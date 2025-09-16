@@ -121,16 +121,7 @@ if [%__ConfigureOnly%] == [1] goto :Exit
 echo Commencing build of corehost native components
 
 :: Build the project created by Cmake
-set __generatorArgs=
-if [%__Ninja%] == [1] (
-    set __generatorArgs=
-) else if [%__BuildArch%] == [wasm] (
-    set __generatorArgs=-j
-) else (
-    set __generatorArgs=
-)
-
-call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
+call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE%
 IF ERRORLEVEL 1 (
     goto :Failure
 )

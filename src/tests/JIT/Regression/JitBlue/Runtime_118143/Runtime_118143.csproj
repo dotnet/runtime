@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <!-- The issue reproduces only with tiered compilation and PGO enabled -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+  </ItemGroup>
+</Project>

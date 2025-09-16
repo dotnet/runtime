@@ -15,7 +15,7 @@ IPC_EVENT_TYPE0(DB_IPCE_TYPE_MASK                    ,0x0FFF)
 // 4. All event values should be monotonically increasing, though we can skip values.
 // 5. All values should be a subset of the bits specified by DB_IPCE_TYPE_MASK.
 //
-// These rules are enforced by a bunch of compile time checks (C_ASSERT) in
+// These rules are enforced by a bunch of compile time checks (static_assert) in
 // the function DoCompileTimeCheckOnDbgIpcEventTypes.
 // If you get compiler errors in this file, you are probably violating the rules above.
 

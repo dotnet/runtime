@@ -1068,6 +1068,7 @@ namespace System.Runtime.InteropServices
         public static int GetExceptionCode() { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode) { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode, System.IntPtr errorInfo) { throw null; }
+        public static System.Exception? GetExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { throw null; }
         public static System.IntPtr GetExceptionPointers() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1208,6 +1209,7 @@ namespace System.Runtime.InteropServices
         public static void StructureToPtr<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure, System.IntPtr ptr, bool fDeleteOld) { }
         public static void ThrowExceptionForHR(int errorCode) { }
         public static void ThrowExceptionForHR(int errorCode, System.IntPtr errorInfo) { }
+        public static void ThrowExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement(System.Array arr, int index) { throw null; }
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index) { throw null; }

@@ -122,42 +122,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void EnvironmentVariable_DotNetInfo_ListEnvironment()
-        {
-            var command = TestContext.BuiltDotNet.Exec("--info")
-                .CaptureStdOut();
-
-            var envVars = new (string Architecture, string Path)[] {
-                ("arm64", "/arm64/dotnet/root"),
-                ("x64", "/x64/dotnet/root"),
-                ("x86", "/x86/dotnet/root")
-            };
-            foreach(var envVar in envVars)
-            {
-                command = command.DotNetRoot(envVar.Path, envVar.Architecture);
-            }
-
-            string dotnetRootNoArch = "/dotnet/root";
-            command = command.DotNetRoot(dotnetRootNoArch);
-
-            (string Architecture, string Path) unknownEnvVar = ("unknown", "/unknown/dotnet/root");
-            command = command.DotNetRoot(unknownEnvVar.Path, unknownEnvVar.Architecture);
-
-            var result = command.Execute();
-            result.Should().Pass()
-                .And.HaveStdOutContaining("Environment variables:")
-                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
-                .And.NotHaveStdOutContaining($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{unknownEnvVar.Architecture.ToUpper()}")
-                .And.NotHaveStdOutContaining($"[{unknownEnvVar.Path}]");
-
-            foreach ((string architecture, string path) in envVars)
-            {
-                result.Should()
-                    .HaveStdOutMatching($@"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{architecture.ToUpper()}\s*\[{path}\]");
-            }
-        }
-
-        [Fact]
         public void DefaultInstallLocation()
         {
             TestApp app = sharedTestState.TestBehaviourEnabledApp;
@@ -319,6 +283,51 @@ namespace HostActivation.Tests
                             .HaveStdOutMatching($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", System.Text.RegularExpressions.RegexOptions.Multiline);
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void NotFound()
+        {
+            TestApp app = sharedTestState.TestBehaviourEnabledApp;
+
+            // Ensure no install locations are registered
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
+            {
+                string defaultLocation = Path.GetTempPath();
+                string registeredLocationOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
+                    ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
+                    : registeredInstallLocationOverride.PathValueOverride;
+                Command.Create(app.AppExe)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, defaultLocation)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("The following locations were searched:")
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Application directory:
+                            {app.Location}
+                        """)
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Environment variable:
+                            DOTNET_ROOT_{TestContext.BuildArchitecture.ToUpper()} = <not set>
+                            DOTNET_ROOT = <not set>
+                        """)
+                    .And.HaveStdErrMatching(
+                        $"""
+                          Registered location:
+                            {System.Text.RegularExpressions.Regex.Escape(registeredLocationOverride)}.*{TestContext.BuildArchitecture}.* = <not set>
+                        """)
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Default location:
+                            {defaultLocation}
+                        """);
             }
         }
 

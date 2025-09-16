@@ -14,10 +14,15 @@ namespace System.Security.Cryptography
     ///   Represents an SLH-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <c>SlhDsa</c> base class,
-    ///   rather than any specific derived class.
-    ///   The derived classes are intended for interop with the underlying system
-    ///   cryptographic libraries.
+    ///   <para>
+    ///     This algorithm is specified by FIPS-205.
+    ///   </para>
+    ///   <para>
+    ///     Developers are encouraged to program against the <see cref="SlhDsa"/> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class SlhDsa : IDisposable
@@ -62,9 +67,6 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
-        /// <summary>
-        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
-        /// </summary>
         private protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
 
         /// <summary>
@@ -328,7 +330,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             SignPreHashCore(hash, context, hashAlgorithmOid, destination);
@@ -426,7 +428,7 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ValidateHashAlgorithm(hash, hashAlgorithmOid);
+            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
             ThrowIfDisposed();
 
             if (signature.Length != Algorithm.SignatureSizeInBytes)
@@ -614,8 +616,8 @@ namespace System.Security.Cryptography
                 3 + // Version Integer
                 2 + // AlgorithmIdentifier Sequence
                 3 + // AlgorithmIdentifier OID value, undervalued to be safe
-                2 + // Secret key Octet String prefix, undervalued to be safe
-                Algorithm.SecretKeySizeInBytes;
+                2 + // Private key Octet String prefix, undervalued to be safe
+                Algorithm.PrivateKeySizeInBytes;
 
             if (destination.Length < MinimumPossiblePkcs8SlhDsaKey)
             {
@@ -648,19 +650,19 @@ namespace System.Security.Cryptography
         /// </exception>
         protected virtual bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            // Secret key size for SLH-DSA is at most 128 bytes so we can stack allocate it.
-            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
-            Debug.Assert(secretKeySizeInBytes is <= 128);
-            Span<byte> secretKey = (stackalloc byte[128])[..secretKeySizeInBytes];
+            // Private key size for SLH-DSA is at most 128 bytes so we can stack allocate it.
+            int privateKeySizeInBytes = Algorithm.PrivateKeySizeInBytes;
+            Debug.Assert(privateKeySizeInBytes is <= 128);
+            Span<byte> privateKey = (stackalloc byte[128])[..privateKeySizeInBytes];
 
             try
             {
-                ExportSlhDsaSecretKey(secretKey);
+                ExportSlhDsaPrivateKey(privateKey);
 
                 // The ASN.1 overhead of a PrivateKeyInfo encoding a private key is 22 bytes.
                 // Round it off to 32. This checked operation should never throw because the inputs are not
                 // user provided.
-                int capacity = checked(32 + secretKeySizeInBytes);
+                int capacity = checked(32 + privateKeySizeInBytes);
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
 
                 using (writer.PushSequence())
@@ -672,7 +674,7 @@ namespace System.Security.Cryptography
                         writer.WriteObjectIdentifier(Algorithm.Oid);
                     }
 
-                    writer.WriteOctetString(secretKey);
+                    writer.WriteOctetString(privateKey);
                 }
 
                 Debug.Assert(writer.GetEncodedLength() <= capacity);
@@ -680,7 +682,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(secretKey);
+                CryptographicOperations.ZeroMemory(privateKey);
             }
         }
 
@@ -1106,55 +1108,55 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the FIPS 205 secret key format.
+        ///   Exports the current key in the FIPS 205 private key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key. Its length must be exactly
-        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
+        ///   The buffer to receive the private key. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.PrivateKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
+        ///   <paramref name="destination"/> is the incorrect length to receive the private key.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>The current instance cannot export a secret key.</para>
+        ///   <para>The current instance cannot export a private key.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void ExportSlhDsaSecretKey(Span<byte> destination)
+        public void ExportSlhDsaPrivateKey(Span<byte> destination)
         {
-            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
+            int privateKeySizeInBytes = Algorithm.PrivateKeySizeInBytes;
 
-            if (destination.Length != secretKeySizeInBytes)
+            if (destination.Length != privateKeySizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, privateKeySizeInBytes),
                     nameof(destination));
             }
 
             ThrowIfDisposed();
 
-            ExportSlhDsaSecretKeyCore(destination);
+            ExportSlhDsaPrivateKeyCore(destination);
         }
 
         /// <summary>
-        ///   Exports the current key in the FIPS 205 secret key format.
+        ///   Exports the current key in the FIPS 205 private key format.
         /// </summary>
         /// <returns>
-        ///   The FIPS 205 secret key.
+        ///   The FIPS 205 private key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   <para>The current instance cannot export a secret key.</para>
+        ///   <para>The current instance cannot export a private key.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] ExportSlhDsaSecretKey()
+        public byte[] ExportSlhDsaPrivateKey()
         {
             ThrowIfDisposed();
 
-            byte[] destination = new byte[Algorithm.SecretKeySizeInBytes];
-            ExportSlhDsaSecretKeyCore(destination);
+            byte[] destination = new byte[Algorithm.PrivateKeySizeInBytes];
+            ExportSlhDsaPrivateKeyCore(destination);
             return destination;
         }
 
@@ -1291,12 +1293,12 @@ namespace System.Security.Cryptography
                     SlhDsaAlgorithm info = GetAlgorithmIdentifier(in algId);
                     ReadOnlySpan<byte> privateKey = key.Span;
 
-                    if (privateKey.Length != info.SecretKeySizeInBytes)
+                    if (privateKey.Length != info.PrivateKeySizeInBytes)
                     {
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
 
-                    ret = ImportSlhDsaSecretKey(info, key.Span);
+                    ret = ImportSlhDsaPrivateKey(info, key.Span);
                 },
                 out int read,
                 out SlhDsa slhDsa);
@@ -1702,13 +1704,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports an SLH-DSA private key in the FIPS 205 secret key format.
+        ///   Imports an SLH-DSA private key in the FIPS 205 private key format.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific SLH-DSA algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes of a FIPS 205 secret key.
+        ///   The bytes of a FIPS 205 private key.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -1726,29 +1728,29 @@ namespace System.Security.Cryptography
         ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports SLH-DSA.
         /// </exception>
-        public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        public static SlhDsa ImportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
 
-            if (source.Length != algorithm.SecretKeySizeInBytes)
+            if (source.Length != algorithm.PrivateKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_SecretKeyWrongSizeForAlgorithm, nameof(source));
+                throw new ArgumentException(SR.Argument_PrivateKeyWrongSizeForAlgorithm, nameof(source));
             }
 
             ThrowIfNotSupported();
 
-            return SlhDsaImplementation.ImportSecretKey(algorithm, source);
+            return SlhDsaImplementation.ImportPrivateKey(algorithm, source);
         }
 
-        /// <inheritdoc cref="ImportSlhDsaSecretKey(SlhDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <inheritdoc cref="ImportSlhDsaPrivateKey(SlhDsaAlgorithm, ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, byte[] source)
+        public static SlhDsa ImportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            return ImportSlhDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
+            return ImportSlhDsaPrivateKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1854,12 +1856,12 @@ namespace System.Security.Cryptography
         protected abstract void ExportSlhDsaPublicKeyCore(Span<byte> destination);
 
         /// <summary>
-        ///   When overridden in a derived class, exports the FIPS 205 secret key to the specified buffer.
+        ///   When overridden in a derived class, exports the FIPS 205 private key to the specified buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key.
+        ///   The buffer to receive the private key.
         /// </param>
-        protected abstract void ExportSlhDsaSecretKeyCore(Span<byte> destination);
+        protected abstract void ExportSlhDsaPrivateKeyCore(Span<byte> destination);
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
@@ -1950,7 +1952,7 @@ namespace System.Security.Cryptography
         {
             // A PKCS#8 SLH-DSA-SHA2-256s private key has an ASN.1 overhead of 22 bytes, assuming no attributes.
             // Make it an even 32 and that should give a good starting point for a buffer size.
-            int size = Algorithm.SecretKeySizeInBytes + 32;
+            int size = Algorithm.PrivateKeySizeInBytes + 32;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
             byte[] buffer = CryptoPool.Rent(size);
@@ -1993,48 +1995,6 @@ namespace System.Security.Cryptography
             }
 
             return algorithm;
-        }
-
-        private static void ValidateHashAlgorithm(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
-        {
-            int? outputSize = hashAlgorithmOid switch
-            {
-                Oids.Md5 => 128 / 8,
-                Oids.Sha1 => 160 / 8,
-                Oids.Sha256 => 256 / 8,
-                Oids.Sha384 => 384 / 8,
-                Oids.Sha512 => 512 / 8,
-                Oids.Sha3_256 => 256 / 8,
-                Oids.Sha3_384 => 384 / 8,
-                Oids.Sha3_512 => 512 / 8,
-                Oids.Shake128 => 256 / 8,
-                Oids.Shake256 => 512 / 8,
-                _ => null,
-            };
-
-            if (outputSize is not null)
-            {
-                if (hash.Length != outputSize)
-                {
-                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
-                }
-            }
-            else
-            {
-                // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
-                const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
-
-                try
-                {
-                    // Only the format of the OID is validated here. The derived classes can decide to do more if they want to.
-                    writer.WriteObjectIdentifier(hashAlgorithmOid);
-                }
-                catch (ArgumentException ae)
-                {
-                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch, ae);
-                }
-            }
         }
 
         private static void ThrowIfNotSupported()

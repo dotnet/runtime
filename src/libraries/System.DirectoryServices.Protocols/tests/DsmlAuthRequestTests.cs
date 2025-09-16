@@ -19,7 +19,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Principal")]
-        public void Ctor_Principal(string principal)
+        public void Ctor_Principal(string? principal)
         {
             var request = new DsmlAuthRequest(principal);
             Assert.Empty(request.Controls);

@@ -11,8 +11,6 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class PaxGlobalExtendedAttributesTarEntry : PosixTarEntry
     {
-        private ReadOnlyDictionary<string, string>? _readOnlyGlobalExtendedAttributes;
-
         // Constructor used when reading an existing archive.
         internal PaxGlobalExtendedAttributesTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin, TarEntryFormat.Pax)
@@ -34,7 +32,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Returns the global extended attributes stored in this entry.
         /// </summary>
-        public IReadOnlyDictionary<string, string> GlobalExtendedAttributes => _readOnlyGlobalExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
+        public IReadOnlyDictionary<string, string> GlobalExtendedAttributes => field ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => false;

@@ -48,7 +48,6 @@
     <Compile Include="..\WebSocketHelper.cs" />
     <Compile Include="..\LoopbackHelper.cs" />
     <Compile Include="..\ResourceHelper.cs" />
-    <Compile Include="..\WebSocketData.cs" />
     <Compile Include="BrowserTimerThrottlingTest.cs" />
   </ItemGroup>
   <ItemGroup>

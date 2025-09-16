@@ -183,7 +183,7 @@ namespace ILCompiler
                     if (callsiteModule != null)
                     {
                         Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
-                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().Name);
                     }
                 }
             }
@@ -241,6 +241,7 @@ namespace ILCompiler
             {
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.MetadataTypeHandle:
                 case ReadyToRunHelperId.DefaultConstructor:
                 case ReadyToRunHelperId.TypeHandleForCasting:
                 case ReadyToRunHelperId.ObjectAllocator:
@@ -266,13 +267,22 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
-                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
-            if (canPotentiallyConstruct)
-                return ReadyToRunHelperId.TypeHandle;
+            // This will not correctly answer questions for canonical forms because the answer would
+            // be about whether a type loader template for the type exists.
+            // We need to make a small exception for canonical definitions because of RuntimeAugments.GetCanonType
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
 
             if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
-                return ReadyToRunHelperId.TypeHandle;
+                return ReadyToRunHelperId.MetadataTypeHandle;
+
+            if (ConstructedEETypeNode.CreationAllowed(type))
+            {
+                if (NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.TypeHandle;
+
+                if (NodeFactory.DevirtualizationManager.CanReferenceMetadataMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.MetadataTypeHandle;
+            }
 
             return ReadyToRunHelperId.NecessaryTypeHandle;
         }
@@ -302,6 +312,8 @@ namespace ILCompiler
             {
                 case ReadyToRunHelperId.TypeHandle:
                     return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                case ReadyToRunHelperId.MetadataTypeHandle:
+                    return NodeFactory.MetadataTypeSymbol((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                     return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.TypeHandleForCasting:
@@ -344,7 +356,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternSymbol(JitHelper.GetNewObjectHelperForType(type));
+                        return NodeFactory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:
@@ -391,12 +403,6 @@ namespace ILCompiler
                     }
                     lookupKind = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
-            }
-
-            // We don't have separate entries for necessary type handles to avoid possible duplication
-            if (lookupKind == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                lookupKind = ReadyToRunHelperId.TypeHandle;
             }
 
             DictionaryLayoutNode dictionaryLayout;
@@ -650,7 +656,7 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    if (node is ConstructedEETypeNode)
                         yield return ((IEETypeNode)node).Type;
                 }
             }

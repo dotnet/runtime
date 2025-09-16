@@ -666,7 +666,7 @@ static bool PushObject(Object* obj, void* unused)
     }
 
     // We only care about dead objects
-    if (!data && g_theGCHeap->IsPromoted(obj, false))
+    if (!data && g_theGCHeap->IsPromoted2(obj, false))
     {
 #if DUMP_GRAPH
         printf ("alive\n");

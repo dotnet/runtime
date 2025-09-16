@@ -50,6 +50,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             ImplicitIndexerAccess.Test();
 
             AnnotationOnUnsupportedType.Test();
+            AutoPropertyUnrecognizedField.Test();
+
+            OneAutoPropAccessor.Test();
+            AutoPropertySyntaxVariations.Test();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -242,6 +246,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // See above comment about fake compiler generated backing fields - this warning is expected from the analyzer
                 [ExpectedWarning("IL2078", nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWhichLooksLikeCompilerGenerated) + ".get",
                     nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWhichLooksLikeCompilerGenerated_Field), Tool.Analyzer, "")]
+                [CompilerGenerated]
                 get
                 {
                     return PropertyWhichLooksLikeCompilerGenerated_Field;
@@ -284,7 +289,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             // Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
             [ExpectedWarning("IL2042",
-                "Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithDifferentBackingFields", Tool.Trimmer | Tool.NativeAot, "")]
+                "Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithDifferentBackingFields", Tool.Trimmer | Tool.NativeAot, "Requires IL")]
             [ExpectedWarning("IL2078",
                 nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWithDifferentBackingFields) + ".get",
                 "Type", Tool.Analyzer, "")]
@@ -293,11 +298,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 [ExpectedWarning("IL2078",
                     nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWithDifferentBackingFields) + ".get", Tool.Trimmer | Tool.NativeAot, "")]
+                [CompilerGenerated]
                 get
                 {
                     return PropertyWithDifferentBackingFields_GetterField;
                 }
 
+                [CompilerGenerated]
                 set
                 {
                     PropertyWithDifferentBackingFields_SetterField = value;
@@ -324,11 +331,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
                 [ExpectedWarning("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                [CompilerGenerated]
                 get { return PropertyWithExistingAttributes_Field; }
 
                 // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
                 [ExpectedWarning("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                [CompilerGenerated]
                 set { PropertyWithExistingAttributes_Field = value; }
             }
 
@@ -360,11 +369,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
                 [ExpectedWarning("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+                [CompilerGenerated]
                 get { return PropertyWithConflictingAttributes_Field; }
 
                 // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
                 [ExpectedWarning("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+                [CompilerGenerated]
                 set { PropertyWithConflictingAttributes_Field = value; }
             }
 
@@ -393,9 +404,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [ExpectedWarning("IL2078", nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWithConflictingNoneAttributes) + ".get",
                     nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWithConflictingNoneAttributes_Field), Tool.Analyzer, "")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.None)]
+                [CompilerGenerated]
                 get { return PropertyWithConflictingNoneAttributes_Field; }
 
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.None)]
+                [CompilerGenerated]
                 set { PropertyWithConflictingNoneAttributes_Field = value; }
             }
 
@@ -905,7 +918,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 [ExpectedWarning("IL2098")]
                 static void RequirePublicFields(
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                     ref string s)
                 {
                 }
@@ -936,6 +949,273 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 StringRefProperty.Test();
                 _ = UnsupportedPropertyAnnotationMismatch;
                 UnsupportedPropertyAnnotationMismatch = null;
+            }
+        }
+
+        class AutoPropertyUnrecognizedField
+        {
+            // Simulate an auto-property with unrecognizeable accessor behavior
+            [CompilerGenerated]
+            private Type Property_BackingField;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type Property
+            {
+                [CompilerGenerated]
+                [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
+                get
+                {
+                    // tools cannot find backing field when there are two loads in a getter
+                    _ = Property_BackingField;
+                    return Property_BackingField;
+                }
+                [CompilerGenerated]
+                set
+                {
+                    // tools cannot find backing field when there are two stores in a setter
+                    Property_BackingField = null;
+                    Property_BackingField = value;
+                }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type PropertyAutoSet
+            {
+                [CompilerGenerated]
+                [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
+                get
+                {
+                    // tools cannot find backing field when there are two loads in a getter
+                    _ = Property_BackingField;
+                    return Property_BackingField;
+                }
+                set;
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type PropertyAutoGet
+            {
+                [ExpectedWarning("IL2078", ["return value", nameof(PropertyAutoGet), "BackingField"], producedBy: Tool.NativeAot | Tool.Trimmer, "Requires IL")]
+                get;
+                [CompilerGenerated]
+                set
+                {
+                    // tools cannot find backing field when there are two stores in a setter
+                    Property_BackingField = null;
+                    Property_BackingField = value;
+                }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type PropertyManualSet
+            {
+                [CompilerGenerated]
+                [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
+                get
+                {
+                    // tools cannot find backing field when there are two loads in a getter
+                    _ = Property_BackingField;
+                    return Property_BackingField;
+                }
+                set => Property_BackingField = value;
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type PropertyManualGet
+            {
+                [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
+                get => Property_BackingField;
+                [CompilerGenerated]
+                set
+                {
+                    // tools cannot find backing field when there are two stores in a setter
+                    Property_BackingField = null;
+                    Property_BackingField = value;
+                }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type PropertyOnlyGet
+            {
+                [CompilerGenerated]
+                [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
+                get
+                {
+                    // tools cannot find backing field when there are two loads in a getter
+                    _ = Property_BackingField;
+                    return Property_BackingField;
+                }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [ExpectedWarning("IL2042", nameof(PropertyOnlySet), Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
+            public Type PropertyOnlySet
+            {
+                [CompilerGenerated]
+                set
+                {
+                    // tools cannot find backing field when there are two stores in a setter
+                    Property_BackingField = null;
+                    Property_BackingField = value;
+                }
+            }
+
+            public static void Test()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                // No warning since annotation is not propagated
+                instance.Property_BackingField = GetUnknownType();
+
+                TestProperty();
+                TestPropertyAutoSet();
+                TestPropertyAutoGet();
+                TestPropertyOnlySet();
+                TestPropertyOnlyGet();
+                TestPropertyManualGet();
+                TestPropertyManualSet();
+            }
+
+            [ExpectedWarning("IL2072", nameof(Property), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", "RequiresAll", nameof(Property))]
+            public static void TestProperty()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.Property = GetUnknownType();
+                instance.Property = GetTypeWithPublicConstructors();
+                instance.Property.RequiresPublicConstructors();
+                instance.Property.RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", nameof(PropertyAutoSet), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", "RequiresAll", nameof(PropertyAutoSet))]
+            public static void TestPropertyAutoSet()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.PropertyAutoSet = GetUnknownType();
+                instance.PropertyAutoSet = GetTypeWithPublicConstructors();
+                instance.PropertyAutoSet.RequiresPublicConstructors();
+                instance.PropertyAutoSet.RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", nameof(PropertyAutoGet), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", "RequiresAll", nameof(PropertyAutoGet))]
+            public static void TestPropertyAutoGet()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.PropertyAutoGet = GetUnknownType();
+                instance.PropertyAutoGet = GetTypeWithPublicConstructors();
+                instance.PropertyAutoGet.RequiresPublicConstructors();
+                instance.PropertyAutoGet.RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", nameof(PropertyOnlySet), nameof(GetUnknownType))]
+            public static void TestPropertyOnlySet()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.PropertyOnlySet = GetUnknownType();
+                instance.PropertyOnlySet = GetTypeWithPublicConstructors();
+            }
+
+            [ExpectedWarning("IL2072", "RequiresAll", nameof(PropertyOnlyGet))]
+            public static void TestPropertyOnlyGet()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.PropertyOnlyGet.RequiresPublicConstructors();
+                instance.PropertyOnlyGet.RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", nameof(PropertyManualGet), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", "RequiresAll", nameof(PropertyManualGet))]
+            public static void TestPropertyManualGet()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.PropertyManualGet.RequiresPublicConstructors();
+                instance.PropertyManualGet.RequiresAll();
+                instance.PropertyManualGet = GetTypeWithPublicConstructors();
+                instance.PropertyManualGet = GetUnknownType();
+            }
+
+            [ExpectedWarning("IL2072", nameof(PropertyManualSet), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", "RequiresAll", nameof(PropertyManualSet))]
+            public static void TestPropertyManualSet()
+            {
+                var instance = new AutoPropertyUnrecognizedField();
+                instance.PropertyManualSet.RequiresPublicConstructors();
+                instance.PropertyManualSet.RequiresAll();
+                instance.PropertyManualSet = GetTypeWithPublicConstructors();
+                instance.PropertyManualSet = GetUnknownType();
+            }
+        }
+
+        // Validate that auto-property accessors are recognized and annotation is propagated to backing field
+        // Even when there is only one auto-property accessor and the other is manually implemented.
+        class OneAutoPropAccessor
+        {
+            private Type Property_BackingField;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type AutoGet
+            {
+                get;
+                set { field = value; }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type AutoSet
+            {
+                // Annotation does propagate to the backing field, so no warning
+                get { return field; }
+                set;
+            }
+
+            [ExpectedWarning("IL2072", nameof(AutoSet), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2072", nameof(AutoGet), nameof(GetUnknownType))]
+            public static void Test()
+            {
+                var instance = new OneAutoPropAccessor();
+                instance.AutoGet = GetUnknownType();
+                _ = instance.AutoGet;
+                instance.AutoSet = GetUnknownType();
+                _ = instance.AutoSet;
+            }
+        }
+
+        // Validates a number of different auto-property syntax variations to ensure that they are all recognized and the annotation is propagated
+        class AutoPropertySyntaxVariations
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type BodySetter
+            {
+                get;
+                [ExpectedWarning("IL2074", nameof(BodySetter), nameof(GetUnknownType))]
+                set { field = GetUnknownType(); }
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type ExpressionSetter
+            {
+                get;
+                [ExpectedWarning("IL2074", nameof(ExpressionSetter), nameof(GetUnknownType))]
+                set => field = GetUnknownType();
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type BodyGetter { get { return field; } set; }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public Type ExpressionGetter { get => field; set; }
+
+            public static void Test()
+            {
+                var instance = new AutoPropertySyntaxVariations();
+                instance.BodySetter = instance.BodyGetter;
+                instance.ExpressionSetter = instance.ExpressionGetter;
             }
         }
 

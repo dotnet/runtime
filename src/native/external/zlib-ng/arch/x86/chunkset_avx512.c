@@ -98,6 +98,10 @@ static inline uint8_t* CHUNKCOPY(uint8_t *out, uint8_t const *from, unsigned len
     return out;
 }
 
+/* MSVC compiler decompression bug when optimizing for size */
+#if defined(_MSC_VER) && _MSC_VER < 1943
+#  pragma optimize("", off)
+#endif
 static inline chunk_t GET_CHUNK_MAG(uint8_t *buf, uint32_t *chunk_rem, uint32_t dist) {
     lut_rem_pair lut_rem = perm_idx_lut[dist - 3];
     __m256i ret_vec;
@@ -128,6 +132,9 @@ static inline chunk_t GET_CHUNK_MAG(uint8_t *buf, uint32_t *chunk_rem, uint32_t 
 
     return ret_vec;
 }
+#if defined(_MSC_VER) && _MSC_VER < 1943
+#  pragma optimize("", on)
+#endif
 
 static inline void storehalfchunk(uint8_t *out, halfchunk_t *chunk) {
     _mm_storeu_si128((__m128i *)out, *chunk);

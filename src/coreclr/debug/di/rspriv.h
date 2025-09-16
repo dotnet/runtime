@@ -114,13 +114,6 @@ class CordbEval;
 
 class CordbMDA;
 
-class CorpubPublish;
-class CorpubProcess;
-class CorpubAppDomain;
-class CorpubProcessEnum;
-class CorpubAppDomainEnum;
-
-
 class RSLock;
 class NeuterList;
 
@@ -1094,11 +1087,11 @@ typedef enum {
     enumCordbEnCSnapshot,   //  21
     enumCordbEval,          //  22
     enumCordbUnmanagedThread,// 23
-    enumCorpubPublish,      //  24
-    enumCorpubProcess,      //  25
-    enumCorpubAppDomain,    //  26
-    enumCorpubProcessEnum,  //  27
-    enumCorpubAppDomainEnum,//  28
+    // unused,              //  24
+    // unused,              //  25
+    // unused,              //  26
+    // unused,              //  27
+    // unused,              //  28
     enumCordbEnumFilter,    //  29
     enumCordbEnCErrorInfo,  //  30
     enumCordbEnCErrorInfoEnum,//31
@@ -1157,7 +1150,7 @@ class CordbHashTable;
 #define CORDB_COMMON_BASE_SIGNATURE 0x0d00d96a
 #define CORDB_COMMON_BASE_SIGNATURE_DEAD 0x0dead0b1
 
-// Common base for both CorPublish + CorDebug objects.
+// Common base for CorDebug objects.
 class CordbCommonBase : public IUnknown
 {
 public:
@@ -10691,12 +10684,6 @@ public:
 };
 #endif // FEATURE_INTEROP_DEBUGGING
 
-
-//********************************************************************************
-//**************** App Domain Publishing Service API *****************************
-//********************************************************************************
-
-
 class EnumElement
 {
 public:
@@ -10715,293 +10702,6 @@ private:
     void        *m_pData;
     EnumElement *m_pNext;
 };
-
-#if defined(FEATURE_DBG_PUBLISH)
-
-// Prototype of psapi!GetModuleFileNameEx.
-typedef DWORD FPGetModuleFileNameEx(HANDLE, HMODULE, LPTSTR, DWORD);
-
-
-class CorpubPublish : public CordbCommonBase, public ICorPublish
-{
-public:
-    CorpubPublish();
-    virtual ~CorpubPublish();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbPublish"; }
-#endif
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublish
-    //-----------------------------------------------------------
-
-    COM_METHOD EnumProcesses(
-        COR_PUB_ENUMPROCESS Type,
-        ICorPublishProcessEnum **ppIEnum);
-
-    COM_METHOD GetProcess(
-        unsigned pid,
-        ICorPublishProcess **ppProcess);
-
-    //-----------------------------------------------------------
-    // CreateObject
-    //-----------------------------------------------------------
-    static COM_METHOD CreateObject(REFIID id, void **object)
-    {
-        *object = NULL;
-
-        if (id != IID_IUnknown && id != IID_ICorPublish)
-            return (E_NOINTERFACE);
-
-        CorpubPublish *pCorPub = new (nothrow) CorpubPublish();
-
-        if (pCorPub == NULL)
-            return (E_OUTOFMEMORY);
-
-        *object = (ICorPublish*)pCorPub;
-        pCorPub->AddRef();
-
-        return (S_OK);
-    }
-
-private:
-    HRESULT GetProcessInternal( unsigned pid, CorpubProcess **ppProcess );
-
-    // Cached information to get the process name. Not available on all platforms, so may be null.
-    HModuleHolder m_hPSAPIdll;
-    FPGetModuleFileNameEx * m_fpGetModuleFileNameEx;
-};
-
-class CorpubProcess : public CordbCommonBase, public ICorPublishProcess
-{
-public:
-    CorpubProcess(const ProcessDescriptor * pProcessDescriptor,
-        bool fManaged,
-        HANDLE hProcess,
-        HANDLE hMutex,
-        AppDomainEnumerationIPCBlock *pAD,
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-        IPCReaderInterface *pIPCReader,
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
-        FPGetModuleFileNameEx * fpGetModuleFileNameEx);
-    virtual ~CorpubProcess();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CorpubProcess"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishProcess
-    //-----------------------------------------------------------
-    COM_METHOD IsManaged(BOOL *pbManaged);
-
-    /*
-     * Enumerate the list of known application domains in the target process.
-     */
-    COM_METHOD EnumAppDomains(ICorPublishAppDomainEnum **ppEnum);
-
-    /*
-     * Returns the OS ID for the process in question.
-     */
-    COM_METHOD GetProcessID(unsigned *pid);
-
-    /*
-     * Get the display name for a process.
-     */
-    COM_METHOD GetDisplayName(ULONG32 cchName,
-                                ULONG32 *pcchName,
-                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    CorpubProcess   *GetNextProcess () { return m_pNext;}
-    void SetNext (CorpubProcess *pNext) { m_pNext = pNext;}
-
-    // Helper to tell if this process has exited
-    bool IsExited();
-
-public:
-    ProcessDescriptor               m_processDescriptor;
-
-private:
-    bool                            m_fIsManaged;
-    HANDLE                          m_hProcess;
-    HANDLE                          m_hMutex;
-    AppDomainEnumerationIPCBlock    *m_AppDomainCB;
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    IPCReaderInterface              *m_pIPCReader;  // controls the lifetime of the AppDomainEnumerationIPCBlock
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
-    CorpubProcess                   *m_pNext;   // pointer to the next process in the process list
-    WCHAR                           *m_szProcessName;
-
-};
-
-class CorpubAppDomain  : public CordbCommonBase, public ICorPublishAppDomain
-{
-public:
-    CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id);
-    virtual ~CorpubAppDomain();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CorpubAppDomain"; }
-#endif
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface (REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishAppDomain
-    //-----------------------------------------------------------
-
-    /*
-     * Get the name and ID for an application domain.
-     */
-    COM_METHOD GetID (ULONG32 *pId);
-
-    /*
-     * Get the name for an application domain.
-     */
-    COM_METHOD GetName (ULONG32 cchName,
-                        ULONG32 *pcchName,
-                        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    CorpubAppDomain *GetNextAppDomain () { return m_pNext;}
-    void SetNext (CorpubAppDomain *pNext) { m_pNext = pNext;}
-
-private:
-    CorpubAppDomain *m_pNext;
-    WCHAR           *m_szAppDomainName;
-    ULONG           m_id;
-
-};
-
-class CorpubProcessEnum : public CordbCommonBase, public ICorPublishProcessEnum
-{
-public:
-    CorpubProcessEnum(CorpubProcess *pFirst);
-    virtual ~CorpubProcessEnum();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CorpubProcessEnum"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishProcessEnum
-    //-----------------------------------------------------------
-
-    COM_METHOD Skip(ULONG celt);
-    COM_METHOD Reset();
-    COM_METHOD Clone(ICorPublishEnum **ppEnum);
-    COM_METHOD GetCount(ULONG *pcelt);
-    COM_METHOD Next(ULONG celt,
-                    ICorPublishProcess *objects[],
-                    ULONG *pceltFetched);
-
-private:
-    CorpubProcess       *m_pFirst;
-    CorpubProcess       *m_pCurrent;
-
-};
-
-class CorpubAppDomainEnum : public CordbCommonBase, public ICorPublishAppDomainEnum
-{
-public:
-    CorpubAppDomainEnum(CorpubAppDomain *pFirst);
-    virtual ~CorpubAppDomainEnum();
-
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbAppDomainEnum"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorPublishAppDomainEnum
-    //-----------------------------------------------------------
-    COM_METHOD Skip(ULONG celt);
-    COM_METHOD Reset();
-    COM_METHOD Clone(ICorPublishEnum **ppEnum);
-    COM_METHOD GetCount(ULONG *pcelt);
-
-    COM_METHOD Next(ULONG celt,
-                    ICorPublishAppDomain *objects[],
-                    ULONG *pceltFetched);
-
-private:
-    CorpubAppDomain     *m_pFirst;
-    CorpubAppDomain     *m_pCurrent;
-
-};
-
-#endif // defined(FEATURE_DBG_PUBLISH)
 
 class CordbHeapEnum : public CordbBase, public ICorDebugHeapEnum
 {

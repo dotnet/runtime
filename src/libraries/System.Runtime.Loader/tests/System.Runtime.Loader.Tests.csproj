@@ -30,6 +30,7 @@
     <Compile Include="ResourceAssemblyLoadContext.cs" />
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />
+    <Compile Include="AssemblyResolutionDowngradeTest.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
@@ -50,6 +51,7 @@
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion1\System.Runtime.Loader.Test.AssemblyVersion1.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion1.dll" />
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->

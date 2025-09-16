@@ -104,7 +104,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)sizeof(T)));
+            return ref AddByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
             // ldarg .0
             // ldarg .1
@@ -124,14 +124,14 @@ namespace System.Runtime.CompilerServices
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Add<T>(ref T source, IntPtr elementOffset)
+        public static ref T Add<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)sizeof(T)));
+            return ref AddByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -186,7 +186,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (nuint)(elementOffset * (nuint)sizeof(T)));
+            return ref AddByteOffset(ref source, elementOffset * (nuint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -214,7 +214,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+            return ref AddByteOffset(ref source, (nint)byteOffset);
 #endif
 
             // ldarg .0
@@ -405,6 +405,22 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressLessThan(in left, in right);
+        }
+
+        /// <summary>
         /// Determines whether the memory address referenced by <paramref name="left"/> is less than
         /// the memory address referenced by <paramref name="right"/>.
         /// </summary>
@@ -426,6 +442,22 @@ namespace System.Runtime.CompilerServices
             // ldarg.1
             // clt.un
             // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressGreaterThan(in left, in right);
         }
 
         /// <summary>
@@ -626,7 +658,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
+        public static ref T AddByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
         {
             // This method is implemented by the toolchain
@@ -705,7 +737,7 @@ namespace System.Runtime.CompilerServices
         // Mono:ByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
+        public static nint ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
             where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
@@ -788,7 +820,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)sizeof(T)));
+            return ref SubtractByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -834,14 +866,14 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Subtract<T>(ref T source, IntPtr elementOffset)
+        public static ref T Subtract<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)sizeof(T)));
+            return ref SubtractByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -867,7 +899,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (nuint)(elementOffset * (nuint)sizeof(T)));
+            return ref SubtractByteOffset(ref source, elementOffset * (nuint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -885,7 +917,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T SubtractByteOffset<T>(ref T source, IntPtr byteOffset)
+        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
@@ -911,7 +943,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(void*)byteOffset);
+            return ref SubtractByteOffset(ref source, (nint)byteOffset);
 #endif
 
             // ldarg .0

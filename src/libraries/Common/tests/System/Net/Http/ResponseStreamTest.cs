@@ -319,8 +319,18 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server);
             if (abort == "abortDuringBody")
             {
-                using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                HttpResponseMessage res;
+                try
+                {
+                    res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                }
+                catch (HttpRequestException)
+                {
+                    // sometimes the server aborts earlier than the browser is able to return from the non-blocking send/fetch
+                    return;
+                }
                 await Assert.ThrowsAsync<HttpRequestException>(() => res.Content.ReadAsByteArrayAsync());
+                res.Dispose();
             }
             else
             {
@@ -487,7 +497,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static TheoryData CancelRequestReadFunctions
+        public static TheoryData<bool, int, bool> CancelRequestReadFunctions
             => new TheoryData<bool, int, bool>
             {
                 { false, 0, false },

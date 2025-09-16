@@ -47,6 +47,15 @@ include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 include(FeatureSummary)
 
+# We need to enable C++ before trying to check for coverage
+option(WITH_GTEST "Build gtest_zlib" ON)
+option(WITH_FUZZERS "Build test/fuzz" OFF)
+option(WITH_BENCHMARKS "Build test/benchmarks" OFF)
+
+if(WITH_GTEST OR WITH_FUZZERS OR WITH_BENCHMARKS)
+  enable_language(CXX)
+endif()
+
 include(cmake/detect-arch.cmake)
 include(cmake/detect-install-dirs.cmake)
 include(cmake/detect-coverage.cmake)
@@ -79,9 +88,6 @@ option(WITH_GZFILEOP "Compile with support for gzFile related functions" ON)
 option(ZLIB_COMPAT "Compile with zlib compatible API" OFF)
 option(ZLIB_ENABLE_TESTS "Build test binaries" ON)
 option(ZLIBNG_ENABLE_TESTS "Test zlib-ng specific API" ON)
-option(WITH_GTEST "Build gtest_zlib" ON)
-option(WITH_FUZZERS "Build test/fuzz" OFF)
-option(WITH_BENCHMARKS "Build test/benchmarks" OFF)
 option(WITH_BENCHMARK_APPS "Build application benchmarks" OFF)
 option(WITH_OPTIM "Build with optimisation" ON)
 option(WITH_REDUCED_MEM "Reduced memory usage for special cases (reduces performance)" OFF)
@@ -363,6 +369,21 @@ if(MSVC)
 endif()
 
 #
+# Additional flags for features checking
+#
+set(ADDITIONAL_CHECK_FLAGS )
+if(APPLE)
+    check_c_compiler_flag(-Werror=unguarded-availability HAVE_W_ERROR_UNGUARDED_AVAILABILITY)
+    if(HAVE_W_ERROR_UNGUARDED_AVAILABILITY)
+        set(ADDITIONAL_CHECK_FLAGS "${ADDITIONAL_CHECK_FLAGS} -Werror=unguarded-availability")
+    endif()
+    check_c_compiler_flag(-Werror=unguarded-availability-new HAVE_W_ERROR_UNGUARDED_AVAILABILITY_NEW)
+    if(HAVE_W_ERROR_UNGUARDED_AVAILABILITY_NEW)
+        set(ADDITIONAL_CHECK_FLAGS "${ADDITIONAL_CHECK_FLAGS} -Werror=unguarded-availability-new")
+    endif()
+endif()
+
+#
 # Check for standard/system includes
 #
 check_include_file(arm_acle.h  HAVE_ARM_ACLE_H)
@@ -407,28 +428,42 @@ set(CMAKE_REQUIRED_DEFINITIONS) # clear variable
 #
 # Check for fseeko and other optional functions
 #
+set(CMAKE_REQUIRED_FLAGS "${ADDITIONAL_CHECK_FLAGS}")
 check_function_exists(fseeko HAVE_FSEEKO)
 if(NOT HAVE_FSEEKO)
     add_definitions(-DNO_FSEEKO)
 endif()
+set(CMAKE_REQUIRED_FLAGS)
 
+set(CMAKE_REQUIRED_FLAGS "${ADDITIONAL_CHECK_FLAGS}")
 check_function_exists(strerror HAVE_STRERROR)
 if(NOT HAVE_STRERROR)
     add_definitions(-DNO_STRERROR)
 endif()
+set(CMAKE_REQUIRED_FLAGS)
 
-set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200112L)
+#
+# Check for aligned memory allocation support: POSIX
+#
+set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200112L -D_ISOC11_SOURCE=1)
+set(CMAKE_REQUIRED_FLAGS "${ADDITIONAL_CHECK_FLAGS}")
 check_symbol_exists(posix_memalign stdlib.h HAVE_POSIX_MEMALIGN)
 if(HAVE_POSIX_MEMALIGN)
     add_definitions(-DHAVE_POSIX_MEMALIGN)
 endif()
+set(CMAKE_REQUIRED_FLAGS)
 set(CMAKE_REQUIRED_DEFINITIONS)
 
-set(CMAKE_REQUIRED_DEFINITIONS -D_ISOC11_SOURCE=1)
+#
+# Check for aligned memory allocation support: C11
+#
+set(CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200112L -D_ISOC11_SOURCE=1)
+set(CMAKE_REQUIRED_FLAGS "${ADDITIONAL_CHECK_FLAGS}")
 check_symbol_exists(aligned_alloc stdlib.h HAVE_ALIGNED_ALLOC)
 if(HAVE_ALIGNED_ALLOC)
     add_definitions(-DHAVE_ALIGNED_ALLOC)
 endif()
+set(CMAKE_REQUIRED_FLAGS)
 set(CMAKE_REQUIRED_DEFINITIONS)
 
 if(WITH_SANITIZER STREQUAL "Address")
@@ -575,13 +610,6 @@ if(MSVC)
     set(CMAKE_DEBUG_POSTFIX "d")
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
-endif()
-
-if(BASEARCH_X86_FOUND)
-    # FORCE_SSE2 option will only be shown if HAVE_SSE2_INTRIN is true
-    if("${ARCH}" MATCHES "i[3-6]86")
-        cmake_dependent_option(FORCE_SSE2 "Always assume CPU is SSE2 capable" OFF "HAVE_SSE2_INTRIN" OFF)
-    endif()
 endif()
 
 #
@@ -902,6 +930,10 @@ if(WITH_OPTIM)
         endif()
         if(WITH_SSE2)
             check_sse2_intrinsics()
+            # FORCE_SSE2 option will only be shown if HAVE_SSE2_INTRIN is true
+            if("${ARCH}" MATCHES "i[3-6]86")
+                cmake_dependent_option(FORCE_SSE2 "Always assume CPU is SSE2 capable" OFF "HAVE_SSE2_INTRIN" OFF)
+            endif()
             if(HAVE_SSE2_INTRIN)
                 add_definitions(-DX86_SSE2)
                 set(SSE2_SRCS ${ARCHDIR}/chunkset_sse2.c ${ARCHDIR}/compare256_sse2.c ${ARCHDIR}/slide_hash_sse2.c)
@@ -1062,6 +1094,12 @@ if(IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
     set(PC_INC_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
 else()
     set(PC_INC_INSTALL_DIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+endif()
+
+if(IS_ABSOLUTE "${CMAKE_INSTALL_BINDIR}")
+    set(PC_BIN_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}")
+else()
+    set(PC_BIN_INSTALL_DIR "\${exec_prefix}/${CMAKE_INSTALL_BINDIR}")
 endif()
 
 if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")

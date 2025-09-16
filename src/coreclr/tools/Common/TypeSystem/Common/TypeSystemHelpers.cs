@@ -65,10 +65,6 @@ namespace Internal.TypeSystem
             return paramType.ParameterType;
         }
 
-        public static bool HasLayout(this MetadataType mdType)
-        {
-            return mdType.IsSequentialLayout || mdType.IsExplicitLayout;
-        }
 
         public static LayoutInt GetElementSize(this TypeDesc type)
         {

@@ -3,7 +3,10 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 public interface ITest
 {
@@ -932,6 +935,10 @@ public class InterpreterTest
         if (!TestDelegate())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestIntrinsics");
+        if (!TestIntrinsics())
+            Environment.FailFast(null);
+
         Console.WriteLine("TestCalli");
         if (!TestCalli())
             Environment.FailFast(null);
@@ -944,15 +951,43 @@ public class InterpreterTest
         if (!TestPreciseInitCctors())
             Environment.FailFast(null);
 
-	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+        Console.WriteLine("TestThreading_Interlocked_CompareExchange");
+        if (!TestThreading_Interlocked_CompareExchange())
+            Environment.FailFast(null);
 
-	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+        Console.WriteLine("TestRuntimeHelpers_IsReferenceOrContainsReferences");
+        if (!TestRuntimeHelpers_IsReferenceOrContainsReferences())
+            Environment.FailFast(null);
 
-	Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+        Console.WriteLine("TestMemoryMarshal_GetArrayDataReference");
+        if (!TestMemoryMarshal_GetArrayDataReference())
+            Environment.FailFast(null);
 
+        Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+
+        Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+
+        Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+
+        Console.WriteLine("TestPInvoke");
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
+        // For stackwalking validation
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
+    }
+
+    public static bool TestIntrinsics()
+    {
+        Console.WriteLine("Vector128.IsHardwareAccelerated=");
+        Console.WriteLine(Vector128.IsHardwareAccelerated);
+        Console.WriteLine("X86Base.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.X86.X86Base.IsSupported);
+        Console.WriteLine("ArmBase.IsSupported=");
+        Console.WriteLine(System.Runtime.Intrinsics.Arm.ArmBase.IsSupported);
+        return true;
     }
 
     public static void TestExceptionHandling()
@@ -2024,7 +2059,7 @@ public class InterpreterTest
 
     public static T[,,] TestNewMDArr<T>(int len)
     {
-        return new T[len,len-1,len-2];
+        return new T[len, len - 1, len - 2];
     }
 
     public static object Box<T>(T value)
@@ -2040,6 +2075,11 @@ public class InterpreterTest
     struct GenericStruct<T>
     {
         public T Value;
+
+        public override string ToString()
+        {
+            return "GenericStruct<T>: " + (Value?.ToString() ?? "<null>");
+        }
     }
 
     public static int preciseInitCctorsRun = 0;
@@ -2056,7 +2096,7 @@ public class InterpreterTest
         }
 
         public static void TriggerCctorMethod<U>()
-        {}
+        { }
     }
 
     class MyClass<T>
@@ -2351,6 +2391,58 @@ public class InterpreterTest
     static object BoxedSubtraction(object lhs, object rhs)
     {
         return (int)lhs - (int)rhs;
+    }
+
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvokeWithMarshaling(string s);
+
+    public static bool TestPInvoke()
+    {
+        if (sumTwoInts(1, 2) != 3)
+            return false;
+
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
+            return false;
+
+        // Test marshaling wrappers
+        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+
+        bool caught = false;
+        try {
+            Console.WriteLine("calling missingPInvoke");
+            missingPInvoke();
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #1");
+            caught = true;
+        }
+
+        if (!caught)
+            return false;
+
+        bool caught2 = false;
+        try {
+            Console.WriteLine("calling missingPInvokeWithMarshaling");
+            missingPInvokeWithMarshaling("test");
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #2");
+            caught2 = true;
+        }
+
+        if (!caught2)
+            return false;
+
+        return true;
     }
 
     public static bool TestArray()
@@ -2889,5 +2981,73 @@ public class InterpreterTest
             return false;
 
         return true;
+    }
+
+    public static bool TestThreading_Interlocked_CompareExchange()
+    {
+        // Value type test
+        int location = 1;
+        int value = 2;
+        int comparand = 1;
+        int result = System.Threading.Interlocked.CompareExchange(ref location, value, comparand);
+        if (!(result == 1 && location == 2))
+            return false;
+
+        // Reference type test
+        object objLocation = "a";
+        object objValue = "b";
+        object objComparand = "a";
+        object objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objComparand) && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        // Reference type test (fail)
+        objLocation = "a";
+        objValue = "b";
+        objComparand = "c";
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objLocation) && object.ReferenceEquals(objLocation, "a")))
+            return false;
+
+        // Null reference test
+        objLocation = null;
+        objValue = "b";
+        objComparand = null;
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(objResult is null && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        return true;
+    }
+
+    public static bool TestRuntimeHelpers_IsReferenceOrContainsReferences()
+    {
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<object>())
+            return false;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<int>())
+            return false;
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<int[]>())
+            return false;
+        return true;
+    }
+
+    public static bool TestMemoryMarshal_GetArrayDataReference()
+    {
+        int[] arr = new int[1];
+        ref int dataRef = ref MemoryMarshal.GetArrayDataReference(arr);
+        dataRef = 42;
+        if (arr[0] != 42)
+            return false;
+
+        arr = null;
+        try
+        {
+            MemoryMarshal.GetArrayDataReference(arr);
+            return false;
+        }
+        catch (NullReferenceException)
+        {
+            return true;
+        }
     }
 }
