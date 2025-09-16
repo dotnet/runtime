@@ -4166,12 +4166,6 @@ private:
     DWORD m_dwOutOfProcessStepping;
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
-    enum DetachState
-    {
-        DS_None,                // Detach is not in progress
-        DS_DetachInProgress,    // Detach has been initiated
-        DS_DetachComplete       // Detach is complete
-    };
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
     void TryDetach(); // Sets detach state to TryDetach, starting the detach evacuation counter.
 private:
