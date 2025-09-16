@@ -509,6 +509,94 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsDateTime();
         }
 
+        internal virtual DateOnly ReadElementContentAsDateOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+            string s = reader.ReadElementContentAsString();
+            try
+            {
+                return ParseDateOnly(s);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(DateOnly));
+                throw; // unreachable
+            }
+        }
+
+        internal virtual DateOnly ReadContentAsDateOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, nameof(DateOnly));
+            string s = reader.ReadContentAsString();
+            try
+            {
+                return ParseDateOnly(s);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(DateOnly));
+                throw; // unreachable
+            }
+        }
+
+        internal virtual TimeOnly ReadElementContentAsTimeOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+
+            string s = reader.ReadElementContentAsString();
+
+            try
+            {
+                if (DateTime.Now.Year > 1900)
+                {
+                    var dto = XmlConvert.ToDateTimeOffset(s);
+                    return TimeOnly.FromTimeSpan(dto.TimeOfDay);
+                }
+                return ParseTimeOnly(s);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(TimeOnly));
+                throw; // unreachable
+            }
+        }
+
+        internal virtual TimeOnly ReadContentAsTimeOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowConversionException(string.Empty, nameof(TimeOnly));
+
+            string s = reader.ReadContentAsString();
+            try
+            {
+                if (DateTime.Now.Year > 1900)
+                {
+                    var dto = XmlConvert.ToDateTimeOffset(s);
+                    return TimeOnly.FromTimeSpan(dto.TimeOfDay);
+                }
+                return ParseTimeOnly(s);
+            }
+            catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
+            {
+                ThrowConversionException(s, nameof(TimeOnly));
+                throw; // unreachable
+            }
+        }
+
+        private static DateOnly ParseDateOnly(string s)
+        {
+            return DateOnly.ParseExact(s, "yyyy-MM-dd", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
+        private static TimeOnly ParseTimeOnly(string s)
+        {
+            // Strictly parse the expected TimeOnly format. No timezone/offset allowed.
+            return TimeOnly.ParseExact(s, "HH:mm:ss.FFFFFFF", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
         internal int ReadElementContentAsInt()
         {
             if (isEndOfEmptyElement)
