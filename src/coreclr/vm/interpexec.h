@@ -30,10 +30,12 @@ class InterpreterFrame;
 enum class InterpreterFrameReporting
 {
     Normal = 0,
+#ifndef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     FuncletReportGlobals = 1,
     FuncletNoReportGlobals = 2,
 
     Mask = 3
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 };
 
 struct InterpMethodContextFrame
@@ -50,11 +52,18 @@ public:
     bool IsFuncletFrame()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+        return false;
+#else
         return ((size_t)pRetVal & (size_t)InterpreterFrameReporting::Mask) != (size_t)InterpreterFrameReporting::Normal;
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     }
     bool ShouldReportGlobals()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+        return true;
+#else
         switch ((InterpreterFrameReporting)((size_t)pRetVal & (size_t)InterpreterFrameReporting::Mask))
         {
         case InterpreterFrameReporting::FuncletReportGlobals:
@@ -66,12 +75,17 @@ public:
             assert(false);
             return false;
         }
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     }
 
     int8_t* GetRetValAddr()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+        return pRetVal;
+#else
         return (int8_t*)((size_t)pRetVal & ~(size_t)InterpreterFrameReporting::Mask);
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     }
 
     int8_t* GetRetValAddr_KnownNormalReporting()
@@ -86,7 +100,11 @@ public:
     {
         this->pParent = pParent;
         this->startIp = startIp;
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+        this->pRetVal = pRetVal;
+#else
         this->pRetVal = (int8_t*)((size_t)pRetVal | (size_t)reporting);
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
         this->pStack = pStack;
         this->ip = NULL;
     }

@@ -299,7 +299,12 @@ void InterpCompiler::AllocOffsets()
             ForEachInsVar(pIns, pIns, &InterpCompiler::SetVarLiveRangeCB);
             insIndex++;
         }
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
         int32_t currentOffset = m_totalVarsStackSize;
+#else
+        // The first interp stack slot in a funclet is reserved to hold the pointer to the parent frame's stack, the rest is available for local vars
+        int32_t currentOffset = pBB->clauseNonTryType == BBClauseNone ? m_totalVarsStackSize : INTERP_STACK_SLOT_SIZE;
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 
         insIndex = 0;
         for (pIns = pBB->pFirstIns; pIns != NULL; pIns = pIns->pNext) {

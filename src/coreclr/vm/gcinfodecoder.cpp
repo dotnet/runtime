@@ -2141,6 +2141,9 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     }
     else
     {
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+        baseReg = pFrame->pStack;
+#else
         if (pFrame->ShouldReportGlobals())
         {
             if (pFrame->IsFuncletFrame())
@@ -2156,6 +2159,7 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         {
             return NULL;
         }
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     }
 
     _ASSERTE(baseReg);

@@ -780,7 +780,7 @@ private:
     void EmitCode();
     int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs, bool forFunclet);
-    int32_t GetFuncletAdjustedVarOffset(InterpInst *ins, int varIndex, bool forFunclet);
+    int32_t GetFuncletAdjustedVarOffset(int varIndex, bool forFunclet);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
     InterpMethod* CreateInterpMethod();
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);

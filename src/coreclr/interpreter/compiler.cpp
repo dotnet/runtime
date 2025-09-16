@@ -735,14 +735,16 @@ uint32_t InterpCompiler::ConvertOffset(int32_t offset)
     return offset * sizeof(int32_t) + sizeof(void*);
 }
 
-int32_t InterpCompiler::GetFuncletAdjustedVarOffset(InterpInst *ins, int varIndex, bool forFunclet)
+int32_t InterpCompiler::GetFuncletAdjustedVarOffset(int varIndex, bool forFunclet)
 {
+#ifndef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     if (forFunclet && m_pVars[varIndex].global)
     {
         // In funclets, global vars are accessed relative to the main method frame pointer
         return -(m_pVars[varIndex].offset + FUNCLET_STACK_ADJUSTMENT_OFFSET);
     }
     else
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     {
         return m_pVars[varIndex].offset;
     }
@@ -762,7 +764,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     if (opcode == INTOP_SWITCH)
     {
         int32_t numLabels = ins->data [0];
-        *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[0], forFunclet);
+        *ip++ = GetFuncletAdjustedVarOffset(ins->sVars[0], forFunclet);
         *ip++ = numLabels;
         // Add relocation for each label
         for (int32_t i = 0; i < numLabels; i++)
@@ -777,7 +779,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     {
         int32_t brBaseOffset = (int32_t)(startIp - m_pMethodCode);
         for (int i = 0; i < g_interpOpSVars[opcode]; i++)
-            *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[i], forFunclet);
+            *ip++ = GetFuncletAdjustedVarOffset(ins->sVars[i], forFunclet);
 
         if (ins->info.pTargetBB->nativeOffset >= 0)
         {
@@ -809,8 +811,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         // Revert opcode emit
         ip--;
 
-        int destOffset = GetFuncletAdjustedVarOffset(ins, ins->dVar, forFunclet);
-        int srcOffset = GetFuncletAdjustedVarOffset(ins, ins->sVars[0], forFunclet);
+        int destOffset = GetFuncletAdjustedVarOffset(ins->dVar, forFunclet);
+        int srcOffset = GetFuncletAdjustedVarOffset(ins->sVars[0], forFunclet);
         if (srcOffset >= 0)
             srcOffset += fOffset;
         else
@@ -836,8 +838,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     {
         // This opcode references a var, int sVars[0], but it is not registered as a source for it
         // aka g_interpOpSVars[INTOP_LDLOCA] is 0.
-        *ip++ = GetFuncletAdjustedVarOffset(ins, ins->dVar, forFunclet);
-        *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[0], forFunclet);
+        *ip++ = GetFuncletAdjustedVarOffset(ins->dVar, forFunclet);
+        *ip++ = GetFuncletAdjustedVarOffset(ins->sVars[0], forFunclet);
     }
     else
     {
@@ -846,7 +848,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         // variable we emit another offset. Finally, we will emit any additional data needed
         // by the instruction.
         if (g_interpOpDVars[opcode])
-            *ip++ = GetFuncletAdjustedVarOffset(ins, ins->dVar, forFunclet);
+            *ip++ = GetFuncletAdjustedVarOffset(ins->dVar, forFunclet);
 
         if (g_interpOpSVars[opcode])
         {
@@ -858,7 +860,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
                 }
                 else
                 {
-                    *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[i], forFunclet);
+                    *ip++ = GetFuncletAdjustedVarOffset(ins->sVars[i], forFunclet);
                 }
             }
         }
@@ -2303,6 +2305,7 @@ void InterpCompiler::EmitLoadVar(int32_t var)
     InterpType interpType = m_pVars[var].interpType;
     CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
 
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     if (m_pCBB->clauseNonTryType == BBClauseFilter)
     {
         assert(m_pVars[var].ILGlobal);
@@ -2312,6 +2315,7 @@ void InterpCompiler::EmitLoadVar(int32_t var)
         EmitLdind(interpType, clsHnd, m_pVars[var].offset);
         return;
     }
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 
     int32_t size = m_pVars[var].size;
 
@@ -2338,6 +2342,7 @@ void InterpCompiler::EmitStoreVar(int32_t var)
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK(1);
 
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     if (m_pCBB->clauseNonTryType == BBClauseFilter)
     {
         AddIns(INTOP_LOAD_FRAMEVAR);
@@ -2346,6 +2351,7 @@ void InterpCompiler::EmitStoreVar(int32_t var)
         EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */);
         return;
     }
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -4006,6 +4012,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_shadowCopyOfThisPointerActuallyNeeded = true;
     }
 
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     if (m_pCBB->clauseNonTryType == BBClauseFilter)
     {
         AddIns(INTOP_LOAD_FRAMEVAR);
@@ -4019,6 +4026,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
         return;
     }
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);

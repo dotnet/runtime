@@ -2176,7 +2176,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 
     StackVal retVal;
 
-    
+#ifndef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     // Frame pointer for original method
     int8_t* originalStack;
     if (pOriginalFrame->IsFuncletFrame())
@@ -2189,6 +2189,11 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     }
     *(int8_t**)sp = originalStack;
     InterpreterFrameReporting frameReporting = isFilter ? InterpreterFrameReporting::FuncletNoReportGlobals : InterpreterFrameReporting::FuncletReportGlobals;
+#else
+    sp = isFilter ? sp : pOriginalFrame->pStack;
+    InterpreterFrameReporting frameReporting = InterpreterFrameReporting::Normal;
+#endif
+
     frames.interpMethodContextFrame.ReInit(NULL, pOriginalFrame->startIp, (int8_t*)&retVal, frameReporting, sp);
 
     ExceptionClauseArgs exceptionClauseArgs;

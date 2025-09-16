@@ -321,9 +321,15 @@ static void InterpBreakpoint()
 }
 #endif
 
-#define LOCAL_VAR_ADDR(offset,type) offset < 0 ? (((type*)((*(uintptr_t*)stack) + (-offset)))) : ((type*)(stack + (offset)))
-#define LOCAL_VAR(offset,type) (*(LOCAL_VAR_ADDR(offset, type)))
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+#define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
+#else
+#define LOCAL_VAR_ADDR(offset,type) ((offset) < 0 ? (((type*)((*(uintptr_t*)stack) + (-offset)))) : ((type*)(stack + (offset))))
+#endif
+
+#define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
+
 
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
 {
@@ -684,6 +690,20 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     else
     {
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+        // * Filter funclets are executed in the current frame, because they are executed
+        //   in the first pass of EH when the frames between the current frame and the
+        //   parent frame are still alive. All accesses to the locals and arguments
+        //   in this case use the pExceptionClauseArgs->pFrame->pStack as a frame pointer.
+        // * Catch and finally funclets are running in the parent frame directly
+
+        if (pExceptionClauseArgs->isFilter)
+        {
+            // Since filters run in their own frame, we need to clear the global variables
+            // so that GC doesn't pick garbage in variables that were not yet written to.
+            memset(pFrame->pStack, 0, pMethod->allocaSize);
+        }
+#else
         // * Filter funclets are executed in the current frame, because they are executed
         //   in the first pass of EH when the frames between the current frame and the
         //   parent frame are still alive. All accesses to the locals and arguments
@@ -691,6 +711,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
         // * Catch and finally funclets are also executed in the current frame, because
         //   they are executed in the second pass of EH, when the DispatchEx function is still on
         //   the managed stack.
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 
         // Start executing at the beginning of the exception clause
         ip = pExceptionClauseArgs->ip;
@@ -3062,6 +3083,11 @@ do                                                                      \
                             // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                             pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                         }
+
+#ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+                        // Set the frame to the same values as the caller frame.
+                        pChildFrame->ReInit(pFrame, pFrame->startIp, NULL, InterpreterFrameReporting::Normal, pFrame->pStack);
+#else
                         // Store the address for the current frame's stack pointer into the new frame's stack space, if we are
                         // adjusting the stack.
                         if (pFrame->IsFuncletFrame())
@@ -3078,6 +3104,7 @@ do                                                                      \
                             stack = pChildFrame->pStack;
                             pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                         }
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
                         pFrame = pChildFrame;
                     }
                     assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);

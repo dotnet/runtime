@@ -178,6 +178,14 @@ enum class CalliFlags : int32_t
     PInvoke = 1 << 2, // The call is a PInvoke call
 };
 
+// FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS can be enabled to reuse the stack frame of the outer function for executing catch, finally and fault funclets
+// This feature is not compatible with fully interpreted code, however, as while we execute the funclet we may overwrite the stack space of the DispatchEx
+// function which is part of the actual funclet dispatch path. We may wish to re-enable this feature in the future if we run on a platform where
+// we can guarantee that the DispatchEx and other related functions that make of the EH subsystem will not be interpreted.
+//#define FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+
+#ifndef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 #define FUNCLET_STACK_ADJUSTMENT_OFFSET 8
+#endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
 
 #endif
