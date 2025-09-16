@@ -87,7 +87,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 : BaseWithTwo<TPublicMethods, TPublicFields>
             { }
 
-            [ExpectedWarning("IL2091", Tool.Analyzer, "Analyzer sees declarations")]
+            [ExpectedWarning("IL2091", Tool.Analyzer, "Analyzer warns on declaration for implicit constructor")]
             class DerivedWithOnlyStaticMethodReference<TUnknown> : BaseWithPublicMethods<TUnknown>
             {
                 // The method body in this case looks like:

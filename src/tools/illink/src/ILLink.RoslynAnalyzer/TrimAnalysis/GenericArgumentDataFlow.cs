@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
     internal readonly struct GenericArgumentDataFlow
     {
-        private readonly RequiresAnalyzerBase? _analyzer;
+        private readonly IGenericInstantiationAnalysis? _analyzer;
         private readonly FeatureContext _featureContext;
         private readonly TypeNameResolver _typeNameResolver;
         private readonly ISymbol _owningSymbol;
@@ -23,7 +23,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         private readonly Action<Diagnostic>? _reportDiagnostic;
 
         public GenericArgumentDataFlow(
-            RequiresAnalyzerBase? analyzer,
+            IGenericInstantiationAnalysis? analyzer,
             FeatureContext featureContext,
             TypeNameResolver typeNameResolver,
             ISymbol owningSymbol,

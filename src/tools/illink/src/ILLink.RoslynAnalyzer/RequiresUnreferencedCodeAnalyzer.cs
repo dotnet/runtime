@@ -100,7 +100,7 @@ namespace ILLink.RoslynAnalyzer
         protected override string GetMessageFromAttribute(AttributeData? requiresAttribute) =>
             RequiresUnreferencedCodeUtils.GetMessageFromAttribute(requiresAttribute);
 
-        internal override void ProcessGenericInstantiation(
+        public override void ProcessGenericInstantiation(
             ITypeSymbol typeArgument,
             ITypeParameterSymbol typeParameter,
             FeatureContext featureContext,

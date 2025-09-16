@@ -204,7 +204,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
         {
-            // Analyzer does not see the base class constructor
             [ExpectedWarning("IL2091", nameof(GenericBaseTypeWithRequirements<T>))]
             public DerivedTypeWithOpenGenericOnBase() { }
         }

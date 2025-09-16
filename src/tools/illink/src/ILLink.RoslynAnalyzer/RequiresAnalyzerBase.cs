@@ -19,7 +19,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer
 {
-    public abstract class RequiresAnalyzerBase : DiagnosticAnalyzer
+    public abstract class RequiresAnalyzerBase : DiagnosticAnalyzer, IGenericInstantiationAnalysis
     {
         private protected abstract string RequiresAttributeName { get; }
 
@@ -35,7 +35,7 @@ namespace ILLink.RoslynAnalyzer
         private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
         private protected abstract DiagnosticDescriptor RequiresOnEntryPoint { get; }
 
-        internal virtual void ProcessGenericInstantiation(
+        public virtual void ProcessGenericInstantiation(
             ITypeSymbol typeArgument,
             ITypeParameterSymbol typeParameter,
             FeatureContext featureContext,

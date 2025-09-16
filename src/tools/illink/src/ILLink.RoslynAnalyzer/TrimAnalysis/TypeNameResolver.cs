@@ -12,7 +12,7 @@ using System.Collections.Immutable;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    internal struct TypeNameResolver
+    public struct TypeNameResolver
     {
         readonly Compilation _compilation;
 

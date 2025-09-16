@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.Generics
         [Kept]
         class NewConstraint
         {
+            [Kept]
             class TestClass
             {
                 static readonly int field = 1;
@@ -55,6 +56,7 @@ namespace Mono.Linker.Tests.Cases.Generics
         [Kept]
         class NewConstraintOnMethod
         {
+            [Kept]
             class TestClass
             {
                 static readonly int field = 1;
