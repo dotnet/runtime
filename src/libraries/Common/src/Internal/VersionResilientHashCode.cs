@@ -20,14 +20,13 @@ namespace Internal
             private int _hash2;
             private int _numCharactersHashed;
 
-#pragma warning disable IDE0060
             public HashCodeBuilder(ReadOnlySpan<byte> seed)
             {
                 _hash1 = 0x6DA3B944;
                 _hash2 = 0;
                 _numCharactersHashed = 0;
+                Append(seed);
             }
-#pragma warning restore IDE0060
 
             public void Append(ReadOnlySpan<byte> src)
             {
