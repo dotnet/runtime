@@ -2103,7 +2103,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        public readonly struct SumOfSquaredMagnitudeDifferences<T>
+        public readonly struct SumOfSquaredAbsoluteDifferences<T>
             : IBinaryOperation_Tensor_Scalar<T, T>
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>, ISubtractionOperators<T, T, T>, INumberBase<T>
         {
