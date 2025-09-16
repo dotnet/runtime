@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Restore;Build">
+<Project DefaultTargets="Restore;Build">
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
