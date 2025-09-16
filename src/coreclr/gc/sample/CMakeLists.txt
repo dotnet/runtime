@@ -45,6 +45,7 @@ if(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_WIN32)
     ../vxsort/isa_detection.cpp
     ../vxsort/do_vxsort_neon.cpp
     ../vxsort/machine_traits.neon.cpp
+    ../vxsort/smallsort/bitonic_sort.scalar.uint32_t.generated.cpp
     ../vxsort/smallsort/bitonic_sort.scalar.uint64_t.generated.cpp
 )
 endif(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_WIN32)
