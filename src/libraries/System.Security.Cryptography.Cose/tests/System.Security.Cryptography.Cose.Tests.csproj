@@ -56,11 +56,11 @@
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.15.0" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Cose.csproj" />
   </ItemGroup>

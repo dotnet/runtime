@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Configuration.Abstractions.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>

@@ -50,7 +50,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="CborDocument\System.Formats.Cbor.Tests.DataModel.fsproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Formats.Cbor.csproj" />
     <PackageReference Include="FsCheck" Version="$(FsCheckVersion)" />

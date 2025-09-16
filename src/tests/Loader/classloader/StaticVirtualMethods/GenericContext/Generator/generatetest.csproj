@@ -4,4 +4,4 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
-</Project> 
+</Project>

@@ -14,7 +14,7 @@
         <Compile Include="Microsoft.Bcl.Numerics.Forwards.cs" />
       </ItemGroup>
     </When>
-  
+
     <Otherwise>
       <ItemGroup>
         <Compile Include="System\MathF.cs" />

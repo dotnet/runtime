@@ -12,7 +12,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Remove="LoggerMessageGenerator.Roslyn3.11.cs" />
   </ItemGroup>

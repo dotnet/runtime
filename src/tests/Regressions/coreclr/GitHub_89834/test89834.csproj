@@ -3,7 +3,7 @@
     <!-- Requires explicit Main as it uses an async Main. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
-    
+
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Relies on StackFrame.GetMethod that is not trim-compatible -->

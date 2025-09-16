@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\ref\System.Diagnostics.DiagnosticSource.csproj" /> 
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\ref\System.Diagnostics.DiagnosticSource.csproj" />
   </ItemGroup>
 
 </Project>
