@@ -265,7 +265,7 @@ bool IGC.TryGetDynamicAdaptationMode(out int mode)
 {
     mode = default;
     string[] gcIdentifiers = GetGCIdentifiers();
-    if (!gcIdentifiers.Contains("dynamic_heap))
+    if (!gcIdentifiers.Contains("dynamic_heap"))
     {
         return false;
     }
