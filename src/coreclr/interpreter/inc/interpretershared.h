@@ -178,4 +178,6 @@ enum class CalliFlags : int32_t
     PInvoke = 1 << 2, // The call is a PInvoke call
 };
 
+#define FUNCLET_STACK_ADJUSTMENT_OFFSET 8
+
 #endif

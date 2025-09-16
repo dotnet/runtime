@@ -2157,7 +2157,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     // InterpMethodContextFrame. This is important for the stack walking code.
     struct Frames
     {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpMethodContextFrame interpMethodContextFrame;
         InterpreterFrame interpreterFrame;
 
         Frames(TransitionBlock* pTransitionBlock)
@@ -2176,9 +2176,20 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 
     StackVal retVal;
 
-    frames.interpMethodContextFrame.startIp = pOriginalFrame->startIp;
-    frames.interpMethodContextFrame.pStack = isFilter ? sp : pOriginalFrame->pStack;
-    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+    
+    // Frame pointer for original method
+    int8_t* originalStack;
+    if (pOriginalFrame->IsFuncletFrame())
+    {
+        originalStack = *(int8_t**)pOriginalFrame->pStack;
+    }
+    else
+    {
+        originalStack = pOriginalFrame->pStack - FUNCLET_STACK_ADJUSTMENT_OFFSET;
+    }
+    *(int8_t**)sp = originalStack;
+    InterpreterFrameReporting frameReporting = isFilter ? InterpreterFrameReporting::FuncletNoReportGlobals : InterpreterFrameReporting::FuncletReportGlobals;
+    frames.interpMethodContextFrame.ReInit(NULL, pOriginalFrame->startIp, (int8_t*)&retVal, frameReporting, sp);
 
     ExceptionClauseArgs exceptionClauseArgs;
     exceptionClauseArgs.ip = (const int32_t *)pHandler;

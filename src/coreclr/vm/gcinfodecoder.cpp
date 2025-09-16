@@ -7,6 +7,10 @@
 
 #include "gcinfodecoder.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #ifdef USE_GC_INFO_DECODER
 
 #ifndef CHECK_APP_DOMAIN
@@ -2122,9 +2126,14 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
 {
     OBJECTREF* pObjRef = NULL;
 
+    InterpMethodContextFrame* pFrame = (InterpMethodContextFrame*)GetSP(pRD->pCurrentContext);
+    _ASSERTE(pFrame);
+
+    int8_t* baseReg = nullptr;
+
     if( GC_SP_REL == spBase )
     {
-        _ASSERTE(!"GC_SP_REL is invalid for interpreter frames");
+        baseReg = pFrame->pStack;
     }
     else if( GC_CALLER_SP_REL == spBase )
     {
@@ -2132,13 +2141,25 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     }
     else
     {
-        // Interpreter-TODO: Enhance GcInfoEncoder/Decoder to allow omitting the stack slot base register for interpreted
-        //  methods, since only one base (fp) is ever used for interpreter locals. See Interpreter-TODO in DecodeSlotTable.
-        _ASSERTE( GC_FRAMEREG_REL == spBase );
-        uint8_t* fp = (uint8_t *)GetFP(pRD->pCurrentContext);
-        _ASSERTE(fp);
-        pObjRef = (OBJECTREF*)(fp + spOffset);
+        if (pFrame->ShouldReportGlobals())
+        {
+            if (pFrame->IsFuncletFrame())
+            {
+                baseReg = *(int8_t**)pFrame->pStack + FUNCLET_STACK_ADJUSTMENT_OFFSET;
+            }
+            else
+            {
+                baseReg = pFrame->pStack;
+            }
+        }
+        else
+        {
+            return NULL;
+        }
     }
+
+    _ASSERTE(baseReg);
+    pObjRef = (OBJECTREF*)(baseReg + spOffset);
 
     return pObjRef;
 }
@@ -2220,6 +2241,11 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
     GCINFODECODER_CONTRACT;
 
     OBJECTREF* pObjRef = GetStackSlot(spOffset, spBase, pRD);
+
+    // Provide a means for GetStackSlot to indicate that this slot shoult not actually be reported
+    if (pObjRef == NULL)
+        return;
+
     _ASSERTE(IS_ALIGNED(pObjRef, sizeof(OBJECTREF*)));
 
 #ifdef _DEBUG

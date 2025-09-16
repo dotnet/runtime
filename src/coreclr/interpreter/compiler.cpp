@@ -735,7 +735,20 @@ uint32_t InterpCompiler::ConvertOffset(int32_t offset)
     return offset * sizeof(int32_t) + sizeof(void*);
 }
 
-int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*, MemPoolAllocator> *relocs)
+int32_t InterpCompiler::GetFuncletAdjustedVarOffset(InterpInst *ins, int varIndex, bool forFunclet)
+{
+    if (forFunclet && m_pVars[varIndex].global)
+    {
+        // In funclets, global vars are accessed relative to the main method frame pointer
+        return -(m_pVars[varIndex].offset + FUNCLET_STACK_ADJUSTMENT_OFFSET);
+    }
+    else
+    {
+        return m_pVars[varIndex].offset;
+    }
+}
+
+int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*, MemPoolAllocator> *relocs, bool forFunclet)
 {
     ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
 
@@ -749,7 +762,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     if (opcode == INTOP_SWITCH)
     {
         int32_t numLabels = ins->data [0];
-        *ip++ = m_pVars[ins->sVars[0]].offset;
+        *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[0], forFunclet);
         *ip++ = numLabels;
         // Add relocation for each label
         for (int32_t i = 0; i < numLabels; i++)
@@ -764,7 +777,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     {
         int32_t brBaseOffset = (int32_t)(startIp - m_pMethodCode);
         for (int i = 0; i < g_interpOpSVars[opcode]; i++)
-            *ip++ = m_pVars[ins->sVars[i]].offset;
+            *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[i], forFunclet);
 
         if (ins->info.pTargetBB->nativeOffset >= 0)
         {
@@ -796,9 +809,13 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         // Revert opcode emit
         ip--;
 
-        int destOffset = m_pVars[ins->dVar].offset;
-        int srcOffset = m_pVars[ins->sVars[0]].offset;
-        srcOffset += fOffset;
+        int destOffset = GetFuncletAdjustedVarOffset(ins, ins->dVar, forFunclet);
+        int srcOffset = GetFuncletAdjustedVarOffset(ins, ins->sVars[0], forFunclet);
+        if (srcOffset >= 0)
+            srcOffset += fOffset;
+        else
+            srcOffset -= fOffset;
+
         if (fSize)
             opcode = INTOP_MOV_VT;
         else
@@ -819,8 +836,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     {
         // This opcode references a var, int sVars[0], but it is not registered as a source for it
         // aka g_interpOpSVars[INTOP_LDLOCA] is 0.
-        *ip++ = m_pVars[ins->dVar].offset;
-        *ip++ = m_pVars[ins->sVars[0]].offset;
+        *ip++ = GetFuncletAdjustedVarOffset(ins, ins->dVar, forFunclet);
+        *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[0], forFunclet);
     }
     else
     {
@@ -829,7 +846,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         // variable we emit another offset. Finally, we will emit any additional data needed
         // by the instruction.
         if (g_interpOpDVars[opcode])
-            *ip++ = m_pVars[ins->dVar].offset;
+            *ip++ = GetFuncletAdjustedVarOffset(ins, ins->dVar, forFunclet);
 
         if (g_interpOpSVars[opcode])
         {
@@ -841,7 +858,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
                 }
                 else
                 {
-                    *ip++ = m_pVars[ins->sVars[i]].offset;
+                    *ip++ = GetFuncletAdjustedVarOffset(ins, ins->sVars[i], forFunclet);
                 }
             }
         }
@@ -927,7 +944,7 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
             continue;
         }
 
-        ip = EmitCodeIns(ip, ins, relocs);
+        ip = EmitCodeIns(ip, ins, relocs, bb->clauseNonTryType != BBClauseNone);
     }
 
     m_pCBB->nativeEndOffset = (int32_t)(ip - m_pMethodCode);
@@ -1162,7 +1179,7 @@ public:
         if (allocateNewSlot)
         {
             // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
-            *pSlot = m_encoder->GetStackSlotId(offsetBytes, flags, GC_FRAMEREG_REL);
+            *pSlot = m_encoder->GetStackSlotId(offsetBytes, flags, (flags & GC_SLOT_UNTRACKED) ? GC_FRAMEREG_REL : GC_SP_REL);
         }
         else
         {
@@ -2084,17 +2101,29 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         for (uint32_t j = clause.HandlerOffset; j < (clause.HandlerOffset + clause.HandlerLength); j++)
         {
             InterpBasicBlock* pBB = m_ppOffsetToBB[j];
-            if (pBB != NULL && pBB->clauseType == BBClauseNone)
+
+            if (pBB == NULL)
+                continue;
+
+            uint8_t clauseType;
+            if ((clause.Flags == CORINFO_EH_CLAUSE_NONE) || (clause.Flags == CORINFO_EH_CLAUSE_FILTER))
             {
-                if ((clause.Flags == CORINFO_EH_CLAUSE_NONE) || (clause.Flags == CORINFO_EH_CLAUSE_FILTER))
-                {
-                    pBB->clauseType = BBClauseCatch;
-                }
-                else
-                {
-                    assert((clause.Flags == CORINFO_EH_CLAUSE_FINALLY) || (clause.Flags == CORINFO_EH_CLAUSE_FAULT));
-                    pBB->clauseType = BBClauseFinally;
-                }
+                clauseType = BBClauseCatch;
+            }
+            else
+            {
+                assert((clause.Flags == CORINFO_EH_CLAUSE_FINALLY) || (clause.Flags == CORINFO_EH_CLAUSE_FAULT));
+                clauseType = BBClauseFinally;
+            }
+
+            if (pBB->clauseType == BBClauseNone)
+            {
+                pBB->clauseType = clauseType;
+            }
+
+            if (pBB->clauseNonTryType == BBClauseNone)
+            {
+                pBB->clauseNonTryType = clauseType;
             }
         }
 
@@ -2118,9 +2147,16 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             for (uint32_t j = clause.FilterOffset; j < clause.HandlerOffset; j++)
             {
                 InterpBasicBlock* pBB = m_ppOffsetToBB[j];
-                if (pBB != NULL && pBB->clauseType == BBClauseNone)
+                if (pBB == NULL)
+                    continue;
+
+                if (pBB->clauseType == BBClauseNone)
                 {
                     pBB->clauseType = BBClauseFilter;
+                }
+                if (pBB->clauseNonTryType == BBClauseNone)
+                {
+                    pBB->clauseNonTryType = BBClauseFilter;
                 }
             }
         }
@@ -2165,6 +2201,7 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             InterpBasicBlock* pAfterFinallyBB = m_ppOffsetToBB[clause.HandlerOffset + clause.HandlerLength];
             assert(pAfterFinallyBB != NULL);
             pFinallyCallIslandBB->clauseType = pAfterFinallyBB->clauseType;
+            pFinallyCallIslandBB->clauseNonTryType = pAfterFinallyBB->clauseNonTryType;
             pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
         }
     }
@@ -2266,7 +2303,7 @@ void InterpCompiler::EmitLoadVar(int32_t var)
     InterpType interpType = m_pVars[var].interpType;
     CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
 
-    if (m_pCBB->clauseType == BBClauseFilter)
+    if (m_pCBB->clauseNonTryType == BBClauseFilter)
     {
         assert(m_pVars[var].ILGlobal);
         AddIns(INTOP_LOAD_FRAMEVAR);
@@ -2301,7 +2338,7 @@ void InterpCompiler::EmitStoreVar(int32_t var)
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK(1);
 
-    if (m_pCBB->clauseType == BBClauseFilter)
+    if (m_pCBB->clauseNonTryType == BBClauseFilter)
     {
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
@@ -3969,7 +4006,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_shadowCopyOfThisPointerActuallyNeeded = true;
     }
 
-    if (m_pCBB->clauseType == BBClauseFilter)
+    if (m_pCBB->clauseNonTryType == BBClauseFilter)
     {
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);

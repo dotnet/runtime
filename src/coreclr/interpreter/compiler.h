@@ -327,6 +327,9 @@ struct InterpBasicBlock
     // Type of the innermost try block, catch, filter, or finally that contains this basic block.
     uint8_t clauseType;
 
+    // Type of the innermost catch, filter, or finally that contains this basic block. Try blocks within catch, filter or finally blocks are accounted as catch, filter or finally blocks.
+    uint8_t clauseNonTryType;
+
     // True indicates that this basic block is the first block of a filter, catch or filtered handler funclet.
     bool isFilterOrCatchFuncletEntry;
 
@@ -358,6 +361,7 @@ struct InterpBasicBlock
         emitState = BBStateNotEmitted;
 
         clauseType = BBClauseNone;
+        clauseNonTryType = BBClauseNone;
         isFilterOrCatchFuncletEntry = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
@@ -775,7 +779,8 @@ private:
     uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
     int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
-    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
+    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs, bool forFunclet);
+    int32_t GetFuncletAdjustedVarOffset(InterpInst *ins, int varIndex, bool forFunclet);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
     InterpMethod* CreateInterpMethod();
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);

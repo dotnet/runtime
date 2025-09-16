@@ -321,20 +321,21 @@ static void InterpBreakpoint()
 }
 #endif
 
+#define LOCAL_VAR_ADDR(offset,type) offset < 0 ? (((type*)((*(uintptr_t*)stack) + (-offset)))) : ((type*)(stack + (offset)))
+#define LOCAL_VAR(offset,type) (*(LOCAL_VAR_ADDR(offset, type)))
+#define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
+
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
 {
     int32_t* dims = (int32_t*)alloca(numArgs * sizeof(int32_t));
+    int8_t* dimsBase = LOCAL_VAR_ADDR(dimsOffset, int8_t);
     for (int i = 0; i < numArgs; i++)
     {
-        dims[i] = *(int32_t*)(stack + dimsOffset + i * 8);
+        dims[i] = *(int32_t*)(dimsBase + i * 8);
     }
 
     return AllocateArrayEx(arrayClass, dims, numArgs);
 }
-
-#define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
-#define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
-#define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
 template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)
 {
@@ -687,14 +688,9 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
         //   in the first pass of EH when the frames between the current frame and the
         //   parent frame are still alive. All accesses to the locals and arguments
         //   in this case use the pExceptionClauseArgs->pFrame->pStack as a frame pointer.
-        // * Catch and finally funclets are running in the parent frame directly
-
-        if (pExceptionClauseArgs->isFilter)
-        {
-            // Since filters run in their own frame, we need to clear the global variables
-            // so that GC doesn't pick garbage in variables that were not yet written to.
-            memset(pFrame->pStack, 0, pMethod->allocaSize);
-        }
+        // * Catch and finally funclets are also executed in the current frame, because
+        //   they are executed in the second pass of EH, when the DispatchEx function is still on
+        //   the managed stack.
 
         // Start executing at the beginning of the exception clause
         ip = pExceptionClauseArgs->ip;
@@ -730,6 +726,7 @@ MAIN_LOOP:
                     break;
 #endif
                 case INTOP_INITLOCALS:
+                    assert(ip[1] >= 0);
                     memset(stack + ip[1], 0, ip[2]);
                     ip += 3;
                     break;
@@ -779,16 +776,16 @@ MAIN_LOOP:
                     break;
                 case INTOP_RET:
                     // Return stack slot sized value
-                    *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
+                    *(int64_t*)pFrame->GetRetValAddr_KnownNormalReporting() = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
                 case INTOP_RET_VT:
-                    memmove(pFrame->pRetVal, stack + ip[1], ip[2]);
+                    memmove(pFrame->GetRetValAddr_KnownNormalReporting(), LOCAL_VAR_ADDR(ip[1], void*), ip[2]);
                     goto EXIT_FRAME;
                 case INTOP_RET_VOID:
                     goto EXIT_FRAME;
 
                 case INTOP_LDLOCA:
-                    LOCAL_VAR(ip[1], void*) = stack + ip[2];
+                    LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void*);
                     ip += 3;
                     break;
                 case INTOP_LOAD_FRAMEVAR:
@@ -814,7 +811,7 @@ MAIN_LOOP:
 #undef MOV
 
                 case INTOP_MOV_VT:
-                    memmove(stack + ip[1], stack + ip[2], ip[3]);
+                    memmove(LOCAL_VAR_ADDR(ip[1], void*), LOCAL_VAR_ADDR(ip[2], void*), ip[3]);
                     ip += 4;
                     break;
 
@@ -1899,7 +1896,7 @@ MAIN_LOOP:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
                     NULL_CHECK(src);
-                    memcpy(stack + ip[1], (char*)src + ip[3], ip[4]);
+                    memcpy(LOCAL_VAR_ADDR(ip[1], void*), (char*)src + ip[3], ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1951,7 +1948,7 @@ MAIN_LOOP:
                 {
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    memcpyNoGCRefs(dest + ip[3], stack + ip[2], ip[4]);
+                    memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void*), ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1960,7 +1957,7 @@ MAIN_LOOP:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    CopyValueClassUnchecked(dest + ip[3], stack + ip[2], pMT);
+                    CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void*), pMT);
                     ip += 5;
                     break;
                 }
@@ -2269,7 +2266,9 @@ MAIN_LOOP:
                 {
                     isTailcall = (*ip == INTOP_CALLI_TAIL);
                     returnOffset = ip[1];
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     callArgsOffset = ip[2];
+                    assert(callArgsOffset >= 0);
                     int32_t calliFunctionPointerVar = ip[3];
                     int32_t calliCookie = ip[4];
                     int32_t flags = ip[5];
@@ -2285,11 +2284,11 @@ MAIN_LOOP:
                     {
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
                         {
-                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, returnValueAddress);
                         }
                         else
                         {
-                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
+                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, returnValueAddress);
                         }
                     }
                     else
@@ -2306,7 +2305,7 @@ MAIN_LOOP:
                             goto CALL_INTERP_METHOD;
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-                        InvokeCalliStub(calliFunctionPointer, cookie, stack + callArgsOffset, stack + returnOffset);
+                        InvokeCalliStub(calliFunctionPointer, cookie, stack + callArgsOffset, returnValueAddress);
                     }
 
                     break;
@@ -2320,6 +2319,8 @@ MAIN_LOOP:
                     isTailcall = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
+                    assert(callArgsOffset >= 0);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
                     int32_t flags = ip[5];
@@ -2335,11 +2336,11 @@ MAIN_LOOP:
 
                     if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        InvokeUnmanagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        InvokeUnmanagedMethod(targetMethod, stack + callArgsOffset, returnValueAddress, callTarget);
                     }
                     else
                     {
-                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, stack + callArgsOffset, returnValueAddress, callTarget);
                     }
 
                     break;
@@ -2351,6 +2352,9 @@ MAIN_LOOP:
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
+
+                    assert(callArgsOffset >= 0);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
                     // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
@@ -2369,7 +2373,7 @@ MAIN_LOOP:
                     // TODO! Once we are investigating performance here, we may want to optimize this so that
                     // delegate calls to interpeted methods don't have to go through the native invoke here, but for
                     // now this should work well.
-                    InvokeDelegateInvokeMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetAddress);
+                    InvokeDelegateInvokeMethod(targetMethod, stack + callArgsOffset, returnValueAddress, targetAddress);
                     break;
                 }
 
@@ -2389,6 +2393,9 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 CALL_INTERP_METHOD:
+
+                    assert(callArgsOffset >= 0);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
@@ -2413,7 +2420,7 @@ CALL_INTERP_METHOD:
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
-                            InvokeManagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+                            InvokeManagedMethod(targetMethod, stack + callArgsOffset, returnValueAddress, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
                             break;
                         }
                     }
@@ -2429,7 +2436,7 @@ CALL_INTERP_METHOD:
                         memcpy(pFrame->pStack, stack + callArgsOffset, pTargetMethod->argsSize);
                         // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
                         //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
-                        pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+                        pFrame->ReInit(pFrame->pParent, targetIp, pFrame->GetRetValAddr_KnownNormalReporting(), InterpreterFrameReporting::Normal, pFrame->pStack);
                     }
                     else
                     {
@@ -2447,7 +2454,7 @@ CALL_INTERP_METHOD:
                                 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                                 pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                             }
-                            pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
+                            pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, InterpreterFrameReporting::Normal, stack + callArgsOffset);
                             pFrame = pChildFrame;
                         }
                         assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
@@ -2520,7 +2527,7 @@ CALL_INTERP_METHOD:
                     methodSlot = ip[3];
 
                     int32_t vtSize = ip[4];
-                    void *vtThis = stack + returnOffset;
+                    void *vtThis = LOCAL_VAR_ADDR(returnOffset, void*);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
@@ -2768,7 +2775,7 @@ do {                                                                           \
                     size_t componentSize = arr->GetMethodTable()->GetComponentSize();
                     void* elemAddr = pData + idx * componentSize;
                     MethodTable* pElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
-                    CopyValueClassUnchecked(stack + ip[1], elemAddr, pElemMT);
+                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(ip[1], void*), elemAddr, pElemMT);
                     ip += 5;
                     break;
                 }
@@ -2879,7 +2886,7 @@ do {                                                                           \
                     void* elemAddr = pData + idx * elemSize;
                     MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[5]];
 
-                    CopyValueClassUnchecked(elemAddr, stack + ip[3], pMT);
+                    CopyValueClassUnchecked(elemAddr, LOCAL_VAR_ADDR(ip[3], void*), pMT);
                     ip += 6;
                     break;
                 }
@@ -2899,7 +2906,7 @@ do {                                                                           \
                     size_t elemSize = ip[4];
                     void* elemAddr = pData + idx * elemSize;
 
-                    memcpyNoGCRefs(elemAddr, stack + ip[3], elemSize);
+                    memcpyNoGCRefs(elemAddr, LOCAL_VAR_ADDR(ip[3], void*), elemSize);
                     ip += 5;
                     break;
                 }
@@ -3038,6 +3045,9 @@ do                                                                      \
                 case INTOP_CALL_FINALLY:
                 {
                     const int32_t* targetIp = ip + ip[1];
+                    // TODO-Interp, this is more adjustment than we need, but it'll work for now
+                    const int32_t stackAdjust = pFrame->startIp->Method->allocaSize;
+                    assert(stackAdjust >= 0);
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip + 2;
 
@@ -3052,8 +3062,22 @@ do                                                                      \
                             // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                             pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                         }
-                        // Set the frame to the same values as the caller frame.
-                        pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
+                        // Store the address for the current frame's stack pointer into the new frame's stack space, if we are
+                        // adjusting the stack.
+                        if (pFrame->IsFuncletFrame())
+                        {
+                            // If we're already in a funclet, the finally can re-use the stack space of the current funclet's frame
+                            pChildFrame->ReInit(pFrame, pFrame->startIp, NULL, InterpreterFrameReporting::FuncletReportGlobals, pFrame->pStack);
+                        }
+                        else
+                        {
+                            // If we're calling into the finally from the main method body, then we need to create a separate frame, and
+                            // fill in the funclet frame pointer link slot
+                            *(int8_t**)(pFrame->pStack + stackAdjust) = pFrame->pStack - FUNCLET_STACK_ADJUSTMENT_OFFSET;
+                            pChildFrame->ReInit(pFrame, pFrame->startIp, NULL, InterpreterFrameReporting::FuncletReportGlobals, pFrame->pStack + stackAdjust);
+                            stack = pChildFrame->pStack;
+                            pThreadContext->pStackPointer = stack + pMethod->allocaSize;
+                        }
                         pFrame = pChildFrame;
                     }
                     assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
@@ -3063,10 +3087,10 @@ do                                                                      \
                     break;
                 }
                 case INTOP_LEAVE_FILTER:
-                    *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int32_t);
+                    *(int64_t*)pFrame->GetRetValAddr() = LOCAL_VAR(ip[1], int32_t);
                     goto EXIT_FRAME;
                 case INTOP_LEAVE_CATCH:
-                    *(const int32_t**)pFrame->pRetVal = ip + ip[1];
+                    *(const int32_t**)(pFrame->GetRetValAddr()) = ip + ip[1];
                     goto EXIT_FRAME;
                 case INTOP_THROW_PNSE:
                     COMPlusThrow(kPlatformNotSupportedException);

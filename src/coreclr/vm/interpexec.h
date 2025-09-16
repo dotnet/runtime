@@ -27,21 +27,66 @@ struct StackVal
 typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
 class InterpreterFrame;
 
+enum class InterpreterFrameReporting
+{
+    Normal = 0,
+    FuncletReportGlobals = 1,
+    FuncletNoReportGlobals = 2,
+
+    Mask = 3
+};
+
 struct InterpMethodContextFrame
 {
-    PTR_InterpMethodContextFrame pParent;
-    PTR_InterpByteCodeStart startIp; // from startIp we can obtain InterpMethod and MethodDesc
-    int8_t *pStack;
-    int8_t *pRetVal;
-    const int32_t *ip; // This ip is updated only when execution can leave the frame
-    PTR_InterpMethodContextFrame pNext;
+    PTR_InterpMethodContextFrame pParent = 0;
+    PTR_InterpByteCodeStart startIp = 0; // from startIp we can obtain InterpMethod and MethodDesc
+    int8_t *pStack = 0;
+private:
+    int8_t *pRetVal = 0; // If the low bit is set on pRetVal, then Frame represents a funclet
+public:
+    const int32_t *ip = 0; // This ip is updated only when execution can leave the frame
+    PTR_InterpMethodContextFrame pNext = 0;
+
+    bool IsFuncletFrame()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ((size_t)pRetVal & (size_t)InterpreterFrameReporting::Mask) != (size_t)InterpreterFrameReporting::Normal;
+    }
+    bool ShouldReportGlobals()
+    {
+        LIMITED_METHOD_CONTRACT;
+        switch ((InterpreterFrameReporting)((size_t)pRetVal & (size_t)InterpreterFrameReporting::Mask))
+        {
+        case InterpreterFrameReporting::FuncletReportGlobals:
+        case InterpreterFrameReporting::Normal:
+            return true;
+        case InterpreterFrameReporting::FuncletNoReportGlobals:
+            return false;
+        default:
+            assert(false);
+            return false;
+        }
+    }
+
+    int8_t* GetRetValAddr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int8_t*)((size_t)pRetVal & ~(size_t)InterpreterFrameReporting::Mask);
+    }
+
+    int8_t* GetRetValAddr_KnownNormalReporting()
+    {
+        LIMITED_METHOD_CONTRACT;
+        assert(!IsFuncletFrame());
+        return pRetVal;
+    }
 
 #ifndef DACCESS_COMPILE
-    void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, int8_t *pStack)
+    void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, InterpreterFrameReporting reporting, int8_t *pStack)
     {
         this->pParent = pParent;
         this->startIp = startIp;
-        this->pRetVal = pRetVal;
+        this->pRetVal = (int8_t*)((size_t)pRetVal | (size_t)reporting);
         this->pStack = pStack;
         this->ip = NULL;
     }
