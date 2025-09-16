@@ -51,7 +51,7 @@ namespace System.IO
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
             // Get the full path
-            path.EnsureTerminated();
+            path.NullTerminate();
             GetFullPathName(path.AsSpan(), ref builder);
 
             string result = builder.AsSpan().IndexOf('~') >= 0
@@ -177,7 +177,7 @@ namespace System.IO
 
             while (!success)
             {
-                inputBuilder.EnsureTerminated();
+                inputBuilder.NullTerminate();
                 uint result = Interop.Kernel32.GetLongPathNameW(
                     ref inputBuilder.GetPinnableReference(), ref outputBuilder.GetPinnableReference(), (uint)outputBuilder.Capacity);
 

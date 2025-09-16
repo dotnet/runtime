@@ -545,7 +545,7 @@ namespace System.Diagnostics
                             logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                         }
 
-                        commandLine.EnsureTerminated();
+                        commandLine.NullTerminate();
                         fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
                         fixed (char* environmentBlockPtr = environmentBlock)
                         fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
@@ -580,7 +580,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        commandLine.EnsureTerminated();
+                        commandLine.NullTerminate();
                         fixed (char* environmentBlockPtr = environmentBlock)
                         fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                         {

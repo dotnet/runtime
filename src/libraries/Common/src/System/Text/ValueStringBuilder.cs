@@ -54,6 +54,16 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Ensures that the builder is terminated with a NUL character.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void NullTerminate()
+        {
+            EnsureCapacity(_pos + 1);
+            _chars[_pos] = '\0';
+        }
+
+        /// <summary>
         /// Get a pinnable reference to the builder.
         /// Does not ensure there is a null char after <see cref="Length"/>
         /// This overload is pattern matched in the C# 7.3+ compiler so you can omit
