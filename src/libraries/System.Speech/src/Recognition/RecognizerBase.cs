@@ -1687,8 +1687,6 @@ ISpGrammarResourceLoader
             ActivateRule(sapiGrammar, uri, ruleName);
         }
 
-        // Method called on background thread to do actual grammar loading.
-#pragma warning disable 56500 // Transferring exceptions to another thread
         private void LoadGrammarAsyncCallback(object grammarObject)
         {
             Debug.WriteLine("Loading grammar asynchronously.");
@@ -1750,8 +1748,6 @@ ISpGrammarResourceLoader
                 _asyncWorkerUI.PostOperation(new WaitCallback(LoadGrammarAsyncCompletedCallback), grammarObject);
             }
         }
-
-#pragma warning restore 56500
 
         // Method called by AsyncOperationManager on appropriate thread when async grammar loading completes.
         private void LoadGrammarAsyncCompletedCallback(object grammarObject)
@@ -1995,9 +1991,6 @@ ISpGrammarResourceLoader
             }
         }
 
-        // Method called on background thread {from RecognizeAsync} to start recognition process.
-#pragma warning disable 56500 // Transferring exceptions to another thread
-
         private void RecognizeAsyncWaitForGrammarsToLoad(object unused)
         {
             Debug.WriteLine("Waiting for any pending grammar loads to complete.");
@@ -2066,7 +2059,6 @@ ISpGrammarResourceLoader
                 _asyncWorkerUI.PostOperation(new WaitCallback(RecognizeAsyncWaitForGrammarsToLoadFailed), eventArgs);
             }
         }
-#pragma warning restore 56500
 
         // Method called on app thread model used to fire the RecognizeCompelted event args if recognition stopped prematurely
         private void RecognizeAsyncWaitForGrammarsToLoadFailed(object eventArgs)
