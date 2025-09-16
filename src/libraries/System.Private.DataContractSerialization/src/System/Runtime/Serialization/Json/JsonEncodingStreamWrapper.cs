@@ -103,7 +103,6 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-#pragma warning suppress 56503 // The contract for non seekable stream is to throw exception
                 throw new NotSupportedException();
             }
             set { throw new NotSupportedException(); }
