@@ -44,9 +44,6 @@ DebuggerControllerPage         *DebuggerController::g_protections = NULL;
 CrstStatic                      DebuggerController::g_criticalSection;
 int                             DebuggerController::g_cTotalMethodEnter = 0;
 
-Volatile<BOOL>                  DebuggerController::g_fProcessingDetach = false;
-Volatile<DWORD>                 DebuggerController::g_cActiveDispatchedExceptions = 0;
-Volatile<DWORD>                 DebuggerController::g_cDispatchedFlares = 0;
 
 // Is this patch at a position at which it's safe to take a stack?
 bool DebuggerControllerPatch::IsSafeForStackTrace()
@@ -1156,10 +1153,8 @@ void DebuggerController::DeleteAllControllers()
     while (pDebuggerController != NULL)
     {
         pNextDebuggerController = pDebuggerController->m_next;
-        if (pDebuggerController->DebuggerDetachClean())
-        {
-            pDebuggerController->Delete();
-        }
+        pDebuggerController->DebuggerDetachClean();
+        pDebuggerController->Delete();
         pDebuggerController = pNextDebuggerController;
     }
 }
@@ -1221,10 +1216,9 @@ void DebuggerController::Delete()
     }
 }
 
-bool DebuggerController::DebuggerDetachClean()
+void DebuggerController::DebuggerDetachClean()
 {
     //do nothing here
-    return true;
 }
 
 //static
@@ -2702,12 +2696,6 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         // !!! check result
         LOG((LF_CORDB,LL_INFO10000, "DC::APS: About to skip from PC=0x%p\n", PC));
         skip = new (interopsafe) DebuggerPatchSkip(thread, patch);
-        if (DebuggerController::GetProcessingDetach())
-        {
-            DebuggerController::IncrementActiveDispatchedExceptions();
-            int cActiveDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions(); // increment twice - once for debugger patch skip, the second SetIP back to original location
-            LOG((LF_CORDB, LL_INFO10000, "DebuggerPatchSkip allocated, incrementing ActiveDispatchedExceptions - cActiveDispatchedExceptions=%d\n", cActiveDispatchedExceptions));
-        }
         TRACE_ALLOC(skip);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
@@ -4373,26 +4361,6 @@ void DebuggerController::TriggerExternalMethodFixup(PCODE target)
     _ASSERTE(!"This code should be unreachable. If your controller enables ExternalMethodFixup events, it should also override this callback to do something useful when the event arrives.");
 }
 
-/*static*/ int DebuggerController::GetNumPendingControllers()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    
-    ControllerLockHolder lockController;
-    int cTotalPendingControllers = 0;
-
-    for (DebuggerController* p = g_controllers; p != NULL; p = p->m_next)
-    {
-        cTotalPendingControllers++;
-    }
-
-    return cTotalPendingControllers;
-}
-
 
 #ifdef _DEBUG
 // See comment in DispatchNativeException
@@ -4805,7 +4773,7 @@ DebuggerPatchSkip::~DebuggerPatchSkip()
 #endif // !FEATURE_EMULATE_SINGLESTEP
 }
 
-bool DebuggerPatchSkip::DebuggerDetachClean()
+void DebuggerPatchSkip::DebuggerDetachClean()
 {
 // Since for ARM/ARM64 SharedPatchBypassBuffer isn't existed, we don't have to anything here.
 #ifndef FEATURE_EMULATE_SINGLESTEP
@@ -4824,15 +4792,6 @@ bool DebuggerPatchSkip::DebuggerDetachClean()
    // 2. Create a "stack walking" implementation for native code and use it to get the current IP and
    // set the IP to the right place.
 
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    // during detach we need to ensure the context is only being updated out of process
-    bool bUsingOutOfProcEvents = g_pDebugInterface->IsOutOfProcessSetContextEnabled();
-    if (bUsingOutOfProcEvents)
-    {
-        return false; // return false so that we do not delete this controller
-    }
-#endif
-
     Thread *thread = GetThreadNULLOk();
     if (thread != NULL)
     {
@@ -4847,8 +4806,6 @@ bool DebuggerPatchSkip::DebuggerDetachClean()
         }
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
-
-    return true;
 }
 
 TP_RESULT DebuggerPatchSkip::TriggerPatch(DebuggerControllerPatch *patch,
