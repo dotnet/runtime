@@ -4261,11 +4261,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             GenTree* bitIndexOp = op1->gtGetOp2();
 
             if (bitIndexOp->IsIntegralConst())
-                bitIndexOp->SetContained();
-
-            LIR::Use cmpUse;
-            bool     isUserJtrue = BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE);
-            if (bitIndexOp->IsIntegralConst() && (cmp->OperIs(GT_NE) || isUserJtrue))
             {
                 // Shift the tested bit into the sign bit, then check if negative/positive.
                 // Work on whole registers because comparisons and compressed shifts are full-register only.
@@ -4274,6 +4269,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 if (bitIndex < signBitIndex)
                 {
                     bitIndexOp->AsIntConCommon()->SetIntegralValue(signBitIndex - bitIndex);
+                    bitIndexOp->SetContained();
                     op1->SetOperRaw(GT_LSH);
                     op1->gtType = TYP_I_IMPL;
                 }
