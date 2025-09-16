@@ -12912,6 +12912,14 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
         if (FAILED(ret))
         {
             comp->ResetForJitRetry();
+
+#ifdef FEATURE_INTERPRETER
+            // HACK: Suppress silencing of JIT failure for the interpreter jit manager, so that we don't
+            //  silently fall back to JIT when we wanted to interpret a method
+            if (jitMgr->GetCodeType() == (miManaged | miIL | miOPTIL))
+                ;
+            else
+#endif
             ret = CORJIT_SKIPPED;
         }
     }
