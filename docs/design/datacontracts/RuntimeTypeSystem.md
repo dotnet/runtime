@@ -86,14 +86,14 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
-    public virtual bool IsArray(TypeHandle typeHandle, out uint rank);
-    public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
-    public virtual TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments);
-    public TypeHandle GetPrimitiveType(CorElementType typeCode);
-    public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
-    public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
-    public virtual bool IsPointer(TypeHandle typeHandle);
-    public virtual TargetPointer GetLoaderModule(TypeHandle typeHandle);
+    bool IsArray(TypeHandle typeHandle, out uint rank);
+    TypeHandle GetTypeParam(TypeHandle typeHandle);
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments);
+    TypeHandle GetPrimitiveType(CorElementType typeCode);
+    bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
+    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    bool IsPointer(TypeHandle typeHandle);
+    TargetPointer GetLoaderModule(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
 }

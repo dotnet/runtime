@@ -12,7 +12,6 @@ namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
 {
-    // All interface methods throw NotImplementedException for now
     private readonly Target _target;
     private readonly Contracts.ModuleHandle _moduleHandle;
     private readonly Contracts.ILoader _loader;
@@ -25,6 +24,7 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         _loader = target.Contracts.Loader;
         _runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
     }
+
     public TypeHandle GetArrayType(TypeHandle elementType, ArrayShape shape)
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Array, shape.Rank, ImmutableArray<TypeHandle>.Empty);
 
@@ -69,7 +69,7 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         => _runtimeTypeSystem.GetPrimitiveType((CorElementType)typeCode);
 
     public TypeHandle GetSZArrayType(TypeHandle elementType)
-        =>  _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, ImmutableArray<TypeHandle>.Empty);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, ImmutableArray<TypeHandle>.Empty);
 
     public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {

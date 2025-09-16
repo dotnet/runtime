@@ -95,7 +95,6 @@ public interface IRuntimeTypeSystem : IContract
     IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle methodTable) => throw new NotImplementedException();
     TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
 
-
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();

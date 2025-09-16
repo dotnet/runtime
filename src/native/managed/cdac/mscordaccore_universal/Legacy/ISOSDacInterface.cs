@@ -231,7 +231,6 @@ internal struct DacpReJitData
     public ClrDataAddress NativeCodeAddr;
 };
 
-
 internal struct DacpMethodDescData
 {
     public int bHasNativeCode;

@@ -14,5 +14,6 @@ internal sealed class CoreLibBinder : IData<CoreLibBinder>
 
         Classes = target.ReadPointer(address + (ulong)type.Fields[nameof(Classes)].Offset);
     }
+
     public TargetPointer Classes { get; init; }
 }

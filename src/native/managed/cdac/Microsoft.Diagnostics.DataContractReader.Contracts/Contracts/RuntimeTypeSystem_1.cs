@@ -57,7 +57,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal bool IsCanonMT => MethodTableFlags_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == MethodTableFlags_1.EEClassOrCanonMTBits.EEClass;
     }
 
-    internal readonly struct TypeKey : IEquatable<TypeKey>
+    private readonly struct TypeKey : IEquatable<TypeKey>
     {
         public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs)
         {

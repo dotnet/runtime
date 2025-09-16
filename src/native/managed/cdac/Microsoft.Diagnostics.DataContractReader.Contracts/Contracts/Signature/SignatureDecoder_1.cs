@@ -26,7 +26,7 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
     {
         if (_thProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<TypeHandle>? thProvider))
         {
-            return (SignatureTypeProvider<TypeHandle>)(object)thProvider;
+            return thProvider;
         }
 
         SignatureTypeProvider<TypeHandle> newProvider = new(_target, moduleHandle);
@@ -38,7 +38,7 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
     {
         if (_mdhProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<MethodDescHandle>? mdhProvider))
         {
-            return (SignatureTypeProvider<MethodDescHandle>)(object)mdhProvider;
+            return mdhProvider;
         }
         SignatureTypeProvider<MethodDescHandle> newProvider = new(_target, moduleHandle);
         _mdhProviders[moduleHandle] = newProvider;
@@ -54,5 +54,4 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
         // Implementation pending
         return decoder.DecodeFieldSignature(ref blobReader);
     }
-
 }
