@@ -2117,6 +2117,7 @@ namespace System.Numerics.Tensors
             {
                 for (int i = 0; i < x.Length; i++)
                 {
+                    // Absolute value is needed before squaring to support complex numbers
                     T diff = T.Abs(x[i] - y);
                     destination[i] = diff * diff;
                 }
