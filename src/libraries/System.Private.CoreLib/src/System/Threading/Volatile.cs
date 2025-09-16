@@ -217,13 +217,12 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        [return: NotNullIfNotNull(nameof(location))]
-        public static T Read<T>([NotNullIfNotNull(nameof(location))] ref readonly T location) where T : class? =>
+        public static T Read<T>(ref readonly T location) where T : class? =>
             Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref Unsafe.AsRef(in location)).Value)!;
 
         [Intrinsic]
         [NonVersionable]
-        public static void Write<T>([NotNullIfNotNull(nameof(value))] ref T location, T value) where T : class? =>
+        public static void Write<T>(ref T location, T value) where T : class? =>
             Unsafe.As<T, VolatileObject>(ref location).Value = value;
         #endregion
 

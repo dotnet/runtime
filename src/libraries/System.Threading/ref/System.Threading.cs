@@ -613,8 +613,7 @@ namespace System.Threading
         public static ulong Read(ref readonly ulong location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.UIntPtr Read(ref readonly System.UIntPtr location) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
-        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref readonly T location) where T : class? { throw null; }
+        public static T Read<T>(ref readonly T location) where T : class? { throw null; }
 
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
@@ -634,7 +633,7 @@ namespace System.Threading
         public static void Write(ref ulong location, ulong value) { }
         [System.CLSCompliantAttribute(false)]
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
-        public static void Write<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location, T value) where T : class? { }
+        public static void Write<T>(ref T location, T value) where T : class? { }
         public static void ReadBarrier() { }
         public static void WriteBarrier() { }
     }
