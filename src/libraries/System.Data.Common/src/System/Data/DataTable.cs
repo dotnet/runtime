@@ -6757,10 +6757,7 @@ namespace System.Data
             }
             ReadXmlSerializableInternal(reader);
 
-            if (textReader != null)
-            {
-                textReader.Normalized = fNormalization;
-            }
+            textReader?.Normalized = fNormalization;
         }
 
         [RequiresUnreferencedCode("DataTable.ReadXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
@@ -6845,6 +6842,7 @@ namespace System.Data
             [Conditional("DEBUG")]
             internal void Cleanup()
             {
+#pragma warning disable IDE0031 // Null check can be simplified
                 // cannot assume target table was set
                 if (_targetTable != null)
                 {
@@ -6859,6 +6857,7 @@ namespace System.Data
 #endif
                     _targetTable._rowDiffId = null;
                 }
+#pragma warning restore IDE0031
             }
 
             [Conditional("DEBUG")]

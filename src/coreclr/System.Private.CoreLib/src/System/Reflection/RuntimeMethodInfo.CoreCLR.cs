@@ -274,8 +274,7 @@ namespace System.Reflection
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null)
-                mb._methodBase = this;
+            mb?._methodBase = this;
             return mb;
         }
 

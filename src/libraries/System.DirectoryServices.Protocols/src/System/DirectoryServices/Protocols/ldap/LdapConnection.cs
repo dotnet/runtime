@@ -162,10 +162,7 @@ namespace System.DirectoryServices.Protocols
             get => _needDispose;
             set
             {
-                if (_ldapHandle != null)
-                {
-                    _ldapHandle._needDispose = value;
-                }
+                _ldapHandle?._needDispose = value;
 
                 _needDispose = value;
             }
@@ -419,10 +416,7 @@ namespace System.DirectoryServices.Protocols
             LdapPal.CancelDirectoryAsyncOperation(_ldapHandle, messageId);
 
             LdapRequestState resultObject = result._resultObject;
-            if (resultObject != null)
-            {
-                resultObject._abortCalled = true;
-            }
+            resultObject?._abortCalled = true;
         }
 
         public PartialResultsCollection GetPartialResults(IAsyncResult asyncResult)

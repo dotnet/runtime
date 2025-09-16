@@ -342,10 +342,7 @@ namespace System.Runtime.Caching
                 if (_disposed == 0)
                 {
                     existingEntry = _entries[key] as MemoryCacheEntry;
-                    if (existingEntry != null)
-                    {
-                        existingEntry.State = EntryState.RemovingFromCache;
-                    }
+                    existingEntry?.State = EntryState.RemovingFromCache;
                     entry.State = EntryState.AddingToCache;
                     added = true;
                     _entries[key] = entry;

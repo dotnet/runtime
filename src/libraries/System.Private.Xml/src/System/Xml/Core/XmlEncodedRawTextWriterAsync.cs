@@ -682,10 +682,7 @@ namespace System.Xml
             int bEnc;
             while (startOffset < endOffset)
             {
-                if (_charEntityFallback != null)
-                {
-                    _charEntityFallback.StartOffset = startOffset;
-                }
+                _charEntityFallback?.StartOffset = startOffset;
                 _encoder!.Convert(_bufChars, startOffset, endOffset - startOffset, _bufBytes!, _bufBytesUsed, _bufBytes!.Length - _bufBytesUsed, false, out chEnc, out bEnc, out _);
                 startOffset += chEnc;
                 _bufBytesUsed += bEnc;

@@ -2649,7 +2649,7 @@ namespace System.Threading.Tasks
                                         TSource value = kvp.Value;
 
                                         // Update our iteration index
-                                        if (state != null) state.CurrentIteration = index;
+                                        state?.CurrentIteration = index;
 
                                         if (simpleBody != null)
                                             simpleBody(value);
@@ -2689,8 +2689,7 @@ namespace System.Threading.Tasks
                                         throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
 
                                     // I'm not going to try to maintain this
-                                    if (state != null)
-                                        state.CurrentIteration = 0;
+                                    state?.CurrentIteration = 0;
 
                                     while (myPartition.MoveNext())
                                     {
