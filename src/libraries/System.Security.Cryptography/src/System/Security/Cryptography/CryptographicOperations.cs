@@ -806,22 +806,17 @@ namespace System.Security.Cryptography
 
             if (hashSizeInBytes > MaxStackAlloc)
             {
-                macBuffer = new byte[hashSizeInBytes];
+                Debug.Fail($"Validated hash algorithm '{hashAlgorithm.Name}' size ({hashSizeInBytes}) exceeds stack alloc.");
+                throw new CryptographicException();
             }
 
-            unsafe
-            {
-                fixed (byte* pMacBuffer = macBuffer) // Fixed to prevent GC moves.
-                {
-                    int written = HashProviderDispenser.OneShotHashProvider.MacData(hashAlgorithm.Name, key, source, macBuffer);
-                    Debug.Assert(written == hashSizeInBytes);
-                    Span<byte> mac = macBuffer.Slice(0, written);
+            int written = HashProviderDispenser.OneShotHashProvider.MacData(hashAlgorithm.Name, key, source, macBuffer);
+            Debug.Assert(written == hashSizeInBytes);
+            Span<byte> mac = macBuffer.Slice(0, written);
 
-                    bool result = FixedTimeEquals(mac, hash);
-                    ZeroMemory(mac);
-                    return result;
-                }
-            }
+            bool result = FixedTimeEquals(mac, hash);
+            ZeroMemory(mac);
+            return result;
         }
 
         /// <exception cref="ArgumentNullException">
@@ -903,22 +898,17 @@ namespace System.Security.Cryptography
 
             if (hashSizeInBytes > MaxStackAlloc)
             {
-                macBuffer = new byte[hashSizeInBytes];
+                Debug.Fail($"Validated hash algorithm '{hashAlgorithm.Name}' size ({hashSizeInBytes}) exceeds stack alloc.");
+                throw new CryptographicException();
             }
 
-            unsafe
-            {
-                fixed (byte* pMacBuffer = macBuffer) // Fixed to prevent GC moves.
-                {
-                    int written = LiteHashProvider.HmacStream(hashAlgorithm.Name, key, source, macBuffer);
-                    Debug.Assert(written == hashSizeInBytes);
-                    Span<byte> mac = macBuffer.Slice(0, written);
+            int written = LiteHashProvider.HmacStream(hashAlgorithm.Name, key, source, macBuffer);
+            Debug.Assert(written == hashSizeInBytes);
+            Span<byte> mac = macBuffer.Slice(0, written);
 
-                    bool result = FixedTimeEquals(mac, hash);
-                    ZeroMemory(mac);
-                    return result;
-                }
-            }
+            bool result = FixedTimeEquals(mac, hash);
+            ZeroMemory(mac);
+            return result;
         }
 
         /// <exception cref="ArgumentNullException">
