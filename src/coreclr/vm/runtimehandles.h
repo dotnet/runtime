@@ -114,9 +114,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 
     static
-    FCDECL1(FC_BOOL_RET, IsCollectible, PTR_ReflectClassBaseObject pType);
-
-    static
     FCDECL1(FC_BOOL_RET, IsGenericVariable, PTR_ReflectClassBaseObject pType);
 
     static

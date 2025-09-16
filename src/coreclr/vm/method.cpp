@@ -3859,7 +3859,7 @@ MethodDesc *MethodDesc::GetInterfaceMD()
 bool MethodDesc::IsCollectible()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return HasMethodInstantiation() ? GetLoaderAllocator()->IsCollectible() : GetMethodTable()->Collectible();
+    return GetLoaderAllocator()->IsCollectible();
 }
 
 PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()

@@ -824,9 +824,6 @@ namespace System
             return type!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsCollectible(RuntimeType type);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
         internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 

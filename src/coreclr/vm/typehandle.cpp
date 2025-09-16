@@ -274,7 +274,7 @@ bool TypeHandle::IsCollectible() const
 
     if (IsTypeDesc())
     {
-        return AsTypeDesc()->GetLoaderAllocator()->IsCollectible();
+        return AsTypeDesc()->IsCollectible();
     }
     else
     {

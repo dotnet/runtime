@@ -3227,7 +3227,17 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible => RuntimeTypeHandle.IsCollectible(this);
+        public sealed override unsafe bool IsCollectible
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isCollectible = th.IsTypeDesc ? th.AsTypeDesc()->IsCollectible : th.AsMethodTable()->IsCollectible;
+                GC.KeepAlive(this);
+                return isCollectible;
+            }
+        }
 
         public override MethodBase? DeclaringMethod
         {
