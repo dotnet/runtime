@@ -3227,14 +3227,7 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible
-        {
-            get
-            {
-                RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
-            }
-        }
+        public sealed override bool IsCollectible => RuntimeTypeHandle.IsCollectible(this);
 
         public override MethodBase? DeclaringMethod
         {

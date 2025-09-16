@@ -3856,9 +3856,15 @@ MethodDesc *MethodDesc::GetInterfaceMD()
 }
 #endif // !DACCESS_COMPILE
 
+bool MethodDesc::IsCollectible()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return HasMethodInstantiation() ? GetLoaderAllocator()->IsCollectible() : GetMethodTable()->Collectible();
+}
+
 PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
     return GetLoaderModule()->GetLoaderAllocator();
 }
 
