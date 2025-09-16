@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
             Assert.Equal(5, exporter.Schemas.Count);
             Assert.Equal(36, exporter.Schemas.GlobalElements.Count);
-            Assert.Equal(18, exporter.Schemas.GlobalTypes.Count);
+            Assert.Equal(20, exporter.Schemas.GlobalTypes.Count);
 
             SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.datacontract.org/2004/07/SerializableTypes.XsdDataContractExporterTests"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.datacontract.org/2004/07/SerializableTypes.XsdDataContractExporterTests"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref schemas);
             SchemaUtils.OrderedContains(@"<xs:complexType name=""DataContractTypes.Person1"">", ref schemas);
@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
             Assert.Equal(3, exporter.Schemas.Count);
             Assert.Equal(39, exporter.Schemas.GlobalElements.Count);
-            Assert.Equal(21, exporter.Schemas.GlobalTypes.Count);
+            Assert.Equal(23, exporter.Schemas.GlobalTypes.Count);
 
             SchemaUtils.OrderedContains(@"<xs:schema xmlns:tns=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests"" xmlns:ser=""http://schemas.microsoft.com/2003/10/Serialization/"" elementFormDefault=""qualified"" targetNamespace=""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Xml.XsdDataContractExporterTests"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">", ref schemas);
             SchemaUtils.OrderedContains(@"<xs:import namespace=""http://schemas.microsoft.com/2003/10/Serialization/"" />", ref schemas);
