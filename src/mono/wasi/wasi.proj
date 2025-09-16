@@ -5,8 +5,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
@@ -16,7 +14,6 @@
     <_WasiDefaultsRspPath>$(NativeBinDir)src\wasi-default.rsp</_WasiDefaultsRspPath>
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
     <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
-    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
@@ -25,10 +22,6 @@
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
   </Target>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-  </ItemGroup>
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
@@ -73,8 +66,6 @@
     <ItemGroup>
       <_WasiFlags Include="@(_WasiCommonFlags)" />
 
-      <_WasiCompileFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Condition="'$(WasmEnableThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'mono-include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))"/>
@@ -84,7 +75,6 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PTHREAD"/>
       <!-- keep in sync with src\mono\wasi\build\WasiApp.targets -->
-      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread"/>
     </ItemGroup>
 
@@ -137,10 +127,6 @@
           DependsOnTargets="AcquireWasiSdk;GenerateWasiPropsAndRspFiles;GenerateManagedToNative">
 
     <ItemGroup>
-      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
-      <ICULibFiles Include="$(ICULibDir)/*.dat" />
       <WASIComponentImports Include="$(RepoRoot)src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit" />
     </ItemGroup>
     <PropertyGroup>
@@ -168,7 +154,6 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASM_OPT_FLAGS=&quot;@(WasmOptConfigurationFlags, ';')&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -207,17 +192,10 @@
           DestinationFolder="%(_FilesToCopy.DestinationFolder)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);
-                       @(WASIComponentImports);"
-          DestinationFolder="$(NativeBinDir)"
-          SkipUnchangedFiles="true" />
-
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" />
 
     <ItemGroup>
-      <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
       <WasmSrcFiles Include="$(_WasiDefaultsRspPath);$(_WasiCompileRspPath);$(_WasiLinkRspPath);$(NativeBinDir)src\wasm-props.json" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
@@ -227,7 +205,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(WASIComponentImports);"
+    <Copy SourceFiles="@(WASIComponentImports);"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

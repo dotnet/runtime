@@ -125,7 +125,7 @@
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
-    <CoverletCollectorVersion>6.0.0</CoverletCollectorVersion>
+    <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <JsonSchemaNetVersion>7.0.2</JsonSchemaNetVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
@@ -149,8 +149,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>9.0.0-preview-20241010.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.8</MicrosoftNativeQuicMsQuicSchannelVersion>
-    <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.15</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport

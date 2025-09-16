@@ -627,7 +627,7 @@ namespace System.IO.Ports
                 {
                     DtrEnable = dtrEnable;
                 }
-                catch (IOException) when (dtrEnable == false)
+                catch (IOException) when (!dtrEnable)
                 {
                     // An IOException can be thrown when using a virtual port from eg. socat, which doesn't implement
                     // the required termios command for setting DtrEnable, but it still works without setting the value
@@ -649,7 +649,7 @@ namespace System.IO.Ports
                         _rtsEnable = RtsEnabledNative();
                         RtsEnable = rtsEnable;
                     }
-                    catch (IOException) when (rtsEnable == false)
+                    catch (IOException) when (!rtsEnable)
                     {
                         // An IOException can be thrown when using a virtual port from eg. socat, which doesn't implement
                         // the required termios command for setting RtsEnable, but it still works without setting the value

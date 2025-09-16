@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -39,7 +41,7 @@ internal readonly struct Loader_1 : ILoader
 
     private enum PEImageFlags : uint
     {
-        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+        FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
     private readonly Target _target;
 
@@ -531,5 +533,69 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         return loaderAllocator.StubHeap;
+    }
+
+    TargetPointer ILoader.GetObjectHandle(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.ObjectHandle.Handle;
+    }
+
+    private int GetRVAFromMetadata(ModuleHandle handle, int token)
+    {
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        return methodDef.RelativeVirtualAddress;
+    }
+
+    TargetPointer ILoader.GetILHeader(ModuleHandle handle, uint token)
+    {
+        // we need module
+        ILoader loader = this;
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
+        TargetPointer headerPtr = GetDynamicIL(handle, token);
+        if (headerPtr == TargetPointer.Null)
+        {
+            int rva = GetRVAFromMetadata(handle, (int)token);
+            headerPtr = loader.GetILAddr(peAssembly, rva);
+        }
+        return headerPtr;
+    }
+
+    private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
+    {
+        public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
+        public bool Equals(uint left, uint right) => left == right;
+        public uint Hash(uint key) => key;
+        public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
+        public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
+        public bool IsDeleted(DynamicILBlobEntry entry) => false;
+    }
+
+    private sealed class DynamicILBlobTable : IData<DynamicILBlobTable>
+    {
+        static DynamicILBlobTable IData<DynamicILBlobTable>.Create(Target target, TargetPointer address)
+            => new DynamicILBlobTable(target, address);
+
+        public DynamicILBlobTable(Target target, TargetPointer address)
+        {
+            ISHash sHashContract = target.Contracts.SHash;
+            Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
+            HashTable = sHashContract.CreateSHash(target, address, type, new DynamicILBlobTraits());
+        }
+        public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
+    }
+
+    private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.DynamicILBlobTable == TargetPointer.Null)
+        {
+            return TargetPointer.Null;
+        }
+        DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
+        ISHash shashContract = _target.Contracts.SHash;
+        return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 }

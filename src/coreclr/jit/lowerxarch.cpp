@@ -2602,19 +2602,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicTernaryLogic(node);
         }
 
-        case NI_GFNI_GaloisFieldAffineTransform:
-        case NI_GFNI_GaloisFieldAffineTransformInverse:
-        case NI_GFNI_V256_GaloisFieldAffineTransform:
-        case NI_GFNI_V256_GaloisFieldAffineTransformInverse:
-        case NI_GFNI_V512_GaloisFieldAffineTransform:
-        case NI_GFNI_V512_GaloisFieldAffineTransformInverse:
-        {
-            // Managed API surfaces these with only UBYTE operands.
-            // We retype in order to support EVEX embedded broadcast of op2
-            node->SetSimdBaseJitType(CORINFO_TYPE_ULONG);
-            break;
-        }
-
         default:
             break;
     }
@@ -3167,7 +3154,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                                 GenTree* vecCns =
                                     comp->gtNewSimdCreateBroadcastNode(simdType, broadcastOp,
-                                                                       op1Intrinsic->GetSimdBaseJitType(), simdSize);
+                                                                       nestedIntrin->GetSimdBaseJitType(), simdSize);
 
                                 assert(vecCns->IsCnsVec());
                                 BlockRange().InsertAfter(broadcastOp, vecCns);
@@ -8909,126 +8896,192 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 //
 //  Arguments:
 //     parentNode - The hardware intrinsic node
-//     childNode  - The operand node to try contain
+//     cnsVec     - The constant vector to contain
 //
-void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode)
+void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* cnsVec)
 {
-    assert(!childNode->IsAllBitsSet());
-    assert(!childNode->IsZero());
+    assert(!cnsVec->IsAllBitsSet());
+    assert(!cnsVec->IsZero());
 
     if (!comp->canUseEmbeddedBroadcast())
     {
-        MakeSrcContained(parentNode, childNode);
+        MakeSrcContained(parentNode, cnsVec);
         return;
     }
 
-    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
-    // The containment check has already validated that the child is sufficiently large.
+    // Regardless of how the constant vector was created, we can convert it to an embedded broadcast if it
+    // repeats correctly for the instruction's broadcast element size.
     //
-    // We use the parent node's base type, because we must ensure that the constant repeats correctly for that size,
-    // regardless of how the constant vector was created.
+    // Likewise, we do not have to match the intrinsic's base type as long as the broadcast size is correct.
 
-    var_types   simdType            = childNode->TypeGet();
-    var_types   simdBaseType        = parentNode->GetSimdBaseType();
-    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
-    bool        isCreatedFromScalar = true;
+    var_types   simdBaseType     = parentNode->GetSimdBaseType();
+    instruction ins              = HWIntrinsicInfo::lookupIns(parentNode->GetHWIntrinsicId(), simdBaseType, comp);
+    unsigned    broadcastSize    = CodeGenInterface::instInputSize(ins);
+    CorInfoType broadcastJitType = parentNode->GetSimdBaseJitType();
 
-    if (varTypeIsSmall(simdBaseType))
+    if (broadcastSize != genTypeSize(simdBaseType))
     {
-        isCreatedFromScalar = false;
+        if (broadcastSize == 4)
+        {
+            broadcastJitType = varTypeIsFloating(simdBaseType) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_INT;
+        }
+        else
+        {
+            assert(broadcastSize == 8);
+            broadcastJitType = varTypeIsFloating(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_LONG;
+        }
+    }
+
+    if (!cnsVec->IsBroadcast(JITtype2varType(broadcastJitType)))
+    {
+        // Some bit-wise instructions have both 4-byte and 8-byte broadcast forms.
+        // If the constant wasn't a match at 4 bytes, it might be at 8.
+
+        bool canUse8ByteBroadcast = false;
+
+        if (broadcastSize == 4)
+        {
+            switch (ins)
+            {
+                case INS_andps:
+                case INS_andnps:
+                case INS_orps:
+                case INS_xorps:
+                case INS_pandd:
+                case INS_pandnd:
+                case INS_pord:
+                case INS_pxord:
+                case INS_vpternlogd:
+                case INS_vshuff32x4:
+                case INS_vshufi32x4:
+                {
+                    canUse8ByteBroadcast = cnsVec->IsBroadcast(TYP_LONG);
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        if (canUse8ByteBroadcast)
+        {
+            broadcastJitType = varTypeIsFloating(simdBaseType) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_LONG;
+            parentNode->SetSimdBaseJitType(broadcastJitType);
+        }
+        else
+        {
+            MakeSrcContained(parentNode, cnsVec);
+            return;
+        }
+    }
+    else if (broadcastSize == 8)
+    {
+        // If the constant was originally a match at 8 bytes, it might also be at 4.
+        // We prefer the smaller broadcast when possible, because it shrinks the data section.
+
+        switch (ins)
+        {
+            case INS_andpd:
+            case INS_andnpd:
+            case INS_orpd:
+            case INS_xorpd:
+            case INS_vpandq:
+            case INS_vpandnq:
+            case INS_vporq:
+            case INS_vpxorq:
+            case INS_vpternlogq:
+            case INS_vshuff64x2:
+            case INS_vshufi64x2:
+            {
+                if (cnsVec->IsBroadcast(TYP_INT))
+                {
+                    broadcastJitType = varTypeIsFloating(simdBaseType) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_INT;
+                    parentNode->SetSimdBaseJitType(broadcastJitType);
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    // We use the original constant vector's size for the broadcast node, because the parent node may consume
+    // more than its own size. The containment check has already validated that the constant is sufficiently
+    // large, but that check will be asserted again at codegen, so the replacement must also satisfy.
+
+    var_types      simdType      = cnsVec->TypeGet();
+    NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
+    GenTree*       constScalar   = nullptr;
+
+    if (simdType == TYP_SIMD32)
+    {
+        broadcastName = NI_AVX2_BroadcastScalarToVector256;
+    }
+    else if (simdType == TYP_SIMD64)
+    {
+        broadcastName = NI_AVX512_BroadcastScalarToVector512;
     }
     else
     {
-        isCreatedFromScalar = childNode->IsBroadcast(simdBaseType);
+        assert(simdType == TYP_SIMD16);
     }
 
-    if (isCreatedFromScalar)
+    switch (JITtype2varType(broadcastJitType))
     {
-        NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
-        if (simdType == TYP_SIMD32)
+        case TYP_FLOAT:
         {
-            broadcastName = NI_AVX2_BroadcastScalarToVector256;
-        }
-        else if (simdType == TYP_SIMD64)
-        {
-            broadcastName = NI_AVX512_BroadcastScalarToVector512;
-        }
-        else
-        {
-            assert(simdType == TYP_SIMD16);
+            float scalar = cnsVec->gtSimdVal.f32[0];
+            constScalar  = comp->gtNewDconNodeF(scalar);
+            break;
         }
 
-        GenTree* constScalar = nullptr;
-        switch (simdBaseType)
+        case TYP_DOUBLE:
         {
-            case TYP_FLOAT:
-            {
-                float scalar = childNode->gtSimdVal.f32[0];
-                constScalar  = comp->gtNewDconNodeF(scalar);
-                break;
-            }
-            case TYP_DOUBLE:
-            {
-                double scalar = childNode->gtSimdVal.f64[0];
-                constScalar   = comp->gtNewDconNodeD(scalar);
-                break;
-            }
-            case TYP_INT:
-            {
-                int32_t scalar = childNode->gtSimdVal.i32[0];
-                constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
-                break;
-            }
-            case TYP_UINT:
-            {
-                uint32_t scalar = childNode->gtSimdVal.u32[0];
-                constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
-                break;
-            }
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-                int64_t scalar = childNode->gtSimdVal.i64[0];
-                constScalar    = comp->gtNewLconNode(scalar);
-                break;
-            }
-            default:
-                unreached();
+            double scalar = cnsVec->gtSimdVal.f64[0];
+            constScalar   = comp->gtNewDconNodeD(scalar);
+            break;
         }
 
-        GenTreeHWIntrinsic* createScalar =
-            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType,
-                                           16);
-        GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName,
-                                                                           simdBaseJitType, genTypeSize(simdType));
-        BlockRange().InsertBefore(childNode, broadcastNode);
-        BlockRange().InsertBefore(broadcastNode, createScalar);
-        BlockRange().InsertBefore(createScalar, constScalar);
-        LIR::Use use;
-        if (BlockRange().TryGetUse(childNode, &use))
+        case TYP_INT:
         {
-            use.ReplaceWith(broadcastNode);
-        }
-        else
-        {
-            broadcastNode->SetUnusedValue();
+            int32_t scalar = cnsVec->gtSimdVal.i32[0];
+            constScalar    = comp->gtNewIconNode(scalar);
+            break;
         }
 
-        BlockRange().Remove(childNode);
-        LowerNode(createScalar);
-        LowerNode(broadcastNode);
-        if (varTypeIsFloating(simdBaseType))
+        case TYP_LONG:
         {
-            MakeSrcContained(broadcastNode, createScalar);
+            int64_t scalar = cnsVec->gtSimdVal.i64[0];
+            constScalar    = comp->gtNewLconNode(scalar);
+            break;
         }
-        else if (constScalar->TypeIs(TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG))
+
+        default:
         {
-            MakeSrcContained(broadcastNode, constScalar);
+            unreached();
         }
-        MakeSrcContained(parentNode, broadcastNode);
-        return;
     }
-    MakeSrcContained(parentNode, childNode);
+
+    GenTreeHWIntrinsic* broadcastNode =
+        comp->gtNewSimdHWIntrinsicNode(simdType, constScalar, broadcastName, broadcastJitType, genTypeSize(simdType));
+
+    BlockRange().InsertBefore(parentNode, constScalar, broadcastNode);
+    BlockRange().Remove(cnsVec);
+
+    GenTree** use      = nullptr;
+    bool      useFound = parentNode->TryGetUse(cnsVec, &use);
+    assert(useFound);
+
+    parentNode->ReplaceOperand(use, broadcastNode);
+
+    MakeSrcContained(broadcastNode, constScalar);
+    MakeSrcContained(parentNode, broadcastNode);
 }
 
 //------------------------------------------------------------------------
@@ -10093,12 +10146,51 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 {
                                     unsigned    tgtMaskSize        = simdSize / genTypeSize(simdBaseType);
                                     CorInfoType tgtSimdBaseJitType = CORINFO_TYPE_UNDEF;
+                                    size_t      broadcastOpIndex   = 0;
 
-                                    if (op2->isEmbeddedMaskingCompatible(comp, tgtMaskSize, tgtSimdBaseJitType))
+                                    if (op2->isEmbeddedMaskingCompatible(comp, tgtMaskSize, tgtSimdBaseJitType,
+                                                                         &broadcastOpIndex))
                                     {
                                         if (tgtSimdBaseJitType != CORINFO_TYPE_UNDEF)
                                         {
                                             op2->AsHWIntrinsic()->SetSimdBaseJitType(tgtSimdBaseJitType);
+
+                                            if (broadcastOpIndex != 0)
+                                            {
+                                                // We have already contained a broadcast, and we are choosing a wider
+                                                // instruction to support masking. We need to rewrite the broadcast
+                                                // constant to the larger size.
+
+                                                GenTreeHWIntrinsic* broadcastNode =
+                                                    op2->AsHWIntrinsic()->Op(broadcastOpIndex)->AsHWIntrinsic();
+                                                GenTree* constNode = broadcastNode->Op(1);
+                                                int64_t  lval      = 0;
+
+                                                assert(genTypeSize(constNode) == 4);
+                                                assert(tgtMaskSize == 2);
+
+                                                if (constNode->IsCnsFltOrDbl())
+                                                {
+                                                    float fval = FloatingPointUtils::convertToSingle(
+                                                        constNode->AsDblCon()->DconValue());
+                                                    lval = BitOperations::SingleToUInt32Bits(fval);
+                                                }
+                                                else
+                                                {
+                                                    assert(constNode->OperIs(GT_CNS_INT));
+                                                    lval = static_cast<uint32_t>(constNode->AsIntCon()->IconValue());
+                                                }
+
+                                                GenTree* lconNode = comp->gtNewLconNode((lval << 32) | lval);
+
+                                                broadcastNode->SetSimdBaseJitType(CORINFO_TYPE_LONG);
+                                                broadcastNode->Op(1) = lconNode;
+
+                                                BlockRange().InsertBefore(broadcastNode, lconNode);
+                                                BlockRange().Remove(constNode);
+
+                                                MakeSrcContained(broadcastNode, lconNode);
+                                            }
                                         }
 
                                         MakeSrcContained(node, op2);

@@ -693,7 +693,7 @@ namespace ILCompiler
             int curIndex = 0;
             foreach (var searchMethod in owningType.GetMethods())
             {
-                if (searchMethod.Name != singleMethodName)
+                if (searchMethod.GetName() != singleMethodName)
                     continue;
 
                 curIndex++;
@@ -723,7 +723,7 @@ namespace ILCompiler
                 curIndex = 0;
                 foreach (var searchMethod in owningType.GetMethods())
                 {
-                    if (searchMethod.Name != singleMethodName)
+                    if (searchMethod.GetName() != singleMethodName)
                         continue;
 
                     curIndex++;
@@ -759,12 +759,12 @@ namespace ILCompiler
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)method.Context.SystemModule);
 
             sb.Append($"--singlemethodtypename \"{formatter.FormatName(method.OwningType, true)}\"");
-            sb.Append($" --singlemethodname \"{method.Name}\"");
+            sb.Append($" --singlemethodname \"{method.GetName()}\"");
             {
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (searchMethod.Name != method.Name)
+                    if (!searchMethod.Name.SequenceEqual(method.Name))
                         continue;
 
                     curIndex++;

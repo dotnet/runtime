@@ -115,6 +115,8 @@ public interface ILoader : IContract
     TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

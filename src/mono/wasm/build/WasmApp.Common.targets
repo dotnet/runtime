@@ -529,13 +529,15 @@
     </PropertyGroup>
 
     <!-- Default with nothing set: Build+relink+config=debug -->
-    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
-      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' != 'false' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
       <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == 'false' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     </PropertyGroup>
   </Target>

@@ -176,7 +176,6 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-link.rsp'))</_WasmDefaultLinkFlagsRsp>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
@@ -242,7 +241,6 @@
       <_WasiClangCommonFlags Include="$(WasiClangFlags)" />
       <_WasiClangCommonFlags Include="--sysroot=&quot;$(WASI_SDK_PATH.Replace('\', '/'))share/wasi-sysroot&quot;" />
       <_WasiClangCommonFlags Include="--target=wasm32-unknown-wasip2" />
-      <_WasiClangCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
       <!--<_WasiClangCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />-->
@@ -407,9 +405,7 @@
       <_WasiLinkStepArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
       <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
-      <_WasiLinkStepArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
-      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread"/>
       <!--
       this together with some DLLImports makes dependency on wasi:http@0.2.0

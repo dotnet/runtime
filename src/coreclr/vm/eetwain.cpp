@@ -2603,7 +2603,8 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
-    TADDR baseStackSlot = GetFP(pContext->pCurrentContext);
+    PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+    TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
     return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
 }
 
@@ -2622,7 +2623,8 @@ PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
-        TADDR baseStackSlot = GetFP(pContext->pCurrentContext);
+        PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+        TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
         TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
         return PTR_VOID(taExactGenericsToken);

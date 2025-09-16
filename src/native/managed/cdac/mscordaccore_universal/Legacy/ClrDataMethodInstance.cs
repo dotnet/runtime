@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -110,7 +111,82 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     }
 
     int IXCLRDataMethodInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
-        => _legacyImpl is not null ? _legacyImpl.GetName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            if (flags != 0)
+                throw new ArgumentException();
+
+            bool fallbackToUnknown = false;
+            StringBuilder sb = new();
+            try
+            {
+                TypeNameBuilder.AppendMethodInternal(
+                    _target,
+                    sb,
+                    _methodDesc,
+                    TypeNameFormat.FormatSignature |
+                    TypeNameFormat.FormatNamespace |
+                    TypeNameFormat.FormatFullInst);
+            }
+            catch
+            {
+                string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(_methodDesc.Address);
+                if (fallbackName != null)
+                {
+                    sb.Clear();
+                    sb.Append(fallbackName);
+                }
+                else
+                {
+                    sb.Clear();
+                    sb.Append("Unknown");
+                    fallbackToUnknown = true;
+                }
+            }
+
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, sb.ToString());
+
+            if (!fallbackToUnknown && nameBuf != null && bufLen < sb.Length + 1)
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint nameLenLocal = 0;
+            char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
+            int hrLocal;
+            fixed (char* pNameBufLocal = nameBufLocal)
+            {
+                hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, nameBuf is null ? null : pNameBufLocal);
+            }
+
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (nameLen is not null)
+                Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
+
+            if (nameBuf is not null)
+            {
+                string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
+                string cdacName = new string(nameBuf);
+                Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.GetFlags(uint* flags)
         => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
@@ -270,19 +346,20 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(hrLocal == hr, $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
 
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(mapNeeded == null || *mapNeeded == mapNeededLocal);
                 if (mapsLocal is not null)
                 {
-                    for (int i = 0; i < mapsLocal.Length; i++)
+                    int countToCheck = Math.Min(mapsLocal.Length, (int)mapNeededLocal);
+                    for (int i = 0; i < countToCheck; i++)
                     {
-                        Debug.Assert(mapsLocal[i].ilOffset == maps![i].ilOffset, $"cDAC: {maps[i].ilOffset:x}, DAC: {mapsLocal[i].ilOffset:x}");
-                        Debug.Assert(mapsLocal[i].startAddress == maps[i].startAddress, $"cDAC: {maps[i].startAddress:x}, DAC: {mapsLocal[i].startAddress:x}");
-                        Debug.Assert(mapsLocal[i].endAddress == maps[i].endAddress, $"cDAC: {maps[i].endAddress:x}, DAC: {mapsLocal[i].endAddress:x}");
-                        Debug.Assert(mapsLocal[i].type == maps[i].type, $"cDAC: {maps[i].type:x}, DAC: {mapsLocal[i].type:x}");
+                        Debug.Assert(mapsLocal[i].ilOffset == maps![i].ilOffset, $"ILOffset - cDAC: {maps[i].ilOffset:x}, DAC: {mapsLocal[i].ilOffset:x}");
+                        Debug.Assert(mapsLocal[i].startAddress == maps[i].startAddress, $"StartAddress - cDAC: {maps[i].startAddress:x}, DAC: {mapsLocal[i].startAddress:x}");
+                        Debug.Assert(mapsLocal[i].endAddress == maps[i].endAddress, $"EndAddress - cDAC: {maps[i].endAddress:x}, DAC: {mapsLocal[i].endAddress:x}");
+                        Debug.Assert(mapsLocal[i].type == maps[i].type, $"Type - cDAC: {maps[i].type:x}, DAC: {mapsLocal[i].type:x}");
                     }
                 }
             }
