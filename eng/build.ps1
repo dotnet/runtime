@@ -262,6 +262,10 @@ if ($vs) {
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
+  # MSBuild Server dogfood.
+  $env:DOTNET_CLI_USE_MSBUILD_SERVER=1;
+  $env:MSBUILD_USE_SERVER=1;
+
   # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
   if ($runtimeConfiguration)
   {
