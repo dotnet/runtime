@@ -83,7 +83,7 @@ fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(InterpreterIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$RunInInterpreter" ]
+if [ ! -z "$RunInterpreter" ]
 then
   echo SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
   exit $(IncompatibleTestBashScriptExitCode)
