@@ -1341,8 +1341,6 @@ void CordbProcess::Neuter()
     }
     m_unmanagedThreadHashTable.RemoveAll();
     m_dwOutOfProcessStepping = 0;
-    m_cProcessedFlares = 0;
-    m_fDetachInProgress = FALSE;
 #endif
 
     NeuterChildren();
@@ -3133,6 +3131,7 @@ void CordbProcess::DetachShim()
             DetachInProgressGuard(CordbProcess * pProcess) 
             {
                 m_pProcess = pProcess;
+                pProcess->m_cProcessedFlares = 0;
                 pProcess->m_fDetachInProgress = TRUE;
             }
             ~DetachInProgressGuard() 

@@ -1161,14 +1161,13 @@ class DebuggerController
     static bool GetProcessingDetach() {LIMITED_METHOD_CONTRACT;  return g_fProcessingDetach; }
     static void SetProcessingDetach(bool fProcessingDetach) {LIMITED_METHOD_CONTRACT;  g_fProcessingDetach = fProcessingDetach; }
     static int GetActiveDispatchedExceptions() {LIMITED_METHOD_CONTRACT;  return g_cActiveDispatchedExceptions; }
+    static void IncrementActiveDispatchedExceptions(int cActiveDispatchedExceptions) { LIMITED_METHOD_CONTRACT;  g_cActiveDispatchedExceptions += cActiveDispatchedExceptions; }
     static int IncrementActiveDispatchedExceptions() { LIMITED_METHOD_CONTRACT;  return (int)InterlockedIncrement(&g_cActiveDispatchedExceptions); }
     static int DecrementActiveDispatchedExceptions() { LIMITED_METHOD_CONTRACT;  return (int)InterlockedDecrement(&g_cActiveDispatchedExceptions); }
+    static int GetNumPendingControllers();
     static int GetDispatchedFlares() {LIMITED_METHOD_DAC_CONTRACT;  return g_cDispatchedFlares; }
+    static void SetDispatchedFlares(int cDispatchedFlares) { LIMITED_METHOD_DAC_CONTRACT; g_cDispatchedFlares = cDispatchedFlares; }
     static int IncrementDispatchedFlares() { LIMITED_METHOD_DAC_CONTRACT;  return (int)InterlockedIncrement(&g_cDispatchedFlares); }
-    static void ResetDispatchedFlares() { LIMITED_METHOD_DAC_CONTRACT;  g_cDispatchedFlares = 0; }
-    static bool CanSendDetach(bool fDecrementActiveExceptions = false);
-#else
-    static int GetDispatchedFlares() {LIMITED_METHOD_DAC_CONTRACT;  return 0; }
 #endif
 
 #if defined(_DEBUG)
@@ -1225,10 +1224,13 @@ private:
     static int g_cTotalMethodEnter;
 
     // When detach is initiated, the runtime is synchronized.
-    // However, it is possible that DC::DNE is still processing debugger events.
-    // This is a running count of exceptions running inside of DC::DNE
+    // This is a running count of dispatched exceptions that
+    // could result in a SetThreadContextNeeded event.
     // Detach will use this to get an accurate count of
     // SetThreadContextNeeded flares after continuing.
+    // State is tracked globally because the controllers are deleted
+    // during the detach operation
+    // This variable is only used while the debugger is attached
     static Volatile<DWORD> g_cActiveDispatchedExceptions;
 
     // During detach we need to wait until all flares have been processed
@@ -1236,8 +1238,9 @@ private:
     // true, we will start tracking the number of dispatched flares.
     static Volatile<BOOL> g_fProcessingDetach;
 
-    // This is the number of flares that have been sent 
-    // It will be sent to the right side to ensure that it stays attached
+    // This is the number of flares that have been sent after 
+    // continuing inside of a detach request 
+    // This will be sent to the right side to ensure that it stays attached
     // long enough to process any SetThreadContextNeeded events
     static Volatile<DWORD> g_cDispatchedFlares;
 
