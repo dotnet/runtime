@@ -509,6 +509,7 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
 #ifdef DEBUG
     TArray<char, MallocAllocator> m_methodName;
+    bool m_verbose = false;
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
