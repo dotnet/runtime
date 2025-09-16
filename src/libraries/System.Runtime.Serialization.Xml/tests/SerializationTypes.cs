@@ -1147,6 +1147,12 @@ public class TypeWithDateAndTimeOnlyProperties
     public TimeOnly? NullableDefaultTime { get; set; }
 }
 
+public class DateOnlyWrapper { public DateOnly TestValue { get; set; } }
+public class TimeOnlyWrapper { public TimeOnly TestValue { get; set; } }
+public class TimeOnlyAsXsdTimeWrapper { [XmlElement(DataType = "time")] public TimeOnly TestValue { get; set; } }
+public class DateTimeDateWrapper { [XmlElement(DataType = "date")] public DateTime TestValue { get; set; } }
+public class DateTimeTimeWrapper { [XmlElement(DataType = "time")] public DateTime TestValue { get; set; } }
+
 public class TypeWithTimeSpanProperty
 {
     public TimeSpan TimeSpanProperty;

@@ -1115,41 +1115,59 @@ public static partial class XmlSerializerTests
     }
 
     [Theory]
-    [InlineData("07:25:13.45-04:00", false, true)]  // Oh the humanity
-    [InlineData("07:25:13.45-04:00", true, false, "07:25:13.45")]
-    [InlineData("02:38:23.40Z", false, true)]       // My heart will go on
-    [InlineData("02:38:23.40Z", true, false, "02:38:23.4")]
-    [InlineData("7:48:07", false, true)]        // Will live in infamy
-    [InlineData("7:48:07", true, true)]
-    [InlineData("08:32 AM", false, true)]       // Helen errupts
-    [InlineData("08:32 AM", true, true)]
-    public static void Xml_TimeOnlyParseErrors(string timeString, bool withCompatSwitch, bool shouldFail, string expected = "")
+    [InlineData("07:25:13.45-04:00", true, "07:25:13.45")]  // Oh the humanity
+    [InlineData("02:38:23.40Z", true, "02:38:23.4")]        // My heart will go on
+    [InlineData("7:48:07", false)]        // Will live in infamy
+    [InlineData("08:32 AM", false)]       // Helen errupts
+    public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
     {
         const string switchName = "Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss";
         AppContext.TryGetSwitch(switchName, out bool originalEnabled);
 
-        var xml = WithXmlHeader($"""
-            <timeOnly>{timeString}</timeOnly>
-            """);
-
-        if (withCompatSwitch)
-            AppContext.SetSwitch(switchName, true);
-
+        // Try straigt up
+        var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
         TimeOnly result = default;
         var ex = Record.Exception(() =>
         {
             result = DeserializeFromXmlString<TimeOnly>(xml);
         });
+        Assert.NotNull(ex);
+        Assert.IsType<InvalidOperationException>(ex);
 
-        if (shouldFail)
+        // Try with compat-influencing 'timeWithoutOffset' data type
+        var xmlWrapper = WithXmlHeader($"<TimeOnlyAsXsdTimeWrapper><TestValue>{timeString}</TestValue></TimeOnlyAsXsdTimeWrapper>");
+        var wrapperResult = default(TimeOnlyAsXsdTimeWrapper);
+        ex = Record.Exception(() =>
+        {
+            wrapperResult = DeserializeFromXmlString<TimeOnlyAsXsdTimeWrapper>(xmlWrapper);
+        });
+        if (succeedsWithCompat)
+        {
+            Assert.Null(ex);
+            Assert.Equal(expected, FormatTimeString(wrapperResult.TestValue));
+        }
+        else
         {
             Assert.NotNull(ex);
             Assert.IsType<InvalidOperationException>(ex);
         }
-        else
+
+        // Finally, try with the AppCompat switch
+        AppContext.SetSwitch(switchName, true);
+        result = default;
+        ex = Record.Exception(() =>
+        {
+            result = DeserializeFromXmlString<TimeOnly>(xml);
+        });
+        if (succeedsWithCompat)
         {
             Assert.Null(ex);
             Assert.Equal(expected, FormatTimeString(result));
+        }
+        else
+        {
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
         }
         AppContext.SetSwitch(switchName, originalEnabled);
     }
@@ -1283,18 +1301,18 @@ public static partial class XmlSerializerTests
     public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
     {
         var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var toaxtSerializer = new XmlSerializer(typeof(TimeOnlyAsXsdTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
         var dttSerializer = new XmlSerializer(typeof(DateTimeTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
 
         // DateTime fields can be used with 'DataType="time"' attributes to produce xsd:time conforming output.
         // These xsd:time fields can logically fit into TimeOnly structs - if optional timezone/offset info is
         // discarded. By default, XmlSerializer doesn't emit any offset details for xsd:date, but it does for xsd:time.
         // There is an appCompat switch to allow discarding offset details when reading an xsd:time into TimeOnly.
-        // 'Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss'
-        const string switchName = "Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss";
-        AppContext.TryGetSwitch(switchName, out bool originalEnabled);
-        AppContext.SetSwitch(switchName, true);
-        var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
+        // 'Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss'. The 'TimeOnly' field can also be decorated
+        // with a 'DataType="timeWithoutOffset"' attribute to indicate that offset information should be ignored.
+        // Use the latter approach here.
 
+        var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
         DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind); 
         Assert.Equal(kind, testTime.Kind);
 
@@ -1318,10 +1336,8 @@ public static partial class XmlSerializerTests
               <TestValue>{FormatTimeString(dttObj.TestValue, ignoreUtc)}</TestValue>
             </DateAndTimeTest>
             """), () => dttSerializer);
-        toObj = (TimeOnlyWrapper)Deserialize(toSerializer, xml);
-        Assert.StrictEqual(TimeOnly.FromDateTime(dttObj.TestValue /* now */), toObj.TestValue);
-
-        AppContext.SetSwitch(switchName, originalEnabled);
+        var toaxtObj = (TimeOnlyAsXsdTimeWrapper)Deserialize(toaxtSerializer, xml);
+        Assert.StrictEqual(TimeOnly.FromDateTime(dttObj.TestValue /* now */), toaxtObj.TestValue);
     }
 
     [Fact]
@@ -2946,11 +2962,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
         return ms;
     }
-
-    public class DateOnlyWrapper { public DateOnly TestValue { get; set; } }
-    public class TimeOnlyWrapper { public TimeOnly TestValue { get; set; } }
-    public class DateTimeDateWrapper { [XmlElement(DataType = "date")] public DateTime TestValue { get; set; } }
-    public class DateTimeTimeWrapper { [XmlElement(DataType = "time")] public DateTime TestValue { get; set; } }
 
     private static string FormatDateString(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     private static string FormatDateString(DateTime date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
