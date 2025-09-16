@@ -673,6 +673,22 @@ internal unsafe partial interface ISOSDacInterface6
     int GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data);
 };
 
+internal struct DacpReJitData2
+{
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+        kReverted = 3,
+    };
+
+    public uint rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ClrDataAddress il;
+    public ClrDataAddress ilCodeVersionNodePtr;
+}
+
 [GeneratedComInterface]
 [Guid("c1020dde-fe98-4536-a53b-f35a74c327eb")]
 internal unsafe partial interface ISOSDacInterface7
@@ -680,7 +696,7 @@ internal unsafe partial interface ISOSDacInterface7
     [PreserveSig]
     int GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId);
     [PreserveSig]
-    int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData);
+    int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData);
     [PreserveSig]
     int GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData);
     [PreserveSig]

@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type { DotnetModuleInternal } from "../types/internal";
-import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB, mono_assert } from "./globals";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
@@ -21,6 +21,12 @@ const URLPolyfill = class URL {
 export function verifyEnvironment () {
     mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    mono_assert(globalThis.performance && typeof globalThis.performance.now === "function", "This browser/engine doesn't support performance.now. Please use a modern version.");
+    mono_assert(ENVIRONMENT_IS_SHELL || globalThis.crypto && typeof globalThis.crypto.subtle === "object", "This engine doesn't support crypto.subtle. Please use a modern version.");
+    mono_assert(ENVIRONMENT_IS_SHELL || globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function", "This engine doesn't support crypto.getRandomValues. Please use a modern version.");
+    if (ENVIRONMENT_IS_NODE) {
+        mono_assert(typeof process.exit === "function", "This engine doesn't support process.exit. Please use a modern version.");
+    }
     if (WasmEnableThreads) {
         mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS. See also https://aka.ms/dotnet-wasm-features");
         mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers. See also https://aka.ms/dotnet-wasm-features");
@@ -72,16 +78,6 @@ export async function detect_features_and_polyfill (module: DotnetModuleInternal
         }
     }
 
-    if (ENVIRONMENT_IS_NODE) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore:
-        INTERNAL.require = await import(/*! webpackIgnore: true */"module").then(mod => mod.createRequire(/*! webpackIgnore: true */import.meta.url));
-    } else {
-        INTERNAL.require = Promise.resolve(() => {
-            throw new Error("require not supported");
-        });
-    }
-
     if (typeof globalThis.URL === "undefined") {
         globalThis.URL = URLPolyfill as any;
     }
@@ -97,8 +93,12 @@ export async function fetch_like (url: string, init?: RequestInit): Promise<Resp
                 return globalThis.fetch(url, init || { credentials: "same-origin" });
             }
             if (!node_fs) {
-                node_url = INTERNAL.require("url");
-                node_fs = INTERNAL.require("fs");
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore:
+                node_url = await import(/*! webpackIgnore: true */"url");
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore:
+                node_fs = await import(/*! webpackIgnore: true */"fs");
             }
             if (isFileUrl) {
                 url = node_url.fileURLToPath(url);

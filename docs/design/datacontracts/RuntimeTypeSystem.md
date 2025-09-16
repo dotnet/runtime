@@ -185,6 +185,7 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
 }
 ```
 

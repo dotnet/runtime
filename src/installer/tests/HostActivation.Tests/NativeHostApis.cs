@@ -159,6 +159,30 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Hostfxr_resolve_sdk2_NoGlobalJson_NoWriteToStdResolvesTheSame(bool do_not_print_errors)
+        {
+            // With no global.json and disallowing previews, pick latest non-preview
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            string expectedData = string.Join(';', new[]
+            {
+                ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "1.2.300")),
+                ("global_json_state", "not_found"),
+            });
+
+            string api = ApiNames.hostfxr_resolve_sdk2;
+            string flags = do_not_print_errors ? "disallow_prerelease,do_not_print_errors" : "disallow_prerelease";
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, flags)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+        }
+
         [Fact]
         public void Hostfxr_resolve_sdk2_GlobalJson_DisallowPrerelease()
         {
@@ -299,6 +323,32 @@ namespace HostActivation.Tests
                     .And.ReturnStatusCode(api, Constants.ErrorCode.SdkResolveFailure)
                     .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Hostfxr_resolve_sdk2_FailsToResolve_NoWriteToStd(bool do_not_print_errors)
+        {
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            string api = ApiNames.hostfxr_resolve_sdk2;
+            using TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_FailsToResolve_NoWriteToStd));
+
+            string invalidVersion = "1.2.0"; // feature band < 1 triggers __invalid_data_no_fallback
+            GlobalJson.CreateWithVersion(workingDir.Location, invalidVersion);
+
+            var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, do_not_print_errors ? "do_not_print_errors" : "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute();
+
+            result.Should().Pass()
+                .And.ReturnStatusCode(api, Constants.ErrorCode.SdkResolveFailure);
+
+            if (do_not_print_errors)
+                result.StdErr.Should().BeEmpty();
+            else
+                result.StdErr.Should().Contain("A compatible .NET SDK was not found.");
         }
 
         [Fact]

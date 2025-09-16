@@ -252,7 +252,7 @@ namespace System.Text.RegularExpressions
                 RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
                 RegexInterpreterCode code = RegexWriter.Write(tree);
 
-                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, tree, code, regexinfos[i].MatchTimeout);
+                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, tree, regexinfos[i].MatchTimeout);
             }
 
             c.Save(assemblyname.Name ?? "RegexCompileToAssembly");
