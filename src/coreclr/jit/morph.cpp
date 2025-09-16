@@ -7397,7 +7397,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
             }
-            else
+            else if (!op2->IsIntegralConst() || !op2->IsIntegralConstAbsPow2())
             {
                 // Transformation: a % b = a - (a / b) * b;
                 tree = fgMorphModToSubMulDiv(tree->AsOp());
