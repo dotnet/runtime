@@ -244,7 +244,7 @@ namespace System.Collections.Concurrent
         {
             if (!IsCompatibleKey<TAlternateKey>(_tables))
             {
-                ThrowHelper.ThrowIncompatibleComparer();
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IncompatibleComparer);
             }
 
             return new AlternateLookup<TAlternateKey>(this);
@@ -337,7 +337,7 @@ namespace System.Collections.Concurrent
             {
                 if (pair.Key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 if (!TryAddInternal(_tables, pair.Key, null, pair.Value, updateIfExists: false, acquireLock: false, out _))
@@ -368,7 +368,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             return TryAddInternal(_tables, key, null, value, updateIfExists: false, acquireLock: true, out _);
@@ -397,7 +397,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             return TryRemoveInternal(key, out value, matchValue: false, default);
@@ -422,7 +422,7 @@ namespace System.Collections.Concurrent
         {
             if (item.Key is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(item), SR.ConcurrentDictionary_ItemKeyIsNull);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.item, ExceptionResource.ConcurrentDictionary_ItemKeyIsNull);
             }
 
             return TryRemoveInternal(item.Key, out _, matchValue: true, item.Value);
@@ -518,7 +518,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             Tables tables = _tables;
@@ -607,7 +607,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             return TryUpdateInternal(_tables, key, null, newValue, comparisonValue);
@@ -1076,7 +1076,7 @@ namespace System.Collections.Concurrent
             {
                 if (key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 TryAddInternal(_tables, key, null, value, updateIfExists: true, acquireLock: true, out _);
@@ -1183,12 +1183,12 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (valueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.valueFactory);
             }
 
             Tables tables = _tables;
@@ -1225,12 +1225,12 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (valueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.valueFactory);
             }
 
             Tables tables = _tables;
@@ -1262,7 +1262,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             Tables tables = _tables;
@@ -1304,17 +1304,17 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (addValueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(addValueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.addValueFactory);
             }
 
             if (updateValueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.updateValueFactory);
             }
 
             Tables tables = _tables;
@@ -1377,17 +1377,17 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (addValueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(addValueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.addValueFactory);
             }
 
             if (updateValueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.updateValueFactory);
             }
 
             Tables tables = _tables;
@@ -1448,12 +1448,12 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (updateValueFactory is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.updateValueFactory);
             }
 
             Tables tables = _tables;
@@ -1677,7 +1677,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (!(key is TKey))
@@ -1704,7 +1704,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             return key is TKey tkey && ContainsKey(tkey);
@@ -1755,7 +1755,7 @@ namespace System.Collections.Concurrent
         {
             if (key is null)
             {
-                ThrowHelper.ThrowKeyNullException();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             if (key is TKey tkey)
@@ -1796,7 +1796,7 @@ namespace System.Collections.Concurrent
             {
                 if (key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 if (key is TKey tkey && TryGetValue(tkey, out TValue? value))
@@ -1810,7 +1810,7 @@ namespace System.Collections.Concurrent
             {
                 if (key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 if (!(key is TKey))
@@ -1831,12 +1831,12 @@ namespace System.Collections.Concurrent
             {
                 if (!(value is TValue))
                 {
-                    ThrowHelper.ThrowValueNullException();
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect);
                 }
             }
             else if (default(TValue) is not null)
             {
-                ThrowHelper.ThrowValueNullException();
+                ThrowHelper.ThrowArgumentException(ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect);
             }
         }
 
@@ -2060,11 +2060,6 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void AcquireAllLocks(ref int locksAcquired)
         {
-            if (CDSCollectionETWBCLProvider.Log.IsEnabled())
-            {
-                CDSCollectionETWBCLProvider.Log.ConcurrentDictionary_AcquiringAllLocks(_tables._buckets.Length);
-            }
-
             // First, acquire lock 0, then acquire the rest. _tables won't change after acquiring lock 0.
             AcquireFirstLock(ref locksAcquired);
             AcquirePostFirstLock(_tables, ref locksAcquired);
@@ -2385,7 +2380,7 @@ namespace System.Collections.Concurrent
             {
                 if (key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 Tables tables = Dictionary._tables;
@@ -2469,7 +2464,7 @@ namespace System.Collections.Concurrent
                         TKey actualKey = comparer.Create(key);
                         if (actualKey is null)
                         {
-                            ThrowHelper.ThrowKeyNullException();
+                            ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                         }
 
                         // The key was not found in the bucket. Insert the key-value pair.
@@ -2544,7 +2539,7 @@ namespace System.Collections.Concurrent
             {
                 if (key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 Tables tables = Dictionary._tables;
@@ -2590,7 +2585,7 @@ namespace System.Collections.Concurrent
             {
                 if (key is null)
                 {
-                    ThrowHelper.ThrowKeyNullException();
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
                 Tables tables = Dictionary._tables;
@@ -2704,7 +2699,7 @@ namespace System.Collections.Concurrent
         {
             if (dictionary is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(dictionary));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
             }
 
             _dictionary = dictionary;

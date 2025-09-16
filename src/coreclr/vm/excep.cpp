@@ -3553,9 +3553,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
                 // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
-                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in 
-                // checked builds of Windows OS. 
-                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not 
+                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in
+                // checked builds of Windows OS.
+                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not
                 // match a valid return address on the stack.
                 bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError();
                 RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
@@ -5926,6 +5926,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
@@ -5957,6 +5958,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #if defined(TARGET_AMD64) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
 }

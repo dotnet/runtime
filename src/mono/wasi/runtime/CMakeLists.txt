@@ -15,9 +15,6 @@ set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLA
 target_link_libraries(dotnet
     PRIVATE
     stdc++
-    ${ICU_LIB_DIR}/libicudata.a
-    ${ICU_LIB_DIR}/libicuuc.a
-    ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
@@ -26,10 +23,13 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
-    ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
+    ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libicudata.a
+    ${NATIVE_BIN_DIR}/libicuuc.a
+    ${NATIVE_BIN_DIR}/libicui18n.a
     ${NATIVE_BIN_DIR}/libz.a
 )
 

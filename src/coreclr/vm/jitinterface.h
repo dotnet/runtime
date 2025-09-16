@@ -145,28 +145,28 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStatic
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
-EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength);
+EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength);
 
 #if defined(FEATURE_64BIT_ALIGNMENT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
+EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
 #endif
 
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
-EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength);
+EXTERN_C FCDECL1(Object*, RhpNewFast_UP, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString_UP, MethodTable* pMT, INT_PTR stringLength);
 #endif
 
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, MethodTable* pMT, INT_PTR size);
 
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -1017,8 +1017,9 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
-PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
+MethodDesc* GetMethodDescForILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);

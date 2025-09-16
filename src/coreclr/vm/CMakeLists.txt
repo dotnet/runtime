@@ -2,7 +2,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(RUNTIME_DIR ../runtime)
 
-# Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
+# Needed due to the munged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
@@ -622,78 +622,86 @@ if(CLR_CMAKE_TARGET_WIN32)
 
 endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if (FEATURE_PORTABLE_HELPERS)
+    set(PORTABLE_SOURCES_DIR "${RUNTIME_DIR}/portable/")
+    set(PORTABLE_VM_SOURCES_DIR "./portable/")
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64)
-    set(VM_SOURCES_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/AllocSlow.asm
-        ${ARCH_SOURCES_DIR}/AsmHelpers.asm
-        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
-        ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
-        ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
-        ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
-        ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
-        ${ARCH_SOURCES_DIR}/getstate.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
-        ${ARCH_SOURCES_DIR}/patchedcode.asm
-        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-        ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
-        ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
-        ${ARCH_SOURCES_DIR}/thunktemplates.asm
-        ${ARCH_SOURCES_DIR}/Context.asm
-        ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
-        ${ARCH_SOURCES_DIR}/UMThunkStub.asm
-        ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
-        ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
+    list(APPEND VM_SOURCES_WKS
+        ${PORTABLE_SOURCES_DIR}/AllocFast.cpp
+        ${PORTABLE_VM_SOURCES_DIR}/AllocSlow.cpp
+        ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
     )
-
-    set(VM_HEADERS_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmconstants.h
-    )
-elseif(CLR_CMAKE_TARGET_ARCH_I386)
-    set(VM_SOURCES_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
-        ${ARCH_SOURCES_DIR}/AllocSlow.asm
-        ${ARCH_SOURCES_DIR}/asmhelpers.asm
-        ${ARCH_SOURCES_DIR}/ehhelpers.asm
-        ${ARCH_SOURCES_DIR}/jithelp.asm
-        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-        ${ARCH_SOURCES_DIR}/thunktemplates.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
+elseif(CLR_CMAKE_TARGET_WIN32)
+    if(CLR_CMAKE_TARGET_ARCH_AMD64)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.asm
+            ${ARCH_SOURCES_DIR}/AsmHelpers.asm
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
+            ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
+            ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
+            ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
+            ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
+            ${ARCH_SOURCES_DIR}/getstate.asm
+            ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
+            ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
+            ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
+            ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
+            ${ARCH_SOURCES_DIR}/patchedcode.asm
+            ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+            ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
+            ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
+            ${ARCH_SOURCES_DIR}/thunktemplates.asm
+            ${ARCH_SOURCES_DIR}/Context.asm
+            ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
+            ${ARCH_SOURCES_DIR}/UMThunkStub.asm
+            ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
+            ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
-    set(VM_HEADERS_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmconstants.h
-    )
-elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
-    set(VM_SOURCES_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/AllocSlow.asm
-        ${ARCH_SOURCES_DIR}/AsmHelpers.asm
-        ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
-        ${ARCH_SOURCES_DIR}/patchedcode.asm
-        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
-        ${ARCH_SOURCES_DIR}/thunktemplates.asm
-        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
-        ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
-        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
+        set(VM_HEADERS_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmconstants.h
         )
+    elseif(CLR_CMAKE_TARGET_ARCH_I386)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
+            ${ARCH_SOURCES_DIR}/AllocSlow.asm
+            ${ARCH_SOURCES_DIR}/asmhelpers.asm
+            ${ARCH_SOURCES_DIR}/ehhelpers.asm
+            ${ARCH_SOURCES_DIR}/jithelp.asm
+            ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+            ${ARCH_SOURCES_DIR}/thunktemplates.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
+            )
 
-    set(VM_HEADERS_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmconstants.h
-    )
-endif()
+        set(VM_HEADERS_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmconstants.h
+        )
+    elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.asm
+            ${ARCH_SOURCES_DIR}/AsmHelpers.asm
+            ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
+            ${ARCH_SOURCES_DIR}/patchedcode.asm
+            ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
+            ${ARCH_SOURCES_DIR}/thunktemplates.asm
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
+            ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
+            )
+
+        set(VM_HEADERS_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmconstants.h
+        )
+    endif()
 
     set(ASM_SUFFIX asm)
-else(CLR_CMAKE_TARGET_WIN32)
+else()
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -781,7 +789,7 @@ else(CLR_CMAKE_TARGET_WIN32)
     endif()
 
     set(ASM_SUFFIX S)
-endif(CLR_CMAKE_TARGET_WIN32)
+endif()
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH

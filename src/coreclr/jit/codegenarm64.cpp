@@ -4272,6 +4272,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         var_types   type = tree->TypeGet();
         instruction ins  = ins_StoreFromSrc(dataReg, type);
+        emitAttr    attr = emitActualTypeSize(type);
+
+        // Handle instances with a variable length store
+        if (varTypeUsesMaskReg(type))
+        {
+            attr = EA_SCALABLE;
+        }
 
         if (tree->IsVolatile())
         {
@@ -4288,7 +4295,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             }
         }
 
-        GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+        GetEmitter()->emitInsLoadStoreOp(ins, attr, dataReg, tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
         genUpdateLife(tree);
