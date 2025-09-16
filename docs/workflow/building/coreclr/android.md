@@ -75,6 +75,9 @@ To build CoreCLR runtime NuGet packages, run the following command from `<repo-r
 > [!NOTE]
 > The runtime packages will be located at: `<repo-root>/artifacts/packages/<configuration>/Shipping/`
 
+> [!NOTE]
+> The static CoreCLR runtime for static linking (`libcoreclr_static.a`) is available in inner build artifacts but is not yet shipped in NuGet packages.
+
 ### Windows + WSL2
 
 Building on Windows is not directly supported yet. However it is possible to use WSL2 for this purpose.

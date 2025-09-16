@@ -4024,7 +4024,6 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrd:
         case INS_pextrq:
         case INS_pextrw:
-        case INS_pextrw_sse42:
         case INS_rorx:
         case INS_shlx:
         case INS_sarx:
@@ -5391,6 +5390,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx) ||
                (ins == INS_cmpxchg)
+               // kmov instructions reach this path with EA_8BYTE size, even on x86
+               || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 
@@ -5959,22 +5960,22 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
     assert((fmt >= IF_ARD) && (fmt <= IF_RWR_RRD_ARD_RRD));
 
     // We should have the same number of AM and GM formats
-    static_assert_no_msg((IF_RWR_RRD_ARD_RRD - IF_ARD) == (IF_RWR_RRD_MRD_RRD - IF_MRD));
+    static_assert((IF_RWR_RRD_ARD_RRD - IF_ARD) == (IF_RWR_RRD_MRD_RRD - IF_MRD));
 
     // GM should precede AM in the list
-    static_assert_no_msg(IF_MRD < IF_ARD);
+    static_assert(IF_MRD < IF_ARD);
 
     const unsigned delta = IF_ARD - IF_MRD;
 
     // Spot check a few entries
-    static_assert_no_msg((IF_ARD - delta) == IF_MRD);
-    static_assert_no_msg((IF_ARD_CNS - delta) == IF_MRD_CNS);
-    static_assert_no_msg((IF_ARD_RRD - delta) == IF_MRD_RRD);
-    static_assert_no_msg((IF_RRD_ARD - delta) == IF_RRD_MRD);
-    static_assert_no_msg((IF_RRD_ARD_CNS - delta) == IF_RRD_MRD_CNS);
-    static_assert_no_msg((IF_RRD_ARD_RRD - delta) == IF_RRD_MRD_RRD);
-    static_assert_no_msg((IF_RRD_RRD_ARD - delta) == IF_RRD_RRD_MRD);
-    static_assert_no_msg((IF_RWR_RRD_ARD_RRD - delta) == IF_RWR_RRD_MRD_RRD);
+    static_assert((IF_ARD - delta) == IF_MRD);
+    static_assert((IF_ARD_CNS - delta) == IF_MRD_CNS);
+    static_assert((IF_ARD_RRD - delta) == IF_MRD_RRD);
+    static_assert((IF_RRD_ARD - delta) == IF_RRD_MRD);
+    static_assert((IF_RRD_ARD_CNS - delta) == IF_RRD_MRD_CNS);
+    static_assert((IF_RRD_ARD_RRD - delta) == IF_RRD_MRD_RRD);
+    static_assert((IF_RRD_RRD_ARD - delta) == IF_RRD_RRD_MRD);
+    static_assert((IF_RWR_RRD_ARD_RRD - delta) == IF_RWR_RRD_MRD_RRD);
 
     return static_cast<insFormat>(fmt - delta);
 }
@@ -7003,35 +7004,8 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // Store lower 8 bytes
     emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
 
-    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-    {
-        // Extract and store upper 4 bytes
-        emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
-    }
-    else if (tmpRegProvider != nullptr)
-    {
-        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
-        assert(isFloatReg(tmpReg));
-
-        // Extract upper 4 bytes from data
-        emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
-
-        // Store upper 4 bytes
-        emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
-    }
-    else
-    {
-        // We don't have temp regs - let's do two shuffles then
-
-        // [0,1,2,3] -> [2,3,0,1]
-        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
-
-        //  Store upper 4 bytes
-        emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offset + 8);
-
-        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
-        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
-    }
+    // Extract and store upper 4 bytes
+    emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
 }
 #endif // FEATURE_SIMD
 
@@ -13628,7 +13602,6 @@ void emitter::emitDispIns(
                 case INS_extractps:
                 case INS_pextrb:
                 case INS_pextrw:
-                case INS_pextrw_sse42:
                 case INS_pextrd:
                 {
                     tgtAttr = EA_4BYTE;
@@ -20128,9 +20101,9 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
     IS_INFO mask = static_cast<IS_INFO>(isInfo & (IS_GM_RD | IS_GM_RW | IS_GM_WR));
     if (mask != 0)
     {
-        static_assert_no_msg(0 == (IS_GM_RD >> 13));
-        static_assert_no_msg(1 == (IS_GM_WR >> 13));
-        static_assert_no_msg(2 == (IS_GM_RW >> 13));
+        static_assert(0 == (IS_GM_RD >> 13));
+        static_assert(1 == (IS_GM_WR >> 13));
+        static_assert(2 == (IS_GM_RW >> 13));
 
         insFormat result = static_cast<insFormat>(IF_MRD + (mask >> 13));
         assert((result == IF_MRD) || (result == IF_MWR) || (result == IF_MRW));
@@ -20140,9 +20113,9 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
     mask = static_cast<IS_INFO>(isInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR));
     if (mask != 0)
     {
-        static_assert_no_msg(0 == (IS_SF_RD >> 16));
-        static_assert_no_msg(1 == (IS_SF_WR >> 16));
-        static_assert_no_msg(2 == (IS_SF_RW >> 16));
+        static_assert(0 == (IS_SF_RD >> 16));
+        static_assert(1 == (IS_SF_WR >> 16));
+        static_assert(2 == (IS_SF_RW >> 16));
 
         insFormat result = static_cast<insFormat>(IF_SRD + (mask >> 16));
         assert((result == IF_SRD) || (result == IF_SWR) || (result == IF_SRW));
@@ -20152,9 +20125,9 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
     mask = static_cast<IS_INFO>(isInfo & (IS_AM_RD | IS_AM_RW | IS_AM_WR));
     if (mask != 0)
     {
-        static_assert_no_msg(0 == (IS_AM_RD >> 19));
-        static_assert_no_msg(1 == (IS_AM_WR >> 19));
-        static_assert_no_msg(2 == (IS_AM_RW >> 19));
+        static_assert(0 == (IS_AM_RD >> 19));
+        static_assert(1 == (IS_AM_WR >> 19));
+        static_assert(2 == (IS_AM_RW >> 19));
 
         insFormat result = static_cast<insFormat>(IF_ARD + (mask >> 19));
         assert((result == IF_ARD) || (result == IF_AWR) || (result == IF_ARW));

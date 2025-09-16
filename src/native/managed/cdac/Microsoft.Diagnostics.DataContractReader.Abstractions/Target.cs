@@ -55,14 +55,16 @@ public abstract class Target
     /// Read a pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>Pointer read from the target</returns>}
+    /// <returns>Pointer read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract TargetPointer ReadPointer(ulong address);
 
     /// <summary>
     /// Read a code pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>Pointer read from the target</returns>}
+    /// <returns>Pointer read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract TargetCodePointer ReadCodePointer(ulong address);
 
     /// <summary>
@@ -70,6 +72,7 @@ public abstract class Target
     /// </summary>
     /// <param name="address">The address where to start reading</param>
     /// <param name="buffer">Destination to copy the bytes, the number of bytes to read is the span length</param>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract void ReadBuffer(ulong address, Span<byte> buffer);
 
     /// <summary>
@@ -83,14 +86,16 @@ public abstract class Target
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract string ReadUtf8String(ulong address);
 
     /// <summary>
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract string ReadUtf16String(ulong address);
 
     /// <summary>
@@ -98,6 +103,7 @@ public abstract class Target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract TargetNUInt ReadNUInt(ulong address);
 
     /// <summary>
@@ -138,7 +144,16 @@ public abstract class Target
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+
+    /// <summary>
+    /// Read a value from the target in little endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    public abstract T ReadLittleEndian<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
     /// <summary>
     /// Read a value from the target in target endianness
@@ -154,8 +169,7 @@ public abstract class Target
     /// <typeparam name="T">Type of value to write</typeparam>
     /// <param name="address">Address to start writing to</param>
     /// <param name="value">Value to write</param>
-    /// <returns>True if the write was successful, false otherwise</returns>
-    public abstract bool Write<T>(ulong address, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+    public abstract void Write<T>(ulong address, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
     /// <summary>
     /// Read a target pointer from a span of bytes

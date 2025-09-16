@@ -26,11 +26,11 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public static unsafe int ClassConstructorOffset => -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
-        private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
+        private ArrayBuilder<TypeDesc> _typesThatNeedTypeHandles;
 
-        private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
+        private ArrayBuilder<InstantiatedMethod> _methodsThatNeedDictionaries;
 
-        private LowLevelList<TypeDesc> _typesThatNeedPreparation;
+        private ArrayBuilder<TypeDesc> _typesThatNeedPreparation;
 
 #if DEBUG
         private bool _finalTypeBuilding;
@@ -87,8 +87,6 @@ namespace Internal.Runtime.TypeLoader
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
-
-            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -266,10 +264,10 @@ namespace Internal.Runtime.TypeLoader
         private void ProcessTypesNeedingPreparation()
         {
             // Process the pending types
-            while (_typesThatNeedPreparation != null)
+            while (_typesThatNeedPreparation.Count > 0)
             {
                 var pendingTypes = _typesThatNeedPreparation;
-                _typesThatNeedPreparation = null;
+                _typesThatNeedPreparation = default;
 
                 for (int i = 0; i < pendingTypes.Count; i++)
                     PrepareType(pendingTypes[i]);

@@ -1,14 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-using System.Runtime;
 using System;
+using System.IO;
+using System.Linq;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using JObject = nint;
 using JString = nint;
 using JObjectArray = nint;
+using JSize = int;
 
 namespace MonoDroid.NativeAOT;
 
@@ -16,19 +19,23 @@ namespace MonoDroid.NativeAOT;
 internal static unsafe partial class MonoDroidExports
 {
     // void Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_setEnv")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_setEnv", CallConvs = [typeof(CallConvCdecl)])]
     public static void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
     {
         string? key = env->GetStringUTFChars(j_key);
         string? value = env->GetStringUTFChars(j_value);
+        Console.WriteLine($"SetEnv: {key ?? "null"} = {value ?? "null"}");
         if (key != null && value != null)
+        {
             Environment.SetEnvironmentVariable(key, value);
+        }
     }
 
     // int Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_initRuntime")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_initRuntime", CallConvs = [typeof(CallConvCdecl)])]
     public static int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
     {
+        Console.WriteLine("Initializing Android crypto native library");
         // The NativeAOT runtime does not need to be initialized, but the crypto library does.
         JavaVM* javaVM = env->GetJavaVM();
         AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
@@ -39,14 +46,33 @@ internal static unsafe partial class MonoDroidExports
     internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
 
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
     public static int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
     {
-        return Program.Main();
+        int argc = env->GetArrayLength(j_args);
+        string[] args = new string[argc];
+        for (int i = 0; i < argc; i++)
+        {
+            JObject j_arg = env->GetObjectArrayElement(j_args, i);
+            args[i] = env->GetStringUTFChars((JString)j_arg);
+        }
+
+#if SINGLE_FILE_TEST_RUNNER
+        string excludesFile = Path.Combine(Environment.GetEnvironmentVariable("HOME"), "xunit-excludes.txt");
+        if (File.Exists(excludesFile))
+        {
+            args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+        }
+        // SingleFile unit tests
+        return SingleFileTestRunner.Main(args);
+#else
+        // Functional tests
+        return Program.Main(args);
+#endif
     }
 
     // void Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_freeNativeResources")]
+    [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_freeNativeResources", CallConvs = [typeof(CallConvCdecl)])]
     public static void FreeNativeResources(JNIEnv* env, JObject thiz)
     {
         // Placeholder for actual implementation
@@ -85,6 +111,22 @@ internal unsafe struct JNIEnv
                 return null;
 
             return vm;
+        }
+    }
+
+    public JSize GetArrayLength(JObjectArray array)
+    {
+        fixed (JNIEnv* thisptr = &this)
+        {
+            return NativeInterface->GetArrayLength(thisptr, array);
+        }
+    }
+
+    public JObject GetObjectArrayElement(JObjectArray array, JSize index)
+    {
+        fixed (JNIEnv* thisptr = &this)
+        {
+            return NativeInterface->GetObjectArrayElement(thisptr, array, index);
         }
     }
 
@@ -312,11 +354,10 @@ internal unsafe struct JNIEnv
         delegate* unmanaged[Cdecl]<JNIEnv*, JString, int> GetStringUTFLength;
         public delegate* unmanaged[Cdecl]<JNIEnv*, JString, out byte, byte*> GetStringUTFChars;
         public delegate* unmanaged[Cdecl]<JNIEnv*, JString, byte*, void> ReleaseStringUTFChars;
-
-        void* GetArrayLength;
+        public delegate* unmanaged[Cdecl]<JNIEnv*, JObjectArray, JSize> GetArrayLength;
 
         void* NewObjectArray;
-        void* GetObjectArrayElement;
+        public delegate* unmanaged[Cdecl]<JNIEnv*, JObjectArray, JSize, JObject> GetObjectArrayElement;
         void* SetObjectArrayElement;
 
         void* NewBooleanArray;

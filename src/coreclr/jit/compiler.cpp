@@ -2890,10 +2890,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (RunningSuperPmiReplay())
         {
 #ifdef HOST_64BIT
-            static_assert_no_msg(sizeof(void*) == 8);
+            static_assert(sizeof(void*) == 8);
             compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
 #else
-            static_assert_no_msg(sizeof(void*) == 4);
+            static_assert(sizeof(void*) == 4);
             compProfilerMethHnd = (void*)0x0BADF00D;
 #endif
         }
@@ -4912,6 +4912,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Conditional to switch conversion, and switch peeling
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
@@ -4919,10 +4923,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-
-        // Conditional to switch conversion, and switch peeling
-        //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
         // Run flow optimizations before reordering blocks
         //
@@ -6060,11 +6060,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         }
 
         instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-
-        if (JitConfig.EnableSSE42() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
-        }
 
         if (JitConfig.EnableAVX() != 0)
         {

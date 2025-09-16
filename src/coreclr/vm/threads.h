@@ -3961,9 +3961,10 @@ struct cdac_data<Thread>
     #else
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_currentExInfo);
     #endif
-
     #ifndef TARGET_UNIX
     static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
+    + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
     #endif
 };
 
@@ -5162,17 +5163,24 @@ class CoopTransitionHolder
 {
     Frame * m_pFrame;
 
+#ifdef DEBUG
+    int m_uncaughtExceptions;
+#endif
+
 public:
     CoopTransitionHolder(Thread * pThread)
         : m_pFrame(pThread->m_pFrame)
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DEBUG
+        m_uncaughtExceptions = std::uncaught_exceptions();
+#endif
     }
 
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        _ASSERTE_MSG(m_pFrame == nullptr || m_uncaughtExceptions < std::uncaught_exceptions(), "Early return from JIT/EE interface method");
         if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }
@@ -5181,7 +5189,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
-        // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+        // static_assert(FRAME_TOP_VALUE != NULL);
         m_pFrame = nullptr;
     }
 };

@@ -9,7 +9,13 @@
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
-#define SWITCH_MIN_TESTS    3
+
+#if TARGET_ARM64
+// ARM64 has conditional instructions which can be more efficient than a switch->bittest (optOptimizeBools)
+#define SWITCH_MIN_TESTS 5
+#else
+#define SWITCH_MIN_TESTS 3
+#endif
 
 // This is a heuristics based value tuned for optimal performance
 #define CONVERT_SWITCH_TO_CCMP_MIN_TEST 5
@@ -35,9 +41,6 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             continue;
         }
 
-// Limit to XARCH, ARM is already doing a great job with such comparisons using
-// a series of ccmp instruction (see ifConvert phase).
-#ifdef TARGET_XARCH
         // block->KindIs(BBJ_COND) check is for better throughput.
         if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
@@ -47,10 +50,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             // Converted switches won't have dominant cases, so we can skip the switch peeling check.
             assert(!block->GetSwitchTargets()->HasDominantCase());
         }
-        else
-#endif
-
-            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
+        else if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
             modified = true;
@@ -67,10 +67,48 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 }
 
 //------------------------------------------------------------------------------
+// SkipFallthroughBlocks : Skip all fallthrough blocks (empty BBJ_ALWAYS blocks)
+//
+// Arguments:
+//    compiler - The compiler instance.
+//    block    - the block to process
+//
+// Return Value:
+//    block that is not an empty fallthrough block
+//
+static BasicBlock* SkipFallthroughBlocks(Compiler* comp, BasicBlock* block)
+{
+    BasicBlock* origBlock = block;
+    if (!block->KindIs(BBJ_ALWAYS) || (block->firstStmt() != nullptr))
+    {
+        // Fast path
+        return block;
+    }
+
+    // We might consider ignoring statements with only NOPs if that is profitable.
+
+    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVec       visited = BitVecOps::MakeEmpty(&traits);
+    BitVecOps::AddElemD(&traits, visited, block->bbID);
+    while (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
+           BasicBlock::sameEHRegion(block, block->GetTarget()))
+    {
+        block = block->GetTarget();
+        if (!BitVecOps::TryAddElemD(&traits, visited, block->bbID))
+        {
+            // A cycle detected, bail out.
+            return origBlock;
+        }
+    }
+    return block;
+}
+
+//------------------------------------------------------------------------------
 // IsConstantTestCondBlock : Does the given block represent a simple BBJ_COND
 //    constant test? e.g. JTRUE(EQ/NE(X, CNS)).
 //
 // Arguments:
+//    compiler         - The compiler instance.
 //    block            - The block to check
 //    allowSideEffects - is variableNode allowed to have side-effects (COMMA)?
 //    trueTarget       - [out] The successor visited if X == CNS
@@ -82,7 +120,8 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 // Return Value:
 //    True if the block represents a constant test, false otherwise
 //
-bool IsConstantTestCondBlock(const BasicBlock* block,
+bool IsConstantTestCondBlock(Compiler*         comp,
+                             const BasicBlock* block,
                              bool              allowSideEffects,
                              BasicBlock**      trueTarget,
                              BasicBlock**      falseTarget,
@@ -123,9 +162,11 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                     return false;
                 }
 
-                *isReversed  = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *trueTarget  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
-                *falseTarget = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
+                *isReversed = rootNode->gtGetOp1()->OperIs(GT_NE);
+                *trueTarget =
+                    SkipFallthroughBlocks(comp, *isReversed ? block->GetFalseTarget() : block->GetTrueTarget());
+                *falseTarget =
+                    SkipFallthroughBlocks(comp, *isReversed ? block->GetTrueTarget() : block->GetFalseTarget());
 
                 if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
@@ -172,6 +213,12 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
+#ifdef TARGET_ARM
+    // Bitmap test (TryLowerSwitchToBitTest) is quite verbose on ARM32 (~6 instructions), it results in massive size
+    // regressions.
+    return false;
+#endif
+
     GenTree*    variableNode                    = nullptr;
     ssize_t     cns                             = 0;
     BasicBlock* trueTarget                      = nullptr;
@@ -184,7 +231,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
     // and then try to accumulate as many constant test blocks as possible. Once we hit
     // a block that doesn't match the pattern, we start processing the accumulated blocks.
     bool isReversed = false;
-    if (IsConstantTestCondBlock(firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
+    if (IsConstantTestCondBlock(this, firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
     {
         if (isReversed)
         {
@@ -234,7 +281,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             }
 
             // Inspect secondary blocks
-            if (IsConstantTestCondBlock(currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
+            if (IsConstantTestCondBlock(this, currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
                                         &currVariableNode, &currCns))
             {
                 if (currTrueTarget != trueTarget)
@@ -338,7 +385,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
         return false;
     }
 
-    static_assert_no_msg(SWITCH_MIN_TESTS > 0);
+    static_assert(SWITCH_MIN_TESTS > 0);
 
     // Find max and min values in the testValues array
     // At this point we have at least SWITCH_MIN_TESTS values in the array
@@ -399,10 +446,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     BasicBlock* blockIfTrue  = nullptr;
     BasicBlock* blockIfFalse = nullptr;
     bool        isReversed   = false;
-    const bool  isTest       = IsConstantTestCondBlock(lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
+    const bool  isTest = IsConstantTestCondBlock(this, lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
     assert(isTest);
 
-    assert(firstBlock->TrueTargetIs(blockIfTrue));
+    assert(SkipFallthroughBlocks(this, firstBlock->GetTrueTarget()) == SkipFallthroughBlocks(this, blockIfTrue));
     FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
     FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
 

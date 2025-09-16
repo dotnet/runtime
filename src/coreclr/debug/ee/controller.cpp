@@ -210,13 +210,13 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
         //
 
         BYTE* bufferBypassRW = pSharedPatchBypassBufferRW->BypassBuffer;
-        
+
         // Overwrite the *signed* displacement.
         int dwOldDisp = *(int*)(&patchBypassRX[instrAttrib.m_dwOffsetToDisp]);
         int dwNewDisp = offsetof(SharedPatchBypassBuffer, BypassBuffer) -
         (offsetof(SharedPatchBypassBuffer, PatchBypass) + instrAttrib.m_cbInstr);
         *(int*)(&patchBypassRW[instrAttrib.m_dwOffsetToDisp]) = dwNewDisp;
-        
+
         // This could be an LEA, which we'll just have to change into a MOV and copy the original address.
         if (((patchBypassRX[0] == 0x4C) || (patchBypassRX[0] == 0x48)) && (patchBypassRX[1] == 0x8d))
         {
@@ -229,7 +229,7 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
             _ASSERTE(instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
             memcpy(bufferBypassRW, this->address + instrAttrib.m_cbInstr + dwOldDisp, instrAttrib.m_cOperandSize);
-            
+
             if (instrAttrib.m_fIsWrite)
             {
                 // save the actual destination address and size so when we TriggerSingleStep() we can update the value
@@ -238,17 +238,17 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
             }
         }
     }
-    
+
     #endif // TARGET_AMD64
 
     m_pSharedPatchBypassBuffer->SetInstructionAttrib(instrAttrib);
-    
+
     // Since we just created a new buffer of code, but the CPU caches code and may
     // not be aware of our changes. This should force the CPU to dump any cached
     // instructions it has in this region and load the new ones from memory
     FlushInstructionCache(GetCurrentProcess(), patchBypassRW + CORDbg_BREAK_INSTRUCTION_SIZE,
     MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE);
-    
+
     return m_pSharedPatchBypassBuffer;
 }
 #endif // !FEATURE_EMULATE_SINGLESTEP
@@ -2408,10 +2408,10 @@ static bool _AddrIsJITHelper(PCODE addr)
     {
         for (int i = 0; i < CORINFO_HELP_COUNT; i++)
         {
-            if (hlpFuncTable[i].pfnHelper == (void*)addr)
+            if (hlpFuncTable[i].pfnHelper == addr)
             {
                 LOG((LF_CORDB, LL_INFO10000,
-                        "_ANIM: address of helper function found: 0x%08x\n",
+                        "_ANIM: address of helper function found: 0x%zx\n",
                         addr));
                 return true;
             }
@@ -2419,10 +2419,10 @@ static bool _AddrIsJITHelper(PCODE addr)
 
         for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
         {
-            if (hlpDynamicFuncTable[d].pfnHelper == (void*)addr)
+            if (hlpDynamicFuncTable[d].pfnHelper == addr)
             {
                 LOG((LF_CORDB, LL_INFO10000,
-                        "_ANIM: address of helper function found: 0x%08x\n",
+                        "_ANIM: address of helper function found: 0x%zx\n",
                         addr));
                 return true;
             }
@@ -2430,7 +2430,7 @@ static bool _AddrIsJITHelper(PCODE addr)
 
         LOG((LF_CORDB, LL_INFO10000,
              "_ANIM: address within runtime dll, but not a helper function "
-             "0x%08x\n", addr));
+             "0x%zx\n", addr));
     }
 #else // !defined(HOST_64BIT) && !defined(TARGET_UNIX)
     // TODO: Figure out what we want to do here

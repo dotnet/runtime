@@ -35,10 +35,6 @@ endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
-if (DEFINED CLR_CMAKE_ICU_DIR)
-  include_directories(${CLR_CMAKE_ICU_DIR}/include)
-endif(DEFINED CLR_CMAKE_ICU_DIR)
-
 if (CLR_CMAKE_TARGET_ARCH_WASM)
     add_compile_options(-fwasm-exceptions)
 endif()
@@ -110,10 +106,6 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     add_subdirectory(pal)
-
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-      add_subdirectory(hosts)
-    endif()
 else()
     if(CLR_CMAKE_TARGET_UNIX)
         add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
@@ -208,14 +200,15 @@ include_directories("classlibnative/bcltype")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
+include_directories("interpreter/inc")
 include_directories("minipal")
 
 if(FEATURE_INTERPRETER)
-add_subdirectory(interpreter)
+  add_subdirectory(interpreter)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
-    include_directories("${GENERATED_INCLUDE_DIR}/etw")
+  include_directories("${GENERATED_INCLUDE_DIR}/etw")
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 
 add_subdirectory(debug/dbgutil)
@@ -311,8 +304,5 @@ endif()
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)
-endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-
-if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(hosts)
-endif(CLR_CMAKE_HOST_WIN32)
+endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
