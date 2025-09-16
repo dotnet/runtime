@@ -111,7 +111,6 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
                 "outputCapture": "std",
                 "program": "corerun.js",
                 "env": {
-                    "PAL_DBG_CHANNELS": "+all.all",
                     "CORE_ROOT":"/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
                 },
                 "args": [

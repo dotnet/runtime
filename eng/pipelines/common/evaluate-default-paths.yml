@@ -42,11 +42,13 @@ parameters:
         src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/*
         src/tasks/Microsoft.NET.WebAssembly.Webcil/*
         src/tests/Common/wasm-test-runner/*
+        src/coreclr/vm/wasm/*
     ]
     _wasm_pipelines: [
         eng/pipelines/**/*wasm*
     ]
     _wasm_src_native: [
+        src/coreclr/vm/wasm/*
         src/native/minipal/*
         src/native/libs/CMakeLists.txt
         src/native/libs/configure.cmake
