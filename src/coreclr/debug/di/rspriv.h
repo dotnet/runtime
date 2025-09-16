@@ -4158,6 +4158,7 @@ private:
     HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+    void ClearThreadTrackers(); // Clears all thread trackers
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
     void TryDetach(); // Sets detach state to TryDetach, starting the detach evacuation counter.
     bool IsOutOfProcessStepping() { return m_dwOutOfProcessStepping != 0; }

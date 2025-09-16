@@ -1224,23 +1224,6 @@ void CordbProcess::Neuter()
     // Take the process lock.
     RSLockHolder lockHolder(GetProcessLock());
 
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
-    CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
-    for (CUnmanagedThreadHashTableIterator it = beginIter; it != endIter; ++it)
-    {
-        UnmanagedThreadTracker * pUnmanagedThread = *it;
-        _ASSERTE(pUnmanagedThread != NULL);
-        if (pUnmanagedThread != NULL)
-        {
-            pUnmanagedThread->Close();
-            delete pUnmanagedThread;
-        }
-    }
-    m_unmanagedThreadHashTable.RemoveAll();
-    m_dwOutOfProcessStepping = 0;
-#endif
-
     NeuterChildren();
 
     // Release the metadata interfaces
@@ -14101,6 +14084,10 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
 
     m_pProcess->m_exiting = true;
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    m_pProcess->ClearThreadTrackers(); // we must release the thread trackers on the Win32EventThread
+#endif
+
     if (fDetach)
     {
         m_pProcess->SetSynchronized(false);
@@ -14793,5 +14780,23 @@ bool CordbProcess::CanDetach()
 void CordbProcess::TryDetach()
 {
     m_detachSetThreadContextNeededEvent.Set();
+}
+
+void CordbProcess::ClearThreadTrackers()
+{
+    CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+    CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+    for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
+    {
+        UnmanagedThreadTracker * pUnmanagedThread = *curIter;
+        _ASSERTE(pUnmanagedThread != NULL);
+        if (pUnmanagedThread != NULL)
+        {
+            pUnmanagedThread->Close();
+            delete pUnmanagedThread;
+        }
+    }
+    m_unmanagedThreadHashTable.RemoveAll();
+    m_dwOutOfProcessStepping = 0;
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
