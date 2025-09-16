@@ -122,7 +122,7 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
     }
    ```
 
-Note that path in the `args` and `CORE_ROOT` need to be **absolute path** on your host file system in **unix format** (even on Windows).
+Note that for `corerun` path in the `args` and `CORE_ROOT` need to be **absolute path** on your host file system in **unix format** (even on Windows).
 
 3. **Copy managed DLLs** `System.Runtime.dll` and `helloworld.dll` into `artifacts/bin/coreclr/browser.wasm.Debug/IL/`.
 

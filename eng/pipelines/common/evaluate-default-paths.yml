@@ -208,7 +208,7 @@ jobs:
     #
     # ** WASM **
     # Changes in *only* Wasm.Build.Tests, debugger, or runtime-tests are very
-    # self-contained, so we try to trigger only those relevants tests
+    # self-contained, so we try to trigger only those relevant tests
     #
     - subset: wasmbuildtests
       combined: true
