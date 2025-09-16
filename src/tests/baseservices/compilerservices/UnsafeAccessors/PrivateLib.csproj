@@ -6,4 +6,3 @@
     <Compile Include="PrivateLib.cs" />
   </ItemGroup>
 </Project>
-
