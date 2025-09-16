@@ -9,6 +9,8 @@
 
 #include <new> // for std::bad_alloc
 
+thread_local bool t_interpDump;
+
 static const StackType g_stackTypeFromInterpType[] =
 {
     StackTypeI4, // I1
@@ -138,7 +140,7 @@ void InterpCompiler::CopyToInterpGenericLookup(InterpGenericLookup* dst, const C
         GetGenericLookupOffset(src, 2) > UINT16_MAX || GetGenericLookupOffset(src, 3) > UINT16_MAX)
     {
 #ifdef DEBUG
-        if (m_verbose)
+        if (t_interpDump)
         {
             printf("CopyToInterpGenericLookup: Offsets too large for generic lookup, unable to compile\n");
             printf("  Indirections: %d\n", (int)src->indirections);
@@ -806,6 +808,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         *ip++ = srcOffset;
         if (opcode == INTOP_MOV_VT)
             *ip++ = fSize;
+
+        // NOTE: It is important to patch the opcode of the insn so that live end offsets are computed correctly.
+        // Otherwise the live end offset will be computed using the size of mov_src_off instead of the actual move,
+        //  which will break gc live range computations.
+        ins->opcode = opcode;
+        ins->data[0] = fSize;
     }
     else if (opcode == INTOP_LDLOCA)
     {
@@ -1056,18 +1064,14 @@ class InterpGcSlotAllocator
 
         TArray<ConservativeRange, MemPoolAllocator> m_liveRanges;
 
-        void InsertRange(InterpCompiler* pCompiler, uint32_t start, uint32_t end)
+        void InsertRange(uint32_t start, uint32_t end)
         {
-#ifdef DEBUG
-            bool m_verbose = pCompiler->m_verbose;
-#endif
-
             ConservativeRange newRange(start, end);
-            
+
             if (m_liveRanges.GetSize() != 0)
             {
                 // Find the first range which has a start offset greater or equal to the new ranges start offset
-                
+
                 int32_t hiBound = m_liveRanges.GetSize();
                 int32_t loBound = 0;
                 while (loBound < hiBound)
@@ -1126,10 +1130,6 @@ class InterpGcSlotAllocator
 
     unsigned m_slotTableSize;
 
-#ifdef DEBUG
-    bool m_verbose;
-#endif
-
     GcSlotId* LocateGcSlotTableEntry(uint32_t offsetBytes, GcSlotFlags flags)
     {
         GcSlotId *slotTable = m_slotTables[(flags & GC_SLOT_INTERIOR) == GC_SLOT_INTERIOR];
@@ -1144,9 +1144,6 @@ public:
         , m_encoder(encoder)
         , m_conservativeRanges(compiler->GetMemPoolAllocator())
         , m_slotTableSize(compiler->m_totalVarsStackSize / sizeof(void *))
-#ifdef DEBUG
-        , m_verbose(compiler->m_verbose)
-#endif
     {
         for (int i = 0; i < 2; i++)
         {
@@ -1173,10 +1170,11 @@ public:
         }
 
         INTERP_DUMP(
-            "%s %s%sgcslot %u at %u\n",
+            "%s %s%s%sgcslot %u at %u\n",
             allocateNewSlot ? "Allocated" : "Reused",
             (flags & GC_SLOT_UNTRACKED) ? "global " : "",
             (flags & GC_SLOT_INTERIOR) ? "interior " : "",
+            (flags & GC_SLOT_PINNED) ? "pinned " : "",
             *pSlot,
             offsetBytes
         );
@@ -1210,7 +1208,7 @@ public:
         {
             m_conservativeRanges.Set(slotIndex, new (m_compiler) ConservativeRanges(m_compiler));
         }
-        m_conservativeRanges.Get(slotIndex)->InsertRange(m_compiler, startOffset, endOffset);
+        m_conservativeRanges.Get(slotIndex)->InsertRange(startOffset, endOffset);
     }
 
     void ReportConservativeRangesToGCEncoder()
@@ -1564,9 +1562,15 @@ static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
     :
-    #ifdef DEBUG
+#ifdef DEBUG
+#ifdef TARGET_WASM
+    // enable verbose output on wasm temporarily
+    m_dumpScope(true),
+#else
+    m_dumpScope(InterpConfig.InterpDump().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args)),
+#endif
     m_methodName(GetMallocAllocator()),
-    #endif
+#endif
     m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
@@ -1594,16 +1598,13 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                             /* includeSignature */ true,
                             /* includeReturnType */ false,
                             /* includeThis */ false);
-
-    if (InterpConfig.InterpDump().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
-        m_verbose = true;
 #endif
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
-    if (m_verbose || InterpConfig.InterpList())
+    if (t_interpDump || InterpConfig.InterpList())
     {
         printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
@@ -1614,7 +1615,7 @@ InterpMethod* InterpCompiler::CompileMethod()
     GenerateCode(m_methodInfo);
 
 #ifdef DEBUG
-    if (m_verbose)
+    if (t_interpDump)
     {
         printf("\nUnoptimized IR:\n");
         PrintCode();
@@ -1627,7 +1628,7 @@ InterpMethod* InterpCompiler::CompileMethod()
     EmitCode();
 
 #ifdef DEBUG
-    if (m_verbose)
+    if (t_interpDump)
     {
         printf("\nCompiled method: ");
         PrintMethodName(m_methodHnd);
@@ -2782,7 +2783,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         default:
         {
 #ifdef DEBUG
-            if (m_verbose)
+            if (t_interpDump)
             {
                 const char* className = NULL;
                 const char* namespaceName = NULL;
@@ -4252,7 +4253,7 @@ retry_emit:
         m_ppOffsetToBB[insOffset] = m_pCBB;
 
 #ifdef DEBUG
-        if (m_verbose)
+        if (t_interpDump)
         {
             const uint8_t *ip = m_ip;
             printf("IL_%04x %-10s, sp %d, %s",
@@ -7288,6 +7289,8 @@ void InterpCompiler::PrintCompiledCode()
         PrintCompiledIns(ip, m_pMethodCode);
         ip = InterpNextOp(ip);
     }
+
+    printf("End of method: %04x: IR_%04x\n", (int32_t)ConvertOffset((int32_t)(ip - m_pMethodCode)), (int32_t)(ip - m_pMethodCode));
 }
 
 void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
@@ -7295,7 +7298,7 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
     int32_t opcode = *ip;
     int32_t insOffset = (int32_t)(ip - start);
 
-    printf("IR_%04x: %-14s", insOffset, InterpOpName(opcode));
+    printf("%04x: IR_%04x: %-14s", (int32_t)ConvertOffset(insOffset), insOffset, InterpOpName(opcode));
     ip++;
 
     if (g_interpOpDVars[opcode] > 0)

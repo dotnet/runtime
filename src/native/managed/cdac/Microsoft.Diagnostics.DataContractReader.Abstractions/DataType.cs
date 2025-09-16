@@ -112,6 +112,7 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
 

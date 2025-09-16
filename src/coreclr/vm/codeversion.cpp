@@ -917,11 +917,41 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     if(pIL == NULL)
     {
         PTR_Module pModule = GetModule();
-        PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
-        if (pMethodDesc != NULL && pMethodDesc->MayHaveILHeader())
+        // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
+        // Profilers can attach dynamic IL to methods with zero RVA.
+        mdMethodDef methodDef = GetMethodDef();
+        TADDR pIL = pModule->GetDynamicIL(methodDef);
+        if (pIL == (TADDR)NULL)
         {
-            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
+            DWORD rva;
+            DWORD dwImplFlags;
+            if (methodDef & 0x00FFFFFF)
+            {
+                if (FAILED(pModule->GetMDImport()->GetMethodImplProps(methodDef, &rva, &dwImplFlags)))
+                {   // Class loader already asked for MethodImpls, so this should always succeed (unless there's a
+                    // bug or a new code path)
+                    _ASSERTE(!"If this ever fires, then this method should return HRESULT");
+                    rva = 0;
+                }
+
+                // RVA points to IL header only when the code type is IL
+                if (!IsMiIL(dwImplFlags))
+                {
+                    rva = 0;
+                }
+            }
+            else
+            {
+                rva = 0;
+            }
+            pIL = pModule->GetIL(rva);
         }
+
+#ifdef DACCESS_COMPILE
+        return (pIL != (TADDR)NULL) ? dac_cast<PTR_COR_ILMETHOD>(DacGetIlMethod(pIL)) : NULL;
+#else // !DACCESS_COMPILE
+        return PTR_COR_ILMETHOD(pIL);
+#endif // !DACCESS_COMPILE
     }
 
     return pIL;
