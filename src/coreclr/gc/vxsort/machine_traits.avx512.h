@@ -31,6 +31,7 @@ class vxsort_machine_traits<int32_t, AVX512> {
     typedef int32_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
 
+    static const int N = sizeof(TV) / sizeof(T);
     static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
     static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
     static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
@@ -93,6 +94,7 @@ class vxsort_machine_traits<int64_t, AVX512> {
     typedef int32_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
 
+    static const int N = sizeof(TV) / sizeof(T);
     static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
     static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
     static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
