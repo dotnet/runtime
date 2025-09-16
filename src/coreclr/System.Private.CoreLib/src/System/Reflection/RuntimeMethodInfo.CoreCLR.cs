@@ -274,8 +274,7 @@ namespace System.Reflection
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null)
-                mb._methodBase = this;
+            mb?._methodBase = this;
             return mb;
         }
 
@@ -447,7 +446,7 @@ namespace System.Reflection
             RuntimeMethodHandle.GetMethodInstantiationInternal(this);
 
         public override Type[] GetGenericArguments() =>
-            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? Type.EmptyTypes;
+            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? [];
 
         public override MethodInfo GetGenericMethodDefinition()
         {

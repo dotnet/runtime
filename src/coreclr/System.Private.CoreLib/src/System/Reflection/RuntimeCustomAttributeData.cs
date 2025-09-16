@@ -1575,7 +1575,7 @@ namespace System.Reflection
 
                             RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                 attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes)) ??
+                                attributeType.GetProperty(name, type, [])) ??
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 
@@ -2272,6 +2272,7 @@ namespace System.Reflection
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                 default: Debug.Fail("Unreachable code"); break;
             }
 

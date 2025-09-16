@@ -135,14 +135,13 @@ jobs:
             buildAllTestsAsStandalone: true
 
 #
-# iOS simulator
 # Build the whole product using CoreCLR and run functional tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: checked
+    buildConfig: Checked
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}

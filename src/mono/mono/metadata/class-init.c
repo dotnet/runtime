@@ -67,6 +67,7 @@ static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 static FoundAttrUD class_has_isbyreflike_attribute (MonoClass *klass);
 static FoundAttrUD class_has_inlinearray_attribute (MonoClass *klass);
+static FoundAttrUD class_has_extendedlayout_attribute (MonoClass *klass);
 
 static
 GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "ICollection`1");
@@ -511,7 +512,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	}
 
 	klass->name = name;
-	klass->name_hash = mono_metadata_str_hash (name);
+	klass->name_hash = g_str_hash (name);
 	klass->name_space = nspace;
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
@@ -744,6 +745,24 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			klass->is_inlinearray = 1;
 			mono_class_set_inlinearray_value(klass, GPOINTER_TO_INT32 (attr.value));
 		}
+		if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXTENDED_LAYOUT) {
+			attr = class_has_extendedlayout_attribute (klass);
+			if (attr.has_attr) {
+				mono_class_set_extendedlayout_value (klass, GPOINTER_TO_INT32 (attr.value));
+			} else {
+				mono_class_set_type_load_failure (klass, "Extended layout attribute not found for %s", m_class_get_name (klass));
+				mono_loader_unlock ();
+				MONO_PROFILER_RAISE (class_failed, (klass));
+				return NULL;
+			}
+
+			if (klass->is_inlinearray) {
+				mono_class_set_type_load_failure (klass, "InlineArray type %s cannot have extended layout.", m_class_get_name (klass));
+				mono_loader_unlock ();
+				MONO_PROFILER_RAISE (class_failed, (klass));
+				return NULL;
+			}
+		}
 	}
 
 	// compute is_exception_class, used by interp to avoid inlining exception handling code
@@ -838,6 +857,25 @@ has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, 
 	}
 }
 
+static void
+has_extended_layout_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
+{
+	FoundAttrUD *attr = (FoundAttrUD *)user_data;
+	MonoError error;
+	MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
+	if (ctor) {
+		const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+		uint32_t data_size = mono_metadata_decode_value (data, &data);
+		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
+		mono_error_assert_ok (&error);
+		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
+		attr->value = GUINT_TO_POINTER (*(guint32 *)decoded_attr->typed_args [0]->value.primitive);
+		g_free (decoded_attr);
+	} else {
+		g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
+	}
+}
+
 static FoundAttrUD
 class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, MonoHasValueCallback callback)
 {
@@ -883,6 +921,11 @@ class_has_inlinearray_attribute (MonoClass *klass)
 	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE, has_inline_array_attribute_value_func);
 }
 
+static FoundAttrUD
+class_has_extendedlayout_attribute (MonoClass *klass)
+{
+	return class_has_wellknown_attribute (klass, "System.Runtime.InteropServices", "ExtendedLayoutAttribute", TRUE, TRUE, has_extended_layout_attribute_value_func);
+}
 
 gboolean
 mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *method)
@@ -1176,7 +1219,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	name [nsize + maxrank + bounded] = ']';
 	name [nsize + maxrank + bounded + 1] = 0;
 	klass->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
-	klass->name_hash = mono_metadata_str_hash (klass->name);
+	klass->name_hash = g_str_hash (klass->name);
 	g_free (name);
 
 	klass->type_token = 0;
@@ -1534,7 +1577,7 @@ mono_class_create_ptr (MonoType *type)
 	result->name_space = el_class->name_space;
 	name = g_strdup_printf ("%s*", el_class->name);
 	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
-	result->name_hash = mono_metadata_str_hash (result->name);
+	result->name_hash = g_str_hash (result->name);
 	result->class_kind = MONO_CLASS_POINTER;
 	g_free (name);
 
@@ -1613,7 +1656,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
-	result->name_hash = mono_metadata_str_hash (result->name);
+	result->name_hash = g_str_hash (result->name);
 	result->class_kind = MONO_CLASS_POINTER;
 
 	result->image = mono_defaults.corlib; /* need to fix... */
@@ -1762,7 +1805,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	while (bitmap < end) {
 		if (*bitmap || numz == 255) {
 			if (dest) {
-				*dest++ = numz;
+				*dest++ = (uint8_t)numz;
 				*dest++ = *bitmap;
 			}
 			res += 2;
@@ -1776,7 +1819,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	if (numz) {
 		res += 2;
 		if (dest) {
-			*dest++ = numz;
+			*dest++ = (uint8_t)numz;
 			*dest++ = 0;
 		}
 	}
@@ -2062,6 +2105,10 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 
 	return TRUE;
 }
+
+typedef enum _ExtendedLayoutKind {
+	EXTENDED_LAYOUT_KIND_CSTRUCT = 0
+} ExtendedLayoutKind;
 
 /*
  * mono_class_layout_fields:
@@ -2431,6 +2478,89 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 		break;
+	}
+	case TYPE_ATTRIBUTE_EXTENDED_LAYOUT:  {
+		ExtendedLayoutKind extended_layout_kind = (ExtendedLayoutKind)mono_class_get_extendedlayout_value (klass);
+		if (extended_layout_kind == EXTENDED_LAYOUT_KIND_CSTRUCT) {
+			if (!m_class_is_valuetype(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type must be value type."))
+					return;
+			}
+
+			mono_class_setup_fields (klass->parent);
+			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
+				return;
+
+			real_size = klass->parent->instance_size;
+
+			if (top == 0) {
+				/* Empty structs are not allowed */
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be empty."))
+					return;
+			}
+
+			if (any_field_has_auto_layout) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot have AutoLayout fields."))
+					return;
+			}
+
+			klass->blittable = TRUE;
+
+			for (i = 0; i < top; i++){
+				gint32 align;
+				guint32 size;
+				MonoType *ftype;
+
+				field = &klass->fields [i];
+
+				if (mono_field_is_deleted (field))
+					continue;
+				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+					continue;
+
+				ftype = mono_type_get_underlying_type (field->type);
+				ftype = mono_type_get_basic_type_from_generic (ftype);
+
+				if ((top == 1) && (instance_size == MONO_ABI_SIZEOF (MonoObject)) &&
+					(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
+					/* This field is a hack inserted by MCS to empty structures */
+					continue;
+				}
+
+				size = mono_type_size (field->type, &align);
+
+				if (type_has_references (klass, ftype))
+					if (mono_class_set_type_load_failure (klass, "CStruct type must not have reference fields."))
+						return;
+
+				min_align = MAX (align, min_align);
+				field_offsets [i] = real_size;
+				if (align) {
+					field_offsets [i] += align - 1;
+					field_offsets [i] &= ~(align - 1);
+				}
+				/*TypeBuilders produce all sort of weird things*/
+				g_assert (image_is_dynamic (klass->image) || field_offsets [i] > 0);
+
+				gint64 raw_real_size = (gint64)field_offsets [i] + size;
+				real_size = (gint32)raw_real_size;
+
+				if (real_size != raw_real_size)
+					mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+			}
+
+			instance_size = real_size;
+
+			if (instance_size & (min_align - 1)) {
+				instance_size += min_align - 1;
+				instance_size &= ~(min_align - 1);
+			}
+			break;
+		}
+		else {
+			mono_class_set_type_load_failure (klass, "Unknown extended layout kind '%d'.", extended_layout_kind);
+			return;
+		}
 	}
 	}
 

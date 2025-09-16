@@ -1996,11 +1996,12 @@ class FlowGraphNaturalLoop
 
     GenTreeLclVarCommon* FindDef(unsigned lclNum);
 
-    void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
+    bool FindConstInit(BasicBlock* preheader, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
-    bool IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info);
-    bool InitBlockEntersLoopOnTrue(BasicBlock* initBlock);
+    bool HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info);
+    bool IsZeroTripTest(BasicBlock* guardBlock, bool entersOnTrue, NaturalLoopIterInfo* info);
+
     template<typename T>
     static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
@@ -3645,6 +3646,7 @@ public:
     unsigned gtSetEvalOrderMinOpts(GenTree* tree);
     bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
+    bool gtTreeHasLocalStore(GenTree* tree, unsigned lclNum);
 
     void gtSetStmtInfo(Statement* stmt);
 
@@ -7063,8 +7065,7 @@ protected:
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
-    bool optExtractInitTestIncr(
-        BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
+    bool optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** ppIncr);
 
     void optSetMappedBlockTargets(BasicBlock*      blk,
                           BasicBlock*      newBlk,
@@ -7659,14 +7660,26 @@ public:
 
     // Redundant branch opts
     //
-    PhaseStatus   optRedundantBranches();
-    bool          optRedundantRelop(BasicBlock* const block);
-    bool          optRedundantBranch(BasicBlock* const block);
-    bool          optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
-    bool          optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool          optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
-    bool          optJumpThreadCore(JumpThreadInfo& jti);
-    bool          optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    PhaseStatus optRedundantBranches();
+    bool        optRedundantRelop(BasicBlock* const block);
+    bool        optRedundantBranch(BasicBlock* const block);
+    bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool        optJumpThreadCore(JumpThreadInfo& jti);
+
+    enum class ReachabilityResult
+    {
+        BudgetExceeded,
+        Unreachable,
+        Reachable
+    };
+    ReachabilityResult optReachableWithBudget(BasicBlock* const fromBlock,
+                                              BasicBlock* const toBlock,
+                                              BasicBlock* const excludedBlock,
+                                              int*              pBudget);
+    bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
