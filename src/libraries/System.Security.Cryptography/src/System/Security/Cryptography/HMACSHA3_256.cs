@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Computes a Hash-based Message Authentication Code (HMAC) by using the SHA3-256 hash function.
     /// </summary>
-    public class HMACSHA3_256 : HMAC, IHMACShared
+    public class HMACSHA3_256 : HMAC, IHMACStatic
     {
         private HMACCommon _hMacCommon;
         internal const int BlockSize = 136; // FIPS 202 Table 3.
@@ -91,8 +91,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        static int IHMACShared.HashSizeInBytes => HashSizeInBytes;
-        static string IHMACShared.HashAlgorithmName => HashAlgorithmNames.SHA3_256;
+        static int IHMACStatic.HashSizeInBytes => HashSizeInBytes;
+        static string IHMACStatic.HashAlgorithmName => HashAlgorithmNames.SHA3_256;
 
         /// <inheritdoc />
         protected override void HashCore(byte[] rgb, int ib, int cb) =>
@@ -392,7 +392,7 @@ namespace System.Security.Cryptography
         public static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
         {
             CheckSha3Support();
-            return HMACShared<HMACSHA3_256>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA3_256>.Verify(key, source, hash);
         }
 
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
@@ -402,7 +402,7 @@ namespace System.Security.Cryptography
         public static bool Verify(byte[] key, byte[] source, byte[] hash)
         {
             CheckSha3Support();
-            return HMACShared<HMACSHA3_256>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA3_256>.Verify(key, source, hash);
         }
 
         /// <summary>
@@ -433,7 +433,7 @@ namespace System.Security.Cryptography
         public static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
         {
             CheckSha3Support();
-            return HMACShared<HMACSHA3_256>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA3_256>.Verify(key, source, hash);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -443,7 +443,7 @@ namespace System.Security.Cryptography
         public static bool Verify(byte[] key, Stream source, byte[] hash)
         {
             CheckSha3Support();
-            return HMACShared<HMACSHA3_256>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA3_256>.Verify(key, source, hash);
         }
 
         /// <summary>
@@ -482,7 +482,7 @@ namespace System.Security.Cryptography
             CancellationToken cancellationToken = default)
         {
             CheckSha3Support();
-            return HMACShared<HMACSHA3_256>.VerifyAsync(key, source, hash, cancellationToken);
+            return HMACStatic<HMACSHA3_256>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -496,7 +496,7 @@ namespace System.Security.Cryptography
             CancellationToken cancellationToken = default)
         {
             CheckSha3Support();
-            return HMACShared<HMACSHA3_256>.VerifyAsync(key, source, hash, cancellationToken);
+            return HMACStatic<HMACSHA3_256>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         /// <inheritdoc />

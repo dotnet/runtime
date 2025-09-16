@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
-    public class HMACSHA1 : HMAC, IHMACShared
+    public class HMACSHA1 : HMAC, IHMACStatic
     {
         /// <summary>
         /// The hash size produced by the HMAC SHA1 algorithm, in bits.
@@ -68,8 +68,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        static int IHMACShared.HashSizeInBytes => HashSizeInBytes;
-        static string IHMACShared.HashAlgorithmName => HashAlgorithmNames.SHA1;
+        static int IHMACStatic.HashSizeInBytes => HashSizeInBytes;
+        static string IHMACStatic.HashAlgorithmName => HashAlgorithmNames.SHA1;
 
         protected override void HashCore(byte[] rgb, int ib, int cb) =>
             _hMacCommon.AppendHashData(rgb, ib, cb);
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
         {
-            return HMACShared<HMACSHA1>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA1>.Verify(key, source, hash);
         }
 
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool Verify(byte[] key, byte[] source, byte[] hash)
         {
-            return HMACShared<HMACSHA1>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA1>.Verify(key, source, hash);
         }
 
         /// <summary>
@@ -390,7 +390,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
         {
-            return HMACShared<HMACSHA1>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA1>.Verify(key, source, hash);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -399,7 +399,7 @@ namespace System.Security.Cryptography
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
         public static bool Verify(byte[] key, Stream source, byte[] hash)
         {
-            return HMACShared<HMACSHA1>.Verify(key, source, hash);
+            return HMACStatic<HMACSHA1>.Verify(key, source, hash);
         }
 
         /// <summary>
@@ -434,7 +434,7 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> hash,
             CancellationToken cancellationToken = default)
         {
-            return HMACShared<HMACSHA1>.VerifyAsync(key, source, hash, cancellationToken);
+            return HMACStatic<HMACSHA1>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         /// <exception cref="ArgumentNullException">
@@ -447,7 +447,7 @@ namespace System.Security.Cryptography
             byte[] hash,
             CancellationToken cancellationToken = default)
         {
-            return HMACShared<HMACSHA1>.VerifyAsync(key, source, hash, cancellationToken);
+            return HMACStatic<HMACSHA1>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
