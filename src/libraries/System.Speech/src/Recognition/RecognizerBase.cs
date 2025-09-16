@@ -1687,6 +1687,7 @@ ISpGrammarResourceLoader
             ActivateRule(sapiGrammar, uri, ruleName);
         }
 
+        // Method called on background thread to do actual grammar loading.
         private void LoadGrammarAsyncCallback(object grammarObject)
         {
             Debug.WriteLine("Loading grammar asynchronously.");
@@ -1991,6 +1992,7 @@ ISpGrammarResourceLoader
             }
         }
 
+        // Method called on background thread {from RecognizeAsync} to start recognition process.
         private void RecognizeAsyncWaitForGrammarsToLoad(object unused)
         {
             Debug.WriteLine("Waiting for any pending grammar loads to complete.");
