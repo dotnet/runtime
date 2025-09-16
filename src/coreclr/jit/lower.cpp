@@ -4295,8 +4295,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             var_types type     = genActualType(testedOp);
             op1->AsOp()->gtOp1 = andOp1 = comp->gtNewOperNode(GT_RSH, type, testedOp, bitIndexOp);
             op1->AsOp()->gtOp2 = andOp2 = comp->gtNewIconNode(1, type);
-            BlockRange().InsertBefore(op1, andOp1);
-            BlockRange().InsertBefore(op1, andOp2);
+            BlockRange().InsertBefore(op1, andOp1, andOp2);
             andOp2->SetContained();
         }
 #endif // TARGET_RISCV64
