@@ -42,7 +42,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Transcoding.cs" Link="System\Text\Unicode\Utf8Utility.Transcoding.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Validation.cs" Link="System\Text\Unicode\Utf8Utility.Validation.cs" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Range.cs" />

@@ -43,7 +43,7 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.netcoreapp.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netcoreapp.cs" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Formats\Cbor\CborHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />

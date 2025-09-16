@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- The stack trace of the two tiers sometimes differ (one is missing System.Reflection.MethodBase.Invoke between 
+    <!-- The stack trace of the two tiers sometimes differ (one is missing System.Reflection.MethodBase.Invoke between
     TestRunner.ExecuteAssemblyEntryPoint and System.Reflection.RuntimeMethodInfo.Invoke -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

@@ -25,5 +25,5 @@
     <ItemGroup>
       <IlcReference Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(LibrariesRuntimeFiles.IsNative)' != 'true'"/>
     </ItemGroup>
-  </Target>  
+  </Target>
 </Project>
