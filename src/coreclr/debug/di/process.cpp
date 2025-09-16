@@ -3152,20 +3152,26 @@ void CordbProcess::DetachShim()
             DWORD dwResult = WaitForMultipleObjectsEx(_countof(rghWaitSet), rghWaitSet, FALSE, DETACH_WAIT_TIMEOUT_MS, FALSE);
             if (dwResult == WAIT_OBJECT_0)
             {
-                // we have been signaled that it is safe to detach
+                // We have been signaled via TryDetach() to determine if it is safe to detach
                 // so call CanDetach and then detach if it returns S_OK
                 fDetachComplete = (this->m_pShim->GetWin32EventThread()->SendCanDetach() == S_OK);
             }
-            else
+            else if (dwResult == WAIT_OBJECT_0 + 1 /*UnsafeGetProcessHandle()*/)
             {
-                // The process has exited while waiting for the detach to complete or we timed out waiting for debug events, indicating the process is idle.
-                // Simply detach as if it had succeeded.
-
-                CONSISTENCY_CHECK_MSGF(dwResult != WAIT_TIMEOUT, ("Timeout while waiting for detach to complete"));
-                _ASSERTE(dwResult == WAIT_TIMEOUT || dwResult == WAIT_OBJECT_0 + 1 /*UnsafeGetProcessHandle()*/ );
-
+                // The process has exited while waiting for the detach to complete
                 m_detached = true;
                 m_stopCount = 0;
+                return;
+            }
+            else
+            {
+                // We timed out waiting for debug events, indicating the process is idle.
+                // Simply detach as if it had succeeded.
+
+                _ASSERTE(dwResult == WAIT_TIMEOUT);
+                CONSISTENCY_CHECK_MSGF(false, ("Timeout while waiting for detach to complete"));
+
+                fDetachComplete = true;
             }
         }
 #endif
