@@ -196,8 +196,9 @@ void DispatchMemberInfo::Init()
         // If we do throw an exception, then the status of the object
         // is in limbo - just neuter it.
         Neuter();
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
@@ -448,7 +449,13 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             ARG_SLOT GetMethodHandleArg = ObjToArgSlot(MemberInfoObj);
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
+            {
+                // TODO: (async) revisit and examine if this needs to be supported somehow
+                if (pMeth->IsAsyncMethod())
+                    ThrowHR(COR_E_NOTSUPPORTED);
+
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
+            }
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
@@ -713,7 +720,7 @@ void DispatchMemberInfo::DetermineCultureAwareness()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         GCPROTECT_BEGIN(CustomAttrArray)
         {
@@ -827,6 +834,10 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     CONTRACTL_END;
 
     GCX_PREEMP();
+
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMD->IsAsyncMethod())
+        ThrowHR(COR_E_NOTSUPPORTED);
 
     MetaSig         msig(pMD);
     LPCSTR          szName;
@@ -1028,7 +1039,7 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
 DispatchInfo::DispatchInfo(MethodTable *pMT)
 : m_pMT(pMT)
 , m_pFirstMemberInfo(NULL)
-, m_lock(CrstInterop, (CrstFlags)(CRST_HOST_BREAKABLE | CRST_REENTRANCY))
+, m_lock(CrstInterop, (CrstFlags)(CRST_REENTRANCY))
 , m_CurrentDispID(0x10000)
 , m_bAllowMembersNotInComMTMemberMap(FALSE)
 , m_bInvokeUsingInvokeMember(FALSE)
@@ -1216,10 +1227,6 @@ public:
     }
 };
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                                       InvokeObjects*        pObjs,
                                       int                   NumParams,
@@ -1545,7 +1552,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
 
     if (!m_bInvokeUsingInvokeMember)
     {
-        PREFIX_ASSUME(pDispMemberInfo != NULL);
+        _ASSERTE(pDispMemberInfo != NULL);
 
         if (pDispMemberInfo->IsCultureAware())
         {
@@ -1830,9 +1837,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     if (pVarRes)
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void DispatchInfo::InvokeMemberDebuggerWrapper(
                                       DispatchMemberInfo*   pDispMemberInfo,
@@ -2165,6 +2169,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
         DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         EX_TRY
         {
             InvokeMemberDebuggerWrapper(pDispMemberInfo,
@@ -2189,8 +2194,9 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         EX_CATCH
         {
             pThrowable = GET_THROWABLE();
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_END_CATCH
         catchFrame.Pop();
 
         if (pThrowable != NULL)
@@ -2334,7 +2340,7 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
         {
             GCX_PREEMP();
-            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElementMT);
+            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
         }
         GCPROTECT_END();
 
@@ -2410,7 +2416,7 @@ void DispatchInfo::CleanUpNativeParam(DispatchMemberInfo *pDispMemberInfo, int i
     {
         // if the argument was totally corrupted and cleanup failed, just swallow it and continue
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID *pSrcArgNames, int NumNamedArgs, PTRARRAYREF *pNamedParamArray)
@@ -2578,6 +2584,12 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMDForProperty->IsAsyncVariantMethod())
+        {
+            return false;
+        }
+
         if (pMDForProperty->GetMDImport()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
         {
             if (IsMemberVisibleFromCom(pMDForProperty->GetMethodTable(), tkMember, pMDForProperty->GetMemberDef()))

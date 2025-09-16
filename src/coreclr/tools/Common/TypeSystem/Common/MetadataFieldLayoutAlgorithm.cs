@@ -63,10 +63,17 @@ namespace Internal.TypeSystem
             // hierarchy); otherwise, from System.Object
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
             // ValueType or System.Object then both need to have layout.
-            if (!type.IsValueType && type.HasLayout())
+            //
+            // ExtendedLayout is not supported on non-value types.
+            if (!type.IsValueType && !type.IsAutoLayout)
             {
+                if (type.IsExtendedLayout)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                }
+
                 MetadataType baseType = type.MetadataBaseType;
-                if (!baseType.IsObject && !baseType.HasLayout())
+                if (!baseType.IsObject && baseType.IsAutoLayout)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
@@ -144,15 +151,12 @@ namespace Internal.TypeSystem
                 }
 
                 var layoutMetadata = type.GetClassLayout();
-
                 // If packing is out of range or not a power of two, throw that the size is invalid
                 int packing = layoutMetadata.PackingSize;
                 if (packing < 0 || packing > 128 || ((packing & (packing - 1)) != 0))
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
-
-                Debug.Assert(layoutMetadata.Offsets == null || layoutMetadata.Offsets.Length == numInstanceFields);
             }
 
             // At this point all special cases are handled and all inputs validated
@@ -304,7 +308,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
@@ -312,7 +316,6 @@ namespace Internal.TypeSystem
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
             LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
-            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
             int packingSize = ComputePackingSize(type, layoutMetadata);
             LayoutInt largestAlignmentRequired = LayoutInt.One;
 
@@ -329,9 +332,12 @@ namespace Internal.TypeSystem
                 hasVectorTField = type.BaseType.IsVectorTOrHasVectorTFields;
             }
 
-            foreach (FieldAndOffset fieldAndOffset in layoutMetadata.Offsets)
+            foreach (FieldDesc field in type.GetFields())
             {
-                TypeDesc fieldType = fieldAndOffset.Field.FieldType;
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
                 if (!fieldData.LayoutAbiStable)
                     layoutAbiStable = false;
@@ -344,10 +350,12 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
-                if (fieldAndOffset.Offset == FieldAndOffset.InvalidOffset)
+                LayoutInt metadataOffset = field.MetadataOffset;
+
+                if (metadataOffset == LayoutInt.Indeterminate)
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
 
-                LayoutInt computedOffset = fieldAndOffset.Offset + cumulativeInstanceFieldPos + offsetBias;
+                LayoutInt computedOffset = metadataOffset + cumulativeInstanceFieldPos + offsetBias;
 
                 // GC pointers MUST be aligned.
                 bool needsToBeAligned =
@@ -363,11 +371,11 @@ namespace Internal.TypeSystem
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
                     {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, fieldAndOffset.Offset.ToStringInvariant());
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, metadataOffset.ToStringInvariant());
                     }
                 }
 
-                offsets[fieldOrdinal] = new FieldAndOffset(fieldAndOffset.Field, computedOffset);
+                offsets[fieldOrdinal] = new FieldAndOffset(field, computedOffset);
 
                 LayoutInt fieldExtent = computedOffset + fieldSizeAndAlignment.Size;
                 instanceSize = LayoutInt.Max(fieldExtent, instanceSize);
@@ -411,7 +419,7 @@ namespace Internal.TypeSystem
             return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target);
         }
 
-        protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
 
@@ -420,8 +428,6 @@ namespace Internal.TypeSystem
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
-
-            var layoutMetadata = type.GetClassLayout();
 
             LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
@@ -471,7 +477,7 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
-                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, numInstanceFields, layoutMetadata, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
@@ -490,13 +496,99 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
+        protected ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            if (type.ContainsGCPointers || !type.IsValueType)
+            {
+                // CStruct layout algorithm does not support GC pointers.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            var offsets = new FieldAndOffset[numInstanceFields];
+
+            LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
+            LayoutInt largestAlignmentRequirement = LayoutInt.One;
+            int fieldOrdinal = 0;
+            int packingSize = type.Context.Target.MaximumAlignment;
+            bool layoutAbiStable = true;
+            bool hasAutoLayoutField = false;
+            bool hasInt128Field = false;
+            bool hasVectorTField = false;
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
+                if (!fieldData.LayoutAbiStable)
+                    layoutAbiStable = false;
+                if (fieldData.HasAutoLayout)
+                    hasAutoLayoutField = true;
+                if (fieldData.HasInt128Field)
+                    hasInt128Field = true;
+                if (fieldData.HasVectorTField)
+                    hasVectorTField = true;
+
+                largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
+
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
+                offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
+                cumulativeInstanceFieldPos = LayoutInt.AddThrowing(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Size, type);
+
+                fieldOrdinal++;
+            }
+
+            if (hasAutoLayoutField)
+            {
+                // CStruct does not support auto layout fields
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (cumulativeInstanceFieldPos == LayoutInt.Zero)
+            {
+                // CStruct cannot have zero size.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (type.IsInlineArray)
+            {
+                // CStruct types cannot be inline arrays
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(
+                type,
+                cumulativeInstanceFieldPos,
+                largestAlignmentRequirement,
+                classLayoutSize: 0, // CStruct does not use the size from metadata.
+                out instanceByteSizeAndAlignment);
+
+            ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
+            {
+                IsAutoLayoutOrHasAutoLayoutFields = false,
+                IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
+                FieldAlignment = instanceSizeAndAlignment.Alignment,
+                FieldSize = instanceSizeAndAlignment.Size,
+                ByteCountUnaligned = instanceByteSizeAndAlignment.Size,
+                ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
+                Offsets = offsets,
+                LayoutAbiStable = layoutAbiStable
+            };
+
+            return computedLayout;
+        }
+
         private static void AdjustForInlineArray(
             MetadataType type,
             int instanceFieldCount,
+            in ClassLayoutMetadata layoutMetadata,
             ref SizeAndAlignment instanceByteSizeAndAlignment,
             ref SizeAndAlignment instanceSizeAndAlignment)
         {
-            int repeat = type.GetInlineArrayLength();
+            int repeat = layoutMetadata.InlineArrayLength;
 
             if (repeat <= 0)
             {
@@ -506,6 +598,11 @@ namespace Internal.TypeSystem
             if (instanceFieldCount != 1)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
+            }
+
+            if (layoutMetadata.Size != 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicitSize, type);
             }
 
             if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
@@ -533,11 +630,11 @@ namespace Internal.TypeSystem
         {
         }
 
-        protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             TypeSystemContext context = type.Context;
 
-            bool hasLayout = type.HasLayout();
+            bool hasLayout = !type.IsAutoLayout;
 
             // Auto-layout in CoreCLR does not respect packing size.
             int packingSize = type.Context.Target.MaximumAlignment;
@@ -836,7 +933,7 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
-                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, numInstanceFields, layoutMetadata, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
@@ -906,7 +1003,7 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
                 if (!cumulativeInstanceFieldPos.IsIndeterminate)
                 {
-                    if (requiresAlignedBase && type.BaseType.IsZeroSizedReferenceType && ((MetadataType)type.BaseType).HasLayout())
+                    if (requiresAlignedBase && type.BaseType.IsZeroSizedReferenceType && !((MetadataType)type.BaseType).IsAutoLayout)
                     {
                         cumulativeInstanceFieldPos += LayoutInt.One;
                     }
@@ -980,7 +1077,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
+        private static int ComputePackingSize(MetadataType type, in ClassLayoutMetadata layoutMetadata)
         {
             if (layoutMetadata.PackingSize == 0)
                 return type.Context.Target.MaximumAlignment;
@@ -1078,7 +1175,9 @@ namespace Internal.TypeSystem
             if (type.Context.Target.Abi == TargetAbi.NativeAotArmel)
                 return NotHA;
 
-            MetadataType metadataType = (MetadataType)type;
+            // If type represents an enum, we want to treat it as its underlying type.
+            MetadataType metadataType = (MetadataType)type.UnderlyingType;
+
             int haElementSize = 0;
 
             switch (metadataType.Category)

@@ -1,20 +1,32 @@
 {
-    "PipelinesToAnalyze":[
-       {
-          "PipelineId": 129,
-          "PipelineName": "runtime"
-       },
-       {
-         "PipelineId": 133,
-         "PipelineName": "runtime-dev-innerloop"
-       },
-       {
-         "PipelineId": 154,
-         "PipelineName": "runtime-extra-platforms"
-       },
-       {
-         "PipelineId": 157,
-         "PipelineName": "runtime-llvm"
-       }
-    ]
+  "PipelinesToAnalyze": [
+    {
+      "PipelineId": 129,
+      "PipelineName": "runtime"
+    },
+    {
+      "PipelineId": 133,
+      "PipelineName": "runtime-dev-innerloop"
+    },
+    {
+      "PipelineId": 139,
+      "PipelineName": "dotnet-linker-tests"
+    },
+    {
+      "PipelineId": 154,
+      "PipelineName": "runtime-extra-platforms"
+    },
+    {
+      "PipelineId": 157,
+      "PipelineName": "runtime-llvm"
+    },
+    {
+      "PipelineId": 265,
+      "PipelineName": "runtime-nativeaot-outerloop"
+    },
+    {
+      "PipelineId": 108,
+      "PipelineName": "runtime-coreclr outerloop"
+    }
+  ]
 }

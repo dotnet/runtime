@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -113,15 +113,11 @@
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
-    <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\MethodNameAndSignature.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
@@ -161,7 +157,9 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\CrashInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\Java\JavaMarshal.NativeAot.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
     <Compile Include="System\ArgIterator.cs" />
@@ -170,8 +168,6 @@
     <Compile Include="System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
-    <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\IO\Stream.NativeAot.cs" />
@@ -190,21 +186,21 @@
     <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\RuntimeType.cs" />
+    <Compile Include="System\RuntimeType.NativeAot.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\ThunkPool.cs" />
-    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
@@ -244,6 +240,7 @@
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.NativeAot.cs" />
   </ItemGroup>
@@ -281,16 +278,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs">
       <Link>Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetContextToken.cs">
-      <Link>Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="System\Environment.NativeAot.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\Kernel32\Interop.DynamicLoad.cs</Link>
     </Compile>
@@ -312,14 +303,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
-      <Link>Interop\Unix\System.Native\Interop.MMap.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
       <Link>Interop\Unix\System.Native\Interop.MProtect.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
-      <Link>Interop\Unix\System.Native\Interop.MUnmap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -332,8 +317,8 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>Utilities\LockFreeReaderHashtableOfPointers.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>System\Collections\Generic\LowLevelList.cs</Link>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs">
+      <Link>Utilities\TypeHashingAlgorithms.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
@@ -355,9 +340,6 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
-    </Compile>
-    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
-      <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Runtime\RhFailFastReason.cs">
       <Link>System\Runtime\RhFailFastReason.cs</Link>
@@ -553,9 +535,6 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)RhBaseName.cs">
-      <Link>Runtime.Base\src\RhBaseName.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>
@@ -572,34 +551,8 @@
   </ItemGroup>
 
   <!-- Setup eventing file generation -->
-  <ItemGroup>
-    <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
-    <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
-    <EventingInclusionList Include="$(CoreClrProjectRoot)nativeaot/Runtime/eventpipe/gen-eventing-event-inc.lst" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)NativeRuntimeEventSource.Generated.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\NativeRuntimeEventSource.Generated.cs</Link>
-    </EventingSourceFile>
-    <Compile Include="@(EventingSourceFile)" />
+  <ItemGroup Condition="'$(FeaturePerfTracing)' == 'true'">
+    <AdditionalFiles Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
+    <AdditionalFiles Include="$(CoreClrProjectRoot)nativeaot/Runtime/eventpipe/gen-eventing-event-inc.lst" />
   </ItemGroup>
-
-  <Target Name="GenerateEventingFiles"
-          Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)"
-          Outputs="@(EventingSourceFile)"
-          DependsOnTargets="FindPython"
-          BeforeTargets="BeforeCompile">
-
-    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generared.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
-    <PropertyGroup>
-      <_PythonWarningParameter>-Wall</_PythonWarningParameter>
-      <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>
-      <_EventingSourceFileDirectory>%(EventingSourceFile.RootDir)%(EventingSourceFile.Directory)</_EventingSourceFileDirectory>
-      <_EventingSourceFileDirectory Condition="HasTrailingSlash('$(_EventingSourceFileDirectory)')">$(_EventingSourceFileDirectory.TrimEnd('\'))</_EventingSourceFileDirectory>
-    </PropertyGroup>
-
-    <Exec Command="&quot;$(PYTHON)&quot; -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot; --inc &quot;@(EventingInclusionList)&quot;" />
-
-    <ItemGroup>
-      <FileWrites Include="@(EventingSourceFile)" />
-    </ItemGroup>
-  </Target>
 </Project>

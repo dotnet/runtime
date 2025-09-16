@@ -162,10 +162,7 @@ namespace System.DirectoryServices.Protocols
             get => _needDispose;
             set
             {
-                if (_ldapHandle != null)
-                {
-                    _ldapHandle._needDispose = value;
-                }
+                _ldapHandle?._needDispose = value;
 
                 _needDispose = value;
             }
@@ -200,10 +197,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             if (request is DsmlAuthRequest)
             {
@@ -273,10 +267,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             if (partialMode < PartialResultProcessing.NoPartialResultSupport || partialMode > PartialResultProcessing.ReturnPartialResultsAndNotifyCallback)
             {
@@ -393,10 +384,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             if (!(asyncResult is LdapAsyncResult))
             {
@@ -428,10 +416,7 @@ namespace System.DirectoryServices.Protocols
             LdapPal.CancelDirectoryAsyncOperation(_ldapHandle, messageId);
 
             LdapRequestState resultObject = result._resultObject;
-            if (resultObject != null)
-            {
-                resultObject._abortCalled = true;
-            }
+            resultObject?._abortCalled = true;
         }
 
         public PartialResultsCollection GetPartialResults(IAsyncResult asyncResult)
@@ -441,10 +426,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             if (!(asyncResult is LdapAsyncResult))
             {
@@ -466,10 +448,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             if (!(asyncResult is LdapAsyncResult))
             {
@@ -534,7 +513,7 @@ namespace System.DirectoryServices.Protocols
 
             // Bind if user has not turned off automatic bind, have not done so or there is a need
             // to do rebind, also connectionless LDAP does not need to do bind.
-            if (AutoBind && (!_bounded || _needRebind) && ((LdapDirectoryIdentifier)Directory).Connectionless != true)
+            if (AutoBind && (!_bounded || _needRebind) && !((LdapDirectoryIdentifier)Directory).Connectionless)
             {
                 Debug.WriteLine("rebind occurs\n");
                 Bind();

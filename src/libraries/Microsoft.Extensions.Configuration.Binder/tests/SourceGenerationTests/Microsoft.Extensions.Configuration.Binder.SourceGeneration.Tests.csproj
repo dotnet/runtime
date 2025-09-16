@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Type not supported; property on type not supported -->
     <NoWarn>$(NoWarn);SYSLIB1100,SYSLIB1101</NoWarn>
@@ -8,9 +9,7 @@
     <NoWarn>$(NoWarn);SYSLIB1103,SYSLIB1104</NoWarn>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-
-    <!-- Avoid conflict with Microsoft.Extensions.Configuration.Binder (via InternalsVisibleTo) -->
-    <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -67,4 +66,5 @@
       <CustomAdditionalCompileInputs Include="@(Analyzer)" />
     </ItemGroup>
   </Target>
+
 </Project>

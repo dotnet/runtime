@@ -209,7 +209,7 @@ namespace System.Net.Security.Tests
                 testName: testName,
                 intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
-                keySize: 2048,
+                keyFactory: CertificateAuthority.KeyFactory.RSASize(2048),
                 extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];

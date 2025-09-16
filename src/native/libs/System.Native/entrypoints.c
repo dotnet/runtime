@@ -16,6 +16,7 @@
 #include "pal_log.h"
 #include "pal_memory.h"
 #include "pal_mount.h"
+#include "pal_crossprocessmutex.h"
 #include "pal_networkchange.h"
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
@@ -66,8 +67,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_MemfdCreate)
     DllImportEntry(SystemNative_ShmOpen)
     DllImportEntry(SystemNative_ShmUnlink)
-    DllImportEntry(SystemNative_GetReadDirRBufferSize)
-    DllImportEntry(SystemNative_ReadDirR)
+    DllImportEntry(SystemNative_ReadDir)
     DllImportEntry(SystemNative_OpenDir)
     DllImportEntry(SystemNative_CloseDir)
     DllImportEntry(SystemNative_Pipe)
@@ -132,10 +132,12 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_Realloc)
     DllImportEntry(SystemNative_GetSpaceInfoForMountPoint)
-    DllImportEntry(SystemNative_GetFormatInfoForMountPoint)
+    DllImportEntry(SystemNative_GetFileSystemTypeNameForMountPoint)
     DllImportEntry(SystemNative_GetAllMountPoints)
+#if !defined(TARGET_WASM) && !defined(TARGET_WASI)
     DllImportEntry(SystemNative_ReadEvents)
     DllImportEntry(SystemNative_CreateNetworkChangeListenerSocket)
+#endif // !defined(TARGET_WASM) && !defined(TARGET_WASI)
     DllImportEntry(SystemNative_GetHostEntryForName)
     DllImportEntry(SystemNative_FreeHostEntry)
     DllImportEntry(SystemNative_GetNameInfo)
@@ -255,6 +257,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_FUTimens)
     DllImportEntry(SystemNative_GetTimestamp)
+    DllImportEntry(SystemNative_GetLowResolutionTimestamp)
     DllImportEntry(SystemNative_GetBootTimeTicks)
     DllImportEntry(SystemNative_GetCpuUtilization)
     DllImportEntry(SystemNative_GetPwUidR)
@@ -285,6 +288,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupName)
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Size)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Init)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Acquire)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Release)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Destroy)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_IsAbandoned)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
     DllImportEntry(SystemNative_Select)
 };
 

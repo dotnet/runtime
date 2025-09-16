@@ -42,7 +42,7 @@ internal sealed class InterpToNativeGenerator
 
     private static void Emit(StreamWriter w, IEnumerable<string> cookies)
     {
-        // Use OrderBy because Order() is not available in net472
+        // Use OrderBy because Order() is not available on .NET Framework
         var signatures = cookies.OrderBy(c => c).Distinct().ToArray();
         Array.Sort(signatures, StringComparer.Ordinal);
 

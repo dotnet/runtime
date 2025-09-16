@@ -169,10 +169,7 @@ namespace System.Security.Cryptography.Pkcs
             bool requestSignerCertificates = false,
             X509ExtensionCollection? extensions = null)
         {
-            if (signerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(signerInfo);
 
             // https://tools.ietf.org/html/rfc3161, Appendix A.
             //

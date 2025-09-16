@@ -746,7 +746,7 @@ namespace System.Management
         /// </example>
         public SelectQuery(bool isSchemaQuery, string condition) : base()
         {
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
 
             this.isSchemaQuery = true;
@@ -910,7 +910,7 @@ namespace System.Management
         {
             string s;
 
-            if (isSchemaQuery == false) //this is an instances query
+            if (!isSchemaQuery) //this is an instances query
             {
                 //If the class name is not set we can't build a query
                 //Shouldn't throw here because the user may be in the process of filling in the properties...
@@ -970,7 +970,7 @@ namespace System.Management
             string q = query.Trim();
             bool bFound = false; string tempProp; int i;
 
-            if (isSchemaQuery == false) //instances query
+            if (!isSchemaQuery) //instances query
             {
                 //Find "select" clause and get the property list if exists
                 string keyword = TokenSelect;
@@ -1115,7 +1115,7 @@ namespace System.Management
                 }
             }
 
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 return new SelectQuery(className, condition, strArray);
             else
                 return new SelectQuery(true, condition);
@@ -1350,7 +1350,7 @@ namespace System.Management
             string relatedRole,
             string thisRole)
         {
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
 
             this.isSchemaQuery = true;
@@ -1763,7 +1763,7 @@ namespace System.Management
         /// </returns>
         public override object Clone()
         {
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 return new RelatedObjectQuery(sourceObject, relatedClass, relationshipClass,
                                             relatedQualifier, relationshipQualifier, relatedRole,
                                             thisRole, classDefinitionsOnly);
@@ -1962,7 +1962,7 @@ namespace System.Management
             string relationshipQualifier,
             string thisRole)
         {
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
 
             this.isSchemaQuery = true;
@@ -2269,7 +2269,7 @@ namespace System.Management
         /// </returns>
         public override object Clone()
         {
-            if (isSchemaQuery == false)
+            if (!isSchemaQuery)
                 return new RelationshipQuery(sourceObject, relationshipClass,
                                             relationshipQualifier, thisRole, classDefinitionsOnly);
             else
@@ -3218,10 +3218,7 @@ namespace System.Management
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is EventQuery && destinationType == typeof(InstanceDescriptor))
             {

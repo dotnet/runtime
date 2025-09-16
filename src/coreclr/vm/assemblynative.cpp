@@ -25,6 +25,7 @@
 #include "typeparse.h"
 #include "encee.h"
 #include "threadsuspend.h"
+#include <caparser.h>
 
 #include "appdomainnative.hpp"
 #include "../binder/inc/bindertracing.h"
@@ -191,9 +192,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath,
-                                      MDInternalImport_Default,
-                                      BundleFileLocation::Invalid());
+        pILImage = PEImage::OpenImage(pwzILPath);
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
@@ -1154,7 +1153,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 
     // Retrieve the PEAssembly from the assembly.
     PEAssembly* pPEAssembly = pAssembly->GetPEAssembly();
-    PREFIX_ASSUME(pPEAssembly!=NULL);
+    _ASSERTE(pPEAssembly!=NULL);
 
     LPCSTR pszVersion = NULL;
     IfFailThrow(pPEAssembly->GetMDImport()->GetVersionString(&pszVersion));
@@ -1169,7 +1168,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 
 /*static*/
 
-extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
+extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
 {
     QCALL_CONTRACT;
 
@@ -1221,17 +1220,17 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
             loaderAllocator->ActivateManagedTracking();
         }
 
-        IfFailThrow(CustomAssemblyBinder::SetupContext(pDefaultBinder, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pCustomBinder));
+        IfFailThrow(CustomAssemblyBinder::SetupContext(pDefaultBinder, loaderAllocator, loaderAllocatorHandle, ptrAssemblyLoadContext, &pCustomBinder));
         ptrNativeAssemblyBinder = reinterpret_cast<INT_PTR>(pCustomBinder);
     }
     else
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == (INT_PTR)NULL);
+        _ASSERTE(pDefaultBinder->GetAssemblyLoadContext() == (INT_PTR)NULL);
 
         // Attach the managed TPA binding context with the native one.
-        pDefaultBinder->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
+        pDefaultBinder->SetAssemblyLoadContext(ptrAssemblyLoadContext);
         ptrNativeAssemblyBinder = reinterpret_cast<INT_PTR>(pDefaultBinder);
     }
 
@@ -1263,7 +1262,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
 {
     QCALL_CONTRACT;
 
-    INT_PTR ptrManagedAssemblyLoadContext = 0;
+    INT_PTR ptrAssemblyLoadContext = 0;
 
     BEGIN_QCALL;
 
@@ -1274,13 +1273,13 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
     if (!pAssemblyBinder->IsDefault())
     {
         // Fetch the managed binder reference from the native binder instance
-        ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();
-        _ASSERTE(ptrManagedAssemblyLoadContext != (INT_PTR)NULL);
+        ptrAssemblyLoadContext = pAssemblyBinder->GetAssemblyLoadContext();
+        _ASSERTE(ptrAssemblyLoadContext != (INT_PTR)NULL);
     }
 
     END_QCALL;
 
-    return ptrManagedAssemblyLoadContext;
+    return ptrAssemblyLoadContext;
 }
 
 // static
@@ -1299,7 +1298,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_InternalTryGetRawMetadata(
     _ASSERTE(blobRef != nullptr);
     _ASSERTE(lengthRef != nullptr);
 
-    static_assert_no_msg(sizeof(*lengthRef) == sizeof(COUNT_T));
+    static_assert(sizeof(*lengthRef) == sizeof(COUNT_T));
     metadata = assembly->GetPEAssembly()->GetLoadedMetadata(reinterpret_cast<COUNT_T *>(lengthRef));
     *blobRef = reinterpret_cast<UINT8 *>(const_cast<PTR_VOID>(metadata));
     _ASSERTE(*lengthRef >= 0);
@@ -1428,4 +1427,284 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
     END_QCALL;
 
     return result;
+}
+
+namespace
+{
+    LPCSTR TypeMapAssemblyTargetAttributeName = "System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1";
+    LPCSTR TypeMapAttributeName = "System.Runtime.InteropServices.TypeMapAttribute`1";
+    LPCSTR TypeMapAssociationAttributeName = "System.Runtime.InteropServices.TypeMapAssociationAttribute`1";
+
+    bool IsTypeSpecForTypeMapGroup(
+        MethodTable* groupTypeMT,
+        Assembly* pAssembly,
+        mdToken typeSpec)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(groupTypeMT != NULL);
+        _ASSERTE(pAssembly != NULL);
+        _ASSERTE(TypeFromToken(typeSpec) == mdtTypeSpec);
+
+        IMDInternalImport* pImport = pAssembly->GetMDImport();
+
+        PCCOR_SIGNATURE sig;
+        ULONG sigLen;
+        IfFailThrow(pImport->GetTypeSpecFromToken(typeSpec, &sig, &sigLen));
+
+        SigPointer sigPointer{ sig, sigLen };
+
+        SigTypeContext context{};
+        TypeHandle typeMapAttribute = sigPointer.GetTypeHandleNT(pAssembly->GetModule(), &context);
+        if (typeMapAttribute.IsNull()
+            || !typeMapAttribute.HasInstantiation())    // All TypeMap attributes are generic.
+        {
+            return false;
+        }
+
+        Instantiation genericParams = typeMapAttribute.GetInstantiation();
+        if (genericParams.GetNumArgs() != 1) // All TypeMap attributes have a single generic parameter.
+            return false;
+
+        return genericParams[0] == groupTypeMT;
+    }
+
+    template<typename ATTR_PROCESSOR>
+    void ProcessTypeMapAttribute(
+        LPCSTR attributeName,
+        ATTR_PROCESSOR& processor,
+        MethodTable* groupTypeMT,
+        Assembly* pAssembly)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(attributeName != NULL);
+        _ASSERTE(groupTypeMT != NULL);
+        _ASSERTE(pAssembly != NULL);
+
+        HRESULT hr;
+        IMDInternalImport* pImport = pAssembly->GetMDImport();
+
+        // Find all the CustomAttributes with the supplied name
+        MDEnumHolder hEnum(pImport);
+        hr = pImport->EnumCustomAttributeByNameInit(
+            TokenFromRid(1, mdtAssembly),
+            attributeName,
+            &hEnum);
+        IfFailThrow(hr);
+
+        // Enumerate all instances of the CustomAttribute we asked about.
+        // Since the TypeMap attributes are generic, we need to narrow the
+        // search to only those that are instantiated over the "GroupType"
+        // that is supplied by the caller.
+        mdTypeSpec lastMatchingTypeSpec = mdTypeSpecNil;
+        mdCustomAttribute tkAttribute;
+        while (pImport->EnumNext(&hEnum, &tkAttribute))
+        {
+            mdToken tokenMember;
+            IfFailThrow(pImport->GetCustomAttributeProps(tkAttribute, &tokenMember));
+
+            mdToken tokenType;
+            IfFailThrow(pImport->GetParentToken(tokenMember, &tokenType));
+
+            // Ensure the parent token is a TypeSpec.
+            // This can occur if the attribute is redefined externally.
+            if (TypeFromToken(tokenType) != mdtTypeSpec)
+                continue;
+
+            // Determine if this TypeSpec contains the "GroupType" we are looking for.
+            // There is no requirement in ECMA-335 that the same TypeSpec be used
+            // for the same generic instantiation. It is true for Roslyn assemblies so we
+            // will do a check as an optimization, but we must fall back and re-check
+            // the TypeSpec contents to be sure it doesn't match.
+            if (tokenType != lastMatchingTypeSpec)
+            {
+                if (!IsTypeSpecForTypeMapGroup(groupTypeMT, pAssembly, tokenType))
+                    continue;
+
+                lastMatchingTypeSpec = (mdTypeSpec)tokenType;
+            }
+
+            // We've determined the attribute is the instantiation we want, now process the attribute contents.
+            void const* blob;
+            ULONG blobLen;
+            IfFailThrow(pImport->GetCustomAttributeAsBlob(tkAttribute, &blob, &blobLen));
+
+            // Pass the blob data off to the processor.
+            if (!processor.Process(blob, blobLen))
+            {
+                // The processor has indicated processing should stop.
+                break;
+            }
+        }
+    }
+
+    class AssemblyPtrCollectionTraits : public DefaultSHashTraits<Assembly*>
+    {
+    public:
+        typedef Assembly* key_t;
+        static const key_t GetKey(Assembly* e) { LIMITED_METHOD_CONTRACT; return e; }
+        static count_t Hash(key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)key; }
+        static BOOL Equals(key_t lhs, key_t rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
+    };
+
+    using AssemblyPtrCollection = SHash<AssemblyPtrCollectionTraits>;
+
+    // Used for TypeMapAssemblyTargetAttribute`1 attribute.
+    class AssemblyTargetProcessor final
+    {
+        AssemblyPtrCollection _toProcess;
+        AssemblyPtrCollection _processed;
+
+    public:
+        AssemblyTargetProcessor(Assembly* first)
+        {
+            _toProcess.Add(first);
+        }
+
+        BOOL Process(void const* blob, ULONG blobLen)
+        {
+            CustomAttributeParser cap(blob, blobLen);
+            IfFailThrow(cap.ValidateProlog());
+
+            LPCUTF8 assemblyName;
+            ULONG assemblyNameLen;
+            IfFailThrow(cap.GetNonNullString(&assemblyName, &assemblyNameLen));
+
+            // Load the assembly
+            SString assemblyNameString{ SString::Utf8, assemblyName, assemblyNameLen };
+
+            AssemblySpec spec;
+            spec.Init(assemblyNameString);
+
+            Assembly* pAssembly = spec.LoadAssembly(FILE_LOADED);
+
+            // Only add the assembly if it is unknown.
+            if (_toProcess.Lookup(pAssembly) == NULL
+                && _processed.Lookup(pAssembly) == NULL)
+            {
+                _toProcess.Add(pAssembly);
+            }
+
+            return TRUE;
+        }
+
+        bool IsEmpty() const
+        {
+            return _toProcess.GetCount() == 0;
+        }
+
+        Assembly* GetNext()
+        {
+            AssemblyPtrCollection::Iterator first = _toProcess.Begin();
+            Assembly* tmp = *first;
+            _toProcess.Remove(first);
+            _ASSERTE(_toProcess.Lookup(tmp) == NULL);
+            _processed.Add(tmp);
+            _ASSERTE(_processed.Lookup(tmp) != NULL);
+            return tmp;
+        }
+    };
+
+    // Used for TypeMapAttribute`1 and TypeMapAssociationAttribute`1 attributes.
+    class MappingsProcessor final
+    {
+        BOOL (*_callback)(CallbackContext* context, ProcessAttributesCallbackArg* arg);
+        CallbackContext* _context;
+
+    public:
+        MappingsProcessor(
+            BOOL (*callback)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+            CallbackContext* context)
+            : _callback{ callback }
+            , _context{ context }
+        {
+            _ASSERTE(_callback != NULL);
+        }
+
+        BOOL Process(void const* blob, ULONG blobLen)
+        {
+            CustomAttributeParser cap(blob, blobLen);
+            IfFailThrow(cap.ValidateProlog());
+
+            // Observe that one of the constructors for TypeMapAttribute`1
+            // takes three (3) arguments, but we only ever look at two (2).
+            // This is because the third argument isn't needed by the
+            // mapping logic and is only used by the Trimmer.
+
+            LPCUTF8 str1;
+            ULONG strLen1;
+            IfFailThrow(cap.GetNonNullString(&str1, &strLen1));
+
+            LPCUTF8 str2;
+            ULONG strLen2;
+            IfFailThrow(cap.GetNonNullString(&str2, &strLen2));
+
+            ProcessAttributesCallbackArg arg;
+            arg.Utf8String1 = str1;
+            arg.Utf8String2 = str2;
+            arg.StringLen1 = strLen1;
+            arg.StringLen2 = strLen2;
+
+            return _callback(_context, &arg);
+        }
+    };
+}
+
+extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
+    QCall::AssemblyHandle pAssembly,
+    QCall::TypeHandle pGroupType,
+    BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    CallbackContext* context)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pAssembly != NULL);
+    _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
+    _ASSERTE(newExternalTypeEntry != NULL || newProxyTypeEntry != NULL);
+    _ASSERTE(context != NULL);
+
+    BEGIN_QCALL;
+
+    TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
+    _ASSERTE(!groupTypeTH.IsTypeDesc());
+    MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
+
+    AssemblyTargetProcessor assemblies{ pAssembly };
+    while (!assemblies.IsEmpty())
+    {
+        Assembly* currAssembly = assemblies.GetNext();
+
+        // Set the current assembly in the context.
+        {
+            GCX_COOP();
+            context->_currAssembly = currAssembly->GetExposedObject();
+        }
+
+        ProcessTypeMapAttribute(
+            TypeMapAssemblyTargetAttributeName,
+            assemblies,
+            groupTypeMT,
+            currAssembly);
+
+        if (newExternalTypeEntry != NULL)
+        {
+            MappingsProcessor onExternalType{ newExternalTypeEntry, context };
+            ProcessTypeMapAttribute(
+                TypeMapAttributeName,
+                onExternalType,
+                groupTypeMT,
+                currAssembly);
+        }
+
+        if (newProxyTypeEntry != NULL)
+        {
+            MappingsProcessor onProxyType{ newProxyTypeEntry, context };
+            ProcessTypeMapAttribute(
+                TypeMapAssociationAttributeName,
+                onProxyType,
+                groupTypeMT,
+                currAssembly);
+        }
+    }
+
+    END_QCALL;
 }

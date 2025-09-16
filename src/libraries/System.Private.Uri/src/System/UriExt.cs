@@ -80,7 +80,7 @@ namespace System
                     }
                 }
             }
-            else if (err > ParsingError.LastRelativeUriOkErrIndex)
+            else if (err > ParsingError.LastErrorOkayForRelativeUris)
             {
                 //This is a fatal error based solely on scheme name parsing
                 _string = null!; // make it be invalid Uri
@@ -104,7 +104,7 @@ namespace System
                 {
                     if ((err = PrivateParseMinimal()) != ParsingError.None)
                     {
-                        if (uriKind != UriKind.Absolute && err <= ParsingError.LastRelativeUriOkErrIndex)
+                        if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                         {
                             // RFC 3986 Section 5.4.2 - http:(relativeUri) may be considered a valid relative Uri.
                             _syntax = null!; // convert to relative uri
@@ -153,7 +153,7 @@ namespace System
                     {
                         // Can we still take it as a relative Uri?
                         if (uriKind != UriKind.Absolute && err != ParsingError.None
-                            && err <= ParsingError.LastRelativeUriOkErrIndex)
+                            && err <= ParsingError.LastErrorOkayForRelativeUris)
                         {
                             _syntax = null!; // convert it to relative
                             e = null;
@@ -195,19 +195,14 @@ namespace System
             // If we encountered any parsing errors that indicate this may be a relative Uri,
             // and we'll allow relative Uri's, then create one.
             else if (err != ParsingError.None && uriKind != UriKind.Absolute
-                && err <= ParsingError.LastRelativeUriOkErrIndex)
+                && err <= ParsingError.LastErrorOkayForRelativeUris)
             {
                 e = null;
                 _flags &= (Flags.UserEscaped | Flags.HasUnicode); // the only flags that makes sense for a relative uri
                 if (hasUnicode)
                 {
                     // Iri'ze and then normalize relative uris
-                    _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
-                                                (UriComponents)0);
-                    if (_string.Length > ushort.MaxValue)
-                    {
-                        return;
-                    }
+                    _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length, isQuery: false);
                 }
             }
             else
@@ -725,11 +720,11 @@ namespace System
         // b) Bidi chars are stripped
         //
         // should be called only if IRI parsing is switched on
-        internal unsafe string EscapeUnescapeIri(string input, int start, int end, UriComponents component)
+        internal unsafe string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
         {
             fixed (char* pInput = input)
             {
-                return IriHelper.EscapeUnescapeIri(pInput, start, end, component);
+                return IriHelper.EscapeUnescapeIri(pInput, start, end, isQuery);
             }
         }
 
@@ -772,7 +767,7 @@ namespace System
             if (err != ParsingError.None)
             {
                 // If it looks as a relative Uri, custom factory is ignored
-                if (uriKind != UriKind.Absolute && err <= ParsingError.LastRelativeUriOkErrIndex)
+                if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                     return new Uri((flags & Flags.UserEscaped), null, uriString);
 
                 return null;
@@ -891,7 +886,7 @@ namespace System
             return null;
         }
 
-        private unsafe string GetRelativeSerializationString(UriFormat format)
+        private string GetRelativeSerializationString(UriFormat format)
         {
             if (format == UriFormat.UriEscaped)
             {

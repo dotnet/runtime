@@ -4747,6 +4747,18 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	return result;
 }
 
+MonoBoolean
+ves_icall_System_Reflection_RuntimeAssembly_InternalTryGetRawMetadata (MonoQCallAssemblyHandle assembly_h, gpointer_ref blob, gint32_ref length, MonoError *error)
+{
+	MonoAssembly *assembly = assembly_h.assembly;
+	MonoImage *image = assembly->image;
+
+	*blob = image->raw_metadata;
+	*((guint32*)length) = image->raw_metadata_len;
+
+	return *blob != NULL;
+}
+
 /* move this in some file in mono/util/ */
 static char *
 g_concat_dir_and_file (const char *dir, const char *file)
@@ -5133,7 +5145,7 @@ ves_icall_System_Reflection_Assembly_GetEntryAssembly (MonoError *error)
 }
 
 MonoReflectionAssemblyHandle
-ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error)
+ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoStackCrawlMark *stack_mark, MonoError *error)
 {
 	MonoMethod *m;
 	MonoMethod *dest;
@@ -6230,19 +6242,6 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 	// for us and pass it as much information as possible. On Windows 8+ we can also
 	// use the __fastfail intrinsic.
 	abort ();
-}
-
-gint32
-ves_icall_System_Environment_get_TickCount (void)
-{
-	/* this will overflow after ~24 days */
-	return (gint32) (mono_msec_boottime () & 0xffffffff);
-}
-
-gint64
-ves_icall_System_Environment_get_TickCount64 (void)
-{
-	return mono_msec_boottime ();
 }
 
 gpointer

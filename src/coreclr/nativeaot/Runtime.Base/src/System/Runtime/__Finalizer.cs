@@ -7,7 +7,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 //
-// Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
+// Implements the single finalizer thread for a NativeAOT instance. Essentially waits for an event to fire
 // indicating finalization is necessary then drains the queue of pending finalizable objects, calling the
 // finalize method for each one.
 //
@@ -20,10 +20,6 @@ namespace System.Runtime
         [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers")]
         public static void ProcessFinalizers()
         {
-#if INPLACE_RUNTIME
-            System.Runtime.FinalizerInitRunner.DoInitialize();
-#endif
-
             while (true)
             {
                 // Wait until there's some work to be done. If true is returned we should finalize objects,
@@ -43,7 +39,7 @@ namespace System.Runtime
                 {
                     // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
                     // out by initiating a garbage collection and then go back to waiting for another request.
-                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: true);
+                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: Interop.BOOL.TRUE);
                 }
             }
         }

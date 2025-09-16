@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 
 namespace TestUnhandledException
 {
@@ -13,7 +14,7 @@ namespace TestUnhandledException
 
     unsafe class Program
     {
-        [DllImport("foreignunhandled")]
+        [DllImport("unhandlednative")]
         public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
 
         private const string INTERNAL_CALL = "__internal";
@@ -40,9 +41,21 @@ namespace TestUnhandledException
 
         static void Main(string[] args)
         {
+            // Ensure that the OS doesn't generate core dump for this intentionally crashing process
+            Utilities.DisableOSCoreDump();
+
             if (args[0] == "main")
             {
                 throw new Exception("Test");
+            }
+            else if (args[0] == "mainhardware")
+            {
+                string s = null;
+                Console.WriteLine(s.Length); // This will cause a NullReferenceException
+            }
+            else if (args[0] == "mainthreadinterrupted")
+            {
+                throw new ThreadInterruptedException("Test");
             }
             else if (args[0] == "foreign")
             {
@@ -51,6 +64,28 @@ namespace TestUnhandledException
             else if (args[0] == "secondary")
             {
                 Thread t = new Thread(() => throw new Exception("Test"));
+                t.Start();
+                t.Join();
+            }
+            else if (args[0] == "secondaryhardware")
+            {
+                Thread t = new Thread(() =>
+                {
+                    string s = null;
+                    Console.WriteLine(s.Length); // This will cause a NullReferenceException
+                });
+                t.Start();
+                t.Join();
+            }
+            else if (args[0] == "secondaryunhandled")
+            {
+                Thread t = new Thread(() => throw new Exception("Test"));
+                t.Start();
+                t.Join();
+            }
+            else if (args[0] == "secondarythreadinterrupted")
+            {
+                Thread t = new Thread(() => throw new ThreadInterruptedException("Test"));
                 t.Start();
                 t.Join();
             }

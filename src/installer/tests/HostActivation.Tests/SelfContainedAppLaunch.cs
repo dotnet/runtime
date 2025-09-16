@@ -3,12 +3,15 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
 using Xunit;
+using static Microsoft.DotNet.CoreSetup.Test.NetCoreAppBuilder;
+using static Microsoft.NET.HostModel.AppHost.HostWriter;
 
 namespace HostActivation.Tests
 {
@@ -151,10 +154,78 @@ namespace HostActivation.Tests
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(app.Location)
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), TestContext.BuildRID)
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void DevicePath()
+        {
+            string appExe = $@"\\?\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+
+            appExe = $@"\\.\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+        }
+
+        [Fact]
+        public void CustomRuntimeLocation()
+        {
+            string subdirectory = "runtime-directory";
+            Action<NetCoreAppBuilder> customizer = b =>
+            {
+                // Find the NETCoreApp runtime pack
+                RuntimeLibraryBuilder netCoreApp = b.RuntimeLibraries.First(
+                    r => r.Type == RuntimeLibraryType.runtimepack.ToString() && r.Name == $"runtimepack.{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}");
+
+                // Update all NETCoreApp asset paths to point to the subdirectory
+                RuntimeAssetGroupBuilder[] groups = [.. netCoreApp.AssemblyGroups, .. netCoreApp.NativeLibraryGroups];
+                foreach (RuntimeAssetGroupBuilder group in groups)
+                {
+                    foreach (RuntimeFileBuilder asset in group.Assets)
+                    {
+                        asset.Path = Path.Join(subdirectory, asset.Path);
+                    }
+                }
+
+                foreach (ResourceAssemblyBuilder resource in netCoreApp.ResourceAssemblies)
+                {
+                    resource.Path = Path.Join(subdirectory, resource.Path);
+                }
+            };
+
+            using TestApp app = TestApp.CreateFromBuiltAssets("HelloWorld");
+            app.PopulateSelfContained(TestApp.MockedComponent.None, customizer);
+            app.CreateAppHost(dotNetRootOptions: new()
+            {
+                Location = DotNetSearchOptions.SearchLocation.AppRelative,
+                AppRelativeDotNet = subdirectory
+            });
+
+            // Apphost should be able to find hostfxr based on the .NET search options
+            // Runtime files should be resolved based on relative path in .deps.json
+            Command.Create(app.AppExe)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
+                .And.HaveStdErrContaining($"CoreCLR path = '{Path.Join(app.Location, subdirectory, Binaries.CoreClr.FileName)}'");
         }
 
         public class SharedTestState : IDisposable
@@ -175,4 +246,3 @@ namespace HostActivation.Tests
         }
     }
 }
-

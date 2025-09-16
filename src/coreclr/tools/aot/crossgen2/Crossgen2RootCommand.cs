@@ -7,142 +7,143 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    internal class Crossgen2RootCommand : CliRootCommand
+    internal class Crossgen2RootCommand : RootCommand
     {
-        public CliArgument<Dictionary<string, string>> InputFilePaths { get; } =
+        public Argument<Dictionary<string, string>> InputFilePaths { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
-        public CliOption<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
+        public Option<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
             new("--unrooted-input-file-paths", "-u") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = SR.UnrootedInputFilesToCompile };
-        public CliOption<Dictionary<string, string>> ReferenceFilePaths { get; } =
+        public Option<Dictionary<string, string>> ReferenceFilePaths { get; } =
             new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = SR.ReferenceFiles };
-        public CliOption<string> InstructionSet { get; } =
+        public Option<string> InstructionSet { get; } =
             new("--instruction-set") { Description = SR.InstructionSets };
-        public CliOption<int> MaxVectorTBitWidth { get; } =
+        public Option<int> MaxVectorTBitWidth { get; } =
             new("--max-vectort-bitwidth") { Description = SR.MaxVectorTBitWidths };
-        public CliOption<string[]> MibcFilePaths { get; } =
+        public Option<string[]> MibcFilePaths { get; } =
             new("--mibc", "-m") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.MibcFiles };
-        public CliOption<string> OutputFilePath { get; } =
+        public Option<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = SR.OutputFilePath };
-        public CliOption<string> CompositeRootPath { get; } =
+        public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
-        public CliOption<bool> Optimize { get; } =
+        public Option<bool> Optimize { get; } =
             new("--optimize", "-O") { Description = SR.EnableOptimizationsOption };
-        public CliOption<bool> OptimizeDisabled { get; } =
+        public Option<bool> OptimizeDisabled { get; } =
             new("--optimize-disabled", "--Od") { Description = SR.DisableOptimizationsOption };
-        public CliOption<bool> OptimizeSpace { get; } =
+        public Option<bool> OptimizeSpace { get; } =
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
-        public CliOption<bool> OptimizeTime { get; } =
+        public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public CliOption<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
-        public CliOption<TypeValidationRule> TypeValidation { get; } =
+        public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
-        public CliOption<bool> InputBubble { get; } =
+        public Option<bool> InputBubble { get; } =
             new("--inputbubble") { Description = SR.InputBubbleOption };
-        public CliOption<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
+        public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
             new("--inputbubbleref") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = SR.InputBubbleReferenceFiles };
-        public CliOption<bool> Composite { get; } =
+        public Option<bool> Composite { get; } =
             new("--composite") { Description = SR.CompositeBuildMode };
-        public CliOption<string> CompositeKeyFile { get; } =
+        public Option<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
-        public CliOption<bool> CompileNoMethods { get; } =
+        public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
-        public CliOption<bool> OutNearInput { get; } =
+        public Option<bool> OutNearInput { get; } =
             new("--out-near-input") { Description = SR.OutNearInputOption };
-        public CliOption<bool> SingleFileCompilation { get; } =
+        public Option<bool> SingleFileCompilation { get; } =
             new("--single-file-compilation") { Description = SR.SingleFileCompilationOption };
-        public CliOption<bool> Partial { get; } =
+        public Option<bool> Partial { get; } =
             new("--partial") { Description = SR.PartialImageOption };
-        public CliOption<bool> CompileBubbleGenerics { get; } =
+        public Option<bool> CompileBubbleGenerics { get; } =
             new("--compilebubblegenerics") { Description = SR.BubbleGenericsOption };
-        public CliOption<bool> EmbedPgoData { get; } =
+        public Option<bool> EmbedPgoData { get; } =
             new("--embed-pgo-data") { Description = SR.EmbedPgoDataOption };
-        public CliOption<string> DgmlLogFileName { get; } =
+        public Option<string> DgmlLogFileName { get; } =
             new("--dgmllog") { Description = SR.SaveDependencyLogOption };
-        public CliOption<bool> GenerateFullDgmlLog { get; } =
+        public Option<bool> GenerateFullDgmlLog { get; } =
             new("--fulllog") { Description = SR.SaveDetailedLogOption };
-        public CliOption<bool> IsVerbose { get; } =
+        public Option<bool> IsVerbose { get; } =
             new("--verbose") { Description = SR.VerboseLoggingOption };
-        public CliOption<string> SystemModuleName { get; } =
+        public Option<string> SystemModuleName { get; } =
             new("--systemmodule") { DefaultValueFactory = _ => Helpers.DefaultSystemModule, Description = SR.SystemModuleOverrideOption };
-        public CliOption<bool> WaitForDebugger { get; } =
+        public Option<bool> WaitForDebugger { get; } =
             new("--waitfordebugger") { Description = SR.WaitForDebuggerOption };
-        public CliOption<string[]> CodegenOptions { get; } =
+        public Option<string[]> CodegenOptions { get; } =
             new("--codegenopt") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.CodeGenOptions };
-        public CliOption<bool> SupportIbc { get; } =
+        public Option<bool> SupportIbc { get; } =
             new("--support-ibc") { Description = SR.SupportIbc };
-        public CliOption<bool> Resilient { get; } =
+        public Option<bool> Resilient { get; } =
             new("--resilient") { Description = SR.ResilientOption };
-        public CliOption<string> ImageBase { get; } =
+        public Option<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
-        public CliOption<TargetArchitecture> TargetArchitecture { get; } =
+        public Option<TargetArchitecture> TargetArchitecture { get; } =
             new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
-        public CliOption<bool> EnableGenericCycleDetection { get; } =
+        public Option<bool> EnableGenericCycleDetection { get; } =
             new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
-        public CliOption<int> GenericCycleDepthCutoff { get; } =
+        public Option<int> GenericCycleDepthCutoff { get; } =
             new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
-        public CliOption<int> GenericCycleBreadthCutoff { get; } =
+        public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
-        public CliOption<TargetOS> TargetOS { get; } =
+        public Option<TargetOS> TargetOS { get; } =
             new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
-        public CliOption<string> JitPath { get; } =
+        public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
-        public CliOption<bool> PrintReproInstructions { get; } =
+        public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
-        public CliOption<string> SingleMethodTypeName { get; } =
+        public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
-        public CliOption<string> SingleMethodName { get; } =
+        public Option<string> SingleMethodName { get; } =
             new("--singlemethodname") { Description = SR.SingleMethodMethodName };
-        public CliOption<int> SingleMethodIndex { get; } =
+        public Option<int> SingleMethodIndex { get; } =
             new("--singlemethodindex") { Description = SR.SingleMethodIndex };
-        public CliOption<string[]> SingleMethodGenericArgs { get; } =
+        public Option<string[]> SingleMethodGenericArgs { get; } =
             new("--singlemethodgenericarg") { Description = SR.SingleMethodGenericArgs };
-        public CliOption<int> Parallelism { get; } =
+        public Option<int> Parallelism { get; } =
             new("--parallelism") { CustomParser = MakeParallelism, DefaultValueFactory = MakeParallelism, Description = SR.ParalellismOption };
-        public CliOption<int> CustomPESectionAlignment { get; } =
+        public Option<int> CustomPESectionAlignment { get; } =
             new("--custom-pe-section-alignment") { Description = SR.CustomPESectionAlignmentOption };
-        public CliOption<bool> Map { get; } =
+        public Option<bool> Map { get; } =
             new("--map") { Description = SR.MapFileOption };
-        public CliOption<bool> MapCsv { get; } =
+        public Option<bool> MapCsv { get; } =
             new("--mapcsv") { Description = SR.MapCsvFileOption };
-        public CliOption<bool> Pdb { get; } =
+        public Option<bool> Pdb { get; } =
             new("--pdb") { Description = SR.PdbFileOption };
-        public CliOption<string> PdbPath { get; } =
+        public Option<string> PdbPath { get; } =
             new("--pdb-path") { Description = SR.PdbFilePathOption };
-        public CliOption<bool> PerfMap { get; } =
+        public Option<bool> PerfMap { get; } =
             new("--perfmap") { Description = SR.PerfMapFileOption };
-        public CliOption<string> PerfMapPath { get; } =
+        public Option<string> PerfMapPath { get; } =
             new("--perfmap-path") { Description = SR.PerfMapFilePathOption };
-        public CliOption<int> PerfMapFormatVersion { get; } =
+        public Option<int> PerfMapFormatVersion { get; } =
             new("--perfmap-format-version") { DefaultValueFactory = _ => 0, Description = SR.PerfMapFormatVersionOption };
-        public CliOption<string[]> CrossModuleInlining { get; } =
+        public Option<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
-        public CliOption<bool> AsyncMethodOptimization { get; } =
+        public Option<bool> AsyncMethodOptimization { get; } =
             new("--opt-async-methods") { Description = SR.AsyncModuleOptimization };
-        public CliOption<string> NonLocalGenericsModule { get; } =
+        public Option<string> NonLocalGenericsModule { get; } =
             new("--non-local-generics-module") { DefaultValueFactory = _ => string.Empty, Description = SR.NonLocalGenericsModule };
-        public CliOption<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
-            new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
-        public CliOption<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
-            new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
-        public CliOption<bool> VerifyTypeAndFieldLayout { get; } =
+        public Option<MethodLayoutAlgorithm> MethodLayout { get; } =
+            new("--method-layout") { CustomParser = MakeMethodLayoutAlgorithm, DefaultValueFactory = MakeMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
+        public Option<FileLayoutAlgorithm> FileLayout { get; } =
+            new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
+        public Option<bool> VerifyTypeAndFieldLayout { get; } =
             new("--verify-type-and-field-layout") { Description = SR.VerifyTypeAndFieldLayoutOption };
-        public CliOption<string> CallChainProfileFile { get; } =
+        public Option<string> CallChainProfileFile { get; } =
             new("--callchain-profile") { Description = SR.CallChainProfileFile };
-        public CliOption<string> MakeReproPath { get; } =
+        public Option<string> MakeReproPath { get; } =
             new("--make-repro-path") { Description = "Path where to place a repro package" };
-        public CliOption<bool> HotColdSplitting { get; } =
+        public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
-        public CliOption<bool> SynthesizeRandomMibc { get; } =
+        public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
-        public CliOption<int> DeterminismStress { get; } =
+        public Option<int> DeterminismStress { get; } =
             new("--determinism-stress");
 
         public bool CompositeOrInputBubble { get; private set; }
@@ -285,69 +286,62 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
+        public static void PrintExtendedHelp(ParseResult _)
         {
-            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
-                yield return sectionDelegate;
+            Console.WriteLine(SR.OptionPassingHelp);
+            Console.WriteLine();
+            Console.WriteLine(SR.DashDashHelp);
+            Console.WriteLine();
 
-            yield return _ =>
+            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
+            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
+            Console.WriteLine();
+
+            Console.WriteLine(SR.CrossModuleInliningExtraHelp);
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<MethodLayoutAlgorithm>())));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<FileLayoutAlgorithm>())));
+            Console.WriteLine();
+
+            Console.WriteLine(SR.InstructionSetHelp);
+            foreach (string arch in ValidArchitectures)
             {
-                Console.WriteLine(SR.OptionPassingHelp);
-                Console.WriteLine();
-                Console.WriteLine(SR.DashDashHelp);
-                Console.WriteLine();
-
-                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-                string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
-
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
-                Console.WriteLine();
-
-                Console.WriteLine(SR.CrossModuleInliningExtraHelp);
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<ReadyToRunMethodLayoutAlgorithm>())));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<ReadyToRunFileLayoutAlgorithm>())));
-                Console.WriteLine();
-
-                Console.WriteLine(SR.InstructionSetHelp);
-                foreach (string arch in ValidArchitectures)
+                TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
+                bool first = true;
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch).DistinctBy((instructionSet) => instructionSet.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
-                    bool first = true;
-                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    // Only instruction sets with are specifiable should be printed to the help text
+                    if (instructionSet.Specifiable)
                     {
-                        // Only instruction sets with are specifiable should be printed to the help text
-                        if (instructionSet.Specifiable)
+                        if (first)
                         {
-                            if (first)
-                            {
-                                Console.Write(arch);
-                                Console.Write(": ");
-                                first = false;
-                            }
-                            else
-                            {
-                                Console.Write(", ");
-                            }
-                            Console.Write(instructionSet.Name);
+                            Console.Write(arch);
+                            Console.Write(": ");
+                            first = false;
                         }
+                        else
+                        {
+                            Console.Write(", ");
+                        }
+                        Console.Write(instructionSet.Name);
                     }
-
-                    if (first) continue; // no instruction-set found for this architecture
-
-                    Console.WriteLine();
                 }
 
+                if (first) continue; // no instruction-set found for this architecture
+
                 Console.WriteLine();
-                Console.WriteLine(SR.CpuFamilies);
-                Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-                return true;
-            };
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(SR.CpuFamilies);
+            Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
         }
 
         private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
@@ -378,33 +372,34 @@ namespace ILCompiler
             return parallelism;
         }
 
-        private static ReadyToRunMethodLayoutAlgorithm MakeReadyToRunMethodLayoutAlgorithm(ArgumentResult result)
+        private static MethodLayoutAlgorithm MakeMethodLayoutAlgorithm(ArgumentResult result)
         {
             if (result.Tokens.Count == 0 )
-                return ReadyToRunMethodLayoutAlgorithm.DefaultSort;
+                return MethodLayoutAlgorithm.DefaultSort;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "defaultsort" => ReadyToRunMethodLayoutAlgorithm.DefaultSort,
-                "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
-                "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
-                "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
-                "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
-                "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
-                "random" => ReadyToRunMethodLayoutAlgorithm.Random,
+                "defaultsort" => MethodLayoutAlgorithm.DefaultSort,
+                "exclusiveweight" => MethodLayoutAlgorithm.ExclusiveWeight,
+                "hotcold" => MethodLayoutAlgorithm.HotCold,
+                "instrumentedhotcold" => MethodLayoutAlgorithm.InstrumentedHotCold,
+                "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
+                "callfrequency" => MethodLayoutAlgorithm.CallFrequency,
+                "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
+                "random" => MethodLayoutAlgorithm.Random,
                 _ => throw new CommandLineException(SR.InvalidMethodLayout)
             };
         }
 
-        private static ReadyToRunFileLayoutAlgorithm MakeReadyToRunFileLayoutAlgorithm(ArgumentResult result)
+        private static FileLayoutAlgorithm MakeFileLayoutAlgorithm(ArgumentResult result)
         {
             if (result.Tokens.Count == 0 )
-                return ReadyToRunFileLayoutAlgorithm.DefaultSort;
+                return FileLayoutAlgorithm.DefaultSort;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "defaultsort" => ReadyToRunFileLayoutAlgorithm.DefaultSort,
-                "methodorder" => ReadyToRunFileLayoutAlgorithm.MethodOrder,
+                "defaultsort" => FileLayoutAlgorithm.DefaultSort,
+                "methodorder" => FileLayoutAlgorithm.MethodOrder,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
             };
         }

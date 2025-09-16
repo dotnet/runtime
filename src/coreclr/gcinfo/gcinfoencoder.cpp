@@ -7,9 +7,29 @@
  *
  */
 
+// Interpreter-FIXME: we get an existing implementation of ASSERTE via PCH that isn't usable
+//  from inside the interpreter, so we need to replace it with our own.
+#undef _ASSERTE
+
+#if defined(_DEBUG)
+
+extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+
+#define _ASSERTE(expr) if (!(expr)) { \
+    assertAbort(#expr, __FILE__, __LINE__); \
+}
+#else // _DEBUG
+#define _ASSERTE(expr) (void)0
+#endif // _DEBUG
+
+
 #include <stdint.h>
 
+#include "gcinfohelpers.h"
 #include "gcinfoencoder.h"
+
+using namespace GcInfoEncoderExt;
+
 #include "targetosarch.h"
 
 #ifdef _DEBUG
@@ -19,7 +39,6 @@
 #endif
 
 #ifndef STANDALONE_BUILD
-#include "log.h"
 #include "simplerhash.h"
 #include "bitposition.h"
 #endif
@@ -354,7 +373,6 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     SecObjSize += other.SecObjSize;
     GsCookieSize += other.GsCookieSize;
     GenericsCtxSize += other.GenericsCtxSize;
-    PspSymSize += other.PspSymSize;
     StackBaseSize += other.StackBaseSize;
     ReversePInvokeFrameSize += other.ReversePInvokeFrameSize;
     FixedAreaSize += other.FixedAreaSize;
@@ -379,56 +397,54 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
 
 void GcInfoSize::Log(DWORD level, const char * header)
 {
-    if(LoggingOn(LF_GCINFO, level))
+    if (GCINFO_LOGSPEW(level, header))
     {
-        LogSpew(LF_GCINFO, level, header);
+        GCINFO_LOGSPEW( level, "---COUNTS---\n");
+        GCINFO_LOGSPEW( level, "NumMethods: %zu\n", NumMethods);
+        GCINFO_LOGSPEW( level, "NumCallSites: %zu\n", NumCallSites);
+        GCINFO_LOGSPEW( level, "NumRanges: %zu\n", NumRanges);
+        GCINFO_LOGSPEW( level, "NumRegs: %zu\n", NumRegs);
+        GCINFO_LOGSPEW( level, "NumStack: %zu\n", NumStack);
+        GCINFO_LOGSPEW( level, "NumUntracked: %zu\n", NumUntracked);
+        GCINFO_LOGSPEW( level, "NumTransitions: %zu\n", NumTransitions);
+        GCINFO_LOGSPEW( level, "SizeOfCode: %zu\n", SizeOfCode);
+        GCINFO_LOGSPEW( level, "EncInfoSize: %zu\n", EncInfoSize);
 
-        LogSpew(LF_GCINFO, level, "---COUNTS---\n");
-        LogSpew(LF_GCINFO, level, "NumMethods: %zu\n", NumMethods);
-        LogSpew(LF_GCINFO, level, "NumCallSites: %zu\n", NumCallSites);
-        LogSpew(LF_GCINFO, level, "NumRanges: %zu\n", NumRanges);
-        LogSpew(LF_GCINFO, level, "NumRegs: %zu\n", NumRegs);
-        LogSpew(LF_GCINFO, level, "NumStack: %zu\n", NumStack);
-        LogSpew(LF_GCINFO, level, "NumUntracked: %zu\n", NumUntracked);
-        LogSpew(LF_GCINFO, level, "NumTransitions: %zu\n", NumTransitions);
-        LogSpew(LF_GCINFO, level, "SizeOfCode: %zu\n", SizeOfCode);
-        LogSpew(LF_GCINFO, level, "EncInfoSize: %zu\n", EncInfoSize);
-
-        LogSpew(LF_GCINFO, level, "---SIZES(bits)---\n");
-        LogSpew(LF_GCINFO, level, "Total: %zu\n", TotalSize);
-        LogSpew(LF_GCINFO, level, "UntrackedSlot: %zu\n", UntrackedSlotSize);
-        LogSpew(LF_GCINFO, level, "NumUntracked: %zu\n", NumUntrackedSize);
-        LogSpew(LF_GCINFO, level, "Flags: %zu\n", FlagsSize);
-        LogSpew(LF_GCINFO, level, "CodeLength: %zu\n", CodeLengthSize);
-        LogSpew(LF_GCINFO, level, "Prolog/Epilog: %zu\n", ProEpilogSize);
-        LogSpew(LF_GCINFO, level, "SecObj: %zu\n", SecObjSize);
-        LogSpew(LF_GCINFO, level, "GsCookie: %zu\n", GsCookieSize);
-        LogSpew(LF_GCINFO, level, "PspSym: %zu\n", PspSymSize);
-        LogSpew(LF_GCINFO, level, "GenericsCtx: %zu\n", GenericsCtxSize);
-        LogSpew(LF_GCINFO, level, "StackBase: %zu\n", StackBaseSize);
-        LogSpew(LF_GCINFO, level, "FixedArea: %zu\n", FixedAreaSize);
-        LogSpew(LF_GCINFO, level, "ReversePInvokeFrame: %zu\n", ReversePInvokeFrameSize);
-        LogSpew(LF_GCINFO, level, "NumCallSites: %zu\n", NumCallSitesSize);
-        LogSpew(LF_GCINFO, level, "NumRanges: %zu\n", NumRangesSize);
-        LogSpew(LF_GCINFO, level, "CallSiteOffsets: %zu\n", CallSitePosSize);
-        LogSpew(LF_GCINFO, level, "Ranges: %zu\n", RangeSize);
-        LogSpew(LF_GCINFO, level, "NumRegs: %zu\n", NumRegsSize);
-        LogSpew(LF_GCINFO, level, "NumStack: %zu\n", NumStackSize);
-        LogSpew(LF_GCINFO, level, "RegSlots: %zu\n", RegSlotSize);
-        LogSpew(LF_GCINFO, level, "StackSlots: %zu\n", StackSlotSize);
-        LogSpew(LF_GCINFO, level, "CallSiteStates: %zu\n", CallSiteStateSize);
-        LogSpew(LF_GCINFO, level, "EhOffsets: %zu\n", EhPosSize);
-        LogSpew(LF_GCINFO, level, "EhStates: %zu\n", EhStateSize);
-        LogSpew(LF_GCINFO, level, "ChunkPointers: %zu\n", ChunkPtrSize);
-        LogSpew(LF_GCINFO, level, "ChunkMasks: %zu\n", ChunkMaskSize);
-        LogSpew(LF_GCINFO, level, "ChunkFinalStates: %zu\n", ChunkFinalStateSize);
-        LogSpew(LF_GCINFO, level, "Transitions: %zu\n", ChunkTransitionSize);
+        GCINFO_LOGSPEW( level, "---SIZES(bits)---\n");
+        GCINFO_LOGSPEW( level, "Total: %zu\n", TotalSize);
+        GCINFO_LOGSPEW( level, "UntrackedSlot: %zu\n", UntrackedSlotSize);
+        GCINFO_LOGSPEW( level, "NumUntracked: %zu\n", NumUntrackedSize);
+        GCINFO_LOGSPEW( level, "Flags: %zu\n", FlagsSize);
+        GCINFO_LOGSPEW( level, "CodeLength: %zu\n", CodeLengthSize);
+        GCINFO_LOGSPEW( level, "Prolog/Epilog: %zu\n", ProEpilogSize);
+        GCINFO_LOGSPEW( level, "SecObj: %zu\n", SecObjSize);
+        GCINFO_LOGSPEW( level, "GsCookie: %zu\n", GsCookieSize);
+        GCINFO_LOGSPEW( level, "PspSym: %zu\n", PspSymSize);
+        GCINFO_LOGSPEW( level, "GenericsCtx: %zu\n", GenericsCtxSize);
+        GCINFO_LOGSPEW( level, "StackBase: %zu\n", StackBaseSize);
+        GCINFO_LOGSPEW( level, "FixedArea: %zu\n", FixedAreaSize);
+        GCINFO_LOGSPEW( level, "ReversePInvokeFrame: %zu\n", ReversePInvokeFrameSize);
+        GCINFO_LOGSPEW( level, "NumCallSites: %zu\n", NumCallSitesSize);
+        GCINFO_LOGSPEW( level, "NumRanges: %zu\n", NumRangesSize);
+        GCINFO_LOGSPEW( level, "CallSiteOffsets: %zu\n", CallSitePosSize);
+        GCINFO_LOGSPEW( level, "Ranges: %zu\n", RangeSize);
+        GCINFO_LOGSPEW( level, "NumRegs: %zu\n", NumRegsSize);
+        GCINFO_LOGSPEW( level, "NumStack: %zu\n", NumStackSize);
+        GCINFO_LOGSPEW( level, "RegSlots: %zu\n", RegSlotSize);
+        GCINFO_LOGSPEW( level, "StackSlots: %zu\n", StackSlotSize);
+        GCINFO_LOGSPEW( level, "CallSiteStates: %zu\n", CallSiteStateSize);
+        GCINFO_LOGSPEW( level, "EhOffsets: %zu\n", EhPosSize);
+        GCINFO_LOGSPEW( level, "EhStates: %zu\n", EhStateSize);
+        GCINFO_LOGSPEW( level, "ChunkPointers: %zu\n", ChunkPtrSize);
+        GCINFO_LOGSPEW( level, "ChunkMasks: %zu\n", ChunkMaskSize);
+        GCINFO_LOGSPEW( level, "ChunkFinalStates: %zu\n", ChunkFinalStateSize);
+        GCINFO_LOGSPEW( level, "Transitions: %zu\n", ChunkTransitionSize);
     }
 }
 
 #endif
 
-GcInfoEncoder::GcInfoEncoder(
+template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncoder(
             ICorJitInfo*                pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
             IAllocator*                 pJitAllocator,
@@ -439,11 +455,6 @@ GcInfoEncoder::GcInfoEncoder(
         m_InterruptibleRanges( pJitAllocator ),
         m_LifetimeTransitions( pJitAllocator )
 {
-#ifdef MEASURE_GCINFO
-    // This causes multiple complus.log files in JIT64.  TODO: consider using ICorJitInfo::logMsg instead.
-    InitializeLogging();
-#endif
-
     _ASSERTE( pCorJitInfo != NULL );
     _ASSERTE( pMethodInfo != NULL );
     _ASSERTE( pJitAllocator != NULL );
@@ -468,7 +479,6 @@ GcInfoEncoder::GcInfoEncoder(
     m_GSCookieValidRangeStart = 0;
     _ASSERTE(sizeof(m_GSCookieValidRangeEnd) == sizeof(UINT32));
     m_GSCookieValidRangeEnd = (UINT32) (-1); // == UINT32.MaxValue
-    m_PSPSymStackSlot = NO_PSP_SYM;
     m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
     m_contextParamType = GENERIC_CONTEXTPARAM_NONE;
 
@@ -491,14 +501,10 @@ GcInfoEncoder::GcInfoEncoder(
 #endif //_DEBUG
 
     m_CodeLength = 0;
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    m_SizeOfStackOutgoingAndScratchArea = -1;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-void GcInfoEncoder::DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UINT32 numCallSites)
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UINT32 numCallSites)
 {
     m_pCallSites = pCallSites;
     m_pCallSiteSizes = pCallSiteSizes;
@@ -507,7 +513,7 @@ void GcInfoEncoder::DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UI
     for(UINT32 i=0; i<numCallSites; i++)
     {
         _ASSERTE(pCallSiteSizes[i] > 0);
-        _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(pCallSites[i])) == pCallSites[i]);
+        _ASSERTE(GcInfoEncoding::DENORMALIZE_CODE_OFFSET(GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCallSites[i])) == pCallSites[i]);
         if(i > 0)
         {
             UINT32 prevEnd = pCallSites[i-1] + pCallSiteSizes[i-1];
@@ -519,7 +525,7 @@ void GcInfoEncoder::DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UI
 }
 #endif
 
-GcSlotId GcInfoEncoder::GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags )
+template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags )
 {
     // We could lookup an existing identical slot in the slot table (via some hashtable mechanism).
     // We just create duplicates for now.
@@ -544,7 +550,7 @@ GcSlotId GcInfoEncoder::GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags )
     return newSlotId;
 }
 
-GcSlotId GcInfoEncoder::GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase )
+template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase )
 {
     // We could lookup an existing identical slot in the slot table (via some hashtable mechanism).
     // We just create duplicates for now.
@@ -580,7 +586,7 @@ GcSlotId GcInfoEncoder::GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcSta
     return newSlotId;
 }
 
-void GcInfoEncoder::GrowSlotTable()
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::GrowSlotTable()
 {
     m_SlotTableSize *= 2;
     GcSlotDesc* newSlotTable = (GcSlotDesc*) m_pAllocator->Alloc( m_SlotTableSize * sizeof(GcSlotDesc) );
@@ -593,7 +599,7 @@ void GcInfoEncoder::GrowSlotTable()
     m_SlotTable = newSlotTable;
 }
 
-void GcInfoEncoder::WriteSlotStateVector(BitStreamWriter &writer, const BitArray& vector)
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::WriteSlotStateVector(BitStreamWriter &writer, const BitArray& vector)
 {
     for(UINT32 i = 0; i < m_NumSlots && !m_SlotTable[i].IsUntracked(); i++)
     {
@@ -604,12 +610,12 @@ void GcInfoEncoder::WriteSlotStateVector(BitStreamWriter &writer, const BitArray
     }
 }
 
-void GcInfoEncoder::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
 {
     UINT32 stopInstructionOffset = startInstructionOffset + length;
 
-    UINT32 normStartOffset = NORMALIZE_CODE_OFFSET(startInstructionOffset);
-    UINT32 normStopOffset = NORMALIZE_CODE_OFFSET(stopInstructionOffset);
+    UINT32 normStartOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(startInstructionOffset);
+    UINT32 normStopOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(stopInstructionOffset);
 
     // Ranges must not overlap and must be passed sorted by increasing offset
     _ASSERTE(
@@ -636,7 +642,7 @@ void GcInfoEncoder::DefineInterruptibleRange( UINT32 startInstructionOffset, UIN
         }
     }
 
-    LOG((LF_GCINFO, LL_INFO1000000, "interruptible at %x length %x\n", startInstructionOffset, length));
+    GCINFO_LOG( LL_INFO1000000, "interruptible at %x length %x\n", startInstructionOffset, length);
 }
 
 
@@ -644,7 +650,7 @@ void GcInfoEncoder::DefineInterruptibleRange( UINT32 startInstructionOffset, UIN
 //
 // For inputs, pass zero as offset
 //
-void GcInfoEncoder::SetSlotState(
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSlotState(
                             UINT32      instructionOffset,
                             GcSlotId    slotId,
                             GcSlotState slotState
@@ -661,23 +667,23 @@ void GcInfoEncoder::SetSlotState(
 
     *( m_LifetimeTransitions.Append() ) = transition;
 
-    LOG((LF_GCINFO, LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset));
+    GCINFO_LOG( LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset);
 }
 
 
-void GcInfoEncoder::SetIsVarArg()
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetIsVarArg()
 {
     m_IsVarArg = true;
 }
 
-void GcInfoEncoder::SetCodeLength( UINT32 length )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetCodeLength( UINT32 length )
 {
     _ASSERTE( length > 0 );
     _ASSERTE( m_CodeLength == 0 || m_CodeLength == length );
     m_CodeLength = length;
 }
 
-void GcInfoEncoder::SetPrologSize( UINT32 prologSize )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetPrologSize( UINT32 prologSize )
 {
     _ASSERTE(prologSize != 0);
     _ASSERTE(m_GSCookieValidRangeStart == 0 || m_GSCookieValidRangeStart == prologSize);
@@ -688,7 +694,7 @@ void GcInfoEncoder::SetPrologSize( UINT32 prologSize )
     m_GSCookieValidRangeEnd   = prologSize+1;
 }
 
-void GcInfoEncoder::SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd )
 {
     _ASSERTE( spOffsetGSCookie != NO_GS_COOKIE );
     _ASSERTE( m_GSCookieStackSlot == NO_GS_COOKIE || m_GSCookieStackSlot == spOffsetGSCookie );
@@ -699,15 +705,7 @@ void GcInfoEncoder::SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRa
     m_GSCookieValidRangeEnd   = validRangeEnd;
 }
 
-void GcInfoEncoder::SetPSPSymStackSlot( INT32 spOffsetPSPSym )
-{
-    _ASSERTE( spOffsetPSPSym != NO_PSP_SYM );
-    _ASSERTE( m_PSPSymStackSlot == NO_PSP_SYM || m_PSPSymStackSlot == spOffsetPSPSym );
-
-    m_PSPSymStackSlot              = spOffsetPSPSym;
-}
-
-void GcInfoEncoder::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
 {
     _ASSERTE( spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT);
     _ASSERTE( m_GenericsInstContextStackSlot == NO_GENERICS_INST_CONTEXT || m_GenericsInstContextStackSlot == spOffsetGenericsContext );
@@ -716,10 +714,10 @@ void GcInfoEncoder::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsConte
     m_contextParamType = type;
 }
 
-void GcInfoEncoder::SetStackBaseRegister( UINT32 regNum )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStackBaseRegister( UINT32 regNum )
 {
     _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
-    _ASSERTE(DENORMALIZE_STACK_BASE_REGISTER(NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
+    _ASSERTE(GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
 #if defined(TARGET_LOONGARCH64)
     assert(regNum == 3 || 22 == regNum);
@@ -729,7 +727,7 @@ void GcInfoEncoder::SetStackBaseRegister( UINT32 regNum )
     m_StackBaseRegister = regNum;
 }
 
-void GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
 {
     _ASSERTE( slots != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
     _ASSERTE( m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
@@ -737,37 +735,44 @@ void GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
 }
 
 #ifdef TARGET_ARM64
-void GcInfoEncoder::SetSizeOfEditAndContinueFixedStackFrame( UINT32 size )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfEditAndContinueFixedStackFrame( UINT32 size )
 {
     m_SizeOfEditAndContinueFixedStackFrame = size;
 }
 #endif
 
 #ifdef TARGET_AMD64
-void GcInfoEncoder::SetWantsReportOnlyLeaf()
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetWantsReportOnlyLeaf()
 {
     m_WantsReportOnlyLeaf = true;
 }
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-void GcInfoEncoder::SetHasTailCalls()
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetHasTailCalls()
 {
     m_HasTailCalls = true;
 }
 #endif // TARGET_AMD64
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-void GcInfoEncoder::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 {
-    _ASSERTE( size != (UINT32)-1 );
-    _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
-    m_SizeOfStackOutgoingAndScratchArea = size;
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+    {
+        _ASSERTE( size != (UINT32)-1 );
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
+        m_SizeOfStackOutgoingAndScratchArea = size;
+    }
+    else
+    {
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 );
+        _ASSERTE( size == (UINT32)0 );
+    }
 }
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
-void GcInfoEncoder::SetReversePInvokeFrameSlot(INT32 spOffset)
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetReversePInvokeFrameSlot(INT32 spOffset)
 {
     m_ReversePInvokeFrameSlot = spOffset;
 }
+
 
 struct GcSlotDescAndId
 {
@@ -819,7 +824,7 @@ struct CompareSlotDescAndIdBySlotDesc
 
 struct CompareLifetimeTransitionsByOffsetThenSlot
 {
-    bool operator()(const GcInfoEncoder::LifetimeTransition& first, const GcInfoEncoder::LifetimeTransition& second)
+    bool operator()(const GcInfoEncoderExt::LifetimeTransition& first, const GcInfoEncoderExt::LifetimeTransition& second)
     {
         UINT32 firstOffset  = first.CodeOffset;
         UINT32 secondOffset = second.CodeOffset;
@@ -837,12 +842,13 @@ struct CompareLifetimeTransitionsByOffsetThenSlot
 
 struct CompareLifetimeTransitionsBySlot
 {
-    bool operator()(const GcInfoEncoder::LifetimeTransition& first, const GcInfoEncoder::LifetimeTransition& second)
+    bool operator()(const GcInfoEncoderExt::LifetimeTransition& first, const GcInfoEncoderExt::LifetimeTransition& second)
     {
         UINT32 firstOffset  = first.CodeOffset;
         UINT32 secondOffset = second.CodeOffset;
 
-        _ASSERTE(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
+        // Interpreter-FIXME: GcInfoEncoding::
+        // _ASSERTE(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
 
         // Sort them by slot
         if( first.SlotId != second.SlotId)
@@ -902,19 +908,20 @@ void BitStreamWriter::MemoryBlockList::Dispose(IAllocator* allocator)
 #endif
 }
 
-void GcInfoEncoder::FinalizeSlotIds()
+
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::FinalizeSlotIds()
 {
 #ifdef _DEBUG
     m_IsSlotTableFrozen = TRUE;
 #endif
 }
 
-void GcInfoEncoder::Build()
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 {
 #ifdef _DEBUG
     _ASSERTE(m_IsSlotTableFrozen || m_NumSlots == 0);
 
-    _ASSERTE((1 << NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == NUM_NORM_CODE_OFFSETS_PER_CHUNK);
+    _ASSERTE((1 << GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
     char methodName[256];
     m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, sizeof(methodName));
@@ -922,9 +929,9 @@ void GcInfoEncoder::Build()
     char className[256];
     m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, sizeof(className));
 
-    LOG((LF_GCINFO, LL_INFO100,
+    GCINFO_LOG( LL_INFO100,
          "Entering GcInfoEncoder::Build() for method %s:%s\n",
-         className, methodName));
+         className, methodName);
 #endif
 
 
@@ -937,9 +944,9 @@ void GcInfoEncoder::Build()
     UINT32 hasContextParamType = (m_GenericsInstContextStackSlot != NO_GENERICS_INST_CONTEXT);
     UINT32 hasReversePInvokeFrame = (m_ReversePInvokeFrameSlot != NO_REVERSE_PINVOKE_FRAME);
 
-    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
+    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
-        ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
+        ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
 #ifdef TARGET_AMD64
         !m_WantsReportOnlyLeaf &&
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -966,7 +973,7 @@ void GcInfoEncoder::Build()
         GCINFO_WRITE(m_Info1, (m_IsVarArg ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasSecurityObject */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
-        GCINFO_WRITE(m_Info1, ((m_PSPSymStackSlot != NO_PSP_SYM) ? 1 : 0), 1, FlagsSize);
+        GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
 #if defined(TARGET_LOONGARCH64)
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
@@ -984,8 +991,8 @@ void GcInfoEncoder::Build()
     }
 
     _ASSERTE( m_CodeLength > 0 );
-    _ASSERTE(DENORMALIZE_CODE_LENGTH(NORMALIZE_CODE_LENGTH(m_CodeLength)) == m_CodeLength);
-    GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_CODE_LENGTH(m_CodeLength), CODE_LENGTH_ENCBASE, CodeLengthSize);
+    _ASSERTE(GcInfoEncoding::DENORMALIZE_CODE_LENGTH(GcInfoEncoding::NORMALIZE_CODE_LENGTH(m_CodeLength)) == m_CodeLength);
+    GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_CODE_LENGTH(m_CodeLength), GcInfoEncoding::CODE_LENGTH_ENCBASE, CodeLengthSize);
 
     if(hasGSCookie)
     {
@@ -999,13 +1006,13 @@ void GcInfoEncoder::Build()
         _ASSERTE(intersectionStart > 0 && intersectionStart < m_CodeLength);
         _ASSERTE(intersectionEnd > 0 && intersectionEnd <= m_CodeLength);
         _ASSERTE(intersectionStart <= intersectionEnd);
-        UINT32 normPrologSize = NORMALIZE_CODE_OFFSET(intersectionStart);
-        UINT32 normEpilogSize = NORMALIZE_CODE_OFFSET(m_CodeLength) - NORMALIZE_CODE_OFFSET(intersectionEnd);
+        UINT32 normPrologSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(intersectionStart);
+        UINT32 normEpilogSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength) - GcInfoEncoding::NORMALIZE_CODE_OFFSET(intersectionEnd);
         _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
         _ASSERTE(normEpilogSize < m_CodeLength);
 
-        GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
-        GCINFO_WRITE_VARL_U(m_Info1, normEpilogSize, NORM_EPILOG_SIZE_ENCBASE, ProEpilogSize);
+        GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
+        GCINFO_WRITE_VARL_U(m_Info1, normEpilogSize, GcInfoEncoding::NORM_EPILOG_SIZE_ENCBASE, ProEpilogSize);
     }
     else if (hasContextParamType)
     {
@@ -1013,10 +1020,10 @@ void GcInfoEncoder::Build()
         // Save the prolog size, to be used for determining when it is not safe
         // to report generics param context and the security object
         _ASSERTE(m_GSCookieValidRangeStart > 0 && m_GSCookieValidRangeStart < m_CodeLength);
-        UINT32 normPrologSize = NORMALIZE_CODE_OFFSET(m_GSCookieValidRangeStart);
+        UINT32 normPrologSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_GSCookieValidRangeStart);
         _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
 
-        GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
+        GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
     }
 
     // Encode the offset to the GS cookie.
@@ -1024,24 +1031,13 @@ void GcInfoEncoder::Build()
     {
         _ASSERTE(!slimHeader);
 #ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "GS cookie at " FMT_STK "\n",
+        GCINFO_LOG( LL_INFO1000, "GS cookie at " FMT_STK "\n",
              DBG_STK(m_GSCookieStackSlot)
-             ));
+             );
 #endif
 
-        GCINFO_WRITE_VARL_S(m_Info1, NORMALIZE_STACK_SLOT(m_GSCookieStackSlot), GS_COOKIE_STACK_SLOT_ENCBASE, GsCookieSize);
+        GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GSCookieStackSlot), GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE, GsCookieSize);
 
-    }
-
-    // Encode the offset to the PSPSym.
-    // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before stack allocations on X64.
-    if(m_PSPSymStackSlot != NO_PSP_SYM)
-    {
-        _ASSERTE(!slimHeader);
-#ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "Parent PSP at " FMT_STK "\n", DBG_STK(m_PSPSymStackSlot)));
-#endif
-        GCINFO_WRITE_VARL_S(m_Info1, NORMALIZE_STACK_SLOT(m_PSPSymStackSlot), PSP_SYM_STACK_SLOT_ENCBASE, PspSymSize);
     }
 
     // Encode the offset to the generics type context.
@@ -1049,11 +1045,11 @@ void GcInfoEncoder::Build()
     {
         _ASSERTE(!slimHeader);
 #ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
+        GCINFO_LOG( LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
              DBG_STK(m_GenericsInstContextStackSlot)
-             ));
+             );
 #endif
-        GCINFO_WRITE_VARL_S(m_Info1, NORMALIZE_STACK_SLOT(m_GenericsInstContextStackSlot), GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, GenericsCtxSize);
+        GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GenericsInstContextStackSlot), GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, GenericsCtxSize);
     }
 
     if(!slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
@@ -1063,30 +1059,31 @@ void GcInfoEncoder::Build()
 #elif defined(TARGET_RISCV64)
         assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
 #endif
-        GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
+        GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
 
     if (m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA)
     {
-        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncInfoSize);
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, GcInfoEncoding::SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncInfoSize);
 #ifdef TARGET_ARM64
-        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinueFixedStackFrame, SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, EncInfoSize);
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinueFixedStackFrame, GcInfoEncoding::SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, EncInfoSize);
 #endif
     }
 
     if (hasReversePInvokeFrame)
     {
         _ASSERTE(!slimHeader);
-        GCINFO_WRITE_VARL_S(m_Info1, NORMALIZE_STACK_SLOT(m_ReversePInvokeFrameSlot), REVERSE_PINVOKE_FRAME_ENCBASE, ReversePInvokeFrameSize);
+        GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_ReversePInvokeFrameSlot), GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE, ReversePInvokeFrameSize);
     }
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    if (!slimHeader)
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
     {
-        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
-        GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
+        if (!slimHeader)
+        {
+            _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
+            GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
+        }
     }
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
     UINT32 numInterruptibleRanges = (UINT32) m_InterruptibleRanges.Count();
 
@@ -1117,12 +1114,12 @@ void GcInfoEncoder::Build()
         UINT32 callSite = m_pCallSites[callSiteIndex];
         callSite += m_pCallSiteSizes[callSiteIndex];
 
-        _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(callSite)) == callSite);
-        UINT32 normOffset = NORMALIZE_CODE_OFFSET(callSite);
+        _ASSERTE(GcInfoEncoding::DENORMALIZE_CODE_OFFSET(GcInfoEncoding::NORMALIZE_CODE_OFFSET(callSite)) == callSite);
+        UINT32 normOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(callSite);
         m_pCallSites[numCallSites++] = normOffset;
     }
 
-    GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_NUM_SAFE_POINTS(numCallSites), NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
+    GCINFO_WRITE_VARL_U(m_Info1, numCallSites, GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
     m_NumCallSites = numCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
@@ -1132,7 +1129,7 @@ void GcInfoEncoder::Build()
     }
     else
     {
-        GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_NUM_INTERRUPTIBLE_RANGES(numInterruptibleRanges), NUM_INTERRUPTIBLE_RANGES_ENCBASE, NumRangesSize);
+        GCINFO_WRITE_VARL_U(m_Info1, numInterruptibleRanges, GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE, NumRangesSize);
     }
 
 
@@ -1142,7 +1139,7 @@ void GcInfoEncoder::Build()
     // Encode call site offsets
     ///////////////////////////////////////////////////////////////////////
 
-    UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
+    UINT32 numBitsPerOffset = CeilOfLog2(GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength));
 
     for(UINT32 callSiteIndex = 0; callSiteIndex < m_NumCallSites; callSiteIndex++)
     {
@@ -1173,9 +1170,9 @@ void GcInfoEncoder::Build()
 
             lastStopOffset = normStopOffset;
 
-            GCINFO_WRITE_VARL_U(m_Info1, normStartDelta, INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, RangeSize);
+            GCINFO_WRITE_VARL_U(m_Info1, normStartDelta, GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, RangeSize);
 
-            GCINFO_WRITE_VARL_U(m_Info1, normStopDelta-1, INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, RangeSize);
+            GCINFO_WRITE_VARL_U(m_Info1, normStopDelta-1, GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, RangeSize);
         }
     }
 
@@ -1260,14 +1257,14 @@ void GcInfoEncoder::Build()
 #endif
     }
 
-#if CODE_OFFSETS_NEED_NORMALIZATION
-    // Do a pass to normalize transition offsets
-    for(pCurrent = pTransitions; pCurrent < pEndTransitions; pCurrent++)
-    {
-        _ASSERTE(pCurrent->CodeOffset <= m_CodeLength);
-        pCurrent->CodeOffset = NORMALIZE_CODE_OFFSET(pCurrent->CodeOffset);
+    if (GcInfoEncoding::CODE_OFFSETS_NEED_NORMALIZATION) {
+        // Do a pass to normalize transition offsets
+        for(pCurrent = pTransitions; pCurrent < pEndTransitions; pCurrent++)
+        {
+            _ASSERTE(pCurrent->CodeOffset <= m_CodeLength);
+            pCurrent->CodeOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCurrent->CodeOffset);
+        }
     }
-#endif
 
     ///////////////////////////////////////////////////////////////////
     // Find out which slots are really used
@@ -1444,7 +1441,7 @@ void GcInfoEncoder::Build()
     if (numRegisters)
     {
         GCINFO_WRITE(m_Info1, 1, 1, FlagsSize);
-        GCINFO_WRITE_VARL_U(m_Info1, numRegisters, NUM_REGISTERS_ENCBASE, NumRegsSize);
+        GCINFO_WRITE_VARL_U(m_Info1, numRegisters, GcInfoEncoding::NUM_REGISTERS_ENCBASE, NumRegsSize);
     }
     else
     {
@@ -1453,8 +1450,8 @@ void GcInfoEncoder::Build()
     if (numStackSlots || numUntrackedSlots)
     {
         GCINFO_WRITE(m_Info1, 1, 1, FlagsSize);
-        GCINFO_WRITE_VARL_U(m_Info1, numStackSlots, NUM_STACK_SLOTS_ENCBASE, NumStackSize);
-        GCINFO_WRITE_VARL_U(m_Info1, numUntrackedSlots, NUM_UNTRACKED_SLOTS_ENCBASE, NumUntrackedSize);
+        GCINFO_WRITE_VARL_U(m_Info1, numStackSlots, GcInfoEncoding::NUM_STACK_SLOTS_ENCBASE, NumStackSize);
+        GCINFO_WRITE_VARL_U(m_Info1, numUntrackedSlots, GcInfoEncoding::NUM_UNTRACKED_SLOTS_ENCBASE, NumUntrackedSize);
     }
     else
     {
@@ -1478,8 +1475,8 @@ void GcInfoEncoder::Build()
         _ASSERTE(pSlotDesc->IsRegister());
 
         // Encode slot identification
-        UINT32 currentNormRegNum = NORMALIZE_REGISTER(pSlotDesc->Slot.RegisterNumber);
-        GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, REGISTER_ENCBASE, RegSlotSize);
+        UINT32 currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
+        GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, RegSlotSize);
         GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, RegSlotSize);
 
         for(UINT32 j = 1; j < numRegisters; j++)
@@ -1495,17 +1492,17 @@ void GcInfoEncoder::Build()
             while(pSlotDesc->IsDeleted());
             _ASSERTE(pSlotDesc->IsRegister());
 
-            currentNormRegNum = NORMALIZE_REGISTER(pSlotDesc->Slot.RegisterNumber);
+            currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
 
             if(lastFlags != GC_SLOT_IS_REGISTER)
             {
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, REGISTER_ENCBASE, RegSlotSize);
+                GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, RegSlotSize);
                 GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, RegSlotSize);
             }
             else
             {
                 _ASSERTE(pSlotDesc->Flags == GC_SLOT_IS_REGISTER);
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum - lastNormRegNum - 1, REGISTER_DELTA_ENCBASE, RegSlotSize);
+                GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum - lastNormRegNum - 1, GcInfoEncoding::REGISTER_DELTA_ENCBASE, RegSlotSize);
             }
         }
     }
@@ -1525,8 +1522,8 @@ void GcInfoEncoder::Build()
         // Encode slot identification
         _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
         GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
-        INT32 currentNormStackSlot = NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
-        GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, STACK_SLOT_ENCBASE, StackSlotSize);
+        INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+        GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
 
         GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
 
@@ -1544,20 +1541,20 @@ void GcInfoEncoder::Build()
             _ASSERTE(!pSlotDesc->IsRegister());
             _ASSERTE(!pSlotDesc->IsUntracked());
 
-            currentNormStackSlot = NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+            currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
 
             _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
             GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
 
             if(lastFlags != GC_SLOT_BASE)
             {
-                GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, STACK_SLOT_ENCBASE, StackSlotSize);
+                GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
                 GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
             }
             else
             {
                 _ASSERTE(pSlotDesc->Flags == GC_SLOT_BASE);
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, STACK_SLOT_DELTA_ENCBASE, StackSlotSize);
+                GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, StackSlotSize);
             }
         }
     }
@@ -1577,8 +1574,8 @@ void GcInfoEncoder::Build()
         // Encode slot identification
         _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
         GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
-        INT32 currentNormStackSlot = NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
-        GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, STACK_SLOT_ENCBASE, UntrackedSlotSize);
+        INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+        GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
 
         GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
 
@@ -1596,20 +1593,20 @@ void GcInfoEncoder::Build()
             _ASSERTE(!pSlotDesc->IsRegister());
             _ASSERTE(pSlotDesc->IsUntracked());
 
-            currentNormStackSlot = NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
+            currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
 
             _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
             GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
 
             if(lastFlags != GC_SLOT_UNTRACKED)
             {
-                GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, STACK_SLOT_ENCBASE, UntrackedSlotSize);
+                GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
                 GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
             }
             else
             {
                 _ASSERTE(pSlotDesc->Flags == GC_SLOT_UNTRACKED);
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, STACK_SLOT_DELTA_ENCBASE, UntrackedSlotSize);
+                GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, UntrackedSlotSize);
             }
         }
     }
@@ -1701,13 +1698,13 @@ void GcInfoEncoder::Build()
         for (LiveStateHashTable::KeyIterator iter = hashMap.Begin(), end = hashMap.End(); !iter.Equal(end); iter.Next())
         {
             largestSetOffset = sizeofSets;
-            sizeofSets += SizeofSlotStateVarLengthVector(*iter.Get(), LIVESTATE_RLE_SKIP_ENCBASE, LIVESTATE_RLE_RUN_ENCBASE);
+            sizeofSets += SizeofSlotStateVarLengthVector(*iter.Get(), GcInfoEncoding::LIVESTATE_RLE_SKIP_ENCBASE, GcInfoEncoding::LIVESTATE_RLE_RUN_ENCBASE);
         }
 
         // Now that we know the largest offset, we can figure out how much the indirection
         // will cost us and commit
         UINT32 numBitsPerPointer = ((largestSetOffset < 2) ? 1 : CeilOfLog2(largestSetOffset + 1));
-        const size_t sizeofEncodedNumBitsPerPointer = BitStreamWriter::SizeofVarLengthUnsigned(numBitsPerPointer, POINTER_SIZE_ENCBASE);
+        const size_t sizeofEncodedNumBitsPerPointer = BitStreamWriter::SizeofVarLengthUnsigned(numBitsPerPointer, GcInfoEncoding::POINTER_SIZE_ENCBASE);
         const size_t sizeofNoIndirection = m_NumCallSites * (numRegisters + numStackSlots);
         const size_t sizeofIndirection = sizeofEncodedNumBitsPerPointer  // Encode the pointer sizes
                                          + (m_NumCallSites * numBitsPerPointer) // Encode the pointers
@@ -1723,14 +1720,14 @@ void GcInfoEncoder::Build()
         {
             // we are using an indirection
             GCINFO_WRITE(m_Info1, 1, 1, FlagsSize);
-            GCINFO_WRITE_VARL_U(m_Info1, numBitsPerPointer - 1, POINTER_SIZE_ENCBASE, CallSiteStateSize);
+            GCINFO_WRITE_VARL_U(m_Info1, numBitsPerPointer - 1, GcInfoEncoding::POINTER_SIZE_ENCBASE, CallSiteStateSize);
 
             // Now encode the live sets and record the real offset
             for (LiveStateHashTable::KeyIterator iter = hashMap.Begin(), end = hashMap.End(); !iter.Equal(end); iter.Next())
             {
                 _ASSERTE(FitsIn<UINT32>(m_Info2.GetBitCount()));
                 iter.SetValue((UINT32)m_Info2.GetBitCount());
-                GCINFO_WRITE_VAR_VECTOR(m_Info2, *iter.Get(), LIVESTATE_RLE_SKIP_ENCBASE, LIVESTATE_RLE_RUN_ENCBASE, CallSiteStateSize);
+                GCINFO_WRITE_VAR_VECTOR(m_Info2, *iter.Get(), GcInfoEncoding::LIVESTATE_RLE_SKIP_ENCBASE, GcInfoEncoding::LIVESTATE_RLE_RUN_ENCBASE, CallSiteStateSize);
             }
 
             _ASSERTE(sizeofSets == m_Info2.GetBitCount());
@@ -1843,7 +1840,7 @@ void GcInfoEncoder::Build()
             InterruptibleRange *pRange = &pRanges[i];
             totalInterruptibleLength += pRange->NormStopOffset - pRange->NormStartOffset;
         }
-        _ASSERTE(totalInterruptibleLength <= NORMALIZE_CODE_OFFSET(m_CodeLength));
+        _ASSERTE(totalInterruptibleLength <= GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength));
 
         liveState.ClearAll();
         // Re-use couldBeLive
@@ -1944,14 +1941,14 @@ void GcInfoEncoder::Build()
         pEndTransitions = pNextFree;
 
 #else
-        UINT32 totalInterruptibleLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
+        UINT32 totalInterruptibleLength = GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength);
 
 #endif //PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
         //
         // Initialize chunk pointers
         //
-        UINT32 numChunks = (totalInterruptibleLength + NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+        UINT32 numChunks = (totalInterruptibleLength + GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK;
         _ASSERTE(numChunks > 0);
 
         size_t* pChunkPointers = (size_t*) m_pAllocator->Alloc(numChunks*sizeof(size_t));
@@ -1961,7 +1958,7 @@ void GcInfoEncoder::Build()
         // Encode transitions
         //------------------------------------------------------------------
 
-        LOG((LF_GCINFO, LL_INFO1000, "Encoding %i lifetime transitions.\n", pEndTransitions - pTransitions));
+        GCINFO_LOG( LL_INFO1000, "Encoding %i lifetime transitions.\n", pEndTransitions - pTransitions);
 
 
         liveState.ClearAll();
@@ -2008,13 +2005,13 @@ void GcInfoEncoder::Build()
             pChunkPointers[currentChunk] = m_Info2.GetBitCount() + 1;
 
             // Write couldBeLive slot map
-            GCINFO_WRITE_VAR_VECTOR(m_Info2, couldBeLive, LIVESTATE_RLE_SKIP_ENCBASE, LIVESTATE_RLE_RUN_ENCBASE, ChunkMaskSize);
+            GCINFO_WRITE_VAR_VECTOR(m_Info2, couldBeLive, GcInfoEncoding::LIVESTATE_RLE_SKIP_ENCBASE, GcInfoEncoding::LIVESTATE_RLE_RUN_ENCBASE, ChunkMaskSize);
 
-            LOG((LF_GCINFO, LL_INFO100000,
+            GCINFO_LOG( LL_INFO100000,
                          "Chunk %d couldBeLive (%04x-%04x):\n", currentChunk,
-                         currentChunk * NUM_NORM_CODE_OFFSETS_PER_CHUNK,
-                         ((currentChunk + 1) * NUM_NORM_CODE_OFFSETS_PER_CHUNK) - 1
-                         ));
+                         currentChunk * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK,
+                         ((currentChunk + 1) * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK) - 1
+                         );
 
             // Write final state
             // For all the bits set in couldBeLive.
@@ -2031,15 +2028,15 @@ void GcInfoEncoder::Build()
                                     ChunkFinalStateSize
                                     );
 
-                    LOG((LF_GCINFO, LL_INFO100000,
+                    GCINFO_LOG( LL_INFO100000,
                          "\t" LOG_GCSLOTDESC_FMT " %s at end of chunk.\n",
                          LOG_GCSLOTDESC_ARGS(&m_SlotTable[i]),
-                         liveState.ReadBit(i) ? "live" : "dead"));
+                         liveState.ReadBit(i) ? "live" : "dead");
                 }
             }
 
             // Write transitions offsets
-            UINT32 normChunkBaseCodeOffset = currentChunk * NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+            UINT32 normChunkBaseCodeOffset = currentChunk * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK;
 
             LifetimeTransition* pT = pCurrent - numTransitionsInCurrentChunk;
 
@@ -2055,11 +2052,11 @@ void GcInfoEncoder::Build()
 
                     _ASSERTE(couldBeLive.ReadBit(slotId));
 
-                    LOG((LF_GCINFO, LL_INFO100000,
+                    GCINFO_LOG( LL_INFO100000,
                          "\tTransition " LOG_GCSLOTDESC_FMT " going %s at offset %04x.\n",
                          LOG_GCSLOTDESC_ARGS(&m_SlotTable[pT->SlotId]),
                          pT->BecomesLive ? "live" : "dead",
-                         (int) pT->CodeOffset ));
+                         (int) pT->CodeOffset );
 
                     // Write code offset delta
                     UINT32 normCodeOffset = pT->CodeOffset;
@@ -2068,10 +2065,10 @@ void GcInfoEncoder::Build()
                     // Don't encode transitions at offset 0 as they are useless
                     if(normCodeOffsetDelta)
                     {
-                        _ASSERTE(normCodeOffsetDelta < NUM_NORM_CODE_OFFSETS_PER_CHUNK);
+                        _ASSERTE(normCodeOffsetDelta < GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
                         GCINFO_WRITE(m_Info2, 1, 1, ChunkTransitionSize);
-                        GCINFO_WRITE(m_Info2, normCodeOffsetDelta, NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ChunkTransitionSize);
+                        GCINFO_WRITE(m_Info2, normCodeOffsetDelta, GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ChunkTransitionSize);
 
 #ifdef MEASURE_GCINFO
                         m_CurrentMethodSize.NumTransitions++;
@@ -2105,7 +2102,7 @@ void GcInfoEncoder::Build()
         }
 
         UINT32 numBitsPerPointer = CeilOfLog2(largestPointer + 1);
-        GCINFO_WRITE_VARL_U(m_Info1, numBitsPerPointer, POINTER_SIZE_ENCBASE, ChunkPtrSize);
+        GCINFO_WRITE_VARL_U(m_Info1, numBitsPerPointer, GcInfoEncoding::POINTER_SIZE_ENCBASE, ChunkPtrSize);
 
         if(numBitsPerPointer)
         {
@@ -2168,12 +2165,12 @@ lExitSuccess:;
         m_CurrentMethodSize.Log(LL_INFO100, "=== PartiallyInterruptible method breakdown ===\r\n");
         g_PiGcInfoSize.Log(LL_INFO10, "=== PartiallyInterruptible global breakdown ===\r\n");
     }
-    LogSpew(LF_GCINFO, LL_INFO10, "Total SlimHeaders: %zu\n", g_NumSlimHeaders);
-    LogSpew(LF_GCINFO, LL_INFO10, "NumMethods: %zu\n", g_NumFatHeaders);
+    GCINFO_LOGSPEW( LL_INFO10, "Total SlimHeaders: %zu\n", g_NumSlimHeaders);
+    GCINFO_LOGSPEW( LL_INFO10, "NumMethods: %zu\n", g_NumFatHeaders);
 #endif
 }
 
-void GcInfoEncoder::SizeofSlotStateVarLengthVector(const BitArray &vector,
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SizeofSlotStateVarLengthVector(const BitArray &vector,
                                                    UINT32          baseSkip,
                                                    UINT32          baseRun,
                                                    UINT32         *pSizeofSimple,
@@ -2248,7 +2245,7 @@ void GcInfoEncoder::SizeofSlotStateVarLengthVector(const BitArray &vector,
     *pSizeofRLENeg = sizeofRLENeg;
 }
 
-UINT32 GcInfoEncoder::SizeofSlotStateVarLengthVector(const BitArray &vector,
+template <typename GcInfoEncoding> UINT32 TGcInfoEncoder<GcInfoEncoding>::SizeofSlotStateVarLengthVector(const BitArray &vector,
                                                     UINT32          baseSkip,
                                                     UINT32          baseRun)
 {
@@ -2265,7 +2262,7 @@ UINT32 GcInfoEncoder::SizeofSlotStateVarLengthVector(const BitArray &vector,
     return sizeofRLENeg;
 }
 
-UINT32 GcInfoEncoder::WriteSlotStateVarLengthVector(BitStreamWriter &writer,
+template <typename GcInfoEncoding> UINT32 TGcInfoEncoder<GcInfoEncoding>::WriteSlotStateVarLengthVector(BitStreamWriter &writer,
                                                     const BitArray  &vector,
                                                     UINT32           baseSkip,
                                                     UINT32           baseRun)
@@ -2355,7 +2352,7 @@ UINT32 GcInfoEncoder::WriteSlotStateVarLengthVector(BitStreamWriter &writer,
 }
 
 
-void GcInfoEncoder::EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTransitions,
+template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTransitions,
                                                     size_t* pNumTransitions,
                                                     LifetimeTransition** ppEndTransitions)
 {
@@ -2410,12 +2407,12 @@ void GcInfoEncoder::EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTrans
 // Write encoded information to its final destination and frees temporary buffers.
 // The encoder shouldn't be used anymore after calling this method.
 //
-BYTE* GcInfoEncoder::Emit()
+template <typename GcInfoEncoding> BYTE* TGcInfoEncoder<GcInfoEncoding>::Emit()
 {
     size_t cbGcInfoSize = m_Info1.GetByteCount() +
                           m_Info2.GetByteCount();
 
-    LOG((LF_GCINFO, LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength ));
+    GCINFO_LOG( LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength );
 
     BYTE* destBuffer = (BYTE *)eeAllocGCInfo(cbGcInfoSize);
     // Allocator will throw an exception on failure.
@@ -2439,16 +2436,17 @@ BYTE* GcInfoEncoder::Emit()
     return destBuffer;
 }
 
-void * GcInfoEncoder::eeAllocGCInfo (size_t        blockSize)
+template <typename GcInfoEncoding> void * TGcInfoEncoder<GcInfoEncoding>::eeAllocGCInfo (size_t        blockSize)
 {
     m_BlockSize = blockSize;
     return m_pCorJitInfo->allocGCInfo(blockSize);
 }
 
-size_t GcInfoEncoder::GetEncodedGCInfoSize() const
+template <typename GcInfoEncoding> size_t TGcInfoEncoder<GcInfoEncoding>::GetEncodedGCInfoSize() const
 {
     return m_BlockSize;
 }
+
 
 BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 {
@@ -2469,7 +2467,7 @@ BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 //
 void BitStreamWriter::Write( size_t data, UINT32 count )
 {
-    _ASSERT(count <= BITS_PER_SIZE_T);
+    _ASSERTE(count <= BITS_PER_SIZE_T);
 
     if(count)
     {
@@ -2544,6 +2542,21 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 
 }
 
+inline void BitStreamWriter::AllocMemoryBlock()
+{
+    // Interpreter-FIXME: Causes linker error in interpreter because IS_ALIGNED calls _ASSERTE
+    // _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
+    MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
+
+    m_pCurrentSlot = pMemBlock->Contents;
+    m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
+
+#ifdef _DEBUG
+       m_MemoryBlocksCount++;
+#endif
+}
+
+
 void BitStreamWriter::Dispose()
 {
     m_MemoryBlocks.Dispose(m_pAllocator);
@@ -2616,3 +2629,9 @@ int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
     }
 }
 
+// Instantiate the encoder so other files can use it
+template class TGcInfoEncoder<TargetGcInfoEncoding>;
+
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoEncoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER

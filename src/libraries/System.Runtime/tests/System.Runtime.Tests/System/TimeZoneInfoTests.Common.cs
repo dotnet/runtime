@@ -42,7 +42,6 @@ namespace System.Tests
         private static string s_strFiji = s_isWindows ? "Fiji Standard Time" : "Pacific/Fiji";
 
         private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
-        private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
 
         [Fact]
         public static void Kind()

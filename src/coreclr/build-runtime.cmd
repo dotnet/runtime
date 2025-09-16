@@ -46,6 +46,7 @@ set __TargetArchArm=0
 set __TargetArchArm64=0
 set __TargetArchLoongArch64=0
 set __TargetArchRiscV64=0
+set __TargetArchWasm=0
 
 set __BuildTypeDebug=0
 set __BuildTypeChecked=0
@@ -54,7 +55,6 @@ set __BuildTypeRelease=0
 set __PgoInstrument=0
 set __PgoOptimize=0
 set __EnforcePgo=0
-set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -66,13 +66,14 @@ set __UnprocessedBuildArgs=
 
 set __BuildNative=1
 set __RestoreOptData=1
+set __CrossTarget=0
 set __HostOS=
 set __HostArch=
 set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
-set __OutputRid=
+set __TargetRid=
 set __SubDir=
 
 :Arg_Loop
@@ -94,6 +95,7 @@ if /i "%1" == "-arm"                 (set __TargetArchArm=1&shift&goto Arg_Loop)
 if /i "%1" == "-arm64"               (set __TargetArchArm64=1&shift&goto Arg_Loop)
 if /i "%1" == "-loongarch64"         (set __TargetArchLoongArch64=1&shift&goto Arg_Loop)
 if /i "%1" == "-riscv64"             (set __TargetArchRiscV64=1&shift&goto Arg_Loop)
+if /i "%1" == "-wasm"                (set __TargetArchWasm=1&shift&goto Arg_Loop)
 
 if /i "%1" == "-debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
 if /i "%1" == "-checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
@@ -134,10 +136,11 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)    
+if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-targetrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-outputrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-subdir"              (set __SubDir=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set __remainingArgs="!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
@@ -152,6 +155,7 @@ if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%~2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-fsanitize"           (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&shift&shift&goto Arg_Loop)
+if /i "%1" == "-keepnativesymbols"   (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -175,7 +179,7 @@ if defined VCINSTALLDIR (
 
 if defined __BuildAll goto BuildAll
 
-set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64
+set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64 + __TargetArchWasm
 if %__TotalSpecifiedTargetArch% GTR 1 (
     echo Error: more than one build architecture specified, but "all" not specified.
     goto Usage
@@ -187,6 +191,7 @@ if %__TargetArchArm%==1         set __TargetArch=arm
 if %__TargetArchArm64%==1       set __TargetArch=arm64
 if %__TargetArchLoongArch64%==1 set __TargetArch=loongarch64
 if %__TargetArchRiscV64%==1     set __TargetArch=riscv64
+if %__TargetArchWasm%==1        set __TargetArch=wasm
 if "%__HostArch%" == "" set __HostArch=%__TargetArch%
 
 set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
@@ -281,7 +286,14 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-if not "%__TargetOS%"=="android" (
+if "%__TargetOS%"=="android" (
+    set __CrossTarget=1
+)
+if "%__TargetOS%"=="browser" (
+    set __CrossTarget=1
+)
+
+if %__CrossTarget% EQU 0 (
     call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
 ) else (
     call powershell -NoProfile -ExecutionPolicy ByPass -File "%__RepoRootDir%\eng\native\version\copy_version_files.ps1"
@@ -355,7 +367,7 @@ REM ============================================================================
 
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
-for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
+for /f "delims=-" %%i in ("%__TargetRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 :: Default to "win10" fallback
@@ -400,9 +412,9 @@ if %__BuildNative% EQU 1 (
     )
 
     set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeArgs%
-    
-    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
-    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
+
+    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
+    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
         goto ExitWithError
@@ -427,7 +439,7 @@ if %__BuildNative% EQU 1 (
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
     set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (
@@ -486,11 +498,11 @@ REM ============================================================================
 
 set __TargetArchList=
 
-set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64
+set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64 + __TargetArchWasm
 if %__TotalSpecifiedTargetArch% EQU 0 (
     REM Nothing specified means we want to build all architectures.
     set __TargetArchList=x64 x86 arm arm64
-    
+
     if %__BuildAllJitsCommunity%==1 (
         set __TargetArchList=%__TargetArchList% loongarch64 riscv64
     )
@@ -504,6 +516,7 @@ if %__TargetArchArm%==1         set __TargetArchList=%__TargetArchList% arm
 if %__TargetArchArm64%==1       set __TargetArchList=%__TargetArchList% arm64
 if %__TargetArchLoongArch64%==1 set __TargetArchList=%__TargetArchList% loongarch64
 if %__TargetArchRiscV64%==1     set __TargetArchList=%__TargetArchList% riscv64
+if %__TargetArchWasm%==1        set __TargetArchList=%__TargetArchList% wasm
 
 set __BuildTypeList=
 

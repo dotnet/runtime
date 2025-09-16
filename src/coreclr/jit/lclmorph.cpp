@@ -1240,38 +1240,22 @@ public:
                 PopValue();
                 break;
 
-            case GT_RETURN:
-                if (TopValue(0).Node() != node)
+            case GT_CAST:
+            {
+                assert(TopValue(1).Node() == node);
+                assert(TopValue(0).Node() == node->AsCast()->CastOp());
+
+                var_types castToType = node->CastToType();
+                bool isPtrCast = (castToType == TYP_I_IMPL) || (castToType == TYP_U_IMPL) || (castToType == TYP_BYREF);
+                if (!isPtrCast || node->gtOverflow() || !TopValue(0).IsAddress() ||
+                    !TopValue(1).AddOffset(TopValue(0), 0))
                 {
-                    assert(TopValue(1).Node() == node);
-                    assert(TopValue(0).Node() == node->gtGetOp1());
-                    GenTreeUnOp* ret    = node->AsUnOp();
-                    GenTree*     retVal = ret->gtGetOp1();
-                    if (retVal->OperIs(GT_LCL_VAR))
-                    {
-                        // TODO-1stClassStructs: this block is a temporary workaround to keep diffs small,
-                        // having `doNotEnreg` affect block init and copy transformations that affect many methods.
-                        // I have a change that introduces more precise and effective solution for that, but it would
-                        // be merged separately.
-                        GenTreeLclVar* lclVar = retVal->AsLclVar();
-                        unsigned       lclNum = lclVar->GetLclNum();
-                        if (!m_compiler->compMethodReturnsMultiRegRetType() &&
-                            !m_compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
-                        {
-                            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-                            if (varDsc->lvFieldCnt > 1)
-                            {
-                                m_compiler->lvaSetVarDoNotEnregister(
-                                    lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
-                            }
-                        }
-                    }
-
                     EscapeValue(TopValue(0), node);
-                    PopValue();
                 }
-                break;
 
+                PopValue();
+                break;
+            }
             case GT_CALL:
                 while (TopValue(0).Node() != node)
                 {
@@ -1494,9 +1478,9 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag            = GTF_EMPTY;
-        GenTreeCall* callUser           = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
-        bool         hasHiddenStructArg = false;
+        GenTreeFlags defFlag    = GTF_EMPTY;
+        GenTreeCall* callUser   = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
+        bool         escapeAddr = true;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
@@ -1516,7 +1500,7 @@ private:
                 (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
-                hasHiddenStructArg = true;
+                escapeAddr = false;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
 
@@ -1528,7 +1512,25 @@ private:
             }
         }
 
-        if (!hasHiddenStructArg)
+        if ((callUser != nullptr) && callUser->IsAsync() && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
+        {
+            CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
+            if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
+            {
+                INDEBUG(varDsc->SetDefinedViaAddress(true));
+                escapeAddr = false;
+                defFlag    = GTF_VAR_DEF;
+
+                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
+                {
+                    defFlag |= GTF_VAR_USEASG;
+                }
+
+                callUser->asyncInfo->HasSuspensionIndicatorDef = true;
+            }
+        }
+
+        if (escapeAddr)
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
 
@@ -1548,7 +1550,8 @@ private:
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
+        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc) &&
+            escapeAddr)
         {
             varDsc->lvQuirkToLong = true;
             JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
@@ -1650,7 +1653,7 @@ private:
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(m_compiler->lvaVarAddrExposed(lclNum) ||
                ((m_lclAddrAssertions != nullptr) && m_lclAddrAssertions->IsMarkedForExposure(lclNum)) ||
-               m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+               m_compiler->lvaGetDesc(lclNum)->IsDefinedViaAddress());
 
         if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
@@ -1797,7 +1800,7 @@ private:
                     case TYP_SIMD12:
                     {
                         // Handle the Vector3 field of case 2
-                        assert(varDsc->TypeGet() == TYP_SIMD16);
+                        assert(varDsc->TypeIs(TYP_SIMD16));
 
                         // We effectively inverse the operands here and take elementNode as the main value and
                         // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
@@ -1946,7 +1949,7 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (indir->TypeGet() != TYP_STRUCT)
+        if (!indir->TypeIs(TYP_STRUCT))
         {
             if (indir->TypeGet() == varDsc->TypeGet())
             {
@@ -1975,14 +1978,14 @@ private:
 
                 if (indir->TypeIs(TYP_FLOAT))
                 {
-                    if (((offset % genTypeSize(TYP_FLOAT)) == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset % genTypeSize(TYP_FLOAT)) == 0)
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && varDsc->TypeIs(TYP_SIMD16))
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1990,8 +1993,7 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0) &&
-                        m_compiler->IsBaselineSimdIsaSupported())
+                    if (varDsc->TypeIs(TYP_SIMD16) && ((offset % 8) == 0))
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -2001,7 +2003,7 @@ private:
                 else if (((indir->TypeIs(TYP_SIMD16) &&
                            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
                           (indir->TypeIs(TYP_SIMD32) &&
-                           m_compiler->IsBaselineVector512IsaSupportedOpportunistically())) &&
+                           m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
                          (genTypeSize(indir) * 2 == genTypeSize(varDsc)) && ((offset % genTypeSize(indir)) == 0))
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
@@ -2027,12 +2029,12 @@ private:
             return IndirTransform::LclFld;
         }
 
-        if (varDsc->TypeGet() != TYP_STRUCT)
+        if (!varDsc->TypeIs(TYP_STRUCT))
         {
             return IndirTransform::LclFld;
         }
 
-        if ((offset == 0) && ClassLayout::AreCompatible(indir->AsBlk()->GetLayout(), varDsc->GetLayout()))
+        if ((offset == 0) && indir->AsBlk()->GetLayout()->CanAssignFrom(varDsc->GetLayout()))
         {
             return IndirTransform::LclVar;
         }

@@ -207,11 +207,15 @@ namespace System.Buffers
             return (result, match0, match1);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector128&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector128&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         public static Vector128<byte> LoadAndPack16AsciiChars(ref char source)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref source);
@@ -221,9 +225,9 @@ namespace System.Buffers
             {
                 return Sse2.PackUnsignedSaturate(source0.AsInt16(), source1.AsInt16());
             }
-            else if (AdvSimd.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
-                return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
+                return AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
             }
             else
             {
@@ -233,8 +237,12 @@ namespace System.Buffers
             }
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector256&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector256&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<byte> LoadAndPack32AsciiChars(ref char source)
@@ -247,8 +255,12 @@ namespace System.Buffers
             return PackedSpanHelpers.FixUpPackedVector256Result(packed);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector512&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector512&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         public static Vector512<byte> LoadAndPack64AsciiChars(ref char source)
@@ -306,7 +318,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static Vector128<byte> Shuffle(Vector128<byte> maskLow, Vector128<byte> maskHigh, Vector128<byte> low, Vector128<byte> high)
         {
-            return Vector128.ShuffleUnsafe(maskLow, low) & Vector128.ShuffleUnsafe(maskHigh, high);
+            return SearchValues.ShuffleNativeModified(maskLow, low) & Vector128.ShuffleNative(maskHigh, high);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

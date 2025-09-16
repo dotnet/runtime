@@ -410,7 +410,7 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
-        shadowVarDsc->SetHiddenBufferStructArg(varDsc->IsHiddenBufferStructArg());
+        shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());
 #endif
 
         if (varTypeIsStruct(type))
@@ -418,8 +418,9 @@ void Compiler::gsParamsToShadows()
             // We don't need unsafe value cls check here since we are copying the params and this flag
             // would have been set on the original param before reaching here.
             lvaSetStruct(shadowVarNum, varDsc->GetLayout(), false);
-            shadowVarDsc->lvIsMultiRegArg = varDsc->lvIsMultiRegArg;
-            shadowVarDsc->lvIsMultiRegRet = varDsc->lvIsMultiRegRet;
+            shadowVarDsc->lvIsMultiRegArg  = varDsc->lvIsMultiRegArg;
+            shadowVarDsc->lvIsMultiRegRet  = varDsc->lvIsMultiRegRet;
+            shadowVarDsc->lvIsMultiRegDest = varDsc->lvIsMultiRegDest;
         }
         shadowVarDsc->lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
         shadowVarDsc->lvIsPtr          = varDsc->lvIsPtr;
@@ -511,7 +512,7 @@ void Compiler::gsParamsToShadows()
         }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
-        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
+        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && varDsc->TypeIs(TYP_STRUCT))
         {
             JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
                     shadowVarNum);
@@ -536,36 +537,10 @@ void Compiler::gsParamsToShadows()
                 // inserting reverse pinvoke transitions way too early in the
                 // JIT.
 
-                struct HasReversePInvokeEnterVisitor : GenTreeVisitor<HasReversePInvokeEnterVisitor>
-                {
-                    enum
-                    {
-                        DoPreOrder = true,
-                    };
-
-                    HasReversePInvokeEnterVisitor(Compiler* comp)
-                        : GenTreeVisitor(comp)
-                    {
-                    }
-
-                    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-                    {
-                        if (((*use)->gtFlags & GTF_CALL) == 0)
-                        {
-                            return fgWalkResult::WALK_SKIP_SUBTREES;
-                        }
-
-                        if ((*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
-                            (*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
-                        {
-                            return fgWalkResult::WALK_ABORT;
-                        }
-
-                        return fgWalkResult::WALK_CONTINUE;
-                    }
+                auto isReversePInvoke = [=](GenTree* tree) {
+                    return tree->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                           tree->IsHelperCall(this, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS);
                 };
-
-                HasReversePInvokeEnterVisitor checker(this);
 
                 Statement* reversePInvokeStmt = nullptr;
                 for (Statement* const stmt : fgFirstBB->Statements())
@@ -574,7 +549,7 @@ void Compiler::gsParamsToShadows()
                     // at the point before we insert the shadow copy statement.
                     assert(!gtHasRef(stmt->GetRootNode(), lclNum));
 
-                    if (checker.WalkTree(stmt->GetRootNodePointer(), nullptr) == fgWalkResult::WALK_ABORT)
+                    if (gtFindNodeInTree<GTF_CALL>(stmt->GetRootNode(), isReversePInvoke) != nullptr)
                     {
                         reversePInvokeStmt = stmt;
                         break;

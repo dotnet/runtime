@@ -70,13 +70,15 @@ endm
 ;;
 ;; This macro builds a frame describing the current state of managed code.
 ;;
-;; The macro assumes it is called from a helper that has already set up an EBP frame and that the values of
-;; EBX, ESI and EDI remain unchanged from their values in managed code. It pushes the frame at the top of the
-;; stack.
+;; The macro assumes it is called from a helper that the values of EBX, ESI and EDI remain unchanged from their
+;; values in managed code. It pushes the frame at the top of the stack.
 ;;
 ;; EAX is trashed by this macro.
 ;;
 PUSH_COOP_PINVOKE_FRAME macro transitionFrameReg
+    push        ebp
+    mov         ebp, esp
+
     lea         eax, [ebp + 8]                      ; get the ESP of the caller
     push        eax                                 ; save ESP
     push        edi
@@ -94,28 +96,32 @@ endm
 
 ;;
 ;; Remove the frame from a previous call to PUSH_COOP_PINVOKE_FRAME from the top of the stack and restore EBX,
-;; ESI and EDI to their previous values.
-;;
-;; TRASHES ECX
+;; ESI, and EDI to their previous values. Tears down the EBP frame.
 ;;
 POP_COOP_PINVOKE_FRAME macro
     add         esp, 4*4
     pop         ebx
     pop         esi
     pop         edi
-    pop         ecx
+    add         esp, 4
+
+    pop         ebp
 endm
 
+INLINE_GET_ALLOC_CONTEXT_BASE macro destReg, trashReg
+    INLINE_GETTHREAD destReg, trashReg
+endm
 
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_Attached                    equ 01h
 TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
 
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1
+GC_ALLOC_ALIGN8_BIAS            equ 4
+GC_ALLOC_ALIGN8                 equ 8
 
 ;; Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_RBX           equ 00000001h
@@ -125,28 +131,23 @@ PTFF_SAVE_ALL_PRESERVED equ 00000007h   ;; NOTE: RBP is not included in this set
 PTFF_SAVE_RSP           equ 00008000h
 PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref and we're in hijack handler
 PTFF_SAVE_ALL_SCRATCH   equ 00000700h
-PTFF_THREAD_ABORT       equ 00100000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
-TrapThreadsFlags_AbortInProgress equ 1
-TrapThreadsFlags_TrapThreads     equ 2
-
-;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-STATUS_REDHAWK_THREAD_ABORT      equ 43h
+TrapThreadsFlags_TrapThreads     equ 1
 
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
+OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocContext
 
 ;;
 ;; CONSTANTS -- SYMBOLS
 ;;
 
 RhDebugBreak                                equ @RhDebugBreak@0
-RhpGcAlloc                                  equ @RhpGcAlloc@16
+RhpGcAlloc                                  equ _RhpGcAlloc@16
 G_LOWEST_ADDRESS                            equ _g_lowest_address
 G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low
@@ -157,6 +158,7 @@ RhpTrapThreads                              equ _RhpTrapThreads
 RhpStressGc                                 equ @RhpStressGc@0
 RhpGcPoll2                                  equ @RhpGcPoll2@4
 RhHandleGet                                 equ @RhHandleGet@4
+DivInt64Internal                            equ @DivInt64Internal_FCall@16
 RhpGcSafeZeroMemory                         equ @RhpGcSafeZeroMemory@8
 RhpGetNumThunkBlocksPerMapping              equ @RhpGetNumThunkBlocksPerMapping@0
 
@@ -185,6 +187,7 @@ EXTERN RhpGcPoll2                               : PROC
 EXTERN RhHandleGet                              : PROC
 EXTERN RhpGcSafeZeroMemory                      : PROC
 EXTERN RhpGetNumThunkBlocksPerMapping           : PROC
+EXTERN DivInt64Internal                         : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC

@@ -85,21 +85,12 @@
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME r2, r3, r12
 
-    ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame] 
+    ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     bl          RhpWaitForGC2
-
-    ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
-    tst         r2, #PTFF_THREAD_ABORT
-    bne         LOCAL_LABEL(ThrowThreadAbort)
 
     POP_PROBE_FRAME
     bx          lr
 
-LOCAL_LABEL(ThrowThreadAbort):
-    POP_PROBE_FRAME
-    mov         r0, #STATUS_REDHAWK_THREAD_ABORT
-    mov         r1, lr // return address as exception PC
-    b           C_FUNC(RhpThrowHwEx)
 NESTED_END RhpWaitForGC
 
 LEAF_ENTRY RhpGcPoll

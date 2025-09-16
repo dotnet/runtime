@@ -5,7 +5,7 @@ setlocal
 :: Initialize the args that will be passed to cmake
 set "__sourceDir=%~dp0"
 :: remove trailing slash
-if %__sourceDir:~-1%==\ set "__ProjectDir=%__sourceDir:~0,-1%"
+if "%__sourceDir:~-1%"=="\" set "__sourceDir=%__sourceDir:~0,-1%"
 
 set "__RepoRootDir=%__sourceDir%\..\..\.."
 :: normalize
@@ -20,7 +20,7 @@ set __PortableBuild=0
 set __ConfigureOnly=0
 set __IncrementalNativeBuild=0
 set __Ninja=1
-set __OutputRid=""
+set __TargetRid=""
 set __ExtraCmakeParams=
 
 :Arg_Loop
@@ -36,7 +36,8 @@ if /i [%1] == [amd64]       (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       (set __BuildArch=arm64&&shift&goto Arg_Loop)
 
 if /i [%1] == [portable]    (set __PortableBuild=1&&shift&goto Arg_Loop)
-if /i [%1] == [outputrid]   (set __OutputRid=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [targetrid]   (set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [outputrid]   (set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [toolsetDir]  (set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
@@ -68,16 +69,16 @@ echo Configuring corehost native components
 echo.
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\%__OutputRid%.%CMAKE_BUILD_TYPE%"
+    set "__CMakeBinDir=%__binDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%"
 )
 
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__objDir%\%__OutputRid%.%CMAKE_BUILD_TYPE%\corehost"
+    set "__IntermediatesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\corehost"
 )
 if %__Ninja% == 0 (
     set "__IntermediatesDir=%__IntermediatesDir%\ide"
 )
-set "__ResourcesDir=%__objDir%\%__OutputRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
+set "__ResourcesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 
@@ -99,7 +100,7 @@ echo "Computed RID for native build is %cm_BaseRid%"
 
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
-for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
+for /f "delims=-" %%i in ("%__TargetRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 
@@ -107,9 +108,9 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files
-echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%"
+echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%"
 
-call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
+call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 
@@ -120,16 +121,7 @@ if [%__ConfigureOnly%] == [1] goto :Exit
 echo Commencing build of corehost native components
 
 :: Build the project created by Cmake
-set __generatorArgs=
-if [%__Ninja%] == [1] (
-    set __generatorArgs=
-) else if [%__BuildArch%] == [wasm] (
-    set __generatorArgs=-j
-) else (
-    set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
-)
-
-call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
+call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE%
 IF ERRORLEVEL 1 (
     goto :Failure
 )

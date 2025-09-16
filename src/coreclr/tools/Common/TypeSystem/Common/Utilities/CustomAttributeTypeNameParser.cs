@@ -21,7 +21,7 @@ namespace Internal.TypeSystem
         /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
         /// </summary>
         public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
-            Func<ModuleDesc, string, MetadataType> canonResolver = null)
+            Func<ModuleDesc, string, TypeDesc> canonGenericResolver = null)
         {
             if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
                 ThrowHelper.ThrowTypeLoadException(name, module);
@@ -31,7 +31,7 @@ namespace Internal.TypeSystem
                 _context = module.Context,
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
-                _canonResolver = canonResolver
+                _canonGenericResolver = canonGenericResolver
             }.Resolve(parsed);
         }
 
@@ -91,7 +91,7 @@ namespace Internal.TypeSystem
             internal TypeSystemContext _context;
             internal ModuleDesc _module;
             internal bool _throwIfNotFound;
-            internal Func<ModuleDesc, string, MetadataType> _canonResolver;
+            internal Func<ModuleDesc, string, TypeDesc> _canonGenericResolver;
 
             internal List<ModuleDesc> _referencedModules;
 
@@ -136,30 +136,30 @@ namespace Internal.TypeSystem
                 }
 
                 ModuleDesc module = _module;
-                if (topLevelTypeName.AssemblyName != null)
+                if (topLevelTypeName.AssemblyName is not null)
                 {
                     module = _context.ResolveAssembly(typeName.AssemblyName, throwIfNotFound: _throwIfNotFound);
                     if (module == null)
                         return null;
                 }
 
-                if (module != null)
+                if (module is not null)
                 {
                     TypeDesc type = GetSimpleTypeFromModule(typeName, module);
-                    if (type != null)
+                    if (type is not null)
                     {
                         _referencedModules?.Add(module);
                         return type;
                     }
                 }
 
-                // If it didn't resolve and wasn't assembly-qualified, we also try core library
                 if (topLevelTypeName.AssemblyName == null)
                 {
+                    // If it didn't resolve and wasn't assembly-qualified, we also try core library
                     if (module != _context.SystemModule)
                     {
                         TypeDesc type = GetSimpleTypeFromModule(typeName, _context.SystemModule);
-                        if (type != null)
+                        if (type is not null)
                         {
                             _referencedModules?.Add(_context.SystemModule);
                             return type;
@@ -179,21 +179,20 @@ namespace Internal.TypeSystem
                     TypeDesc type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
                     if (type == null)
                         return null;
-                    return ((MetadataType)type).GetNestedType(TypeNameHelpers.Unescape(typeName.Name));
+                    return ((MetadataType)type).GetNestedType(TypeName.Unescape(typeName.Name));
                 }
 
-                string fullName = TypeNameHelpers.Unescape(typeName.FullName);
-
-                if (_canonResolver != null)
+                if (_canonGenericResolver != null)
                 {
-                    MetadataType canonType = _canonResolver(module, fullName);
+                    string fullName = TypeName.Unescape(typeName.FullName);
+                    TypeDesc canonType = _canonGenericResolver(module, fullName);
                     if (canonType != null)
                         return canonType;
                 }
 
-                (string typeNamespace, string name) = TypeNameHelpers.Split(fullName);
-
-                return module.GetType(typeNamespace, name, throwIfNotFound: false);
+                return module.GetType(
+                    System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Namespace)),
+                    System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Name)), throwIfNotFound: false);
             }
 
             private TypeDesc GetGenericType(TypeName typeName)

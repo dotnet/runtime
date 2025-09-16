@@ -11,51 +11,54 @@
 #define _BUNDLE_H_
 
 #include <sstring.h>
-#include "coreclrhost.h"
+#include <coreclrhost.h>
 
 class Bundle;
 
 struct BundleFileLocation
 {
     INT64 Size;
-    void* DataStart;
     INT64 Offset;
-    INT64 UncompresedSize;
+    INT64 UncompressedSize;
 
     BundleFileLocation()
     {
         LIMITED_METHOD_CONTRACT;
 
         Size = 0;
-        DataStart = nullptr;
         Offset = 0;
-        UncompresedSize = 0;
+        UncompressedSize = 0;
     }
 
     static BundleFileLocation Invalid() { LIMITED_METHOD_CONTRACT; return BundleFileLocation(); }
 
     const SString &Path() const;
 
-    bool IsValid() const { LIMITED_METHOD_CONTRACT; return DataStart != nullptr || Offset != 0; }
+    bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
 };
 
 class Bundle
 {
 public:
-    Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn* externalAssemblyProbe = nullptr);
+    Bundle(LPCSTR bundlePath, BundleProbeFn *probe);
     BundleFileLocation Probe(const SString& path, bool pathIsBundleRelative = false) const;
 
-    const SString &Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
-    const SString &BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath; }
+    // Paths do not change and should remain valid for the lifetime of the Bundle
+    const SString& Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
+    const UTF8* BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath.GetUTF8(); }
+
+    // Extraction path does not change and should remain valid for the lifetime of the Bundle
+    bool HasExtractedFiles() const { LIMITED_METHOD_CONTRACT; return !m_extractionPath.IsEmpty(); }
+    const WCHAR* ExtractionPath() const { LIMITED_METHOD_CONTRACT; return m_extractionPath.GetUnicode(); }
 
     static Bundle* AppBundle; // The BundleInfo for the current app, initialized by coreclr_initialize.
     static bool AppIsBundle() { LIMITED_METHOD_CONTRACT; return AppBundle != nullptr; }
     static BundleFileLocation ProbeAppBundle(const SString& path, bool pathIsBundleRelative = false);
 
 private:
-    SString m_path; // The path to single-file executable or package name/id on Android
+    SString m_path; // The path to single-file executable
     BundleProbeFn *m_probe;
-    ExternalAssemblyProbeFn *m_externalAssemblyProbe;
+    SString m_extractionPath; // The path to the extraction location, if bundle extracted any files
 
     SString m_basePath; // The prefix to denote a path within the bundle
     COUNT_T m_basePathLength;

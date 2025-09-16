@@ -56,7 +56,7 @@
 
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
-  #define CODE_ALIGN               4       // code alignment requirement
+  #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
   #define FIRST_INT_CALLEE_SAVED  REG_S1
@@ -99,6 +99,11 @@
 
   #define CNT_CALLEE_SAVED_FLOAT  (12)
   #define CNT_CALLEE_TRASH_FLOAT  (20)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+
+  #define CNT_CALLEE_SAVED_MASK   (0)
+  #define CNT_CALLEE_TRASH_MASK   (0)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -221,6 +226,9 @@
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_A0 | RBM_A1 | RBM_A2 | RBM_A3 | RBM_A4 | RBM_A5 | RBM_A6 | RBM_A7 | RBM_T3))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_T3
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_T0
+
+  #define REG_ASYNC_CONTINUATION_RET REG_A2
+  #define RBM_ASYNC_CONTINUATION_RET RBM_A2
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP

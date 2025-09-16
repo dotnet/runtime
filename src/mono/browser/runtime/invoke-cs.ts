@@ -123,7 +123,8 @@ function bind_fn_0V (closure: BindingClosure) {
             // call C# side
             invoke_sync_jsexport(method, args);
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -147,7 +148,8 @@ function bind_fn_1V (closure: BindingClosure) {
             // call C# side
             invoke_sync_jsexport(method, args);
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -175,7 +177,8 @@ function bind_fn_1R (closure: BindingClosure) {
             const js_result = res_converter(args);
             return js_result;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -208,7 +211,8 @@ function bind_fn_1RA (closure: BindingClosure) {
 
             return promise;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -238,7 +242,8 @@ function bind_fn_2R (closure: BindingClosure) {
             const js_result = res_converter(args);
             return js_result;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -273,7 +278,8 @@ function bind_fn_2RA (closure: BindingClosure) {
 
             return promise;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -325,7 +331,8 @@ function bind_fn (closure: BindingClosure) {
             }
             return js_result;
         } finally {
-            Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
@@ -372,7 +379,7 @@ function _walk_exports_to_set_function (assembly: string, namespace: string, cla
     scope[`${methodname}.${signature_hash}`] = fn;
 }
 
-export async function mono_wasm_get_assembly_exports (assembly: string): Promise<any> {
+export async function SystemInteropJS_GetAssemblyExports (assembly: string): Promise<any> {
     assert_js_interop();
     const result = exportsByAssembly.get(assembly);
     if (!result) {

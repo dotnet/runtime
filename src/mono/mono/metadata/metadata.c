@@ -38,6 +38,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-logger-internals.h>
+#include "../native/containers/dn-simdhash-utils.h"
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -1874,18 +1875,21 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 guint
 mono_metadata_generic_inst_hash (gconstpointer data)
 {
+	// Custom MurmurHash3 for generic instances to produce a high quality hash
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
-	guint hash = 0;
 	g_assert (ginst);
 	g_assert (ginst->type_argv);
 
+	uint32_t h1 = ginst->type_argc;
+
 	for (guint i = 0; i < ginst->type_argc; ++i) {
-		hash *= 13;
 		g_assert (ginst->type_argv [i]);
-		hash += mono_metadata_type_hash (ginst->type_argv [i]);
+		MURMUR3_HASH_BLOCK ((uint32_t) mono_metadata_type_hash (ginst->type_argv [i]));
 	}
 
-	return hash ^ (ginst->is_open << 8);
+	h1 ^= ginst->is_open;
+
+	return (guint)murmur3_fmix32 (h1);
 }
 
 static gboolean
@@ -3355,7 +3359,7 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 		mm->gsignature_cache = dn_simdhash_ght_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature, 256, NULL);
 
 	// FIXME: The lookup is done on the newly allocated sig so it always fails
-	dn_simdhash_ght_try_get_value (mm->gsignature_cache, &helper, (gpointer *)&res);
+	res = dn_simdhash_ght_get_value_or_default (mm->gsignature_cache, &helper);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		// FIXME: sig is an inflated signature not owned by the mem manager
@@ -3496,10 +3500,9 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	mono_loader_lock ();
 
 	if (!mm->ginst_cache)
-		mm->ginst_cache = dn_simdhash_ght_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst, 0, NULL);
+		mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
 
-	MonoGenericInst *ginst = NULL;
-	dn_simdhash_ght_try_get_value (mm->ginst_cache, candidate, (void **)&ginst);
+	MonoGenericInst *ginst = g_hash_table_lookup (mm->ginst_cache, candidate);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
@@ -3513,7 +3516,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		for (int i = 0; i < type_argc; ++i)
 			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
-		dn_simdhash_ght_insert (mm->ginst_cache, ginst, ginst);
+		g_hash_table_insert (mm->ginst_cache, ginst, ginst);
 	}
 
 	mono_loader_unlock ();
@@ -5593,29 +5596,6 @@ gboolean
 mono_metadata_generic_context_equal (const MonoGenericContext *g1, const MonoGenericContext *g2)
 {
 	return g1->class_inst == g2->class_inst && g1->method_inst == g2->method_inst;
-}
-
-/*
- * mono_metadata_str_hash:
- *
- *   This should be used instead of g_str_hash for computing hash codes visible
- * outside this module, since g_str_hash () is not guaranteed to be stable
- * (its not the same in eglib for example).
- */
-guint
-mono_metadata_str_hash (gconstpointer v1)
-{
-	/* Same as g_str_hash () in glib */
-	/* note: signed/unsigned char matters - we feed UTF-8 to this function, so the high bit will give diferent results if we don't match. */
-	unsigned char *p = (unsigned char *) v1;
-	guint hash = *p;
-
-	while (*p++) {
-		if (*p)
-			hash = (hash << 5) - hash + *p;
-	}
-
-	return hash;
 }
 
 /**

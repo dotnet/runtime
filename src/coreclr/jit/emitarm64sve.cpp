@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #include "instr.h"
+#include "codegen.h"
 
 /*****************************************************************************/
 
@@ -2256,7 +2257,14 @@ void emitter::emitInsSve_R_R(instruction     ins,
             // Thus, MOV is the preferred disassembly.
             ins = INS_sve_mov;
             break;
-
+        case INS_sve_ldr:
+        case INS_sve_str:
+        {
+            // We might come here through emitIns_R_R() to emit "ldr Zx, [Xn]" and
+            // in the case, just generate the ldr variant, where offset is zero.
+            emitInsSve_R_R_I(ins, attr, reg1, reg2, 0, opt, sopt);
+            return;
+        }
         default:
             unreached();
             break;
@@ -2562,22 +2570,22 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
         case INS_sve_sshllt:
         case INS_sve_ushllb:
         case INS_sve_ushllt:
-            assert(insOptsScalableWide(opt));
+            assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // x xx
 
             switch (opt)
             {
-                case INS_OPTS_SCALABLE_B:
+                case INS_OPTS_SCALABLE_H:
                     assert(isValidUimm<3>(imm)); // iii
                     break;
 
-                case INS_OPTS_SCALABLE_H:
+                case INS_OPTS_SCALABLE_S:
                     assert(isValidUimm<4>(imm)); // x iii
                     break;
 
-                case INS_OPTS_SCALABLE_S:
+                case INS_OPTS_SCALABLE_D:
                     assert(isValidUimm<5>(imm)); // xx iii
                     break;
 
@@ -2638,9 +2646,9 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isValidRot(emitDecodeRotationImm90_or_270(imm)));
 
             // Convert rot to bitwise representation: 0 if 90, 1 if 270
-            imm = emitEncodeRotationImm90_or_270(imm); // r
             fmt = IF_SVE_FV_2A;
             break;
 
@@ -2658,10 +2666,26 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm<9>(imm));     // iii
-                                             // iiiiii
-
             assert(insScalableOptsNone(sopt));
+
+            // imm is the number of bytes to offset by. The instruction requires a multiple of the
+            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
+            // into a register.
+            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
+            {
+                // TODO-SVE: This assumes 128bit SVE.
+                imm = imm / 16;
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
+            }
+
+            assert(isValidSimm<9>(imm));
+
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_IE_2A;
@@ -2677,10 +2701,26 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm<9>(imm));     // iii
-                                             // iiiiii
-
             assert(insScalableOptsNone(sopt));
+
+            // imm is the number of bytes to offset by. The instruction requires a multiple of the
+            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
+            // into a register.
+            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
+            {
+                // TODO-SVE: This assumes 128bit SVE.
+                imm = imm / 16;
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
+            }
+
+            assert(isValidSimm<9>(imm));
+
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_JH_2A;
@@ -3557,7 +3597,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
         case INS_sve_subhnt:
         case INS_sve_rsubhnb:
         case INS_sve_rsubhnt:
-            unreached(); // TODO-SVE: Not yet supported.
             assert(insOptsScalableWide(opt));
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
@@ -4554,14 +4593,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
         case INS_sve_cdot:
             assert(insScalableOptsNone(sopt));
             assert(insOptsScalableWords(opt));
-            assert(isVectorRegister(reg1));                        // ddddd
-            assert(isVectorRegister(reg2));                        // nnnnn
-            assert(isVectorRegister(reg3));                        // mmmmm
-            assert(isValidRot(imm));                               // rr
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isVectorRegister(reg1));                         // ddddd
+            assert(isVectorRegister(reg2));                         // nnnnn
+            assert(isVectorRegister(reg3));                         // mmmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm))); // rr
+            assert(isValidVectorElemsize(optGetSveElemsize(opt)));  // xx
 
             // Convert rot to bitwise representation
-            imm = emitEncodeRotationImm0_to_270(imm);
             fmt = IF_SVE_EJ_3A;
             break;
 
@@ -4569,14 +4607,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
         case INS_sve_sqrdcmlah:
             assert(insScalableOptsNone(sopt));
             assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg1));                        // ddddd
-            assert(isVectorRegister(reg2));                        // nnnnn
-            assert(isVectorRegister(reg3));                        // mmmmm
-            assert(isValidRot(imm));                               // rr
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isVectorRegister(reg1));                         // ddddd
+            assert(isVectorRegister(reg2));                         // nnnnn
+            assert(isVectorRegister(reg3));                         // mmmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm))); // rr
+            assert(isValidVectorElemsize(optGetSveElemsize(opt)));  // xx
 
             // Convert rot to bitwise representation
-            imm = emitEncodeRotationImm0_to_270(imm);
             fmt = IF_SVE_EK_3A;
             break;
 
@@ -5430,7 +5467,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5438,7 +5475,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FE_3B;
             }
@@ -5457,7 +5494,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5465,7 +5502,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FG_3B;
             }
@@ -5478,7 +5515,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5486,7 +5523,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // i i
                 fmt = IF_SVE_FH_3B;
             }
@@ -5528,7 +5565,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_H)
+            if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<3>(imm));                  // ii i
@@ -5536,7 +5573,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<2>(imm)); // ii
                 fmt = IF_SVE_FJ_3B;
             }
@@ -5758,12 +5795,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
     switch (ins)
     {
         case INS_sve_cdot:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
+
+            imm = (imm1 << 2) | imm2;
 
             if (opt == INS_OPTS_SCALABLE_B)
             {
@@ -5780,12 +5817,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
             break;
 
         case INS_sve_cmla:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
             // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
@@ -5802,13 +5839,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
             break;
 
         case INS_sve_sqrdcmlah:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
 
+            imm = (imm1 << 2) | imm2;
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert(isValidUimm<2>(imm1));                 // ii
@@ -7425,6 +7461,30 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
             return 0x00800000; // set the bit at location 23
 
         case EA_8BYTE:
+            return 0x00C00000; // set the bit at location 23 and 22
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeNarrowingSveElemsize(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_1BYTE:
+            return 0x00400000; // set the bit at location 22
+
+        case EA_2BYTE:
+            return 0x00800000; // set the bit at location 23
+
+        case EA_4BYTE:
             return 0x00C00000; // set the bit at location 23 and 22
 
         default:
@@ -10011,13 +10071,22 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
         case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
-        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
             code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg3());                    // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+            // Scalable, 3 regs, no predicates, narrowing
+        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V<4, 0>(id->idReg1());                               // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2());                               // nnnnn
+            code |= insEncodeReg_V<20, 16>(id->idReg3());                             // mmmmm
+            code |= insEncodeNarrowingSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10387,6 +10456,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             {
                 code |= insEncodeReg_V<20, 16>(id->idReg3()); // mmmmm
             }
+            else
+            {
+                code |= insEncodeReg_V<20, 16>(id->idReg2()); // mmmmm
+            }
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10755,9 +10828,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_V<9, 5>(id->idReg2());      // nnnnn
             code |= insEncodeUimm<20, 16>(emitGetInsSC(id)); // iii
             // Bit 23 should not be set by below call
-            assert(insOptsScalableWide(id->idInsOpt()));
-            code |= insEncodeSveElemsize_tszh_23_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
-                                                                                                   // x
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            code |= insEncodeSplitUimm<22, 22, 20, 19>(optGetSveElemsize(id->idInsOpt()) / 2);
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -12648,12 +12720,20 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
         case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
-        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
         case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
             assert(isVectorRegister(id->idReg2()));          // nnnnn
             assert(isVectorRegister(id->idReg3()));          // mmmmm
+            assert(isScalableVectorSize(id->idOpSize()));
+            break;
+
+        // Scalable, unpredicated, narrowing
+        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+            assert(insOptsScalableWide(id->idInsOpt())); // xx
+            assert(isVectorRegister(id->idReg1()));      // ddddd
+            assert(isVectorRegister(id->idReg2()));      // nnnnn
+            assert(isVectorRegister(id->idReg3()));      // mmmmm
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
@@ -12949,7 +13029,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_FG_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply-add long (indexed)
         case IF_SVE_FH_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
         case IF_SVE_FJ_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_S);
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
             assert(isLowVectorRegister(id->idReg3())); // mmmm
@@ -13463,7 +13543,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
-            assert(insOptsScalableWide(id->idInsOpt()));
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isVectorRegister(id->idReg2()));                           // nnnnn
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // x xx
@@ -13471,15 +13551,15 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
             switch (id->idInsOpt())
             {
-                case INS_OPTS_SCALABLE_B:
+                case INS_OPTS_SCALABLE_H:
                     assert(isValidUimm<3>(imm)); // iii
                     break;
 
-                case INS_OPTS_SCALABLE_H:
+                case INS_OPTS_SCALABLE_S:
                     assert(isValidUimm<4>(imm)); // x iii
                     break;
 
-                case INS_OPTS_SCALABLE_S:
+                case INS_OPTS_SCALABLE_D:
                     assert(isValidUimm<5>(imm)); // xx iii
                     break;
 
@@ -15340,10 +15420,10 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
         // <Zd>.<T>, <Zn>.<Tb>, #<const>
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
         {
-            const insOpts largeSizeSpecifier = (insOpts)(id->idInsOpt() + 1);
-            emitDispSveReg(id->idReg1(), largeSizeSpecifier, true); // ddddd
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);     // nnnnn
-            emitDispImm(emitGetInsSC(id), false);                   // iii
+            const insOpts narrowSizeSpecifier = (insOpts)(id->idInsOpt() - 1);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);      // ddddd
+            emitDispSveReg(id->idReg2(), narrowSizeSpecifier, true); // nnnnn
+            emitDispImm(emitGetInsSC(id), false);                    // iii
             break;
         }
 

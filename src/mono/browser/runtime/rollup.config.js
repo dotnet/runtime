@@ -20,7 +20,6 @@ const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace
 const wasmObjDir = process.env.WasmObjDir ? process.env.WasmObjDir.replace(/"/g, "") : "obj";
 const wasmEnableThreads = process.env.WasmEnableThreads === "true" ? true : false;
 const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
-const wasmEnablePerfTracing = process.env.FEATURE_PERFTRACING === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
 // because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
@@ -114,7 +113,6 @@ const envConstants = {
     configuration,
     wasmEnableThreads,
     wasmEnableSIMD,
-    wasmEnablePerfTracing,
     wasmEnableExceptionHandling,
     gitHash,
     wasmEnableJsInteropByValue,
@@ -163,7 +161,7 @@ const typescriptConfigOptions = {
 };
 
 const outputCodePlugins = [consts(envConstants), typescript(typescriptConfigOptions)];
-const externalDependencies = ["module", "process"];
+const externalDependencies = ["module", "process", "url", "fs"];
 
 const loaderConfig = {
     treeshake: !isDebug,
@@ -173,8 +171,9 @@ const loaderConfig = {
             format: "es",
             file: nativeBinDir + "/dotnet.js",
             banner,
+            intro: "/*! bundlerFriendlyImports */",
             plugins,
-            sourcemap: true,
+            sourcemap: isDebug ? true : "hidden",
             sourcemapPathTransform,
         }
     ],

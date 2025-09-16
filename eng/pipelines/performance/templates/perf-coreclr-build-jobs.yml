@@ -1,14 +1,13 @@
 parameters:
     linux_x64: false
-    linux_musl_x64: false
+    linux_arm64: false
     windows_x64: false
     windows_x86: false
-    linux_arm64: false
     windows_arm64: false
-    coreclrAndroid: false
+    android_arm64: false
 
 jobs:
-  - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_musl_x64, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
+  - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
     # build coreclr and libraries
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -21,8 +20,6 @@ jobs:
           - windows_x64
         - ${{ if eq(parameters.windows_x86, true) }}:
           - windows_x86
-        - ${{ if eq(parameters.linux_musl_x64, true) }}:
-          - linux_musl_x64
         - ${{ if eq(parameters.linux_arm64, true) }}:
           - linux_arm64
         - ${{ if eq(parameters.windows_arm64, true) }}:
@@ -42,7 +39,7 @@ jobs:
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
               displayName: Build Assets
 
-  - ${{ if eq(parameters.coreclrAndroid, true) }}:
+  - ${{ if eq(parameters.android_arm64, true) }}:
     # build CoreCLR Android scenarios
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:

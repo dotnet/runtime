@@ -120,8 +120,20 @@ namespace Microsoft.NET.HostModel.AppHost
                 RetryUtil.RetryOnIOError(() =>
                 {
                     bool isMachOImage;
-                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
+                    // MacOS requires a new inode to be created when updating a signed file, so we'll delete the file and create a new one.
+                    if (File.Exists(appHostDestinationFilePath))
+                        File.Delete(appHostDestinationFilePath);
+
+                    long appHostSourceLength = HostModelUtils.GetFileLength(appHostSourceFilePath);
+                    string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
+                    // Memory-mapped files cannot be resized, so calculate
+                    // the maximum length of the destination file upfront.
+                    long appHostDestinationLength = enableMacOSCodeSign ?
+                        appHostSourceLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostSourceLength, destinationFileName)
+                        : appHostSourceLength;
+                    using (MemoryMappedFile appHostDestinationMap = MemoryMappedFile.CreateNew(null, appHostDestinationLength))
                     {
+                        using (MemoryMappedViewStream appHostDestinationStream = appHostDestinationMap.CreateViewStream())
                         using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                         {
                             isMachOImage = MachObjectFile.IsMachOImage(appHostSourceStream);
@@ -131,61 +143,49 @@ namespace Microsoft.NET.HostModel.AppHost
                             }
                             appHostSourceStream.CopyTo(appHostDestinationStream);
                         }
-                        // Get the size of the source app host to ensure that we don't write extra data to the destination.
-                        // On Windows, the size of the view accessor is rounded up to the next page boundary.
-                        long appHostLength = appHostDestinationStream.Length;
-                        string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
-                        // On Mac, we need to extend the file size to accommodate the signature.
-                        long appHostTmpCapacity = enableMacOSCodeSign ?
-                            appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName)
-                            : appHostLength;
 
-                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostTmpCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostTmpCapacity, MemoryMappedFileAccess.ReadWrite))
+                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = appHostDestinationMap.CreateViewAccessor())
                         {
                             // Transform the host file in-memory.
-                            RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
+                            RewriteAppHost(appHostDestinationMap, memoryMappedViewAccessor);
                             if (isMachOImage)
                             {
+                                IMachOFileAccess file = new MemoryMappedMachOViewAccessor(memoryMappedViewAccessor);
+                                MachObjectFile machObjectFile = MachObjectFile.Create(file);
                                 if (enableMacOSCodeSign)
                                 {
-                                    string fileName = Path.GetFileName(appHostDestinationFilePath);
-                                    MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                                    appHostDestinationLength = machObjectFile.AdHocSignFile(file, destinationFileName);
                                 }
-                                else if (MachObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
+                                else if (machObjectFile.RemoveCodeSignatureIfPresent(file, out long? length))
                                 {
-                                    appHostLength = length.Value;
+                                    appHostDestinationLength = length.Value;
                                 }
                             }
                         }
-                        appHostDestinationStream.SetLength(appHostLength);
-
-                        if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                        using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 1))
+                        using (MemoryMappedViewAccessor appHostAccessor = appHostDestinationMap.CreateViewAccessor(0, appHostDestinationLength, MemoryMappedFileAccess.Read))
                         {
-                            using var updater = new ResourceUpdater(appHostDestinationStream, true);
-                            updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
-                            updater.Update();
+                            // Write the final content to the destination file, only up to the total length of the host, not the entire mapped file.
+                            // On Windows, memory-mapped files are rounded up to the next page size.
+                            // On MacOS, the memory-mapped file is created with a conservative estimate of the size of the signature.
+                            BinaryUtils.WriteToStream(appHostAccessor, appHostDestinationStream, appHostDestinationLength);
+                            // TODO: This could be moved to work on the MemoryMappedFile if we can precalculate the size required.
+                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                            {
+                                using ResourceUpdater updater = new ResourceUpdater(appHostDestinationStream, leaveOpen: true);
+                                updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                                updater.Update();
+                            }
                         }
                     }
                 });
-
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
-                    const int EINTR = 4;
-                    int chmodReturnCode = 0;
-
-                    do
-                    {
-                        chmodReturnCode = chmod(appHostDestinationFilePath, filePermissionOctal);
-                    }
-                    while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
-
-                    if (chmodReturnCode == -1)
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
-                    }
+                    // chmod +755
+                    File.SetUnixFileMode(appHostDestinationFilePath,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
                 }
             }
             catch (Exception ex)
@@ -202,81 +202,6 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Set the current AppHost as a single-file bundle.
-        /// </summary>
-        /// <param name="appHostPath">The path of Apphost template, which has the place holder</param>
-        /// <param name="bundleHeaderOffset">The offset to the location of bundle header</param>
-        public static void SetAsBundle(
-            string appHostPath,
-            long bundleHeaderOffset)
-        {
-            byte[] bundleHeaderPlaceholder = {
-                // 8 bytes represent the bundle header-offset
-                // Zero for non-bundle apphosts (default).
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
-                0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
-                0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
-                0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
-                0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
-            };
-
-            // Re-write the destination apphost with the proper contents.
-            RetryUtil.RetryOnIOError(() =>
-                BinaryUtils.SearchAndReplace(appHostPath,
-                                             bundleHeaderPlaceholder,
-                                             BitConverter.GetBytes(bundleHeaderOffset),
-                                             pad0s: false));
-
-            RetryUtil.RetryOnIOError(() =>
-                MachOUtils.AdjustHeadersForBundle(appHostPath));
-
-            // Memory-mapped write does not updating last write time
-            RetryUtil.RetryOnIOError(() =>
-                File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
-        }
-
-        /// <summary>
-        /// Check if the an AppHost is a single-file bundle
-        /// </summary>
-        /// <param name="appHostFilePath">The path of Apphost to check</param>
-        /// <param name="bundleHeaderOffset">An out parameter containing the offset of the bundle header (if any)</param>
-        /// <returns>True if the AppHost is a single-file bundle, false otherwise</returns>
-        public static bool IsBundle(string appHostFilePath, out long bundleHeaderOffset)
-        {
-            byte[] bundleSignature = {
-                // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
-                0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
-                0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
-                0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
-                0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
-            };
-
-            long headerOffset = 0;
-            void FindBundleHeader()
-            {
-                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
-                {
-                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-                    {
-                        int position = BinaryUtils.SearchInFile(accessor, bundleSignature);
-                        if (position == -1)
-                        {
-                            throw new PlaceHolderNotFoundInAppHostException(bundleSignature);
-                        }
-
-                        headerOffset = accessor.ReadInt64(position - sizeof(long));
-                    }
-                }
-            }
-
-            RetryUtil.RetryOnIOError(FindBundleHeader);
-            bundleHeaderOffset = headerOffset;
-
-            return headerOffset != 0;
         }
 
         private static byte[] GetSearchOptionBytes(DotNetSearchOptions searchOptions)
@@ -301,8 +226,5 @@ namespace Microsoft.NET.HostModel.AppHost
 
             return searchOptionsBytes;
         }
-
-        [LibraryImport("libc", SetLastError = true)]
-        private static partial int chmod([MarshalAs(UnmanagedType.LPStr)] string pathname, int mode);
     }
 }

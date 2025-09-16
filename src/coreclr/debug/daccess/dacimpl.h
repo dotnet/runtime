@@ -13,6 +13,7 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
+#include <minipal/mutex.h>
 #include "gcinterface.dac.h"
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
@@ -26,7 +27,7 @@
 #include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
-extern CRITICAL_SECTION g_dacCritSec;
+extern minipal_mutex g_dacMutex;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
 // Note that CLRDATA_ADDRESS is sign-extended (for compat with Windbg and OS conventions).  Converting
@@ -56,7 +57,7 @@ inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
 {
     SUPPORTS_DAC;
 #ifndef HOST_64BIT
-    static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
+    static_assert(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
     {
@@ -73,7 +74,7 @@ inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutT
 {
     SUPPORTS_DAC;
 #ifndef HOST_64BIT
-    static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
+    static_assert(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
     {
@@ -90,7 +91,7 @@ inline TADDR CORDB_ADDRESS_TO_TADDR(CORDB_ADDRESS cdbAddr)
 {
     SUPPORTS_DAC;
 #ifndef HOST_64BIT
-    static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
+    static_assert(sizeof(TADDR)==sizeof(UINT));
     if (cdbAddr > UINT_MAX)
     {
         _ASSERTE_MSG(false, "CORDB_ADDRESS out of range for this platform");
@@ -1417,7 +1418,7 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
-    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
 
@@ -1504,6 +1505,7 @@ private:
     BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
+    TADDR GetIdentityForManagedObjectWrapper(TADDR mow);
 #endif
 
 protected:
@@ -3420,12 +3422,7 @@ private:
 //
 //----------------------------------------------------------------------------
 
-#ifdef FEATURE_EH_FUNCLETS
-typedef ExceptionTrackerBase ClrDataExStateType;
-#else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
-#endif // FEATURE_EH_FUNCLETS
-
 
 class ClrDataExceptionState : public IXCLRDataExceptionState
 {
@@ -3813,7 +3810,7 @@ public:
 //----------------------------------------------------------------------------
 
 #define DAC_ENTER() \
-    EnterCriticalSection(&g_dacCritSec); \
+    minipal_mutex_enter(&g_dacMutex); \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
     g_dacImpl = this;
 
@@ -3821,10 +3818,10 @@ public:
 // the process's host instance cache hasn't been flushed
 // since the child was created.
 #define DAC_ENTER_SUB(dac) \
-    EnterCriticalSection(&g_dacCritSec); \
+    minipal_mutex_enter(&g_dacMutex); \
     if (dac->m_instanceAge != m_instanceAge) \
     { \
-        LeaveCriticalSection(&g_dacCritSec); \
+        minipal_mutex_leave(&g_dacMutex); \
         return E_INVALIDARG; \
     } \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
@@ -3832,7 +3829,7 @@ public:
 
 #define DAC_LEAVE() \
     g_dacImpl = __prevDacImpl; \
-    LeaveCriticalSection(&g_dacCritSec)
+    minipal_mutex_leave(&g_dacMutex)
 
 
 #define SOSHelperEnter() \
@@ -3850,7 +3847,7 @@ public:
             EX_RETHROW; \
         }               \
     }                   \
-    EX_END_CATCH(SwallowAllExceptions) \
+    EX_END_CATCH \
     DAC_LEAVE();
 
 HRESULT DacGetHostVtPtrs(void);

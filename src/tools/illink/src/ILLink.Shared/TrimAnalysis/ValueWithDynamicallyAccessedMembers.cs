@@ -10,10 +10,10 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	public abstract record ValueWithDynamicallyAccessedMembers : SingleValue
-	{
-		public abstract DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+    public abstract record ValueWithDynamicallyAccessedMembers : SingleValue
+    {
+        public abstract DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public abstract IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ();
-	}
+        public abstract IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch();
+    }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -40,6 +41,28 @@ namespace System.Runtime.InteropServices
 
             return span;
         }
+
+        /// <summary>
+        /// Get a <see cref="Span{Byte}"/> view over a <see cref="BitArray"/>'s data.
+        /// </summary>
+        /// <param name="array">The <see cref="BitArray"/> whose backing storage should be viewed.</param>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="BitArray"/> may have more capacity than is required to store the number of bits represented by
+        /// <see cref="BitArray.Length"/>. The returned span's <see cref="Span{Byte}.Length"/> will be the smallest number
+        /// of bytes capable of representing that length. If the <see cref="BitArray"/>'s length is not evenly divisible by
+        /// 8, the last byte of the span may contain extraneous bits that do not represent elements in the <see cref="BitArray"/>.
+        /// These may be ignored.
+        /// </para>
+        /// <para>
+        /// The length of the <see cref="BitArray"/> should not be changed while the resulting <see cref="Span{Byte}"/>
+        /// is in use. After such a change, the span may no longer refer to the <see cref="BitArray"/>'s backing storage.
+        /// </para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<byte> AsBytes(BitArray? array) =>
+            array is null ? default :
+            array._array.AsSpan(0, BitArray.GetByteArrayLengthFromBitLength(array.Length));
 
         /// <summary>
         /// Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/> or a ref null if it does not exist in the <paramref name="dictionary"/>.

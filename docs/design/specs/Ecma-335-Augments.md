@@ -24,6 +24,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Creating arrays using newobj](#creating-arrays-using-newobj)
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
+- [Extended layout](#extended-layout)
 
 ## Signatures
 
@@ -1009,7 +1010,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 ### II.14.4.2
 - Replace the sentence "Managed pointers (&) can point to an instance of a value type, a field of an object, a field of a value type, an element of an array, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with  "Managed pointers (&) can point to a local variable, a method argument, a field of an object or a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
-- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. A null managed pointer must not be dereferenced."
+- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. `NullReferenceException` is thrown if a null managed pointer is dereferenced."
 
 Changes to signatures:
 ### II.23.2.10
@@ -1024,8 +1025,9 @@ Changes to signatures:
 ### III.1.1.5.2
 - Replace "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
 - Remove the sentence "Managed pointers cannot be null."
-- Add a bullet point
-  - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+- Add two bullet points
+  - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+  - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
@@ -1063,15 +1065,60 @@ In order to maintain alignment, if the field needs alignment to be preserved, th
 
 ## Checked user-defined operators
 
-Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+Section "I.10.3.1 Unary operators" is reworded to include the support for instance form operators:
+```diff
+- Unary operators take one operand, perform some operation on it, and return the result. They are
+- represented as static methods on the class that defines the type of their one operand. Table I.4:
+- Unary Operator Names shows the names that are defined.
++ Unary operators take one operand and perform some operation on it. They are exposed on the class
++ that defines the type of their one operand and are represented as either static methods which
++ return the result or as void returning instance methods which take the first operand as the this
++ pointer and which mutates that operand directly. "Table I.4: Unary Operator Names" shows the names
++ that are defined.
+```
 
-Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
-*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+"Table I.4: Unary Operator Names" is expanded to include a third column, "Method Kind", which indicates whether the operator is represented as an instance or a static method. All existing table entries should have this column set to "static". The following additional entries are added to the table:
+> | Name                            | ISO/IEC 14882:20003 C++ Operator Symbol | Method Kind |
+> | ------------------------------- | --------------------------------------- | ----------- |
+> | *op_CheckedIncrement*           | Similar to `++`<sup>1, 3</sup>          | static      |
+> | *op_CheckedDecrement*           | Similar to `--`<sup>1, 3</sup>          | static      |
+> | *op_CheckedUnaryNegation*       | `-` (unary)<sup>3</sup>                 | static      |
+> | *op_DecrementAssignment*        | Similar to `++`<sup>4</sup>             | instance    |
+> | *op_IncrementAssignment*        | Similar to `--`<sup>4</sup>             | instance    |
+> | *op_CheckedDecrementAssignment* | Similar to `++`<sup>3, 4</sup>          | instance    |
+> | *op_CheckedIncrementAssignment* | Similar to `--`<sup>3, 4</sup>          | instance    |
+>
+> <sup>3</sup> A checked operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is `System.OverflowException`.
+>
+> <sup>4</sup> Unlike <sup>1</sup>, these methods increment or decrement their operand directly and so better match the pure C++ point of view.
 
-Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
-implementing checked explicit conversion operator.
+Section "I.10.3.2 Binary operators" is reworded to include the support for instance form operators:
+```diff
+- Binary operators take two operands, perform some operation on them, and return a value. They
+- are represented as static methods on the class that defines the type of one of their two operands.
+- Table I.5: Binary Operator Names shows the names that are defined.
++ Binary operators take two operands and perform some operation on them. They are exposed on the class
++ that defines the type of one of their two operands and are represented as either static methods which
++ return the result or as void returning instance methods which take the first operand as the `this`
++ pointer and which mutates that operand directly. "Table I.5: Binary Operator Names" shows the names
++ that are defined.
+```
 
-A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
+"Table I.5: Binary Operator Names" is expanded to include a third column, "Method Kind", which indicates whether the operator is represented as an instance or a static method. All existing table entries should have this column set to "static". Table entries where the name column ends with "Assignment" should have this column set to "static or instance". The following additional entries are added to the table:
+> | Name                                 | ISO/IEC 14882:20003 C++ Operator Symbol | Method Kind        |
+> | ------------------------------------ | --------------------------------------- | ------------------ |
+> | *op_CheckedAddition*                 | + (binary)<sup>1</sup>                  | static             |
+> | *op_CheckedSubtraction*              | - (binary)<sup>1</sup>                  | static             |
+> | *op_CheckedMultiply*                 | \* (binary)<sup>1</sup>                 | static             |
+> | *op_CheckedDivision*                 | /<sup>1</sup>                           | static             |
+> | *op_CheckedAdditionAssignment*       | +=<sup>1</sup>                          | static or instance |
+> | *op_CheckedSubtractionAssignment*    | -=<sup>1</sup>                          | static or instance |
+> | *op_CheckedMultiplicationAssignment* | \*=<sup>1</sup>                         | static or instance |
+> | *op_CheckedDivisionAssignment*       | /=<sup>1</sup>                          | static or instance |
+>
+> <sup>1</sup> A checked operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is `System.OverflowException`.
+
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method implementing checked explicit conversion operator.
 
 ## Atomic reads and writes
 
@@ -1102,3 +1149,45 @@ The incorrect description of `System.Array.Initialize` API in section "II.13.2 I
 ## Debug Interchange Format
 
 The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).
+
+## Extended Layout
+
+In section I.9.5, the following layout rule is added:
+
+- **extendedlayout**: A class marked `extendedlayout` guides the loader to use a set of rules indicated by the first parameter to a custom attribute of type `System.Runtime.InteropServices.ExtendedLayoutAttribute` on the type. Each of these layouts may have restrictions on valid layouts.
+
+In section II.10.1, `extended` is added as a possible value for `ClassAttr`.
+
+In section II.10.1.2, `extended` is added as a type layout attribute, and the following entry is added in the list of layout attributes:
+
+- **extended**: The CLI shal lay out the files based on the rules indicated by the first parameter to a custom attribute of type `System.Runtime.InteropServices.ExtendedLayoutAttribute` on the type.
+
+In section II.10.7, the following clause is appended:
+
+The **.pack** and **.size** directives are not valid on a type marked with `extended`.
+
+In section II.22.8, the following diffs are applied:
+
+```diff
+- The information held in the ClassLayout table depends upon the Flags value for {AutoLayout, SequentialLayout, ExplicitLayout} in the owner class or value type.
+- A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout, then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type’s hierarchy); otherwise, from System.Object.
++ The information held in the ClassLayout table depends upon the Flags value for {AutoLayout, SequentialLayout, ExplicitLayout, ExtendedLayout} in the owner class or value type.
++ A type has layout if it is marked SequentialLayout or ExplicitLayout or ExtendedLayout.
++ A type with ExtendedLayout must immediately inherit from System.ValueType.
++ If any type within an inheritance chain has layout, then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type’s hierarchy); otherwise, from System.Object.
+```
+
+```diff
+- 3. The Class or ValueType indexed by Parent shall be SequentialLayout or ExplicitLayout (§II.23.1.15). (That is, AutoLayout types shall not own any rows in the ClassLayout table.) [ERROR]
++ 3. The Class or ValueType indexed by Parent shall be SequentialLayout or ExplicitLayout (§II.23.1.15). (That is, AutoLayout and ExtendedLayout types shall not own any rows in the ClassLayout table.) [ERROR]
+```
+
+In section II.22.37, the following clause is removed:
+
+b. can set 0 or 1 of `SequentialLayout` and `ExplicitLayout` (if none set, then defaults to `AutoLayout`) [ERROR]
+
+In section II.23.1.15, the following row is added to the table:
+
+|-----|------|------|
+| `ExtendedLayout` | 0x00000018 | Layout is supplied by a `System.Runtime.InteropServices.ExtendedLayoutAttribute` custom attribute |
+

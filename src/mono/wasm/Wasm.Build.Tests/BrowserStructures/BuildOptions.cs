@@ -23,10 +23,10 @@ public record BuildOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string BootConfigFileName                                   = "dotnet.boot.js",
+        string? BootConfigFileName                                   = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
-        bool FeaturePerfTracing                                     = false
+        bool EnableDiagnostics                                      = false
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,
@@ -44,7 +44,7 @@ public record BuildOptions : MSBuildOptions
         BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        FeaturePerfTracing
+        EnableDiagnostics
     )
     {
     }

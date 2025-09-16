@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Finalizers are called via a field on the MethodTable, not through the VTable
-                if (isObjectType && method.Name == "Finalize")
+                if (isObjectType && method.Name.SequenceEqual("Finalize"u8))
                     continue;
 
                 // Current type doesn't define this slot.
@@ -204,7 +204,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
             // Finalizers are called via a field on the MethodTable, not through the VTable
-            if (_type.IsObject && virtualMethod.Name == "Finalize")
+            if (_type.IsObject && virtualMethod.Name.SequenceEqual("Finalize"u8))
                 return;
 
             _usedMethods.Add(virtualMethod);
@@ -242,12 +242,6 @@ namespace ILCompiler.DependencyAnalysis
                         factory.VirtualMethodUse(method),
                         factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                         "Canonically equivalent virtual method use");
-
-                if (defType.Context.SupportsUniversalCanon)
-                    yield return new CombinedDependencyListEntry(
-                        factory.VirtualMethodUse(method),
-                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Universal)),
-                        "Universal Canonically equivalent virtual method use");
             }
         }
     }

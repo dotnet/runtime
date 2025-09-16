@@ -22,8 +22,8 @@ public abstract record MSBuildOptions
     bool                            WarnAsError                     = true,
     RuntimeVariant                  RuntimeType                     = RuntimeVariant.SingleThreaded,
     IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
-    string                          BootConfigFileName              = "dotnet.boot.js",
+    string?                          BootConfigFileName              = null,
     string                          NonDefaultFrameworkDir          = "",
     string                          ExtraMSBuildArgs                = "",
-    bool                            FeaturePerfTracing              = false
+    bool                            EnableDiagnostics               = false
 );

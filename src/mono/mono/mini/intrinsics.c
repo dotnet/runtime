@@ -654,18 +654,8 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
-		// We also always throw for Nullable<T> inputs, so fallback to the
-		// managed implementation here as well.
-
 		MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
-		if (mono_class_is_nullable (tfrom_klass)) {
-			return NULL;
-		}
-
 		MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
-		if (mono_class_is_nullable (tto_klass)) {
-			return NULL;
-		}
 
 		// The same applies for when the type sizes do not match, as this will always throw
 		// and so its not an expected case and we can fallback to the managed implementation
@@ -710,6 +700,17 @@ MONO_RESTORE_WARNING
 				opcode = (tto_type == MONO_TYPE_I2) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
 				tto_stack = STACK_I4;
 			} else if (size == 4) {
+#if TARGET_SIZEOF_VOID_P == 4
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I4;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U4;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I4;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U4;
+#endif
 				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
 					opcode = OP_MOVE_F_TO_I4;
 					tto_stack = STACK_I4;
@@ -722,26 +723,42 @@ MONO_RESTORE_WARNING
 				}
 			} else if (size == 8) {
 #if TARGET_SIZEOF_VOID_P == 8
-					if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_F_TO_I8;
-						tto_stack = STACK_I8;
-					} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_I8_TO_F;
-						tto_stack = STACK_R8;
-					} else {
-						opcode = OP_MOVE;
-						tto_stack = STACK_I8;
-					}
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I8;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U8;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I8;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U8;
+#endif
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+				if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_F_TO_I8;
+					tto_stack = STACK_I8;
+				} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_I8_TO_F;
+					tto_stack = STACK_R8;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I8;
+				}
 #else
-					return NULL;
+				return NULL;
 #endif
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
-#if TARGET_SIZEOF_VOID_P == 8
-				opcode = OP_XCAST;
-				tto_stack = STACK_VTYPE;
-#else
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+			if (!COMPILE_LLVM (cfg))
+				// FIXME: Fix the register allocation for SIMD on Windows x64
 				return NULL;
+#endif
+			opcode = OP_XCAST;
+			tto_stack = STACK_VTYPE;
+#else
+			return NULL;
 #endif
 		}
 
@@ -2396,19 +2413,21 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		const char* cmethod_name = cmethod->name;
 
-		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
-			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-			// but, they all prefix the qualified name of the interface first, so we'll check for that and
-			// skip the prefix before trying to resolve the method.
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+			if (strncmp(cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
+				// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+				// but, they all prefix the qualified name of the interface first, so we'll check for that and
+				// skip the prefix before trying to resolve the method.
 
-			if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-				cmethod_name += 77;
-			} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-				cmethod_name += 79;
-			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
-				cmethod_name += 80;
+				if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+					cmethod_name += 79;
+				} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+					cmethod_name += 80;
+				}
+			} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
+				cmethod_name += 67;
 			}
 		}
 

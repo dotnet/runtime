@@ -484,12 +484,13 @@ namespace System.Speech.Internal.ObjectTokens
 
         private static RegistryKey RegKeyFromRootPath(string rootPath)
         {
-            RegistryKey[] roots = new RegistryKey[] {
+            ReadOnlySpan<RegistryKey> roots =
+            [
                 Registry.ClassesRoot,
                 Registry.LocalMachine,
                 Registry.CurrentUser,
                 Registry.CurrentConfig
-            };
+            ];
 
             foreach (RegistryKey key in roots)
             {

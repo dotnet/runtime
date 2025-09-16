@@ -105,7 +105,7 @@ namespace System.Reflection
 
         internal RuntimeMethodInfo? GetParentDefinition()
         {
-            if (!IsVirtual || m_declaringType.IsInterface)
+            if (!IsVirtual || m_declaringType.IsActualInterface)
                 return null;
 
             RuntimeType? parent = (RuntimeType?)m_declaringType.BaseType;
@@ -274,8 +274,7 @@ namespace System.Reflection
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null)
-                mb._methodBase = this;
+            mb?._methodBase = this;
             return mb;
         }
 
@@ -323,7 +322,7 @@ namespace System.Reflection
 
         public override MethodInfo GetBaseDefinition()
         {
-            if (!IsVirtual || IsStatic || m_declaringType == null || m_declaringType.IsInterface)
+            if (!IsVirtual || IsStatic || m_declaringType == null || m_declaringType.IsActualInterface)
                 return this;
 
             int slot = RuntimeMethodHandle.GetSlot(this);
@@ -447,7 +446,7 @@ namespace System.Reflection
             RuntimeMethodHandle.GetMethodInstantiationInternal(this);
 
         public override Type[] GetGenericArguments() =>
-            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? Type.EmptyTypes;
+            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? [];
 
         public override MethodInfo GetGenericMethodDefinition()
         {

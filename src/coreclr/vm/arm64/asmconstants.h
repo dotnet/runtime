@@ -36,6 +36,9 @@ ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::Inline
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
+
 #define               Thread__m_fPreemptiveGCDisabled   0x04
 #define               Thread__m_pFrame                  0x08
 
@@ -44,6 +47,16 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 
 #define Thread_m_pFrame Thread__m_pFrame
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
+
+#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
+
+#define               OFFSETOF__ee_alloc_context__combined_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 #define METHODDESC_REGISTER            x12
 
@@ -75,33 +88,8 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pRetBuffArg          == offsetof(CallDescrData, pRetBuffArg))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
-
-// Offset of the array containing the address of captured registers in MachState
-#define MachState__captureX19_X29 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureX19_X29 == offsetof(MachState, captureX19_X29))
-
-// Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrX19_X29 0x58
-ASMCONSTANTS_C_ASSERT(MachState__ptrX19_X29 == offsetof(MachState, ptrX19_X29))
-
-#define MachState__isValid 0xc0
-ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
-
-#define LazyMachState_captureX19_X29 MachState__captureX19_X29
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureX19_X29 == offsetof(LazyMachState, captureX19_X29))
-
-#ifdef __APPLE__
-#define LazyMachState_captureSp     (MachState__isValid+8+88) // padding for alignment
-#else // __APPLE__
-#define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
-#endif // __APPLE
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
-
-#define LazyMachState_captureIp     (LazyMachState_captureSp+8)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
-
-#define VASigCookie__pNDirectILStub 0x8
-ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
+#define VASigCookie__pPInvokeILStub 0x8
+ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
@@ -113,24 +101,84 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
+#define OFFSETOF__CONTEXT__X19        0xA0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__X19 == offsetof(T_CONTEXT, X19));
+
+#define OFFSETOF__CONTEXT__Fp         0xF0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
+
+#define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
+                    == offsetof(DynamicHelperStubArgs, Constant1));
+
+#define               OFFSETOF__DynamicHelperStubArgs__Constant2    0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant2
+                    == offsetof(DynamicHelperStubArgs, Constant2));
+
+#define               OFFSETOF__DynamicHelperStubArgs__Helper    0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Helper
+                    == offsetof(DynamicHelperStubArgs, Helper));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SecondIndir    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SecondIndir
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SecondIndir));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__LastIndir    0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__LastIndir
+                    == offsetof(GenericDictionaryDynamicHelperStubData, LastIndir));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SizeOffset    0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SizeOffset
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SizeOffset));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffset    0xc
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffset
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SlotOffset));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs    0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs
+                    == offsetof(GenericDictionaryDynamicHelperStubData, HandleArgs));
+
+#ifdef FEATURE_INTERPRETER
+#define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x48, 0x20)
+#else
+#define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x40, 0x18)
+#endif // FEATURE_INTERPRETER
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo
+                    == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
 
 //=========================================
-#define MethodTable__m_dwFlags         0x0
-ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
+#define               OFFSETOF__MethodTable__m_dwFlags    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__m_BaseSize         0x04
-ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
+#define               OFFSETOF__MethodTable__m_usComponentSize    0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_usComponentSize == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
+#define               OFFSETOF__MethodTable__m_uBaseSize    0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_uBaseSize == offsetof(MethodTable, m_BaseSize));
 
-#define ArrayBase__m_NumComponents     0x8
-ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
+#define               OFFSETOF__MethodTable__m_pPerInstInfo    DBG_FRE(0x38, 0x30)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pPerInstInfo
+                    == offsetof(MethodTable, m_pPerInstInfo));
 
-#define PtrArray__m_Array              0x10
-ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
+#define               OFFSETOF__Object__m_pEEType   0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab));
+
+#define               OFFSETOF__Array__m_Length     0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
+
+#define               MAX_STRING_LENGTH 0x3FFFFFDF
+ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
+
+#define               STRING_COMPONENT_SIZE 2
+
+#define               STRING_BASE_SIZE 0x16
+ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(WCHAR));
+
+#define               SZARRAY_BASE_SIZE 0x18
+ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(DWORD));
 
 //=========================================
 
@@ -242,6 +290,35 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(
 #define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
+#define OFFSETOF__ThreadLocalInfo__m_pThread 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLocalInfo, m_pThread))
+
+#ifdef FEATURE_INTERPRETER
+#ifdef _DEBUG
+#define OFFSETOF__InterpMethod__pCallStub 0x20
+#else
+#define OFFSETOF__InterpMethod__pCallStub 0x18
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
+
+#ifdef TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xb78
+#else // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xba0
+#endif // TARGET_UNIX
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
+
+#define OFFSETOF__InterpThreadContext__pStackPointer 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
+
+#define OFFSETOF__CallStubHeader__Routines 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
+
+#define SIZEOF__TransitionBlock 0xb0
+ASMCONSTANTS_C_ASSERT(SIZEOF__TransitionBlock == sizeof(TransitionBlock))
+
+#endif // FEATURE_INTERPRETER
 
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER        0x1

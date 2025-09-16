@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
 
@@ -334,8 +335,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     string name = customAttributeEntry.TypeNamespace + "." + customAttributeEntry.TypeName;
                     // This hashing algorithm MUST match exactly the logic in NativeCuckooFilter
-                    int hashOfAttribute = ReadyToRunHashCode.NameHashCode(name);
-                    uint hash = unchecked((uint)ReadyToRunHashCode.CombineTwoValuesIntoHash((uint)hashOfAttribute, (uint)customAttributeEntry.Parent));
+                    int hashOfAttribute = VersionResilientHashCode.NameHashCode(System.Text.Encoding.UTF8.GetBytes(name));
+                    uint hash = unchecked((uint)VersionResilientHashCode.CombineTwoValuesIntoHash((uint)hashOfAttribute, (uint)customAttributeEntry.Parent));
                     ushort fingerprint = (ushort)(hash >> 16);
                     if (fingerprint == 0)
                     {

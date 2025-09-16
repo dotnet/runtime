@@ -39,6 +39,7 @@
     <_LongRunningGCTests>false</_LongRunningGCTests>
     <_GcSimulatorTests>false</_GcSimulatorTests>
     <_RunInUnloadableContext>false</_RunInUnloadableContext>
+    <_RunInterpreter>false</_RunInterpreter>
     <_TieringTest>false</_TieringTest>
     <_HotColdSplitting>false</_HotColdSplitting>
     <_NativeAotTest>false</_NativeAotTest>
@@ -98,6 +99,7 @@
         LongRunningGCTests=$(_LongRunningGCTests);
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
+        RunInterpreter=$(_RunInterpreter);
         TieringTest=$(_TieringTest);
         HotColdSplitting=$(_HotColdSplitting);
         NativeAotTest=$(_NativeAotTest);
@@ -685,7 +687,7 @@
   -->
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe" />
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe 2&gt;nul" />
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
@@ -694,6 +696,7 @@
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="set RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
+    <HelixPreCommand Include="set RunInterpreter=1" Condition=" '$(RunInterpreter)' == 'true' " />
     <HelixPreCommand Include="set RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="set HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\runincontext.cmd" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -719,7 +722,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe 2&gt;nul"/>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' ">
@@ -747,6 +750,7 @@
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
+    <HelixPreCommand Include="export RunInterpreter=1" Condition=" '$(RunInterpreter)' == 'true' " />
     <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />

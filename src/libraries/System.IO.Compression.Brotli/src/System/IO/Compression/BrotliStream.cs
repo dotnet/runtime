@@ -138,7 +138,14 @@ namespace System.IO.Compression
         /// <summary>Gets a reference to the underlying stream.</summary>
         /// <value>A stream object that represents the underlying stream.</value>
         /// <exception cref="System.ObjectDisposedException">The underlying stream is closed.</exception>
-        public Stream BaseStream => _stream;
+        public Stream BaseStream
+        {
+            get
+            {
+                EnsureNotDisposed();
+                return _stream;
+            }
+        }
         /// <summary>Gets a value indicating whether the stream supports reading while decompressing a file.</summary>
         /// <value><see langword="true" /> if the <see cref="System.IO.Compression.CompressionMode" /> value is <see langword="Decompress," /> and the underlying stream supports reading and is not closed; otherwise, <see langword="false" />.</value>
         public override bool CanRead => _mode == CompressionMode.Decompress && _stream != null && _stream.CanRead;

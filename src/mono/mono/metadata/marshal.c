@@ -3582,7 +3582,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation.
 		 * Emit a wrapper that throws a NotSupportedException.
 		 */
-		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method cannot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
 		goto emit_exception_for_error;
 	} else if (!pinvoke && !piinfo->addr && !aot) {
 		/* if there's no code but the error isn't set, just use a fairly generic exception. */
@@ -5241,6 +5241,62 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	return res;
 }
 
+static void process_unsafe_accessor_type (MonoUnsafeAccessorKind kind, MonoMethod *accessor_method, MonoMethodSignature *tgt_sig)
+{
+	g_assert (accessor_method);
+	g_assert (tgt_sig);
+
+	char *type_name;
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
+	MonoImage *image = m_class_get_image (accessor_method->klass);
+	MonoType *type;
+
+	// Iterate through all parameters. Zero is the return value, the arguments are 1-based.
+	for (guint16 seq = 0; seq <= tgt_sig->param_count; ++seq) {
+
+		ERROR_DECL (error);
+
+		type_name = NULL;
+		if (!mono_method_param_get_unsafe_accessor_type_attr_data (accessor_method, seq, &type_name, error))
+			continue;
+		mono_error_assert_ok (error);
+		g_assert (type_name);
+
+		type = mono_reflection_type_from_name_checked (type_name, alc, image, error);
+		if (!type)
+			continue;
+		mono_error_assert_ok (error);
+
+		// Future versions of the runtime may support
+		// UnsafeAccessorTypeAttribute on value types.
+		g_assert (type->type != MONO_TYPE_VALUETYPE);
+
+		if (seq == 0 && m_type_is_byref (tgt_sig->ret)) {
+			// [FIXME] UnsafeAccessorType is not supported on return that are byref, type safety issue.
+			return;
+		}
+
+		// Check the target signature for attribute, byref and cmods state. This information
+		// is not contained with in the type name itself, so we may need to check the target
+		// signature and retain it on the new type.
+		MonoType *current_param = (seq == 0) ? tgt_sig->ret : tgt_sig->params [seq - 1];
+		if (current_param->attrs != 0 || m_type_is_byref(current_param) || current_param->has_cmods) {
+			type = mono_metadata_type_dup_with_cmods(image, type, current_param);
+			type->byref__ = current_param->byref__;
+			type->attrs = current_param->attrs;
+		}
+
+		// Update the target signature with the new type
+		if (seq == 0) {
+			// The return value
+			tgt_sig->ret = type;
+		} else {
+			// The arguments
+			tgt_sig->params [seq - 1] = type;
+		}
+	}
+}
+
 /*
  * mono_marshal_get_unsafe_accessor_wrapper:
  *
@@ -5388,6 +5444,9 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
 	}
 	sig->pinvoke = 0;
+
+	// Parse the signature and check for instances of UnsafeAccessorTypeAttribute.
+	process_unsafe_accessor_type (kind, accessor_method, sig);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
@@ -5884,61 +5943,38 @@ mono_marshal_is_loading_type_info (MonoClass *klass)
 	return g_slist_find (loads_list, klass) != NULL;
 }
 
-/**
- * mono_marshal_load_type_info:
- *
- * Initialize \c klass::marshal_info using information from metadata. This function can
- * recursively call itself, and the caller is responsible to avoid that by calling
- * \c mono_marshal_is_loading_type_info beforehand.
- *
- * LOCKING: Acquires the loader lock.
- */
-MonoMarshalType *
-mono_marshal_load_type_info (MonoClass* klass)
+static void
+mono_marshal_load_extended_layout_type_info(MonoClass* klass, MonoMarshalType* info)
 {
-	int j, count = 0;
-	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
-	MonoMarshalType *info;
+	int j = 0;
+	gpointer iter = NULL;
 	MonoClassField* field;
-	gpointer iter;
-	guint32 layout;
-	GSList *loads_list;
 
-	g_assert (klass != NULL);
-
-	info = mono_class_get_marshal_info (klass);
-	if (info)
-		return info;
-
-	if (!m_class_is_inited (klass))
-		mono_class_init_internal (klass);
-
-	info = mono_class_get_marshal_info (klass);
-	if (info)
-		return info;
-
-	/*
-	 * This function can recursively call itself, so we keep the list of classes which are
-	 * under initialization in a TLS list.
-	 */
-	g_assert (!mono_marshal_is_loading_type_info (klass));
-	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
-	loads_list = g_slist_prepend (loads_list, klass);
-	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
-
-	iter = NULL;
+	info->native_size = mono_class_instance_size(klass) - MONO_ABI_SIZEOF (MonoObject);
+	info->min_align = mono_class_min_align(klass);
+ 
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
+
 		if (mono_field_is_deleted (field))
 			continue;
-		count++;
+
+		info->fields [j].field = field;
+		info->fields [j].offset = mono_field_get_offset (field);
 	}
+}
+
+static void
+mono_marshal_load_standard_layout_type_info(MonoClass* klass, MonoMarshalType* info)
+{
+	int j;
+	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
+	MonoClassField* field;
+	gpointer iter;
+	guint32 layout;
 
 	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
-
-	info = (MonoMarshalType *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
-	info->num_fields = count;
 
 	/* Try to find a size for this type in metadata */
 	explicit_size = mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
@@ -6049,6 +6085,70 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (m_class_get_rank (klass) && !mono_marshal_is_loading_type_info (m_class_get_element_class (klass))) {
 		mono_marshal_load_type_info (m_class_get_element_class (klass));
 	}
+}
+
+/**
+ * mono_marshal_load_type_info:
+ *
+ * Initialize \c klass::marshal_info using information from metadata. This function can
+ * recursively call itself, and the caller is responsible to avoid that by calling
+ * \c mono_marshal_is_loading_type_info beforehand.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass)
+{
+	int count = 0;
+	MonoMarshalType *info;
+	MonoClassField* field;
+	gpointer iter;
+	guint32 layout;
+	GSList *loads_list;
+
+	g_assert (klass != NULL);
+
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
+
+	if (!m_class_is_inited (klass))
+		mono_class_init_internal (klass);
+
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
+
+	/*
+	 * This function can recursively call itself, so we keep the list of classes which are
+	 * under initialization in a TLS list.
+	 */
+	g_assert (!mono_marshal_is_loading_type_info (klass));
+	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
+	loads_list = g_slist_prepend (loads_list, klass);
+	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
+
+	iter = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		count++;
+	}
+
+	info = (MonoMarshalType *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
+	info->num_fields = count;
+
+
+	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
+
+	if (layout == TYPE_ATTRIBUTE_EXTENDED_LAYOUT) {
+		mono_marshal_load_extended_layout_type_info(klass, info);
+	} else {
+		mono_marshal_load_standard_layout_type_info(klass, info);
+	}
+
 
 	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
 	loads_list = g_slist_remove (loads_list, klass);

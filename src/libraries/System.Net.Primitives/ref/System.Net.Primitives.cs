@@ -283,7 +283,7 @@ namespace System.Net
         static bool System.IUtf8SpanParsable<System.Net.IPAddress>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    public partial class IPEndPoint : System.Net.EndPoint
+    public partial class IPEndPoint : System.Net.EndPoint, ISpanFormattable, ISpanParsable<IPEndPoint>, IUtf8SpanFormattable, IUtf8SpanParsable<IPEndPoint>
     {
         public const int MaxPort = 65535;
         public const int MinPort = 0;
@@ -301,6 +301,19 @@ namespace System.Net
         public override string ToString() { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
         public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
+        public static IPEndPoint Parse(ReadOnlySpan<byte> utf8Text) { throw null; }
+        static IPEndPoint ISpanParsable<IPEndPoint>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        static IPEndPoint IParsable<IPEndPoint>.Parse(string s, IFormatProvider? provider) { throw null; }
+        static IPEndPoint IUtf8SpanParsable<IPEndPoint>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) { throw null; }
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IPEndPoint? result) { throw null; }
+        static bool ISpanParsable<IPEndPoint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IPEndPoint? result) { throw null; }
+        static bool IParsable<IPEndPoint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IPEndPoint? result) { throw null; }
+        static bool IUtf8SpanParsable<IPEndPoint>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IPEndPoint? result) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) { throw null; }
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) { throw null; }
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) { throw null; }
     }
     public readonly partial struct IPNetwork : System.IEquatable<System.Net.IPNetwork>, System.IFormattable, System.IParsable<System.Net.IPNetwork>, System.ISpanFormattable, System.ISpanParsable<System.Net.IPNetwork>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Net.IPNetwork>
     {
@@ -538,7 +551,7 @@ namespace System.Net.Sockets
 }
 namespace System.Security.Authentication
 {
-    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum CipherAlgorithmType
     {
         None = 0,
@@ -552,7 +565,7 @@ namespace System.Security.Authentication
         Aes = 26129,
         Rc4 = 26625,
     }
-    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum ExchangeAlgorithmType
     {
         None = 0,
@@ -560,7 +573,7 @@ namespace System.Security.Authentication
         RsaKeyX = 41984,
         DiffieHellman = 43522,
     }
-    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum HashAlgorithmType
     {
         None = 0,
