@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <OutputType>Library</OutputType>
