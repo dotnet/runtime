@@ -4153,6 +4153,7 @@ private:
     DWORD m_dwOutOfProcessStepping;
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+    void ClearThreadTrackers(); // Clears all thread trackers
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
