@@ -163,7 +163,7 @@ export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
       <TestAssemblySourcePath>$(OutputPath)/../testv1/test/</TestAssemblySourcePath>
       <TestAssemblyTargetPath>$(OutputPath)/testv1</TestAssemblyTargetPath>
     </PropertyGroup>
-
+    
     <MakeDir Directories="$(TestAssemblyTargetPath)" />
     <Copy SourceFiles="$(TestAssemblySourcePath)$(TestAssemblyName)" DestinationFolder="$(TestAssemblyTargetPath)" />
   </Target>
