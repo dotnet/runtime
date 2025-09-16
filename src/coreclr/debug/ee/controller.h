@@ -1161,7 +1161,7 @@ class DebuggerController
     static bool GetProcessingDetach() {LIMITED_METHOD_CONTRACT;  return g_fProcessingDetach; }
     static void SetProcessingDetach(bool fProcessingDetach) {LIMITED_METHOD_CONTRACT;  g_fProcessingDetach = fProcessingDetach; }
     static int GetActiveDispatchedExceptions() {LIMITED_METHOD_CONTRACT;  return g_cActiveDispatchedExceptions; }
-    static void IncrementActiveDispatchedExceptions(int cActiveDispatchedExceptions) { LIMITED_METHOD_CONTRACT;  g_cActiveDispatchedExceptions += cActiveDispatchedExceptions; }
+    static void SetActiveDispatchedExceptions(int cActiveDispatchedExceptions) { LIMITED_METHOD_CONTRACT;  g_cActiveDispatchedExceptions = cActiveDispatchedExceptions; }
     static int IncrementActiveDispatchedExceptions() { LIMITED_METHOD_CONTRACT;  return (int)InterlockedIncrement(&g_cActiveDispatchedExceptions); }
     static int DecrementActiveDispatchedExceptions() { LIMITED_METHOD_CONTRACT;  return (int)InterlockedDecrement(&g_cActiveDispatchedExceptions); }
     static int GetNumPendingControllers();

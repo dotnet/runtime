@@ -5473,7 +5473,29 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
-    if (retVal && fIsVEH)
+    bool fSendSetThreadContextNeeded = (retVal && fIsVEH);
+    if (DebuggerController::GetProcessingDetach())
+    {
+        int cDispatchedFlares = fSendSetThreadContextNeeded ? DebuggerController::IncrementDispatchedFlares() : DebuggerController::GetDispatchedFlares();
+        _ASSERTE(cDispatchedFlares >= 0);
+        int cActiveDispatchedExceptions = DebuggerController::DecrementActiveDispatchedExceptions();
+        _ASSERTE(cActiveDispatchedExceptions >= 0);
+        if (cActiveDispatchedExceptions == 0)
+        {
+            LOG((LF_CORDB, LL_INFO1000000, "D::FCNE Sending last exception event g_cDispatchedFlares=%d g_cActiveDispatchedExceptions=%d\n", cDispatchedFlares, cActiveDispatchedExceptions));
+            DebuggerController::SetProcessingDetach(false);
+
+            DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
+            InitIPCEvent(pResult, DB_IPCE_DETACH_FROM_PROCESS_RESULT, NULL);
+
+            pResult->DetachFromProcessResult.cDispatchedFlares = cDispatchedFlares;
+            LOG((LF_CORDB, LL_INFO1000000, "D::HIPCE Detach is complete. cDispatchedFlares=%d\n", pResult->DetachFromProcessResult.cDispatchedFlares));
+
+            m_pRCThread->SendIPCReply();
+        }
+    }
+
+    if (fSendSetThreadContextNeeded)
     {
         // This does not return. Out-of-proc debugger will update the thread context
         // within this call.
@@ -8944,6 +8966,13 @@ void Debugger::ThreadCreated(Thread* pRuntimeThread)
         return;
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (DebuggerController::GetProcessingDetach())
+    {
+        int cActiveDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions();
+        LOG((LF_CORDB, LL_INFO10000, "DebuggerThreadStarter allocated, incrementing ActiveDispatchedExceptions - cActiveDispatchedExceptions=%d\n", cActiveDispatchedExceptions));
+    }
+#endif
 
     starter->EnableTraceCall(LEAF_MOST_FRAME);
 }
@@ -10823,7 +10852,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 #endif
             {
                 // Reply to the detach message before we release any Runtime threads. This ensures that the debugger will get
-                // the detach reply before the process exits if the main thread is near exiting.
+                // the detach reply before the process exits if the main thread is near exiting.69
                 DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
                 InitIPCEvent(pResult, DB_IPCE_DETACH_FROM_PROCESS_RESULT, NULL);
 
@@ -10841,7 +10870,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
                 // start counting the number of flares we have sent
                 DebuggerController::SetDispatchedFlares(0); // resets the count of Debugger::SendSetThreadContextNeeded to zero
-                DebuggerController::IncrementActiveDispatchedExceptions(cNumberOfControllers); // sets the number of controllers we expect to handle in Debugger::FirstChanceNativeException
+                DebuggerController::SetActiveDispatchedExceptions(cNumberOfControllers); // sets the number of controllers we expect to handle in Debugger::FirstChanceNativeException
 
                 // this enables counting the number of queued Debugger::SendSetThreadContextNeeded
                 // once we have an accurate count of the number of controllers
@@ -16277,24 +16306,6 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 {
     return m_fOutOfProcessSetContextEnabled;
 }
-
-#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendDetachComplete()
-{
-    int cDispatchedFlares = DebuggerController::GetDispatchedFlares();
-    int cActiveDispatchedExceptions = DebuggerController::GetActiveDispatchedExceptions();
-    int cNumControllers = DebuggerController::GetNumPendingControllers();
-
-    LOG((LF_CORDB, LL_INFO1000000, "D::SendDetachComplete Sending detach complete event g_cDispatchedFlares=%d g_cActiveDispatchedExceptions=%d g_cNumControllers=%d\n", cDispatchedFlares, cActiveDispatchedExceptions, cNumControllers));
-
-    DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
-    InitIPCEvent(pResult, DB_IPCE_DETACH_FROM_PROCESS_RESULT, NULL);
-
-    pResult->DetachFromProcessResult.cDispatchedFlares = cDispatchedFlares;
-
-    m_pRCThread->SendIPCReply();
-}
-#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #else
 void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
 {
