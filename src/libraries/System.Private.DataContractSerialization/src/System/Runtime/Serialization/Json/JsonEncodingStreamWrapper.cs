@@ -101,10 +101,7 @@ namespace System.Runtime.Serialization.Json
         // The encoding conversion and buffering breaks seeking.
         public override long Position
         {
-            get
-            {
-                throw new NotSupportedException();
-            }
+            get { throw new NotSupportedException(); }
             set { throw new NotSupportedException(); }
         }
 
