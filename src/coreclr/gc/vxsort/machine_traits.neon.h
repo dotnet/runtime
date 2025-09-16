@@ -75,11 +75,9 @@ class vxsort_machine_traits<uint32_t, NEON> {
 
     // Compare. Use mask to get one bit per lane. Add across into a single 64bit int.
     static INLINE TMASK get_cmpgt_mask(TV a, TV b) {
-        TV compare_mask = vdupq_n_u32(0);
-        compare_mask = vsetq_lane_u32(0b01,   compare_mask, 0);
-        compare_mask = vsetq_lane_u32(0b10,   compare_mask, 1);
-        compare_mask = vsetq_lane_u32(0b100,  compare_mask, 2);
-        compare_mask = vsetq_lane_u32(0b1000, compare_mask, 3);
+        const uint32_t compare_mask_array[4] = {0b01, 0b10, 0b100, 0b1000};
+        TV compare_mask = vld1q_u32 (&compare_mask_array[0]);
+
         return vaddvq_u32(vandq_u32(vcgtq_u32(a, b), compare_mask));
     }
 
@@ -175,10 +173,8 @@ class vxsort_machine_traits<uint64_t, NEON> {
         //[A,B,C,D] into [B,C,D,A]
         uint32x4_t b_rot = vextq_u32((uint32x4_t)b, (uint32x4_t)b, 1);
 
-        // Select odd lanes from b_rot, even lanes from a
-        uint32x4_t odd_mask = vdupq_n_u32(0u);
-        odd_mask = vsetq_lane_u32(~0u, odd_mask, 1);
-        odd_mask = vsetq_lane_u32(~0u, odd_mask, 3);
+        const uint32_t odd_mask_array[4] = {0x00000000u, 0xFFFFFFFFu, 0x00000000u, 0xFFFFFFFFu};
+        uint32x4_t odd_mask = vld1q_u32 (&odd_mask_array[0]);
 
         return vreinterpretq_u64_u32(vbslq_u32(odd_mask, b_rot, (uint32x4_t)a));
     }
