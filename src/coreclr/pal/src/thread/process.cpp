@@ -2444,8 +2444,11 @@ PROCCreateCrashDump(
         size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
         if (previousThreadId != 0)
         {
-            // Should never reenter or recurse
-            _ASSERTE(previousThreadId != currentThreadId);
+            // Return error if reenter this code
+            if (previousThreadId == currentThreadId)
+            {
+                return false;
+            }
 
             // The first thread generates the crash info and any other threads are blocked
             while (true)
