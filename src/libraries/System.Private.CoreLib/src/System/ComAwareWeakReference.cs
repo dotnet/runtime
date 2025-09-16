@@ -112,7 +112,7 @@ namespace System
                 if (_comInfo != null)
                 {
                     // Check if the target is still null
-                    target = Unsafe.As<T?>(GCHandle.InternalGet(_weakHandle));
+                    target = Unsafe.As<T>(GCHandle.InternalGet(_weakHandle));
                     if (target == null)
                     {
                         // Resolve and reset. Perform runtime cast to catch bugs
