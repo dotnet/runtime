@@ -170,6 +170,7 @@ namespace System.Tests
         [InlineData("nelknet 4.15.0-24201807041620-generic", 4, 15, 0, int.MaxValue)] // integer overflow
         [InlineData("", 0, 0, 0, 0)]
         [InlineData("1abc", 1, 0, 0, 0)]
+        [InlineData("36.1", 36, 1, 0, 0)] // Android 36.1 minor SDK version
         public void OSVersion_ParseVersion(string input, int major, int minor, int build, int revision)
         {
             var getOSMethod = typeof(Environment).GetMethod("GetOperatingSystem", BindingFlags.Static | BindingFlags.NonPublic);
@@ -188,6 +189,25 @@ namespace System.Tests
             Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
             Assert.Equal(-1, version.Revision); // Revision is never set on OSX
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public void OSVersion_ValidVersion_AndroidMinor()
+        {
+            Version version = Environment.OSVersion.Version;
+            
+            // Compare with what Java reports (if available)
+            string? javaVersion = Environment.GetEnvironmentVariable("DOTNET_ANDROID_VERSION_FROM_JAVA");
+            if (javaVersion != null)
+            {
+                // For Android, MonoRunner.java sets "36.1", so compare major and minor only
+                Assert.Equal(javaVersion, $"{version.Major}.{version.Minor}");
+            }
+            else
+            {
+                Assert.Fail("$DOTNET_ANDROID_VERSION_FROM_JAVA environment variable not set");
+            }
         }
 
         [Fact]
