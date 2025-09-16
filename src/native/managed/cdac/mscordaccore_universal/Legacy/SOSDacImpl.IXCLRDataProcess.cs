@@ -628,5 +628,25 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess2 is not null ? _legacyProcess2.GetGcNotification(gcEvtArgs) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess2.SetGcNotification(GcEvtArgs gcEvtArgs)
-        => _legacyProcess2 is not null ? _legacyProcess2.SetGcNotification(gcEvtArgs) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (gcEvtArgs.type > 1)
+                throw new ArgumentException();
+            _target.Contracts.Notifications.SetGcNotification(gcEvtArgs.type, gcEvtArgs.condemnedGeneration);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess2 is not null)
+        {
+            int hrLocal = _legacyProcess2.SetGcNotification(gcEvtArgs);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
+    }
 }

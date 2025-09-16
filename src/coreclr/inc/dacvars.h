@@ -116,6 +116,7 @@ DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
 DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
+DEFINE_DACVAR(WORD, dac__g_GcNotificationFlags, g_gcNotificationFlags)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
@@ -130,7 +131,6 @@ DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionMa
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
-DEFINE_DACVAR(PTR_GcNotification, dac__g_pGcNotificationTable, ::g_pGcNotificationTable)
 
 DEFINE_DACVAR(PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 

@@ -1725,17 +1725,8 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     }
 
     // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
-    {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+    return GcNotifications::GetNotification(gea) != 0;
 }
 
 void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
@@ -1750,14 +1741,10 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
     }
 
     // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
+    GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+    if (GcNotifications::GetNotification(gea))
     {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            DACNotify::DoGCNotification(gea);
-        }
+        DACNotify::DoGCNotification(gea);
     }
 
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)

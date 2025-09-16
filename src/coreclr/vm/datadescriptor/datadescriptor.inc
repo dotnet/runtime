@@ -994,6 +994,7 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
+CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS

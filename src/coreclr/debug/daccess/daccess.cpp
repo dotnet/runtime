@@ -3103,7 +3103,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
-    m_gcNotificationTable  = NULL;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
     m_streams = NULL;
@@ -5332,23 +5331,16 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
         }
         else
         {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
+            WORD res = GcNotifications::GetNotification(*gcEvtArgs);
+            if (res)
             {
-                status = E_OUTOFMEMORY;
+                gcEvtArgs->typ = GC_MARK_END;
+                gcEvtArgs->condemnedGeneration = res & 0x7fff;
+                status = S_OK;
             }
             else
             {
-                GcEvtArgs *res = gn.GetNotification(*gcEvtArgs);
-                if (res != NULL)
-                {
-                    *gcEvtArgs = *res;
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
+                status = E_FAIL;
             }
         }
     }
@@ -5380,22 +5372,8 @@ ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
         }
         else
         {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                if (gn.SetNotification(gcEvtArgs) && gn.UpdateOutOfProcTable())
-                {
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
+            GcNotifications::SetNotification(gcEvtArgs);
+            status = S_OK;
         }
     }
     EX_CATCH
@@ -6396,18 +6374,6 @@ ClrDataAccess::GetHostJitNotificationTable()
     }
 
     return m_jitNotificationTable;
-}
-
-GcNotification*
-ClrDataAccess::GetHostGcNotificationTable()
-{
-    if (m_gcNotificationTable == NULL)
-    {
-        m_gcNotificationTable =
-            GcNotifications::InitializeNotificationTable(128);
-    }
-
-    return m_gcNotificationTable;
 }
 
 /* static */ bool
