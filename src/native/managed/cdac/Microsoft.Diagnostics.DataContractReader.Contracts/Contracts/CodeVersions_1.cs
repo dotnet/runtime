@@ -37,37 +37,36 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         public OptimizationTierEnum OptimizationTier;
         public TargetPointer NativeCodeVersionNodePtr;
     };
-
-    private IEnumerable<NativeCodeVersionNode> GetNativeCodeVersionNodes(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle)
+    
+    internal enum NativeOptimizationTier : uint
     {
-        if (!ilCodeVersionHandle.IsValid)
-            yield break;
+        OptimizationTier0 = 0,
+        OptimizationTier1 = 1,
+        OptimizationTier1OSR = 2,
+        OptimizationTierOptimized = 3, // may do less optimizations than tier 1
+        OptimizationTier0Instrumented = 4,
+        OptimizationTier1Instrumented = 5,
+    };
 
-        // Iterate through versioning state nodes and return the active one, matching any IL code version
-        Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
-        TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
+    private DacpTieredVersionData.OptimizationTierEnum GetInitialOptimizationTier(bool isEligibleForTieredCompilation, bool isReadyToRun)
+    {
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureTieredCompilation) == 0 || !isEligibleForTieredCompilation)
+            return (DacpTieredVersionData.OptimizationTierEnum)NativeOptimizationTier.OptimizationTierOptimized;
 
-        // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
-        TargetPointer versioningStateAddr = rts.GetMethodDescVersioningState(md);
-        if (versioningStateAddr == TargetPointer.Null)
-            yield break;
-
-        Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
-
-        // LinkedList stage of NativeCodeVersion::Next, heavily inlined
-        TargetPointer currentAddress = versioningState.NativeCodeVersionNode;
-        while (currentAddress != TargetPointer.Null)
+        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
+        else if (1 == count) // get the call counting stuff
         {
-            Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
-            if (current.ILVersionId == ilVersionId)
-            {
-                yield return current;
-            }
-            currentAddress = current.Next;
+            return DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJitted;
         }
-        yield break;
+        else if (eeConfig.TieredPGO) // tiered pgo
+        {
+            if (eeConfig.TieredPGO_InstrumentOnlyHotCode || isReadyToRun)
+                return DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_MinOptJitted;
+            else
+                return DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
+        }
     }
+
     int ICodeVersions.GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs, out Span<byte> nativeCodeAddrs, out int pcNativeCodeAddrs)
     {
         pcNativeCodeAddrs = 0;
@@ -92,15 +91,22 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
         bool isReadyToRun = loader.GetReadyToRunInfo(moduleHandle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
+        bool isEligibleForTieredCompilation = rts.IsEligibleForTieredCompilation(mdh);
         int count = 0;
-        foreach (NativeCodeVersionNode nativeCodeVersionNode in GetNativeCodeVersionNodes(methodDesc, ilCodeVersion))
+        foreach (NativeCodeVersionHandle nativeCodeVersionHandle in ((ICodeVersions)this).GetNativeCodeVersions(methodDesc, ilCodeVersion))
         {
+            if (!nativeCodeVersionHandle.IsExplicit)
+            {
+                // get the default optimization level
+                dacpTieredVersionDataArray[count].OptimizationTier = GetInitialOptimizationTier(isEligibleForTieredCompilation, isReadyToRun);
+            }
+            NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
             if (r2rImageBase <= nativeCodeVersionNode.NativeCode && nativeCodeVersionNode.NativeCode < r2rImageEnd)
             {
                 dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_ReadyToRun;
             }
 
-            else if (rts.IsEligibleForTieredCompilation(mdh))
+            else if (isEligibleForTieredCompilation)
             {
                 uint optimizationTier = nativeCodeVersionNode.OptimizationTier;
                 switch (optimizationTier)

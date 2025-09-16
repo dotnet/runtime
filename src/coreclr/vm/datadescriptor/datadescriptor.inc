@@ -314,6 +314,10 @@ CDAC_TYPE_BEGIN(EEConfig)
 CDAC_TYPE_INDETERMINATE(EEConfig)
 CDAC_TYPE_FIELD(EEConfig, /*bool*/, JitMinOpts, cdac_data<EEConfig>::JitMinOpts)
 CDAC_TYPE_FIELD(EEConfig, /*bool*/, Debuggable, cdac_data<EEConfig>::Debuggable)
+#if defined(FEATURE_PGO)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, TieredPGO, cdac_data<EEConfig>::TieredPGO)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, TieredPGO_InstrumentOnlyHotCode, cdac_data<EEConfig>::TieredPGO_InstrumentOnlyHotCode)
+#endif
 CDAC_TYPE_END(EEConfig)
 
 CDAC_TYPE_BEGIN(ArrayClass)
@@ -983,6 +987,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_GLOBAL(FeatureTieredCompilation, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureTieredCompilation, uint8, 0)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)

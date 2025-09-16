@@ -702,6 +702,10 @@ template<> struct cdac_data<EEConfig>
 {
     static constexpr size_t JitMinOpts = offsetof(EEConfig, fJitMinOpts);
     static constexpr size_t Debuggable = offsetof(EEConfig, fDebuggable);
+#if defined(FEATURE_PGO)
+    static constexpr size_t TieredPGO = offsetof(EEConfig, fTieredPGO);
+    static constexpr size_t TieredPGO_InstrumentOnlyHotCode = offsetof(EEConfig, tieredPGO_InstrumentOnlyHotCode);
+#endif
 };
 
 
