@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <!--
-    When building a library as a reference, the returned build outputs include both the
+    When building a library as a reference, the returned build outputs include both the 
     IL assembly produced by CSC and the native obj produced by Ilc. Separate the native
     object file here so it isn't passed to CSC, and instead redirect it to be picked up
     by the LinkNative target.

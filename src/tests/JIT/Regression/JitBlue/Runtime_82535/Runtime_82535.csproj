@@ -6,3 +6,4 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>
+

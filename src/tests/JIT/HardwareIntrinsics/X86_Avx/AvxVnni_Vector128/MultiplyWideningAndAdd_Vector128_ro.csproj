@@ -9,7 +9,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
-    <Optimize>True</Optimize>
+    <Optimize>True</Optimize> 
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MultiplyWideningAndAdd.Byte.cs" />

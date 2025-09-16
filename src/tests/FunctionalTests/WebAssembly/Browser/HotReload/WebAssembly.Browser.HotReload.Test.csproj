@@ -41,5 +41,5 @@
                                       Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
     </ItemGroup>
   </Target>
-
+  
 </Project>
