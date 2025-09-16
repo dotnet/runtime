@@ -631,7 +631,7 @@ namespace System.Data
                     PropertyCollection? extendedProperties = (PropertyCollection?)list[5];
 
                     //ParentKey Columns.
-                    DataTable parentTable = (allConstraints == false) ? this : DataSet!.Tables[parentInfo[0]];
+                    DataTable parentTable = (!allConstraints) ? this : DataSet!.Tables[parentInfo[0]];
                     DataColumn[] parentkeyColumns = new DataColumn[parentInfo.Length - 1];
                     for (int i = 0; i < parentkeyColumns.Length; i++)
                     {
@@ -639,7 +639,7 @@ namespace System.Data
                     }
 
                     //ChildKey Columns.
-                    DataTable childTable = (allConstraints == false) ? this : DataSet!.Tables[childInfo[0]];
+                    DataTable childTable = (!allConstraints) ? this : DataSet!.Tables[childInfo[0]];
                     DataColumn[] childkeyColumns = new DataColumn[childInfo.Length - 1];
                     for (int i = 0; i < childkeyColumns.Length; i++)
                     {

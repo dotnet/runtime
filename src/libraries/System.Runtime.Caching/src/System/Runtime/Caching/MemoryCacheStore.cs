@@ -279,7 +279,7 @@ namespace System.Runtime.Caching
 
                 // MemoryCacheStatistics has been disposed, and therefore nobody should be using
                 // _insertBlock except for potential threads in WaitInsertBlock (which won't care if we call Close).
-                Debug.Assert(_useInsertBlock == false, "_useInsertBlock == false");
+                Debug.Assert(!_useInsertBlock, "_useInsertBlock == false");
                 _insertBlock.Close();
 
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.

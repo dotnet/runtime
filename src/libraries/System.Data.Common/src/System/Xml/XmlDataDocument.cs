@@ -53,7 +53,7 @@ namespace System.Xml
 
         internal void AddPointer(IXmlDataVirtualNode pointer)
         {
-            Debug.Assert(_pointers.ContainsValue(pointer) == false);
+            Debug.Assert(!_pointers.ContainsValue(pointer));
             lock (_pointers)
             {
                 _countAddPointer++;
@@ -238,8 +238,8 @@ namespace System.Xml
         // Binds special listeners to catch the 1st data-row created. When the 1st DataRow is created, XmlDataDocument will automatically bind all regular listeners.
         private void BindSpecialListeners()
         {
-            Debug.Assert(_fDataRowCreatedSpecial == false);
-            Debug.Assert(_fBoundToDataSet == false && _fBoundToDocument == false);
+            Debug.Assert(!_fDataRowCreatedSpecial);
+            Debug.Assert(!_fBoundToDataSet && !_fBoundToDocument);
             _dataSet.DataRowCreated += new DataRowCreatedEventHandler(OnDataRowCreatedSpecial);
             _fDataRowCreatedSpecial = true;
         }
@@ -341,7 +341,7 @@ namespace System.Xml
 #if DEBUG
             // Cannot have both special and permananent listeners ON
             if (_fDataRowCreatedSpecial)
-                Debug.Assert((_fBoundToDataSet == false) && (_fBoundToDocument == false));
+                Debug.Assert(!_fBoundToDataSet && !_fBoundToDocument);
             // fBoundToDataSet and fBoundToDocument should have the same value
             Debug.Assert(_fBoundToDataSet ? _fBoundToDocument : (!_fBoundToDocument));
 #endif
@@ -357,7 +357,7 @@ namespace System.Xml
             // This is the 1st time an element is being created on an empty XmlDataDocument - unbind special listeners, bind permanent ones and then go on w/
             // creation of this element
             EnsurePopulatedMode();
-            Debug.Assert(_fDataRowCreatedSpecial == false);
+            Debug.Assert(!_fDataRowCreatedSpecial);
 
             // Loaded state: create a DataRow, this in turn will create and associate the XmlBoundElement, which we will return.
             DataTable dt = _mapper.SearchMatchingTableSchema(localName, namespaceURI);
@@ -529,12 +529,12 @@ namespace System.Xml
                 _fAssociateDataRow = true;
             }
 
-            Debug.Assert(_fDataRowCreatedSpecial == false);
+            Debug.Assert(!_fDataRowCreatedSpecial);
             Debug.Assert(_mapper.IsMapped());
             Debug.Assert(_fBoundToDataSet && _fBoundToDocument);
 #if DEBUG
             // In case we EnsurePopulatedMode was called on an already populated mode, we should NOT change fAssociateDataRow
-            if (fDataRowCreatedSpecialOld == false)
+            if (!fDataRowCreatedSpecialOld)
                 Debug.Assert(fAssociateDataRowOld == _fAssociateDataRow);
 #endif
         }
@@ -952,8 +952,8 @@ namespace System.Xml
             bool oldFoliationEnabled = IsFoliationEnabled;
             bool oldAssociateDataRow = _fAssociateDataRow;
 
-            // Caller should ensure that the EnforceConstraints == false. See 60486 for more info about why this was changed from DataSet.EnforceConstraints = false to an assert.
-            Debug.Assert(DataSet.EnforceConstraints == false);
+            // Caller should ensure that EnforceConstraints is false. See 60486 for more info about why this was changed from DataSet.EnforceConstraints = false to an assert.
+            Debug.Assert(!DataSet.EnforceConstraints);
             XmlNode newNode;
 
             try
@@ -985,7 +985,7 @@ namespace System.Xml
         {
             Debug.Assert(_ignoreDataSetEvents);
             Debug.Assert(_ignoreXmlEvents);
-            Debug.Assert(IsFoliationEnabled == false);
+            Debug.Assert(!IsFoliationEnabled);
 
             // Create the diconnected tree based on the other navigator
             XmlNode newNode = CloneNode(other);
@@ -1789,7 +1789,7 @@ namespace System.Xml
                 // okay to allow text node value changes when bound.
                 XmlBoundElement? rowElement = null;
 
-                Debug.Assert(DataSet.EnforceConstraints == false);
+                Debug.Assert(!DataSet.EnforceConstraints);
 
                 if (DataSetMapper.GetRegion(args.Node, out rowElement))
                 {
@@ -1825,7 +1825,7 @@ namespace System.Xml
             _ignoreXmlEvents = true;
             IsFoliationEnabled = false;
 
-            Debug.Assert(DataSet.EnforceConstraints == false);
+            Debug.Assert(!DataSet.EnforceConstraints);
 
             bool fEnableCascading = DataSet._fEnableCascading;
             DataSet._fEnableCascading = false;
@@ -1879,7 +1879,7 @@ namespace System.Xml
             _ignoreXmlEvents = true;
             IsFoliationEnabled = false;
 
-            Debug.Assert(DataSet.EnforceConstraints == false);
+            Debug.Assert(!DataSet.EnforceConstraints);
 
             bool fEnableCascading = DataSet._fEnableCascading;
             DataSet._fEnableCascading = false;
@@ -2204,7 +2204,7 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.DataDom_DataSetNestedRelationsChange);
 
             // If Add and Remove, we should already been throwing if .Nested == false
-            Debug.Assert(!(args.Action == CollectionChangeAction.Add || args.Action == CollectionChangeAction.Remove) || rel!.Nested == false);
+            Debug.Assert(!(args.Action == CollectionChangeAction.Add || args.Action == CollectionChangeAction.Remove) || !rel!.Nested);
             if (args.Action == CollectionChangeAction.Refresh)
             {
                 foreach (DataRelation relTemp in (DataRelationCollection)oRelationsCollection!)
@@ -2255,7 +2255,7 @@ namespace System.Xml
             Debug.Assert(child.ParentNode != prevSibling.ParentNode);
             // prevSibling must have a parent, since we want to add a sibling to it
             Debug.Assert(prevSibling.ParentNode != null);
-            Debug.Assert(IsFoliationEnabled == false);
+            Debug.Assert(!IsFoliationEnabled);
             Debug.Assert(IgnoreXmlEvents);
             // Should not insert after docElem node
             Debug.Assert(prevSibling != DocumentElement);
@@ -2385,7 +2385,7 @@ namespace System.Xml
         internal static void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
         {
             Debug.Assert(xmlText != null);
-            Debug.Assert(row.Table.DataSet!.EnforceConstraints == false);
+            Debug.Assert(!row.Table.DataSet!.EnforceConstraints);
             object oVal;
             try
             {
@@ -2453,7 +2453,7 @@ namespace System.Xml
         {
             Debug.Assert(rowElement != null);
             Debug.Assert(rowElement.Row != null);
-            Debug.Assert(DataSet.EnforceConstraints == false);
+            Debug.Assert(!DataSet.EnforceConstraints);
 
             DataRow row = rowElement.Row;
             Debug.Assert(row != null);
@@ -2751,7 +2751,7 @@ namespace System.Xml
 #if DEBUG
                     try
                     {
-                        Debug.Assert(row.Table.DataSet!.EnforceConstraints == false);
+                        Debug.Assert(!row.Table.DataSet!.EnforceConstraints);
 #endif
                         row.Table.Rows.Add(row);
                         SetNestedParentRegion(rowElem);
@@ -2775,7 +2775,7 @@ namespace System.Xml
 #if DEBUG
                     try
                     {
-                        Debug.Assert(row.Table.DataSet!.EnforceConstraints == false);
+                        Debug.Assert(!row.Table.DataSet!.EnforceConstraints);
 #endif
                         // Change the row status to be alive (unchanged)
                         row.RejectChanges();
@@ -2813,7 +2813,7 @@ namespace System.Xml
 #if DEBUG
                     try
                     {
-                        Debug.Assert(row.Table.DataSet!.EnforceConstraints == false);
+                        Debug.Assert(!row.Table.DataSet!.EnforceConstraints);
 #endif
                         SetNestedParentRegion(rowElem);
 #if DEBUG
