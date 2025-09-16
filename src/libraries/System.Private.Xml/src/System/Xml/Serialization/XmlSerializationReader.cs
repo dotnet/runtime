@@ -1119,6 +1119,11 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToTimeOnly(value);
         }
 
+        protected static TimeOnly ToTimeOnlyIgnoreOffset(string value)
+        {
+            return XmlCustomFormatter.ToTimeOnlyIgnoreOffset(value);
+        }
+
         protected static char ToChar(string value)
         {
             return XmlCustomFormatter.ToChar(value);

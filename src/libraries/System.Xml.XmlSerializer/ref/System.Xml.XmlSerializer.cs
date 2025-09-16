@@ -585,6 +585,7 @@ namespace System.Xml.Serialization
         protected static long ToEnum(string value, System.Collections.Hashtable h, string typeName) { throw null; }
         protected static System.DateTime ToTime(string value) { throw null; }
         protected static System.TimeOnly ToTimeOnly(string value) { throw null; }
+        protected static System.TimeOnly ToTimeOnlyIgnoreOffset(string value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         protected static string? ToXmlName(string? value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
@@ -647,6 +648,7 @@ namespace System.Xml.Serialization
         protected static string FromEnum(long value, string[] values, long[] ids, string typeName) { throw null; }
         protected static string FromTime(System.DateTime value) { throw null; }
         protected static string FromTimeOnly(System.TimeOnly value) { throw null; }
+        protected static string FromTimeOnlyIgnoreOffset(System.TimeOnly value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("name")]
         protected static string? FromXmlName(string? name) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("ncName")]

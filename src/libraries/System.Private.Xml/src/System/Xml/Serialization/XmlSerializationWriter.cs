@@ -150,6 +150,11 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.FromTimeOnly(value);
         }
 
+        protected static string FromTimeOnlyIgnoreOffset(TimeOnly value)
+        {
+            return XmlCustomFormatter.FromTimeOnlyIgnoreOffset(value);
+        }
+
         internal static bool TryFormatDateOnly(DateOnly value, Span<char> destination, out int charsWritten)
         {
             return XmlCustomFormatter.TryFormatDateOnly(value, destination, out charsWritten);

@@ -102,6 +102,8 @@ namespace System.Xml.Serialization
             return value.ToString("HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
         }
 
+        internal static string FromTimeOnlyIgnoreOffset(TimeOnly value) => FromTimeOnly(value);
+
         internal static string FromDateTime(DateTime value)
         {
             if (Mode == DateTimeSerializationSection.DateTimeSerializationMode.Local)
@@ -434,17 +436,22 @@ namespace System.Xml.Serialization
         {
             if (LocalAppContextSwitches.AllowXsdTimeToTimeOnlyWithOffsetLoss)
             {
-                // Previous workarounds for lack of TimeOnly support included serializing a TimeOnly with 'DataType="time"'.
-                // xsd:time potentially contains an offset designation though, which TimeOnly does not. This would be considered
-                // a loss of data. If the intent was never to include that data, this switch allows for TimeOnly to receive
-                // data from an xsd:time, even if it contains offset information.
-                // Use DateTimeOffset so the time of day is not adjusted for the offset.
-                var dto = DateTimeOffset.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
-                return TimeOnly.FromTimeSpan(dto.TimeOfDay);
+                return ToTimeOnlyIgnoreOffset(value);
             }
 
             // Strictly parse the expected TimeOnly format.
             return TimeOnly.ParseExact(value, "HH:mm:ss.FFFFFFF", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+        }
+
+        internal static TimeOnly ToTimeOnlyIgnoreOffset(string value)
+        {
+            // Previous workarounds for lack of TimeOnly support included serializing a TimeOnly with 'DataType="time"'.
+            // xsd:time potentially contains an offset designation though, which TimeOnly does not. This would be considered
+            // a loss of data. If the intent was never to include that data, this switch allows for TimeOnly to receive
+            // data from an xsd:time, even if it contains offset information.
+            // Use DateTimeOffset so the time of day is not adjusted for the offset.
+            var dto = DateTimeOffset.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
+            return TimeOnly.FromTimeSpan(dto.TimeOfDay);
         }
 
         internal static char ToChar(string value)
