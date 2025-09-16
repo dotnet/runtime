@@ -531,7 +531,7 @@ internal readonly struct Loader_1 : ILoader
     private int GetRVAFromMetadata(ModuleHandle handle, int token)
     {
         IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle);
         MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
         return methodDef.RelativeVirtualAddress;
     }

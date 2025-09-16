@@ -764,21 +764,23 @@ internal sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+            ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
+
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
-            uint fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
+            CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
             data->Type = fieldDescType;
             data->sigType = fieldDescType;
 
             uint token = rtsContract.GetFieldDescMemberDef(fieldDescTargetPtr);
             FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+
             TargetPointer enclosingMT = rtsContract.GetMTOfEnclosingClass(fieldDescTargetPtr);
             TypeHandle ctx = rtsContract.GetTypeHandle(enclosingMT);
             TargetPointer modulePtr = rtsContract.GetModule(ctx);
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
+            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle);
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-            ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
             try
             {
                 // try to completely decode the signature
@@ -788,6 +790,7 @@ internal sealed unsafe partial class SOSDacImpl
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
                 // that we can return to SOS for pretty-printing.
                 // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
+                // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
                 if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
                     data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
                 // array MTs
@@ -817,11 +820,13 @@ internal sealed unsafe partial class SOSDacImpl
             // partial decoding of signature
             BlobReader blobReader = mdReader.GetBlobReader(fieldDef.Signature);
             SignatureHeader header = blobReader.ReadSignatureHeader();
+            // read the header byte and check for correctness
             if (header.Kind != SignatureKind.Field)
                 throw new BadImageFormatException();
             // read the top-level type
             CorElementType typeCode;
             EntityHandle entityHandle;
+            // in a loop, read custom modifiers until we get to the underlying type
             do
             {
                 typeCode = (CorElementType)blobReader.ReadByte();
@@ -830,13 +835,15 @@ internal sealed unsafe partial class SOSDacImpl
 
             if (typeCode is CorElementType.Class or CorElementType.ValueType)
             {
+                // if the typecode is class or value, we have been able to read the token that follows in the sig
                 data->TokenOfType = (uint)MetadataTokens.GetToken(entityHandle);
             }
             else
             {
+                // otherwise we have not found the token here, but we can encode the underlying type in sigType
                 data->TokenOfType = (uint)CorTokenType.mdtTypeDef;
                 if (data->MTOfType == 0)
-                    data->sigType = (uint)typeCode;
+                    data->sigType = typeCode;
             }
 
             data->ModuleOfType = modulePtr.ToClrDataAddress(_target);
@@ -846,7 +853,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->bIsThreadLocal = rtsContract.IsFieldDescThreadStatic(fieldDescTargetPtr) ? 1 : 0;
             data->bIsContextLocal = 0;
             data->bIsStatic = rtsContract.IsFieldDescStatic(fieldDescTargetPtr) ? 1 : 0;
-            data->NextField = rtsContract.GetFieldDescNextField(fieldDescTargetPtr).ToClrDataAddress(_target);
+            data->NextField = fieldDescTargetPtr + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
         }
         catch (System.Exception ex)
         {

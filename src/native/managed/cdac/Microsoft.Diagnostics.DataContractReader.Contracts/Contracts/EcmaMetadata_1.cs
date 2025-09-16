@@ -14,14 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
-    private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
-
-    private sealed class ModuleHandleBox
-    {
-        public ModuleHandle Value { get; }
-        public ModuleHandleBox(ModuleHandle value) => Value = value;
-    }
-    private static ConditionalWeakTable<MetadataReader, ModuleHandleBox> _moduleHandles = new();
+    private Dictionary<ModuleHandle, MetadataReaderProvider> _metadata = new();
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
@@ -43,40 +36,28 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
     }
 
-    public MetadataReader? GetMetadata(ModuleHandle handle)
+    public MetadataReader GetMetadata(ModuleHandle handle)
     {
-        MetadataReader? reader;
+        MetadataReader reader;
         if (_metadata.TryGetValue(handle, out MetadataReaderProvider? result))
         {
-            reader = result?.GetMetadataReader();
+            reader = result.GetMetadataReader();
         }
         else
         {
-            MetadataReaderProvider? provider = GetMetadataProvider(handle);
+            MetadataReaderProvider provider = GetMetadataProvider(handle);
             _metadata.Add(handle, provider);
-            reader = provider?.GetMetadataReader();
-            _moduleHandles.Add(reader!, new ModuleHandleBox(handle));
+            reader = provider.GetMetadataReader();
         }
         return reader;
     }
 
-    public static ModuleHandle? GetModuleFromMetadataReader(MetadataReader reader)
-    {
-        if (_moduleHandles.TryGetValue(reader, out ModuleHandleBox? box))
-        {
-            return box!.Value;
-        }
-        return null;
-    }
-
-    private MetadataReaderProvider? GetMetadataProvider(ModuleHandle handle)
+    private MetadataReaderProvider GetMetadataProvider(ModuleHandle handle)
     {
         AvailableMetadataType type = GetAvailableMetadataType(handle);
 
         switch (type)
         {
-            case AvailableMetadataType.None:
-                return null;
             case AvailableMetadataType.ReadOnly:
             {
                 TargetSpan address = GetReadOnlyMetadataAddress(handle);

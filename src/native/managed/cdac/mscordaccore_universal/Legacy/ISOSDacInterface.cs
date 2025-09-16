@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -351,8 +352,8 @@ internal unsafe partial interface ISOSEnum
 
 internal struct DacpFieldDescData
 {
-    public uint Type;
-    public uint sigType;     // ELEMENT_TYPE_XXX from signature. We need this to display pretty name for String in minidump's case
+    public CorElementType Type;
+    public CorElementType sigType;     // ELEMENT_TYPE_XXX from signature. We need this to display pretty name for String in minidump's case
     public ClrDataAddress MTOfType; // NULL if Type is not loaded
     public ClrDataAddress ModuleOfType;
     public uint TokenOfType;

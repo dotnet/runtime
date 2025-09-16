@@ -85,6 +85,7 @@ public interface IRuntimeTypeSystem : IContract
     #region TypeHandle inspection APIs
     TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
     TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
@@ -143,7 +144,6 @@ public interface IRuntimeTypeSystem : IContract
     TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments) => throw new NotImplementedException();
     TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
-    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
@@ -201,9 +201,8 @@ public interface IRuntimeTypeSystem : IContract
     uint GetFieldDescMemberDef(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    uint GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
-    TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
 }
 

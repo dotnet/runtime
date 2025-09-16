@@ -26,10 +26,10 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
     }
 
     public TypeHandle GetArrayType(TypeHandle elementType, ArrayShape shape)
-        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Array, shape.Rank, ImmutableArray<TypeHandle>.Empty);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Array, shape.Rank, []);
 
     public TypeHandle GetByReferenceType(TypeHandle elementType)
-        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Byref, 0, ImmutableArray<TypeHandle>.Empty);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Byref, 0, []);
 
     public TypeHandle GetFunctionPointerType(MethodSignature<TypeHandle> signature)
         => GetPrimitiveType(PrimitiveTypeCode.IntPtr);
@@ -63,13 +63,13 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         => elementType;
 
     public TypeHandle GetPointerType(TypeHandle elementType)
-        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Ptr, 0, ImmutableArray<TypeHandle>.Empty);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Ptr, 0, []);
 
     public TypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
         => _runtimeTypeSystem.GetPrimitiveType((CorElementType)typeCode);
 
     public TypeHandle GetSZArrayType(TypeHandle elementType)
-        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, ImmutableArray<TypeHandle>.Empty);
+        => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, []);
 
     public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {

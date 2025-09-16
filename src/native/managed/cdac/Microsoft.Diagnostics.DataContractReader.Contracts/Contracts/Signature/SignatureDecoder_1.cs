@@ -9,17 +9,23 @@ using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+/* NOTE: some elements of SignatureTypeProvider remain unimplemented or minimally implemented
+    * as they are not needed for the current usage of ISignatureDecoder.
+    * GetModifiedType and GetPinnedType ignore pinning and custom modifiers.
+    * GetTypeFromReference does not look up the type in another module.
+    * GetTypeFromSpecification is unimplemented.
+    * These can be completed as needed.
+    */
+
 internal sealed class SignatureDecoder_1 : ISignatureDecoder
 {
     private readonly Target _target;
-    private Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>> _thProviders;
-    private Dictionary<ModuleHandle, SignatureTypeProvider<MethodDescHandle>> _mdhProviders;
+    private readonly Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>> _thProviders = [];
+    private readonly Dictionary<ModuleHandle, SignatureTypeProvider<MethodDescHandle>> _mdhProviders = [];
 
     internal SignatureDecoder_1(Target target)
     {
         _target = target;
-        _thProviders = new Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>>();
-        _mdhProviders = new Dictionary<ModuleHandle, SignatureTypeProvider<MethodDescHandle>>();
     }
 
     private SignatureTypeProvider<TypeHandle> GetTypeHandleProvider(ModuleHandle moduleHandle)
@@ -48,10 +54,9 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
     TypeHandle ISignatureDecoder.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
     {
         SignatureTypeProvider<TypeHandle> provider = GetTypeHandleProvider(moduleHandle);
-        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
         BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
         SignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, mdReader, ctx);
-        // Implementation pending
         return decoder.DecodeFieldSignature(ref blobReader);
     }
 }

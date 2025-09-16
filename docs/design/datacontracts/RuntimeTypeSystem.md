@@ -197,7 +197,6 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
-TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer);
 ```
 
 ## Version 1
@@ -1679,7 +1678,4 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
 }
-
-TargetPointer GetFieldDescNextField(TargetPointer fieldDescPointer)
-    => fieldDescPointer + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 ```

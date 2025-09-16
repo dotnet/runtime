@@ -1470,10 +1470,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
     }
 
-    uint IRuntimeTypeSystem.GetFieldDescType(TargetPointer fieldDescPointer)
+    CorElementType IRuntimeTypeSystem.GetFieldDescType(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
-        return (fieldDesc.DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
+        // 27 is the number of bits that the type is shifted left. if you change the enum, please change this too.
+        return (CorElementType)((fieldDesc.DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27);
     }
 
     uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef)
@@ -1485,7 +1486,4 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
     }
-
-    TargetPointer IRuntimeTypeSystem.GetFieldDescNextField(TargetPointer fieldDescPointer)
-        => fieldDescPointer + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
 }

@@ -10,7 +10,7 @@ public interface IEcmaMetadata : IContract
 {
     static string IContract.Name { get; } = nameof(EcmaMetadata);
     TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
-    MetadataReader? GetMetadata(ModuleHandle module) => throw new NotImplementedException();
+    MetadataReader GetMetadata(ModuleHandle module) => throw new NotImplementedException();
 }
 
 public readonly struct EcmaMetadata : IEcmaMetadata
