@@ -32,7 +32,6 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameParser.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\AssemblyNameInfo.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParseOptions.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs" />
     <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\Resources\Strings.resx">
