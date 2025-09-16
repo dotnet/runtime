@@ -1280,6 +1280,11 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     gcInfoEncoder->SetStackBaseRegister(0);
     gcInfoEncoder->DefineInterruptibleRange(0, ConvertOffset(m_methodCodeSize));
 
+    if (pInterpMethod->unmanagedCallersOnly)
+    {
+        gcInfoEncoder->SetReversePInvokeFrameSlot(0);
+    }
+
     GENERIC_CONTEXTPARAM_TYPE paramType;
 
     switch (m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK)
