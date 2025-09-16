@@ -1587,7 +1587,6 @@ HCIMPLEND_RAW
 // This function sets the card table with the granularity of 1 byte, to avoid ghost updates
 //    that could occur if multiple threads were trying to set different bits in the same card.
 
-#include <optsmallperfcritical.h>
 void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
 {
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -1625,7 +1624,6 @@ void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
         }
     }
 }
-#include <optdefault.h>
 
 void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 {

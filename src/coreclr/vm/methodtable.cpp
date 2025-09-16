@@ -291,8 +291,6 @@ void MethodDataCache::Clear()
 //==========================================================================================
 // Optimization intended for MethodTable::GetDispatchMap
 
-#include <optsmallperfcritical.h>
-
 //==========================================================================================
 PTR_DispatchMap MethodTable::GetDispatchMap()
 {
@@ -309,8 +307,6 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
 
     return dac_cast<PTR_DispatchMap>((pMT->GetAuxiliaryData() + 1));
 }
-
-#include <optdefault.h>
 
 
 //==========================================================================================
@@ -1380,8 +1376,6 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
     return FALSE;
 }
 
-#include <optsmallperfcritical.h>
-
 //==========================================================================================
 BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
@@ -1494,8 +1488,6 @@ BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* 
     CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     return result;
 }
-
-#include <optdefault.h>
 
 BOOL
 MethodTable::IsExternallyVisible()

@@ -1276,8 +1276,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
     RETURN pIntf;
 }
 
-#include <optsmallperfcritical.h>   // improves CCW QI perf by ~10%
-
 #define IS_EQUAL_GUID(refguid,data1,data2,data3, data4,data5,data6,data7,data8,data9,data10,data11) \
     ((((DWORD*)&refguid)[0] == (data1)) &&                                             \
      (((DWORD*)&refguid)[1] == (((data3)<<16)|(data2))) &&                             \
@@ -1383,7 +1381,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 
     RETURN NULL;
 }
-#include <optdefault.h>
 
 //--------------------------------------------------------------------------
 // Init Outer unknown, cache a GIT cookie

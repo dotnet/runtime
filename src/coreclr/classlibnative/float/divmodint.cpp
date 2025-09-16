@@ -7,8 +7,6 @@
 
 #include "divmodint.h"
 
-#include <optsmallperfcritical.h>
-
 FCIMPL2(int32_t, DivModInt::DivInt32, int32_t dividend, int32_t divisor)
     FCALL_CONTRACT;
 

@@ -701,7 +701,6 @@ ErrExit:
     return hr;
 }
 
-#include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
@@ -750,8 +749,6 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
 
     return res;
 }
-
-#include <optdefault.h>
 
 //--------------------------------------------------------------------------------
 // Determines if a COM object can be cast to the specified type.
@@ -1063,7 +1060,6 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
 
 #endif // FEATURE_COMINTEROP
 
-#include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
 // QI helper, enables and disables GC during call-outs
 HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
@@ -1172,7 +1168,6 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 
     return hr;
 }
-#include <optdefault.h>
 
 #if defined(FEATURE_COMINTEROP)
 
@@ -1406,7 +1401,6 @@ HRESULT EnsureComStartedNoThrow()
     return hr;
 }
 
-#include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
 // AddRef helper, enables and disables GC during call-outs
 ULONG SafeAddRef(IUnknown* pUnk)
@@ -1463,7 +1457,6 @@ ULONG SafeAddRefPreemp(IUnknown* pUnk)
 
     return res;
 }
-#include <optdefault.h>
 
 //--------------------------------------------------------------------------------
 // Ole RPC seems to return an inconsistent SafeArray for arrays created with

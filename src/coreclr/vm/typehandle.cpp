@@ -665,7 +665,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
     }
 }
 
-#include <optsmallperfcritical.h>
 TypeHandle::CastResult TypeHandle::CanCastToCached(TypeHandle type)  const
 {
     CONTRACTL
@@ -684,7 +683,6 @@ TypeHandle::CastResult TypeHandle::CanCastToCached(TypeHandle type)  const
 
     return CastCache::TryGetFromCache(*this, type);
 }
-#include <optdefault.h>
 
 #endif // #ifndef DACCESS_COMPILE
 

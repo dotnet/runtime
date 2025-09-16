@@ -1477,8 +1477,6 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 // COMInterlocked
 //
 
-#include <optsmallperfcritical.h>
-
 FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
@@ -1555,8 +1553,6 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
     return InterlockedExchangeAdd64((INT64 *) location, value);
 }
 FCIMPLEND
-
-#include <optdefault.h>
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {

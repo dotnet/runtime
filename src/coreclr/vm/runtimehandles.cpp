@@ -198,7 +198,6 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
 }
 FCIMPLEND
 
-#include <optsmallperfcritical.h>
 FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod) {
     CONTRACTL {
         FCALL_CHECK;
@@ -215,7 +214,6 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
     *ppMethod = pMethod;
 }
 FCIMPLEND
-#include <optdefault.h>
 
 FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssemblyIfExists, ReflectClassBaseObject *pTypeUNSAFE)
 {

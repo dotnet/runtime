@@ -279,8 +279,6 @@ FCIMPLEND
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
 //==================================================================================================================
 
-#include <optsmallperfcritical.h>
-
 // This helper can handle any CLR->COM call.
 FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
 {
@@ -309,8 +307,6 @@ FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     return NULL;
 }
 FCIMPLEND
-
-#include <optdefault.h>
 
 extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget)
 {
@@ -400,7 +396,6 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall:
     END_QCALL;
 }
 
-#include <optsmallperfcritical.h>
 extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags)
 {
     QCALL_CONTRACT;
@@ -446,7 +441,6 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 
     END_QCALL;
 }
-#include <optdefault.h>
 
 #endif // FEATURE_COMINTEROP
 

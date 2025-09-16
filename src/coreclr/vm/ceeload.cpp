@@ -4467,9 +4467,6 @@ LookupMapBase::ListEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // DACCESS_COMPILE
 
 
-// Optimization intended for Module::EnsureActive only
-#include <optsmallperfcritical.h>
-
 #ifndef DACCESS_COMPILE
 VOID Module::EnsureActive()
 {
@@ -4483,8 +4480,6 @@ VOID Module::EnsureActive()
     GetAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
-
-#include <optdefault.h>
 
 CHECK Module::CheckActivated()
 {

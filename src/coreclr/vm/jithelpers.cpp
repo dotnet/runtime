@@ -94,8 +94,6 @@ using std::isnan;
 //
 //========================================================================
 
-#include <optsmallperfcritical.h>
-
 //
 // helper macro to get high 32-bit of 64-bit int
 //
@@ -153,16 +151,12 @@ HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
 HCIMPLEND
 #endif // !HOST_64BIT && !TARGET_X86
 
-#include <optdefault.h>
-
 
 //========================================================================
 //
 //      FLOATING POINT HELPERS
 //
 //========================================================================
-
-#include <optsmallperfcritical.h>
 
 /*********************************************************************/
 HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
@@ -244,8 +238,6 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 }
 HCIMPLEND
 
-#include <optdefault.h>
-
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
 {
@@ -263,8 +255,6 @@ extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
 //      SHARED STATIC FIELD HELPERS
 //
 //========================================================================
-
-#include <optsmallperfcritical.h>
 
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has
 // been initialized.
@@ -305,8 +295,6 @@ HCIMPL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pD
     return pDynamicStaticsInfo->GetGCStaticsPointerAssumeIsInited();
 }
 HCIMPLEND
-
-#include <optdefault.h>
 
 //========================================================================
 //
@@ -373,8 +361,6 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
     return ((BYTE*)&t_ThreadStatics) + staticBlockIndex;
 }
 HCIMPLEND
-
-#include <optdefault.h>
 
 //========================================================================
 //
@@ -734,7 +720,6 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 HCIMPLEND
 
 // Helper for synchronized static methods in shared generics code
-#include <optsmallperfcritical.h>
 HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
     CONTRACTL {
         FCALL_CHECK;
@@ -746,9 +731,6 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
 
     return pMT;
 HCIMPLEND
-#include <optdefault.h>
-
-
 
 
 //========================================================================

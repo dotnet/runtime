@@ -2002,8 +2002,6 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #else // DACCESS_COMPILE
 
-// Optimization intended for EnsureLoadLevel only
-#include <optsmallperfcritical.h>
 void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
@@ -2036,7 +2034,6 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     RETURN;
 }
 
-#include <optdefault.h>
 CHECK Assembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 {
     CONTRACTL
