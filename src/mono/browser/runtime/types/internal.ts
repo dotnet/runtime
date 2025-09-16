@@ -219,8 +219,6 @@ export type RuntimeHelpers = {
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
-    beforePreInit: PromiseAndController<void>,
-    afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<void>,
@@ -244,7 +242,7 @@ export type RuntimeHelpers = {
     utf8ToString: (ptr: CharPtr) => string,
     mono_background_exec: () => void,
     mono_wasm_ds_exec: () => void,
-    mono_wasm_process_current_pid: () => number,
+    SystemJS_GetCurrentProcessId: () => number,
 }
 
 export type DiagnosticHelpers = {
@@ -440,7 +438,6 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
     wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;

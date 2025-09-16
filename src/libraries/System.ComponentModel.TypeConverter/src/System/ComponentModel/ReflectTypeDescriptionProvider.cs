@@ -637,10 +637,7 @@ namespace System.ComponentModel
                 properties = PropertyDescriptorCollection.Empty;
             }
 
-            if (cache != null)
-            {
-                cache[s_extenderPropertiesKey] = properties;
-            }
+            cache?[s_extenderPropertiesKey] = properties;
 
             return properties;
         }
@@ -1312,10 +1309,7 @@ namespace System.ComponentModel
                 properties[idx] = new ExtendedPropertyDescriptor(rpd, rpd.ExtenderGetReceiverType(), provider, null);
             }
 
-            if (cache != null)
-            {
-                cache[s_extenderProviderPropertiesKey] = properties;
-            }
+            cache?[s_extenderProviderPropertiesKey] = properties;
 
             return properties;
         }
