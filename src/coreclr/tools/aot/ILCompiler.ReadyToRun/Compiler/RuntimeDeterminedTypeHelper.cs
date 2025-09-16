@@ -142,7 +142,7 @@ namespace ILCompiler
             {
                 return field1 == null && field2 == null;
             }
-            return field1.Name == field2.Name &&
+            return field1.Name.SequenceEqual(field2.Name) &&
                 RuntimeDeterminedTypeHelper.Equals(field1.OwningType, field2.OwningType) &&
                 RuntimeDeterminedTypeHelper.Equals(field1.FieldType, field2.FieldType);
         }
@@ -207,7 +207,7 @@ namespace ILCompiler
             {
                 return 0;
             }
-            return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.Name.GetHashCode());
+            return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.GetName().GetHashCode());
         }
 
         public static int GetHashCode(FieldWithToken field)

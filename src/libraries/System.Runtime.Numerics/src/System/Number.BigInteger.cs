@@ -626,7 +626,8 @@ namespace System
 
             if (targetSpan)
             {
-                spanSuccess = sb.TryCopyTo(destination, out charsWritten);
+                charsWritten = (spanSuccess = sb.AsSpan().TryCopyTo(destination)) ? sb.Length : 0;
+                sb.Dispose();
                 return null;
             }
             else

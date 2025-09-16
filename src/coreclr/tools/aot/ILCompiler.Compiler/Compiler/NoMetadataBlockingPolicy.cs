@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -28,7 +30,7 @@ namespace ILCompiler
         private MetadataType _arrayOfTType;
         private MetadataType InitializeArrayOfTType(TypeSystemEntity contextEntity)
         {
-            _arrayOfTType = contextEntity.Context.SystemModule.GetType("System", "Array`1");
+            _arrayOfTType = contextEntity.Context.SystemModule.GetType("System"u8, "Array`1"u8);
             return _arrayOfTType;
         }
         private MetadataType GetArrayOfTType(TypeSystemEntity contextEntity)
@@ -52,7 +54,7 @@ namespace ILCompiler
                     return true;
 
                 // Also don't expose the ValueType.__GetFieldOverride method.
-                if (ecmaMethod.Name == Internal.IL.Stubs.ValueTypeGetFieldHelperMethodOverride.MetadataName
+                if (ecmaMethod.Name.SequenceEqual(Internal.IL.Stubs.ValueTypeGetFieldHelperMethodOverride.MetadataName)
                     && ecmaMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
                     return true;
 
