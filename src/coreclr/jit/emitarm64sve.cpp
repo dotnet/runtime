@@ -18692,17 +18692,24 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
     }
 
     // The following instructions cannot use predicated movprfx, else the behaviour will be unpredictable.
-    switch (secondId->idInsFmt())
+    switch (secondId->idIns())
     {
-        case IF_SVE_AA_3A:
+        case INS_sve_sqdecd:
+        case INS_sve_sqdech:
+        case INS_sve_sqdecw:
+        case INS_sve_sqincd:
+        case INS_sve_sqinch:
+        case INS_sve_sqincw:
+        case INS_sve_uqdecd:
+        case INS_sve_uqdech:
+        case INS_sve_uqdecw:
+        case INS_sve_uqincd:
+        case INS_sve_uqinch:
+        case INS_sve_uqincw:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_addp:
-                case INS_sve_smaxp:
-                case INS_sve_sminp:
-                case INS_sve_umaxp:
-                case INS_sve_uminp:
+                case IF_SVE_BP_1A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18710,15 +18717,20 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_AT_3A:
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_eorbt:
-                case INS_sve_eortb:
-                case INS_sve_fclamp:
-                case INS_sve_sclamp:
-                case INS_sve_uclamp:
+                case IF_SVE_EL_3A:
+                case IF_SVE_FG_3A:
+                case IF_SVE_FG_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18726,16 +18738,17 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_AV_3A:
+        case INS_sve_add:
+        case INS_sve_sqadd:
+        case INS_sve_sqsub:
+        case INS_sve_sub:
+        case INS_sve_subr:
+        case INS_sve_uqadd:
+        case INS_sve_uqsub:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_bcax:
-                case INS_sve_bsl:
-                case INS_sve_bsl1n:
-                case INS_sve_bsl2n:
-                case INS_sve_eor3:
-                case INS_sve_nbsl:
+                case IF_SVE_EC_1A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18743,11 +18756,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_AW_2A:
+        case INS_sve_and:
+        case INS_sve_bic:
+        case INS_sve_eon:
+        case INS_sve_eor:
+        case INS_sve_orn:
+        case INS_sve_orr:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_xar:
+                case IF_SVE_BS_1A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18755,16 +18773,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_BN_1A:
+        case INS_sve_bcax:
+        case INS_sve_bsl:
+        case INS_sve_bsl1n:
+        case INS_sve_bsl2n:
+        case INS_sve_eor3:
+        case INS_sve_nbsl:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_decd:
-                case INS_sve_dech:
-                case INS_sve_decw:
-                case INS_sve_incd:
-                case INS_sve_inch:
-                case INS_sve_incw:
+                case IF_SVE_AV_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18772,22 +18790,17 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_BP_1A:
+        case INS_sve_bfmlalb:
+        case INS_sve_bfmlalt:
+        case INS_sve_bfmlslb:
+        case INS_sve_bfmlslt:
+        case INS_sve_fmlslb:
+        case INS_sve_fmlslt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqdecd:
-                case INS_sve_sqdech:
-                case INS_sve_sqdecw:
-                case INS_sve_sqincd:
-                case INS_sve_sqinch:
-                case INS_sve_sqincw:
-                case INS_sve_uqdecd:
-                case INS_sve_uqdech:
-                case INS_sve_uqdecw:
-                case INS_sve_uqincd:
-                case INS_sve_uqinch:
-                case INS_sve_uqincw:
+                case IF_SVE_GZ_3A:
+                case IF_SVE_HB_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18795,16 +18808,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_BS_1A:
+        case INS_sve_decd:
+        case INS_sve_dech:
+        case INS_sve_decw:
+        case INS_sve_incd:
+        case INS_sve_inch:
+        case INS_sve_incw:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_and:
-                case INS_sve_bic:
-                case INS_sve_eon:
-                case INS_sve_eor:
-                case INS_sve_orn:
-                case INS_sve_orr:
+                case IF_SVE_BN_1A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18812,11 +18825,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_BY_2A:
+        case INS_sve_sabalb:
+        case INS_sve_sabalt:
+        case INS_sve_sqdmlalbt:
+        case INS_sve_sqdmlslbt:
+        case INS_sve_uabalb:
+        case INS_sve_uabalt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_extq:
+                case IF_SVE_EL_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18824,11 +18842,15 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_CC_2A:
+        case INS_sve_addp:
+        case INS_sve_smaxp:
+        case INS_sve_sminp:
+        case INS_sve_umaxp:
+        case INS_sve_uminp:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_insr:
+                case IF_SVE_AA_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18836,11 +18858,15 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_CD_2A:
+        case INS_sve_eorbt:
+        case INS_sve_eortb:
+        case INS_sve_fclamp:
+        case INS_sve_sclamp:
+        case INS_sve_uclamp:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_insr:
+                case IF_SVE_AT_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18848,12 +18874,15 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_CM_3A:
+        case INS_sve_faddp:
+        case INS_sve_fmaxnmp:
+        case INS_sve_fmaxp:
+        case INS_sve_fminnmp:
+        case INS_sve_fminp:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_clasta:
-                case INS_sve_clastb:
+                case IF_SVE_GR_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18861,11 +18890,14 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_CT_3A:
+        case INS_sve_adclb:
+        case INS_sve_adclt:
+        case INS_sve_sbclb:
+        case INS_sve_sbclt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_revd:
+                case IF_SVE_FY_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18873,12 +18905,15 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_DN_2A:
+        case INS_sve_fmlallbb:
+        case INS_sve_fmlallbt:
+        case INS_sve_fmlalltb:
+        case INS_sve_fmlalltt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_decp:
-                case INS_sve_incp:
+                case IF_SVE_GO_3A:
+                case IF_SVE_HC_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18886,14 +18921,14 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_DP_2A:
+        case INS_sve_smax:
+        case INS_sve_smin:
+        case INS_sve_umax:
+        case INS_sve_umin:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqdecp:
-                case INS_sve_sqincp:
-                case INS_sve_uqdecp:
-                case INS_sve_uqincp:
+                case IF_SVE_ED_1A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18901,17 +18936,14 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EC_1A:
+        case INS_sve_sqdecp:
+        case INS_sve_sqincp:
+        case INS_sve_uqdecp:
+        case INS_sve_uqincp:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_add:
-                case INS_sve_sqadd:
-                case INS_sve_sqsub:
-                case INS_sve_sub:
-                case INS_sve_subr:
-                case INS_sve_uqadd:
-                case INS_sve_uqsub:
+                case IF_SVE_DP_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18919,14 +18951,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_ED_1A:
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_smax:
-                case INS_sve_smin:
-                case INS_sve_umax:
-                case INS_sve_umin:
+                case IF_SVE_EL_3A:
+                case IF_SVE_FJ_3A:
+                case IF_SVE_FJ_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18934,11 +18968,14 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EE_1A:
+        case INS_sve_srsra:
+        case INS_sve_ssra:
+        case INS_sve_ursra:
+        case INS_sve_usra:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_mul:
+                case IF_SVE_FU_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18946,12 +18983,13 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EF_3A:
+        case INS_sve_smmla:
+        case INS_sve_ummla:
+        case INS_sve_usmmla:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sdot:
-                case INS_sve_udot:
+                case IF_SVE_FO_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18959,12 +18997,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EG_3A:
+        case INS_sve_bfmla:
+        case INS_sve_bfmls:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sdot:
-                case INS_sve_udot:
+                case IF_SVE_GU_3C:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18972,12 +19010,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EH_3A:
+        case INS_sve_cadd:
+        case INS_sve_sqcadd:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sdot:
-                case INS_sve_udot:
+                case IF_SVE_FV_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18985,11 +19023,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EI_3A:
+        case INS_sve_clasta:
+        case INS_sve_clastb:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_usdot:
+                case IF_SVE_CM_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -18997,11 +19036,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EJ_3A:
+        case INS_sve_decp:
+        case INS_sve_incp:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_cdot:
+                case IF_SVE_DN_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19009,12 +19049,13 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EK_3A:
+        case INS_sve_fmla:
+        case INS_sve_fmls:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_cmla:
-                case INS_sve_sqrdcmlah:
+                case IF_SVE_GU_3A:
+                case IF_SVE_GU_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19022,28 +19063,15 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EL_3A:
+        case INS_sve_fmlalb:
+        case INS_sve_fmlalt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sabalb:
-                case INS_sve_sabalt:
-                case INS_sve_smlalb:
-                case INS_sve_smlalt:
-                case INS_sve_smlslb:
-                case INS_sve_smlslt:
-                case INS_sve_sqdmlalb:
-                case INS_sve_sqdmlalbt:
-                case INS_sve_sqdmlalt:
-                case INS_sve_sqdmlslb:
-                case INS_sve_sqdmlslbt:
-                case INS_sve_sqdmlslt:
-                case INS_sve_uabalb:
-                case INS_sve_uabalt:
-                case INS_sve_umlalb:
-                case INS_sve_umlalt:
-                case INS_sve_umlslb:
-                case INS_sve_umlslt:
+                case IF_SVE_GM_3A:
+                case IF_SVE_GN_3A:
+                case IF_SVE_GZ_3A:
+                case IF_SVE_HB_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19051,12 +19079,14 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EM_3A:
+        case INS_sve_mla:
+        case INS_sve_mls:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqrdmlah:
-                case INS_sve_sqrdmlsh:
+                case IF_SVE_FF_3A:
+                case IF_SVE_FF_3B:
+                case IF_SVE_FF_3C:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19064,11 +19094,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EW_3A:
+        case INS_sve_saba:
+        case INS_sve_uaba:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_mlapt:
+                case IF_SVE_FW_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19076,11 +19107,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EW_3B:
+        case INS_sve_sdot:
+        case INS_sve_udot:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_madpt:
+                case IF_SVE_EF_3A:
+                case IF_SVE_EG_3A:
+                case IF_SVE_EH_3A:
+                case IF_SVE_EY_3A:
+                case IF_SVE_EY_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19088,12 +19124,15 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EY_3A:
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sdot:
-                case INS_sve_udot:
+                case IF_SVE_EM_3A:
+                case IF_SVE_FK_3A:
+                case IF_SVE_FK_3B:
+                case IF_SVE_FK_3C:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19101,12 +19140,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EY_3B:
+        case INS_sve_bfclamp:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sdot:
-                case INS_sve_udot:
+                case IF_SVE_GW_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19114,12 +19152,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_EZ_3A:
+        case INS_sve_bfdot:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sudot:
-                case INS_sve_usdot:
+                case IF_SVE_GY_3B:
+                case IF_SVE_HA_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19127,11 +19165,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FA_3A:
+        case INS_sve_bfmmla:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_cdot:
+                case IF_SVE_HD_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19139,11 +19177,13 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FA_3B:
+        case INS_sve_cdot:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_cdot:
+                case IF_SVE_EJ_3A:
+                case IF_SVE_FA_3A:
+                case IF_SVE_FA_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19151,11 +19191,13 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FB_3A:
+        case INS_sve_cmla:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_cmla:
+                case IF_SVE_EK_3A:
+                case IF_SVE_FB_3A:
+                case IF_SVE_FB_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19163,11 +19205,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FB_3B:
+        case INS_sve_extq:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_cmla:
+                case IF_SVE_BY_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19175,11 +19217,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FC_3A:
+        case INS_sve_fcmla:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqrdcmlah:
+                case IF_SVE_GV_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19187,11 +19229,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FC_3B:
+        case INS_sve_fdot:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqrdcmlah:
+                case IF_SVE_GY_3A:
+                case IF_SVE_GY_3B:
+                case IF_SVE_GY_3B_D:
+                case IF_SVE_HA_3A:
+                case IF_SVE_HA_3A_E:
+                case IF_SVE_HA_3A_F:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19199,12 +19246,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FF_3A:
+        case INS_sve_fmmla:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_mla:
-                case INS_sve_mls:
+                case IF_SVE_HD_3A_A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19212,12 +19258,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FF_3B:
+        case INS_sve_ftmad:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_mla:
-                case INS_sve_mls:
+                case IF_SVE_HN_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19225,12 +19270,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FF_3C:
+        case INS_sve_insr:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_mla:
-                case INS_sve_mls:
+                case IF_SVE_CC_2A:
+                case IF_SVE_CD_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19238,18 +19283,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FG_3A:
+        case INS_sve_madpt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_smlalb:
-                case INS_sve_smlalt:
-                case INS_sve_smlslb:
-                case INS_sve_smlslt:
-                case INS_sve_umlalb:
-                case INS_sve_umlalt:
-                case INS_sve_umlslb:
-                case INS_sve_umlslt:
+                case IF_SVE_EW_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19257,18 +19295,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FG_3B:
+        case INS_sve_mlapt:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_smlalb:
-                case INS_sve_smlalt:
-                case INS_sve_smlslb:
-                case INS_sve_smlslt:
-                case INS_sve_umlalb:
-                case INS_sve_umlalt:
-                case INS_sve_umlslb:
-                case INS_sve_umlslt:
+                case IF_SVE_EW_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19276,14 +19307,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FJ_3A:
+        case INS_sve_mul:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqdmlalb:
-                case INS_sve_sqdmlalt:
-                case INS_sve_sqdmlslb:
-                case INS_sve_sqdmlslt:
+                case IF_SVE_EE_1A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19291,14 +19319,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FJ_3B:
+        case INS_sve_revd:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqdmlalb:
-                case INS_sve_sqdmlalt:
-                case INS_sve_sqdmlslb:
-                case INS_sve_sqdmlslt:
+                case IF_SVE_CT_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19306,12 +19331,13 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FK_3A:
+        case INS_sve_sqrdcmlah:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqrdmlah:
-                case INS_sve_sqrdmlsh:
+                case IF_SVE_EK_3A:
+                case IF_SVE_FC_3A:
+                case IF_SVE_FC_3B:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19319,12 +19345,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FK_3B:
+        case INS_sve_sudot:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqrdmlah:
-                case INS_sve_sqrdmlsh:
+                case IF_SVE_EZ_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19332,12 +19357,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FK_3C:
+        case INS_sve_usdot:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_sqrdmlah:
-                case INS_sve_sqrdmlsh:
+                case IF_SVE_EI_3A:
+                case IF_SVE_EZ_3A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
@@ -19345,352 +19370,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             }
             break;
         }
-        case IF_SVE_FO_3A:
+        case INS_sve_xar:
         {
-            switch (secondId->idIns())
+            switch (secondId->idInsFmt())
             {
-                case INS_sve_smmla:
-                case INS_sve_ummla:
-                case INS_sve_usmmla:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_FU_2A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_srsra:
-                case INS_sve_ssra:
-                case INS_sve_ursra:
-                case INS_sve_usra:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_FV_2A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_cadd:
-                case INS_sve_sqcadd:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_FW_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_saba:
-                case INS_sve_uaba:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_FY_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_adclb:
-                case INS_sve_adclt:
-                case INS_sve_sbclb:
-                case INS_sve_sbclt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GM_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmlalb:
-                case INS_sve_fmlalt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GN_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmlalb:
-                case INS_sve_fmlalt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GO_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmlallbb:
-                case INS_sve_fmlallbt:
-                case INS_sve_fmlalltb:
-                case INS_sve_fmlalltt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GR_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_faddp:
-                case INS_sve_fmaxnmp:
-                case INS_sve_fmaxp:
-                case INS_sve_fminnmp:
-                case INS_sve_fminp:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GU_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmla:
-                case INS_sve_fmls:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GU_3B:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmla:
-                case INS_sve_fmls:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GU_3C:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfmla:
-                case INS_sve_bfmls:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GV_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fcmla:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GW_3B:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfclamp:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GY_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fdot:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GY_3B:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfdot:
-                case INS_sve_fdot:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GY_3B_D:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fdot:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_GZ_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfmlalb:
-                case INS_sve_bfmlalt:
-                case INS_sve_bfmlslb:
-                case INS_sve_bfmlslt:
-                case INS_sve_fmlalb:
-                case INS_sve_fmlalt:
-                case INS_sve_fmlslb:
-                case INS_sve_fmlslt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HA_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfdot:
-                case INS_sve_fdot:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HA_3A_E:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fdot:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HA_3A_F:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fdot:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HB_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfmlalb:
-                case INS_sve_bfmlalt:
-                case INS_sve_bfmlslb:
-                case INS_sve_bfmlslt:
-                case INS_sve_fmlalb:
-                case INS_sve_fmlalt:
-                case INS_sve_fmlslb:
-                case INS_sve_fmlslt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HC_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmlallbb:
-                case INS_sve_fmlallbt:
-                case INS_sve_fmlalltb:
-                case INS_sve_fmlalltt:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HD_3A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_bfmmla:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HD_3A_A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_fmmla:
-                    assert(!movprefxIsPredicated);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        case IF_SVE_HN_2A:
-        {
-            switch (secondId->idIns())
-            {
-                case INS_sve_ftmad:
+                case IF_SVE_AW_2A:
                     assert(!movprefxIsPredicated);
                     break;
                 default:
