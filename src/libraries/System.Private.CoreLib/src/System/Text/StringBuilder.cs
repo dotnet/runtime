@@ -2856,6 +2856,7 @@ namespace System.Text
         public bool TryGetRuneAt(int index, out Rune value)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             // Get span at StringBuilder index
             Span<char> chars = index + 1 < Length
