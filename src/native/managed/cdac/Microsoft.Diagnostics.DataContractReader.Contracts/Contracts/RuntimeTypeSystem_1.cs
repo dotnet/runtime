@@ -78,6 +78,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     // on MethodDescChunk.FlagsAndTokenRange
@@ -254,6 +262,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public bool IsDynamicMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
         public bool IsILStub => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+        public ILStubType ILStubType => (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        public bool IsCLRToCOMStub => ILStubType == ILStubType.StubCLRToCOMInterop;
+        public bool IsPInvokeVarArgStub => ILStubType == ILStubType.StubPInvokeVarArg;
+        public bool HasMDContextArg => IsCLRToCOMStub || IsPInvokeVarArgStub;
     }
 
     private sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
@@ -902,6 +914,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return AsDynamicMethodDesc(methodDesc).IsILStub;
+    }
+
+    public bool HasMDContextArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        return AsDynamicMethodDesc(methodDesc).HasMDContextArg;
     }
 
     private MethodTable GetOrCreateMethodTable(MethodDesc methodDesc)
