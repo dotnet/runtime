@@ -478,6 +478,12 @@ namespace
         (*fptr)(ARG(0), ARG(1), ARG(2));
     }
 
+    void CallFunc_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3));
+    }
+
     void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -561,7 +567,7 @@ namespace
         (void*)&CallFunc_I32_RetVoid,
         (void*)&CallFunc_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_RetVoid,
-        NULL,
+        (void*)&CallFunc_I32_I32_I32_I32_RetVoid,
         NULL,
         (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid,
     };
@@ -727,10 +733,17 @@ namespace
         if (!returnsVoid && ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */) != ConvertType::ToI32)
             return NULL;
 
+        uint32_t numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
         ConvertType args[16];
-        _ASSERTE(sig.NumFixedArgs() < ARRAY_SIZE(args));
+        _ASSERTE(numArgs < ARRAY_SIZE(args));
 
         uint32_t i = 0;
+
+        if (sig.HasThis())
+        {
+            args[i++] = ConvertType::ToI32;
+        }
+
         // Ensure all arguments are wasm i32 compatible types.
         for (CorElementType argType = sig.NextArg();
             argType != ELEMENT_TYPE_END;
@@ -743,8 +756,6 @@ namespace
 
             args[i++] = type;
         }
-
-        uint32_t numArgs = sig.NumFixedArgs();
 
         // Check for homogeneous i32 argument types.
         for (uint32_t j = 0; j < numArgs; j++)
