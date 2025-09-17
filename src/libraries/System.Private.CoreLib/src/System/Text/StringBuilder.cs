@@ -2928,11 +2928,9 @@ namespace System.Text
                 value = result;
                 return true;
             }
-            else
-            {
-                value = default;
-                return false;
-            }
+
+            value = default;
+            return false;
         }
 
         /// <summary>Provides a handler used by the language compiler to append interpolated strings into <see cref="StringBuilder"/> instances.</summary>
