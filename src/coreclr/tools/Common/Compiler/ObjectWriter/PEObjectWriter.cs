@@ -599,7 +599,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Machine = _machine,
                 NumberOfSections = (uint)numberOfSections,
-                TimeDateStamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                TimeDateStamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), // TODO: Make deterministic
                 PointerToSymbolTable = 0,
                 NumberOfSymbols = 0,
                 SizeOfOptionalHeader = sizeOfOptionalHeader,
@@ -678,6 +678,9 @@ namespace ILCompiler.ObjectWriter
                     section.Stream.CopyTo(stream);
                 }
             }
+
+            // TODO: calculate PE checksum
+            // TODO: calculate deterministic timestamp
         }
 
         private static unsafe void WriteLittleEndian<T>(Stream stream, T value)
