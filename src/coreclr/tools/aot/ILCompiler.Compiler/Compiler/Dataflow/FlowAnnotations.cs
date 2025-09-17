@@ -592,7 +592,7 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    FieldDesc backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
+                    FieldDesc? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
                     if (backingField is not null)
                     {
                         if (annotatedFields.Any(a => a.Field == backingField))
