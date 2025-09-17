@@ -178,6 +178,14 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
             }
+            else if (relocType is IMAGE_REL_SYMBOL_SIZE &&
+                _definedSymbols.TryGetValue(symbolName, out definedSymbol))
+            {
+                fixed (byte* pData = data)
+                {
+                    Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size);
+                }
+            }
             else
             {
                 EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
