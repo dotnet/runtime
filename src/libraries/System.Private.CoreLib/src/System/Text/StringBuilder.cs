@@ -2341,17 +2341,17 @@ namespace System.Text
         public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
-            Span<char> leftChars = stackalloc char[2];
-            int leftCharsWritten = oldRune.EncodeToUtf16(leftChars);
-            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
+            Span<char> oldChars = stackalloc char[2];
+            int oldCharsWritten = oldRune.EncodeToUtf16(oldChars);
+            ReadOnlySpan<char> oldCharsSlice = oldChars[..oldCharsWritten];
 
             // Convert newRune to span
-            Span<char> rightChars = stackalloc char[2];
-            int rightCharsWritten = newRune.EncodeToUtf16(rightChars);
-            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
+            Span<char> newChars = stackalloc char[2];
+            int newCharsWritten = newRune.EncodeToUtf16(newChars);
+            ReadOnlySpan<char> newCharsSlice = newChars[..newCharsWritten];
 
             // Replace span with span
-            return Replace(leftCharsSlice, rightCharsSlice, startIndex, count);
+            return Replace(oldCharsSlice, newCharsSlice, startIndex, count);
         }
 
         /// <summary>
