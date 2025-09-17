@@ -14,6 +14,7 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+# MSBuild Server dogfood.
 export MSBUILDUSESERVER="${MSBUILDUSESERVER:-1}"
 export DOTNET_CLI_USE_MSBUILD_SERVER="${DOTNET_CLI_USE_MSBUILD_SERVER:-1}"
 
