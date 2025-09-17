@@ -660,13 +660,13 @@ namespace System
                 return dateTime;
             }
 
-            DateTime targetConverted = destinationTimeZone.UtcToLocal(utcDateTime, out _);
+            DateTime targetConverted = destinationTimeZone.UtcToLocal(utcDateTime, out bool isDaylightSaving);
 
             if (targetKind == DateTimeKind.Local)
             {
                 // Because the ticks conversion between UTC and local is lossy, we need to capture whether the
                 // time is in a repeated hour so that it can be passed to the DateTime constructor.
-                return new DateTime(targetConverted.Ticks, DateTimeKind.Local, destinationTimeZone.IsAmbiguousLocalTime(targetConverted));
+                return new DateTime(targetConverted.Ticks, DateTimeKind.Local, isDaylightSaving && destinationTimeZone.IsAmbiguousLocalTime(targetConverted));
             }
             else
             {
