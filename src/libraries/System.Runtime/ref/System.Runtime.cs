@@ -9923,8 +9923,8 @@ namespace System.Globalization
         public string ToTitleCase(string str) { throw null; }
         public char ToUpper(char c) { throw null; }
         public string ToUpper(string str) { throw null; }
-        public System.Text.Rune ToLower(System.Text.Rune r) { throw null; }
-        public System.Text.Rune ToUpper(System.Text.Rune r) { throw null; }
+        public System.Text.Rune ToLower(System.Text.Rune value) { throw null; }
+        public System.Text.Rune ToUpper(System.Text.Rune value) { throw null; }
     }
     public partial class ThaiBuddhistCalendar : System.Globalization.Calendar
     {
