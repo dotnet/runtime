@@ -954,7 +954,7 @@ namespace System.Collections
         public int TrailingZeroCount()
         {
             int count = 0;
-            for (int i = _array.Length - 1; i >= 0; i--)
+            for (int i = 0; i < _array.Length; i++)
             {
                 if (_array[i] != 0)
                     return byte.TrailingZeroCount(_array[i]) + count;
@@ -968,7 +968,7 @@ namespace System.Collections
         public int LeadingZeroCount()
         {
             int count = _bitLength - _array.Length * BitsPerByte; // offset for extra bits beyond _bitLength
-            for (int i = 0; i < _array.Length; i++)
+            for (int i = _array.Length - 1; i >= 0; i--)
             {
                 if (_array[i] != 0)
                     return byte.LeadingZeroCount(_array[i]) + count;
