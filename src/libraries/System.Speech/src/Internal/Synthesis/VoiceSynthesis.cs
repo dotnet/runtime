@@ -1503,7 +1503,7 @@ namespace System.Speech.Internal.Synthesis
 
         private void SignalWorkerThread(object ignored)
         {
-            if (_asyncWorkerUI.AsyncMode == false)
+            if (!_asyncWorkerUI.AsyncMode)
             {
                 _workerWaitHandle.Set();
             }

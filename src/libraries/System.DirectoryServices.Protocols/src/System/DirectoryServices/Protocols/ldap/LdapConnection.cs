@@ -513,7 +513,7 @@ namespace System.DirectoryServices.Protocols
 
             // Bind if user has not turned off automatic bind, have not done so or there is a need
             // to do rebind, also connectionless LDAP does not need to do bind.
-            if (AutoBind && (!_bounded || _needRebind) && ((LdapDirectoryIdentifier)Directory).Connectionless != true)
+            if (AutoBind && (!_bounded || _needRebind) && !((LdapDirectoryIdentifier)Directory).Connectionless)
             {
                 Debug.WriteLine("rebind occurs\n");
                 Bind();

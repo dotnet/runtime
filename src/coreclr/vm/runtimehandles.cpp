@@ -1092,19 +1092,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     return;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsCollectible(QCall::TypeHandle pTypeHandle)
-{
-    QCALL_CONTRACT;
-
-    BOOL retVal = FALSE;
-
-    BEGIN_QCALL;
-    retVal = pTypeHandle.AsTypeHandle().GetLoaderAllocator()->IsCollectible();
-    END_QCALL;
-
-    return retVal;
-}
-
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
@@ -1292,21 +1279,6 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     return funcPtr;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc* pMethod)
-{
-    QCALL_CONTRACT;
-
-    BOOL isCollectible = FALSE;
-
-    BEGIN_QCALL;
-
-    isCollectible = pMethod->GetLoaderAllocator()->IsCollectible();
-
-    END_QCALL;
-
-    return isCollectible;
-}
-
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 {
     CONTRACTL
@@ -1317,6 +1289,14 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
     CONTRACTL_END;
 
     return pMethod->GetName();
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsCollectible, MethodDesc *pMethod)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
+    FC_RETURN_BOOL(pMethod->IsCollectible());
 }
 FCIMPLEND
 
