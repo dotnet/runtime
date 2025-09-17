@@ -18,6 +18,7 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
         StubHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(StubHeap)].Offset);
         ObjectHandle = target.ProcessedData.GetOrAdd<ObjectHandle>(
             target.ReadPointer(address + (ulong)type.Fields[nameof(ObjectHandle)].Offset));
+        CallCountingManager = target.ReadPointer(address + (ulong)type.Fields[nameof(CallCountingManager)].Offset);
     }
 
     public uint ReferenceCount { get; init; }
@@ -25,6 +26,7 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
     public TargetPointer LowFrequencyHeap { get; init; }
     public TargetPointer StubHeap { get; init; }
     public ObjectHandle ObjectHandle { get; init; }
+    public TargetPointer CallCountingManager { get; init; }
 
     public bool IsAlive => ReferenceCount != 0;
 }

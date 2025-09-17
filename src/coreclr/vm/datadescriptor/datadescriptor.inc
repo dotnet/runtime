@@ -206,7 +206,21 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<Loade
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, CallCountingManager, cdac_data<LoaderAllocator>::CallCountingManager)
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(CallCountingManager)
+CDAC_TYPE_INDETERMINATE(CallCountingManager)
+CDAC_TYPE_FIELD(CallCountingManager, /*pointer*/, CallCountingHash, cdac_data<CallCountingManager>::CallCountingHash)
+CDAC_TYPE_END(CallCountingManager)
+
+// the size is pointer size because this is for an SHash
+// and the entry is a pointer to this data structure
+CDAC_TYPE_BEGIN(CallCountingInfo)
+CDAC_TYPE_SIZE(sizeof(uintptr_t))
+CDAC_TYPE_FIELD(CallCountingInfo, /*pointer*/, CodeVersion, cdac_data<CallCountingInfo>::CodeVersion)
+CDAC_TYPE_FIELD(CallCountingInfo, /*int32*/, Stage, cdac_data<CallCountingInfo>::Stage)
+CDAC_TYPE_END(CallCountingInfo)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
@@ -684,10 +698,17 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<Native
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, Flags, cdac_data<NativeCodeVersionNode>::Flags)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeCodeVersionNode>::ILVersionId)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, NativeId, cdac_data<NativeCodeVersionNode>::NativeId)
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
 #endif // HAVE_GCCOVER
 CDAC_TYPE_END(NativeCodeVersionNode)
+
+CDAC_TYPE_BEGIN(NativeCodeVersion)
+CDAC_TYPE_INDETERMINATE(NativeCodeVersion)
+CDAC_TYPE_FIELD(NativeCodeVersion, /*uint8*/, StorageKind, cdac_data<NativeCodeVersion>::StorageKind)
+CDAC_TYPE_FIELD(NativeCodeVersion, /*pointer*/, VersionNode, cdac_data<NativeCodeVersion>::VersionNode)
+CDAC_TYPE_END(NativeCodeVersion)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
 CDAC_TYPE_INDETERMINATE(ILCodeVersionNode)

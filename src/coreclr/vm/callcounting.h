@@ -248,6 +248,7 @@ private:
             static BOOL Equals(const key_t &k1, const key_t &k2);
             static count_t Hash(const key_t &k);
         };
+    friend struct ::cdac_data<CallCountingInfo>;
     };
 
     typedef SHash<CallCountingInfo::CodeVersionHashTraits> CallCountingInfoByCodeVersionHash;
@@ -388,10 +389,22 @@ public:
 #ifdef DACCESS_COMPILE
     static void DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemoryFlags flags);
 #endif
-
+    friend struct ::cdac_data<CallCountingManager>;
     DISABLE_COPY(CallCountingManager);
 };
 
+template<>
+struct cdac_data<CallCountingManager>
+{
+    static constexpr size_t CallCountingHash = offsetof(CallCountingManager, m_callCountingInfoByCodeVersionHash);
+};
+
+template<>
+struct cdac_data<CallCountingInfo>
+{
+    static constexpr size_t CodeVersion = offsetof(CallCountingManager::CallCountingInfo, m_codeVersion);
+    static constexpr size_t Stage = offsetof(CallCountingManager::CallCountingInfo, m_stage);
+};
 ////////////////////////////////////////////////////////////////
 // CallCountingStub definitions
 

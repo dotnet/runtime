@@ -37,7 +37,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         public OptimizationTierEnum OptimizationTier;
         public TargetPointer NativeCodeVersionNodePtr;
     };
-    
+
     internal enum NativeOptimizationTier : uint
     {
         OptimizationTier0 = 0,
@@ -48,23 +48,112 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         OptimizationTier1Instrumented = 5,
     };
 
-    private DacpTieredVersionData.OptimizationTierEnum GetInitialOptimizationTier(bool isEligibleForTieredCompilation, bool isReadyToRun)
+    internal enum Stage : byte
     {
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureTieredCompilation) == 0 || !isEligibleForTieredCompilation)
-            return (DacpTieredVersionData.OptimizationTierEnum)NativeOptimizationTier.OptimizationTierOptimized;
+        StubIsNotActive,
+        StubMayBeActive,
+        PendingCompletion,
+        Complete,
+        Disabled
+    };
 
-        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
-        else if (1 == count) // get the call counting stuff
+    internal enum StorageKind
+    {
+        Unknown,
+        Explicit,
+        Synthetic
+    };
+
+
+    private sealed class CodeVersionHashTraits : ITraits<NativeCodeVersion, CallCountingInfo>
+    {
+        private readonly Target _target;
+        public CodeVersionHashTraits(Target target)
         {
-            return DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJitted;
+            _target = target;
         }
-        else if (eeConfig.TieredPGO) // tiered pgo
+        public NativeCodeVersion GetKey(CallCountingInfo entry)
         {
+            return _target.ProcessedData.GetOrAdd<NativeCodeVersion>(entry.CodeVersion);
+        }
+        public bool Equals(NativeCodeVersion left, NativeCodeVersion right) => left.StorageKind == right.StorageKind && left.MethodDescOrNode == right.MethodDescOrNode;
+        public uint Hash(NativeCodeVersion key)
+        {
+            switch ((StorageKind)key.StorageKind)
+            {
+                case StorageKind.Synthetic: // SK_Synthetic
+                    return (uint)key.MethodDescOrNode;
+                case StorageKind.Explicit: // SK_Explicit
+                    NativeCodeVersionNode node = _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(key.MethodDescOrNode);
+                    return (uint)node.MethodDesc + node.NativeId;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+        public bool IsNull(CallCountingInfo entry) => entry.Address == TargetPointer.Null;
+        public CallCountingInfo Null() => new CallCountingInfo(TargetPointer.Null);
+        public bool IsDeleted(CallCountingInfo entry) => false;
+    }
+
+    private sealed class CallCountingTable : IData<CallCountingTable>
+    {
+        static CallCountingTable IData<CallCountingTable>.Create(Target target, TargetPointer address)
+            => new CallCountingTable(target, address);
+
+        public CallCountingTable(Target target, TargetPointer address)
+        {
+            ISHash sHashContract = target.Contracts.SHash;
+            Target.TypeInfo type = target.GetTypeInfo(DataType.CallCountingInfo);
+            HashTable = sHashContract.CreateSHash(target, address, type, new CodeVersionHashTraits(target));
+        }
+        public ISHash<NativeCodeVersion, CallCountingInfo> HashTable { get; init; }
+    }
+    private bool IsCallCountingEnabled(MethodDescHandle mdh)
+    {
+        Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+        Contracts.ILoader loaderContract = _target.Contracts.Loader;
+        TargetPointer mt = rtsContract.GetMethodTable(mdh);
+        TargetPointer modulePtr = rtsContract.GetLoaderModule(rtsContract.GetTypeHandle(mt));
+        Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
+        TargetPointer loaderAllocator = loaderContract.GetLoaderAllocator(moduleHandle);
+
+        Data.LoaderAllocator loaderAllocatorData = _target.ProcessedData.GetOrAdd<LoaderAllocator>(loaderAllocator);
+        TargetPointer callCountingMgr = loaderAllocatorData.CallCountingManager;
+        TargetPointer callCountingHash = _target.ProcessedData.GetOrAdd<CallCountingManager>(callCountingMgr).CallCountingHash;
+        CallCountingTable callCountingTable = _target.ProcessedData.GetOrAdd<CallCountingTable>(callCountingHash);
+
+        ISHash shashContract = _target.Contracts.SHash;
+        CallCountingInfo entry = shashContract.LookupSHash(callCountingTable.HashTable, new NativeCodeVersion((uint)StorageKind.Synthetic, mdh.Address));
+        return entry.Address != TargetPointer.Null && entry.Stage != (byte)Stage.Disabled;
+    }
+    private NativeOptimizationTier GetInitialOptimizationTier(bool isEligibleForTieredCompilation, bool isReadyToRun, MethodDescHandle mdh)
+    {
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureTieredCompilation) == 0
+                || !isEligibleForTieredCompilation
+                || !IsCallCountingEnabled(mdh))
+            return NativeOptimizationTier.OptimizationTierOptimized;
+        else
+        {
+            Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
             if (eeConfig.TieredPGO_InstrumentOnlyHotCode || isReadyToRun)
-                return DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_MinOptJitted;
+                return NativeOptimizationTier.OptimizationTier0;
             else
-                return DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
+                return NativeOptimizationTier.OptimizationTier0Instrumented;
         }
+    }
+
+    private static DacpTieredVersionData.OptimizationTierEnum GetOptimizationTier(NativeOptimizationTier nativeOptimizationTier)
+    {
+        return nativeOptimizationTier switch
+        {
+            NativeOptimizationTier.OptimizationTier0 => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJitted,
+            NativeOptimizationTier.OptimizationTier1 => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1,
+            NativeOptimizationTier.OptimizationTier1OSR => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1OSR,
+            NativeOptimizationTier.OptimizationTierOptimized => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized,
+            NativeOptimizationTier.OptimizationTier0Instrumented => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJittedInstrumented,
+            NativeOptimizationTier.OptimizationTier1Instrumented => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1Instrumented,
+            _ => DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Unknown,
+        };
     }
 
     int ICodeVersions.GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs, out Span<byte> nativeCodeAddrs, out int pcNativeCodeAddrs)
@@ -97,8 +186,14 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         {
             if (!nativeCodeVersionHandle.IsExplicit)
             {
-                // get the default optimization level
-                dacpTieredVersionDataArray[count].OptimizationTier = GetInitialOptimizationTier(isEligibleForTieredCompilation, isReadyToRun);
+                dacpTieredVersionDataArray[count].NativeCodeVersionNodePtr = TargetPointer.Null;
+                dacpTieredVersionDataArray[count].NativeCodeAddr = rts.GetNativeCode(mdh).AsTargetPointer;
+            }
+            else
+            {
+                NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
+                dacpTieredVersionDataArray[count].NativeCodeVersionNodePtr = nativeCodeVersionHandle.CodeVersionNodeAddress;
+                dacpTieredVersionDataArray[count].NativeCodeAddr = nativeCodeVersionNode.NativeCode;
             }
             NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
             if (r2rImageBase <= nativeCodeVersionNode.NativeCode && nativeCodeVersionNode.NativeCode < r2rImageEnd)
@@ -108,31 +203,12 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
             else if (isEligibleForTieredCompilation)
             {
-                uint optimizationTier = nativeCodeVersionNode.OptimizationTier;
-                switch (optimizationTier)
-                {
-                    case 0:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJitted;
-                        break;
-                    case 1:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1;
-                        break;
-                    case 2:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1OSR;
-                        break;
-                    case 3:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
-                        break;
-                    case 4:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_QuickJittedInstrumented;
-                        break;
-                    case 5:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_OptimizedTier1Instrumented;
-                        break;
-                    default:
-                        dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Unknown;
-                        break;
-                }
+                NativeOptimizationTier optTier;
+                if (!nativeCodeVersionHandle.IsExplicit)
+                    optTier = GetInitialOptimizationTier(isEligibleForTieredCompilation, isReadyToRun, mdh);
+                else
+                    optTier = (NativeOptimizationTier)nativeCodeVersionNode.OptimizationTier;
+                dacpTieredVersionDataArray[count].OptimizationTier = GetOptimizationTier(optTier);
             }
             else if (rts.IsJitOptimizationDisabled(mdh))
             {
