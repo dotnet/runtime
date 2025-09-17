@@ -669,7 +669,7 @@ namespace System.IO
                 }, new TupleSlim<TextWriter, char, char>(this, chars[0], chars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
-            return WriteAsync(chars[0]);
+            return WriteLineAsync(chars[0]);
         }
 
         public virtual Task WriteLineAsync(string? value) =>
