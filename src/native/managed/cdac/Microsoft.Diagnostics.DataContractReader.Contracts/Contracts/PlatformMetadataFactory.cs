@@ -9,7 +9,7 @@ public sealed class PlatformMetadataFactory : IContractFactory<IPlatformMetadata
 {
     IPlatformMetadata IContractFactory<IPlatformMetadata>.CreateContract(Target target, int version)
     {
-        TargetPointer cdacMetadataAddress = target.ReadGlobalPointer(Constants.Globals.PlatformMetadataPtr);
+        TargetPointer cdacMetadataAddress = target.ReadGlobalPointer(Constants.Globals.PlatformMetadata);
         Data.PlatformMetadata cdacMetadata = target.ProcessedData.GetOrAdd<Data.PlatformMetadata>(cdacMetadataAddress);
         return version switch
         {

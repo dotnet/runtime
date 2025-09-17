@@ -45,7 +45,7 @@ file sealed class StressLogTraversal(Target target, IStressMessageReader message
             return default;
         }
 
-        return GetStressLogData(target.ReadGlobalPointer(Constants.Globals.StressLogPtr));
+        return GetStressLogData(target.ReadGlobalPointer(Constants.Globals.StressLog));
     }
 
     public StressLogData GetStressLogData(TargetPointer stressLogPointer)
@@ -108,14 +108,14 @@ file sealed class StressLogTraversal(Target target, IStressMessageReader message
     {
         if (target.ReadGlobal<byte>(Constants.Globals.StressLogHasModuleTable) == 0)
         {
-            Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(target.ReadGlobalPointer(Constants.Globals.StressLogPtr));
+            Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(target.ReadGlobalPointer(Constants.Globals.StressLog));
             return new TargetPointer(stressLog.ModuleOffset.Value + formatOffset);
         }
 
         TargetPointer? moduleTable;
         if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
         {
-            if (!target.TryReadGlobalPointer(Constants.Globals.StressLogPtr, out TargetPointer? pStressLog))
+            if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
             {
                 throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
             }

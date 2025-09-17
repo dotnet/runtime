@@ -1017,7 +1017,7 @@ CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, uint8, 1)
-CDAC_GLOBAL_POINTER(StressLogPtr, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
 CDAC_GLOBAL(StressLogHasModuleTable, uint8, 1)
 CDAC_GLOBAL(StressLogMaxModules, uint64, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
@@ -1027,7 +1027,7 @@ CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
-CDAC_GLOBAL_POINTER(PlatformMetadataPtr, &::g_cdacPlatformMetadata)
+CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 

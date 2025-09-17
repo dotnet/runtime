@@ -2600,7 +2600,7 @@ internal sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
-        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLogPtr);
+        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLog);
 
 #if DEBUG
         if (_legacyImpl is not null)

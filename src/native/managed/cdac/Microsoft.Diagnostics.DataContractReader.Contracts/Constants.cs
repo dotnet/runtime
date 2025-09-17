@@ -35,7 +35,7 @@ public static class Constants
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
-        public const string StressLogPtr = nameof(StressLogPtr);
+        public const string StressLog = nameof(StressLog);
         public const string StressLogModuleTable = nameof(StressLogModuleTable);
         public const string StressLogMaxModules = nameof(StressLogMaxModules);
         public const string StressLogChunkMaxSize = nameof(StressLogChunkMaxSize);
@@ -63,7 +63,7 @@ public static class Constants
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
-        public const string PlatformMetadataPtr = nameof(PlatformMetadataPtr);
+        public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
         public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
