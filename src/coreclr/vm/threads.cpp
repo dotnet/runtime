@@ -1127,7 +1127,6 @@ void InitThreadManager()
 
     }
     else
-#endif // !FEATURE_PORTABLE_HELPERS
     {
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
@@ -1139,6 +1138,7 @@ void InitThreadManager()
         JIT_WriteBarrier_Table_Loc = NULL;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);

@@ -2599,7 +2599,7 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
 }
 
-PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2622,29 +2622,23 @@ PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDes
         InterlockedCompareExchangeT<PCODE>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (PCODE)pFunc, (PCODE)NULL);
     }
 
-    // If the caller wants the MethodDesc, we may need to try and load it.
-    if (methodDesc != NULL)
-    {
-        if (pMD == NULL)
-        {
-            BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
-            pMD = binderId != METHOD__NIL
-                ? CoreLibBinder::GetMethod(binderId)
-                : NULL;
-        }
-        *methodDesc = pMD;
-    }
-
     return hlpDynamicFuncTable[ftnNum].pfnHelper;
 }
 
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     return (METHOD__NIL != hlpDynamicToBinderMap[ftnNum]);
+}
+
+MethodDesc* GetMethodDescForILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(HasILBasedDynamicJitHelper(ftnNum));
+    return CoreLibBinder::GetMethod(hlpDynamicToBinderMap[ftnNum]);
 }
 
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)

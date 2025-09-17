@@ -56,7 +56,7 @@ namespace System.Security.AccessControl
                     nameof(propagationFlags), SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
             }
 
-            if (identity.IsValidTargetType(typeof(SecurityIdentifier)) == false)
+            if (!identity.IsValidTargetType(typeof(SecurityIdentifier)))
             {
                 throw new ArgumentException(
                     SR.Arg_MustBeIdentityReferenceType,

@@ -32,9 +32,9 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(FEATURE_PORTABLE_HELPERS)
-EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
-static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
+static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
 {
     Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
     if (pObject == nullptr)
@@ -69,7 +69,7 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Object* pObject = (Object *)alloc_ptr;
-        pObject->set_EEType(pEEType);
+        pObject->SetMethodTable(pEEType);
         return pObject;
     }
 
@@ -118,8 +118,8 @@ FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Array* pObject = (Array*)alloc_ptr;
-        pObject->set_EEType(pArrayEEType);
-        pObject->InitArrayLength((uint32_t)numElements);
+        pObject->SetMethodTable(pArrayEEType);
+        pObject->SetNumComponents((uint32_t)numElements);
         return pObject;
     }
 
@@ -174,11 +174,11 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->set_EEType(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectEEType);
             alloc_ptr += 12;
         }
         Object* pObject = (Object *)alloc_ptr;
-        pObject->set_EEType(pEEType);
+        pObject->SetMethodTable(pEEType);
         return pObject;
     }
 
@@ -209,11 +209,11 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->set_EEType(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectEEType);
             alloc_ptr += 12;
         }
         Object* pObject = (Object *)alloc_ptr;
-        pObject->set_EEType(pEEType);
+        pObject->SetMethodTable(pEEType);
         return pObject;
     }
 
@@ -259,12 +259,12 @@ FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, int numElement
         if (requiresAlignObject)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->set_EEType(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectEEType);
             alloc_ptr += 12;
         }
         Array* pObject = (Array*)alloc_ptr;
-        pObject->set_EEType(pArrayEEType);
-        pObject->InitArrayLength((uint32_t)numElements);
+        pObject->SetMethodTable(pArrayEEType);
+        pObject->SetNumComponents((uint32_t)numElements);
         return pObject;
     }
 
