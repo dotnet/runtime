@@ -392,7 +392,7 @@ namespace System.Speech.Internal.Synthesis
                     {
                         if (parameter._parameter is ParametersSpeak paramSpeak)
                         {
-                            (parameter._parameter as ParametersSpeak)._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
+                            paramSpeak._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
                         }
                     }
                     // Restart the worker thread
