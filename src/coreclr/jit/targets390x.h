@@ -59,7 +59,7 @@
 
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
-  #define REGNUM_BITS              7       // number of bits in a REG_*
+  #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
@@ -69,10 +69,10 @@
   #define CODE_ALIGN               4       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
-  #define RBM_INT_CALLEE_SAVED    (RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28)
-  #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_IP0|RBM_IP1|RBM_LR)
-  #define RBM_FLT_CALLEE_SAVED    (RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
-  #define RBM_FLT_CALLEE_TRASH    (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V16|RBM_V17|RBM_V18|RBM_V19|RBM_V20|RBM_V21|RBM_V22|RBM_V23|RBM_V24|RBM_V25|RBM_V26|RBM_V27|RBM_V28|RBM_V29|RBM_V30|RBM_V31)
+  #define RBM_INT_CALLEE_SAVED    (RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R12|RBM_R13)
+  #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R14)
+  #define RBM_FLT_CALLEE_SAVED    (RBM_V18|RBM_V19|RBM_V20|RBM_V21|RBM_V22|RBM_V23|RBM_V24|RBM_V25|RBM_V26|RBM_V27|RBM_V28|RBM_V29|RBM_V30|RBM_V31)
+  #define RBM_FLT_CALLEE_TRASH    (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15|RBM_V16|RBM_V17)
 
   #define RBM_LOWMASK              (RBM_P0|RBM_P1|RBM_P2|RBM_P3|RBM_P4|RBM_P5|RBM_P6|RBM_P7)
   #define RBM_HIGHMASK             (RBM_P8|RBM_P9|RBM_P10| RBM_P11|RBM_P12|RBM_P13|RBM_P14|RBM_P15)

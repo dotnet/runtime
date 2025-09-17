@@ -78,6 +78,16 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) nm,
         #include "instrsarm64sve.h"
 
+#elif defined(TARGET_S390X)
+        #define INST1(id, nm, ldst, fmt, e1                                 ) nm,
+        #define INST2(id, nm, ldst, fmt, e1, e2                             ) nm,
+        #define INST3(id, nm, ldst, fmt, e1, e2, e3                         ) nm,
+        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                     ) nm,
+        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                 ) nm,
+        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6             ) nm,
+        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
+        #include "instrs.h"
+
 #elif defined(TARGET_LOONGARCH64)
         #define INST(id, nm, ldst, e1, msk, fmt) nm,
         #include "instrs.h"
@@ -2641,6 +2651,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #elif defined(TARGET_ARM)
     GetEmitter()->emitIns_R_I(INS_mov, size, reg, 0 ARM_ARG(flags));
 #elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
+#elif defined(TARGET_S390X)
     GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);

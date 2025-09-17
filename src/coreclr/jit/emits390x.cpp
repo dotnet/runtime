@@ -1308,13 +1308,14 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 // clang-format off
 static const char * const  xRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) xname,
+    #define REGDEF(name, rnum, mask, xname) xname,
     #include "register.h"
 };
 
+
 static const char * const  wRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) wname,
+    #define REGDEF(name, rnum, mask, xname) xname,
     #include "register.h"
 };
 
@@ -4324,7 +4325,7 @@ void emitter::emitIns_Mov(
             }
             break;
         }
-
+#if 0
         case INS_sve_mov:
         {
             if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
@@ -4366,6 +4367,7 @@ void emitter::emitIns_Mov(
 
             break;
         }
+#endif
         default:
         {
             unreached();
@@ -7961,7 +7963,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                 fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
             }
             break;
-
+/*
         case INS_sve_ldr:
         {
             isSimple = false;
@@ -8004,7 +8006,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             }
         }
         break;
-
+*/
         default:
             NYI("emitIns_R_S"); // FP locals?
             return;
@@ -8230,7 +8232,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             }
             isStr = true;
             break;
-
+/*
         case INS_sve_str:
         {
             isSimple = false;
@@ -8275,6 +8277,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             }
         }
         break;
+*/
 
         default:
             NYI("emitIns_S_R"); // FP locals?
@@ -9050,7 +9053,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            void*            addr,
                            ssize_t          argSize,
                            emitAttr         retSize,
-                           emitAttr         secondRetSize,
+			   emitAttr         secondRetSize,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
@@ -9062,6 +9065,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            bool             isJump /* = false */,
                            bool             noSafePoint /* = false */)
 {
+#if 0
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
@@ -9115,7 +9119,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
     else
     {
@@ -9124,7 +9128,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
 
     /* Update the emitter's live GC ref sets */
@@ -9254,6 +9258,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     dispIns(id);
     appendToCurIG(id);
     emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+#endif				  
 }
 
 /*****************************************************************************
@@ -13149,6 +13154,8 @@ void emitter::emitDispIns(
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+	assert("Entering emitDispInsHelp");
+#if 0
 #ifdef DEBUG
     if (EMITVERBOSE)
     {
@@ -14388,6 +14395,7 @@ void emitter::emitDispInsHelp(
 #endif
 
     printf("\n");
+#endif
 }
 
 /*****************************************************************************
@@ -14438,6 +14446,8 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 //
 void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
+	assert ("Entering emitter::emitInsLoadStoreOp ");
+#if 0
     GenTree* addr = indir->Addr();
 
     if (addr->isContained())
@@ -14599,6 +14609,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
     }
+#endif
 }
 
 // The callee must call genConsumeReg() for any non-contained srcs
@@ -14787,6 +14798,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
 void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
 {
+	assert ("emitter::getMemoryOperation");
+#if 0
     unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
     bool        isLocalAccess = false;
     instruction ins           = id->idIns();
@@ -14947,6 +14960,7 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 
     *pMemAccessKind = memAccessKind;
     *pIsLocalAccess = isLocalAccess;
+#endif
 }
 
 //----------------------------------------------------------------------------------------
@@ -14968,6 +14982,8 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
+    assert ("emitter::insExecutionCharacteristics");
+#if 0
     insExecutionCharacteristics result;
     instruction                 ins    = id->idIns();
     insFormat                   insFmt = id->idInsFmt();
@@ -16644,6 +16660,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     }
 
     return result;
+#endif
 }
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)

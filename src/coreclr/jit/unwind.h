@@ -10,7 +10,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
 
 // Windows no longer imposes a maximum prolog size. However, we still have an
 // assert here just to inform us if we increase the size of the prolog
@@ -52,7 +52,16 @@ const unsigned MAX_EPILOG_SIZE_BYTES = 200;
 #define UW_MAX_CODE_WORDS_COUNT    31
 #define UW_MAX_EPILOG_START_INDEX  0x3FFU
 
-#endif // TARGET_RISCV64
+#elif defined(TARGET_S390X)
+const unsigned MAX_PROLOG_SIZE_BYTES = 200;
+const unsigned MAX_EPILOG_SIZE_BYTES = 200;
+#define UWC_END                    0xE4 // "end" unwind code
+#define UWC_END_C                  0xE5 // "end_c" unwind code
+#define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 20)
+#define UW_MAX_CODE_WORDS_COUNT    31
+#define UW_MAX_EPILOG_START_INDEX  0x3FFU
+
+#endif // TARGET_RISCV64 || TARGET_S390X
 
 #define UW_MAX_EPILOG_COUNT                                                                                            \
     31 // Max number that can be encoded in the "Epilog count" field
@@ -126,9 +135,9 @@ public:
     {
 #if defined(TARGET_ARM)
         return b >= 0xFD;
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
         return (b == UWC_END); // TODO-ARM64-Bug?: what about the "end_c" code?
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_S390X
     }
 
 #ifdef DEBUG
@@ -816,7 +825,7 @@ public:
     // Given the first byte of the unwind code, check that its opsize matches
     // the last instruction added in the emitter.
     void CheckOpsize(BYTE b1);
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     void CheckOpsize(BYTE b1)
     {
     } // nothing to do; all instructions are 4 bytes
@@ -867,4 +876,4 @@ void DumpUnwindInfo(Compiler*         comp,
 
 #endif // DEBUG
 
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_S390X

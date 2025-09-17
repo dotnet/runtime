@@ -1106,12 +1106,12 @@ inline static bool isValidScalarDatasize(emitAttr size)
 {
     return (size == EA_8BYTE) || (size == EA_4BYTE);
 }
-/*
+
 inline static bool isValidScalableDatasize(emitAttr size)
 {
     return ((size & EA_SCALABLE) == EA_SCALABLE);
 }
-*/
+
 inline static bool isValidVectorDatasize(emitAttr size)
 {
     return (size == EA_16BYTE) || (size == EA_8BYTE);
@@ -1157,12 +1157,10 @@ inline static bool isValidVectorElemsizeWidening(emitAttr size)
     return (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
 }
 
-/*
 inline static bool isScalableVectorSize(emitAttr size)
 {
     return (size == EA_SCALABLE);
 }
-*/
 
 inline static bool isGeneralRegister(regNumber reg)
 {
@@ -1760,6 +1758,25 @@ void emitIns_Call(EmitCallType          callType,
                   ssize_t          disp,
                   bool             isJump,
                   bool             noSafePoint = false);
+/*
+void emitIns_Call(EmitCallType          callType,
+                  CORINFO_METHOD_HANDLE methHnd,                   // used for pretty printing
+                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
+                  void*            addr,
+                  int              argSize,
+                  emitAttr         retSize,
+                  VARSET_VALARG_TP ptrVars,
+                  regMaskTP        gcrefRegs,
+                  regMaskTP        byrefRegs,
+                  const DebugInfo& di          = DebugInfo(),
+                  regNumber        ireg        = REG_NA,
+                  regNumber        xreg        = REG_NA,
+                  unsigned         xmul        = 0,
+                  ssize_t          disp        = 0,
+                  bool             isJump      = false,
+                  bool             noSafePoint = false);
+		  */
+
 
 BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);
@@ -1824,4 +1841,14 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
             (jmp->idInsFmt() == IF_LARGELDC));
 }
 
-#endif // TARGET_ARM64
+
+// Missing functions referenced in emits390x.cpp
+bool emitInsMayWriteToGCReg(instrDesc* id);
+bool emitInsWritesToLclVarStackLoc(instrDesc* id);
+bool emitInsWritesToLclVarStackLocPair(instrDesc* id);
+bool emitInsMayWriteMultipleRegs(instrDesc* id);
+void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
+instrDesc* emitNewInstrLclVarPair(emitAttr attr, int varNum);
+void emitRemoveLastInstruction();
+
+#endif // TARGET_S390X

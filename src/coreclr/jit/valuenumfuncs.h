@@ -200,6 +200,8 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
 #elif defined (TARGET_RISCV64)
     //TODO-RISCV64-CQ: add RISCV64's Hardware Intrinsics Instructions if supported.
 
+#elif defined (TARGET_S390X)
+    //TODO-: add S390X's Hardware Intrinsics Instructions if supported.
 #else
 #error Unsupported platform
 #endif
