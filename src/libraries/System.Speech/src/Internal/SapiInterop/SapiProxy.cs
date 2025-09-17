@@ -106,8 +106,6 @@ namespace System.Speech.Internal.SapiInterop
             #endregion
         }
 
-#pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
-
         internal class MTAThread : SapiProxy, IDisposable
         {
             #region Constructors

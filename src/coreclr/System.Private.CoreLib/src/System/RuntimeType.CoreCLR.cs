@@ -3227,12 +3227,15 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible
+        public sealed override unsafe bool IsCollectible
         {
             get
             {
-                RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isCollectible = th.IsTypeDesc ? th.AsTypeDesc()->IsCollectible : th.AsMethodTable()->IsCollectible;
+                GC.KeepAlive(this);
+                return isCollectible;
             }
         }
 

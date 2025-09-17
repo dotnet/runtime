@@ -536,10 +536,10 @@ namespace System.Speech.Recognition
 
                 // The call to RecognizeAsync may happen before the event for the start stream arrives so remove the assert.
                 //Debug.Assert (_detectingInitialSilenceTimeout == false);
-                Debug.Assert(_detectingBabbleTimeout == false);
-                Debug.Assert(_initialSilenceTimeoutReached == false);
-                Debug.Assert(_babbleTimeoutReached == false);
-                Debug.Assert(_isRecognizeCancelled == false);
+                Debug.Assert(!_detectingBabbleTimeout);
+                Debug.Assert(!_initialSilenceTimeoutReached);
+                Debug.Assert(!_babbleTimeoutReached);
+                Debug.Assert(!_isRecognizeCancelled);
                 Debug.Assert(_lastResult == null);
                 Debug.Assert(_lastException == null);
             } // Not recognizing so no events firing - can unlock now
@@ -1694,7 +1694,6 @@ namespace System.Speech.Recognition
         }
 
         // Method called on background thread to do actual grammar loading.
-#pragma warning disable 56500 // Transferring exceptions to another thread
         private void LoadGrammarAsyncCallback(object? grammarObject)
         {
             Debug.WriteLine("Loading grammar asynchronously.");
@@ -1756,8 +1755,6 @@ namespace System.Speech.Recognition
                 _asyncWorkerUI.PostOperation(new WaitCallback(LoadGrammarAsyncCompletedCallback), grammarObject);
             }
         }
-
-#pragma warning restore 56500
 
         // Method called by AsyncOperationManager on appropriate thread when async grammar loading completes.
         private void LoadGrammarAsyncCompletedCallback(object? grammarObject)
@@ -2005,8 +2002,6 @@ namespace System.Speech.Recognition
         }
 
         // Method called on background thread {from RecognizeAsync} to start recognition process.
-#pragma warning disable 56500 // Transferring exceptions to another thread
-
         private void RecognizeAsyncWaitForGrammarsToLoad(object? _)
         {
             Debug.WriteLine("Waiting for any pending grammar loads to complete.");
@@ -2075,7 +2070,6 @@ namespace System.Speech.Recognition
                 _asyncWorkerUI.PostOperation(new WaitCallback(RecognizeAsyncWaitForGrammarsToLoadFailed), eventArgs);
             }
         }
-#pragma warning restore 56500
 
         // Method called on app thread model used to fire the RecognizeCompeleted event args if recognition stopped prematurely
         private void RecognizeAsyncWaitForGrammarsToLoadFailed(object? eventArgs)
@@ -2098,7 +2092,7 @@ namespace System.Speech.Recognition
         // This method will be called asynchronously
         private void SignalHandlerThread(object? _)
         {
-            if (_asyncWorkerUI.AsyncMode == false)
+            if (!_asyncWorkerUI.AsyncMode)
             {
                 _handlerWaitHandle.Set();
             }

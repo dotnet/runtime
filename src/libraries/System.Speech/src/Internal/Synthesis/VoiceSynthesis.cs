@@ -392,7 +392,7 @@ namespace System.Speech.Internal.Synthesis
                     {
                         if (parameter._parameter is ParametersSpeak paramSpeak)
                         {
-                            paramSpeak._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
+                            (parameter._parameter as ParametersSpeak)._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
                         }
                     }
                     // Restart the worker thread
@@ -1492,7 +1492,7 @@ namespace System.Speech.Internal.Synthesis
 
         private void SignalWorkerThread(object? _)
         {
-            if (_asyncWorkerUI.AsyncMode == false)
+            if (!_asyncWorkerUI.AsyncMode)
             {
                 _workerWaitHandle.Set();
             }

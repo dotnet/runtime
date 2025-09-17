@@ -592,7 +592,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         else if (arc.RuleRef.Name.StartsWith("URL:STATIC#", StringComparison.Ordinal))
                         {
                             ruleName = arc.RuleRef.Name.Substring(11);
-                            if (fromOrg == false && FindInRules(ruleName) == null)
+                            if (!fromOrg && FindInRules(ruleName) == null)
                             {
                                 Rule? ruleOrg = org.FindInRules(ruleName);
                                 if (ruleOrg == null)
@@ -606,7 +606,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             ruleName = arc.RuleRef.Name;
                             Rule? ruleExtra = org.FindInRules(ruleName);
-                            if (fromOrg == false)
+                            if (!fromOrg)
                             {
                                 CloneSubGraph(arc.RuleRef, org, extra, srcToDestHash, true);
                             }
