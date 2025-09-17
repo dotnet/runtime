@@ -461,11 +461,11 @@ namespace System.Globalization
             return c;
         }
 
-        public Rune ToLower(Rune r)
+        public Rune ToLower(Rune value)
         {
             // Convert rune to span
             Span<char> chars = stackalloc char[2];
-            int charsWritten = r.EncodeToUtf16(chars);
+            int charsWritten = value.EncodeToUtf16(chars);
             ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
             // Change span to lower and convert to rune
@@ -481,11 +481,11 @@ namespace System.Globalization
                 return new Rune(lowerChar);
             }
         }
-        public Rune ToUpper(Rune r)
+        public Rune ToUpper(Rune value)
         {
             // Convert rune to span
             Span<char> chars = stackalloc char[2];
-            int charsWritten = r.EncodeToUtf16(chars);
+            int charsWritten = value.EncodeToUtf16(chars);
             ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
             // Change span to upper and convert to rune
