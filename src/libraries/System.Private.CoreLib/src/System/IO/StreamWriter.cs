@@ -103,11 +103,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
 
-            if (bufferSize == -1)
+            if (bufferSize != -1)
             {
-                bufferSize = DefaultBufferSize;
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             }
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             _stream = stream;
             _encoding = encoding ?? UTF8NoBOM;
@@ -182,13 +181,12 @@ namespace System.IO
 
         private static FileStream ValidateArgsAndOpenPath(string path, bool append, int bufferSize)
         {
-            if (bufferSize == -1)
-            {
-                bufferSize = DefaultBufferSize;
-            }
-
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
 
             return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileStream.DefaultBufferSize);
         }

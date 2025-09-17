@@ -122,7 +122,7 @@ namespace System.IO
 
         // Creates a new StreamReader for the given stream.  The
         // character encoding is set by encoding and the buffer size,
-        // in number of 16-bit characters, is set by bufferSize.
+        // in bytes, is set by bufferSize.
         //
         // Note that detectEncodingFromByteOrderMarks is a very
         // loose attempt at detecting the encoding by looking at the first
@@ -147,11 +147,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
             }
 
-            if (bufferSize == -1)
+            if (bufferSize != -1)
             {
-                bufferSize = DefaultBufferSize;
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             }
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             _stream = stream;
             _encoding = encoding ??= Encoding.UTF8;
@@ -225,13 +224,12 @@ namespace System.IO
 
         private static FileStream ValidateArgsAndOpenPath(string path, int bufferSize)
         {
-            if (bufferSize == -1)
-            {
-                bufferSize = DefaultBufferSize;
-            }
-
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
 
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize);
         }
