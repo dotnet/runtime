@@ -102,19 +102,11 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     if (!pushReg)
     {
         // Non-tail call: we can use any callee trash register that is not
-        // a return register or contain 'this' pointer (keep alive this), since
-        // we are generating GS cookie check after a GT_RETURN block.
-        // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
-        // as return register for two-register-returned structs.
-        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
-            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_0))
-        {
-            regGSCheck = REG_ARG_1;
-        }
-        else
-        {
-            regGSCheck = REG_ARG_0;
-        }
+        // a return register or contain 'this' pointer (keep alive this), or
+        // a continuation register, since we are generating GS cookie check
+        // after a GT_RETURN block.
+        // ARG_1 is EDX or RSI, depending on platform. Either way it fits our reqirements
+        regGSCheck = REG_ARG_1;
     }
     else
     {
