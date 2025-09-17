@@ -28,6 +28,7 @@ target_link_libraries(dotnet.native
     ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libicudata.a
     ${NATIVE_BIN_DIR}/libicuuc.a
     ${NATIVE_BIN_DIR}/libicui18n.a
     ${NATIVE_BIN_DIR}/libz.a)
