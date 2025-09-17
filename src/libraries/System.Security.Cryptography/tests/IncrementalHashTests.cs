@@ -902,13 +902,13 @@ namespace System.Security.Cryptography.Tests
                 byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
 
                 incremental.AppendData(s_inputBytes);
-                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(Array.Empty<byte>()));
 
                 // Verify previous throw should not have reset, so appended bytes should still verify.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
 
                 incremental.AppendData(s_inputBytes);
-                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(ReadOnlySpan<byte>.Empty));
 
                 // Verify previous throw should not have reset, so appended bytes should still verify.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
@@ -945,13 +945,13 @@ namespace System.Security.Cryptography.Tests
                 byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
 
                 incremental.AppendData(s_inputBytes);
-                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(Array.Empty<byte>()));
 
                 // Verify previous throw should not have reset, so appended bytes should still verify.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
 
                 incremental.AppendData(s_inputBytes);
-                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset([]));
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(ReadOnlySpan<byte>.Empty));
 
                 // Verify previous throw should not have reset, so appended bytes should still verify.
                 AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
