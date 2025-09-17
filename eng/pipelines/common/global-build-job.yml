@@ -83,11 +83,7 @@ jobs:
     variables:
       - name: "MSBUILDUSESERVER"
         value: "1"
-      - name: "env:MSBUILDUSESERVER"
-        value: "1"
       - name: "DOTNET_CLI_USE_MSBUILD_SERVER"
-        value: "1"
-      - name: "env:DOTNET_CLI_USE_MSBUILD_SERVER"
         value: "1"
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
