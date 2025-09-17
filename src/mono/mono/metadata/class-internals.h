@@ -17,6 +17,7 @@
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/options.h"
 
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
@@ -287,8 +288,6 @@ union _MonoClassSizes {
 		int generic_param_token; /* for generic param types, both var and mvar */
 };
 
-#define COMPRESSED_INTERFACE_BITMAP 1
-
 #ifdef ENABLE_CHECKED_BUILD_PRIVATE_TYPES
 #define MONO_CLASS_DEF_PRIVATE 1
 #endif
@@ -317,14 +316,12 @@ union _MonoClassSizes {
 #undef MONO_CLASS_GETTER
 #undef MONO_CLASS_OFFSET
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
 int mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size);
-int mono_class_interface_match (const uint8_t *bitmap, int id);
-#else
-#define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
-#endif
+int mono_class_interface_match_compressed (const uint8_t *bitmap, int id);
 
-#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid)))
+#define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
+
+#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && (mono_opt_compressed_interface_bitmap ?mono_class_interface_match_compressed (m_class_get_interface_bitmap (k), (uiid)) : mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid))))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
@@ -374,7 +371,7 @@ struct MonoVTable {
 
 #define MONO_SIZEOF_VTABLE (sizeof (MonoVTable) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
-#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && mono_class_interface_match ((vt)->interface_bitmap, (uiid)))
+#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && (mono_opt_compressed_interface_bitmap ? mono_class_interface_match_compressed ((vt)->interface_bitmap, (uiid)) : mono_class_interface_match ((vt)->interface_bitmap, (uiid))))
 
 /*
  * Generic instantiation data type encoding.
