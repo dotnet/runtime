@@ -941,8 +941,8 @@ namespace System.Security.Cryptography
         ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
         /// </param>
         /// <returns>
-        ///   <see langword="true" /> if the computed HMAC of <paramref name="source"/> is equal to
-        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        ///   A task that, when awaited, produces <see langword="true" /> if the computed HMAC of
+        ///   <paramref name="source"/> is equal to <paramref name="hash" />; otherwise <see langword="false" />.
         /// </returns>
         /// <exception cref="ArgumentException">
         ///   <para><paramref name="hash"/> has a length not equal to the size of the HMAC output.</para>
