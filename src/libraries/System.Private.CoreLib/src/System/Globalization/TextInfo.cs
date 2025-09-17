@@ -180,6 +180,17 @@ namespace System.Globalization
             return ChangeCaseCommon<ToLowerConversion>(str);
         }
 
+        internal void ToLower(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToLower(source, destination);
+                return;
+            }
+
+            ChangeCaseCommon<ToLowerConversion>(source, destination);
+        }
+
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -451,6 +462,17 @@ namespace System.Globalization
             return ChangeCaseCommon<ToUpperConversion>(str);
         }
 
+        internal void ToUpper(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToUpper(source, destination);
+                return;
+            }
+
+            ChangeCaseCommon<ToUpperConversion>(source, destination);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpperAsciiInvariant(char c)
         {
@@ -472,7 +494,7 @@ namespace System.Globalization
             if (charsSlice.Length == 2)
             {
                 Span<char> lowerChars = stackalloc char[2];
-                ChangeCaseToLower(charsSlice, lowerChars);
+                ToLower(charsSlice, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
             else
@@ -492,7 +514,7 @@ namespace System.Globalization
             if (charsSlice.Length == 2)
             {
                 Span<char> upperChars = stackalloc char[2];
-                ChangeCaseToUpper(charsSlice, upperChars);
+                ToUpper(charsSlice, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
             else
