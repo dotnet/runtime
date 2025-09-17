@@ -425,13 +425,9 @@ namespace ILLink.Shared.TrimAnalysis
                         {
                             _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
                         }
-                        else if (backingFieldFromGetter is not null
+                        if (!(backingFieldFromGetter is not null
                             && backingFieldFromSetter is not null
-                            && backingFieldFromGetter != backingFieldFromSetter)
-                        {
-                            _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        }
-                        else
+                            && backingFieldFromGetter != backingFieldFromSetter))
                         {
                             annotatedFields.Add(new FieldAnnotation(backingField, annotation));
                         }
