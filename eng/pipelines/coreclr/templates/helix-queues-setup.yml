@@ -110,7 +110,7 @@ jobs:
         # superpmi is not about testing platform differences, so go with highest capacity queue
         - OSX.14.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.1200.Arm64
+        - OSX.14.Arm64
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
