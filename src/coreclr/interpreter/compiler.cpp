@@ -3605,6 +3605,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else
             {
+                // Tail call target needs to be IL
+                if (tailcall && isPInvoke && !isMarshaledPInvoke)
+                    tailcall = false;
+
                 // Normal call
                 InterpOpcode opcode;
                 if (isDelegateInvoke)
@@ -3614,7 +3618,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 }
                 else if (tailcall)
                 {
-                    assert(!isPInvoke && !isMarshaledPInvoke);
                     opcode = INTOP_CALL_TAIL;
                 }
                 else

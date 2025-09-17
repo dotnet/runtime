@@ -39,7 +39,7 @@ else(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun PRIVATE -rdynamic)
 
     # Android implements pthread natively
-    if(NOT CLR_CMAKE_TARGET_ANDROID)
+    if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
         target_link_libraries(corerun PRIVATE pthread)
     endif()
     # Static linking
