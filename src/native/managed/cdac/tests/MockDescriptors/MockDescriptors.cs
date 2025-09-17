@@ -57,6 +57,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.MethodTableAuxiliaryData.LoaderModule), DataType.pointer),
             new(nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots), DataType.int16),
+            new(nameof(Data.MethodTableAuxiliaryData.Flags), DataType.uint32),
         ]
     };
 
@@ -152,6 +153,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.TypeDefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.TypeRefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
+            new(nameof(Data.Module.DynamicILBlobTable), DataType.pointer),
         ]
     };
 
@@ -162,6 +164,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.Assembly.Module), DataType.pointer),
             new(nameof(Data.Assembly.IsCollectible), DataType.uint8),
+            new(nameof(Data.Assembly.IsDynamic), DataType.uint8),
             new(nameof(Data.Assembly.Error), DataType.pointer),
             new(nameof(Data.Assembly.NotifyFlags), DataType.uint32),
             new(nameof(Data.Assembly.Level), DataType.uint32),
@@ -174,7 +177,8 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.ExceptionInfo.PreviousNestedInfo), DataType.pointer),
-            new(nameof(Data.ExceptionInfo.ThrownObject), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ThrownObjectHandle), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ExceptionWatsonBucketTrackerBuckets), DataType.pointer),
         ]
     };
 
@@ -194,6 +198,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.LinkNext), DataType.pointer),
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
             new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
+            new(nameof(Data.Thread.UEWatsonBucketTrackerBuckets), DataType.pointer),
         ]
     };
 

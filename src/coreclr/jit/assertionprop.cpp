@@ -251,17 +251,16 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_X86Base_CompareScalarUnorderedLessThan:
                 case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
                 case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_SSE42_TestC:
-                case NI_SSE42_TestZ:
-                case NI_SSE42_TestNotZAndNotC:
+                case NI_X86Base_TestC:
+                case NI_X86Base_TestZ:
+                case NI_X86Base_TestNotZAndNotC:
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
                 case NI_X86Base_Extract:
-                case NI_SSE42_Extract:
-                case NI_SSE42_X64_Extract:
+                case NI_X86Base_X64_Extract:
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
@@ -278,8 +277,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX2_TrailingZeroCount:
                 case NI_AVX2_X64_LeadingZeroCount:
                 case NI_AVX2_X64_TrailingZeroCount:
-                case NI_SSE42_PopCount:
-                case NI_SSE42_X64_PopCount:
+                case NI_X86Base_PopCount:
+                case NI_X86Base_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
@@ -3944,7 +3943,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         // See if (X + CNS) is known to be non-negative
         if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
-            Range    rng = Range(Limit(Limit::keDependent));
+            Range    rng = Range(Limit(Limit::keUnknown));
             ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
             if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
             {
@@ -4417,13 +4416,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
     int op2cns;
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
-        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
-        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
-        && (op2cns != 0))
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) && vnStore->IsVNIntegralConstant(op2VN, &op2cns))
     {
         // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
-        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng1 = Range(Limit(Limit::keUnknown));
         Range rng2 = Range(Limit(Limit::keConstant, op2cns));
 
         if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
@@ -4703,6 +4699,13 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Find an equal or not equal assertion about op1 var.
     unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+
+    // Make sure the local is not truncated.
+    if (!op1->TypeIs(lvaGetRealType(lclNum)))
+    {
+        return nullptr;
+    }
+
     noway_assert(lclNum < lvaCount);
     AssertionIndex index = optLocalAssertionIsEqualOrNotEqual(op1Kind, lclNum, op2Kind, cnsVal, assertions);
 

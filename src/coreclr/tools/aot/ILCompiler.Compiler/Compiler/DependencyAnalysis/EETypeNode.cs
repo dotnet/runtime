@@ -628,8 +628,6 @@ namespace ILCompiler.DependencyAnalysis
                 // Generated type contains generic virtual methods that will get added to the GVM tables
                 if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
                 {
-                    dependencies.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
-
                     TypeDesc canonicalType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
                     if (canonicalType != _type)
                         dependencies.Add(factory.ConstructedTypeSymbol(canonicalType), "Type with generic virtual methods");
@@ -976,7 +974,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Object.Finalize shouldn't get a virtual slot. Finalizer is stored in an optional field
                 // instead: most MethodTable don't have a finalizer, but all EETypes contain Object's vtable.
                 // This lets us save a pointer (+reloc) on most EETypes.
-                Debug.Assert(!declType.IsObject || declMethod.Name != "Finalize");
+                Debug.Assert(!declType.IsObject || !declMethod.Name.SequenceEqual("Finalize"u8));
 
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
@@ -1001,8 +999,8 @@ namespace ILCompiler.DependencyAnalysis
                 // We also null out Equals/GetHashCode - that's just a marginal size/startup optimization.
                 if (isAsyncStateMachineValueType)
                 {
-                    if ((declType.IsObject && declMethod.Name is "Equals" or "GetHashCode" && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
-                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name == ValueTypeGetFieldHelperMethodOverride.MetadataName))
+                    if ((declType.IsObject && (declMethod.Name.SequenceEqual("Equals"u8) || declMethod.Name.SequenceEqual("GetHashCode"u8)) && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
+                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name.SequenceEqual(ValueTypeGetFieldHelperMethodOverride.MetadataName)))
                     {
                         shouldEmitImpl = false;
                     }

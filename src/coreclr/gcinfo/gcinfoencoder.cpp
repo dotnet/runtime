@@ -501,10 +501,6 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
 #endif //_DEBUG
 
     m_CodeLength = 0;
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    m_SizeOfStackOutgoingAndScratchArea = -1;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -757,14 +753,20 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetHasTa
 }
 #endif // TARGET_AMD64
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 {
-    _ASSERTE( size != (UINT32)-1 );
-    _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
-    m_SizeOfStackOutgoingAndScratchArea = size;
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+    {
+        _ASSERTE( size != (UINT32)-1 );
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
+        m_SizeOfStackOutgoingAndScratchArea = size;
+    }
+    else
+    {
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 );
+        _ASSERTE( size == (UINT32)0 );
+    }
 }
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetReversePInvokeFrameSlot(INT32 spOffset)
 {
@@ -1074,13 +1076,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_ReversePInvokeFrameSlot), GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE, ReversePInvokeFrameSize);
     }
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    if (!slimHeader)
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
     {
-        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
-        GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
+        if (!slimHeader)
+        {
+            _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
+            GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
+        }
     }
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
     UINT32 numInterruptibleRanges = (UINT32) m_InterruptibleRanges.Count();
 

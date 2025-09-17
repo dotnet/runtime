@@ -338,7 +338,8 @@ class EEClassLayoutInfo
         {
             Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
             Sequential,
-            Explicit
+            Explicit,
+            CStruct
         };
     private:
         enum {
@@ -484,6 +485,12 @@ class EEClassLayoutInfo
             MethodTable* pParentMT,
             Module* pModule,
             mdTypeDef cl
+        );
+
+        ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
         );
 
     private:
@@ -1317,15 +1324,15 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
-    DWORD HasNonPublicFields()
+    DWORD HasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_HASNONPUBLICFIELDS);
+        return (m_VMFlags & VMFLAG_HASRVASTATICFIELDS);
     }
-    void SetHasNonPublicFields()
+    void SetHasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_HASNONPUBLICFIELDS;
+        m_VMFlags |= (DWORD)VMFLAG_HASRVASTATICFIELDS;
     }
     DWORD IsNotTightlyPacked()
     {
@@ -1647,7 +1654,7 @@ public:
 
         VMFLAG_INLINE_ARRAY                    = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
-        VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
+        VMFLAG_HASRVASTATICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment

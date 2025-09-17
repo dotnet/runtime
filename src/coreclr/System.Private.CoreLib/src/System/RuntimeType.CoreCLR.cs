@@ -560,7 +560,7 @@ namespace System
                                 cachedMembers = cachedMembers2;
                             }
 
-                            Debug.Assert(cachedMembers![freeSlotIndex] == null);
+                            Debug.Assert(cachedMembers[freeSlotIndex] == null);
                             Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
@@ -579,7 +579,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    if (declaringType.IsInterface)
+                    if (declaringType.IsActualInterface)
                     {
                         #region IsInterface
 
@@ -998,7 +998,7 @@ namespace System
                                     continue;
                             }
 
-                            Debug.Assert(interfaceType.IsInterface);
+                            Debug.Assert(interfaceType.IsActualInterface);
                             list.Add(interfaceType);
                         }
 
@@ -1028,7 +1028,7 @@ namespace System
                         for (int i = 0; i < constraints.Length; i++)
                         {
                             RuntimeType constraint = (RuntimeType)constraints[i];
-                            if (constraint.IsInterface)
+                            if (constraint.IsActualInterface)
                                 al.Add(constraint);
 
                             Type[] temp = constraint.GetInterfaces();
@@ -1113,7 +1113,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     ListBuilder<RuntimeEventInfo> list = default;
 
-                    if (!declaringType.IsInterface)
+                    if (!declaringType.IsActualInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1206,7 +1206,7 @@ namespace System
 
                     ListBuilder<RuntimePropertyInfo> list = default;
 
-                    if (!declaringType.IsInterface)
+                    if (!declaringType.IsActualInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1258,8 +1258,8 @@ namespace System
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                    Debug.Assert((declaringType.IsInterface && isInterface && csPropertyInfos == null) ||
-                                 (!declaringType.IsInterface && !isInterface && usedSlots.Length >= numVirtuals));
+                    Debug.Assert((declaringType.IsActualInterface && isInterface && csPropertyInfos == null) ||
+                                 (!declaringType.IsActualInterface && !isInterface && usedSlots.Length >= numVirtuals));
 
                     for (int i = 0; i < tkProperties.Length; i++)
                     {
@@ -1350,7 +1350,7 @@ namespace System
 
                                 for (int j = 0; j < list.Count; j++)
                                 {
-                                    if (propertyInfo.EqualsSig(list[j]!))
+                                    if (propertyInfo.EqualsSig(list[j]))
                                     {
                                         duplicate = true;
                                         break;
@@ -2697,7 +2697,7 @@ namespace System
 
             TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
             Debug.Assert(interfaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
-            Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(!IsActualInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
@@ -2739,7 +2739,7 @@ namespace System
 
                 // If we resolved to an interface method, use the interface type as reflected type. Otherwise use `this`.
                 RuntimeType reflectedType = RuntimeMethodHandle.GetDeclaringType(classRtMethodHandle);
-                if (!reflectedType.IsInterface)
+                if (!reflectedType.IsActualInterface)
                     reflectedType = this;
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
@@ -3227,12 +3227,15 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible
+        public sealed override unsafe bool IsCollectible
         {
             get
             {
-                RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isCollectible = th.IsTypeDesc ? th.AsTypeDesc()->IsCollectible : th.AsMethodTable()->IsCollectible;
+                GC.KeepAlive(this);
+                return isCollectible;
             }
         }
 
@@ -3432,7 +3435,7 @@ namespace System
             }
         }
 
-        internal new unsafe bool IsInterface
+        internal unsafe bool IsActualInterface
         {
             get
             {
@@ -3542,8 +3545,7 @@ namespace System
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
-            return types ?? EmptyTypes;
+            return GetRootElementType().TypeHandle.GetInstantiationPublic() ?? [];
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
@@ -3636,8 +3638,7 @@ namespace System
             if (!IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-            Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? EmptyTypes;
+            return new RuntimeTypeHandle(this).GetConstraints() ?? [];
         }
         #endregion
 
@@ -3756,7 +3757,7 @@ namespace System
             }
 
             // Requires a modified type to return the modifiers.
-            return EmptyTypes;
+            return [];
         }
 
         public override Type[] GetFunctionPointerParameterTypes()
@@ -3771,7 +3772,7 @@ namespace System
 
             if (parameters.Length == 1)
             {
-                return EmptyTypes;
+                return [];
             }
 
             return parameters.AsSpan(1).ToArray();
@@ -3844,7 +3845,7 @@ namespace System
                 int consCount = 0;
 
                 // We cannot use Type.GetTypeArray here because some of the args might be null
-                Type[] argsType = args.Length != 0 ? new Type[args.Length] : EmptyTypes;
+                Type[] argsType = args.Length != 0 ? new Type[args.Length] : [];
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] is object arg)

@@ -40,6 +40,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IReJIT)] = new ReJITFactory(),
             [typeof(IStackWalk)] = new StackWalkFactory(),
             [typeof(IRuntimeInfo)] = new RuntimeInfoFactory(),
+            [typeof(IDebugInfo)] = new DebugInfoFactory(),
+            [typeof(ISHash)] = new SHashFactory(),
+            [typeof(IGC)] = new GCFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -58,6 +61,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IReJIT ReJIT => GetContract<IReJIT>();
     public override IStackWalk StackWalk => GetContract<IStackWalk>();
     public override IRuntimeInfo RuntimeInfo => GetContract<IRuntimeInfo>();
+    public override IDebugInfo DebugInfo => GetContract<IDebugInfo>();
+    public override ISHash SHash => GetContract<ISHash>();
+    public override IGC GC => GetContract<IGC>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {

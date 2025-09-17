@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -61,6 +62,7 @@ namespace ILLink.RoslynAnalyzer
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReturnValueDoesNotMatchFeatureGuards));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.InvalidFeatureGuard));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined));
+            diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DataflowAnalysisDidNotConverge));
 
             foreach (var requiresAnalyzer in RequiresAnalyzers.Value)
             {
@@ -110,8 +112,17 @@ namespace ILLink.RoslynAnalyzer
                     foreach (var operationBlock in context.OperationBlocks)
                     {
                         TrimDataFlowAnalysis trimDataFlowAnalysis = new(context, dataFlowAnalyzerContext, operationBlock);
-                        trimDataFlowAnalysis.InterproceduralAnalyze();
+                        bool success = trimDataFlowAnalysis.InterproceduralAnalyze();
                         trimDataFlowAnalysis.ReportDiagnostics(context.ReportDiagnostic);
+                        if (!success)
+                        {
+                            context.ReportDiagnostic(
+                                Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(
+                                    DiagnosticId.DataflowAnalysisDidNotConverge,
+                                    diagnosticSeverity: DiagnosticSeverity.Warning),
+                                operationBlock.Syntax.GetLocation(),
+                                operationBlock.FindContainingSymbol(context.OwningSymbol).GetDisplayName()));
+                        }
                     }
                 });
 
@@ -132,11 +143,12 @@ namespace ILLink.RoslynAnalyzer
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
+                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
                     if (type.BaseType is INamedTypeSymbol baseType)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, baseType, context.ReportDiagnostic);
+                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
 
                     foreach (var interfaceType in type.Interfaces)
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, interfaceType, context.ReportDiagnostic);
+                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);
 
                     DynamicallyAccessedMembersTypeHierarchy.ApplyDynamicallyAccessedMembersToTypeHierarchy(typeNameResolver, location, type, context.ReportDiagnostic);
                 }, SymbolKind.NamedType);
@@ -310,6 +322,11 @@ namespace ILLink.RoslynAnalyzer
                 || methodSymbol.AssociatedSymbol is not IPropertySymbol propertySymbol
                 || !propertySymbol.Type.IsTypeInterestingForDataflow(isByRef: propertySymbol.RefKind is not RefKind.None)
                 || propertySymbol.GetDynamicallyAccessedMemberTypes() == DynamicallyAccessedMemberTypes.None)
+                return;
+
+            // For C# 14 extension properties, property-level DAM does not propagate to accessors
+            // and we do not consider property vs accessor conflicts meaningful. Skip conflict checks.
+            if (methodSymbol.HasExtensionParameterOnType())
                 return;
 
             // None on the return type of 'get' matches unannotated

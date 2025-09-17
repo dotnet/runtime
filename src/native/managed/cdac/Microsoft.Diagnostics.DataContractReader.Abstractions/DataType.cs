@@ -19,6 +19,8 @@ public enum DataType
     nuint,
     pointer,
 
+    /* VM Data Types */
+
     GCHandle,
     CodePointer,
     Thread,
@@ -46,6 +48,7 @@ public enum DataType
     CGrowableSymbolStream,
     ProbeExtensionResult,
     MethodTable,
+    DynamicStaticsInfo,
     EEClass,
     ArrayClass,
     MethodTableAuxiliaryData,
@@ -109,6 +112,9 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    DynamicILBlobTable,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,
@@ -125,4 +131,12 @@ public enum DataType
     FaultingExceptionFrame,
     HijackFrame,
     TailCallFrame,
+    StubDispatchFrame,
+
+
+    /* GC Data Types */
+
+    GCHeap,
+    Generation,
+    CFinalize,
 }
