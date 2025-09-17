@@ -166,14 +166,23 @@ namespace System.Xml.Xsl.Xslt
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/1, name, args.Count);
                         return _f.InvokeMsUtc(/*datetime:*/_f.ConvertToString(args[0]));
                     }
-                    else if (name == "format-date" || name == "format-time")
+                    else if (name == "format-date")
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/3, name, args.Count);
-                        return _f.InvokeMsFormatDateTime(
+                        return _f.InvokeMSFormatDate(
                             /*datetime:*/_f.ConvertToString(args[0]),
                             /*format:  */1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
-                            /*lang:    */2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
-                            /*isDate:  */_f.Boolean(name == "format-date")
+                            /*lang:    */2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty)
+                        );
+                    }
+                    else if (name == "format-time")
+                    {
+                        FunctionInfo.CheckArity(1, 3, name, args.Count);
+                        return _f.InvokeMsFormatDateTime(
+                            _f.ConvertToString(args[0]),
+                            1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
+                            2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
+                            _f.Boolean(true)
                         );
                     }
                     else if (name == "local-name")

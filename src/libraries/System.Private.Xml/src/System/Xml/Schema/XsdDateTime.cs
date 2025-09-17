@@ -94,7 +94,7 @@ namespace System.Xml.Schema
 
         private void InitiateXsdDateTime(DateAndTimeInfo parsedValue)
         {
-            _dt = new DateTime(parsedValue.Year, parsedValue.Month, parsedValue.Day, parsedValue.Hour, parsedValue.Minute, parsedValue.Second);
+            _dt = new DateTime(parsedValue.Date.Year, parsedValue.Date.Month, parsedValue.Date.Day, parsedValue.Hour, parsedValue.Minute, parsedValue.Second);
             if (parsedValue.Fraction != 0)
             {
                 _dt = _dt.AddTicks(parsedValue.Fraction);

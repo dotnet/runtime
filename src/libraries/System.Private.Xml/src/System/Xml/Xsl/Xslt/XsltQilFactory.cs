@@ -188,6 +188,16 @@ namespace System.Xml.Xsl.Xslt
             );
         }
 
+        public QilNode InvokeMSFormatDate(QilNode date, QilNode format, QilNode lang)
+        {
+            CheckString(date);
+            CheckString(format);
+            CheckString(lang);
+            return XsltInvokeEarlyBound(QName("ms:format-date"),
+                XsltMethods.MSFormatDate, T.StringX, new QilNode[] { date, format, lang }
+            );
+        }
+
         public QilNode InvokeMsFormatDateTime(QilNode datetime, QilNode format, QilNode lang, QilNode isDate)
         {
             CheckString(datetime);

@@ -7,40 +7,34 @@ namespace System.Xml.Schema.DateAndTime.Helpers
 {
     internal struct DateAndTimeInfo
     {
-        public int Day { get; }
+        public DateInfo Date { get; }
         public int Fraction { get; }
         public int Hour { get; }
         public XsdDateTimeKind Kind { get; }
         public int Minute { get; }
-        public int Month { get; }
         public int Second { get; }
         public DateTimeTypeCode TypeCode { get; }
-        public int Year { get; }
         public int ZoneHour { get; }
         public int ZoneMinute { get; }
 
         public DateAndTimeInfo(
-            int day,
+            DateInfo date,
             int fraction,
             int hour,
             XsdDateTimeKind kind,
             int minute,
-            int month,
             int second,
             DateTimeTypeCode typeCode,
-            int year,
             int zoneHour,
             int zoneMinute)
         {
-            Day = day;
+            Date = date;
             Fraction = fraction;
             Hour = hour;
             Kind = kind;
             Minute = minute;
-            Month = month;
             Second = second;
             TypeCode = typeCode;
-            Year = year;
             ZoneHour = zoneHour;
             ZoneMinute = zoneMinute;
         }
@@ -51,8 +45,6 @@ namespace System.Xml.Schema.DateAndTime.Helpers
                   default,
                   default,
                   XsdDateTimeKind.Unspecified,
-                  default,
-                  default,
                   default,
                   default,
                   default,
