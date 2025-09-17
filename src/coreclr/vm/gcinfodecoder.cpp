@@ -2129,11 +2129,11 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     InterpMethodContextFrame* pFrame = (InterpMethodContextFrame*)GetSP(pRD->pCurrentContext);
     _ASSERTE(pFrame);
 
-    int8_t* baseReg = nullptr;
+    TADDR baseReg = 0;
 
     if( GC_SP_REL == spBase )
     {
-        baseReg = pFrame->pStack;
+        baseReg = dac_cast<TADDR>(pFrame->pStack);
     }
     else if( GC_CALLER_SP_REL == spBase )
     {
@@ -2142,18 +2142,11 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     else
     {
 #ifdef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
-        baseReg = pFrame->pStack;
+        baseReg = pFrame->GetFunctionFrameStack();
 #else
         if (pFrame->ShouldReportGlobals())
         {
-            if (pFrame->IsFuncletFrame())
-            {
-                baseReg = *(int8_t**)pFrame->pStack + FUNCLET_STACK_ADJUSTMENT_OFFSET;
-            }
-            else
-            {
-                baseReg = pFrame->pStack;
-            }
+            baseReg = pFrame->GetFunctionFrameStack();
         }
         else
         {
@@ -2163,7 +2156,7 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     }
 
     _ASSERTE(baseReg);
-    pObjRef = (OBJECTREF*)(baseReg + spOffset);
+    pObjRef = dac_cast<PTR_OBJECTREF>(baseReg + spOffset);
 
     return pObjRef;
 }

@@ -78,6 +78,23 @@ public:
 #endif // FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
     }
 
+    TADDR GetFunctionFrameStack()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        TADDR baseStackSlot;
+        if (IsFuncletFrame())
+        {
+            baseStackSlot = (*dac_cast<PTR_TADDR>((uintptr_t)pStack)) + FUNCLET_STACK_ADJUSTMENT_OFFSET;
+        }
+        else
+        {
+            baseStackSlot = dac_cast<TADDR>((uintptr_t)pStack);
+        }
+
+        return baseStackSlot;
+    }
+
     int8_t* GetRetValAddr()
     {
         LIMITED_METHOD_CONTRACT;

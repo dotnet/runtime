@@ -1004,6 +1004,8 @@ public class InterpreterTest
         TestFilterCatchNested();
         TestFilterFailedCatchNested();
         TestFilterCatchFinallyNested();
+        TestGenericsCatchFinallyNested<int>();
+        TestGenericsCatchFinallyNested<object>();
         TestFilterFailedCatchFinallyNested();
         TestFinallyBeforeCatch();
         TestModifyAlias();
@@ -1219,6 +1221,15 @@ public class InterpreterTest
     public static void Throw()
     {
         throw null; // Simulating the throw operation
+    }
+
+    public class GenericException<T> : Exception
+    {
+
+    }
+    public static void ThrowException<T>()
+    {
+        throw new GenericException<T>();
     }
 
     public static void TestCatchCurrent()
@@ -1523,6 +1534,35 @@ public class InterpreterTest
         }
         finally
         {
+            x *= 10;
+            x += 3;
+        }
+        if (x != 123)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestGenericsCatchFinallyNested<T>()
+    {
+        int x = 0;
+        try
+        {
+            Console.WriteLine("In try");
+        }
+        finally
+        {
+            try
+            {
+                x *= 10;
+                x += 1;
+                ThrowException<T>();
+            }
+            catch (GenericException<T> e)
+            {
+                x *= 10;
+                x += 2;
+            }
             x *= 10;
             x += 3;
         }

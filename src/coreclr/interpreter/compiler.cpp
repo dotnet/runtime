@@ -1175,17 +1175,28 @@ public:
 
     void AllocateOrReuseGcSlot(uint32_t offsetBytes, GcSlotFlags flags)
     {
-        GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
-        bool allocateNewSlot = *pSlot == ((GcSlotId)-1);
-
-        if (allocateNewSlot)
+        GcSlotId slot;
+        bool allocateNewSlot;
+        if (flags & GC_SLOT_UNTRACKED)
         {
-            // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
-            *pSlot = m_encoder->GetStackSlotId(offsetBytes, flags, (flags & GC_SLOT_UNTRACKED) ? GC_FRAMEREG_REL : GC_SP_REL);
+            allocateNewSlot = true;
+            slot = m_encoder->GetStackSlotId(offsetBytes, flags, (flags & GC_SLOT_UNTRACKED) ? GC_FRAMEREG_REL : GC_SP_REL);;
         }
         else
         {
-            assert((flags & GC_SLOT_UNTRACKED) == 0);
+            GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
+            
+            allocateNewSlot = *pSlot == ((GcSlotId)-1);
+            
+            if (allocateNewSlot)
+            {
+                // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
+                slot = *pSlot = m_encoder->GetStackSlotId(offsetBytes, flags, (flags & GC_SLOT_UNTRACKED) ? GC_FRAMEREG_REL : GC_SP_REL);
+            }
+            else
+            {
+                slot = *pSlot;
+            }
         }
 
         INTERP_DUMP(
@@ -1194,7 +1205,7 @@ public:
             (flags & GC_SLOT_UNTRACKED) ? "global " : "",
             (flags & GC_SLOT_INTERIOR) ? "interior " : "",
             (flags & GC_SLOT_PINNED) ? "pinned " : "",
-            *pSlot,
+            slot,
             offsetBytes
         );
     }
