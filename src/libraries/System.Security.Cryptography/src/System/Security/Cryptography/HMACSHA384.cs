@@ -108,10 +108,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, byte[] source)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(source);
-
-            return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -122,12 +119,7 @@ namespace System.Security.Cryptography
         /// <returns>The HMAC of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
         {
-            byte[] buffer = new byte[HashSizeInBytes];
-
-            int written = HashData(key, source, buffer.AsSpan());
-            Debug.Assert(written == buffer.Length);
-
-            return buffer;
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -143,12 +135,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (!TryHashData(key, source, destination, out int bytesWritten))
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
-            return bytesWritten;
+            return HMACStatic<HMACTrait>.HashData(key, source, destination);
         }
 
         /// <summary>
@@ -166,16 +153,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HashSizeInBytes)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            bytesWritten = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA384, key, source, destination);
-            Debug.Assert(bytesWritten == HashSizeInBytes);
-
-            return true;
+            return HMACStatic<HMACTrait>.TryHashData(key, source, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -200,15 +178,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA384, key, source, destination);
+            return HMACStatic<HMACTrait>.HashData(key, source, destination);
         }
 
         /// <summary>
@@ -225,12 +195,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(ReadOnlySpan<byte> key, Stream source)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA384, HashSizeInBytes, key, source);
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -247,9 +212,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, Stream source)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            return HashData(new ReadOnlySpan<byte>(key), source);
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -270,12 +233,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA384, key.Span, source, cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
         }
 
         /// <summary>
@@ -296,9 +254,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
         }
 
         /// <summary>
@@ -331,20 +287,7 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HmacStreamAsync(
-                HashAlgorithmNames.SHA384,
-                key.Span,
-                source,
-                destination,
-                cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, destination, cancellationToken);
         }
 
         /// <summary>

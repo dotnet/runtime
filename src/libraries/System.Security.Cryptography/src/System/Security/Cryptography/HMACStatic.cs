@@ -34,6 +34,120 @@ namespace System.Security.Cryptography
             return result;
         }
 
+        internal static byte[] HashData(byte[] key, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
+
+            return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+        }
+
+        internal static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
+        {
+            byte[] buffer = new byte[THMAC.HashSizeInBytes];
+
+            int written = HashData(key, source, buffer.AsSpan());
+            Debug.Assert(written == buffer.Length);
+
+            return buffer;
+        }
+
+        internal static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!TryHashData(key, source, destination, out int bytesWritten))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return bytesWritten;
+        }
+
+        internal static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < THMAC.HashSizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.MacData(THMAC.HashAlgorithmName, key, source, destination);
+            Debug.Assert(bytesWritten == THMAC.HashSizeInBytes);
+
+            return true;
+        }
+
+        internal static int HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < THMAC.HashSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HmacStream(THMAC.HashAlgorithmName, key, source, destination);
+        }
+
+        internal static byte[] HashData(ReadOnlySpan<byte> key, Stream source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HmacStream(THMAC.HashAlgorithmName, THMAC.HashSizeInBytes, key, source);
+        }
+
+        internal static byte[] HashData(byte[] key, Stream source)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            return HashData(new ReadOnlySpan<byte>(key), source);
+        }
+
+        internal static ValueTask<byte[]> HashDataAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HmacStreamAsync(THMAC.HashAlgorithmName, key.Span, source, cancellationToken);
+        }
+
+        internal static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
+        }
+
+        internal static ValueTask<int> HashDataAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < THMAC.HashSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HmacStreamAsync(
+                THMAC.HashAlgorithmName,
+                key.Span,
+                source,
+                destination,
+                cancellationToken);
+        }
+
         internal static bool Verify(byte[] key, byte[] source, byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(key);
