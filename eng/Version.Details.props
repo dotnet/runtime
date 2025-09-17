@@ -6,7 +6,7 @@ This file should be imported by eng/Versions.props
 <Project>
   <PropertyGroup>
     <!-- dotnet/icu dependencies -->
-    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.25463.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
+    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.25466.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet/wcf dependencies -->
     <SystemServiceModelPrimitivesPackageVersion>4.9.0-rc2.21473.1</SystemServiceModelPrimitivesPackageVersion>
     <!-- dotnet/llvm-project dependencies -->
