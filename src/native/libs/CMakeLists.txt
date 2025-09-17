@@ -134,6 +134,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)
             add_compile_options(-Wno-cast-function-type-strict)
+            add_compile_options(-Wno-c++-keyword)
         endif ()
     endif ()
 

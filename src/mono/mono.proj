@@ -229,7 +229,7 @@ export EMSDK_PATH=%24{DIR}/
 unset DIR
 
 export DOTNET_EMSCRIPTEN_LLVM_ROOT=%24{EMSDK_PATH}bin/
-export DOTNET_EMSCRIPTEN_NODE_JS=%24{EMSDK_PATH}node/bin/node
+export DOTNET_EMSCRIPTEN_NODE_JS=%24{EMSDK_PATH}node/22.16.0_64bit/bin/node
 export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%24{EMSDK_PATH}
 
       </_EmsdkPaths>
@@ -241,7 +241,7 @@ set EMSDK_PATH=%CURRENT_SCRIPT:~0,-1%\
 
 set EMSDK_PYTHON=%EMSDK_PATH%python\python.exe
 set DOTNET_EMSCRIPTEN_LLVM_ROOT=%EMSDK_PATH%bin\
-set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node.exe
+set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\22.16.0_64bit\bin\node.exe
 set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
 
       </_EmsdkPaths>
@@ -251,7 +251,7 @@ import os
 emsdk_path = os.path.dirname(os.path.dirname(os.path.realpath(os.getenv('EM_CONFIG')).replace('\\', '/')))
 
 LLVM_ROOT = emsdk_path + '/bin'
-NODE_JS = emsdk_path + '/node/bin/node'
+NODE_JS = emsdk_path + '/node/22.16.0_64bit/bin/node'
 BINARYEN_ROOT = emsdk_path
 
 FROZEN_CACHE = bool(os.getenv('EM_FROZEN_CACHE', 'True'))
@@ -263,24 +263,39 @@ JS_ENGINES = [NODE_JS]
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
 
+    <PropertyGroup>
+      <InstallCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
+      <ActivateCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
+      <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
+      <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
+      <PythonCmd Condition="'$(HostOS)' == 'windows' and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+    </PropertyGroup>
+
+    <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
+          WorkingDirectory="$(BrowserLocalPath)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
+          WorkingDirectory="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="$(PythonCmd) -m pip install certifi &amp;&amp; $(PythonCmd) -m pip install pip-system-certs"
+          Condition="'$(HostOS)' == 'windows'"
+          WorkingDirectory="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true" />
+
     <ItemGroup>
-      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
-                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
-      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
-                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(NETCoreSdkPortableRuntimeIdentifier)\**" />
-      <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
-                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+      <_EmsdkFiles Include="$(EMSDK_PATH)/upstream/**/*" />
+      <_PythonFiles Include="$(EMSDK_PATH)/python/3.13.3_64bit/**/*" />
+      <_ShellFiles Include="$(MSBuildThisFileDirectory)browser/env/**/*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)/%(RecursiveDir)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    <Move SourceFiles="@(_EmsdkFiles)"
+          DestinationFolder="$(EMSDK_PATH)%(RecursiveDir)" />
+    <Move SourceFiles="@(_PythonFiles)"
+          DestinationFolder="$(EMSDK_PATH)/python/%(RecursiveDir)" />
+    <Copy SourceFiles="@(_ShellFiles)" 
+          DestinationFolder="$(EMSDK_PATH)">
     </Copy>
-    <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)node/%(RecursiveDir)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
-    </Copy>
-    <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)python/%(RecursiveDir)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
-    </Copy>
+    <Delete Files="$(EMSDK_PATH)/emsdk_env.bat;$(EMSDK_PATH)/emsdk_env.ps1" />
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
       <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
     </ReadLinesFromFile>
@@ -290,15 +305,6 @@ JS_ENGINES = [NODE_JS]
     <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
                       Overwrite="true"
                       Lines="$(_EmscriptenPaths)" />
-    <!-- Fixup files that were symlinks originally (on Linux/Mac, Windows has an equivalent already) -->
-    <ItemGroup>
-      <NodeModulesBinFiles Include="$(EMSDK_PATH)node\bin\npm.js" />
-    </ItemGroup>
-    <WriteLinesToFile
-      Condition="$([MSBuild]::IsOSPlatform(Linux)) or $([MSBuild]::IsOSPlatform(OSX))"
-      Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
-      File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
-      Overwrite="true" />
 
     <PropertyGroup>
       <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>

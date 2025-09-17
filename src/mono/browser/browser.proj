@@ -124,6 +124,16 @@
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
       <EmccExportedRuntimeMethod Include="maybeExit" />
       <EmccExportedRuntimeMethod Include="abort" />
+      <EmccExportedRuntimeMethod Include="HEAP8" />
+      <EmccExportedRuntimeMethod Include="HEAP16" />
+      <EmccExportedRuntimeMethod Include="HEAPU8" />
+      <EmccExportedRuntimeMethod Include="HEAPU16" />
+      <EmccExportedRuntimeMethod Include="HEAP32" />
+      <EmccExportedRuntimeMethod Include="HEAPU32" />
+      <EmccExportedRuntimeMethod Include="HEAPF32" />
+      <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
@@ -229,10 +239,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
-
-      <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
-      <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
+      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
