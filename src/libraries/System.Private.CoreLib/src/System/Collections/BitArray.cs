@@ -943,6 +943,42 @@ namespace System.Collections
             return (_array[byteCount] & mask) != 0;
         }
 
+        public int PopCount()
+        {
+            int count = 0;
+            foreach (byte b in _array)
+                count += byte.PopCount(b);
+            return count;
+        }
+
+        public int TrailingZeroCount()
+        {
+            int count = 0;
+            for (int i = _array.Length - 1; i >= 0; i--)
+            {
+                if (_array[i] != 0)
+                    return byte.TrailingZeroCount(_array[i]) + count;
+
+                count += 8;
+            }
+
+            return _bitLength;
+        }
+
+        public int LeadingZeroCount()
+        {
+            int count = _bitLength - _array.Length * 8; // offset for extra bits beyond _bitLength
+            for (int i = 0; i < _array.Length; i++)
+            {
+                if (_array[i] != 0)
+                    return byte.LeadingZeroCount(_array[i]) + count;
+
+                count += 8;
+            }
+
+            return _bitLength;
+        }
+
         /// <summary>Gets the number of elements contained in the <see cref="BitArray"/>.</summary>
         public int Count => _bitLength;
 
