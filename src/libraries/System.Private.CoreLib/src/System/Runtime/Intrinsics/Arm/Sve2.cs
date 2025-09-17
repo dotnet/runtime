@@ -2940,6 +2940,75 @@ namespace System.Runtime.Intrinsics.Arm
         ///   URSQRTE Ztied.S, Pg/M, Ztied.S
         /// </summary>
         public static Vector<uint> ReciprocalSqrtEstimate(Vector<uint> value) => ReciprocalSqrtEstimate(value);
+        // Truncate to 16 bits and store, non-temporal
+
+        // /// <summary>
+        // /// void svstnt1h_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        // ///   STNT1H Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // Removed as per #103297
+        // public static void Scatter16BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svstnt1h_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   STNT1H Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter16BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        // /// <summary>
+        // /// void svstnt1h_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        // ///   STNT1H Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // Removed as per #103297
+        // public static void Scatter16BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svstnt1h_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   STNT1H Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter16BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter16BitNarrowing(mask, addresses, data);
+
+        // Truncate to 32 bits and store, non-temporal
+
+        /// <summary>
+        /// void svstnt1w_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   STNT1W Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter32BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter32BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svstnt1w_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   STNT1W Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter32BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter32BitNarrowing(mask, addresses, data);
+
+        // Truncate to 8 bits and store, non-temporal
+
+        // /// <summary>
+        // /// void svstnt1b_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        // ///   STNT1B Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // Removed as per #103297
+        // public static void Scatter8BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svstnt1b_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   STNT1B Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter8BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+        // /// <summary>
+        // /// void svstnt1b_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        // ///   STNT1B Zdata.S, Pg, [Zbases.S, XZR]
+        // /// </summary>
+        // Removed as per #103297
+        // public static void Scatter8BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter8BitNarrowing(mask, addresses, data);
+
+        /// <summary>
+        /// void svstnt1b_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   STNT1B Zdata.D, Pg, [Zbases.D, XZR]
+        /// </summary>
+        public static new void Scatter8BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter8BitNarrowing(mask, addresses, data);
 
         // Rounding shift left
 
