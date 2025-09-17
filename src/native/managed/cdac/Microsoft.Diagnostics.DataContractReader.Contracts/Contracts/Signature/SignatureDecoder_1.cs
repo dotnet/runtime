@@ -54,7 +54,7 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
     TypeHandle ISignatureDecoder.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
     {
         SignatureTypeProvider<TypeHandle> provider = GetTypeHandleProvider(moduleHandle);
-        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
         BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
         SignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, mdReader, ctx);
         return decoder.DecodeFieldSignature(ref blobReader);

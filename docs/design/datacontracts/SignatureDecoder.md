@@ -15,14 +15,12 @@ In version 1 of the SignatureDecoder contract we take advantage of the System.Re
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| Module | TypeDefToMethodTableMap | Mapping table |
-| Module | TypeRefToMethodTableMap | Mapping table |
+
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| ObjectMethodTable | TargetPointer | pointer to the MT of `object` |
-| StringMethodTable | TargetPointer | pointer to the MT of `string` |
+
 
 Contracts used:
 | Contract Name |
@@ -31,85 +29,32 @@ Contracts used:
 | Loader |
 
 ### SignatureTypeProvider
-```csharp
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+The cDAC implements the ISignatureTypeProvider<TType,TGenericContext> with TType=TypeHandle. TGenericContext can either be a MethodDescHandle or TypeHandle; MethodDescHandle context is used to look up generic method parameters, and TypeHandle context is used to look up generic type parameters.
 
-public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
-{
-    private readonly Target _target;
-    private readonly DataContractReader.Contracts.ModuleHandle _moduleHandle;
+A cDAC SignatureTypeProvider is instantiated over a Module which is used to lookup types.
 
-    public SignatureTypeProvider(Target target, DataContractReader.Contracts.ModuleHandle moduleHandle)
-    {
-        _target = target;
-        _moduleHandle = moduleHandle;
-    }
-    public TypeHandle GetArrayType(TypeHandle elementType, ArrayShape shape)
-        => _target.Contracts.RuntimeTypeSystem.GetConstructedType(elementType, CorElementType.Array, shape.Rank, ImmutableArray<TypeHandle>.Empty);
+The following ISignatureTypeProvider APIs are trivially implemented using RuntimeTypeSystem.GetPrimitiveType and RuntimeTypeSystem.GetConstructedType:
 
-    public TypeHandle GetByReferenceType(TypeHandle elementType)
-        => _target.Contracts.RuntimeTypeSystem.GetConstructedType(elementType, CorElementType.Byref, 0, ImmutableArray<TypeHandle>.Empty);
+* GetArrayType - GetConstructedType
+* GetByReferenceType - GetConstructedType
+* GetFunctionPointerType - Implemented as primitive IntPtr type
+* GetGenericInstantiation - GetConstructedType
+* GetModifiedType - Returns unmodified type
+* GetPinnedType - Returns unpinned type
+* GetPointerType - GetConstructedType
+* GetPrimitiveType - GetConstructedType
+* GetSZArrayType - GetConstructedType
 
-    public TypeHandle GetFunctionPointerType(MethodSignature<TypeHandle> signature)
-        => GetPrimitiveType(PrimitiveTypeCode.IntPtr);
+GetGenericMethodParameter is only supported when TGenericContext=MethodDescHandle and looks up the method parameters from the context using RuntimeTypeSystem.GetGenericMethodInstantiation.
 
-    public TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
-        => _target.Contracts.RuntimeTypeSystem.GetConstructedType(genericType, CorElementType.GenericInst, 0, typeArguments);
+GetGenericTypeParameter is only supported when TGenericContext=TypeHandle and looks up the type parameters from the context using RuntimeTypeSystem.GetInstantiation.
 
-    public TypeHandle GetGenericMethodParameter(T context, int index)
-    {
-        if (typeof(T) == typeof(MethodDescHandle))
-        {
-            MethodDescHandle methodContext = (MethodDescHandle)(object)context!;
-            return _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(methodContext)[index];
-        }
-        throw new NotSupportedException();
-    }
-    public TypeHandle GetGenericTypeParameter(T context, int index)
-    {
-        TypeHandle typeContext;
-        if (typeof(T) == typeof(TypeHandle))
-        {
-            typeContext = (TypeHandle)(object)context!;
-            return _target.Contracts.RuntimeTypeSystem.GetInstantiation(typeContext)[index];
-        }
-        throw new NotImplementedException();
-    }
-    public TypeHandle GetModifiedType(TypeHandle modifier, TypeHandle unmodifiedType, bool isRequired)
-        => unmodifiedType;
+GetTypeFromDefinition uses the SignatureTypeProvider's ModuleHandle to lookup the given Token in the Module's TypeDefToMethodTableMap. If a value is not found return null.
 
-    public TypeHandle GetPinnedType(TypeHandle elementType)
-        => elementType;
+GetTypeFromReference uses the SignatureTypeProvider's ModuleHandle to lookup the given Token in the Module's TypeRefToMethodTableMap. If a value is not found return null.The implementation when the type exists in a different module is incomplete.
 
-    public TypeHandle GetPointerType(TypeHandle elementType)
-        => _target.Contracts.RuntimeTypeSystem.GetConstructedType(elementType, CorElementType.Ptr, 0, ImmutableArray<TypeHandle>.Empty);
+GetTypeFromSpecification is not currently implemented.
 
-    public TypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
-        => _target.Contracts.RuntimeTypeSystem.GetPrimitiveType(typeCode);
-
-    public TypeHandle GetSZArrayType(TypeHandle elementType)
-        => _target.Contracts.RuntimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, ImmutableArray<TypeHandle>.Empty);
-
-    public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
-    {
-        int token = MetadataTokens.GetToken((EntityHandle)handle);
-        TargetPointer typeHandlePtr = _target.Contracts.Loader.GetModuleLookupMapElement(_target.ReadPointer(moduleHandle.Address +  /* Module::TypeDefToMethodTableMap offset */, (uint)token, out _);
-        return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
-    }
-
-    public TypeHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
-    {
-        int token = MetadataTokens.GetToken((EntityHandle)handle);
-        TargetPointer typeHandlePtr = _target.Contracts.Loader.GetModuleLookupMapElement(_target.ReadPointer(moduleHandle.Address +  /* Module::TypeRefToMethodTableMap offset */, (uint)token, out _);
-        return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
-    }
-
-    public TypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)
-        => throw new NotImplementedException();
-}
-
-```
 
 ### APIs
 ```csharp

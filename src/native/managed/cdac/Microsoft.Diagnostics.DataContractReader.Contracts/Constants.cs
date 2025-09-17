@@ -25,6 +25,7 @@ public static class Constants
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
         public const string StringMethodTable = nameof(StringMethodTable);
+
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
         public const string DacNotificationFlags = nameof(DacNotificationFlags);

@@ -43,7 +43,6 @@ class FieldDesc
     PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
-    // if this structure is changed please update cdac_data<FieldDesc>
 
     union { //create a union so I can get the correct offset for ClrDump.
         unsigned m_dword1;

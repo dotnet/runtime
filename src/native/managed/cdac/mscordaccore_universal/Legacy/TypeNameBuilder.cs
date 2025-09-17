@@ -120,7 +120,7 @@ internal struct TypeNameBuilder
         else
         {
             module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
-            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module);
+            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
             MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
             stringBuilder.Append(reader.GetString(methodDef.Name));
         }
@@ -137,7 +137,7 @@ internal struct TypeNameBuilder
             MetadataReader? reader = default;
             if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
             {
-                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
+                reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 if (reader is not null)
                 {
                     MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
@@ -227,7 +227,7 @@ internal struct TypeNameBuilder
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-                MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module);
+                MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 var handle = (GenericParameterHandle)MetadataTokens.Handle((int)genericParamToken);
                 GenericParameter genericParam = reader.GetGenericParameter(handle);
                 if (format.HasFlag(TypeNameFormat.FormatGenericParam))
@@ -287,7 +287,7 @@ internal struct TypeNameBuilder
                 }
                 else
                 {
-                    MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                    MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
                     AppendNestedTypeDef(ref tnb, reader, (TypeDefinitionHandle)MetadataTokens.EntityHandle((int)typeDefToken), format);
                 }
 
@@ -314,7 +314,7 @@ internal struct TypeNameBuilder
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
 
-                MetadataReader mr = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module);
+                MetadataReader mr = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 string assemblySimpleName = mr.GetString(mr.GetAssemblyDefinition().Name);
 
                 tnb.AddAssemblySpec(assemblySimpleName);

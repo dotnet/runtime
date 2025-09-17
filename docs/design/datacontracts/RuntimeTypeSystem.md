@@ -413,6 +413,11 @@ Contracts used:
 | --- |
 | `Thread` |
 
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `TYPE_MASK_OFFSET` | int | The number of bits the type is shifted left in the field desc flags2 | `27` |
+
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;

@@ -7,14 +7,13 @@ using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
-    private Dictionary<ModuleHandle, MetadataReaderProvider> _metadata = new();
+    private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
@@ -36,28 +35,28 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
     }
 
-    public MetadataReader GetMetadata(ModuleHandle handle)
+    public MetadataReader? GetMetadata(ModuleHandle handle)
     {
-        MetadataReader reader;
         if (_metadata.TryGetValue(handle, out MetadataReaderProvider? result))
         {
-            reader = result.GetMetadataReader();
+            return result?.GetMetadataReader();
         }
         else
         {
-            MetadataReaderProvider provider = GetMetadataProvider(handle);
+            MetadataReaderProvider? provider = GetMetadataProvider(handle);
             _metadata.Add(handle, provider);
-            reader = provider.GetMetadataReader();
+            return provider?.GetMetadataReader();
         }
-        return reader;
     }
 
-    private MetadataReaderProvider GetMetadataProvider(ModuleHandle handle)
+    private MetadataReaderProvider? GetMetadataProvider(ModuleHandle handle)
     {
         AvailableMetadataType type = GetAvailableMetadataType(handle);
 
         switch (type)
         {
+            case AvailableMetadataType.None:
+                return null;
             case AvailableMetadataType.ReadOnly:
             {
                 TargetSpan address = GetReadOnlyMetadataAddress(handle);

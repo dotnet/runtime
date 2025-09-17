@@ -73,17 +73,17 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
 
     public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {
-        Module module = _target.ProcessedData.GetOrAdd<Module>(_moduleHandle.Address);
         int token = MetadataTokens.GetToken((EntityHandle)handle);
-        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(module.TypeDefToMethodTableMap, (uint)token, out _);
+        TargetPointer typeDefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeDefToMethodTable;
+        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
         return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
     public TypeHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
     {
-        Module module = _target.ProcessedData.GetOrAdd<Module>(_moduleHandle.Address);
         int token = MetadataTokens.GetToken((EntityHandle)handle);
-        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(module.TypeRefToMethodTableMap, (uint)token, out _);
+        TargetPointer typeRefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable;
+        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeRefToMethodTable, (uint)token, out _);
         return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
