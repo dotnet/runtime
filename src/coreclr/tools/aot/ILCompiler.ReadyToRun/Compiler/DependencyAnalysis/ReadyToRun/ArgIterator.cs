@@ -12,6 +12,7 @@ using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.CorConstants;
+using Internal;
 
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -391,7 +392,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return 37 + (_parameterTypes == null ?
                 _returnType.GetHashCode() :
-                TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
+                VersionResilientHashCode.GenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
         }
 
         public bool HasThis() { return _hasThis; }

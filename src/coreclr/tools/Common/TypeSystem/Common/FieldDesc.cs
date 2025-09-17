@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
@@ -26,12 +27,22 @@ namespace Internal.TypeSystem
             return ReferenceEquals(this, o);
         }
 
-        public virtual string Name
+        public virtual ReadOnlySpan<byte> Name
         {
             get
             {
-                return null;
+                return [];
             }
+        }
+
+        public string GetName()
+        {
+            return System.Text.Encoding.UTF8.GetString(
+                Name
+#if NETSTANDARD
+                .ToArray()
+#endif
+                );
         }
 
         public abstract DefType OwningType

@@ -207,6 +207,17 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Cross did not return the expected value.");
         }
 
+        // A test for Cross (Vector3f, Vector3f)
+        // Cross test of the same parallel vector
+        [Fact]
+        public void Vector3CrossSameParallelVectors()
+        {
+            var v = new Vector3(-1, 1, 0);
+            var n = Vector3.Normalize(v);
+            var actual = Vector3.Cross(n, n);
+            Assert.Equal(Vector3.Zero, actual);
+        }
+
         // A test for Distance (Vector3f, Vector3f)
         [Fact]
         public void Vector3DistanceTest()

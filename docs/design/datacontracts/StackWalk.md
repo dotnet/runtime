@@ -22,6 +22,9 @@ string GetFrameName(TargetPointer frameIdentifier);
 
 // Gets the method desc pointer associated with the given Frame.
 TargetPointer GetMethodDescPtr(TargetPointer framePtr);
+
+// Gets the method desc pointer associated with a given IStackDataFrameHandle
+TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 ## Version 1
@@ -347,13 +350,21 @@ TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 string GetFrameName(TargetPointer frameIdentifier);
 ```
 
-`GetMethodDescPtr` returns the method desc pointer associated with a Frame. If not applicable, it returns TargetPointer.Null.
+`GetMethodDescPtr(TargetPointer framePtr)` returns the method desc pointer associated with a Frame. If not applicable, it returns TargetPointer.Null.
 * For FramedMethodFrame and most of its subclasses the methoddesc is accessible as a pointer field on the object (MethodDescPtr). The two exceptions are PInvokeCalliFrame (no valid method desc) and StubDispatchFrame.
   * StubDispatchFrame's MD may be either found on MethodDescPtr, or if this field is null, we look it up using a method table (RepresentativeMTPtr) and MT slot (RepresentativeSlot).
 * InlinedCallFrame also has a field from which we draw the method desc; however, we must first do some validation that the data in this field is valid.
 * MD is not applicable for other types of frames.
 ```csharp
 TargetPointer GetMethodDescPtr(TargetPointer framePtr)
+```
+
+`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note this can either be at a capital 'F' frame or a managed frame unlike the above API which works only at capital 'F' frames.
+This API is implemeted as follows:
+1. Try to get the current frame address with `GetFrameAddress`. If the address is not null, return `GetMethodDescPtr(<frameAddress>)`.
+2. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed contet, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
+```csharp
+TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
 ### x86 Specifics

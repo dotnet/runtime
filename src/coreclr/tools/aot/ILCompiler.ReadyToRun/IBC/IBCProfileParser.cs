@@ -305,8 +305,8 @@ namespace ILCompiler.IBC
 
             var typeEntry = (BlobEntry.ExternalTypeEntry)externalTypeDefBlob;
 
-            string typeNamespace = "";
-            string typeName = Encoding.UTF8.GetString(typeEntry.Name, 0, typeEntry.Name.Length - 1 /* these strings are null terminated */);
+            ReadOnlySpan<byte> typeNamespace = ""u8;
+            ReadOnlySpan<byte> typeName = new ReadOnlySpan<byte>(typeEntry.Name).Slice(0, typeEntry.Name.Length - 1 /* these strings are null terminated */);
             TypeDefinitionHandle enclosingType = default;
             if (!Cor.Macros.IsNilToken(typeEntry.NamespaceToken))
             {
@@ -329,7 +329,7 @@ namespace ILCompiler.IBC
                 }
 
                 var namespaceEntry = (BlobEntry.ExternalNamespaceEntry)namespaceEntryBlob;
-                typeNamespace = Encoding.UTF8.GetString(namespaceEntry.Name, 0, namespaceEntry.Name.Length - 1 /* these strings are null terminated */);
+                typeNamespace = new ReadOnlySpan<byte>(namespaceEntry.Name).Slice(0, namespaceEntry.Name.Length - 1 /* these strings are null terminated */);
             }
             else if (!Cor.Macros.IsNilToken(typeEntry.NestedClassToken))
             {
@@ -378,18 +378,17 @@ namespace ILCompiler.IBC
             else
             {
                 TypeDefinition nestedClassDefinition = externalModule.MetadataReader.GetTypeDefinition(enclosingType);
-                MetadataStringComparer stringComparer = externalModule.MetadataReader.StringComparer;
                 foreach (TypeDefinitionHandle tdNested in nestedClassDefinition.GetNestedTypes())
                 {
                     TypeDefinition candidateClassDefinition = externalModule.MetadataReader.GetTypeDefinition(tdNested);
-                    if (stringComparer.Equals(candidateClassDefinition.Name, typeName))
+                    if (externalModule.MetadataReader.StringEquals(candidateClassDefinition.Name, typeName))
                     {
                         return (uint)externalModule.MetadataReader.GetToken(tdNested);
                     }
                 }
 
                 if (_logger.IsVerbose)
-                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find nested type '{typeName}' on type '{externalModule.MetadataReader.GetToken(enclosingType):x}'");
+                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find nested type '{Encoding.UTF8.GetString(typeName)}' on type '{externalModule.MetadataReader.GetToken(enclosingType):x}'");
                 return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
             }
         }
@@ -399,7 +398,7 @@ namespace ILCompiler.IBC
             var methodEntry = (BlobEntry.ExternalMethodEntry)blobs[new IBCBlobKey(ibcToken, BlobType.ExternalMethodDef)];
             var signatureEntry = (BlobEntry.ExternalSignatureEntry)blobs[new IBCBlobKey(methodEntry.SignatureToken, BlobType.ExternalSignatureDef)];
 
-            string methodName = Encoding.UTF8.GetString(methodEntry.Name);
+            byte[] methodName = methodEntry.Name;
 
 
             var ecmaType = (EcmaType)methodMetadataType.GetTypeDefinition();
@@ -411,7 +410,7 @@ namespace ILCompiler.IBC
 
             foreach (MethodDesc method in ecmaType.GetMethods())
             {
-                if (method.Name == methodName)
+                if (method.Name.SequenceEqual(methodName))
                 {
                     EcmaMethod ecmaCandidateMethod = method as EcmaMethod;
                     if (ecmaCandidateMethod == null)
