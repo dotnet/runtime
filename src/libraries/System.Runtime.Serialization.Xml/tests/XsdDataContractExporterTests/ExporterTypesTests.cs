@@ -1,8 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
 using Xunit.Abstractions;
@@ -848,6 +855,67 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         }
         #endregion
 
+        [Fact]
+        public void DateOnly_TimeOnly_PrimitiveSchemas_Exported()
+        {
+            var exporter = new XsdDataContractExporter();
+            exporter.Export(typeof(DateOnly));
+            exporter.Export(typeof(TimeOnly));
+            const string serNs = "http://schemas.microsoft.com/2003/10/Serialization/";
+            // Compile exporter schemas into a set for semantic validation.
+            var set = new XmlSchemaSet();
+            foreach (XmlSchema schema in exporter.Schemas.Schemas())
+            {
+                using var ms = new MemoryStream();
+                schema.Write(ms);
+                ms.Position = 0;
+                set.Add(XmlSchema.Read(ms, null));
+            }
+            set.Compile();
+
+            XmlSchema? serSchema = null;
+            foreach (XmlSchema s in exporter.Schemas.Schemas())
+            {
+                if (s.TargetNamespace == serNs)
+                {
+                    serSchema = s;
+                    break;
+                }
+            }
+            Assert.NotNull(serSchema);
+
+            XmlSchemaSimpleType? FindSimple(string name)
+            {
+                foreach (XmlSchemaObject o in serSchema!.Items)
+                {
+                    if (o is XmlSchemaSimpleType st && st.Name == name)
+                    {
+                        return st;
+                    }
+                }
+                return null;
+            }
+
+            var dateOnlyCandidate = FindSimple("dateOnly");
+            Assert.NotNull(dateOnlyCandidate);
+            XmlSchemaSimpleType dateOnly = Assert.IsType<XmlSchemaSimpleType>(dateOnlyCandidate);
+            var timeOnlyCandidate = FindSimple("timeOnly");
+            Assert.NotNull(timeOnlyCandidate);
+            XmlSchemaSimpleType timeOnly = Assert.IsType<XmlSchemaSimpleType>(timeOnlyCandidate);
+
+            void AssertPattern(XmlSchemaSimpleType st, string expectedBase, string expectedPattern)
+            {
+                var restriction = Assert.IsType<XmlSchemaSimpleTypeRestriction>(st.Content);
+                Assert.Equal(expectedBase, restriction.BaseTypeName.Name);
+                Assert.Equal("http://www.w3.org/2001/XMLSchema", restriction.BaseTypeName.Namespace);
+                var facet = Assert.Single(restriction.Facets.Cast<XmlSchemaFacet>());
+                var pf = Assert.IsType<XmlSchemaPatternFacet>(facet);
+                Assert.Equal(expectedPattern, pf.Value);
+            }
+
+            AssertPattern(dateOnly, "date", "([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])");
+            AssertPattern(timeOnly, "time", "([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\\.[0-9]{1,7})?)?");
+        }
 #pragma warning restore CS0169, CS0414
     }
 }

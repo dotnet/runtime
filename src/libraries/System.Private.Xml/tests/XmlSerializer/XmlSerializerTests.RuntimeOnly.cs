@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Tests;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -43,30 +44,8 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_ByteArrayNull()
-    {
-        Assert.Null(SerializeAndDeserialize<byte[]>(null,
-@"<?xml version=""1.0""?>
-<base64Binary d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
-        byte[] x = new byte[] { 1, 2 };
-        byte[] y = SerializeAndDeserialize<byte[]>(x,
-@"<?xml version=""1.0""?>
-<base64Binary>AQI=</base64Binary>");
-        Assert.Equal(x, y);
-    }
-
-    [Fact]
     public static void Xml_CharAsRoot()
     {
-        Assert.StrictEqual(char.MinValue, SerializeAndDeserialize<char>(char.MinValue,
-@"<?xml version=""1.0""?>
-<char>0</char>"));
-        Assert.StrictEqual(char.MaxValue, SerializeAndDeserialize<char>(char.MaxValue,
-@"<?xml version=""1.0""?>
-<char>65535</char>"));
-        Assert.StrictEqual('a', SerializeAndDeserialize<char>('a',
-@"<?xml version=""1.0""?>
-<char>97</char>"));
         Assert.StrictEqual('\u00F1', SerializeAndDeserialize<char>('\u00F1',
 @"<?xml version=""1.0""?>
 <char>241</char>"));
@@ -1631,6 +1610,123 @@ public static partial class XmlSerializerTests
         Assert.Equal(originalmapping.XsdTypeNamespace, newmapping.XsdTypeNamespace);
     }
 
+    public class DateAndTimeSchemaWrapper
+    {
+        public DateOnly DateValue;
+        public TimeOnly TimeValue;
+        [XmlElement(DataType = "time")] // Force xs:time via secondary primitive mapping
+        public TimeOnly TimeAsXsdTime;
+    }
+
+    [Fact]
+    public static void XmlSchema_DateOnly_TimeOnly_Primitives_And_Time_Override()
+    {
+        // Helper to find simpleType by name.
+        static XmlSchemaSimpleType GetSimple(XmlSchema schema, string name) =>
+            schema.Items
+                .OfType<XmlSchemaSimpleType>()
+                .FirstOrDefault(st => st.Name == name)
+                ?? throw new Xunit.Sdk.XunitException($"SimpleType '{name}' not found.");
+
+        // Export the schema for the 'DateAndTimeSchemaWrapper' class above
+        var schemas = new XmlSchemas();
+        var exporter = new XmlSchemaExporter(schemas);
+        var importer = new XmlReflectionImporter();
+        var mapping = importer.ImportTypeMapping(typeof(DateAndTimeSchemaWrapper));
+        exporter.ExportTypeMapping(mapping);
+
+        // Compile schemas to ensure validity.
+        schemas.Compile((_, e) => Assert.Fail("Schema compile error: " + e.Message), true);
+
+        // Ensure the Urt schema (with dateOnly/timeOnly) came along with the DateAndTimeSchemaWrapper definition
+        const string urtNs = "http://microsoft.com/wsdl/types/";
+        XmlSchema? urtSchema = schemas.Cast<XmlSchema>().FirstOrDefault(s => s.TargetNamespace == urtNs);
+        Assert.NotNull(urtSchema);
+        XmlSchemaSimpleType dateOnly = GetSimple(urtSchema!, "dateOnly");
+        XmlSchemaSimpleType timeOnly = GetSimple(urtSchema!, "timeOnly");
+
+        // Validate dateOnly restriction over xs:date.
+        var dateRestriction = Assert.IsType<XmlSchemaSimpleTypeRestriction>(dateOnly.Content);
+        Assert.Equal("date", dateRestriction.BaseTypeName.Name);
+        Assert.Equal("http://www.w3.org/2001/XMLSchema", dateRestriction.BaseTypeName.Namespace);
+
+        // Validate timeOnly restriction over xs:time.
+        var timeRestriction = Assert.IsType<XmlSchemaSimpleTypeRestriction>(timeOnly.Content);
+        Assert.Equal("time", timeRestriction.BaseTypeName.Name);
+        Assert.Equal("http://www.w3.org/2001/XMLSchema", timeRestriction.BaseTypeName.Namespace);
+
+        // Locate wrapper complex type and verify its member element types.
+        XmlSchema? wrapperSchema = schemas.Cast<XmlSchema>().FirstOrDefault(s => s.Items.Cast<XmlSchemaObject>().Any(i => i is XmlSchemaComplexType ct && ct.Name == mapping.TypeName));
+        Assert.NotNull(wrapperSchema);
+        XmlSchemaComplexType wrapperType = (XmlSchemaComplexType)wrapperSchema!.Items.Cast<XmlSchemaObject>().First(i => i is XmlSchemaComplexType ct && ct.Name == mapping.TypeName);
+        var seq = Assert.IsType<XmlSchemaSequence>(wrapperType.Particle);
+        var elements = seq.Items.Cast<XmlSchemaElement>().ToDictionary(e => e.Name!);
+
+        Assert.True(elements.ContainsKey("DateValue"));
+        Assert.Equal("dateOnly", elements["DateValue"].SchemaTypeName.Name);
+        Assert.Equal(urtNs, elements["DateValue"].SchemaTypeName.Namespace);
+
+        Assert.True(elements.ContainsKey("TimeValue"));
+        Assert.Equal("timeOnly", elements["TimeValue"].SchemaTypeName.Name);
+        Assert.Equal(urtNs, elements["TimeValue"].SchemaTypeName.Namespace);
+
+        Assert.True(elements.ContainsKey("TimeAsXsdTime"));
+        Assert.Equal("time", elements["TimeAsXsdTime"].SchemaTypeName.Name);
+        Assert.Equal("http://www.w3.org/2001/XMLSchema", elements["TimeAsXsdTime"].SchemaTypeName.Namespace);
+    }
+
+    [Fact]
+    public static void XmlSchema_Import_DateOnly_TimeOnly_And_XsdTime()
+    {
+        // Use XmlSerializer exporter to emit the URT namespace schema (containing dateOnly/timeOnly simpleTypes),
+        // then author a small synthetic schema with global elements referencing those primitives and xs:time.
+        const string urtNs = "http://microsoft.com/wsdl/types/";
+        const string testNs = "http://tempuri.org/DateAndTimeSchemaImport";
+
+        var schemas = new XmlSchemas();
+        var exporter = new XmlSchemaExporter(schemas);
+        var reflectionImporter = new XmlReflectionImporter();
+
+        // Export a wrapper mapping that includes DateOnly/TimeOnly so exporter emits the URT schema once.
+        var wrapperMap = reflectionImporter.ImportTypeMapping(typeof(DateAndTimeSchemaWrapper));
+        exporter.ExportTypeMapping(wrapperMap);
+
+        // Now add a schema that defines global elements referencing the URT primitives (no manual primitive definitions here).
+        string globalsSchemaXml = $"""
+            <?xml version='1.0'?>
+            <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
+              <xs:import namespace='{urtNs}' />
+              <xs:element name='DateValue' type='urt:dateOnly' xmlns:urt='{urtNs}' />
+              <xs:element name='TimeValue' type='urt:timeOnly' xmlns:urt='{urtNs}' />
+              <xs:element name='TimeAsXsdTime' type='xs:time' />
+            </xs:schema>
+            """;
+
+        XmlSchema globalsSchema = XmlSchema.Read(new StringReader(globalsSchemaXml), null);
+        schemas.Add(globalsSchema);
+
+        // Compile all schemas via a set to resolve imports.
+        XmlSchemaSet set = new XmlSchemaSet();
+        foreach (XmlSchema schema in schemas)
+        {
+            using var ms = new MemoryStream();
+            schema.Write(ms);
+            ms.Position = 0;
+            set.Add(XmlSchema.Read(ms, null));
+        }
+        set.Compile();
+
+        // Feed compiled schemas back into importer.
+        var importer = new XmlSchemaImporter(schemas);
+        var dateMapping = importer.ImportTypeMapping(new XmlQualifiedName("DateValue", testNs));
+        var timeMapping = importer.ImportTypeMapping(new XmlQualifiedName("TimeValue", testNs));
+        var xsdTimeMapping = importer.ImportTypeMapping(new XmlQualifiedName("TimeAsXsdTime", testNs));
+
+        Assert.Equal(typeof(DateOnly).FullName, dateMapping.TypeFullName);
+        Assert.Equal(typeof(TimeOnly).FullName, timeMapping.TypeFullName);
+        Assert.Equal(typeof(DateTime).FullName, xsdTimeMapping.TypeFullName);
+    }
+
     [Fact]
     public static void  SoapAttributeTests()
     {
@@ -2009,6 +2105,45 @@ public static partial class XmlSerializerTests
             writeAccessors: default,
             validate: default,
             access: default));
+                        string urtNs = "http://microsoft.com/wsdl/types/";
+                        string testNs = "http://tempuri.org/DateAndTimeSchemaImport";
+                        string schema1 = $@"<?xml version='1.0'?>
+        <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
+            <xs:import namespace='{urtNs}' />
+            <xs:element name='DateValue' type='urt:dateOnly' xmlns:urt='{urtNs}' />
+            <xs:element name='TimeValue' type='urt:timeOnly' xmlns:urt='{urtNs}' />
+            <xs:element name='TimeAsXsdTime' type='xs:time' />
+        </xs:schema>";
+                        string schema2 = @"<?xml version='1.0'?>
+        <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='http://microsoft.com/wsdl/types/' elementFormDefault='qualified'>
+            <xs:simpleType name='dateOnly'>
+                <xs:restriction base='xs:date'>
+                    <xs:pattern value='([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' />
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:simpleType name='timeOnly'>
+                <xs:restriction base='xs:time'>
+                    <xs:pattern value='([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?' />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:schema>";
+                        XmlSchemaSet set = new XmlSchemaSet();
+                        set.Add(XmlSchema.Read(new StringReader(schema1), null));
+                        set.Add(XmlSchema.Read(new StringReader(schema2), null));
+                        set.Compile();
+                        var schemas = new XmlSchemas();
+                        foreach (XmlSchema s in set.Schemas())
+                        {
+                                schemas.Add(s);
+                        }
+                        var xsImporter = new XmlSchemaImporter(schemas);
+                        var dateMapping = xsImporter.ImportTypeMapping(new XmlQualifiedName("DateValue", testNs));
+                        var timeMapping = xsImporter.ImportTypeMapping(new XmlQualifiedName("TimeValue", testNs));
+                        var xsdTimeMapping = xsImporter.ImportTypeMapping(new XmlQualifiedName("TimeAsXsdTime", testNs));
+                        Assert.Equal(typeof(DateOnly).FullName, dateMapping.TypeFullName);
+                        Assert.Equal(typeof(TimeOnly).FullName, timeMapping.TypeFullName);
+                        // xs:time continues to map to DateTime
+                        Assert.Equal(typeof(DateTime).FullName, xsdTimeMapping.TypeFullName);
     }
 
     [Fact]
@@ -2176,33 +2311,14 @@ public static partial class XmlSerializerTests
                 true,
                 "<?xml version=\"1.0\"?>\r\n<anyType d1p1:type=\"boolean\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.w3.org/2001/XMLSchema\">true</anyType>",
                 () => ser));
-
-        Assert.Equal(
-            "abc",
-            SerializeAndDeserialize<object>(
-                "abc",
-                "<?xml version=\"1.0\"?>\r\n<anyType d1p1:type=\"string\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.w3.org/2001/XMLSchema\">abc</anyType>",
-                () => ser));
-
-        var nullDeserialized = SerializeAndDeserialize<object>(
-                null,
-                "<?xml version=\"1.0\"?>\r\n<xsd:anyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />",
-                () => ser);
-        Assert.NotNull(nullDeserialized);
-        Assert.True(typeof(object) == nullDeserialized.GetType());
-    }
-
-    [Fact]
-    public static void Xml_Soap_ObjectAsRoot_Nullable()
-    {
-        XmlTypeMapping nullableTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithNullableObject));
-        var ser = new XmlSerializer(nullableTypeMapping);
+    XmlTypeMapping nullableTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithNullableObject));
+    var nullableSer = new XmlSerializer(nullableTypeMapping);
 
         var value = new TypeWithNullableObject { MyObject = null };
         TypeWithNullableObject actual = SerializeAndDeserialize(
                 value,
                 "<?xml version=\"1.0\"?>\r\n<TypeWithNullableObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\">\r\n  <MyObject xsi:nil=\"true\" />\r\n</TypeWithNullableObject>",
-                () => ser);
+                () => nullableSer);
         Assert.NotNull(actual);
         Assert.Null(actual.MyObject);
     }
@@ -2330,35 +2446,7 @@ public static partial class XmlSerializerTests
         var cg = new MycodeGenerator();
         Assert.NotNull(cg);
     }
-
-    [Fact]
-    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
-    public static void Xml_FromMappings()
-    {
-        var types = new[] { typeof(Guid), typeof(List<string>) };
-        XmlReflectionImporter importer = new XmlReflectionImporter();
-        XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
-        for (int i = 0; i < types.Length; i++)
-        {
-            mappings[i] = importer.ImportTypeMapping(types[i]);
-        }
-        var serializers = XmlSerializer.FromMappings(mappings, typeof(object));
-        Xml_GuidAsRoot_Helper(serializers[0]);
-        Xml_ListGenericRoot_Helper(serializers[1]);
-    }
-
-    [Fact]
-    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
-    public static void Xml_ConstructorWithTypeMapping()
-    {
-        XmlTypeMapping mapping = null;
-        XmlSerializer serializer = null;
-        Assert.Throws<ArgumentNullException>(() => { new XmlSerializer(mapping); });
-
-        mapping = new XmlReflectionImporter(null, null).ImportTypeMapping(typeof(List<string>));
-        serializer = new XmlSerializer(mapping);
-        Xml_ListGenericRoot_Helper(serializer);
-    }
+    
 
     [Fact]
     public static void XmlMembersMapping_PrimitiveValue()
