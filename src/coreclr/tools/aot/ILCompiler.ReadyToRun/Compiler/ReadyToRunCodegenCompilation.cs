@@ -414,7 +414,8 @@ namespace ILCompiler
                     perfMapFormatVersion: _perfMapFormatVersion,
                     generateProfileFile: _generateProfileFile,
                     callChainProfile: _profileData.CallChainProfile,
-                    _customPESectionAlignment);
+                    _customPESectionAlignment,
+                    _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -509,7 +510,8 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                customPESectionAlignment: 0);
+                customPESectionAlignment: 0,
+                _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)
