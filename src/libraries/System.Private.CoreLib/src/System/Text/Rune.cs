@@ -780,7 +780,9 @@ namespace System.Text
 
         public bool Equals(Rune other) => Equals(this, other);
 
+#if SYSTEM_PRIVATE_CORELIB
         public bool Equals(Rune other, StringComparison comparisonType) => Equals(this, other, comparisonType);
+#endif
 
         public static bool Equals(Rune left, Rune right)
         {
