@@ -787,6 +787,7 @@ namespace System.Text
             return left == right;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         public static bool Equals(Rune left, Rune right, StringComparison comparisonType)
         {
             if (comparisonType is StringComparison.Ordinal)
@@ -807,6 +808,7 @@ namespace System.Text
             // Compare span equality
             return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
         }
+#endif
 
         public override int GetHashCode() => Value;
 
