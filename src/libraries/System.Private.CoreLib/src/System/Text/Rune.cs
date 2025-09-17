@@ -778,37 +778,28 @@ namespace System.Text
 
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
-        public bool Equals(Rune other) => Equals(this, other);
+        public bool Equals(Rune other) => this == other;
 
 #if SYSTEM_PRIVATE_CORELIB
-        public bool Equals(Rune other, StringComparison comparisonType) => Equals(this, other, comparisonType);
-#endif
-
-        public static bool Equals(Rune left, Rune right)
-        {
-            return left == right;
-        }
-
-#if SYSTEM_PRIVATE_CORELIB
-        public static bool Equals(Rune left, Rune right, StringComparison comparisonType)
+        public bool Equals(Rune other, StringComparison comparisonType)
         {
             if (comparisonType is StringComparison.Ordinal)
             {
-                return left == right;
+                return this == other;
             }
 
-            // Convert left to span
-            Span<char> leftChars = stackalloc char[2];
-            int leftCharsWritten = left.EncodeToUtf16(leftChars);
-            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
+            // Convert this to span
+            Span<char> thisChars = stackalloc char[2];
+            int thisCharsWritten = EncodeToUtf16(thisChars);
+            ReadOnlySpan<char> thisCharsSlice = thisChars[..thisCharsWritten];
 
-            // Convert right to span
-            Span<char> rightChars = stackalloc char[2];
-            int rightCharsWritten = right.EncodeToUtf16(rightChars);
-            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
+            // Convert other to span
+            Span<char> otherChars = stackalloc char[2];
+            int otherCharsWritten = other.EncodeToUtf16(otherChars);
+            ReadOnlySpan<char> otherCharsSlice = otherChars[..otherCharsWritten];
 
             // Compare span equality
-            return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+            return thisCharsSlice.Equals(otherCharsSlice, comparisonType);
         }
 #endif
 
