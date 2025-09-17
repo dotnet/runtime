@@ -740,11 +740,7 @@ MAIN_LOOP:
                 case INTOP_STORESTUBCONTEXT:
                 {
                     void *thunkData = GetMostRecentUMEntryThunkData();
-                    if (thunkData == nullptr)
-                    {
-                        assert(!"INTOP_STORESTUBCONTEXT failed to get MostRecentUMEntryThunkData");
-                        COMPlusThrow(kNullReferenceException);
-                    }
+                    assert(thunkData);
                     LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
                     break;
@@ -2289,7 +2285,7 @@ MAIN_LOOP:
                     pFrame->ip = ip;
 
                     PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
-                    NULL_CHECK((void *)calliFunctionPointer);
+                    assert(calliFunctionPointer);
 
                     // Interpreter-FIXME: isTailcall
                     if (flags & (int32_t)CalliFlags::PInvoke)
