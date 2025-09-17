@@ -15706,8 +15706,6 @@ namespace System.Text
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Text.Rune other) { throw null; }
         public bool Equals(System.Text.Rune other, System.StringComparison comparisonType) { throw null; }
-        public static bool Equals(System.Text.Rune left, System.Text.Rune right) { throw null; }
-        public static bool Equals(System.Text.Rune left, System.Text.Rune right, StringComparison comparisonType) { throw null; }
         public override int GetHashCode() { throw null; }
         public static double GetNumericValue(System.Text.Rune value) { throw null; }
         public static System.Text.Rune GetRuneAt(string input, int index) { throw null; }
