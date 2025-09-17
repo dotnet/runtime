@@ -248,24 +248,27 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
 GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
 {
-    assert(binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT));
+    assert(binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT, TYP_LONG));
+    var_types type = binOp->gtType;
 
     GenTree* binOp1 = binOp->gtGetOp1();
     GenTree* binOp2 = binOp->gtGetOp2();
 
-    if (binOp1->OperIs(GT_LCL_VAR) && binOp2->OperIs(GT_MUL) && binOp1->TypeIs(TYP_INT) && binOp2->TypeIs(TYP_INT))
+    if (binOp1->OperIs(GT_LCL_VAR) && binOp2->OperIs(GT_MUL) && binOp1->TypeIs(TYP_INT, TYP_LONG) &&
+        binOp2->TypeIs(TYP_INT, TYP_LONG))
     {
         GenTree* binOp21 = binOp2->gtGetOp1();
         GenTree* binOp22 = binOp2->gtGetOp2();
 
-        if (binOp21->OperIs(GT_DIV, GT_UDIV) && binOp22->OperIs(GT_LCL_VAR) && binOp21->TypeIs(TYP_INT) &&
-            binOp22->TypeIs(TYP_INT))
+        if (binOp21->OperIs(GT_DIV, GT_UDIV) && binOp22->OperIs(GT_LCL_VAR) && binOp21->TypeIs(TYP_INT, TYP_LONG) &&
+            binOp22->TypeIs(TYP_INT, TYP_LONG))
         {
             GenTree* binOp211 = binOp21->gtGetOp1();
             GenTree* binOp212 = binOp21->gtGetOp2();
 
-            if (binOp211->OperIs(GT_LCL_VAR) && binOp212->OperIs(GT_LCL_VAR) && binOp211->TypeIs(TYP_INT) &&
-                binOp212->TypeIs(TYP_INT) && binOp211->AsLclVar()->GetLclNum() == binOp1->AsLclVar()->GetLclNum() &&
+            if (binOp211->OperIs(GT_LCL_VAR) && binOp212->OperIs(GT_LCL_VAR) && binOp211->TypeIs(TYP_INT, TYP_LONG) &&
+                binOp212->TypeIs(TYP_INT, TYP_LONG) &&
+                binOp211->AsLclVar()->GetLclNum() == binOp1->AsLclVar()->GetLclNum() &&
                 binOp212->AsLclVar()->GetLclNum() == binOp22->AsLclVar()->GetLclNum())
             {
                 LIR::Use use;
@@ -277,7 +280,7 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                 GenTree*   modeOp1 = comp->gtClone(binOp211);
                 GenTree*   modeOp2 = comp->gtClone(binOp212);
                 GenTreeOp* loweredNode =
-                    comp->gtNewOperNode(binOp21->OperIs(GT_UDIV) ? GT_UMOD : GT_MOD, TYP_INT, modeOp1, modeOp2);
+                    comp->gtNewOperNode(binOp21->OperIs(GT_UDIV) ? GT_UMOD : GT_MOD, type, modeOp1, modeOp2);
                 BlockRange().InsertBefore(binOp->gtNext, loweredNode);
                 BlockRange().InsertBefore(loweredNode, modeOp2);
                 BlockRange().InsertBefore(modeOp2, modeOp1);
@@ -361,7 +364,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     }
 #endif // TARGET_AMD64
 
-    if (binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT))
+    if (binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT, TYP_LONG))
     {
         GenTree* replacementNode = TryLowerMorphedModIfNotCsed(binOp);
         if (replacementNode != nullptr)
