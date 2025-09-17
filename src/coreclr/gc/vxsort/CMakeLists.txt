@@ -35,7 +35,7 @@ if(CLR_CMAKE_TARGET_ARCH_ARM64)
 set (VXSORT_TARGET_SOURCES
   do_vxsort_neon.cpp
   machine_traits.neon.cpp
-  smallsort/bitonic_sort.scalar.uint32_t.generated.cpp
+  smallsort/bitonic_sort.NEON.uint32_t.generated.cpp
   smallsort/bitonic_sort.scalar.uint64_t.generated.cpp
 )
 endif(CLR_CMAKE_TARGET_ARCH_ARM64)

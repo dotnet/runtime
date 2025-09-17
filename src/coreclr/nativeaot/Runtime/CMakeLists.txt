@@ -207,7 +207,7 @@ set (VXSORT_SOURCES
     ${GC_DIR}/vxsort/isa_detection.cpp
     ${GC_DIR}/vxsort/do_vxsort_neon.cpp
     ${GC_DIR}/vxsort/machine_traits.neon.cpp
-    ${GC_DIR}/vxsort/smallsort/bitonic_sort.scalar.uint32_t.generated.cpp
+    ${GC_DIR}/vxsort/smallsort/bitonic_sort.NEON.uint32_t.generated.cpp
     ${GC_DIR}/vxsort/smallsort/bitonic_sort.scalar.uint64_t.generated.cpp
 )
 endif (CLR_CMAKE_TARGET_ARCH_ARM64)

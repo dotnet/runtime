@@ -201,9 +201,7 @@ public:
         type = self.type
         vt = self.bitonic_type_map[type];
         ft = self.bitonic_func_suffix_type_map[type];
-        # return f"vandq_{ft}(vmvn_{ft}({value}), mask)"
         g = self
-        #     __attribute__((target("general-regs-only")))
 
         for m in range(1, g.max_bitonic_sort_vectors() + 1):
             s = f"""

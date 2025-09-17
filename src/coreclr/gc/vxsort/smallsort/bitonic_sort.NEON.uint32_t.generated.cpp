@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "bitonic_sort.scalar.uint32_t.generated.h"
+#include "bitonic_sort.NEON.uint32_t.generated.h"
 
 using namespace vxsort;
 
-void vxsort::smallsort::bitonic<uint32_t, vector_machine::scalar >::sort(uint32_t *ptr, size_t length) {
+void vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::sort(uint32_t *ptr, size_t length) {
     const auto fullvlength = length / N;
     const int remainder = (int) (length - fullvlength * N);
     const auto v = fullvlength + ((remainder > 0) ? 1 : 0);
@@ -29,3 +29,7 @@ void vxsort::smallsort::bitonic<uint32_t, vector_machine::scalar >::sort(uint32_
         case 16: sort_16v_alt(ptr, remainder); break;
     }
 }
+
+    const uint32x4_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::idx  = {0u, 1u, 2u, 3u};
+    const uint32x4_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::maxv = {MAX, MAX, MAX, MAX};
+        

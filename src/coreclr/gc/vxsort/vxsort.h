@@ -200,9 +200,14 @@ private:
 #if defined(TARGET_AMD64)
             bitonic<T, M>::sort(left, length);
 #else
-            // Default to the scalar version
-            // TODO: For 32bit types this could use NEON instead
-            bitonic<T, vector_machine::scalar>::sort(left, length);
+            if (sizeof(T) == 4)
+            {
+                bitonic<T, vector_machine::NEON>::sort(left, length);
+            }
+            else
+            {
+                bitonic<T, vector_machine::scalar>::sort(left, length);
+            }
 #endif
             return;
         }
