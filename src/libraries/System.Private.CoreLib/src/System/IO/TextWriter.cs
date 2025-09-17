@@ -130,10 +130,13 @@ namespace System.IO
             // Convert value to span
             Span<char> chars = stackalloc char[2];
             int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
             // Write span
-            Write(charsSlice);
+            Write(chars[0]);
+            if (charsWritten > 1)
+            {
+                Write(chars[1]);
+            }
         }
 
         // Writes a character array to the text stream. This default method calls
