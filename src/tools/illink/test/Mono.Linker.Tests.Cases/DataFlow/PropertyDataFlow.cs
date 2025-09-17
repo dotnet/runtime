@@ -288,8 +288,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             private Type PropertyWithDifferentBackingFields_SetterField;
 
             // Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
-            [ExpectedWarning("IL2042",
-                "Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithDifferentBackingFields", Tool.Trimmer | Tool.NativeAot, "Requires IL")]
             [ExpectedWarning("IL2078",
                 nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWithDifferentBackingFields) + ".get",
                 "Type", Tool.Analyzer, "")]
