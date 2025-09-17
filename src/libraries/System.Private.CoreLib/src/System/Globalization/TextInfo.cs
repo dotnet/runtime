@@ -503,6 +503,7 @@ namespace System.Globalization
                 return new Rune(lowerChar);
             }
         }
+
         public Rune ToUpper(Rune value)
         {
             // Convert rune to span
