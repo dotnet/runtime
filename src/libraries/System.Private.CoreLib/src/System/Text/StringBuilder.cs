@@ -2850,7 +2850,8 @@ namespace System.Text
             {
                 return value;
             }
-            throw new Exception($"Unable to get rune at {index}.");
+            ThrowHelper.ThrowIndexOutOfRangeException();
+            return default;
         }
 
         public bool TryGetRuneAt(int index, out Rune value)
