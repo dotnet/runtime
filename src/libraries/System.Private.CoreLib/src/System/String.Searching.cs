@@ -294,12 +294,12 @@ namespace System
             return IndexOf(value, 0, comparisonType);
         }
 
-        public int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
+        internal int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
             return IndexOf(value, startIndex, Length - startIndex, comparisonType);
         }
 
-        public int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        internal int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
@@ -463,11 +463,11 @@ namespace System
         {
             return LastIndexOf(value, Length - 1, comparisonType);
         }
-        public int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
+        internal int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
             return LastIndexOf(value, startIndex, startIndex, comparisonType);
         }
-        public int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        internal int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
