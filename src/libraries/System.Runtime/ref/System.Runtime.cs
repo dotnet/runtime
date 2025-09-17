@@ -5716,8 +5716,6 @@ namespace System
         public int IndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int IndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
         public int IndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
-        public int IndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
-        public int IndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5754,8 +5752,6 @@ namespace System
         public int LastIndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int LastIndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
         public int LastIndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
-        public int LastIndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
-        public int LastIndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOfAny(char[] anyOf) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
