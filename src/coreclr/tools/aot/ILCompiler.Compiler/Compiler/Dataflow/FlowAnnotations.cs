@@ -592,41 +592,25 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    if (IsAutoProperty(property))
+                    bool backingFieldFound = backingFieldFromGetter is not null
+                        || backingFieldFromSetter is not null;
+                    bool mismatchingBackingField = backingFieldFromGetter is not null
+                        && backingFieldFromSetter is not null
+                        && backingFieldFromGetter != backingFieldFromSetter;
+
+                    if (backingFieldFound
+                        && !mismatchingBackingField
+                        && IsAutoProperty(property))
                     {
-                        FieldDesc? backingField = null;
-                        if ((property.SetMethod is not null
-                                && property.SetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
-                                && backingFieldFromSetter is null)
-                            || (property.GetMethod is not null
-                                && property.GetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
-                                && backingFieldFromGetter is null))
+                        // We either have a single auto-property accessor or both accessors point to the same backing field
+                        FieldDesc backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
+                        if (annotatedFields.Any(a => a.Field == backingField))
                         {
-                            // We failed to find the backing field of an auto-property accessor
-                            _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        }
-                        else if (backingFieldFromGetter is not null && backingFieldFromSetter is not null
-                            && backingFieldFromSetter != backingFieldFromGetter)
-                        {
-                            // We found two different backing fields for the getter and the setter
-                            _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
+                            _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
                         }
                         else
                         {
-                            // We either have a single auto-property accessor or both accessors point to the same backing field
-                            backingField = backingFieldFromSetter ?? backingFieldFromGetter;
-                        }
-
-                        if (backingField != null)
-                        {
-                            if (annotatedFields.Any(a => a.Field == backingField))
-                            {
-                                _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
-                            }
-                            else
-                            {
-                                annotatedFields.Add(new FieldAnnotation(backingField, annotation));
-                            }
+                            annotatedFields.Add(new FieldAnnotation(backingField, annotation));
                         }
                     }
                 }
