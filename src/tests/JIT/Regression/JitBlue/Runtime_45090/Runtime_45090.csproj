@@ -5,7 +5,7 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <!-- Tests uses GCStress C that is not compatible with the interpreter -->
+    <!-- Test uses GCStress C that is not compatible with the interpreter -->
     <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
