@@ -19,7 +19,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _size = -1;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.Win32ResourcesSection;
+            return ObjectNodeSection.ReadOnlyDataSection;
+        }
 
         public override bool IsShareable => false;
 

@@ -66,6 +66,13 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
+            if (section == ObjectNodeSection.ManagedCodeWindowsContentSection)
+            {
+                // Put managed code in the .text section in the PE.
+                // Having executable code in other sections makes AVs and other tools unhappy.
+                base.CreateSection(ObjectNodeSection.TextSection, comdatName, symbolName, sectionStream);
+                return;
+            }
             // COMDAT sections are not supported in PE files
             base.CreateSection(section, comdatName: null, symbolName, sectionStream);
         }

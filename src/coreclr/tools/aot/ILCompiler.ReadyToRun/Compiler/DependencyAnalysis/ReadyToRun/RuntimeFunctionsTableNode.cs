@@ -23,6 +23,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nodeFactory = nodeFactory;
         }
 
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.PDataSection;
+            else
+                return ObjectNodeSection.DataSection;
+        }
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);

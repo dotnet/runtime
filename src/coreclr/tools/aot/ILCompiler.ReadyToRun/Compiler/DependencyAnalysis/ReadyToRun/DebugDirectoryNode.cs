@@ -52,7 +52,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.DebugDirectorySection;
+            return ObjectNodeSection.TextSection;
+        }
 
         public override bool IsShareable => false;
 
