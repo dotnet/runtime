@@ -370,7 +370,7 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 
   In this case, we report the actual interop MethodDesc. A pointer to the MethodDesc immediately follows the InlinedCallFrame in memory.
 This API is implemeted as follows:
-1. Try to get the current frame address `framePtr` with `GetFrameAddress`. 
+1. Try to get the current frame address `framePtr` with `GetFrameAddress`.
 2. If the address is not null, compute `reportInteropMD` as listed above. Otherwise skip to step 5.
 3. If `reportInteropMD`, dereference the pointer immediately following the InlinedCallFrame and return that value.
 4. If `!reportIteropMD`, return `GetMethodDescPtr(framePtr)`.
