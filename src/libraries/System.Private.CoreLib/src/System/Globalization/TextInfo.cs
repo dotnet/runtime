@@ -488,18 +488,17 @@ namespace System.Globalization
             // Convert rune to span
             Span<char> chars = stackalloc char[2];
             int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
             // Change span to lower and convert to rune
-            if (charsSlice.Length == 2)
+            if (charsWritten == 2)
             {
                 Span<char> lowerChars = stackalloc char[2];
-                ToLower(charsSlice, lowerChars);
+                ToLower(chars, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
             else
             {
-                char lowerChar = ToLower(charsSlice[0]);
+                char lowerChar = ToLower(chars[0]);
                 return new Rune(lowerChar);
             }
         }
@@ -509,18 +508,17 @@ namespace System.Globalization
             // Convert rune to span
             Span<char> chars = stackalloc char[2];
             int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
             // Change span to upper and convert to rune
-            if (charsSlice.Length == 2)
+            if (charsWritten == 2)
             {
                 Span<char> upperChars = stackalloc char[2];
-                ToUpper(charsSlice, upperChars);
+                ToUpper(chars, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
             else
             {
-                char upperChar = ToUpper(charsSlice[0]);
+                char upperChar = ToUpper(chars[0]);
                 return new Rune(upperChar);
             }
         }
