@@ -374,7 +374,7 @@ This API is implemeted as follows:
 2. If the address is not null, compute `reportInteropMD` as listed above. Otherwise skip to step 5.
 3. If `reportInteropMD`, dereference the pointer immediately following the InlinedCallFrame and return that value.
 4. If `!reportIteropMD`, return `GetMethodDescPtr(framePtr)`.
-5. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed contet, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
+5. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed context, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
 ```csharp
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
 ```
