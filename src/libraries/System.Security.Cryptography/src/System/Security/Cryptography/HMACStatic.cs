@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
     {
         internal static abstract int HashSizeInBytes { get; }
         internal static abstract string HashAlgorithmName { get; }
+        internal static abstract bool IsSupported { get; }
     }
 
     // This class acts as a single implementation of the HMAC classes that the public APIs defer to.
@@ -24,6 +25,8 @@ namespace System.Security.Cryptography
         {
             if (hash.Length != THMAC.HashSizeInBytes)
                 throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, THMAC.HashSizeInBytes), nameof(hash));
+
+            CheckPlatformSupport();
 
             Span<byte> mac = stackalloc byte[THMAC.HashSizeInBytes];
             int written = HashProviderDispenser.OneShotHashProvider.MacData(THMAC.HashAlgorithmName, key, source, mac);
@@ -44,6 +47,7 @@ namespace System.Security.Cryptography
 
         internal static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
         {
+            CheckPlatformSupport();
             byte[] buffer = new byte[THMAC.HashSizeInBytes];
 
             int written = HashData(key, source, buffer.AsSpan());
@@ -64,6 +68,8 @@ namespace System.Security.Cryptography
 
         internal static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
+            CheckPlatformSupport();
+
             if (destination.Length < THMAC.HashSizeInBytes)
             {
                 bytesWritten = 0;
@@ -86,6 +92,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckPlatformSupport();
             return LiteHashProvider.HmacStream(THMAC.HashAlgorithmName, key, source, destination);
         }
 
@@ -96,6 +103,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckPlatformSupport();
             return LiteHashProvider.HmacStream(THMAC.HashAlgorithmName, THMAC.HashSizeInBytes, key, source);
         }
 
@@ -116,6 +124,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckPlatformSupport();
             return LiteHashProvider.HmacStreamAsync(THMAC.HashAlgorithmName, key.Span, source, cancellationToken);
         }
 
@@ -140,6 +149,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckPlatformSupport();
             return LiteHashProvider.HmacStreamAsync(
                 THMAC.HashAlgorithmName,
                 key.Span,
@@ -167,6 +177,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckPlatformSupport();
             Span<byte> mac = stackalloc byte[THMAC.HashSizeInBytes];
             int written = LiteHashProvider.HmacStream(THMAC.HashAlgorithmName, key, source, mac);
             Debug.Assert(written == THMAC.HashSizeInBytes);
@@ -199,6 +210,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckPlatformSupport();
             return VerifyAsyncInner(key, source, hash, cancellationToken);
 
             static async ValueTask<bool> VerifyAsyncInner(
@@ -235,6 +247,12 @@ namespace System.Security.Cryptography
             // source parameter check is done in called overload.
 
             return VerifyAsync(new ReadOnlyMemory<byte>(key), source, new ReadOnlyMemory<byte>(hash), cancellationToken);
+        }
+
+        internal static void CheckPlatformSupport()
+        {
+            if (!THMAC.IsSupported)
+                throw new PlatformNotSupportedException();
         }
     }
 }

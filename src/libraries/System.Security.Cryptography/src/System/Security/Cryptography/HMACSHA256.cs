@@ -21,6 +21,7 @@ namespace System.Security.Cryptography
         {
             static int IHMACStatic.HashSizeInBytes => HashSizeInBytes;
             static string IHMACStatic.HashAlgorithmName => HashAlgorithmNames.SHA256;
+            static bool IHMACStatic.IsSupported => true;
         }
 
         /// <summary>

@@ -21,6 +21,10 @@ namespace System.Security.Cryptography
         {
             static int IHMACStatic.HashSizeInBytes => HashSizeInBytes;
             static string IHMACStatic.HashAlgorithmName => HashAlgorithmNames.MD5;
+
+            // Even though MD5 is not supported on browser, we return true and let it act as an unknown algorithm
+            // instead of an unsupported algorithm.
+            static bool IHMACStatic.IsSupported => true;
         }
 
         /// <summary>
