@@ -44,6 +44,7 @@ namespace ILCompiler.ObjectWriter
         // Emitted Symbol Table info
         private sealed record PESymbol(string Name, uint Offset);
         private readonly List<PESymbol> _exportedPESymbols = new();
+        private readonly int? _sectionAlignment;
 
         // Note: Sections are emitted in the order provided by _sections.
         // Grouping/merging of sections by base name (suffixes like '$') has been
@@ -51,7 +52,7 @@ namespace ILCompiler.ObjectWriter
 
         private HashSet<string> _exportedSymbolNames = new();
 
-        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int? sectionAlignment = null)
             : base(factory, options)
         {
         }
@@ -64,14 +65,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
-            if (section == ObjectNodeSection.ManagedCodeWindowsContentSection)
+            // COMDAT sections are not supported in PE files
+            base.CreateSection(section, comdatName: null, symbolName, sectionIndex, sectionStream);
+
+            if (_sectionAlignment is { } alignment)
             {
-                // Put managed code in the .text section in the PE.
-                // Having executable code in other sections makes AVs and other tools unhappy.
-                base.CreateSection(ObjectNodeSection.TextSection, comdatName, symbolName, sectionStream);
-                return;
+                UpdateSectionAlignment(sectionIndex, alignment);
             }
             // COMDAT sections are not supported in PE files
             base.CreateSection(section, comdatName: null, symbolName, sectionStream);

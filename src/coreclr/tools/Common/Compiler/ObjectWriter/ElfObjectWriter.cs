@@ -69,12 +69,11 @@ namespace ILCompiler.ObjectWriter
             _symbols.Add(new ElfSymbol {});
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
             string sectionName =
                 section.Name == "rdata" ? ".rodata" :
                 (section.Name.StartsWith('_') || section.Name.StartsWith('.') ? section.Name : "." + section.Name);
-            int sectionIndex = _sections.Count;
             uint type = 0;
             uint flags = 0;
             ElfSectionDefinition groupSection = null;
@@ -175,7 +174,7 @@ namespace ILCompiler.ObjectWriter
                 });
             }
 
-            base.CreateSection(section, comdatName, symbolName ?? sectionName, sectionStream);
+            base.CreateSection(section, comdatName, symbolName ?? sectionName, sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)

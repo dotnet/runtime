@@ -18,6 +18,7 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using System.Security.Cryptography;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -54,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Nodes to emit into the output executable as collected by the dependency analysis.
         /// </summary>
-        private readonly IEnumerable<DependencyNode> _nodes;
+        private readonly IReadOnlyCollection<DependencyNode> _nodes;
 
         /// <summary>
         /// Set to non-null when the executable generator should output a map or symbol file.
@@ -139,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
             string objectFilePath,
             EcmaModule componentModule,
             IEnumerable<string> inputFiles,
-            IEnumerable<DependencyNode> nodes,
+            IReadOnlyCollection<DependencyNode> nodes,
             NodeFactory factory,
             bool generateMapFile,
             bool generateMapCsvFile,
@@ -188,6 +189,18 @@ namespace ILCompiler.DependencyAnalysis
                     _profileFileBuilder = new ProfileFileBuilder(_outputInfoBuilder, callChainProfile, _nodeFactory.Target);
                 }
             }
+        }
+
+        public void WritePortableExecutableObject(Logger logger)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment == 0 ? null : _customPESectionAlignment);
+            objectWriter.EmitObject(_objectFilePath, _nodes, new NoopObjectDumper(), logger);
+
+            stopwatch.Stop();
+            if (logger.IsVerbose)
+                logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
         }
 
         public void EmitPortableExecutable()
@@ -515,7 +528,7 @@ namespace ILCompiler.DependencyAnalysis
             string objectFilePath,
             EcmaModule componentModule,
             IEnumerable<string> inputFiles,
-            IEnumerable<DependencyNode> nodes,
+            IReadOnlyCollection<DependencyNode> nodes,
             NodeFactory factory,
             bool generateMapFile,
             bool generateMapCsvFile,
@@ -526,7 +539,8 @@ namespace ILCompiler.DependencyAnalysis
             int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
-            int customPESectionAlignment)
+            int customPESectionAlignment,
+            Logger logger)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(
@@ -546,6 +560,12 @@ namespace ILCompiler.DependencyAnalysis
                 callChainProfile,
                 customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
+        }
+
+        private sealed class NoopObjectDumper : IObjectDumper
+        {
+            public void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData) { }
+            public void ReportFoldedNode(NodeFactory factory, ObjectNode originalNode, ISymbolNode targetNode) { }
         }
     }
 }

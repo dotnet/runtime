@@ -299,7 +299,7 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -354,11 +354,9 @@ namespace ILCompiler.ObjectWriter
                 Log2Alignment = 1,
                 Flags = flags,
             };
-
-            int sectionIndex = _sections.Count;
             _sections.Add(machSection);
 
-            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionStream);
+            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)

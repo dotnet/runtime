@@ -54,7 +54,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        private protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream);
+        private protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
 
@@ -81,7 +81,7 @@ namespace ILCompiler.ObjectWriter
             {
                 sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
                 sectionIndex = _sectionIndexToData.Count;
-                CreateSection(section, comdatName, symbolName, sectionData.GetReadStream());
+                CreateSection(section, comdatName, symbolName, sectionIndex, sectionData.GetReadStream());
                 _sectionIndexToData.Add(sectionData);
                 _sectionIndexToRelocations.Add(new());
                 if (comdatName is null)
@@ -291,7 +291,7 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
-        private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
+        public void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);

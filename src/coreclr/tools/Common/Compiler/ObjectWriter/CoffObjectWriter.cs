@@ -75,7 +75,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
             var sectionHeader = new CoffSectionHeader
             {
@@ -114,8 +114,7 @@ namespace ILCompiler.ObjectWriter
                 // We find the defining section of the COMDAT symbol. That one is marked
                 // as "ANY" selection type. All the other ones are marked as associated.
                 bool isPrimary = Equals(comdatName, symbolName);
-                uint sectionIndex = (uint)_sections.Count + 1u;
-                uint definingSectionIndex = isPrimary ? sectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
+                uint definingSectionIndex = isPrimary ? (uint)sectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
 
                 var auxRecord = new CoffSectionSymbol
                 {
@@ -133,7 +132,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Name = sectionHeader.Name,
                     Value = 0,
-                    SectionIndex = sectionIndex,
+                    SectionIndex = (uint)sectionIndex,
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     NumberOfAuxiliaryRecords = 1,
                 });
@@ -146,7 +145,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         Name = symbolName,
                         Value = 0,
-                        SectionIndex = sectionIndex,
+                        SectionIndex = (uint)sectionIndex,
                         StorageClass = isPrimary ? CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL : CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     });
                 }

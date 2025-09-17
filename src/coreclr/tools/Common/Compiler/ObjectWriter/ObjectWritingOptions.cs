@@ -8,6 +8,7 @@ namespace ILCompiler.ObjectWriter
     [Flags]
     public enum ObjectWritingOptions
     {
+        None = 0x00,
         GenerateDebugInfo = 0x01,
         ControlFlowGuard = 0x02,
         UseDwarf5 = 0x4,

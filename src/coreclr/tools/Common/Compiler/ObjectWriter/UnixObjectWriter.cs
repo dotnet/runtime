@@ -30,7 +30,7 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
             if (section.Type != SectionType.Debug &&
                 section != LsdaSection &&
