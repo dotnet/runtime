@@ -1,9 +1,9 @@
 <Dependencies>
   <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="26861c107ef3684f67c07456f01096b0d29edad0" BarId="282973" />
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-rc.2.25426.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-rc.2.25466.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>54b6716c6a33a96cdf0980c300514f566b4f181f</Sha>
+      <Sha>4c504bd8f75919cc512c456551f4229847da9e21</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
