@@ -65,7 +65,7 @@ print_implemented_interfaces (MonoClass *klass)
 			i -= 8;
 		}
 	} else {
-		for (guint32 i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7)? 1 :0)); i++)
+		for (guint32 i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7) ? 1 : 0)); i++)
 			printf (" %02X", klass->interface_bitmap [i]);
 	}
 	printf ("\n");

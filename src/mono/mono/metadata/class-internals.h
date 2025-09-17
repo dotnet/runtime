@@ -321,7 +321,7 @@ int mono_class_interface_match_compressed (const uint8_t *bitmap, int id);
 
 #define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
 
-#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && (mono_opt_compressed_interface_bitmap ?mono_class_interface_match_compressed (m_class_get_interface_bitmap (k), (uiid)) : mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid))))
+#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && (mono_opt_compressed_interface_bitmap ? mono_class_interface_match_compressed (m_class_get_interface_bitmap (k), (uiid)) : mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid))))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
