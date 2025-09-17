@@ -178,11 +178,10 @@ namespace System.Xml.Xsl.Xslt
                     else if (name == "format-time")
                     {
                         FunctionInfo.CheckArity(1, 3, name, args.Count);
-                        return _f.InvokeMsFormatDateTime(
+                        return _f.InvokeMSFormatTime(
                             _f.ConvertToString(args[0]),
                             1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),
-                            2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty),
-                            _f.Boolean(true)
+                            2 < args.Count ? _f.ConvertToString(args[2]) : _f.String(string.Empty)
                         );
                     }
                     else if (name == "local-name")

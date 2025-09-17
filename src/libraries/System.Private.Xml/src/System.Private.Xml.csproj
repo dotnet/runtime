@@ -45,9 +45,11 @@
     <Compile Include="System\Xml\Schema\DateAndTime\Converters\DateAndTimeConverter.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Helpers\DateAndTimeInfo.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Helpers\DateInfo.cs" />
+    <Compile Include="System\Xml\Schema\DateAndTime\Helpers\TimeInfo.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Specifications\DateTimeTypeCode.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\Specifications\XsdDateTimeKind.cs" />
     <Compile Include="System\Xml\Schema\DateAndTime\XsdDate.cs" />
+    <Compile Include="System\Xml\Schema\DateAndTime\XsdTime.cs" />
     <None Include="System\Xml\Core\HtmlEncodedRawTextWriter.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>HtmlEncodedRawTextWriter.cs</LastGenOutput>

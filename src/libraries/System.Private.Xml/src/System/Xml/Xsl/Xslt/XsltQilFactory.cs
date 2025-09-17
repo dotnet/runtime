@@ -209,6 +209,16 @@ namespace System.Xml.Xsl.Xslt
             );
         }
 
+        public QilNode InvokeMSFormatTime(QilNode time, QilNode format, QilNode lang)
+        {
+            CheckString(time);
+            CheckString(format);
+            CheckString(lang);
+            return XsltInvokeEarlyBound(QName("ms:format-time"),
+                XsltMethods.MSFormatTime, T.StringX, new QilNode[] { time, format, lang }
+            );
+        }
+
         public QilNode InvokeMsStringCompare(QilNode x, QilNode y, QilNode lang, QilNode options)
         {
             CheckString(x);

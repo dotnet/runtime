@@ -334,6 +334,30 @@ namespace System.Xml.Xsl.Runtime
             }
         }
 
+        /// <summary>
+        /// Format xsd:time as a time string for a given language using a given format string.
+        /// </summary>
+        /// <param name="time">Lexical representation of xsd:time.</param>
+        /// <param name="format">Format string.</param>
+        /// <param name="lang">Specifies a culture used for formatting.</param>
+        /// <returns><paramref name="time"/> formatted as a time string.</returns>
+        public static string MSFormatTime(string time, string format, string lang)
+        {
+            try
+            {
+                if (!XsdTime.TryParse(time, out XsdTime xsdTime))
+                {
+                    return string.Empty;
+                }
+
+                return xsdTime.ToString(format.Length != 0 ? format : null, GetCultureInfo(lang));
+            }
+            catch (ArgumentException)
+            {
+                return string.Empty;
+            }
+        }
+
         public static double MSNumber(IList<XPathItem> value)
         {
             XsltLibrary.CheckXsltValue(value);

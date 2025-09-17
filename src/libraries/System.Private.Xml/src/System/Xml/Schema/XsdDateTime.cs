@@ -94,10 +94,10 @@ namespace System.Xml.Schema
 
         private void InitiateXsdDateTime(DateAndTimeInfo parsedValue)
         {
-            _dt = new DateTime(parsedValue.Date.Year, parsedValue.Date.Month, parsedValue.Date.Day, parsedValue.Hour, parsedValue.Minute, parsedValue.Second);
-            if (parsedValue.Fraction != 0)
+            _dt = new DateTime(parsedValue.Date.Year, parsedValue.Date.Month, parsedValue.Date.Day, parsedValue.Time.Hour, parsedValue.Time.Minute, parsedValue.Time.Second);
+            if (parsedValue.Time.Fraction != 0)
             {
-                _dt = _dt.AddTicks(parsedValue.Fraction);
+                _dt = _dt.AddTicks(parsedValue.Time.Fraction);
             }
             _extra = (uint)(((int)parsedValue.TypeCode << TypeShift) | ((int)parsedValue.Kind << KindShift) | (parsedValue.ZoneHour << ZoneHourShift) | parsedValue.ZoneMinute);
         }
