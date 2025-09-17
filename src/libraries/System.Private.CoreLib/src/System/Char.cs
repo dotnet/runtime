@@ -129,7 +129,7 @@ namespace System
             return m_value == obj;
         }
 
-        public bool Equals(char right, StringComparison comparisonType)
+        internal bool Equals(char right, StringComparison comparisonType)
         {
             switch (comparisonType)
             {
