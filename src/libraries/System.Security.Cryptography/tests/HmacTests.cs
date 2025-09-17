@@ -1247,11 +1247,15 @@ namespace System.Security.Cryptography.Tests
             CancellationToken cancelledToken = new(true);
             byte[] hash = new byte[THmacTrait.HashSizeInBytes];
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                async () => await VerifyAsync(Array.Empty<byte>(), Stream.Null, hash, cancelledToken));
+            ValueTask<bool> arrayVerify = VerifyAsync(Array.Empty<byte>(), Stream.Null, hash, cancelledToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await arrayVerify);
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                async () => await VerifyAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, new ReadOnlyMemory<byte>(hash), cancelledToken));
+            ValueTask<bool> memoryVerify = VerifyAsync(
+                ReadOnlyMemory<byte>.Empty,
+                Stream.Null,
+                new ReadOnlyMemory<byte>(hash),
+                cancelledToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await memoryVerify);
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -1260,21 +1264,22 @@ namespace System.Security.Cryptography.Tests
             CancellationToken cancelledToken = new(true);
             byte[] hash = new byte[THmacTrait.HashSizeInBytes];
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                async () => await CryptographicOperations.VerifyHmacAsync(
-                    HashAlgorithm,
-                    Array.Empty<byte>(),
-                    Stream.Null,
-                    hash,
-                    cancelledToken));
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                async () => await CryptographicOperations.VerifyHmacAsync(
-                    HashAlgorithm,
-                    ReadOnlyMemory<byte>.Empty,
-                    Stream.Null,
-                    new ReadOnlyMemory<byte>(hash),
-                    cancelledToken));
+            ValueTask<bool> arrayVerify = CryptographicOperations.VerifyHmacAsync(
+                HashAlgorithm,
+                Array.Empty<byte>(),
+                Stream.Null,
+                hash,
+                cancelledToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await arrayVerify);
+
+            ValueTask<bool> memoryVerify = CryptographicOperations.VerifyHmacAsync(
+                HashAlgorithm,
+                ReadOnlyMemory<byte>.Empty,
+                Stream.Null,
+                new ReadOnlyMemory<byte>(hash),
+                cancelledToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await memoryVerify);
         }
 
         [ConditionalFact(nameof(IsSupported))]
