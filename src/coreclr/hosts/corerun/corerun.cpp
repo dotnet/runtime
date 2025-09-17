@@ -490,12 +490,18 @@ static int run(const configuration& config)
         coreclr_set_error_writer_func(log_error_info);
     }
 
+    int result;
 #ifdef TARGET_WASM
     // install the pinvoke override callback to resolve p/invokes to statically linked libraries
     wasm_add_pinvoke_override();
+    result = wasm_load_icu_data(entry_assembly_utf8.c_str());
+    if (result != 1)
+    {
+        std::fprintf(stderr, "Failed to load the ICU data\n");
+        return -1;
+    }
 #endif
 
-    int result;
     result = coreclr_init_func(
         exe_path_utf8.c_str(),
         "corerun",
