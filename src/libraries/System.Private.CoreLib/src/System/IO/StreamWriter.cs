@@ -103,10 +103,11 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
 
-            if (bufferSize != -1)
+            if (bufferSize == -1)
             {
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+                bufferSize = DefaultBufferSize;
             }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             _stream = stream;
             _encoding = encoding ?? UTF8NoBOM;

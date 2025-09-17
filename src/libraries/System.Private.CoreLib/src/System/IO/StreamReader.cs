@@ -147,10 +147,11 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
             }
 
-            if (bufferSize != -1)
+            if (bufferSize == -1)
             {
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+                bufferSize = DefaultBufferSize;
             }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             _stream = stream;
             _encoding = encoding ??= Encoding.UTF8;
