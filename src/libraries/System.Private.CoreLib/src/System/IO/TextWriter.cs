@@ -575,25 +575,20 @@ namespace System.IO
 
         public virtual Task WriteAsync(Rune value)
         {
-            // Convert value to span
             Span<char> chars = stackalloc char[2];
             int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
-            // Write chars individually (can't use span with async)
-            if (charsSlice.Length == 2)
+            if (charsWritten > 1)
             {
-                async Task WriteAsyncPair(char highSurrogate, char lowSurrogate)
+                return Task.Factory.StartNew(static state =>
                 {
-                    await WriteAsync(highSurrogate).ConfigureAwait(false);
-                    await WriteAsync(lowSurrogate).ConfigureAwait(false);
-                }
-                return WriteAsyncPair(charsSlice[0], charsSlice[1]);
+                    var t = (TupleSlim<TextWriter, char, char>)state!;
+                    t.Item1.Write(t.Item2);
+                    t.Item1.Write(t.Item3);
+                }, new TupleSlim<TextWriter, char, char>(this, chars[0], chars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
-            else
-            {
-                return WriteAsync(charsSlice[0]);
-            }
+
+            return WriteAsync(chars[0]);
         }
 
         public virtual Task WriteAsync(string? value) =>
