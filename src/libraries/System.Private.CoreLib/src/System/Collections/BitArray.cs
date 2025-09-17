@@ -943,6 +943,8 @@ namespace System.Collections
             return (_array[byteCount] & mask) != 0;
         }
 
+        /// <summary>Computes the number of bits that are set in the <see cref="BitArray"/>.</summary>
+        /// <returns>The number of set bits in the <see cref="BitArray"/>.</returns>
         public int PopCount()
         {
             int count = 0;
@@ -951,6 +953,8 @@ namespace System.Collections
             return count;
         }
 
+        /// <summary>Computes the number of trailing zero bits in the <see cref="BitArray"/>.</summary>
+        /// <returns>The number of trailing zero bits in the <see cref="BitArray"/>.</returns>
         public int TrailingZeroCount()
         {
             int count = 0;
@@ -965,6 +969,8 @@ namespace System.Collections
             return _bitLength;
         }
 
+        /// <summary>Computes the number of leading zero bits in the <see cref="BitArray"/>.</summary>
+        /// <returns>The number of leading zero bits in the <see cref="BitArray"/>.</returns>
         public int LeadingZeroCount()
         {
             int count = _bitLength - _array.Length * BitsPerByte; // offset for extra bits beyond _bitLength
