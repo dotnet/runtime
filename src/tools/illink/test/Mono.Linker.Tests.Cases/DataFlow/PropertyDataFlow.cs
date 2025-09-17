@@ -959,7 +959,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             private Type Property_BackingField;
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type Property
             {
                 [CompilerGenerated]
@@ -980,7 +979,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyAutoSet
             {
                 [CompilerGenerated]
@@ -995,10 +993,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyAutoGet
             {
-                [ExpectedWarning("IL2078", ["return value", nameof(PropertyAutoGet), "BackingField"], producedBy: Tool.NativeAot | Tool.Trimmer, "Requires IL")]
                 get;
                 [CompilerGenerated]
                 set
@@ -1010,7 +1006,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyManualSet
             {
                 [CompilerGenerated]
@@ -1025,7 +1020,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyManualGet
             {
                 [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
@@ -1040,7 +1034,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyOnlyGet
             {
                 [CompilerGenerated]
@@ -1054,7 +1047,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", nameof(PropertyOnlySet), Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyOnlySet
             {
                 [CompilerGenerated]

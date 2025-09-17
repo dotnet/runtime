@@ -592,21 +592,18 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    bool backingFieldFound = backingFieldFromGetter is not null
-                        || backingFieldFromSetter is not null;
-                    bool mismatchingBackingField = backingFieldFromGetter is not null
-                        && backingFieldFromSetter is not null
-                        && backingFieldFromGetter != backingFieldFromSetter;
-
-                    if (backingFieldFound
-                        && !mismatchingBackingField
-                        && IsAutoProperty(property))
+                    FieldDesc backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
+                    if (backingField is not null)
                     {
-                        // We either have a single auto-property accessor or both accessors point to the same backing field
-                        FieldDesc backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
                         if (annotatedFields.Any(a => a.Field == backingField))
                         {
                             _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                        }
+                        else if (backingFieldFromGetter is not null
+                            && backingFieldFromSetter is not null
+                            && backingFieldFromGetter != backingFieldFromSetter)
+                        {
+                            _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
                         }
                         else
                         {

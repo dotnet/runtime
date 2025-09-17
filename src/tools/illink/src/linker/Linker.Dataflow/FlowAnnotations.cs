@@ -433,20 +433,19 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    bool backingFieldFound = backingFieldFromGetter is not null
-                        || backingFieldFromSetter is not null;
-                    bool mismatchingBackingField = backingFieldFromGetter is not null
-                        && backingFieldFromSetter is not null
-                        && backingFieldFromGetter != backingFieldFromSetter;
 
-                    if (backingFieldFound
-                        && !mismatchingBackingField
-                        && IsAutoProperty(property))
+                    FieldDefinition backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
+                    if (backingField is not null)
                     {
-                        FieldDefinition backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
                         if (annotatedFields.Any(a => a.Field == backingField))
                         {
                             _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                        }
+                        else if (backingFieldFromGetter is not null
+                            && backingFieldFromSetter is not null
+                            && backingFieldFromGetter != backingFieldFromSetter)
+                        {
+                            _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
                         }
                         else
                         {
