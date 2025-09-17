@@ -488,9 +488,9 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
-                helix_queue = "OSX.1200.ARM64"
+                helix_queue = "OSX.13.ARM64"
             else: # internal osx_x64
-                helix_queue = "OSX.1200.Amd64"
+                helix_queue = "OSX.13.Amd64"
 
     # Copy the superpmi scripts
 
