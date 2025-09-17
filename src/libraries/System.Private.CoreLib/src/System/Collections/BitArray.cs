@@ -949,7 +949,10 @@ namespace System.Collections
         {
             int count = 0;
             foreach (byte b in _array)
+            {
                 count += byte.PopCount(b);
+            }
+
             return count;
         }
 
@@ -958,10 +961,10 @@ namespace System.Collections
         public int TrailingZeroCount()
         {
             int count = 0;
-            for (int i = 0; i < _array.Length; i++)
+            foreach (byte b in _array)
             {
-                if (_array[i] != 0)
-                    return byte.TrailingZeroCount(_array[i]) + count;
+                if (b != 0)
+                    return byte.TrailingZeroCount(b) + count;
 
                 count += BitsPerByte;
             }
