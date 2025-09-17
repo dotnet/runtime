@@ -362,10 +362,16 @@ namespace System.IO
             // Convert value to span
             Span<char> chars = stackalloc char[2];
             int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
 
-            // Write span
-            WriteLine(charsSlice);
+            if (charsWritten > 1)
+            {
+                Write(chars[0]);
+                WriteLine(chars[1]);
+            }
+            else
+            {
+                WriteLine(chars[0]);
+            }
         }
 
         // Writes an array of characters followed by a line terminator to the text
