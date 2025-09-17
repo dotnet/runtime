@@ -90,7 +90,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Codesigned file
             File.Copy(filePath, codesignFilePath);
             Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-            var (exitCode, stdErr) = Codesign.Run("-s - -f --preserve-metadata=entitlements -i" + fileName, codesignFilePath);
+            var (exitCode, stdErr) = Codesign.Run("-s - -f -i " + fileName, codesignFilePath);
             Assert.Equal(0, exitCode);
 
             // Managed signed file
@@ -138,41 +138,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 resignedObject.AdHocSignFile(signedMachFile, filePath);
                 MachObjectFile.AssertEquivalent(signedObject, resignedObject);
             }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void SigningAppHostPreservesEntitlements()
-        {
-            using var testDirectory = TestArtifact.Create(nameof(SigningAppHostPreservesEntitlements));
-            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
-            File.Copy(Binaries.AppHost.FilePath, testAppHostPath);
-            string signedHostPath = testAppHostPath + ".signed";
-
-            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
-
-            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasEntitlementsBlob(signedHostPath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(signedHostPath));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void BundledAppHostHasEntitlements()
-        {
-            using var testDirectory = TestArtifact.Create(nameof(BundledAppHostHasEntitlements));
-            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.SingleFileHost.FilePath));
-            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
-            string signedHostPath = testAppHostPath + ".signed";
-
-            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
-            var bundlePath = new Bundler(Path.GetFileName(signedHostPath), testAppHostPath + ".bundle").GenerateBundle([new(signedHostPath, Path.GetFileName(signedHostPath))]);
-
-            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasEntitlementsBlob(bundlePath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(bundlePath));
         }
 
         [Fact]
@@ -325,26 +290,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         public static bool IsMachOImage(string filePath) => MachObjectFile.IsMachOImage(filePath);
-
-        public static bool HasEntitlementsBlob(string filePath)
-        {
-            using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open))
-            using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-            {
-                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                return machObjectFile.EmbeddedSignatureBlob?.EntitlementsBlob != null;
-            }
-        }
-
-        public static bool HasDerEntitlementsBlob(string filePath)
-        {
-            using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open))
-            using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-            {
-                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                return machObjectFile.EmbeddedSignatureBlob?.DerEntitlementsBlob != null;
-            }
-        }
 
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
 
