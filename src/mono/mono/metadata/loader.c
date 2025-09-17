@@ -36,6 +36,7 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/class-init.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/components.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/profiler-private.h>
@@ -1370,6 +1371,13 @@ mono_free_method  (MonoMethod *method)
 		return;
 
 	MONO_PROFILER_RAISE (method_free, (method));
+
+	// EventPipe might require information about methods to be stored throughout
+	// entire app execution, so stack traces can be resolved at a later time.
+	// Same for debugger, we are being overly conservative
+	if (mono_component_event_pipe ()->component.available () ||
+			mono_component_debugger ()->component.available ())
+		return;
 
 	if (method->signature) {
 		/*
