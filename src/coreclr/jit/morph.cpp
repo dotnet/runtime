@@ -7407,7 +7407,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             // when 'b' is not a power of 2 constant and mod operator is signed.
             // Lowering for XARCH does this optimization already,
             // but is also done here to take advantage of CSE.
-            else if (op1->OperIs(GT_LCL_VAR) && (!op2->IsIntegralConst() || !op2->IsIntegralConstAbsPow2()))
+            else if (op1->OperIs(GT_LCL_VAR) && (op2->OperIs(GT_LCL_VAR) || op2->IsIntegralConstAbsPow2()))
 #endif
             {
                 // Transformation: a % b = a - (a / b) * b;
