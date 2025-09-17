@@ -302,7 +302,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return factory.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
+            return factory.Target.IsWindows ? ObjectNodeSection.TextSection;
         }
 
         public FrameInfo[] FrameInfos => _frameInfos;
