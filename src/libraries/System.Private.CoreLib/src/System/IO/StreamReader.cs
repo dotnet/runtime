@@ -102,22 +102,22 @@ namespace System.IO
         }
 
         public StreamReader(Stream stream)
-            : this(stream, true)
+            : this(stream, detectEncodingFromByteOrderMarks: true)
         {
         }
 
         public StreamReader(Stream stream, bool detectEncodingFromByteOrderMarks)
-            : this(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize, false)
+            : this(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize, leaveOpen: false)
         {
         }
 
         public StreamReader(Stream stream, Encoding? encoding)
-            : this(stream, encoding, true, DefaultBufferSize, false)
+            : this(stream, encoding, detectEncodingFromByteOrderMarks: true, DefaultBufferSize, leaveOpen: false)
         {
         }
 
         public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
-            : this(stream, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, false)
+            : this(stream, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, leaveOpen: false)
         {
         }
 
@@ -132,7 +132,7 @@ namespace System.IO
         // of those three match, it will use the Encoding you provided.
         //
         public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-            : this(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false)
+            : this(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
         {
         }
 
@@ -178,7 +178,7 @@ namespace System.IO
         }
 
         public StreamReader(string path)
-            : this(path, true)
+            : this(path, detectEncodingFromByteOrderMarks: true)
         {
         }
 
@@ -188,7 +188,7 @@ namespace System.IO
         }
 
         public StreamReader(string path, Encoding? encoding)
-            : this(path, encoding, true, DefaultBufferSize)
+            : this(path, encoding, detectEncodingFromByteOrderMarks: true, DefaultBufferSize)
         {
         }
 
@@ -203,7 +203,7 @@ namespace System.IO
         }
 
         public StreamReader(string path, FileStreamOptions options)
-            : this(path, Encoding.UTF8, true, options)
+            : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, options)
         {
         }
 
