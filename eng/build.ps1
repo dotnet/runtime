@@ -263,8 +263,14 @@ if ($vs) {
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
   # MSBuild Server dogfood.
-  $env:DOTNET_CLI_USE_MSBUILD_SERVER = $env:DOTNET_CLI_USE_MSBUILD_SERVER ?? 1;
-  $env:MSBUILD_USE_SERVER = $env:MSBUILD_USE_SERVER ?? 1;
+  if ($env:DOTNET_CLI_USE_MSBUILD_SERVER -eq $null) 
+  {
+    $env:DOTNET_CLI_USE_MSBUILD_SERVER = 1
+  }
+  if ($env:MSBUILDUSESERVER -eq $null) 
+  {
+    $env:MSBUILDUSESERVER = 1
+  }
 
   # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
   if ($runtimeConfiguration)
