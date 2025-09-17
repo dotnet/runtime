@@ -2278,6 +2278,7 @@ namespace System.Text
         {
             return Replace(oldRune, newRune, 0, Length);
         }
+
         public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
