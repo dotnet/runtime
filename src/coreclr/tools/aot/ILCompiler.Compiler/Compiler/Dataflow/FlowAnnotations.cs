@@ -595,15 +595,20 @@ namespace ILLink.Shared.TrimAnalysis
                     FieldDesc? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
                     if (backingField is not null)
                     {
-                        if (annotatedFields.Any(a => a.Field == backingField))
+                        bool validBackingFieldFound = backingFieldFromGetter is null
+                            || backingFieldFromSetter is null
+                            || backingFieldFromGetter == backingFieldFromSetter;
+                        if (validBackingFieldFound)
                         {
-                            _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
-                        }
-                        else if (!(backingFieldFromGetter is not null
-                            && backingFieldFromSetter is not null
-                            && backingFieldFromGetter != backingFieldFromSetter))
-                        {
-                            annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            if (annotatedFields.Any(a => a.Field == backingField && a.Annotation != annotation))
+                            {
+                                _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                            }
+                            else
+                            {
+                                // Unique backing field with no conflicts with property or existing field
+                                annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            }
                         }
                     }
                 }
