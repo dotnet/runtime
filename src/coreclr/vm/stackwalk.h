@@ -651,23 +651,6 @@ public:
 
 private:
 
-    // For the new exception handling that uses managed code to dispatch the
-    // exceptions, we need to force the stack walker to report GC references
-    // in the exception handling code frames, since they are alive. This is
-    // different from the old exception handling where no frames below the
-    // funclets upto the parent frame are alive.
-    enum class ForceGCReportingStage : BYTE
-    {
-        Off = 0,
-        // The stack walker has hit a funclet, we are looking for the first managed
-        // frame that would be one of the managed exception handling code frames
-        LookForManagedFrame = 1,
-        // The stack walker has already hit a managed exception handling code frame,
-        // we are looking for a marker frame which indicates the native caller of
-        // the managed exception handling code
-        LookForMarkerFrame = 2
-    };
-
     // This is a helper for the two constructors.
     void CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 flags);
 
@@ -760,8 +743,6 @@ private:
     bool          m_fDidFuncletReportGCReferences;
     bool          m_isRuntimeWrappedExceptions;
 #endif // FEATURE_EH_FUNCLETS
-    // State of forcing of GC reference reporting for managed exception handling methods (RhExThrow, RhDispatchEx etc)
-    ForceGCReportingStage m_forceReportingWhileSkipping;
     // The stack walk has moved past the first ExInfo location on the stack
     bool          m_movedPastFirstExInfo;
     // Indicates that no funclet was seen during the current stack walk yet

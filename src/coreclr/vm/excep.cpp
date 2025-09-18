@@ -6187,7 +6187,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &pCatchHandler)
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExPass2(&exInfo, handlingFrameSP, pCatchHandler);
+    DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
 
     GCPROTECT_END();
     UNREACHABLE();

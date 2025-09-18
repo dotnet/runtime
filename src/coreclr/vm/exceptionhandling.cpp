@@ -1518,7 +1518,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &pCatchHandler)
         CALL_MANAGED_METHOD_NORET(args)
 
-        DispatchExPass2(&exInfo, handlingFrameSP, pCatchHandler);
+        DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
 
         GCPROTECT_END();
 
@@ -1666,7 +1666,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     CRITICAL_CALLSITE;
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExPass2(&exInfo, handlingFrameSP, pCatchHandler);
+    DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
 
     GCPROTECT_END();
     GCPROTECT_END();
@@ -1711,17 +1711,24 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
+    TADDR handlingFrameSP;
+    PCODE pCatchHandler;
+
     GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_RETHROW_EX_HANDLER);
+    DECLARE_ARGHOLDER_ARRAY(args, 4);
 
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
+    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    //Ex.FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
     CALL_MANAGED_METHOD_NORET(args)
+    DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
+
     GCPROTECT_END();
 
     UNREACHABLE();
@@ -3140,7 +3147,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     CONTRACTL
     {
         MODE_COOPERATIVE;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
     }
     CONTRACTL_END;
@@ -3380,12 +3387,9 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
 void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
-    GCX_COOP();
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
 
-    Frame* pFrame = pThread->GetFrame();
-    MarkInlinedCallFrameAsFuncletCall(pFrame);
     exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
 
@@ -3478,7 +3482,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterato
 
 // The onlyFinallys option makes the function return only finally and fault clauses. It is used in
 // the 2nd path of EH primarily to avoid calls to ResolveEHClause that can trigger GC.
-CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, bool onlyFinallys = false)
+CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, bool doNotCalculateCatchType = false)
 {
     CLR_BOOL result = FALSE;
 
@@ -3517,18 +3521,20 @@ CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, 
             pEHClause->_tryStartOffset, pEHClause->_tryEndOffset,
             pEHClause->_isSameTry ? ", isSameTry" : "", pEHClause->_handlerAddress));
 
-        if (onlyFinallys && !(flags & (COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_FAULT)))
-        {
-            // Skip non-finally clauses
-            continue;
-        }
-    
         if (flags == COR_ILEXCEPTION_CLAUSE_NONE)
         {
             pEHClause->_clauseKind = RH_EH_CLAUSE_TYPED;
-            pEHClause->_pTargetType = pJitMan->ResolveEHClause(&EHClause, &pFrameIter->m_crawl).AsMethodTable();
-            EH_LOG((LL_INFO100, " typed clause, target type=%p (%s)\n",
-                pEHClause->_pTargetType, ((MethodTable*)pEHClause->_pTargetType)->GetDebugClassName()));
+            if (!doNotCalculateCatchType)
+            {
+                pEHClause->_pTargetType = pJitMan->ResolveEHClause(&EHClause, &pFrameIter->m_crawl).AsMethodTable();
+                EH_LOG((LL_INFO100, " typed clause, target type=%p (%s)\n",
+                    pEHClause->_pTargetType, ((MethodTable*)pEHClause->_pTargetType)->GetDebugClassName()));
+            }
+            else
+            {
+                pEHClause->_pTargetType = NULL;
+                EH_LOG((LL_INFO100, " typed clause, target type not calculated\n"));
+            }
         }
         else if (flags & COR_ILEXCEPTION_CLAUSE_FILTER)
         {
@@ -4087,74 +4093,53 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             goto Exit;
         }
 
-        if (!pThis->m_crawl.IsFrameless())
+        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()) > (TADDR)pTopExInfo)
         {
-            // Detect collided unwind
-            pFrame = pThis->m_crawl.GetFrame();
-
-            if (InlinedCallFrame::FrameHasActiveCall(pFrame))
+            // Detected collided unwind
+            if ((pThis->GetNextExInfo()->m_passNumber == 1) ||
+                (pThis->GetNextExInfo()->m_idxCurClause == 0xFFFFFFFF))
             {
-                InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-                if (((TADDR)pInlinedCallFrame->m_Datum & (TADDR)InlinedCallFrameMarker::Mask) == ((TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller))
-                {
-                    // passing through CallCatchFunclet et al
-                    if (doingFuncletUnwind)
-                    {
-                        // Unwind the CallCatchFunclet
-                        retVal = MoveToNextNonSkippedFrame(pThis);
-
-                        if (retVal == SWA_FAILED)
-                        {
-                            _ASSERTE_MSG(FALSE, "StackFrameIterator::Next failed");
-                            break;
-                        }
-
-                        if ((pThis->GetNextExInfo()->m_passNumber == 1) ||
-                            (pThis->GetNextExInfo()->m_idxCurClause == 0xFFFFFFFF))
-                        {
-                            _ASSERTE_MSG(FALSE, "did not expect to collide with a 1st-pass ExInfo during a EH stackwalk");
-                            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-                        }
-                        else
-                        {
-                            *uExCollideClauseIdx = pExInfo->m_idxCurClause;
-                            isCollided = true;
-                            pExInfo->m_kind = (ExKind)((uint8_t)pExInfo->m_kind | (uint8_t)ExKind::SupersededFlag);
-
-                            // Unwind to the frame of the prevExInfo
-                            ExInfo* pPrevExInfo = pThis->GetNextExInfo();
-                            EH_LOG((LL_INFO100, "SfiNext: collided with previous exception handling, skipping from IP=%p, SP=%p to IP=%p, SP=%p\n",
-                                    GetControlPC(&pTopExInfo->m_regDisplay), GetRegdisplaySP(&pTopExInfo->m_regDisplay),
-                                    GetControlPC(&pPrevExInfo->m_regDisplay), GetRegdisplaySP(&pPrevExInfo->m_regDisplay)));
-
-                            pThis->SkipTo(&pPrevExInfo->m_frameIter);
-                            pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
-                            _ASSERTE_MSG(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD, "Collided unwind should have reached a frameless method");
-                            break;
-                        }
-                    }
-                }
+                _ASSERTE_MSG(FALSE, "did not expect to collide with a 1st-pass ExInfo during a EH stackwalk");
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
             }
             else
             {
-                if (pTopExInfo->m_passNumber == 1)
+                *uExCollideClauseIdx = pExInfo->m_idxCurClause;
+                isCollided = true;
+                pExInfo->m_kind = (ExKind)((uint8_t)pExInfo->m_kind | (uint8_t)ExKind::SupersededFlag);
+
+                // Unwind to the frame of the prevExInfo
+                ExInfo* pPrevExInfo = pThis->GetNextExInfo();
+                EH_LOG((LL_INFO100, "SfiNext: collided with previous exception handling, skipping from IP=%p, SP=%p to IP=%p, SP=%p\n",
+                        GetControlPC(&pTopExInfo->m_regDisplay), GetRegdisplaySP(&pTopExInfo->m_regDisplay),
+                        GetControlPC(&pPrevExInfo->m_regDisplay), GetRegdisplaySP(&pPrevExInfo->m_regDisplay)));
+
+                pThis->SkipTo(&pPrevExInfo->m_frameIter);
+                pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
+                _ASSERTE_MSG(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD, "Collided unwind should have reached a frameless method");
+                break;
+            }
+        }
+
+        if (!pThis->m_crawl.IsFrameless())
+        {
+            if (pTopExInfo->m_passNumber == 1)
+            {
+                MethodDesc *pMD = pFrame->GetFunction();
+                if (pMD != NULL)
                 {
-                    MethodDesc *pMD = pFrame->GetFunction();
-                    if (pMD != NULL)
-                    {
-                        GCX_COOP();
-                        StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    GCX_COOP();
+                    StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
-                        if (NotifyDebuggerOfStub(pThread, pFrame))
+                    if (NotifyDebuggerOfStub(pThread, pFrame))
+                    {
+                        if (!pTopExInfo->DeliveredFirstChanceNotification())
                         {
-                            if (!pTopExInfo->DeliveredFirstChanceNotification())
-                            {
-                                ExceptionNotifications::DeliverFirstChanceNotification();
-                            }
+                            ExceptionNotifications::DeliverFirstChanceNotification();
                         }
-#endif // DEBUGGING_SUPPORTED
                     }
+#endif // DEBUGGING_SUPPORTED
                 }
             }
 
@@ -4291,16 +4276,6 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
         // Found a containing clause. Because of the order of the clauses, we know this is the
         // most containing.
 
-        // N.B. -- We need to suppress GC "in-between" calls to finallys in this loop because we do
-        // not have the correct next-execution point live on the stack and, therefore, may cause a GC
-        // hole if we allow a GC between invocation of finally funclets (i.e. after one has returned
-        // here to the dispatcher, but before the next one is invoked).  Once they are running, it's
-        // fine for them to trigger a GC, obviously.
-        //
-        // As a result, RhpCallFinallyFunclet will set this state in the runtime upon return from the
-        // funclet, and we need to reset it if/when we fall out of the loop and we know that the
-        // method will no longer get any more GC callbacks.
-
         byte* pFinallyHandler = ehClause._handlerAddress;
         pExInfo->m_idxCurClause = curIdx;
         CallFinallyFunclet(pFinallyHandler, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
@@ -4313,22 +4288,10 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
     InvokeSecondPass(pExInfo, idxStart, MaxTryRegionIdx);
 }
 
-void DECLSPEC_NORETURN DispatchExPass2(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE pCatchHandler)
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE pCatchHandler)
 {
-    // ------------------------------------------------
-    //
-    // Second pass
-    //
-    // ------------------------------------------------
-
-    // Due to the stackwalker logic, we cannot tolerate triggering a GC from the dispatch code once we
-    // are in the 2nd pass.  This is because the stackwalker applies a particular unwind semantic to
-    // 'collapse' funclets which gets confused when we walk out of the dispatch code and encounter the
-    // 'main body' without first encountering the funclet.  The thunks used to invoke 2nd-pass
-    // funclets will always toggle this mode off before invoking them.
     StackFrameIterator *pFrameIter = &pExInfo->m_frameIter;
     pExInfo->m_passNumber = 2;
-    OBJECTREF exceptionObj = pExInfo->m_exception;
     uint startIdx = MaxTryRegionIdx;
     uint catchingTryRegionIdx = pExInfo->m_idxCurClause;
     CLR_BOOL unwoundReversePInvoke = false;
@@ -4337,7 +4300,7 @@ void DECLSPEC_NORETURN DispatchExPass2(ExInfo *pExInfo, TADDR handlingFrameSP, P
     for (; isValid && (GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) <= handlingFrameSP); isValid = SfiNextWorker(pFrameIter, &startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
     {
         _ASSERTE_MSG(isValid, "second-pass EH unwind failed unexpectedly");
-        //DebugScanCallFrame(pExInfo->_passNumber, frameIter.ControlPC, frameIter.SP);
+        _ASSERTE_MSG(GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) != NULL, "IP address must not be null");
 
         if (isExceptionIntercepted)
         {
@@ -4374,8 +4337,8 @@ void DECLSPEC_NORETURN DispatchExPass2(ExInfo *pExInfo, TADDR handlingFrameSP, P
     // ------------------------------------------------
     pExInfo->m_idxCurClause = catchingTryRegionIdx;
 
-    CallCatchFunclet(exceptionObj, (BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
-    // currently, RhpCallCatchFunclet will resume after the catch
+    CallCatchFunclet(pExInfo->m_exception, (BYTE *)pCatchHandler, pFrameIter->m_crawl.GetRegisterSet(), pExInfo);
+    // CallCatchFunclet will resume after the catch and never return here.
     UNREACHABLE();
 }
 
