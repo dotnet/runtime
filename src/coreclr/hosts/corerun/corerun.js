@@ -3,5 +3,4 @@ Module.preRun = () => {
     for (const [key, value] of Object.entries(process.env)) {
         ENV[key] = value;
     }
-    console.log("corerun.js preRun: " + Module.FS.cwd());
 };

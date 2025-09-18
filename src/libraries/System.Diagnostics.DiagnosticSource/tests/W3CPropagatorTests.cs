@@ -31,16 +31,19 @@ namespace System.Diagnostics.Tests
             yield return new object[] { "state=1", "state=1", new[] { new KeyValuePair<string, string>("b1", "v1") }, "b1 = v1", new[] { new KeyValuePair<string, string>("b1", "v1") } };
 
             // Invalid trace state
-            yield return new object[] { "PassThroughW3CState=1", null, null, null, null }; // trace state key has to be lowercase
+            yield return new object[] { "PassThroughW3CState=1", null, null, null, null }; // trace state key has to be lowercase or digit
 
-            // Invalid trace state
-            yield return new object[] { "1start=1", null, null, null, null }; // trace state key has to start with lowercase
+            // valid trace state, the key can have digits https://www.w3.org/TR/trace-context-2/#key
+            yield return new object[] { "1start=1", "1start=1", null, null, null }; // trace state key has to start with lowercase or digit
+
+            // valid trace state, the key can have digits https://www.w3.org/TR/trace-context-2/#key
+            yield return new object[] { "123@456=1", "123@456=1", null, null, null }; // trace state key has to start with lowercase or digit
 
             // Tabs is not allowed in trace state values. use only the valid entry
-            yield return new object[] { "start=1, end=\t1", "start=1", null, null, null }; // trace state key has to start with lowercase
+            yield return new object[] { "start=1, end=\t1", "start=1", null, null, null }; // trace state key has to start with lowercase or digit
 
             // multiple trace states
-            yield return new object[] { "start=1, end=1", "start=1, end=1", null, null, null }; // trace state key has to start with lowercase
+            yield return new object[] { "start=1, end=1", "start=1, end=1", null, null, null }; // trace state key has to start with lowercase or digit
 
             // trace state longer than the max limit
             yield return new object[] { $"{new string('a', 255)}=1", null, null, null, null }; // trace state length max is 256
