@@ -30,8 +30,8 @@ void vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::sort(uint32_t 
     }
 }
 
-    const uint32x4_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::idx  = {0u, 1u, 2u, 3u};
-    const uint32x4_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::maxv = {MAX, MAX, MAX, MAX};
+    const uint32_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::idxArray[4]   = {0u, 1u, 2u, 3u};
+    const uint32_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::maxvArray[4]  = {MAX, MAX, MAX, MAX};
     const uint32_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::mask1Array[4] = {0u, ~0u, 0u, 0u};
     const uint32_t vxsort::smallsort::bitonic<uint32_t, vector_machine::NEON >::mask2Array[4] = {0u, 0u, ~0u, 0u};
         

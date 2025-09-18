@@ -101,8 +101,8 @@ template<> struct bitonic<{t}, NEON> {{
     static const int N = {self.vector_size()};
     static constexpr {t} MAX = std::numeric_limits<{t}>::max();
 
-    static const {self.vector_type()} idx;
-    static const {self.vector_type()} maxv;
+    static const {self.type} idxArray[];
+    static const {self.type} maxvArray[];
     static const {self.type} mask1Array[];
     static const {self.type} mask2Array[];
 public:
@@ -266,6 +266,8 @@ public:
 
             s = f"""
     static NOINLINE void sort_{m:02d}v_alt({type} *ptr, int remainder) {{
+        const {self.vector_type()} maxv = vld1q_{self.vector_suffix()}(maxvArray);
+        const {self.vector_type()} idx = vld1q_{self.vector_suffix()}(idxArray);
         const {self.vector_type()} mask = vcltq_{self.vector_suffix()}(idx, vdupq_n_{self.vector_suffix()}(remainder ? remainder : 4));\n"""
             print(s, file=f)
 
@@ -323,8 +325,8 @@ using namespace vxsort;
         print("}", file=f_src)
 
         s = f"""
-    const {self.vector_type()} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::idx  = {{0u, 1u, 2u, 3u}};
-    const {self.vector_type()} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::maxv = {{MAX, MAX, MAX, MAX}};
+    const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::idxArray[4]   = {{0u, 1u, 2u, 3u}};
+    const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::maxvArray[4]  = {{MAX, MAX, MAX, MAX}};
     const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask1Array[4] = {{0u, ~0u, 0u, 0u}};
     const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask2Array[4] = {{0u, 0u, ~0u, 0u}};
         """;
