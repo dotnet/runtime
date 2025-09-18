@@ -16,6 +16,14 @@
     <type fullname="System.Collections.Generic.IList`1" />
     <type fullname="System.Collections.Generic.IReadOnlyList`1" />
 
+    <type fullname="System.Number">
+      <!-- Methods are required for System.Runtime.Numerics. -->
+      <method name="TryStringToNumberCore" />
+      <method name="NumberToStringCore" />
+      <method name="FormatNumberCore" />
+      <method name="UInt32ToDecCharsCore" />
+    </type>
+
     <!-- Indicator for illink that all instance methods are instantiated -->
     <type fullname="System.SZArrayHelper">
       <method name=".ctor" />

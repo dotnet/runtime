@@ -603,6 +603,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Grisu3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.Unsafe.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.Impl.cs" />
@@ -1466,14 +1467,11 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Number.Formatting.Common.cs">
-      <Link>System\Number.Formatting.Common.cs</Link>
+    <Compile Include="$(CommonPath)System\Number.Common.cs">
+      <Link>System\Number.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs">
       <Link>System\Number.NumberBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Number.Parsing.Common.cs">
-      <Link>System\Number.Parsing.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Numerics\Crc32ReflectedTable.cs">
       <Link>Common\System\Numerics\Crc32ReflectedTable.cs</Link>
