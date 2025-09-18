@@ -1472,17 +1472,17 @@ namespace System.Security.Cryptography.Tests
                 Verify(new ReadOnlySpan<byte>(key), ReadOnlySpan<byte>.Empty, new byte[THmacTrait.HashSizeInBytes]));
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                Verify(key, UntouchableStream.Instance, new byte[THmacTrait.HashSizeInBytes]));
+                Verify(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
             Assert.Throws<PlatformNotSupportedException>(() =>
-                Verify(new ReadOnlySpan<byte>(key), UntouchableStream.Instance, new byte[THmacTrait.HashSizeInBytes]));
+                Verify(new ReadOnlySpan<byte>(key), Stream.Null, new byte[THmacTrait.HashSizeInBytes]));
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                VerifyAsync(key, UntouchableStream.Instance, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
+                VerifyAsync(key, Stream.Null, new byte[THmacTrait.HashSizeInBytes], default(CancellationToken)));
 
             Assert.Throws<PlatformNotSupportedException>(() =>
                 VerifyAsync(
                     new ReadOnlyMemory<byte>(key),
-                    UntouchableStream.Instance,
+                    Stream.Null,
                     new byte[THmacTrait.HashSizeInBytes],
                     default(CancellationToken)));
         }
