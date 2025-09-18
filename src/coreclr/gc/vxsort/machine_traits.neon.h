@@ -46,6 +46,7 @@ class vxsort_machine_traits<uint32_t, NEON> {
     static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
     static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = 32;
     static const int32_t MaxInnerUnroll = 3;
+    static const vector_machine SMALL_SORT_TYPE = vector_machine::NEON;
 
     // Requires hardware support for a masked store.
     static constexpr bool supports_compress_writes() { return false; }
@@ -127,6 +128,7 @@ class vxsort_machine_traits<uint64_t, NEON> {
     static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
     static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
     static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
+    static const vector_machine SMALL_SORT_TYPE = vector_machine::scalar;
 
     // Requires hardware support for a masked store.
     static constexpr bool supports_compress_writes() { return false; }

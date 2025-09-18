@@ -197,18 +197,7 @@ private:
             vxsort_stats<T>::bump_small_sorts();
             vxsort_stats<T>::record_small_sort_size(length);
 #endif
-#if defined(TARGET_AMD64)
-            bitonic<T, M>::sort(left, length);
-#else
-            if (sizeof(T) == 4)
-            {
-                bitonic<T, vector_machine::NEON>::sort(left, length);
-            }
-            else
-            {
-                bitonic<T, vector_machine::scalar>::sort(left, length);
-            }
-#endif
+            bitonic<T, MT::SMALL_SORT_TYPE>::sort(left, length);
             return;
         }
 
