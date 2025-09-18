@@ -397,7 +397,13 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 #if defined(TARGET_64BIT)
     pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (INT_PTR)GetIP(pRD->pCurrentContext);
-#elif defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
+#elif defined(TARGET_ARM)
+    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
+#elif defined(TARGET_X86)
+    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
+#elif defined(TARGET_WASM)
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
 #else // TARGET_WASM

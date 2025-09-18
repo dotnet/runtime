@@ -91,9 +91,9 @@ inline PCODE GetIP(const T_CONTEXT * context)
     return context->InterpreterIP;
 }
 
-inline void SetIP(T_CONTEXT *context, PCODE ip)
+inline void SetIP(T_CONTEXT *context, PCODE eip)
 {
-    context->InterpreterIP = ip;
+    context->InterpreterIP = eip;
 }
 
 inline TADDR GetSP(const T_CONTEXT * context)
@@ -101,14 +101,14 @@ inline TADDR GetSP(const T_CONTEXT * context)
     return (TADDR)context->InterpreterSP;
 }
 
-inline void SetSP(T_CONTEXT *context, TADDR sp)
+inline void SetSP(T_CONTEXT *context, TADDR esp)
 {
-    context->InterpreterSP = (TADDR)sp;
+    context->InterpreterSP = (TADDR)esp;
 }
 
-inline void SetFP(T_CONTEXT *context, TADDR fp)
+inline void SetFP(T_CONTEXT *context, TADDR ebp)
 {
-    context->InterpreterFP = (TADDR)fp;
+    context->InterpreterFP = (TADDR)ebp;
 }
 
 inline TADDR GetFP(const T_CONTEXT * context)
