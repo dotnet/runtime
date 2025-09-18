@@ -25,5 +25,6 @@
   "SHash": 1,
   "StackWalk": 1,
   "StressLog": 2,
+  "SyncBlock": 1,
   "Thread": 1
 }

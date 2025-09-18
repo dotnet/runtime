@@ -78,6 +78,8 @@ public enum DataType
     Array,
     SyncBlock,
     SyncTableEntry,
+    SyncBlockCache,
+    AwareLock,
     InteropSyncBlockInfo,
     InstantiatedMethodDesc,
     DynamicMethodDesc,
