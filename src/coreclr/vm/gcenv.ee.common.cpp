@@ -200,11 +200,20 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     //
     assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
-    // for interior pointers, we optimize the case in which
-    //  it points into the current threads stack area
-    //
-    if (flags & GC_CALL_INTERIOR)
+    if ((flags & GC_CALL_PINNED) && !pCtx->sc->promotion)
+    {
+        // Do nothing. This is the relocate phase, for something that was pinned. It does not need
+        // to be relocated, and on interpreter builds, where we use conservative reporting in some situations,
+        // we MUST NOT attempt to do promotion here, as the GC is not expecting conservative reporting to report
+        // conservative roots during the relocate phase.
+    }
+    else if (flags & GC_CALL_INTERIOR)
+    {
+        // for interior pointers, we optimize the case in which
+        //  it points into the current threads stack area
+        //
         PromoteCarefully(pCtx->f, ppObj, pCtx->sc, flags);
+    }
     else
         (pCtx->f)(ppObj, pCtx->sc, flags);
 }
