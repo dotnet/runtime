@@ -550,12 +550,8 @@ namespace System.Runtime.Serialization
 
             try
             {
-                if (DateTime.Now.Year > 1900)
-                {
-                    var dto = XmlConvert.ToDateTimeOffset(s);
-                    return TimeOnly.FromTimeSpan(dto.TimeOfDay);
-                }
-                return ParseTimeOnly(s);
+                var dto = XmlConvert.ToDateTimeOffset(s);
+                return TimeOnly.FromTimeSpan(dto.TimeOfDay);
             }
             catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
             {
@@ -572,12 +568,8 @@ namespace System.Runtime.Serialization
             string s = reader.ReadContentAsString();
             try
             {
-                if (DateTime.Now.Year > 1900)
-                {
-                    var dto = XmlConvert.ToDateTimeOffset(s);
-                    return TimeOnly.FromTimeSpan(dto.TimeOfDay);
-                }
-                return ParseTimeOnly(s);
+                var dto = XmlConvert.ToDateTimeOffset(s);
+                return TimeOnly.FromTimeSpan(dto.TimeOfDay);
             }
             catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
             {
