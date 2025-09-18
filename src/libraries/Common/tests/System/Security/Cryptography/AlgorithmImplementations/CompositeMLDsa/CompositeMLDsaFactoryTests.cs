@@ -675,7 +675,9 @@ namespace System.Security.Cryptography.Tests
         // otherwise runs the test normally.
         private static void AssertThrowIfNotSupported(Action test, CompositeMLDsaAlgorithm? algorithm = null)
         {
-            if ((algorithm is null && CompositeMLDsa.IsSupported) || CompositeMLDsa.IsAlgorithmSupported(algorithm))
+            bool isSupported = algorithm is null ? CompositeMLDsa.IsSupported : CompositeMLDsa.IsAlgorithmSupported(algorithm);
+
+            if (isSupported)
             {
                 test();
             }
