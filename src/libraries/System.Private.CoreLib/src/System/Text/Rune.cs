@@ -781,6 +781,12 @@ namespace System.Text
         public bool Equals(Rune other) => this == other;
 
 #if SYSTEM_PRIVATE_CORELIB
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified rune are equal.
+        /// </summary>
+        /// <param name="other">The rune to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns></returns>
         public bool Equals(Rune other, StringComparison comparisonType)
         {
             if (comparisonType is StringComparison.Ordinal)

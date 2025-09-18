@@ -45,11 +45,22 @@ namespace System
 #pragma warning restore CA2249
         }
 
+        /// <summary>
+        /// Returns a value indicating whether a specified rune occurs within this string.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <returns><see langword="true"/> if <paramref name="value"/> occurs within this string; otherwise, <see langword="false"/>.</returns>
         public bool Contains(Rune value)
         {
             return Contains(value, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Returns a value indicating whether a specified rune occurs within this string.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if <paramref name="value"/> occurs within this string; otherwise, <see langword="false"/>.</returns>
         public bool Contains(Rune value, StringComparison comparisonType)
         {
             return IndexOf(value, comparisonType) >= 0;
@@ -274,31 +285,96 @@ namespace System
             };
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified rune in the current String object.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int IndexOf(Rune value)
         {
             return IndexOf(value, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified rune in the current String object.
+        /// A parameter specifies the starting search position in the current string.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int IndexOf(Rune value, int startIndex)
         {
             return IndexOf(value, startIndex, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified rune in the current String object.
+        /// Parameters specify the starting search position in the current string and the number of characters in the
+        /// current string to search.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position.</param>
+        /// <param name="count">The number of character positions to examine.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int IndexOf(Rune value, int startIndex, int count)
         {
             return IndexOf(value, startIndex, count, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified rune in the current String object.
+        /// A parameter specifies the type of search to use for the specified rune.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int IndexOf(Rune value, StringComparison comparisonType)
         {
             return IndexOf(value, 0, comparisonType);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified rune in the current String object.
+        /// Parameters specify the starting search position in the current string and the type of search to use for
+        /// the specified rune.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         internal int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
             return IndexOf(value, startIndex, Length - startIndex, comparisonType);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified rune in the current String object.
+        /// Parameters specify the starting search position in the current string, the number of characters in the
+        /// current string to search, and the type of search to use for the specified rune.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position.</param>
+        /// <param name="count">The number of character positions to examine.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         internal int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
@@ -447,26 +523,96 @@ namespace System
             };
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified rune in the current String object.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int LastIndexOf(Rune value)
         {
             return LastIndexOf(value, StringComparison.Ordinal);
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified rune in the current String object.
+        /// A parameter specifies the starting search position in the current string.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int LastIndexOf(Rune value, int startIndex)
         {
             return LastIndexOf(value, startIndex, StringComparison.Ordinal);
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified rune in the current String object.
+        /// Parameters specify the starting search position in the current string and the number of characters in the
+        /// current string to search.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
+        /// <param name="count">The number of character positions to examine.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int LastIndexOf(Rune value, int startIndex, int count)
         {
             return LastIndexOf(value, startIndex, count, StringComparison.Ordinal);
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified rune in the current String object.
+        /// A parameter specifies the type of search to use for the specified rune.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         public int LastIndexOf(Rune value, StringComparison comparisonType)
         {
             return LastIndexOf(value, Length - 1, comparisonType);
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified rune in the current String object.
+        /// Parameters specify the starting search position in the current string and the type of search to use for
+        /// the specified rune.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         internal int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
             return LastIndexOf(value, startIndex, startIndex, comparisonType);
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified rune in the current String object.
+        /// Parameters specify the starting search position in the current string, the number of characters in the
+        /// current string to search, and the type of search to use for the specified rune.
+        /// </summary>
+        /// <param name="value">The rune to seek.</param>
+        /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
+        /// <param name="count">The number of character positions to examine.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that rune is found, or -1 if it is not.
+        /// </returns>
         internal int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);

@@ -1447,6 +1447,15 @@ namespace System
             return dst;
         }
 
+        /// <summary>
+        /// Returns a new string in which all occurrences of a specified Unicode rune in this instance are replaced with another specified Unicode rune.
+        /// </summary>
+        /// <param name="oldRune">The Unicode character to be replaced.</param>
+        /// <param name="newRune">The Unicode character to replace all occurrences of <paramref name="oldRune"/>.</param>
+        /// <returns>
+        /// A string that is equivalent to this instance except that all instances of <paramref name="oldRune"/> are replaced with <paramref name="newRune"/>.
+        /// If <paramref name="oldRune"/> is not found in the current instance, the method returns the current instance unchanged.
+        /// </returns>
         public string Replace(Rune oldRune, Rune newRune)
         {
             if (Length == 0)
@@ -1662,11 +1671,24 @@ namespace System
             return SplitInternal(new ReadOnlySpan<char>(in separator), count, options);
         }
 
+        /// <summary>
+        /// Splits a string into substrings based on a specified delimiting rune and, optionally, options.
+        /// </summary>
+        /// <param name="separator">A character that delimits the substrings in this string.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim substrings and include empty substrings.</param>
+        /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
         public string[] Split(Rune separator, StringSplitOptions options = StringSplitOptions.None)
         {
             return Split(separator, int.MaxValue, options);
         }
 
+        /// <summary>
+        /// Splits a string into a maximum number of substrings based on the provided rune separator, optionally omitting empty substrings from the result.
+        /// </summary>
+        /// <param name="separator">A character that delimits the substrings in this string.</param>
+        /// <param name="count">The maximum number of elements expected in the array.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim substrings and include empty substrings.</param>
+        /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
         public string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
             if (Length == 0)
@@ -2382,6 +2404,14 @@ namespace System
             return TrimHelper(&trimChar, 1, TrimType.Both);
         }
 
+        /// <summary>
+        /// Removes all leading and trailing instances of a rune from the current string.
+        /// </summary>
+        /// <param name="trimRune">A Unicode rune to remove.</param>
+        /// <returns>
+        /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the start and end of the
+        /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
+        /// </returns>
         public string Trim(Rune trimRune)
         {
             if (Length == 0)
@@ -2468,6 +2498,14 @@ namespace System
         // Removes a set of characters from the beginning of this string.
         public unsafe string TrimStart(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Head);
 
+        /// <summary>
+        /// Removes all leading instances of a rune from the current string.
+        /// </summary>
+        /// <param name="trimRune">A Unicode rune to remove.</param>
+        /// <returns>
+        /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the start of the
+        /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
+        /// </returns>
         public string TrimStart(Rune trimRune)
         {
             if (Length == 0)
@@ -2539,6 +2577,14 @@ namespace System
         // Removes a set of characters from the end of this string.
         public unsafe string TrimEnd(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Tail);
 
+        /// <summary>
+        /// Removes all trailing instances of a rune from the current string.
+        /// </summary>
+        /// <param name="trimRune">A Unicode rune to remove.</param>
+        /// <returns>
+        /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the end of the
+        /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
+        /// </returns>
         public string TrimEnd(Rune trimRune)
         {
             if (Length == 0)
