@@ -720,7 +720,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     CONTRACTL_END;
 
-    // fprintf(stderr, "[CLAMP] %s %d %p %p %p %p\n", __PRETTY_FUNCTION__, __LINE__, pInterpreterFrame, pFrame, pThreadContext, pExceptionClauseArgs);
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -777,7 +776,6 @@ MAIN_LOOP:
             // and we can save the IP to the frame at the suspension time.
             // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
             // keep it for such purposes until we don't need it anymore.
-            //fprintf(stderr, "[CLAMP] %s %d %p 0x%x\n", __PRETTY_FUNCTION__, __LINE__, ip, *ip);
             pFrame->ip = (int32_t*)ip;
 
             switch (*ip)

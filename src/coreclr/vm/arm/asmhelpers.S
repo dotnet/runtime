@@ -1031,15 +1031,15 @@ LEAF_ENTRY Store_Stack_Ref
 LEAF_END Store_Stack_Ref
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_PUSH "{lr}"
-    mov r8, r3
+    PROLOG_PUSH "{r5-r8,lr}"
+    mov r8, sp
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
     blx r5
-    add sp, sp, r8
-    EPILOG_POP "{pc}"
+    mov sp, r8
+    EPILOG_POP "{r5-r8,pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
