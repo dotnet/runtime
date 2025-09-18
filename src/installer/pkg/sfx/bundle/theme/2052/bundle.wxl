@@ -31,14 +31,20 @@
   <String Id="ProgressCancelButton" Value="取消(&amp;C)" />
   <String Id="ModifyHeader" Value="修改安装程序" />
   <String Id="ModifyRepairButton" Value="修复(&amp;R)" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="卸载(&amp;U)" />
   <String Id="ModifyCloseButton" Value="关闭(&amp;C)" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="成功完成了修复" />
   <String Id="SuccessUninstallHeader" Value="成功完成了卸载" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="安装成功" />
   <String Id="SuccessHeader" Value="设置成功" />
   <String Id="SuccessLaunchButton" Value="启动(&amp;L)" />
   <String Id="SuccessRestartText" Value="您必须先重新启动计算机，然后才能使用该软件。" />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="重新启动(&amp;R)" />
   <String Id="SuccessCloseButton" Value="关闭(&amp;C)" />
   <String Id="FailureHeader" Value="安装失败" />

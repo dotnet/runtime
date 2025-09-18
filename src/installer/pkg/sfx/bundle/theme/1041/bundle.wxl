@@ -31,14 +31,20 @@
   <String Id="ProgressCancelButton" Value="キャンセル(&amp;C)" />
   <String Id="ModifyHeader" Value="セットアップの変更" />
   <String Id="ModifyRepairButton" Value="修復(&amp;R)" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="アンインストール(&amp;U)" />
   <String Id="ModifyCloseButton" Value="閉じる(&amp;C)" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="修復が正常に完了しました" />
   <String Id="SuccessUninstallHeader" Value="アンインストールが正常に完了しました" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="インストールが正常に終了しました" />
   <String Id="SuccessHeader" Value="セットアップ完了" />
   <String Id="SuccessLaunchButton" Value="起動(&amp;L)" />
   <String Id="SuccessRestartText" Value="ソフトウェアを使用する前にコンピューターを再起動する必要があります。" />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="再起動(&amp;R)" />
   <String Id="SuccessCloseButton" Value="閉じる(&amp;C)" />
   <String Id="FailureHeader" Value="セットアップに失敗しました" />

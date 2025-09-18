@@ -31,14 +31,20 @@ Pronti per iniziare?" />
   <String Id="ProgressCancelButton" Value="Ann&amp;ulla" />
   <String Id="ModifyHeader" Value="Modifica installazione" />
   <String Id="ModifyRepairButton" Value="&amp;Ripristina" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="&amp;Disinstalla" />
   <String Id="ModifyCloseButton" Value="&amp;Chiudi" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="La riparazione è stata completata" />
   <String Id="SuccessUninstallHeader" Value="La disinstallazione è stata completata" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="L'installazione è riuscita" />
   <String Id="SuccessHeader" Value="Installazione completata" />
   <String Id="SuccessLaunchButton" Value="&amp;Avvia" />
   <String Id="SuccessRestartText" Value="È necessario riavviare il computer prima di utilizzare il software." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="&amp;Riavvia" />
   <String Id="SuccessCloseButton" Value="&amp;Chiudi" />
   <String Id="FailureHeader" Value="Installazione non riuscita" />

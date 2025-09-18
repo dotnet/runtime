@@ -31,14 +31,20 @@ Hazır mısınız? Haydi başlayalım!" />
   <String Id="ProgressCancelButton" Value="İ&amp;ptal" />
   <String Id="ModifyHeader" Value="Kurulumu değiştir" />
   <String Id="ModifyRepairButton" Value="&amp;Onar" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="&amp;Kaldır" />
   <String Id="ModifyCloseButton" Value="&amp;Kapat" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="Onarım Başarıyla Tamamlandı" />
   <String Id="SuccessUninstallHeader" Value="Kaldırma Başarıyla Tamamlandı" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="Yükleme başarılı oldu" />
   <String Id="SuccessHeader" Value="Kurulum Başarılı" />
   <String Id="SuccessLaunchButton" Value="&amp;Başlat" />
   <String Id="SuccessRestartText" Value="Yazılımı kullanabilmeniz için bilgisayarınızı yeniden başlatmanız gerekiyor." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="&amp;Yeniden Başlat" />
   <String Id="SuccessCloseButton" Value="&amp;Kapat" />
   <String Id="FailureHeader" Value="Kurulum Başarısız" />

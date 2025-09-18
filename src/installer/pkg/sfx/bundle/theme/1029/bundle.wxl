@@ -31,14 +31,20 @@ Jste připraveni? Dejme se tedy do toho!" />
   <String Id="ProgressCancelButton" Value="&amp;Storno" />
   <String Id="ModifyHeader" Value="Změnit instalaci" />
   <String Id="ModifyRepairButton" Value="Op&amp;ravit" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="O&amp;dinstalovat" />
   <String Id="ModifyCloseButton" Value="&amp;Zavřít" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="Oprava byla úspěšně dokončena" />
   <String Id="SuccessUninstallHeader" Value="Odinstalace se úspěšně dokončila" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="Instalace proběhla úspěšně" />
   <String Id="SuccessHeader" Value="Instalace byla úspěšná." />
   <String Id="SuccessLaunchButton" Value="&amp;Spustit" />
   <String Id="SuccessRestartText" Value="Před použitím tohoto softwaru musíte restartovat počítač." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="&amp;Restartovat" />
   <String Id="SuccessCloseButton" Value="&amp;Zavřít" />
   <String Id="FailureHeader" Value="Instalace se nepovedla" />

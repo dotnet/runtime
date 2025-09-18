@@ -31,14 +31,20 @@
   <String Id="ProgressCancelButton" Value="Отм&amp;ена" />
   <String Id="ModifyHeader" Value="Изменение установки" />
   <String Id="ModifyRepairButton" Value="&amp;Исправить" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="&amp;Удалить" />
   <String Id="ModifyCloseButton" Value="&amp;Закрыть" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="Исправление успешно завершено" />
   <String Id="SuccessUninstallHeader" Value="Удаление успешно завершено" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="Установка успешно завершена" />
   <String Id="SuccessHeader" Value="Установка успешно завершена" />
   <String Id="SuccessLaunchButton" Value="&amp;Запустить" />
   <String Id="SuccessRestartText" Value="Перед использованием программного обеспечения необходимо перезапустить компьютер." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="&amp;Перезапустить" />
   <String Id="SuccessCloseButton" Value="&amp;Закрыть" />
   <String Id="FailureHeader" Value="Сбой установки" />

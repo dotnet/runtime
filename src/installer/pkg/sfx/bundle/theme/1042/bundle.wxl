@@ -31,14 +31,20 @@
   <String Id="ProgressCancelButton" Value="취소(&amp;C)" />
   <String Id="ModifyHeader" Value="설치 수정" />
   <String Id="ModifyRepairButton" Value="복구(&amp;R)" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="제거(&amp;U)" />
   <String Id="ModifyCloseButton" Value="닫기(&amp;C)" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="복구 완료됨" />
   <String Id="SuccessUninstallHeader" Value="제거 완료됨" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="설치가 완료되었습니다." />
   <String Id="SuccessHeader" Value="설치 완료" />
   <String Id="SuccessLaunchButton" Value="시작(&amp;L)" />
   <String Id="SuccessRestartText" Value="소프트웨어를 사용하려면 먼저 컴퓨터를 다시 시작해야 합니다." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="다시 시작(&amp;R)" />
   <String Id="SuccessCloseButton" Value="닫기(&amp;C)" />
   <String Id="FailureHeader" Value="설치 실패" />

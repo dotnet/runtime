@@ -31,14 +31,20 @@ Bereit? Los geht's!" />
   <String Id="ProgressCancelButton" Value="&amp;Abbrechen" />
   <String Id="ModifyHeader" Value="Setup ändern" />
   <String Id="ModifyRepairButton" Value="&amp;Reparieren" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="&amp;Deinstallieren" />
   <String Id="ModifyCloseButton" Value="S&amp;chließen" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
   <String Id="SuccessRepairHeader" Value="Reparatur erfolgreich abgeschlossen" />
   <String Id="SuccessUninstallHeader" Value="Deinstallation erfolgreich abgeschlossen" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
   <String Id="SuccessInstallHeader" Value="Die Installation war erfolgreich." />
   <String Id="SuccessHeader" Value="Setup wurde erfolgreich abgeschlossen" />
   <String Id="SuccessLaunchButton" Value="&amp;Starten" />
   <String Id="SuccessRestartText" Value="Sie müssen den Computer neu starten, bevor Sie die Software verwenden können." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
   <String Id="SuccessRestartButton" Value="&amp;Neustart" />
   <String Id="SuccessCloseButton" Value="S&amp;chließen" />
   <String Id="FailureHeader" Value="Setupfehler" />
