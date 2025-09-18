@@ -749,8 +749,10 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         HeaderList *currentHeaderList = m_pgoHeaders;
         if (currentHeaderList != NULL)
         {
-            if (!CheckIfPgoSchemaIsCompatibleAndSetOffsets(currentHeaderList->header.GetData(), currentHeaderList->header.countsOffset, pSchema, countSchemaItems))
+            size_t matchedCount = CheckIfPgoSchemaIsCompatibleAndSetOffsets(currentHeaderList->header.GetData(), currentHeaderList->header.countsOffset, pSchema, countSchemaItems);
+            if (matchedCount != (size_t) countSchemaItems)
             {
+                // We don't expect to see schema mismatches for dynamic methods
                 return E_NOTIMPL;
             }
             _ASSERTE(currentHeaderList->header.method == pMD);
@@ -779,11 +781,23 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         HeaderList* existingData = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
         if (existingData != NULL)
         {
-            if (!CheckIfPgoSchemaIsCompatibleAndSetOffsets(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems))
+            size_t matchedCount = CheckIfPgoSchemaIsCompatibleAndSetOffsets(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems);
+            if (matchedCount != (size_t) countSchemaItems)
             {
-                // Assume existing data is stale static PGO.... remove it add add the new schema below
+                // Assume existing data is stale static PGO. Remove it add add the new schema below.
                 //
                 laPgoManagerThis->m_pgoDataLookup.Remove(pMD);
+
+                // We may have altered some of the offsets if we had a partial match. Redo the layout.
+                //
+                ICorJitInfo::PgoInstrumentationSchema prevSchema;
+                memset(&prevSchema, 0, sizeof(ICorJitInfo::PgoInstrumentationSchema));
+                prevSchema.Offset = offsetOfInstrumentationDataFromStartOfDataRegion;
+                for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
+                {
+                    LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
+                    prevSchema = pSchema[iSchema];
+                }
             }
             else
             {
