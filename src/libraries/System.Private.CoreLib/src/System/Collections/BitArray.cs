@@ -964,7 +964,9 @@ namespace System.Collections
             foreach (byte b in _array)
             {
                 if (b != 0)
+                {
                     return byte.TrailingZeroCount(b) + count;
+                }
 
                 count += BitsPerByte;
             }
@@ -980,7 +982,9 @@ namespace System.Collections
             for (int i = _array.Length - 1; i >= 0; i--)
             {
                 if (_array[i] != 0)
+                {
                     return byte.LeadingZeroCount(_array[i]) + count;
+                }
 
                 count += BitsPerByte;
             }
