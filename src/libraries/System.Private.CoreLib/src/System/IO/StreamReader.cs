@@ -226,7 +226,7 @@ namespace System.IO
         private static FileStream ValidateArgsAndOpenPath(string path, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            
+
             if (bufferSize != -1)
             {
                 ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
