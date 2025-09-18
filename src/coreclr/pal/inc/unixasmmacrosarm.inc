@@ -318,3 +318,24 @@ C_FUNC(\Name):
         movw \DestReg, #((\Constant) & 0xFFFF)
         movt \DestReg, #((\Constant) >> 16)
 .endm
+
+
+// thumb with PIC version
+.macro INLINE_GET_TLS_VAR var
+        ldr     r0, 2f
+1:
+        add     r0, pc, r0
+        bl      __tls_get_addr
+        b       3f
+
+        // Inline data
+        // LLVM assembler has no concept of subsections and this is not expressible as
+        // cross-section relocation.
+        .p2align 2
+2:
+        .extern \var
+        .type \var, tls_object
+        .long  \var(TLSGD) + (2b - 1b - 4)
+3:
+.endm
+

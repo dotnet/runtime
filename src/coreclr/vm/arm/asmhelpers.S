@@ -899,7 +899,9 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
 LEAF_ENTRY Load_X0
-    EMIT_BREAKPOINT // TODO
+    ldr r0, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Load_X0
 
 LEAF_ENTRY Load_X0_X1
@@ -939,7 +941,9 @@ LEAF_ENTRY Load_X3
 LEAF_END Load_X3
 
 LEAF_ENTRY Store_X0
-    EMIT_BREAKPOINT // TODO
+    str r0, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Store_X0
 
 LEAF_ENTRY Store_X0_X1
@@ -1027,7 +1031,15 @@ LEAF_ENTRY Store_Stack_Ref
 LEAF_END Store_Stack_Ref
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH "{lr}"
+    mov r8, r3
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    blx r5
+    add sp, sp, r8
+    EPILOG_POP "{pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
@@ -1043,11 +1055,51 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    // IR bytecode address
+    mov r9, METHODDESC_REGISTER // InterpMethod
+
+    PROLOG_PUSH "{r0-r3}"
+
+    INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
+    mov r10, r0
+
+    ldr r10, [r10, #OFFSETOF__ThreadLocalInfo__m_pThread]
+
+    ldr r5, [r10, #OFFSETOF__Thread__m_pInterpThreadContext]
+    cbnz r5, LOCAL_LABEL(HaveInterpThreadContext)
+
+    mov r0, r10
+    bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+    mov r5, r0
+
+LOCAL_LABEL(HaveInterpThreadContext):
+
+    # RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    EPILOG_POP "{r0-r3}"
+    # RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+
+    ldr r7, [r9] // InterpMethod*
+    ldr r7, [r7, #OFFSETOF__InterpMethod__pCallStub]
+    add r6, r7, #OFFSETOF__CallStubHeader__Routines
+    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
+    ldr r5, [r6] // InterpThreadContext
+    #EMIT_BREAKPOINT // TODO
+    blx r5
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
 NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH {lr}
+    add r0, sp, #__PWTB_TransitionBlock + 4
+    mov r1, r9
+    mov r2, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_POP {pc}
+
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
