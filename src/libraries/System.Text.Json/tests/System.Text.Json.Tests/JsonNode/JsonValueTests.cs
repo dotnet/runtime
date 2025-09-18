@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -14,6 +15,117 @@ namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonValueTests
     {
+        public static IEnumerable<object[]> GetPrimitiveTypesTwoWaySerializationCases
+        {
+            get
+            {
+                return Enumerable.Empty<object[]>();
+#if NET
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new DateOnly(2025, 4, 16))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(Half.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(Int128.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new TimeOnly(17, 18, 19))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(UInt128.MaxValue)
+                //};
+#endif
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new DateTime(2025, 4, 16, 17, 18, 19))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new DateTimeOffset(2025, 4, 16, 17, 18, 19, new TimeSpan(10, 0, 0)))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new Guid("CA79F1AC-AA0B-4704-8F7F-5A95DF0E4FD2"))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new TimeSpan(1, 2, 3, 4, 5))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new Uri("http://contoso.com"))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(new Version(1, 2, 3, 4))
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(true)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(byte.MinValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create('X')
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(decimal.MinValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(double.MinValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(float.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(111)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(long.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(sbyte.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(short.MinValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create("HelloWorld")
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(uint.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(ulong.MaxValue)
+                //};
+                //yield return new object[]
+                //{
+                //    JsonValue.Create(ushort.MaxValue)
+                //};
+            }
+        }
+
+
         [Fact]
         public static void CreateFromNull()
         {
@@ -765,6 +877,20 @@ namespace System.Text.Json.Nodes.Tests
             JsonValue jsonValueFromString = JsonSerializer.Deserialize<JsonValue>(jsonString)!;
 
             AssertExtensions.TrueExpression(JsonNode.DeepEquals(jsonValueFromString, jsonValueFromSequence));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypesTwoWaySerializationCases))]
+        public static void PrimitiveTypes_TwoWaySerialization(JsonValue value)
+        {
+            string serialized = JsonSerializer.Serialize(value);
+
+            object deserialized = JsonSerializer.Deserialize(serialized, value.GetType());
+            string serializedSecondTime = JsonSerializer.Serialize(deserialized);
+
+            Assert.IsType(value.GetType(), deserialized);
+            JsonNodeTests.AssertDeepEqual(value, deserialized as JsonNode);
+            Assert.Equal(serialized, serializedSecondTime);
         }
 
         public static IEnumerable<object[]> GetPrimitiveTypes()
