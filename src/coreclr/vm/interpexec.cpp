@@ -2361,9 +2361,9 @@ MAIN_LOOP:
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
-                    
+
                     ip += 4;
-                    
+
                     DELEGATEREF delegateObj = LOCAL_VAR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(delegateObj);
                     PCODE targetAddress = delegateObj->GetMethodPtr();
@@ -2890,7 +2890,7 @@ do {                                                                           \
                     void* elemAddr = pData + idx * elemSize;
                     MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[5]];
 
-                    CopyValueClassUnchecked(elemAddr, LOCAL_VAR_ADDR(ip[3], void*), pMT);
+                    CopyValueClassUnchecked(elemAddr, LOCAL_VAR_ADDR(ip[3], void), pMT);
                     ip += 6;
                     break;
                 }
