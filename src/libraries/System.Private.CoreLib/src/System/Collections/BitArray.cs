@@ -948,9 +948,9 @@ namespace System.Collections
         public int PopCount()
         {
             int count = 0;
-            foreach (byte b in _array)
+            foreach (int i in MemoryMarshal.Cast<byte, int>(_array))
             {
-                count += byte.PopCount(b);
+                count += int.PopCount(i);
             }
 
             return count;
