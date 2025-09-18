@@ -145,7 +145,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
         }
 
-        [UnexpectedWarning("IL2109", "DerivedWithoutRequires", Tool.Analyzer | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/107660")]
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+        [ExpectedWarning("IL3050", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
+        [ExpectedWarning("IL3050", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
         class DerivedWithoutRequires : BaseWithRequires
         {
             [ExpectedWarning("IL2026", "--Requires--")]
@@ -158,6 +161,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 StaticMethod();
                 DerivedStaticMethod();
+
+                 // Instantiate for linker test consistency
+                new DerivedWithoutRequires();
             }
         }
 
@@ -206,10 +212,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
-            [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/113249")]
             static Requires<T> StaticField;
 
-            [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/113249")]
             Requires<T> InstanceField;
 
             [ExpectedWarning("IL2091", "PublicFields", "Requires<T>")]

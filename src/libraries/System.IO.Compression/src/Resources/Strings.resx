@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -292,5 +292,8 @@
   </data>
   <data name="PlatformNotSupported_Compression" xml:space="preserve">
     <value>System.IO.Compression is not supported on this platform.</value>
+  </data>
+  <data name="InvalidOffsetToZip64EOCD" xml:space="preserve">
+    <value>Invalid offset to the Zip64 End of Central Directory record.</value>
   </data>
 </root>

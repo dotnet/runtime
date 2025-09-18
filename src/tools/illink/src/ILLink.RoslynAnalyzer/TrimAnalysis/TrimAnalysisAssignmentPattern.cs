@@ -54,7 +54,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
         {
-            var diagnosticContext = new DiagnosticContext(Operation.Syntax.GetLocation(), reportDiagnostic);
+            var location = Operation.Syntax.GetLocation();
             if (context.EnableTrimAnalyzer &&
                 !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
@@ -68,8 +68,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                         if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                             throw new NotImplementedException();
 
-                        var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeHierarchyType: null);
-                        var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(diagnosticContext, reflectionAccessAnalyzer);
+                        var typeNameResolver = new TypeNameResolver(context.Compilation);
+                        var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
+                        var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(context, FeatureContext, typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer, OwningSymbol);
                         requireDynamicallyAccessedMembersAction.Invoke(sourceValue, targetWithDynamicallyAccessedMembers);
                     }
                 }

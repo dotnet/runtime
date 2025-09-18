@@ -10,12 +10,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAKeyFileTests
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsKeyGeneration))]
+        [Fact]
         public static void UseAfterDispose_NewKey()
         {
             UseAfterDispose(false);
@@ -305,7 +305,6 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "DSASecurityTransforms goes straight to OS, has different failure mode")]
         public static void ImportNonsensePublicParameters()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

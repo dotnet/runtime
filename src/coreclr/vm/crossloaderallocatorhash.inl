@@ -20,7 +20,7 @@ CrossLoaderAllocatorHash<TRAITS>::KeyToValuesHashTraits::ComputeUsedEntries(
     CONTRACTL_END;
 
     // An empty value slot may be used to store a count
-    static_assert_no_msg(sizeof(TValue) >= sizeof(TCount));
+    static_assert(sizeof(TValue) >= sizeof(TCount));
 
     TCount entriesInArrayTotal = keyValueStore->GetCapacity();
     TCount usedEntries;
@@ -63,7 +63,7 @@ template<class TRAITS>
     CONTRACTL_END;
 
     // An empty value slot may be used to store a count
-    static_assert_no_msg(sizeof(TValue) >= sizeof(TCount));
+    static_assert(sizeof(TValue) >= sizeof(TCount));
 
     _ASSERTE(entriesInArrayTotal == keyValueStore->GetCapacity());
 

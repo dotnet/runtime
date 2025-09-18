@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -173,6 +174,27 @@ internal readonly struct StackWalk_1 : IStackWalk
 
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
         => FrameIterator.GetFrameName(_target, frameIdentifier);
+
+    TargetPointer IStackWalk.GetMethodDescPtr(TargetPointer framePtr)
+        => FrameIterator.GetMethodDescPtr(framePtr, _target);
+
+    TargetPointer IStackWalk.GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+
+        // if we are at a capital F Frame, we can get the method desc from the frame
+        // TODO(cdac): Support special fReportInteropMD case https://github.com/dotnet/runtime/issues/119724
+        TargetPointer framePtr = ((IStackWalk)this).GetFrameAddress(handle);
+        if (framePtr != TargetPointer.Null)
+            return ((IStackWalk)this).GetMethodDescPtr(framePtr);
+
+        // otherwise try to get the method desc from the IP
+        if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? codeBlockHandle))
+            return TargetPointer.Null;
+
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        return eman.GetMethodDesc(codeBlockHandle.Value);
+    }
 
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {

@@ -43,10 +43,7 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
-        internal static bool DefaultCertificateRevocationCheck { get; } =
-            AppContextSwitchHelper.GetBooleanConfig(
-                "System.Net.Security.NoRevocationCheckByDefault",
-                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT") ? false : true;
+        internal static bool DefaultCertificateRevocationCheck { get; }
 
         internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
@@ -1689,7 +1686,7 @@ namespace System.Net.Http
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
                 await state.RequestMessage.Content.CopyToAsync(requestStream, state.TransportContext).ConfigureAwait(false);
-                await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
+                await requestStream.EndUploadAsync().ConfigureAwait(false);
             }
         }
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -89,19 +90,19 @@ namespace Internal.IL.Stubs
 
             if (type.IsNullable)
             {
-                return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Nullable{flavor}`1")
                     .MakeInstantiatedType(type.Instantiation[0]);
             }
 
             if (type.IsString && flavor == "EqualityComparer")
             {
-                return context.SystemModule.GetKnownType("System.Collections.Generic", "StringEqualityComparer");
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, "StringEqualityComparer"u8);
             }
 
             if (type.IsEnum)
             {
                 // Enums have a specialized comparer that avoids boxing
-                return context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
+                return context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Enum{flavor}`1")
                     .MakeInstantiatedType(type);
             }
 
@@ -111,7 +112,7 @@ namespace Internal.IL.Stubs
                 return null;
             }
 
-            return context.SystemModule.GetKnownType("System.Collections.Generic", implementsInterfaceOfSelf.Value ? $"Generic{flavor}`1" : $"Object{flavor}`1")
+            return context.SystemModule.GetKnownType("System.Collections.Generic"u8, implementsInterfaceOfSelf.Value ? $"Generic{flavor}`1" : $"Object{flavor}`1")
                 .MakeInstantiatedType(type);
         }
 
@@ -149,16 +150,16 @@ namespace Internal.IL.Stubs
 
                 ArrayBuilder<TypeDesc> universalComparers = default(ArrayBuilder<TypeDesc>);
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Nullable{flavor}`1")
                         .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Enum{flavor}`1")
                     .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Generic{flavor}`1")
                     .MakeInstantiatedType(type));
 
-                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Object{flavor}`1")
                     .MakeInstantiatedType(type));
 
                 return universalComparers.ToArray();
@@ -178,18 +179,18 @@ namespace Internal.IL.Stubs
 
                 return new TypeDesc[]
                 {
-                    context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
+                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Nullable{flavor}`1")
                         .MakeInstantiatedType(nullableType),
-                    context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
+                    context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Object{flavor}`1")
                         .MakeInstantiatedType(type),
                 };
             }
 
             return new TypeDesc[]
             {
-                context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
+                context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Generic{flavor}`1")
                     .MakeInstantiatedType(type),
-                context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
+                context.SystemModule.GetKnownType("System.Collections.Generic"u8, $"Object{flavor}`1")
                     .MakeInstantiatedType(type),
             };
         }
@@ -206,7 +207,7 @@ namespace Internal.IL.Stubs
                 Instantiation interfaceInstantiation = implementedInterface.Instantiation;
                 if (interfaceInstantiation.Length == 1)
                 {
-                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
+                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System"u8, interfaceName);
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                     {
@@ -241,7 +242,15 @@ namespace Internal.IL.Stubs
 
         public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)
         {
+            return CanCompareValueTypeBitsUntilOffset(type, objectEqualsMethod, out int lastFieldOffset)
+                && lastFieldOffset == type.InstanceFieldSize.AsInt;
+        }
+
+        public static bool CanCompareValueTypeBitsUntilOffset(MetadataType type, MethodDesc objectEqualsMethod, out int lastFieldEndOffset)
+        {
             Debug.Assert(type.IsValueType);
+
+            lastFieldEndOffset = 0;
 
             if (type.ContainsGCPointers)
                 return false;
@@ -259,6 +268,8 @@ namespace Internal.IL.Stubs
             {
                 if (field.IsStatic)
                     continue;
+
+                lastFieldEndOffset = Math.Max(lastFieldEndOffset, field.Offset.AsInt + field.FieldType.GetElementSize().AsInt);
 
                 if (!overlappingFieldTracker.TrackField(field))
                 {
@@ -299,7 +310,7 @@ namespace Internal.IL.Stubs
             }
 
             // If there are gaps, we can't memcompare
-            if (result && overlappingFieldTracker.HasGaps)
+            if (result && overlappingFieldTracker.HasGapsBeforeOffset(lastFieldEndOffset))
                 result = false;
 
             return result;
@@ -341,18 +352,20 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
-            public bool HasGaps
+            public bool HasGapsBeforeOffset(int offset)
             {
-                get
-                {
-                    for (int i = 0; i < _usedBytes.Length; i++)
-                        if (!_usedBytes[i])
-                            return true;
+                for (int i = 0; i < offset; i++)
+                    if (!_usedBytes[i])
+                        return true;
 
-                    return false;
-                }
+                return false;
             }
         }
+    }
 
+    file static class Extensions
+    {
+        public static MetadataType GetKnownType(this ModuleDesc module, ReadOnlySpan<byte> @namespace, string name)
+            => module.GetKnownType(@namespace, System.Text.Encoding.UTF8.GetBytes(name));
     }
 }

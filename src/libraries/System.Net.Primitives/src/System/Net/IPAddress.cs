@@ -438,7 +438,7 @@ namespace System.Net
 
                 if (this is ReadOnlyIPAddress)
                 {
-                    ThrowSocketOperationNotSupported();
+                    ThrowSocketOperationNotSupportedReadOnly();
                 }
 
                 // Consider: Since scope is only valid for link-local and site-local
@@ -668,7 +668,7 @@ namespace System.Net
                 {
                     if (this is ReadOnlyIPAddress)
                     {
-                        ThrowSocketOperationNotSupported();
+                        ThrowSocketOperationNotSupportedReadOnly();
                     }
 
                     PrivateAddress = unchecked((uint)value);
@@ -718,7 +718,7 @@ namespace System.Net
                 // For IPv6 addresses, we also factor in scope ID.
                 if (IsIPv6)
                 {
-                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers).Slice(0, 16);
                     _hashCode = HashCode.Combine(
                         MemoryMarshal.Read<uint>(numbers),
                         MemoryMarshal.Read<uint>(numbers.Slice(4)),
@@ -769,7 +769,10 @@ namespace System.Net
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
 
         [DoesNotReturn]
-        private static void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported);
+        private void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported, SR.Format(SR.net_SocketException_OperationNotSupported, AddressFamily));
+
+        [DoesNotReturn]
+        private static void ThrowSocketOperationNotSupportedReadOnly() => throw new SocketException(SocketError.OperationNotSupported, SR.net_SocketException_OperationNotSupported_ReadOnlyIPAddress);
 
         private sealed class ReadOnlyIPAddress : IPAddress
         {

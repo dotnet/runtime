@@ -51,10 +51,13 @@ namespace System.Text.RegularExpressions
 
         internal const string SpaceClass = "\u0000\u0000\u0001\u0064"; // \s
         internal const string NotSpaceClass = "\u0000\u0000\u0001\uFF9C"; // \S
+        internal const string NegatedSpaceClass = "\u0001\0\u0001d"; // [^\s]
         internal const string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000"; // \w
         internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000"; // \W
+        internal const string NegatedWordClass = "\u0001\0\n\0\u0002\u0004\u0005\u0003\u0001\u0006\t\u0013\0"; // [^\w]
         internal const string DigitClass = "\u0000\u0000\u0001\u0009"; // \d
         internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7"; // \D
+        internal const string NegatedDigitClass = "\u0001\0\u0001\t"; // [^\d]
         internal const string ControlClass = "\0\0\u0001\u000f"; // \p{Cc}
         internal const string NotControlClass = "\0\0\u0001\ufff1"; // \P{Cc}
         internal const string LetterClass = "\0\0\a\0\u0002\u0004\u0005\u0003\u0001\0"; // \p{L}
@@ -362,6 +365,23 @@ namespace System.Text.RegularExpressions
         }
 
         public void AddChar(char c) => AddRange(c, c);
+
+        public void AddNotChar(char c)
+        {
+            if (c == 0)
+            {
+                AddRange((char)1, LastChar);
+            }
+            else if (c == LastChar)
+            {
+                AddRange((char)0, (char)(LastChar - 1));
+            }
+            else
+            {
+                AddRange((char)0, (char)(c - 1));
+                AddRange((char)(c + 1), LastChar);
+            }
+        }
 
         /// <summary>
         /// Adds a regex char class
@@ -1981,7 +2001,9 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        public static string DescribeSet(string set)
+        /// <param name="set">The set string to describe.</param>
+        /// <param name="forceBrackets">Whether to force brackets around the description even for single characters.</param>
+        public static string DescribeSet(string set, bool forceBrackets = false)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
@@ -1990,7 +2012,8 @@ namespace System.Text.RegularExpressions
             Span<char> scratch = stackalloc char[32];
 
             // Special-case set of a single character to output that character without set square brackets.
-            if (!negated && // no negation
+            if (!forceBrackets && // brackets not forced
+                !negated && // no negation
                 categoryLength == 0 && // no categories
                 endPosition >= set.Length && // no subtraction
                 setLength == 2 && // don't bother handling the case of the single character being 0xFFFF, in which case setLength would be 1
@@ -2116,7 +2139,7 @@ namespace System.Text.RegularExpressions
 
             if (set.Length > endPosition)
             {
-                desc.Append('-').Append(DescribeSet(set.Substring(endPosition)));
+                desc.Append('-').Append(DescribeSet(set.Substring(endPosition), forceBrackets: true));
             }
 
             return desc.Append(']').ToString();

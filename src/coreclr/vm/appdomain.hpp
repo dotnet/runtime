@@ -1549,8 +1549,6 @@ public:
 
 #endif
 
-#if defined(FEATURE_TIERED_COMPILATION)
-
 public:
     TieredCompilationManager * GetTieredCompilationManager()
     {
@@ -1561,8 +1559,6 @@ public:
 private:
     TieredCompilationManager m_tieredCompilationManager;
 
-#endif
-
     friend struct cdac_data<AppDomain>;
 };  // class AppDomain
 
@@ -1571,6 +1567,7 @@ struct cdac_data<AppDomain>
 {
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
     static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
+    static constexpr size_t FriendlyName = offsetof(AppDomain, m_friendlyName);
 };
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;

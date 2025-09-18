@@ -101,6 +101,17 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
 
 #endif // TARGET_ARM
 
+#ifdef TARGET_RISCV64
+
+inline bool Is32BitInstruction(WORD opcode)
+{
+    bool is32 = ((opcode & 0b11) == 0b11);
+    assert(!is32 || ((opcode & 0b11111) != 0b11111)); // 48-bit and larger instructions unsupported
+    return is32;
+}
+
+#endif
+
 // Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
 // on ARM, this will mask off the THUMB bit.
 inline TADDR PCODEToPINSTR(PCODE pc)
@@ -3349,6 +3360,16 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+
+//*****************************************************************************
 // Returns whether the offset fits into bl instruction
 //*****************************************************************************
 inline bool FitsInThumb2BlRel24(INT32 imm24)
@@ -3747,7 +3768,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedExchange(
                 reinterpret_cast<LONG volatile *>(target),
                 *reinterpret_cast<LONG *>(/*::operator*/&(value)));
@@ -3759,7 +3780,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedCompareExchange(
                 reinterpret_cast<LONG volatile *>(destination),
                 *reinterpret_cast<LONG*>(/*::operator*/&(exchange)),
@@ -3775,7 +3796,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedExchange64(
                 reinterpret_cast<LONGLONG volatile *>(target),
                 *reinterpret_cast<LONGLONG *>(/*::operator*/&(value)));
@@ -3787,7 +3808,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedCompareExchange64(
                 reinterpret_cast<LONGLONG volatile *>(destination),
                 *reinterpret_cast<LONGLONG*>(/*::operator*/&(exchange)),

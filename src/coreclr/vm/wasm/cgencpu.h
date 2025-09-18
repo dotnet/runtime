@@ -14,12 +14,6 @@
 #define CODE_SIZE_ALIGN                         4
 #define LOG2SLOT                                LOG2_PTRSIZE
 
-// looks like this is mandatory for now
-#define HAS_NDIRECT_IMPORT_PRECODE              1
-#define HAS_FIXUP_PRECODE                       1
-// ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
-#define HAS_THISPTR_RETBUF_PRECODE              1
-
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
 //**********************************************************************

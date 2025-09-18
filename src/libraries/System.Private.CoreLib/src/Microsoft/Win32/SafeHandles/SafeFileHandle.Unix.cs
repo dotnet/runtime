@@ -71,7 +71,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             set
             {
-                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                Debug.Assert(!value); // We should only use the setter to disable random access.
                 _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
             }
         }
@@ -439,7 +439,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // Delete the file we've created.
                     Debug.Assert(mode == FileMode.Create || mode == FileMode.CreateNew);
-                    Interop.Sys.Unlink(path!);
+                    Interop.Sys.Unlink(path);
 
                     throw new IOException(SR.Format(errorInfo.Error == Interop.Error.EFBIG
                                                         ? SR.IO_FileTooLarge_Path_AllocationSize

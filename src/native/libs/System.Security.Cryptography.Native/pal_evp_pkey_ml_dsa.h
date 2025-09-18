@@ -24,7 +24,7 @@ PALEXPORT EVP_PKEY* CryptoNative_MLDsaGenerateKey(const char* keyType, uint8_t* 
 /*
 Sign a message using the provided ML-DSA key.
 
-Returns 1 on success, 0 on a mismatched signature, -1 on error.
+Returns 1 on success, 0 on signing failure, -1 on other error.
 */
 PALEXPORT int32_t CryptoNative_MLDsaSignPure(EVP_PKEY *pkey,
                                              void* extraHandle,
@@ -46,7 +46,7 @@ PALEXPORT int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
 /*
 Sign an encoded message using the provided ML-DSA key.
 
-Returns 1 on success, 0 on a mismatched signature, -1 on error.
+Returns 1 on success, 0 on signing failure, -1 on other error.
 */
 PALEXPORT int32_t CryptoNative_MLDsaSignPreEncoded(EVP_PKEY *pkey,
                                                    void* extraHandle,
@@ -61,6 +61,26 @@ Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
 PALEXPORT int32_t CryptoNative_MLDsaVerifyPreEncoded(EVP_PKEY *pkey,
                                                      void* extraHandle,
                                                      uint8_t* msg, int32_t msgLen,
+                                                     uint8_t* sig, int32_t sigLen);
+
+/*
+Sign an externally produced signature mu with the provided ML-DSA key.
+
+Returns 1 on success, 0 on signing failure, -1 on other error.
+*/
+PALEXPORT int32_t CryptoNative_MLDsaSignExternalMu(EVP_PKEY* pKey,
+                                                   void* extraHandle,
+                                                   uint8_t* mu, int32_t muLen,
+                                                   uint8_t* destination, int32_t destinationLen);
+
+/*
+Verifies an externally produced signature mu with the provided ML-DSA key.
+
+Returns 1 on success, 0 on mismatched signature, -1 on error.
+*/
+PALEXPORT int32_t CryptoNative_MLDsaVerifyExternalMu(EVP_PKEY* pKey,
+                                                     void* extraHandle,
+                                                     uint8_t* mu, int32_t muLen,
                                                      uint8_t* sig, int32_t sigLen);
 
 /*
