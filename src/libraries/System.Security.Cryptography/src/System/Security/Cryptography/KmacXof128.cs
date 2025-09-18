@@ -19,6 +19,13 @@ namespace System.Security.Cryptography
     /// </remarks>
     public sealed class KmacXof128 : IDisposable
     {
+        private sealed class KmacTrait : IKmacStatic
+        {
+            static string IKmacStatic.HashAlgorithmName => HashAlgorithmNames.KMAC128;
+            static bool IKmacStatic.IsSupported => IsSupported;
+            static bool IKmacStatic.IsXof => true;
+        }
+
         private ConcurrentSafeKmac _kmacProvider;
         private bool _disposed;
 
@@ -514,6 +521,47 @@ namespace System.Security.Cryptography
             CheckStreamCanRead(source);
             CheckPlatformSupport();
             return LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC128, key.Span, source, xof: true, destination, customizationString.Span, cancellationToken);
+        }
+
+        /// <summary>
+        ///   Verifies the hash of data using the KMACXOF128 algorithm.
+        /// </summary>
+        /// <param name="key">The KMAC key.</param>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="hash">The hash to compare against.</param>
+        /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports KMACXOF128.
+        /// </exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public static bool Verify(
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString = default)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static bool Verify(byte[] key, byte[] source, byte[] hash, byte[]? customizationString = null)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
         }
 
         private static void HashDataCore(

@@ -614,6 +614,7 @@
     <Compile Include="System\Security\Cryptography\KeySizes.cs" />
     <Compile Include="System\Security\Cryptography\Kmac128.cs" />
     <Compile Include="System\Security\Cryptography\Kmac256.cs" />
+    <Compile Include="System\Security\Cryptography\KmacStatic.cs" />
     <Compile Include="System\Security\Cryptography\KmacXof128.cs" />
     <Compile Include="System\Security\Cryptography\KmacXof256.cs" />
     <Compile Include="System\Security\Cryptography\KeyBlobHelpers.cs" />
