@@ -92,13 +92,13 @@
 
       <!-- Only display the welcome message when an installation was performed. Message is broken up to
            ensure tab order is correct. -->
-      <Label HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="148" Y="124" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.SuccessInstallLocation)</Label>
-      <Label HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="172" Y="156" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.SuccessInstallProductName)</Label>
-      <Label HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="148" Y="200" Width="-12" Height="32" FontId="PageHeaderFont" HideWhenDisabled="yes">#(loc.ResourcesHeader)</Label>
-      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="172" Y="244" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.DocumentationLink)</Hypertext>
-      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="172" Y="264" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.ReleaseNotesLink)</Hypertext>
-      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="172" Y="284" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.TutorialLink)</Hypertext>
-      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallHeader" X="172" Y="304" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.TelemetryLink)</Hypertext>
+      <Label HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallLocation" X="148" Y="124" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.SuccessInstallLocation)</Label>
+      <Label HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="SuccessInstallProductName" X="172" Y="156" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.SuccessInstallProductName)</Label>
+      <Label HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="ResourcesHeader" X="148" Y="200" Width="-12" Height="32" FontId="PageHeaderFont" HideWhenDisabled="yes">#(loc.ResourcesHeader)</Label>
+      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="DocumentationLink" X="172" Y="244" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.DocumentationLink)</Hypertext>
+      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="ReleaseNotesLink" X="172" Y="264" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.ReleaseNotesLink)</Hypertext>
+      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="TutorialLink" X="172" Y="284" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.TutorialLink)</Hypertext>
+      <Hypertext HexStyle="00000000" EnableCondition="WixBundleAction = 6" Name="TelemetryLink" X="172" Y="304" Width="-12" Height="16" FontId="DefaultFont" HideWhenDisabled="yes">#(loc.TelemetryLink)</Hypertext>
 
       <Label X="148" Y="-48" Width="-12" Height="34" FontId="DefaultFont" DisablePrefix="yes" VisibleCondition="WixStdBARestartRequired">
         <Text>#(loc.SuccessRestartText)</Text>

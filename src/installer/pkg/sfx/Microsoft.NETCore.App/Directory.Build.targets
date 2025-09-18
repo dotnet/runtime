@@ -5,7 +5,7 @@
   <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">
     <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
 
-    <!-- Microsoft.Wix is a dotnet tool package, so exlude its assets. -->
+    <!-- Microsoft.Wix is a dotnet tool package, so exclude its assets. -->
     <PackageReference Include="Microsoft.Wix" Version="$(MicrosoftWixVersion)" ExcludeAssets="all" />
     <!-- Installers needs the $(PkgMicrosoftWixToolsetUIwixext) property to locate the extension. -->
     <PackageReference Include="Microsoft.WixToolset.UI.wixext" Version="$(MicrosoftWixToolsetUIWixextVersion)" GeneratePathProperty="true" />
