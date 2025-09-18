@@ -2482,6 +2482,12 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 //
 PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 {
+    if (compIsForInlining() && JitConfig.JitInstrumentInlinees() == 0)
+    {
+        JITDUMP("Inlinee instrumentation disabled by config\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     // Choose instrumentation technology.
     //
     // We enable edge profiling by default, except when:
@@ -2613,6 +2619,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     if (compIsForInlining())
     {
+        if (JitConfig.JitInstrumentInlinees() == 0)
+        {
+            JITDUMP("Inlinee instrumentation disabled by config\n");
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+
         GenTreeRetExpr* const retExpr = impInlineInfo->inlineCandidateInfo->retExpr;
 
         // If there's a retExpr but no gtSubstBB, we assume the retExpr is a temp
@@ -2623,7 +2635,8 @@ PhaseStatus Compiler::fgInstrumentMethod()
             assert(retExpr->gtSubstExpr != nullptr);
             retBB                 = retExpr->gtSubstBB;
             tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, retExpr->gtSubstExpr);
-            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(retExpr->gtSubstExpr), retBB->bbNum)
+            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(retExpr->gtSubstExpr),
+                    retBB->bbNum);
         }
     }
 
@@ -2735,7 +2748,7 @@ PhaseStatus Compiler::fgInstrumentMethodCore()
     //
     // If this is an OSR method, we should use the same buffer that the Tier0 method used.
     //
-    // This is supported by allocPgoInstrumentationDataBySchema, which will verify the schema
+    // This is supported by allocPgoInstrumentationBySchema, which will verify the schema
     // we provide here matches the one from Tier0, and will fill in the data offsets in
     // our schema properly.
     //
