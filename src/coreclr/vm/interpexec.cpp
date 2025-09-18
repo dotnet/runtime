@@ -738,9 +738,13 @@ MAIN_LOOP:
                     ip++;
                     break;
                 case INTOP_STORESTUBCONTEXT:
-                    LOCAL_VAR(ip[1], void*) = GetMostRecentUMEntryThunkData();
+                {
+                    void *thunkData = GetMostRecentUMEntryThunkData();
+                    assert(thunkData);
+                    LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
                     break;
+                }
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;
@@ -2280,21 +2284,23 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
+                    PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
+                    assert(calliFunctionPointer);
+
                     // Interpreter-FIXME: isTailcall
                     if (flags & (int32_t)CalliFlags::PInvoke)
                     {
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
                         {
-                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                            InvokeUnmanagedCalli(calliFunctionPointer, cookie, stack + callArgsOffset, stack + returnOffset);
                         }
                         else
                         {
-                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
+                            InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
                         }
                     }
                     else
                     {
-                        PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // WASMTODO: We may end up here with native JIT helper entrypoint without MethodDesc
                         // that CALL_INTERP_METHOD is not able to handle. This is a potential problem for
