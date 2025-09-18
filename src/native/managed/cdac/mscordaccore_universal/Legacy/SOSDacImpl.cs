@@ -3107,12 +3107,12 @@ internal sealed unsafe partial class SOSDacImpl
 
             TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
             int count = 0;
-            foreach ((TargetPointer nativeCode, TargetPointer nativeCodeVersionNodePtr, int optTier) in _target.Contracts.CodeVersions.GetTieredVersions(methodDescPtr, rejitId, cNativeCodeAddrs))
+            foreach ((TargetPointer nativeCode, TargetPointer nativeCodeVersionNodePtr, Contracts.OptimizationTierEnum optTier) in _target.Contracts.CodeVersions.GetTieredVersions(methodDescPtr, rejitId, cNativeCodeAddrs))
             {
-                nativeCodeAddrs[count++] = default;
+                nativeCodeAddrs[count] = default;
                 nativeCodeAddrs[count].NativeCodeAddr = nativeCode.ToClrDataAddress(_target);
                 nativeCodeAddrs[count].NativeCodeVersionNodePtr = nativeCodeVersionNodePtr.ToClrDataAddress(_target);
-                nativeCodeAddrs[count].OptimizationTier = (DacpTieredVersionData.OptimizationTierEnum)optTier;
+                nativeCodeAddrs[count++].OptimizationTier = (OptimizationTierEnum)optTier;
             }
             *pcNativeCodeAddrs = count;
             if (count >= cNativeCodeAddrs)

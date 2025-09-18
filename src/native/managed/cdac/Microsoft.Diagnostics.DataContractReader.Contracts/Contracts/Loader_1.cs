@@ -181,8 +181,9 @@ internal readonly struct Loader_1 : ILoader
         if (module.ReadyToRunInfo == TargetPointer.Null)
             return false;
 
-        Data.ReadyToRunInfo readyToRunInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
-        // r2rImageBase = readyToRunInfo. tbd
+        Data.PEImageLayout pEImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(module.ReadyToRunImage);
+        r2rImageBase = pEImageLayout.Base;
+        r2rImageEnd = pEImageLayout.Base + pEImageLayout.Size;
         return true;
     }
 

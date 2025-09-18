@@ -22,6 +22,22 @@ internal struct NativeCodeVersionHandle
 }
 ```
 
+Native code version optimization enum:
+```csharp
+public enum OptimizationTierEnum
+{
+    Unknown = 0,
+    MinOptJitted = 1,
+    Optimized = 2,
+    QuickJitted = 3,
+    OptimizedTier1 = 4,
+    ReadyToRun = 5,
+    OptimizedTier1OSR = 6,
+    QuickJittedInstrumented = 7,
+    OptimizedTier1Instrumented = 8,
+}
+```
+
 ```csharp
 // Return a handle to the active version of the IL code for a given method descriptor
 public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc);
@@ -62,7 +78,15 @@ See [code versioning](../features/code-versioning.md) for a general overview and
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+| CallCountingInfo | CodeVersion | pointer to native code version |
+| CallCountingInfo | Stage | call counting enum, see below |
+| CallCountingInfo | Table | pointer to call counting info SHash table |
+| CallCountingInfo | TableSize | number of entries in CallCountingInfo SHash table |
+| CallCountingManager | CallCountingHash | SHash of native code versions to call counting info |
+| EEConfig | TieredPGO_InstrumentOnlyHotCode | boolean, for deciding optimization tier of default native code version |
 | MethodDescVersioningState | Flags | `MethodDescVersioningStateFlags` flags, see below |
+| NativeCodeVersion | StorageKind | storage kind enum, see below |
+| NativeCodeVersion | MethodDescOrNode | pointer to method desc (synthetic) or version node (explicit) |
 | MethodDescVersioningState | NativeCodeVersionNode | code version node of this method desc, if active |
 | NativeCodeVersionNode | Next | pointer to the next native code version |
 | NativeCodeVersionNode | MethodDesc | indicates a synthetic native code version node |
@@ -70,6 +94,7 @@ Data descriptors used:
 | NativeCodeVersionNode | Flags | `NativeCodeVersionNodeFlags` flags, see below |
 | NativeCodeVersionNode | VersionId | Version ID corresponding to the parent IL code version |
 | NativeCodeVersionNode | GCCoverageInfo | GCStress debug info, if supported |
+| NativeCodeVersionNode | NativeId | ID corresponding to the version node |
 | ILCodeVersioningState | FirstVersionNode | pointer to the first `ILCodeVersionNode` |
 | ILCodeVersioningState | ActiveVersionKind | an `ILCodeVersionKind` value indicating which fields of the active version are value |
 | ILCodeVersioningState | ActiveVersionNode | if the active version is explicit, the NativeCodeVersionNode for the active version |
@@ -107,7 +132,46 @@ private enum ILCodeVersionKind
 }
 ```
 
-Global variables used: *none*
+The value of `NativeCodeVersionNode::OptimizationTier` is one of
+```csharp
+private enum NativeOptimizationTier : uint
+{
+    OptimizationTier0 = 0,
+    OptimizationTier1 = 1,
+    OptimizationTier1OSR = 2,
+    OptimizationTierOptimized = 3,
+    OptimizationTier0Instrumented = 4,
+    OptimizationTier1Instrumented = 5,
+};
+```
+
+The value of `CallCountingInfo::Stage` is one of
+```csharp
+private enum Stage : byte
+{
+    StubIsNotActive = 0,
+    StubMayBeActive = 1,
+    PendingCompletion = 2,
+    Complete = 3,
+    Disabled = 4
+};
+```
+
+The value of `NativeCodeVersion::StorageKind` is one of
+```csharp
+private enum StorageKind
+{
+    Unknown = 0,
+    Explicit = 1,
+    Synthetic = 2
+};
+```
+
+### Global variables used:
+| Global Name | Type | Purpose |
+| --- | --- | --- |
+| `FeatureTieredCompilation` | byte | is FEATURE_TIERED_COMPILATION on (1) or off (0) |
+| `EEConfig` | TargetPointer | Pointer to the global EEConfig |
 
 Contracts used:
 | Contract Name |
@@ -115,6 +179,7 @@ Contracts used:
 | ExecutionManager |
 | Loader |
 | RuntimeTypeSystem |
+| SHash |
 
 Implementation of CodeVersionHandles
 
@@ -193,9 +258,9 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
     // CodeVersionManager::GetILCodeVersions
     GetModuleAndMethodDesc(methodDesc, out TargetPointer module, out uint methodDefToken);
 
-    ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
-    TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-    TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+    ModuleHandle moduleHandle = target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
+    TargetPointer ilCodeVersionTable = target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
+    TargetPointer ilVersionStateAddress = target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
 
     // always add the synthetic version
     yield return new ILCodeVersionHandle(module, methodDefToken, TargetPointer.Null);
@@ -203,11 +268,11 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
     // if explicit versions exist, iterate linked list and return them
     if (ilVersionStateAddress != TargetPointer.Null)
     {
-        Data.ILCodeVersioningState ilState = _target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
+        Data.ILCodeVersioningState ilState = target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
         TargetPointer nodePointer = ilState.FirstVersionNode;
         while (nodePointer != TargetPointer.Null)
         {
-            Data.ILCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.ILCodeVersionNode>(nodePointer);
+            Data.ILCodeVersionNode current = target.ProcessedData.GetOrAdd<Data.ILCodeVersionNode>(nodePointer);
             yield return new ILCodeVersionHandle(TargetPointer.Null, 0, nodePointer);
             nodePointer = current.Next;
         }
@@ -220,7 +285,7 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
 ```csharp
 NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointer ip)
 {
-    Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+    Contracts.IExecutionManager executionManager = target.Contracts.ExecutionManager;
     EECodeInfoHandle? info = executionManager.GetEECodeInfoHandle(ip);
     if (!info.HasValue)
     {
@@ -231,7 +296,7 @@ NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointe
     {
         return NativeCodeVersionHandle.Invalid;
     }
-    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
     if (!rts.IsVersionable(md))
     {
@@ -267,13 +332,13 @@ IEnumerable<NativeCodeVersionHandle> FindNativeCodeVersionNodes(IRuntimeTypeSyst
     if (versioningStateAddr == TargetPointer.Null)
         yield break;
 
-    Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
+    Data.MethodDescVersioningState versioningState = target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
 
     // LinkedList stage of NativeCodeVersion::Next, heavily inlined
     TargetPointer currentAddress = versioningState.NativeCodeVersionNode;
     while (currentAddress != TargetPointer.Null)
     {
-        Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
+        Data.NativeCodeVersionNode current = target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
         if (predicate(current))
         {
             yield return NativeCodeVersionHandle.OfExplicit(currentAddress);
@@ -300,7 +365,7 @@ IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetP
     }
 
     // Iterate through versioning state nodes and return the active one, matching any IL code version
-    Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
     TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
     IEnumerable<NativeCodeVersionHandle> nativeCodeVersions = FindNativeCodeVersionNodes(
@@ -314,6 +379,152 @@ IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetP
 }
 ```
 
+### Iterating through native code versions given a MethodDesc and a rejit ID
+Here we need an SHash, the SHash traits are below:
+```csharp
+    private sealed class CodeVersionHashTraits : ITraits<NativeCodeVersion, CallCountingInfo>
+    {
+        private readonly Target _target;
+        public CodeVersionHashTraits(Target target)
+        {
+            _target = target;
+        }
+        public NativeCodeVersion GetKey(CallCountingInfo entry)
+        {
+            return // read version node or method desc ptr from entry
+        }
+        public bool Equals(NativeCodeVersion left, NativeCodeVersion right) => // storage kind and pointer match
+        public uint Hash(NativeCodeVersion key)
+        {
+            // switch on the storage kind
+            // if synthetic the key is the method desc pointer
+            // if explicit we read the pointer (node pointer)
+            // and then sum the ID of the node and the method desc of the node
+            // otherwise throw not supported
+        }
+        public bool IsNull(CallCountingInfo entry) => // address is null
+        public CallCountingInfo Null() => new CallCountingInfo(TargetPointer.Null);
+        public bool IsDeleted(CallCountingInfo entry) => false;
+    }
+```
+
+```csharp
+private bool IsCallCountingEnabled(MethodDescHandle mdh)
+{
+    // get loader allocator
+    Contracts.IRuntimeTypeSystem rtsContract = target.Contracts.RuntimeTypeSystem;
+    Contracts.ILoader loaderContract = target.Contracts.Loader;
+    TargetPointer loaderAllocator = // get loader allocator using rtsContract and loaderContract
+    Data.LoaderAllocator loaderAllocatorData = target.ProcessedData.GetOrAdd<LoaderAllocator>(loaderAllocator);
+
+    // get call counting manager and hash
+    TargetPointer callCountingMgr = target.ReadPointer(loaderAllocator + /* LoaderAllocator::CallCountingManager offset */);
+    TargetPointer callCountingHash = callCountingMgr + /* CallCountingManager::CallCountingHash offset */;
+
+    CodeVersionHashTraits traits = new(target);
+    ISHash shashContract = target.Contracts.SHash;
+    /* To construct an SHash we must pass a DataType enum.
+    We must be able to look up this enum in a dictionary of known types and retrieve a Target.TypeInfo struct.
+    This struct contains a dictionary of fields with keys corresponding to the names of offsets
+    and values corresponding to the offset values. Optionally, it contains a Size field.
+    Here this is the CallCountingInfo DataType which contains the appropriate offsets for the hashtable data, number of entries, as well as the shape and size of each entry.
+    */
+    SHash<uint, Data.CallCountingInfo> shash = shashContract.CreateSHash<uint, Data.CallCountingInfo>(target, callCountingHash, DataType.CallCountingInfo, traits)
+    CallCountingInfo entry = shashContract.LookupSHash(callCountingTable.HashTable, new NativeCodeVersion((uint)StorageKind.Synthetic, mdh.Address));
+    return // entry is not null and the stage of the entry is not Disabled
+}
+
+private NativeOptimizationTier GetInitialOptimizationTier(bool isReadyToRun, MethodDescHandle mdh)
+{
+    if (target.ReadGlobal<byte>("FeatureTieredCompilation") == 0
+            || !IsCallCountingEnabled(mdh))
+        return NativeOptimizationTier.TierOptimized;
+    else
+    {
+        TargetPointer eeConfig = // read EEConfig global variable
+        bool tieredPGO_InstrumentOnlyHotCode = // read from EEConfig
+        if (tieredPGO_InstrumentOnlyHotCode || isReadyToRun)
+            return NativeOptimizationTier.Tier0;
+        else
+            return NativeOptimizationTier.Tier0Instrumented;
+    }
+}
+
+IEnumerable<(TargetPointer, TargetPointer, OptimizationTierEnum)> GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs)
+{
+    Contracts.ICodeVersions codeVersionsContract = this;
+    Contracts.IReJIT rejitContract = target.Contracts.ReJIT;
+
+    ILCodeVersionHandle ilCodeVersion = codeVersionsContract.GetILCodeVersions(methodDesc)
+        .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
+            ILCodeVersionHandle.Invalid);
+
+    if (!ilCodeVersion.IsValid)
+        throw new ArgumentException();
+    // Iterate through versioning state nodes and return the active one, matching any IL code version
+    Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+    Contracts.ILoader loader = target.Contracts.Loader;
+    ModuleHandle moduleHandle = // get the module handle from the method desc using rts
+
+    bool isReadyToRun = loader.GetReadyToRunInfo(moduleHandle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
+    bool isEligibleForTieredCompilation = rts.IsEligibleForTieredCompilation(mdh);
+    int count = 0;
+    foreach (NativeCodeVersionHandle nativeCodeVersionHandle in ((ICodeVersions)this).GetNativeCodeVersions(methodDesc, ilCodeVersion))
+    {
+        TargetPointer nativeCode = codeVersionsContract.GetNativeCode(nativeCodeVersionHandle).AsTargetPointer;
+        TargetPointer nativeCodeAddr = nativeCode;
+        TargetPointer nativeCodeVersionNodePtr = nativeCodeVersionHandle.IsExplicit ? AsNode(nativeCodeVersionHandle).Address : TargetPointer.Null;
+        OptimizationTierEnum optimizationTier;
+        if (r2rImageBase <= nativeCode && nativeCode < r2rImageEnd)
+        {
+            optimizationTier = OptimizationTierEnum.ReadyToRun;
+        }
+
+        else if (isEligibleForTieredCompilation)
+        {
+            NativeOptimizationTier optTier;
+            if (!nativeCodeVersionHandle.IsExplicit)
+                optTier = GetInitialOptimizationTier(isReadyToRun, mdh);
+            else
+            {
+                NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
+                optTier = (NativeOptimizationTier)nativeCodeVersionNode.OptimizationTier;
+            }
+            optimizationTier = GetOptimizationTier(optTier);
+        }
+        else if (rts.IsJitOptimizationDisabled(mdh))
+        {
+            optimizationTier = OptimizationTierEnum.MinOptJitted;
+        }
+        else
+        {
+            optimizationTier = OptimizationTierEnum.Optimized;
+        }
+        count++;
+        yield return (nativeCodeAddr, nativeCodeVersionNodePtr, optimizationTier);
+
+        if (count >= cNativeCodeAddrs)
+            yield break;
+    }
+}
+```
+
+Helper for the above to translate from internal to external optimization tier
+```csharp
+private static OptimizationTierEnum GetOptimizationTier(NativeOptimizationTier nativeOptimizationTier)
+{
+    return nativeOptimizationTier switch
+    {
+        NativeOptimizationTier.Tier0 => OptimizationTierEnum.QuickJitted,
+        NativeOptimizationTier.Tier1 => OptimizationTierEnum.OptimizedTier1,
+        NativeOptimizationTier.Tier1OSR => OptimizationTierEnum.OptimizedTier1OSR,
+        NativeOptimizationTier.TierOptimized => OptimizationTierEnum.Optimized,
+        NativeOptimizationTier.Tier0Instrumented => OptimizationTierEnum.QuickJittedInstrumented,
+        NativeOptimizationTier.Tier1Instrumented => OptimizationTierEnum.OptimizedTier1Instrumented,
+        _ => OptimizationTierEnum.Unknown,
+    };
+}
+```
 
 ### Finding the active native code version of an ILCodeVersion for a method descriptor
 ```csharp
@@ -329,7 +540,7 @@ public virtual NativeCodeVersionHandle GetActiveNativeCodeVersionForILCodeVersio
 ```csharp
 bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddress)
 {
-    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
     if (rts.IsDynamicMethod(md))
         return false;
@@ -338,7 +549,7 @@ bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddr
     TargetPointer mtAddr = rts.GetMethodTable(md);
     TypeHandle mt = rts.GetTypeHandle(mtAddr);
     TargetPointer modAddr = rts.GetModule(mt);
-    ILoader loader = _target.Contracts.Loader;
+    ILoader loader = target.Contracts.Loader;
     ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
     ModuleFlags modFlags = loader.GetFlags(mod);
     if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
@@ -372,7 +583,7 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
     {
         // Synthetic ILCodeVersion, get the IL from the module and method def
 
-        ILoader loader = _target.Contracts.Loader;
+        ILoader loader = target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
         ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
     }

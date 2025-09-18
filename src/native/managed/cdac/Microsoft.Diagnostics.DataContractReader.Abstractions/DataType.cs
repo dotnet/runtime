@@ -43,7 +43,6 @@ public enum DataType
     LoaderAllocator,
     CallCountingManager,
     CallCountingInfo,
-    CallCountingTable,
     NativeCodeVersion,
     PEAssembly,
     AssemblyBinder,

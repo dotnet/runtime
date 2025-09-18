@@ -831,6 +831,7 @@ public:
 #ifdef FEATURE_READYTORUN
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
+    PTR_PEImageLayout m_pReadyToRunImage; // cached on the module for easy access
     PTR_NativeImage         m_pNativeImage;
 #endif
 
@@ -1705,6 +1706,7 @@ struct cdac_data<Module>
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
+    static constexpr size_t ReadyToRunImage = offsetof(Module, m_pReadyToRunImage);
     static constexpr size_t GrowableSymbolStream = offsetof(Module, m_pIStreamSym);
 
     // Lookup map pointers

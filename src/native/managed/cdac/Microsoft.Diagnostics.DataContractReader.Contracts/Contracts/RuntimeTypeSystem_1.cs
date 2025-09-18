@@ -1062,13 +1062,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TargetPointer corDebuggerControlFlagsPtr = _target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
         uint corDebuggerControlFlags = _target.Read<uint>(corDebuggerControlFlagsPtr);
         // debugger
-        if ((flags & ModuleFlags.DebuggerAllowJitOptsPriv) != 0 ||
-            (((corDebuggerControlFlags & (uint)DebuggerControlFlags.AllowJitOpt) != 0) && (flags & ModuleFlags.DebuggerUserOverridePriv) == 0))
+        bool allowJitOpts = (flags & ModuleFlags.DebuggerAllowJitOptsPriv) != 0 ||
+            (((corDebuggerControlFlags & (uint)DebuggerControlFlags.AllowJitOpt) != 0) && (flags & ModuleFlags.DebuggerUserOverridePriv) == 0);
+        if (!allowJitOpts)
             return true;
         // profiler
-        if ((flags & ModuleFlags.ProfilerDisableOptimizations) != 0)
-            return true;
-        return false;
+        return (flags & ModuleFlags.ProfilerDisableOptimizations) != 0;
     }
     private bool IsJitOptimizationDisabledForAllMethodsInChunk(MethodDesc md)
     {
@@ -1080,7 +1079,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     bool IRuntimeTypeSystem.IsJitOptimizationDisabled(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
-        return md.IsJitOptimizationDisabledForSpecificMethod && IsJitOptimizationDisabledForAllMethodsInChunk(md);
+        return md.IsJitOptimizationDisabledForSpecificMethod || IsJitOptimizationDisabledForAllMethodsInChunk(md);
     }
     TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc)
     {

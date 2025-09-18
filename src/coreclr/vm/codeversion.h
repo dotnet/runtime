@@ -147,12 +147,8 @@ template<>
 struct cdac_data<NativeCodeVersion>
 {
     static constexpr size_t StorageKind = offsetof(NativeCodeVersion, m_storageKind);
-    static constexpr size_t VersionNode = offsetof(NativeCodeVersion, m_pVersionNode);
+    static constexpr size_t MethodDescOrNode = offsetof(NativeCodeVersion, m_pVersionNode);
 };
-
-#endif // FEATURE_CODE_VERSIONING
-
-#ifdef FEATURE_CODE_VERSIONING
 
 enum class RejitFlags : uint32_t
 {

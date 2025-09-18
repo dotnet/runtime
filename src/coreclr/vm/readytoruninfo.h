@@ -347,7 +347,6 @@ struct cdac_data<ReadyToRunInfo>
 {
     static constexpr size_t ReadyToRunHeader = offsetof(ReadyToRunInfo, m_pHeader);
     static constexpr size_t CompositeInfo = offsetof(ReadyToRunInfo, m_pCompositeInfo);
-    static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
     static constexpr size_t NumRuntimeFunctions = offsetof(ReadyToRunInfo, m_nRuntimeFunctions);
     static constexpr size_t RuntimeFunctions = offsetof(ReadyToRunInfo, m_pRuntimeFunctions);
     static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);

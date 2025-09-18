@@ -161,6 +161,12 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if a MethodDesc supports mulitiple code versions
     public virtual bool IsVersionable(MethodDescHandle methodDesc);
 
+    // Returns true if the MethodDesc is eligible for tiered compilation
+    public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
+
+    // Returns true if JIT optimization has been disabled for this MethodDesc
+    bool IsJitOptimizationDisabled(MethodDescHandle methodDesc);
+
     // Return a pointer to the IL versioning state of the MethodDesc
     public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc);
 
@@ -794,7 +800,8 @@ The version 1 `MethodDesc` APIs depend on the following globals:
 | `MethodDescAlignment` | `MethodDescChunk` trailing data is allocated in multiples of this constant.  The size (in bytes) of each `MethodDesc` (or subclass) instance is a multiple of this constant. |
 | `MethodDescTokenRemainderBitCount` | Number of bits in the token remainder in `MethodDesc` |
 | `MethodDescSizeTable` | A pointer to the MethodDesc size table. The MethodDesc flags are used as an offset into this table to lookup the MethodDesc size. |
-
+| `CORDebuggerControlFlags` | A pointer to debugger control flags, that the debugger can set to control optimizations, etc. |
+| `EEConfig` | A pointer to the global EEConfig that contains global settings, etc. |
 
 In the runtime a `MethodDesc` implicitly belongs to a single `MethodDescChunk` and some common data is shared between method descriptors that belong to the same chunk.  A single method table
 will typically have multiple chunks.  There are subkinds of MethodDescs at runtime of varying sizes (but the sizes must be mutliples of `MethodDescAlignment`) and each chunk contains method descriptors of the same size.
@@ -802,6 +809,9 @@ will typically have multiple chunks.  There are subkinds of MethodDescs at runti
 We depend on the following data descriptors:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+jitMinOpts
+| `EEConfig` | `JitMinOpts` | Flag for minimal JIT optimization |
+| `EEConfig` | `Debuggable` | Flag for debuggable code generation |
 | `MethodDesc` | `ChunkIndex` | Offset of this `MethodDesc` relative to the end of its containing `MethodDescChunk` - in multiples of `MethodDescAlignment` |
 | `MethodDesc` | `Slot` | The method's slot |
 | `MethodDesc` | `Flags` | The method's flags |
@@ -1236,6 +1246,42 @@ Determining if a method supports multiple code versions:
         }
         return false;
     }
+```
+
+Determining if a method has JIT optimizations disabled:
+```csharp
+private bool ModuleJitOptsDisabled(MethodDesc md)
+{
+    TypeHandle mt = GetTypeHandle(md.MethodTable);
+    TargetPointer modulePtr = GetModule(mt);
+    ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+    ModuleFlags flags = _target.Contracts.Loader.GetFlags(moduleHandle);
+
+    TargetPointer corDebuggerControlFlagsPtr = _target.ReadGlobalPointer("CORDebuggerControlFlags");
+    uint corDebuggerControlFlags = _target.Read<uint>(corDebuggerControlFlagsPtr);
+
+    bool allowJitOpts = // complex condition checking on the flags to see if JIT opts have been disabled module-wide by the debugger
+    if (!allowJitOpts)
+        return true;
+    // have the jit opts been disabled by the profiler?
+    return (flags & ModuleFlags.ProfilerDisableOptimizations) != 0;
+}
+private bool IsJitOptimizationDisabledForAllMethodsInChunk(MethodDesc md)
+{
+    TargetPointer eeConfigPtr = _target.ReadGlobalPointer("EEConfig");
+    bool jitMinOpts = // read from EEConfig
+    bool debuggable = // read from EEConfig
+    return jitMinOpts || debuggable || ModuleJitOptsDisabled(md);
+}
+
+bool IRuntimeTypeSystem.IsJitOptimizationDisabled(MethodDescHandle methodDesc)
+{
+    MethodDesc md = _methodDescs[methodDesc.Address];
+    // we have cached the boolean isJitOptimizationDisabledForSpecificMethod on each method desc
+    // if there is no metadata then optimization cannot have been disabled
+    // we then read the metadata, if the NoOptimization attribute is set then JIT optimization has been disabled
+    return isJitOptimizationDisabledForSpecificMethod || IsJitOptimizationDisabledForAllMethodsInChunk(md);
+}
 ```
 
 Extracting a pointer to the `MethodDescVersioningState` data for a given method

@@ -231,20 +231,20 @@ internal struct DacpReJitData
     public ClrDataAddress NativeCodeAddr;
 };
 
+public enum OptimizationTierEnum
+{
+    Unknown = 0,
+    MinOptJitted = 1,
+    Optimized = 2,
+    QuickJitted = 3,
+    OptimizedTier1 = 4,
+    ReadyToRun = 5,
+    OptimizedTier1OSR = 6,
+    QuickJittedInstrumented = 7,
+    OptimizedTier1Instrumented = 8,
+}
 internal struct DacpTieredVersionData
 {
-    public enum OptimizationTierEnum
-    {
-        OptimizationTier_Unknown,
-        OptimizationTier_MinOptJitted,
-        OptimizationTier_Optimized,
-        OptimizationTier_QuickJitted,
-        OptimizationTier_OptimizedTier1,
-        OptimizationTier_ReadyToRun,
-        OptimizationTier_OptimizedTier1OSR,
-        OptimizationTier_QuickJittedInstrumented,
-        OptimizationTier_OptimizedTier1Instrumented,
-    };
     public ClrDataAddress NativeCodeAddr;
     public OptimizationTierEnum OptimizationTier;
     public ClrDataAddress NativeCodeVersionNodePtr;
