@@ -32,7 +32,7 @@ namespace System.Xml.Serialization
             object[] attrs = provider.GetCustomAttributes(false);
             for (int i = 0; i < attrs.Length; i++)
             {
-                if (attrs[i] is SoapIgnoreAttribute || attrs[i] is ObsoleteAttribute)
+                if (attrs[i] is SoapIgnoreAttribute)
                 {
                     _soapIgnore = true;
                     break;
