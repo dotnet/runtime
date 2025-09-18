@@ -2157,7 +2157,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     // InterpMethodContextFrame. This is important for the stack walking code.
     struct Frames
     {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpMethodContextFrame interpMethodContextFrame;
         InterpreterFrame interpreterFrame;
 
         Frames(TransitionBlock* pTransitionBlock)
@@ -2176,9 +2176,25 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 
     StackVal retVal;
 
-    frames.interpMethodContextFrame.startIp = pOriginalFrame->startIp;
-    frames.interpMethodContextFrame.pStack = isFilter ? sp : pOriginalFrame->pStack;
-    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+#ifndef FEATURE_REUSE_INTERPRETER_STACK_FOR_NORMAL_FUNCLETS
+    // Frame pointer for original method
+    int8_t* originalStack;
+    if (pOriginalFrame->IsFuncletFrame())
+    {
+        originalStack = *(int8_t**)pOriginalFrame->pStack;
+    }
+    else
+    {
+        originalStack = pOriginalFrame->pStack - FUNCLET_STACK_ADJUSTMENT_OFFSET;
+    }
+    *(int8_t**)sp = originalStack;
+    InterpreterFrameReporting frameReporting = isFilter ? InterpreterFrameReporting::FuncletNoReportGlobals : InterpreterFrameReporting::FuncletReportGlobals;
+#else
+    sp = isFilter ? sp : pOriginalFrame->pStack;
+    InterpreterFrameReporting frameReporting = InterpreterFrameReporting::Normal;
+#endif
+
+    frames.interpMethodContextFrame.ReInit(NULL, pOriginalFrame->startIp, (int8_t*)&retVal, frameReporting, sp);
 
     ExceptionClauseArgs exceptionClauseArgs;
     exceptionClauseArgs.ip = (const int32_t *)pHandler;
@@ -2604,8 +2620,7 @@ OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
     PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
-    TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
-    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
+    return *dac_cast<PTR_OBJECTREF>(frame->GetFunctionFrameStack());
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
@@ -2624,8 +2639,7 @@ PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
         PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
-        TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
-        TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
+        TADDR taSlot = (TADDR)(spOffsetGenericsContext + frame->GetFunctionFrameStack());
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
         return PTR_VOID(taExactGenericsToken);
     }

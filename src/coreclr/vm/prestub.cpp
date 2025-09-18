@@ -2048,7 +2048,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     // InterpMethodContextFrame. This is important for the stack walking code.
     struct Frames
     {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpMethodContextFrame interpMethodContextFrame;
         InterpreterFrame interpreterFrame;
 
         Frames(TransitionBlock* pTransitionBlock)
@@ -2058,15 +2058,13 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     }
     frames(pTransitionBlock);
 
-    frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
-    frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
+    frames.interpMethodContextFrame.ReInit(NULL, dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr), (retBuff != NULL) ? (int8_t*)retBuff : sp, InterpreterFrameReporting::Normal, sp);
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
     frames.interpreterFrame.Pop();
 
-    return frames.interpMethodContextFrame.pRetVal;
+    return frames.interpMethodContextFrame.GetRetValAddr_KnownNormalReporting();
 }
 
 extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
