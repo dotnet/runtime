@@ -93,7 +93,6 @@ public class MonoRunner extends Instrumentation
         setEnv("HOME", filesDir);
         setEnv("TMPDIR", cacheDir);
         setEnv("TEST_RESULTS_DIR", testResultsDir);
-        setEnv("DOTNET_ANDROID_VERSION_FROM_JAVA", getAndroidVersion());
 
         Log.i("DOTNET", "MonoRunner initializeRuntime, entryPointLibName=" + entryPointLibName);
         int localDateTimeOffset = getLocalDateTimeOffset();
@@ -186,20 +185,6 @@ public class MonoRunner extends Instrumentation
             int offsetInMillis = Calendar.getInstance().getTimeZone().getRawOffset();
             return offsetInMillis / 1000;
         }
-    }
-
-    static String getAndroidVersion() {
-        String majorSdk = String.valueOf(android.os.Build.VERSION.SDK_INT);
-        
-        // Check if Build.getMinorSdkVersion() is available (Android 16+ / API 36+)
-        if (android.os.Build.VERSION.SDK_INT >= 36) {
-            int minorSdk = android.os.Build.getMinorSdkVersion(android.os.Build.VERSION.SDK_INT_FULL);
-            if (minorSdk > 0) {
-                return majorSdk + "." + minorSdk;
-            }
-        }
-        
-        return majorSdk + ".0";
     }
 
     static native int setEnv(String key, String value);
