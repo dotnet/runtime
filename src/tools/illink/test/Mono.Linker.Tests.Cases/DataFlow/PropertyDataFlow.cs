@@ -351,14 +351,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
                 [ExpectedWarning("IL2043", "PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2078", "return value", "PropertyWithExistingMismatchedAttributes_Field", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2078", "return value", "PropertyWithExistingMismatchedAttributes_Field")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 [CompilerGenerated]
                 get { return PropertyWithExistingMismatchedAttributes_Field; }
 
                 // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
                 [ExpectedWarning("IL2043", "PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL2069", "PropertyWithExistingMismatchedAttributes_Field", "parameter 'value'", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2069", "PropertyWithExistingMismatchedAttributes_Field", "parameter 'value'")]
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 [CompilerGenerated]
                 set { PropertyWithExistingMismatchedAttributes_Field = value; }
