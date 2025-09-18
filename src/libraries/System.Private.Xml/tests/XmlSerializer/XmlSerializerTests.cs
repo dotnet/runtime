@@ -2368,7 +2368,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ObsoleteAttribute_DoesNotAffectSerialization()
     {
-        // Test that properties marked with [Obsolete] are still serialized (not ignored like [XmlIgnore])
+        // Test that properties marked with [Obsolete(IsError=false)] are still serialized (not ignored like [XmlIgnore])
         var testObject = new TypeWithObsoleteProperty
         {
             NormalProperty = "normal",
@@ -2397,7 +2397,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [Fact]
     public static void ObsoleteAttribute_DoesNotAffectSerialization_DirectSerialization()
     {
-        // Test that properties marked with [Obsolete] are still serialized by directly checking XML output
+        // Test that properties marked with [Obsolete(IsError=false)] are still serialized by directly checking XML output
         var testObject = new TypeWithObsoleteProperty
         {
             NormalProperty = "normal",
@@ -2419,6 +2419,19 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             // Verify that IgnoredProperty is not included (due to [XmlIgnore])
             Assert.DoesNotContain("<IgnoredProperty>", result);
         }
+    }
+
+    [Fact]
+    public static void ObsoleteAttribute_IsError_ThrowsException()
+    {
+        // Test that properties marked with [Obsolete(IsError=true)] throw an exception during serializer creation
+        
+        // We need to create a type with just the error property to test the exception
+        // Using reflection to create an XmlSerializer for a type with ObsoletePropertyWithError
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            var serializer = new XmlSerializer(typeof(TypeWithObsoletePropertyError));
+        });
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
