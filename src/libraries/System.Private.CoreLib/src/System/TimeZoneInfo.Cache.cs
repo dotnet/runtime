@@ -146,7 +146,7 @@ namespace System
                             }
 
                             // check transition with previous transition
-                            if (i > 0)
+                            if (i > transitionInfo.index)
                             {
                                 // If the previous transition is also in daylight saving time, extend the ambiguous period to include it
                                 TimeTransition prevTransition = transitions[i - 1];
@@ -371,12 +371,6 @@ namespace System
             return SafeCreateDateTimeFromTicks(ticks);
         }
 
-        private DateTime UtcToLocal(DateTime utcDateTime, out bool isDaylightSavingTime, out bool isAmbiguous)
-        {
-            long ticks = utcDateTime.Ticks + GetOffsetForUtcDate(utcDateTime, out isDaylightSavingTime, out isAmbiguous).Ticks;
-            return SafeCreateDateTimeFromTicks(ticks);
-        }
-
         /// <summary>
         /// Tries to get the UTC offset for a given local date and time.
         /// </summary>
@@ -404,16 +398,16 @@ namespace System
             {
                 TimeTransition transition = transitions[i];
                 offset = _baseUtcOffset + transition.Offset;
-                DateTime localTicks = SafeCreateDateTimeFromTicks(localDateTime.Ticks - offset.Ticks);
-                if (localTicks >= transition.DateStart && localTicks <= transition.DateEnd) // Start and End dates in the transitions are inclusive
+                long localTicks = SafeCreateDateTimeFromTicks(localDateTime.Ticks - offset.Ticks).Ticks;
+                if (localTicks >= transition.DateStart.Ticks && localTicks <= transition.DateEnd.Ticks) // Start and End dates in the transitions are inclusive
                 {
                     // To keep the app compatibility, we need to prefer the standard offset over the DST offset except if the time has local kind and not created with KindLocalAmbiguousDst
                     if (i + 1 < boundary && transition.DaylightSavingOn && (localDateTime.Kind != DateTimeKind.Local || !localDateTime.IsAmbiguousDaylightSavingTime()))
                     {
                         transition = transitions[i + 1];
                         TimeSpan nextOffset = _baseUtcOffset + transition.Offset;
-                        localTicks = SafeCreateDateTimeFromTicks(localDateTime.Ticks - nextOffset.Ticks);
-                        if (localTicks >= transition.DateStart && localTicks <= transition.DateEnd)
+                        localTicks = SafeCreateDateTimeFromTicks(localDateTime.Ticks - nextOffset.Ticks).Ticks;
+                        if (localTicks >= transition.DateStart.Ticks && localTicks <= transition.DateEnd.Ticks)
                         {
                             offset = nextOffset;
                         }
@@ -451,7 +445,7 @@ namespace System
                 }
 
                 transitionInfo = CacheTransitionsForYear(year);
-                return true;
+                return transitionInfo != (0, 0);
             }
 
             transitionInfo = (0, 0);
@@ -508,7 +502,7 @@ namespace System
         /// <typeparam name="T">The type of elements in the array.</typeparam>
         /// <param name="arrayPoolArray">The array to grow.</param>
         /// <param name="requiredCapacity">The required capacity.</param>
-        internal static void ArrayPoolGrow<T>(ref T[] arrayPoolArray, int requiredCapacity)
+        private static void ArrayPoolGrow<T>(ref T[] arrayPoolArray, int requiredCapacity)
         {
             T[] tmp = ArrayPool<T>.Shared.Rent(Math.Max(arrayPoolArray.Length * 2, requiredCapacity));
             arrayPoolArray.CopyTo(tmp.AsSpan());
@@ -559,7 +553,7 @@ namespace System
         /// <returns>A DateTime representing the end transition time.</returns>
         private static DateTime EndTransitionTimeToDateTime(int year, AdjustmentRule rule)
             => rule.IsEndDateMarkerForEndOfYear() ? // Windows special case when the year transition ends at the end of the year
-                year == MaxYear ? DateTime.MaxValue : new DateTime(year + 1, 1, 1, 0, 0, 0, DateTimeKind.Unspecified) :
+                year >= MaxYear ? DateTime.MaxValue : new DateTime(year + 1, 1, 1, 0, 0, 0, DateTimeKind.Unspecified) :
                 TransitionTimeToDateTime(year, rule.DaylightTransitionEnd);
 
         /// <summary>
