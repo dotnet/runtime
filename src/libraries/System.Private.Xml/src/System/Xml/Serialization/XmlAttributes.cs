@@ -90,11 +90,20 @@ namespace System.Xml.Serialization
                 }
                 else if (attrs[i] is ObsoleteAttribute obsoleteAttr)
                 {
-                    if (obsoleteAttr.IsError)
+                    if (!System.Xml.LocalAppContextSwitches.IgnoreObsoleteMembers)
                     {
-                        throw new InvalidOperationException($"Cannot serialize property with [Obsolete(IsError=true)]: {obsoleteAttr.Message}");
+                        if (obsoleteAttr.IsError)
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.XmlObsoleteIsError, obsoleteAttr.Message));
+                        }
+                        // If IsError is false, continue processing normally (don't ignore)
                     }
-                    // If IsError is false, continue processing normally (don't ignore)
+                    else
+                    {
+                        // Old behavior: ignore obsolete members when switch is enabled
+                        _xmlIgnore = true;
+                        break;
+                    }
                 }
                 else if (attrs[i] is XmlElementAttribute)
                 {

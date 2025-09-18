@@ -2434,6 +2434,65 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         });
     }
 
+    [Fact]
+    public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
+    {
+        // Test that when the switch is enabled, obsolete members are ignored (old behavior)
+        try
+        {
+            // Save the original value if any
+            AppContext.TryGetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", out bool originalSwitchValue);
+            
+            // Enable the switch to restore old behavior
+            AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", true);
+            
+            // Clear cached switch value using reflection
+            Type switchType = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+            if (switchType != null)
+            {
+                FieldInfo fieldInfo = switchType.GetField("s_ignoreObsoleteMembers", BindingFlags.NonPublic | BindingFlags.Static);
+                fieldInfo?.SetValue(null, 0);
+            }
+
+            var testObject = new TypeWithObsoleteProperty
+            {
+                NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+                ObsoleteProperty = "obsolete",
+#pragma warning restore CS0618 // Type or member is obsolete
+                IgnoredProperty = "ignored"
+            };
+
+            var serializer = new XmlSerializer(typeof(TypeWithObsoleteProperty));
+            
+            using (var writer = new StringWriter())
+            {
+                serializer.Serialize(writer, testObject);
+                string result = writer.ToString();
+                
+                // With the switch enabled, obsolete properties should be ignored
+                Assert.DoesNotContain("<ObsoleteProperty>", result);
+                // Normal properties should still be serialized
+                Assert.Contains("<NormalProperty>normal</NormalProperty>", result);
+                // IgnoredProperty should still not be included (due to [XmlIgnore])
+                Assert.DoesNotContain("<IgnoredProperty>", result);
+            }
+        }
+        finally
+        {
+            // Restore original state
+            AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", false);
+            
+            // Clear cached switch value again
+            Type switchType = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+            if (switchType != null)
+            {
+                FieldInfo fieldInfo = switchType.GetField("s_ignoreObsoleteMembers", BindingFlags.NonPublic | BindingFlags.Static);
+                fieldInfo?.SetValue(null, 0);
+            }
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
