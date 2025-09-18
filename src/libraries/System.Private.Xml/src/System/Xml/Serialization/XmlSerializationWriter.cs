@@ -160,9 +160,9 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.TryFormatDateOnly(value, destination, out charsWritten);
         }
 
-        internal static bool TryFormatTimeOnly(TimeOnly value, Span<char> destination, out int charsWriten)
+        internal static bool TryFormatTimeOnly(TimeOnly value, Span<char> destination, out int charsWritten)
         {
-            return XmlCustomFormatter.TryFormatTimeOnly(value, destination, out charsWriten);
+            return XmlCustomFormatter.TryFormatTimeOnly(value, destination, out charsWritten);
         }
 
         protected static string FromChar(char value)
