@@ -699,7 +699,12 @@ namespace System.Numerics
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
-            return Number.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static BigInteger Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            return Number.ParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
@@ -709,7 +714,17 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BigInteger result)
+        {
+            return TryParse(utf8Text, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -1670,7 +1685,12 @@ namespace System.Numerics
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+        }
+
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), MemoryMarshal.Cast<byte, Utf8Char>(utf8Destination), out bytesWritten);
         }
 
         private static BigInteger Add(ReadOnlySpan<uint> leftBits, int leftSign, ReadOnlySpan<uint> rightBits, int rightSign)
@@ -5168,5 +5188,15 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out BigInteger result) => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static BigInteger Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out BigInteger result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
     }
 }

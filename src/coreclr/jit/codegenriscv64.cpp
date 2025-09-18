@@ -5040,6 +5040,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
+            assert(isImmed(tree));
             instruction ins        = genGetInsForOper(tree);
             unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
 
