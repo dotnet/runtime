@@ -1471,7 +1471,7 @@ namespace System
             int newCharsWritten = newRune.EncodeToUtf16(newChars);
             ReadOnlySpan<char> newCharsSlice = newChars[..newCharsWritten];
 
-            return ReplaceCore(this, oldCharsSlice, newCharsSlice, CultureInfo.CurrentCulture.CompareInfo, CompareOptions.None)
+            return ReplaceCore(this, oldCharsSlice, newCharsSlice, CompareInfo.Invariant, CompareOptions.None)
                 ?? this;
         }
 
