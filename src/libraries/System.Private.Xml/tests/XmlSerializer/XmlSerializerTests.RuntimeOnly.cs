@@ -2107,26 +2107,30 @@ public static partial class XmlSerializerTests
             access: default));
                         string urtNs = "http://microsoft.com/wsdl/types/";
                         string testNs = "http://tempuri.org/DateAndTimeSchemaImport";
-                        string schema1 = $@"<?xml version='1.0'?>
-        <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
-            <xs:import namespace='{urtNs}' />
-            <xs:element name='DateValue' type='urt:dateOnly' xmlns:urt='{urtNs}' />
-            <xs:element name='TimeValue' type='urt:timeOnly' xmlns:urt='{urtNs}' />
-            <xs:element name='TimeAsXsdTime' type='xs:time' />
-        </xs:schema>";
-                        string schema2 = @"<?xml version='1.0'?>
-        <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='http://microsoft.com/wsdl/types/' elementFormDefault='qualified'>
-            <xs:simpleType name='dateOnly'>
-                <xs:restriction base='xs:date'>
-                    <xs:pattern value='([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' />
-                </xs:restriction>
-            </xs:simpleType>
-            <xs:simpleType name='timeOnly'>
-                <xs:restriction base='xs:time'>
-                    <xs:pattern value='([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?' />
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:schema>";
+                        string schema1 = $"""
+                            <?xml version='1.0'?>
+                            <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
+                                <xs:import namespace='{urtNs}' />
+                                <xs:element name='DateValue' type='urt:dateOnly' xmlns:urt='{urtNs}' />
+                                <xs:element name='TimeValue' type='urt:timeOnly' xmlns:urt='{urtNs}' />
+                                <xs:element name='TimeAsXsdTime' type='xs:time' />
+                            </xs:schema>
+                            """;
+                        string schema2 = $"""
+                            <?xml version='1.0'?>
+                            <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='http://microsoft.com/wsdl/types/' elementFormDefault='qualified'>
+                                <xs:simpleType name='dateOnly'>
+                                    <xs:restriction base='xs:date'>
+                                        <xs:pattern value='([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                                <xs:simpleType name='timeOnly'>
+                                    <xs:restriction base='xs:time'>
+                                        <xs:pattern value='([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?' />
+                                    </xs:restriction>
+                                </xs:simpleType>
+                            </xs:schema>
+                            """;
                         XmlSchemaSet set = new XmlSchemaSet();
                         set.Add(XmlSchema.Read(new StringReader(schema1), null));
                         set.Add(XmlSchema.Read(new StringReader(schema2), null));
