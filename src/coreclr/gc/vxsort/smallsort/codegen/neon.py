@@ -103,6 +103,8 @@ template<> struct bitonic<{t}, NEON> {{
 
     static const {self.vector_type()} idx;
     static const {self.vector_type()} maxv;
+    static const {self.type} mask1Array[];
+    static const {self.type} mask2Array[];
 public:
 """
         print(s, file=f)
@@ -148,8 +150,8 @@ public:
         {self.vector_type()} mn12  = vminq_{self.vector_suffix()}(d01, sh1);
         {self.vector_type()} mx12  = vmaxq_{self.vector_suffix()}(d01, sh1);
         {self.vector_type()} rot = vextq_{self.vector_suffix()}({vextq_arg}, {vextq_arg}, 3);
-        const {self.vector_type()} mask1 = {{0u, ~0u, 0u, 0u}};
-        const {self.vector_type()} mask2 = {{0u, 0u, ~0u, 0u}};
+        const {self.vector_type()} mask1 = vld1q_{self.vector_suffix()}(mask1Array);
+        const {self.vector_type()} mask2 = vld1q_{self.vector_suffix()}(mask2Array);
         d01 = vbslq_{self.vector_suffix()}(mask1, {vbslq_arg}, d01);
         d01 = vbslq_{self.vector_suffix()}(mask2, rot, d01);
     }}\n"""
@@ -188,8 +190,8 @@ public:
         {self.vector_type()} mn12  = vminq_{self.vector_suffix()}(d01, sh1);
         {self.vector_type()} mx12  = vmaxq_{self.vector_suffix()}(d01, sh1);
         {self.vector_type()} rot = vextq_{self.vector_suffix()}({vextq_arg}, {vextq_arg}, 3);
-        const {self.vector_type()} mask1 = {{0u, ~0u, 0u, 0u}};
-        const {self.vector_type()} mask2 = {{0u, 0u, ~0u, 0u}};
+        const {self.vector_type()} mask1 = vld1q_{self.vector_suffix()}(mask1Array);
+        const {self.vector_type()} mask2 = vld1q_{self.vector_suffix()}(mask2Array);
         d01 = vbslq_{self.vector_suffix()}(mask1, {vbslq_arg}, d01);
         d01 = vbslq_{self.vector_suffix()}(mask2, rot, d01);
     }}\n"""
@@ -323,6 +325,8 @@ using namespace vxsort;
         s = f"""
     const {self.vector_type()} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::idx  = {{0u, 1u, 2u, 3u}};
     const {self.vector_type()} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::maxv = {{MAX, MAX, MAX, MAX}};
+    const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask1Array[4] = {{0u, ~0u, 0u, 0u}};
+    const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask2Array[4] = {{0u, 0u, ~0u, 0u}};
         """;
         print(s, file=f_src)
 
