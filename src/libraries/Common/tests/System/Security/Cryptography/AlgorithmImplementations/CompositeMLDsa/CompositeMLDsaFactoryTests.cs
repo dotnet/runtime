@@ -3,8 +3,10 @@
 
 using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Asn1;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
 
@@ -24,6 +26,17 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256, null));
             AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256, null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportPkcs8PrivateKey(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportSubjectPublicKeyInfo(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportFromPem(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportFromEncryptedPem(null, "PLACEHOLDER"));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => CompositeMLDsa.ImportFromEncryptedPem(null, "PLACEHOLDER"u8.ToArray()));
+
+            AssertExtensions.Throws<ArgumentNullException>("password", static () => CompositeMLDsa.ImportEncryptedPkcs8PrivateKey((string)null, Array.Empty<byte>()));
+            AssertExtensions.Throws<ArgumentNullException>("password", static () => CompositeMLDsa.ImportFromEncryptedPem(string.Empty, (string)null));
+
+            AssertExtensions.Throws<ArgumentNullException>("passwordBytes", static () => CompositeMLDsa.ImportFromEncryptedPem(string.Empty, (byte[])null));
         }
 
         [Theory]
@@ -409,6 +422,189 @@ namespace System.Security.Cryptography.Tests
                 key);
         }
 
+        [Fact]
+        public static void ArgumentValidation_MalformedAsnEncoding()
+        {
+            // Generate a valid ASN.1 encoding
+            byte[] encodedBytes = CreateAsn1EncodedBytes();
+            int actualEncodedLength = encodedBytes.Length;
+
+            // Add a trailing byte so the length indicated in the encoding will be smaller than the actual data.
+            Array.Resize(ref encodedBytes, actualEncodedLength + 1);
+            AssertThrows(encodedBytes);
+
+            // Remove the last byte so the length indicated in the encoding will be larger than the actual data.
+            Array.Resize(ref encodedBytes, actualEncodedLength - 1);
+            AssertThrows(encodedBytes);
+
+            static void AssertThrows(byte[] encodedBytes)
+            {
+                CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                    import => Assert.Throws<CryptographicException>(() => import(encodedBytes)),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
+
+                CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                    import => Assert.Throws<CryptographicException>(() => import(encodedBytes)),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
+
+                CompositeMLDsaTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
+                    import => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", encodedBytes)),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", encodedBytes))));
+            }
+        }
+
+        [Fact]
+        public static void ImportSpki_BerEncoding()
+        {
+            // Valid BER but invalid DER - uses indefinite length encoding
+            byte[] indefiniteLengthOctet = [0x04, 0x80, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00];
+            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+                AssertThrowIfNotSupported(() =>
+                    Assert.Throws<CryptographicException>(() => import(indefiniteLengthOctet))));
+        }
+
+        [Fact]
+        public static void ImportPkcs8_WrongTypeInAsn()
+        {
+            // Create an incorrect ASN.1 structure to pass into the import methods.
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            AlgorithmIdentifierAsn algorithmIdentifier = new AlgorithmIdentifierAsn
+            {
+                Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384),
+            };
+            algorithmIdentifier.Encode(writer);
+            byte[] wrongAsnType = writer.Encode();
+
+            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
+
+            CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
+
+            CompositeMLDsaTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", wrongAsnType))));
+        }
+
+        [Fact]
+        public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
+        {
+#if !NETFRAMEWORK // Does not support exporting RSA SPKI
+            if (!OperatingSystem.IsBrowser())
+            {
+                // RSA key
+                using RSA rsa = RSA.Create();
+                byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
+                CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
+            }
+#endif
+
+            // Create an invalid Composite ML-DSA SPKI with parameters
+            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+            {
+                Algorithm = new AlgorithmIdentifierAsn
+                {
+                    Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaTestData.AllIetfVectors[0].Algorithm),
+                    Parameters = CompositeMLDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
+                },
+                SubjectPublicKey = CompositeMLDsaTestData.AllIetfVectors[0].PublicKey,
+            };
+
+            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
+
+            spki.Algorithm.Parameters = AsnUtils.DerNull;
+
+            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
+
+            // Sanity check
+            spki.Algorithm.Parameters = null;
+            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_AlgorithmErrorsInAsn()
+        {
+#if !NETFRAMEWORK // Does not support exporting RSA PKCS#8 private key
+            if (!OperatingSystem.IsBrowser())
+            {
+                // RSA key isn't valid for ML-DSA
+                using RSA rsa = RSA.Create();
+                byte[] rsaPkcs8Bytes = rsa.ExportPkcs8PrivateKey();
+                CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaPkcs8Bytes))));
+            }
+#endif
+
+            // Create an invalid Composite ML-DSA PKCS8 with parameters
+            PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
+            {
+                PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
+                {
+                    Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaTestData.AllIetfVectors[0].Algorithm),
+                    Parameters = CompositeMLDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
+                },
+                PrivateKey = CompositeMLDsaTestData.AllIetfVectors[0].SecretKey,
+            };
+
+            CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
+
+            pkcs8.PrivateKeyAlgorithm.Parameters = AsnUtils.DerNull;
+
+            CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
+
+            // Sanity check
+            pkcs8.PrivateKeyAlgorithm.Parameters = null;
+            CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(import => AssertThrowIfNotSupported(() => import(pkcs8.Encode())));
+        }
+
+        [Fact]
+        public static void ImportFromPem_MalformedPem()
+        {
+            AssertThrows(WritePemRaw("UNKNOWN LABEL", []));
+            AssertThrows(string.Empty);
+            AssertThrows(WritePemRaw("ENCRYPTED PRIVATE KEY", []));
+            AssertThrows(WritePemRaw("PUBLIC KEY", []) + '\n' + WritePemRaw("PUBLIC KEY", []));
+            AssertThrows(WritePemRaw("PRIVATE KEY", []) + '\n' + WritePemRaw("PUBLIC KEY", []));
+            AssertThrows(WritePemRaw("PUBLIC KEY", []) + '\n' + WritePemRaw("PRIVATE KEY", []));
+            AssertThrows(WritePemRaw("PRIVATE KEY", []) + '\n' + WritePemRaw("PRIVATE KEY", []));
+            AssertThrows(WritePemRaw("PRIVATE KEY", "%"));
+            AssertThrows(WritePemRaw("PUBLIC KEY", "%"));
+
+            static void AssertThrows(string pem)
+            {
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromPem(pem)));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromPem(pem.AsSpan())));
+            }
+        }
+
+        [Fact]
+        public static void ImportFromEncryptedPem_MalformedPem()
+        {
+            AssertThrows(WritePemRaw("UNKNOWN LABEL", []));
+            AssertThrows(WritePemRaw("CERTIFICATE", []));
+            AssertThrows(string.Empty);
+            AssertThrows(WritePemRaw("ENCRYPTED PRIVATE KEY", []) + '\n' + WritePemRaw("ENCRYPTED PRIVATE KEY", []));
+            AssertThrows(WritePemRaw("ENCRYPTED PRIVATE KEY", "%"));
+
+            static void AssertThrows(string encryptedPem)
+            {
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER")));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8)));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem.AsSpan(), "PLACEHOLDER")));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8.ToArray())));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_GenerateKey(CompositeMLDsaAlgorithm algorithm)
@@ -477,9 +673,9 @@ namespace System.Security.Cryptography.Tests
 
         // Asserts the test throws PlatformNotSupportedException if Composite ML-DSA is supported;
         // otherwise runs the test normally.
-        private static void AssertThrowIfNotSupported(Action test, CompositeMLDsaAlgorithm algorithm)
+        private static void AssertThrowIfNotSupported(Action test, CompositeMLDsaAlgorithm? algorithm = null)
         {
-            if (CompositeMLDsa.IsAlgorithmSupported(algorithm))
+            if ((algorithm is null && CompositeMLDsa.IsSupported) || CompositeMLDsa.IsAlgorithmSupported(algorithm))
             {
                 test();
             }
@@ -499,5 +695,16 @@ namespace System.Security.Cryptography.Tests
                 }
             }
         }
+
+        private static byte[] CreateAsn1EncodedBytes()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+            writer.WriteOctetString("some data"u8);
+            byte[] encodedBytes = writer.Encode();
+            return encodedBytes;
+        }
+
+        private static string WritePemRaw(string label, ReadOnlySpan<char> data) =>
+            $"-----BEGIN {label}-----\n{data.ToString()}\n-----END {label}-----";
     }
 }
