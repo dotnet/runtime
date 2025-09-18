@@ -37,6 +37,14 @@ namespace System.Xml.Serialization
                     _soapIgnore = true;
                     break;
                 }
+                else if (attrs[i] is ObsoleteAttribute obsoleteAttr)
+                {
+                    if (obsoleteAttr.IsError)
+                    {
+                        throw new InvalidOperationException($"Cannot serialize property with [Obsolete(IsError=true)]: {obsoleteAttr.Message}");
+                    }
+                    // If IsError is false, continue processing normally (don't ignore)
+                }
                 else if (attrs[i] is SoapElementAttribute)
                 {
                     _soapElement = (SoapElementAttribute)attrs[i];
