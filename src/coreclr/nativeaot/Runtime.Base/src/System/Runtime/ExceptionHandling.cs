@@ -551,14 +551,14 @@ namespace System.Runtime
             internal volatile UIntPtr _notifyDebuggerSP;
         }
 
-        //
-        // Called by RhpThrowHwEx
-        //
-#if NATIVEAOT
-        [RuntimeExport("RhThrowHwEx")]
-#endif
         [StackTraceHidden]
-        public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+        public static void FindHwExHandler(uint exceptionCode, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
+        {
+            FindHwExHandler(exceptionCode, ref exInfo, out handlingFrameSP, out pCatchHandler, out _, out _);
+        }
+
+        [StackTraceHidden]
+        public static void FindHwExHandler(uint exceptionCode, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
@@ -629,17 +629,33 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
-            DispatchEx(ref exInfo._frameIter, ref exInfo);
+            FindExHandler(exceptionToThrow!, ref exInfo, out handlingFrameSP, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
+        }
+
+        //
+        // Called by RhpThrowHwEx
+        //
+#if NATIVEAOT
+        [RuntimeExport("RhThrowHwEx")]
+#endif
+        [StackTraceHidden]
+        public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+        {
+            FindHwExHandler(exceptionCode, ref exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
+            DispatchExPass2(ref exInfo, handlingFrameSP, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
-#if NATIVEAOT
-        [RuntimeExport("RhThrowEx")]
-#endif
         [StackTraceHidden]
-        public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
+        public static void FindExHandler(object exceptionObj, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
+        {
+            FindExHandler(exceptionObj, ref exInfo, out handlingFrameSP, out pCatchHandler, out _, out _);
+        }
+
+        [StackTraceHidden]
+        public static void FindExHandler(object exceptionObj, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
 #if NATIVEAOT
 
@@ -662,11 +678,22 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionObj);
-            DispatchEx(ref exInfo._frameIter, ref exInfo);
+            DispatchExPass1(ref exInfo, out handlingFrameSP, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
+        }
+
+#if NATIVEAOT
+        [RuntimeExport("RhThrowEx")]
+#endif
+        [StackTraceHidden]
+        public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
+        {
+            FindExHandler(exceptionObj, ref exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
+            DispatchExPass2(ref exInfo, handlingFrameSP, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
 #if !NATIVEAOT
+        // TODO: move this to native too
         public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
         {
             exInfo._passNumber = 2;
@@ -749,23 +776,24 @@ namespace System.Runtime
             object rethrownException = activeExInfo.ThrownException;
 
             exInfo.Init(rethrownException, ref activeExInfo);
-            DispatchEx(ref exInfo._frameIter, ref exInfo);
+            FindExHandler(rethrownException, ref exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
+            DispatchExPass2(ref exInfo, handlingFrameSP, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         [StackTraceHidden]
-        private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
+        private static void DispatchExPass1(ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
             object exceptionObj = exInfo.ThrownException;
-
+            scoped ref StackFrameIterator frameIter = ref exInfo._frameIter;
             // ------------------------------------------------
             //
             // First pass
             //
             // ------------------------------------------------
-            UIntPtr handlingFrameSP = MaxSP;
-            byte* pCatchHandler = null;
+            handlingFrameSP = MaxSP;
+            pCatchHandler = null;
             uint catchingTryRegionIdx = MaxTryRegionIdx;
 
             bool isFirstRethrowFrame = (exInfo._kind & ExKind.RethrowFlag) != 0;
@@ -776,8 +804,8 @@ namespace System.Runtime
             byte* prevOriginalPC = null;
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
-            IntPtr pReversePInvokePropagationCallback = IntPtr.Zero;
-            IntPtr pReversePInvokePropagationContext = IntPtr.Zero;
+            pReversePInvokePropagationCallback = IntPtr.Zero;
+            pReversePInvokePropagationContext = IntPtr.Zero;
 
             bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
@@ -869,6 +897,12 @@ namespace System.Runtime
             // without a catch handler or propagation callback.
             Debug.Assert(pCatchHandler != null || pReversePInvokePropagationCallback != IntPtr.Zero || unwoundReversePInvoke || isExceptionIntercepted, "We should have a handler if we're starting the second pass");
             Debug.Assert(!isExceptionIntercepted || (pCatchHandler == null), "No catch handler should be returned for intercepted exceptions in the first pass");
+            exInfo._idxCurClause = catchingTryRegionIdx;
+        }
+
+        [StackTraceHidden]
+        private static void DispatchExPass2(ref ExInfo exInfo, UIntPtr handlingFrameSP, byte* pCatchHandler, IntPtr pReversePInvokePropagationCallback, IntPtr pReversePInvokePropagationContext)
+        {
 
             // ------------------------------------------------
             //
@@ -884,12 +918,14 @@ namespace System.Runtime
 #if NATIVEAOT
             InternalCalls.RhpSetThreadDoNotTriggerGC();
 #endif
+            scoped ref StackFrameIterator frameIter = ref exInfo._frameIter;
             exInfo._passNumber = 2;
-            exInfo._idxCurClause = catchingTryRegionIdx;
-            startIdx = MaxTryRegionIdx;
-            unwoundReversePInvoke = false;
-            isExceptionIntercepted = false;
-            isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
+            object exceptionObj = exInfo.ThrownException;
+            uint startIdx = MaxTryRegionIdx;
+            uint catchingTryRegionIdx = exInfo._idxCurClause;
+            bool unwoundReversePInvoke = false;
+            bool isExceptionIntercepted = false;
+            bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
             for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
             {
                 Debug.Assert(isValid, "second-pass EH unwind failed unexpectedly");

@@ -34,6 +34,8 @@ VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
+void DECLSPEC_NORETURN DispatchExPass2(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE pCatchHandler);
+
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
 enum TrackerMemoryType

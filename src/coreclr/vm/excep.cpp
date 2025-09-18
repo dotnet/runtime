@@ -6171,18 +6171,26 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
+    TADDR handlingFrameSP;
+    PCODE pCatchHandler;
+
     GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_HW_EX_HANDLER);
+    DECLARE_ARGHOLDER_ARRAY(args, 4);
     args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
+    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.RhThrowHwEx(exceptionCode, &exInfo)
+    //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &pCatchHandler)
     CALL_MANAGED_METHOD_NORET(args)
 
+    DispatchExPass2(&exInfo, handlingFrameSP, pCatchHandler);
+
     GCPROTECT_END();
+    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX

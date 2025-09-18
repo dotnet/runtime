@@ -182,6 +182,12 @@ struct RhEHClause
     BYTE *_handlerAddress;
     void *_pTargetType;
     BOOL _isSameTry;
+
+    bool ContainsCodeOffset(unsigned codeOffset)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (codeOffset >= _tryStartOffset) && (codeOffset < _tryEndOffset);
+    }
 };
 
 enum class ExKind : uint8_t

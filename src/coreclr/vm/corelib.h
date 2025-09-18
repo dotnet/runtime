@@ -1344,8 +1344,8 @@ DEFINE_FIELD_U(dictionaryIndexAndSlot, GenericHandleArgs, dictionaryIndexAndSlot
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_CLASS(EH, Runtime, EH)
-DEFINE_METHOD(EH, RH_THROW_EX, RhThrowEx, SM_Obj_RefExInfo_RetVoid)
-DEFINE_METHOD(EH, RH_THROWHW_EX, RhThrowHwEx, SM_UInt_RefExInfo_RetVoid)
+DEFINE_METHOD(EH, FIND_EX_HANDLER, FindExHandler, SM_Obj_RefExInfo_RefUIntPtr_RefBytePtr_RetVoid)
+DEFINE_METHOD(EH, FIND_HW_EX_HANDLER, FindHwExHandler, SM_UInt_RefExInfo_RefUIntPtr_RefBytePtr_RetVoid)
 DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_RefExInfo_RefExInfo_RetVoid)
 DEFINE_METHOD(EH, UNWIND_AND_INTERCEPT, RhUnwindAndIntercept, SM_RefExInfo_UIntPtr_RetVoid)
 DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
