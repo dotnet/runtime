@@ -165,4 +165,6 @@ CDAC_GLOBAL_POINTER(DynamicAdaptationMode, cdac_data<GC_NAMESPACE::gc_heap>::Dyn
 CDAC_GLOBAL_POINTER(GCGlobalMechanisms, &gc_global_mechanisms)
 #endif // GC_CONFIG_DRIVEN
 
+CDAC_GLOBAL_CONTRACT(GC, 1)
+
 CDAC_GLOBALS_END()
