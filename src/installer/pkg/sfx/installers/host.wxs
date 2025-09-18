@@ -117,7 +117,7 @@
       <?elseif $(var.Platform)~=x86 ?>
         <Custom Action="override Wix4BroadcastEnvironmentChange_X86" After="InstallFinalize" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot;"/>
       <?elseif $(var.Platform)~=arm64 ?>
-        <Custom Action="override Wix4BroadcastEnvironmentChange_ARM64" After="InstallFinalize" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot;"/>
+        <Custom Action="override Wix4BroadcastEnvironmentChange_A64" After="InstallFinalize" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot;"/>
       <?else?>
         <?error Unknown platform, $(var.Platform) ?>
       <?endif?>
