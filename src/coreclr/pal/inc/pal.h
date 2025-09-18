@@ -2402,15 +2402,10 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 typedef struct _CONTEXT {
     ULONG ContextFlags;
-
-    DWORD InterpreterWalkFramePointer;
-    DWORD InterpreterSP;
-    DWORD InterpreterFP;
-    DWORD InterpreterIP;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
-    PDWORD InterpreterFP;
+    DWORD none;
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #else

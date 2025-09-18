@@ -26,6 +26,12 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unu
     return 0;
 }
 
+inline TADDR GetSP(const T_CONTEXT * context)
+{
+    _ASSERTE("The function is not implemented on wasm, it lacks registers");
+    return 0;
+}
+
 struct HijackArgs
 {
 };
@@ -86,34 +92,27 @@ public:
 // Exception handling
 //**********************************************************************
 
-inline PCODE GetIP(const T_CONTEXT * context)
-{
-    return context->InterpreterIP;
+inline PCODE GetIP(const T_CONTEXT * context) {
+    _ASSERT("GetIP is not implemented on wasm, it lacks registers");
+    return 0;
 }
 
-inline void SetIP(T_CONTEXT *context, PCODE eip)
-{
-    context->InterpreterIP = eip;
+inline void SetIP(T_CONTEXT *context, PCODE eip) {
+    _ASSERT("SetIP is not implemented on wasm, it lacks registers");
 }
 
-inline TADDR GetSP(const T_CONTEXT * context)
-{
-    return (TADDR)context->InterpreterSP;
+inline void SetSP(T_CONTEXT *context, TADDR esp) {
+    _ASSERT("SetSP is not implemented on wasm, it lacks registers");
 }
 
-inline void SetSP(T_CONTEXT *context, TADDR esp)
-{
-    context->InterpreterSP = (TADDR)esp;
-}
-
-inline void SetFP(T_CONTEXT *context, TADDR ebp)
-{
-    context->InterpreterFP = (TADDR)ebp;
+inline void SetFP(T_CONTEXT *context, TADDR ebp) {
+    _ASSERT("SetFP is not implemented on wasm, it lacks registers");
 }
 
 inline TADDR GetFP(const T_CONTEXT * context)
 {
-    return context->InterpreterFP;
+    _ASSERT("GetFP is not implemented on wasm, it lacks registers");
+    return 0;
 }
 
 #define ENUM_CALLEE_SAVED_REGISTERS()
@@ -163,12 +162,13 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
 
 inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
 {
-    context->InterpreterWalkFramePointer = (TADDR)value;
+    PORTABILITY_ASSERT("SetFirstArgReg is not implemented on wasm");
 }
 
 inline TADDR GetFirstArgReg(T_CONTEXT *context)
 {
-    return (TADDR)context->InterpreterWalkFramePointer;
+    PORTABILITY_ASSERT("GetFirstArgReg is not implemented on wasm");
+    return 0;
 }
 
 inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
