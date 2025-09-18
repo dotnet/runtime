@@ -1,6 +1,9 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
   <String Id="Caption" Value="[WixBundleName] Installer" />
   <String Id="Title" Value="[BUNDLEMONIKER]" />
+  <String Id="Motto" Value="You just need a shell, a text editor and 10 minutes of your time.
+
+Ready? Set? Let's go!" />
   <String Id="ConfirmCancelMessage" Value="Are you sure you want to cancel?" />
   <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Previous version" />
   <String Id="HelpHeader" Value="Setup Help" />
@@ -28,7 +31,7 @@
   <String Id="ProgressCancelButton" Value="&amp;Cancel" />
   <String Id="ModifyHeader" Value="Modify Setup" />
   <String Id="ModifyRepairButton" Value="&amp;Repair" />
-  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it."/>
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
   <String Id="ModifyUninstallButton" Value="&amp;Uninstall" />
   <String Id="ModifyCloseButton" Value="&amp;Close" />
   <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
