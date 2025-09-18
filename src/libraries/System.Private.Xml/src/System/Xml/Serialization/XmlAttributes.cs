@@ -83,7 +83,7 @@ namespace System.Xml.Serialization
             XmlAnyElementAttribute? wildcard = null;
             for (int i = 0; i < attrs.Length; i++)
             {
-                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute)
+                if (attrs[i] is XmlIgnoreAttribute)
                 {
                     _xmlIgnore = true;
                     break;
