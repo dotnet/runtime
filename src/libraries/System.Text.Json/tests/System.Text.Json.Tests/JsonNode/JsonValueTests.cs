@@ -940,7 +940,7 @@ namespace System.Text.Json.Nodes.Tests
 #if NET
             yield return Wrap(Half.MaxValue, JsonValueKind.Number);
             yield return Wrap((Int128)42, JsonValueKind.Number);
-            yield return Wrap((Int128)42, JsonValueKind.Number);
+            yield return Wrap((UInt128)42, JsonValueKind.Number);
             yield return Wrap((Memory<byte>)new byte[] { 1, 2, 3 }, JsonValueKind.String);
             yield return Wrap((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 }, JsonValueKind.String);
             yield return Wrap(new DateOnly(2024, 06, 20), JsonValueKind.String);
