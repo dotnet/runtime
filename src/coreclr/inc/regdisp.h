@@ -356,10 +356,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     }
 };
 
-inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
-{
-}
-
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     _ASSERTE("IsInCalleesFrames is not implemented on wasm");
@@ -370,7 +366,7 @@ inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
 #error "RegDisplay functions are not implemented on this platform."
 #endif
 
-#if defined(TARGET_64BIT) || defined(TARGET_ARM) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#if defined(TARGET_64BIT) || defined(TARGET_ARM) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS) || defined(TARGET_WASM))
 // This needs to be implemented for platforms that have funclets.
 inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 {
@@ -407,7 +403,10 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 #elif defined(TARGET_X86)
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#else // TARGET_X86
+#elif defined(TARGET_WASM)
+    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
+#else // TARGET_WASM
     PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
 #endif
 
