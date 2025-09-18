@@ -156,10 +156,8 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         };
     }
 
-    int ICodeVersions.GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs, out Span<byte> nativeCodeAddrs, out int pcNativeCodeAddrs)
+    IEnumerable<(TargetPointer, TargetPointer, int)> ICodeVersions.GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs)
     {
-        pcNativeCodeAddrs = 0;
-        DacpTieredVersionData[] dacpTieredVersionDataArray = new DacpTieredVersionData[cNativeCodeAddrs];
         Contracts.ICodeVersions codeVersionsContract = this;
         Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
 
@@ -184,21 +182,13 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         int count = 0;
         foreach (NativeCodeVersionHandle nativeCodeVersionHandle in ((ICodeVersions)this).GetNativeCodeVersions(methodDesc, ilCodeVersion))
         {
-            if (!nativeCodeVersionHandle.IsExplicit)
+            TargetPointer nativeCode = codeVersionsContract.GetNativeCode(nativeCodeVersionHandle).AsTargetPointer;
+            TargetPointer nativeCodeAddr = nativeCode;
+            TargetPointer nativeCodeVersionNodePtr = nativeCodeVersionHandle.IsExplicit ? AsNode(nativeCodeVersionHandle).Address : TargetPointer.Null;
+            int optimizationTier;
+            if (r2rImageBase <= nativeCode && nativeCode < r2rImageEnd)
             {
-                dacpTieredVersionDataArray[count].NativeCodeVersionNodePtr = TargetPointer.Null;
-                dacpTieredVersionDataArray[count].NativeCodeAddr = rts.GetNativeCode(mdh).AsTargetPointer;
-            }
-            else
-            {
-                NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
-                dacpTieredVersionDataArray[count].NativeCodeVersionNodePtr = nativeCodeVersionHandle.CodeVersionNodeAddress;
-                dacpTieredVersionDataArray[count].NativeCodeAddr = nativeCodeVersionNode.NativeCode;
-            }
-            NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
-            if (r2rImageBase <= nativeCodeVersionNode.NativeCode && nativeCodeVersionNode.NativeCode < r2rImageEnd)
-            {
-                dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_ReadyToRun;
+                optimizationTier = (int)DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_ReadyToRun;
             }
 
             else if (isEligibleForTieredCompilation)
@@ -207,28 +197,26 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
                 if (!nativeCodeVersionHandle.IsExplicit)
                     optTier = GetInitialOptimizationTier(isEligibleForTieredCompilation, isReadyToRun, mdh);
                 else
+                {
+                    NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
                     optTier = (NativeOptimizationTier)nativeCodeVersionNode.OptimizationTier;
-                dacpTieredVersionDataArray[count].OptimizationTier = GetOptimizationTier(optTier);
+                }
+                optimizationTier = (int)GetOptimizationTier(optTier);
             }
             else if (rts.IsJitOptimizationDisabled(mdh))
             {
-                dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_MinOptJitted;
+                optimizationTier = (int)DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_MinOptJitted;
             }
             else
             {
-                dacpTieredVersionDataArray[count].OptimizationTier = DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
+                optimizationTier = (int)DacpTieredVersionData.OptimizationTierEnum.OptimizationTier_Optimized;
             }
             count++;
+            yield return (nativeCodeAddr, nativeCodeVersionNodePtr, optimizationTier);
 
             if (count >= cNativeCodeAddrs)
-            {
-                nativeCodeAddrs = MemoryMarshal.AsBytes(dacpTieredVersionDataArray.AsSpan());
-                return 1;
-            }
+                yield break;
         }
-        pcNativeCodeAddrs = count;
-        nativeCodeAddrs = MemoryMarshal.AsBytes(dacpTieredVersionDataArray.AsSpan());
-        return 0;
     }
     ILCodeVersionHandle ICodeVersions.GetActiveILCodeVersion(TargetPointer methodDesc)
     {

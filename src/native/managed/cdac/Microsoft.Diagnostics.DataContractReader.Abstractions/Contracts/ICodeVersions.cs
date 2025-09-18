@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface ICodeVersions : IContract
 {
     static string IContract.Name { get; } = nameof(CodeVersions);
-    public virtual int GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs, out Span<byte> nativeCodeAddrs, out int pcNativeCodeAddrs) => throw new NotImplementedException();
+    public virtual IEnumerable<(TargetPointer, TargetPointer, int)> GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs) => throw new NotImplementedException();
 
     public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc) => throw new NotImplementedException();
 
