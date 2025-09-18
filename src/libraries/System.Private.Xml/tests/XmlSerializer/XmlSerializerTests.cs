@@ -2365,6 +2365,62 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal("Member", retarray.xelements[1].Name);
     }
 
+    [Fact]
+    public static void ObsoleteAttribute_DoesNotAffectSerialization()
+    {
+        // Test that properties marked with [Obsolete] are still serialized (not ignored like [XmlIgnore])
+        var testObject = new TypeWithObsoleteProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+            ObsoleteProperty = "obsolete",
+#pragma warning restore CS0618 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
+
+        var result = SerializeAndDeserialize(testObject,
+            @"<?xml version=""1.0"" encoding=""utf-8""?>
+<TypeWithObsoleteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <NormalProperty>normal</NormalProperty>
+  <ObsoleteProperty>obsolete</ObsoleteProperty>
+</TypeWithObsoleteProperty>");
+
+        // Verify that the obsolete property was correctly roundtripped
+        Assert.Equal("normal", result.NormalProperty);
+#pragma warning disable CS0618 // Type or member is obsolete
+        Assert.Equal("obsolete", result.ObsoleteProperty);
+#pragma warning restore CS0618 // Type or member is obsolete
+        // IgnoredProperty should remain null as it has [XmlIgnore]
+        Assert.Null(result.IgnoredProperty);
+    }
+
+    [Fact]
+    public static void ObsoleteAttribute_DoesNotAffectSerialization_DirectSerialization()
+    {
+        // Test that properties marked with [Obsolete] are still serialized by directly checking XML output
+        var testObject = new TypeWithObsoleteProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+            ObsoleteProperty = "obsolete", 
+#pragma warning restore CS0618 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
+
+        var serializer = new XmlSerializer(typeof(TypeWithObsoleteProperty));
+        
+        using (var writer = new StringWriter())
+        {
+            serializer.Serialize(writer, testObject);
+            string result = writer.ToString();
+            
+            // Verify that ObsoleteProperty is included in XML serialization
+            Assert.Contains("<ObsoleteProperty>obsolete</ObsoleteProperty>", result);
+            // Verify that IgnoredProperty is not included (due to [XmlIgnore])
+            Assert.DoesNotContain("<IgnoredProperty>", result);
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
