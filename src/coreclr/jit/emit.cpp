@@ -4848,7 +4848,7 @@ void emitter::emitRemoveJumpToNextInst()
  *  LoongArch64 has an individual implementation for emitJumpDistBind().
  */
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64)
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -4873,9 +4873,9 @@ void emitter::emitJumpDistBind()
                                   // to a small jump. If it is small enough, we will iterate in hopes of
                                   // converting those jumps we missed converting the first (or second...) time.
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     UNATIVE_OFFSET minMediumExtra; // Same as 'minShortExtra', but for medium-sized jumps.
-#endif                             // TARGET_ARM
+#endif                             // TARGET_ARM || TARGET_RISCV64
 
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjLJ;
@@ -4911,9 +4911,9 @@ AGAIN:
     adjIG         = 0;
     minShortExtra = (UNATIVE_OFFSET)-1;
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     minMediumExtra = (UNATIVE_OFFSET)-1;
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (jmp = emitJumpList; jmp; jmp = jmp->idjNext)
     {
@@ -4926,12 +4926,12 @@ AGAIN:
         NATIVE_OFFSET  nsd = 0; // small  jump max. neg distance
         NATIVE_OFFSET  psd = 0; // small  jump max. pos distance
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
         UNATIVE_OFFSET msz = 0; // medium jump size
         NATIVE_OFFSET  nmd = 0; // medium jump max. neg distance
         NATIVE_OFFSET  pmd = 0; // medium jump max. pos distance
         NATIVE_OFFSET  mextra;  // How far beyond the medium jump range is this jump offset?
-#endif                          // TARGET_ARM
+#endif                          // TARGET_ARM || TARGET_RISCV64
 
         NATIVE_OFFSET  extra;           // How far beyond the short jump range is this jump offset?
         UNATIVE_OFFSET srcInstrOffs;    // offset of the source instruction of the jump
@@ -5038,6 +5038,31 @@ AGAIN:
             assert(!"Unknown jump instruction");
         }
 #endif // TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+        /* Figure out the smallest size we can end up with */
+
+        if (emitIsCmpJump(jmp))
+        {
+            ssz = sizeof(code_t);
+            nsd = B_DIST_SMALL_MAX_NEG;
+            psd = B_DIST_SMALL_MAX_POS;
+
+            msz = sizeof(code_t) * 2;
+            nmd = J_DIST_SMALL_MAX_NEG;
+            pmd = J_DIST_SMALL_MAX_POS;
+        }
+        else if (emitIsUncondJump(jmp))
+        {
+            ssz = sizeof(code_t);
+            nsd = J_DIST_SMALL_MAX_NEG;
+            psd = J_DIST_SMALL_MAX_POS;
+        }
+        else
+        {
+            assert(!"Unknown jump instruction");
+        }
+#endif // TARGET_RISCV64
 
         /* Make sure the jumps are properly ordered */
 
@@ -5244,9 +5269,9 @@ AGAIN:
 #if defined(TARGET_ARM)
         srcEncodingOffs =
             srcInstrOffs + 4; // For relative branches, ARM PC is always considered to be the instruction address + 4
-#elif defined(TARGET_ARM64)
-        srcEncodingOffs =
-            srcInstrOffs; // For relative branches, ARM64 PC is always considered to be the instruction address
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+        srcEncodingOffs = srcInstrOffs; // For relative branches, ARM64 and RISC-V PC is always considered to be the
+                                        // instruction address
 #else
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 #endif
@@ -5360,14 +5385,14 @@ AGAIN:
             minShortExtra = (unsigned)extra;
         }
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
         // If we're here, we couldn't convert to a small jump.
         // Handle conversion to medium-sized conditional jumps.
         // 'srcInstrOffs', 'srcEncodingOffs', 'dstOffs', 'jmpDist' have already been computed
         // and don't need to be recomputed.
 
-        if (emitIsCondJump(jmp))
+        if (emitIsCmpJump(jmp))
         {
             if (jmpIG->igNum < tgtIG->igNum)
             {
@@ -5432,7 +5457,7 @@ AGAIN:
                 minMediumExtra = (unsigned)mextra;
         }
 
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
         /*****************************************************************************
          * We arrive here if the jump must stay long, at least for now.
@@ -5475,13 +5500,15 @@ AGAIN:
         // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
         // All other code size is 4.
         assert((sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_RISCV64)
+        assert((sizeDif == 4) || (sizeDif == 8));
 #else
 #error Unsupported or unset target architecture
 #endif
 
         goto NEXT_JMP;
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
         /*****************************************************************************/
         /* Handle conversion to medium jump                                          */
@@ -5508,7 +5535,7 @@ AGAIN:
 
         goto NEXT_JMP;
 
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
         /*****************************************************************************/
 

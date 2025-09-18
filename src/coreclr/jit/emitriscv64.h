@@ -358,4 +358,26 @@ unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 
+//------------------------------------------------------------------------
+// emitIsCmpJump: checks if it's a compare and jump (branch)
+//
+// Arguments:
+//    jmp - the instruction to check
+//
+inline static bool emitIsCmpJump(instrDesc* jmp)
+{
+    return jmp->idInsIs(INS_beqz, INS_bnez, INS_bne, INS_beq, INS_blt, INS_bltu, INS_bge, INS_bgeu);
+}
+
+//------------------------------------------------------------------------
+// emitIsUncondJump: checks if it's an unconditional jump
+//
+// Arguments:
+//    jmp - the instruction to check
+//
+inline static bool emitIsUncondJump(instrDesc* jmp)
+{
+    return jmp->idInsIs(INS_j, INS_jal);
+}
+
 #endif // TARGET_RISCV64

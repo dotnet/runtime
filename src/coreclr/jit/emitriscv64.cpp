@@ -1293,8 +1293,43 @@ void emitter::emitIns_R_AI(instruction  ins,
  */
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
-    // TODO-RISCV64: maybe delete it on future.
-    NYI_RISCV64("emitSetShortJump-----unimplemented/unused on RISCV64 yet----");
+    if (id->idjKeepLong)
+        return;
+
+    assert(emitIsCmpJump(id) || emitIsUncondJump(id));
+    id->idCodeSize(sizeof(code_t)); // single 32-bit instruction
+    id->idjShort = true;
+    id->idInsOpt(emitIsUncondJump(id) ? INS_OPTS_J : INS_OPTS_J_cond);
+
+#if DEBUG_EMIT
+    if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+    {
+        printf("[8] Converting jump %u to short\n", id->idDebugOnlyInfo()->idNum);
+    }
+#endif // DEBUG_EMIT
+}
+
+/*****************************************************************************
+ *
+ *  Record that a jump instruction uses the medium encoding
+ *
+ */
+void emitter::emitSetMediumJump(instrDescJmp* id)
+{
+    if (id->idjKeepLong)
+        return;
+
+#if DEBUG_EMIT
+    if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+    {
+        printf("[9] Converting jump %u to medium\n", id->idDebugOnlyInfo()->idNum);
+    }
+#endif // DEBUG_EMIT
+
+    assert(emitIsCmpJump(id));
+    id->idCodeSize(2 * sizeof(code_t)); // two 32-bit instruction
+    id->idInsOpt(INS_OPTS_JALR);
+    id->idjShort = false;
 }
 
 /*****************************************************************************
@@ -1366,8 +1401,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     id->idReg1((regNumber)(instrCount & 0x1f));
     id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
 
-    id->idInsOpt(INS_OPTS_J);
-    emitCounts_INS_OPTS_J++;
     id->idAddr()->iiaBBlabel = dst;
 
     if (emitComp->opts.compReloc)
@@ -1396,7 +1429,9 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     emitTotalIGjmps++;
 #endif
 
-    id->idCodeSize(4);
+    // TODO: estimate jump length, now we're starting from maximum size
+    id->idCodeSize((emitIsUncondJump(id) ? 2 : 3) * sizeof(code_t));
+    id->idInsOpt(INS_OPTS_JALR);
 
     appendToCurIG(id);
 }
@@ -1449,7 +1484,9 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     emitTotalIGjmps++;
 #endif
 
-    id->idCodeSize(4);
+    // TODO: estimate jump length, now we're starting from maximum size
+    id->idCodeSize(3 * sizeof(code_t));
+    id->idInsOpt(INS_OPTS_JALR);
 
     appendToCurIG(id);
 }
@@ -2081,6 +2118,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
     return (unsigned)(dst - origDst);
 }
 
+#if 0
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -2420,6 +2458,7 @@ AGAIN:
     emitCheckIGList();
 #endif // DEBUG
 }
+#endif
 
 /*****************************************************************************
  *
