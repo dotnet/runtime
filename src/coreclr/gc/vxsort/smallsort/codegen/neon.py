@@ -105,6 +105,8 @@ template<> struct bitonic<{t}, NEON> {{
     static const {self.type} maxvArray[];
     static const {self.type} mask1Array[];
     static const {self.type} mask2Array[];
+    static const {self.type} mask13Array[];
+    static const {self.type} mask23Array[];
 public:
 """
         print(s, file=f)
@@ -161,39 +163,34 @@ public:
     def generate_1v_merge_sorters(self, f, ascending: bool):
         g = self
 
-        #TODO: Replace with a merge sort
-
         suffix = "ascending" if ascending else "descending"
-        vtrnq_args = "mn1, mx1" if ascending else "mx1, mn1"
-        vcombine_arg1 = "mn2" if ascending else "mx2"
-        vcombine_arg2 = "mx2" if ascending else "mn2"
-        vextq_arg = "mx12" if ascending else "mn12"
-        vbslq_arg = "mn12" if ascending else "mx12"
+        vbslq1_arg2 = "hi" if ascending else "lo"
+        vbslq1_arg3 = "lo" if ascending else "hi"
+        vbslq2_arg2 = "mx" if ascending else "mn"
+        vbslq2_arg3 = "mn" if ascending else "mx"
 
         s = f"""    static INLINE void sort_01v_merge_{suffix}({g.generate_param_def_list(1)}) {{
+        const {self.vector_type()} mask13 = vld1q_{self.vector_suffix()}(mask13Array);
+        const {self.vector_type()} mask23 = vld1q_{self.vector_suffix()}(mask23Array);
 
-        // Sort (0,1) and (2,3)
-        {self.vector_type()} b   = vrev64q_{self.vector_suffix()}(d01);
-        {self.vector_type()} mn1 = vminq_{self.vector_suffix()}(d01, b);
-        {self.vector_type()} mx1 = vmaxq_{self.vector_suffix()}(d01, b);
-        uint32x4x2_t t1 = vtrnq_{self.vector_suffix()}({vtrnq_args});
-        d01 = t1.val[0];
+        // Cross half compare
+        {self.vector_type()} t  = vrev64q_{self.vector_suffix()}(d01);
+        t  = vextq_{self.vector_suffix()}(t, t, 2);
+        {self.vector_type()} lo = vminq_{self.vector_suffix()}(d01, t);
+        {self.vector_type()} hi = vmaxq_{self.vector_suffix()}(d01, t);
+        d01 = vbslq_{self.vector_suffix()}(mask23, {vbslq1_arg2}, {vbslq1_arg3});
 
         // Sort (0,2) and (1,3)
-        {self.vector_type()} sh2  = vextq_{self.vector_suffix()}(d01, d01, 2);
-        {self.vector_type()} mn2  = vminq_{self.vector_suffix()}(d01, sh2);
-        {self.vector_type()} mx2  = vmaxq_{self.vector_suffix()}(d01, sh2);
-        d01 = vcombine_{self.vector_suffix()}(vget_low_{self.vector_suffix()}({vcombine_arg1}), vget_high_{self.vector_suffix()}({vcombine_arg2}));
+        {self.vector_type()} sh = vextq_{self.vector_suffix()}(d01, d01, 2);
+        {self.vector_type()} mn = vminq_{self.vector_suffix()}(d01, sh);
+        {self.vector_type()} mx = vmaxq_{self.vector_suffix()}(d01, sh);
+        d01 = vbslq_{self.vector_suffix()}(mask23, {vbslq2_arg2}, {vbslq2_arg3});
 
-        // Sort (1,2)
-        {self.vector_type()} sh1   = vextq_{self.vector_suffix()}(d01, d01, 1);
-        {self.vector_type()} mn12  = vminq_{self.vector_suffix()}(d01, sh1);
-        {self.vector_type()} mx12  = vmaxq_{self.vector_suffix()}(d01, sh1);
-        {self.vector_type()} rot = vextq_{self.vector_suffix()}({vextq_arg}, {vextq_arg}, 3);
-        const {self.vector_type()} mask1 = vld1q_{self.vector_suffix()}(mask1Array);
-        const {self.vector_type()} mask2 = vld1q_{self.vector_suffix()}(mask2Array);
-        d01 = vbslq_{self.vector_suffix()}(mask1, {vbslq_arg}, d01);
-        d01 = vbslq_{self.vector_suffix()}(mask2, rot, d01);
+        // Sort (0,1) and (2,3)
+        sh = vrev64q_{self.vector_suffix()}(d01);
+        mn = vminq_{self.vector_suffix()}(d01, sh);
+        mx = vmaxq_{self.vector_suffix()}(d01, sh);
+        d01 = vbslq_{self.vector_suffix()}(mask13, {vbslq2_arg2}, {vbslq2_arg3});
     }}\n"""
         print(s, file=f)
 
@@ -329,6 +326,8 @@ using namespace vxsort;
     const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::maxvArray[4]  = {{MAX, MAX, MAX, MAX}};
     const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask1Array[4] = {{0u, ~0u, 0u, 0u}};
     const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask2Array[4] = {{0u, 0u, ~0u, 0u}};
+    const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask13Array[4] = {{0u, ~0u, 0u, ~0u}};
+    const {self.type} vxsort::smallsort::bitonic<{t}, vector_machine::NEON >::mask23Array[4] = {{0u, 0u, ~0u, ~0u}};
         """;
         print(s, file=f_src)
 
