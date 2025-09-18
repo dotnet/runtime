@@ -460,6 +460,8 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true };
+
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
@@ -475,7 +477,7 @@ namespace ILCompiler
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
-                _nodeFactory.OptimizationFlags,
+                optimizationFlags,
                 _nodeFactory.ImageBase,
                 automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies

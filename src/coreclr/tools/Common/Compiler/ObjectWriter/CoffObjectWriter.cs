@@ -360,9 +360,8 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
-            using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             var stringTable = new CoffStringTable();
             var coffHeader = new CoffHeader
             {
@@ -510,7 +509,7 @@ namespace ILCompiler.ObjectWriter
 
             public int Size => IsBigObj ? BigObjSize : RegularSize;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 if (!IsBigObj)
                 {
@@ -575,7 +574,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(ushort) + // NumberOfLineNumbers
                 sizeof(uint);    // SectionCharacteristics
 
-            public void Write(FileStream stream, CoffStringTable stringTable)
+            public void Write(Stream stream, CoffStringTable stringTable)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
@@ -688,7 +687,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(uint) +  // SymbolTableIndex
                 sizeof(ushort); // Type
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
@@ -838,7 +837,7 @@ namespace ILCompiler.ObjectWriter
                 return base.GetStringOffset(text) + 4;
             }
 
-            public new void Write(FileStream stream)
+            public new void Write(Stream stream)
             {
                 Span<byte> stringTableSize = stackalloc byte[4];
                 BinaryPrimitives.WriteUInt32LittleEndian(stringTableSize, Size);

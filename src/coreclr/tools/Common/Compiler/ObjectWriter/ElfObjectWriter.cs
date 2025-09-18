@@ -600,9 +600,8 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
-            using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             switch (_machine)
             {
                 case EM_386:
@@ -615,7 +614,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitObjectFile<TSize>(FileStream outputFileStream)
+        private void EmitObjectFile<TSize>(Stream outputFileStream)
             where TSize : struct, IBinaryInteger<TSize>
         {
             ElfStringTable _stringTable = new();
@@ -923,7 +922,7 @@ namespace ILCompiler.ObjectWriter
                     sizeof(ushort); // String table index
             }
 
-            public void Write<TSize>(FileStream stream)
+            public void Write<TSize>(Stream stream)
                 where TSize : struct, IBinaryInteger<TSize>
             {
                 Span<byte> buffer = stackalloc byte[GetSize<TSize>()];
@@ -981,7 +980,7 @@ namespace ILCompiler.ObjectWriter
                     default(TSize).GetByteCount(); // Entry size
             }
 
-            public void Write<TSize>(FileStream stream)
+            public void Write<TSize>(Stream stream)
                 where TSize : struct, IBinaryInteger<TSize>
             {
                 Span<byte> buffer = stackalloc byte[GetSize<TSize>()];
@@ -1017,7 +1016,7 @@ namespace ILCompiler.ObjectWriter
                 return typeof(TSize) == typeof(uint) ? 16 : 24;
             }
 
-            public void Write<TSize>(FileStream stream, ElfStringTable stringTable)
+            public void Write<TSize>(Stream stream, ElfStringTable stringTable)
                 where TSize : struct, IBinaryInteger<TSize>
             {
                 Span<byte> buffer = stackalloc byte[GetSize<TSize>()];

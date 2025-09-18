@@ -11,6 +11,7 @@ using System.Numerics;
 using System.Reflection.PortableExecutable;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -30,8 +31,12 @@ namespace ILCompiler.ObjectWriter
         private uint _peSizeOfInitializedData;
         private uint _peSectionAlignment;
         private uint _peFileAlignment;
+
         private uint _pdataRva;
         private uint _pdataSize;
+        
+        private uint _debugRva;
+        private uint _debugSize;
 
         private uint _exportRva;
         private uint _exportSize;
@@ -43,16 +48,18 @@ namespace ILCompiler.ObjectWriter
 
         // Emitted Symbol Table info
         private sealed record PESymbol(string Name, uint Offset);
+        private readonly Dictionary<string, PESymbol> _definedPESymbols = new();
         private readonly List<PESymbol> _exportedPESymbols = new();
-        private readonly int? _sectionAlignment;
-
-        // Note: Sections are emitted in the order provided by _sections.
-        // Grouping/merging of sections by base name (suffixes like '$') has been
-        // removed to simplify layout and emission.
+        private readonly int _sectionAlignment;
 
         private HashSet<string> _exportedSymbolNames = new();
 
-        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int? sectionAlignment = null)
+        /// <summary>
+        /// The offset of the .debug section in the emitted object file.
+        /// </summary>
+        public uint DebugSectionOffsetInStream { get; private set; }
+
+        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int sectionAlignment)
             : base(factory, options)
         {
             _sectionAlignment = sectionAlignment;
@@ -71,17 +78,15 @@ namespace ILCompiler.ObjectWriter
             // COMDAT sections are not supported in PE files
             base.CreateSection(section, comdatName: null, symbolName, sectionIndex, sectionStream);
 
-            if (_sectionAlignment is { } alignment)
+            if (_sectionAlignment != 0)
             {
-                UpdateSectionAlignment(sectionIndex, alignment);
+                UpdateSectionAlignment(sectionIndex, _sectionAlignment);
             }
-            // COMDAT sections are not supported in PE files
-            base.CreateSection(section, comdatName: null, symbolName, sectionStream);
         }
 
         private struct PEOptionalHeader
         {
-            public bool IsPE32Plus { get; private set; }
+            public bool IsPE32Plus { get; }
 
             // Standard fields
             public byte MajorLinkerVersion { get; set; }
@@ -163,7 +168,7 @@ namespace ILCompiler.ObjectWriter
                 NumberOfRvaAndSizes = 16u;
             }
 
-            public void Write(FileStream stream, OptionalHeaderDataDirectories dataDirectories)
+            public void Write(Stream stream, OptionalHeaderDataDirectories dataDirectories)
             {
                 // Write the optional header fields directly to the stream in the
                 // correct order for PE32 / PE32+ without allocating a giant buffer.
@@ -311,19 +316,18 @@ namespace ILCompiler.ObjectWriter
             }
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
-                if (!_exportedSymbolNames.Contains(symbolName))
-                {
-                    continue;
-                }
-
-                // Use the section index directly now that merging is removed.
                 int sectionIdx = symbolDefinition.SectionIndex;
                 if (sectionIdx < 0 || sectionIdx >= _sections.Count)
                     continue;
 
                 uint targetRva = _sections[sectionIdx].Header.VirtualAddress + (uint)symbolDefinition.Value;
                 PESymbol sym = new(symbolName, targetRva);
-                _exportedPESymbols.Add(sym);
+                _definedPESymbols.Add(symbolName, sym);
+
+                if (_exportedSymbolNames.Contains(symbolName))
+                {
+                    _exportedPESymbols.Add(sym);
+                }
             }
         }
 
@@ -369,6 +373,8 @@ namespace ILCompiler.ObjectWriter
                 h.SizeOfRawData = (uint)s.Stream.Length;
                 uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData) ? 0u : (uint)AlignmentHelper.AlignUp((int)h.SizeOfRawData, (int)fileAlignment);
 
+                uint offsetToStart = pointerToRawData;
+
                 if (rawAligned != 0)
                 {
                     h.PointerToRawData = pointerToRawData;
@@ -393,6 +399,12 @@ namespace ILCompiler.ObjectWriter
                 {
                     _pdataRva = h.VirtualAddress;
                     _pdataSize = h.VirtualSize != 0 ? h.VirtualSize : h.SizeOfRawData;
+                }
+                else if (h.Name == ".debug")
+                {
+                    _debugRva = h.VirtualAddress;
+                    _debugSize = h.VirtualSize != 0 ? h.VirtualSize : h.SizeOfRawData;
+                    DebugSectionOffsetInStream = offsetToStart;
                 }
             }
 
@@ -434,123 +446,178 @@ namespace ILCompiler.ObjectWriter
             _peSizeOfInitializedData = sizeOfInitializedData;
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override unsafe void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            base.EmitRelocations(sectionIndex, relocationList);
-
-            // Gather file-level relocations that need to go into the .reloc
-            // section. We collect entries grouped by 4KB page (page RVA ->
-            // list of (type<<12 | offsetInPage) WORD entries). When this
-            // override is invoked for the last section, synthesize the
-            // .reloc section from the collected entries and append it to
-            // the image section list so that it will be emitted by
-            // EmitObjectFile.
-
-            foreach (var symRel in relocationList)
+            foreach (var reloc in relocationList)
             {
-                RelocType fileRelocType = Relocation.GetFileRelocationType(symRel.Type);
-                if (fileRelocType == RelocType.IMAGE_REL_BASED_ABSOLUTE)
-                    continue;
-
-                uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)symRel.Offset;
-                uint pageRva = targetRva & ~0xFFFu;
-                ushort offsetInPage = (ushort)(targetRva & 0xFFFu);
-                ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
-
-                if (!_baseRelocMap.TryGetValue(pageRva, out var list))
+                switch (reloc.Type)
                 {
-                    list = new List<ushort>();
-                    _baseRelocMap.Add(pageRva, list);
-                }
-                list.Add(entry);
-            }
-
-            // If this is the last section being processed, create the
-            // .reloc section from the accumulated relocation blocks.
-            if (sectionIndex == _sectionIndexToRelocations.Count - 1 && _baseRelocMap.Count > 0)
-            {
-                var ms = new MemoryStream();
-
-                foreach (var kv in _baseRelocMap)
-                {
-                    uint pageRva = kv.Key;
-                    List<ushort> entries = kv.Value;
-                    entries.Sort();
-
-                    int entriesSize = entries.Count * 2;
-                    int sizeOfBlock = 8 + entriesSize;
-                    // Pad to 4-byte alignment as customary
-                    if ((sizeOfBlock & 3) != 0)
-                        sizeOfBlock += 2;
-
-                    byte[] headerBuf = new byte[8];
-                    BinaryPrimitives.WriteUInt32LittleEndian(headerBuf.AsSpan(0, 4), pageRva);
-                    BinaryPrimitives.WriteUInt32LittleEndian(headerBuf.AsSpan(4, 4), (uint)sizeOfBlock);
-                    ms.Write(headerBuf, 0, headerBuf.Length);
-
-                    // Emit entries
-                    foreach (ushort e in entries)
+                    case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                    case RelocType.IMAGE_REL_BASED_DIR64:
+                    case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                    case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                     {
-                        byte[] w = new byte[2];
-                        BinaryPrimitives.WriteUInt16LittleEndian(w.AsSpan(), e);
-                        ms.Write(w, 0, 2);
-                    }
+                        // Gather file-level relocations that need to go into the .reloc
+                        // section. We collect entries grouped by 4KB page (page RVA ->
+                        // list of (type<<12 | offsetInPage) WORD entries).
+                        RelocType fileRelocType = Relocation.GetFileRelocationType(reloc.Type);
+                        uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)reloc.Offset;
+                        uint pageRva = targetRva & ~0xFFFu;
+                        ushort offsetInPage = (ushort)(targetRva & 0xFFFu);
+                        ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
 
-                    // Ensure block is 4-byte aligned by padding a WORD if needed
-                    if (((entriesSize) & 3) != 0)
+                        if (!_baseRelocMap.TryGetValue(pageRva, out var list))
+                        {
+                            list = new List<ushort>();
+                            _baseRelocMap.Add(pageRva, list);
+                        }
+                        list.Add(entry);
+                        break;
+                    }
+                    case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                        {
+                            long rva = _sections[sectionIndex].Header.VirtualAddress + reloc.Offset;
+                            Relocation.WriteValue(reloc.Type, (void*)pData, rva);
+                            WriteRelocDataSpan(reloc, pData);
+                        }
+                        break;
+                    case RelocType.IMAGE_REL_BASED_REL32:
+                    case RelocType.IMAGE_REL_BASED_RELPTR32:
                     {
-                        byte[] pad = new byte[2];
-                        BinaryPrimitives.WriteUInt16LittleEndian(pad.AsSpan(), 0);
-                        ms.Write(pad, 0, 2);
+                        PESymbol definedSymbol = _definedPESymbols[reloc.SymbolName];
+                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                        {
+                            long adjustedAddend = reloc.Addend;
+
+                            adjustedAddend -= 4;
+
+                            adjustedAddend += definedSymbol.Offset;
+                            adjustedAddend += Relocation.ReadValue(reloc.Type, (void*)pData);
+                            adjustedAddend -= reloc.Offset;
+
+                            Relocation.WriteValue(reloc.Type, (void*)pData, adjustedAddend);
+                            WriteRelocDataSpan(reloc, pData);
+                        }
+                        break;
                     }
-                }
-
-                // Create a new section for .reloc and compute its raw/virtual layout
-                var relocHeader = new CoffSectionHeader
-                {
-                    Name = ".reloc",
-                    SectionCharacteristics = SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData
-                };
-
-                var relocSection = new SectionDefinition(relocHeader, ms, new List<CoffRelocation>(), null, null, ".reloc");
-
-                // Compute pointer to raw data: find last used raw end and align
-                uint lastRawEnd = 0;
-                uint lastVEnd = 0;
-                foreach (var s in _sections)
-                {
-                    if (s.Header.PointerToRawData != 0)
-                    {
-                        lastRawEnd = Math.Max(lastRawEnd, s.Header.PointerToRawData + s.Header.SizeOfRawData);
-                    }
-                    uint vEnd = s.Header.VirtualAddress + (uint)AlignmentHelper.AlignUp((int)s.Header.VirtualSize, (int)_peSectionAlignment);
-                    lastVEnd = Math.Max(lastVEnd, vEnd);
+                    case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                        {
+                            long rva = _sections[sectionIndex].Header.PointerToRawData + reloc.Offset;
+                            Relocation.WriteValue(reloc.Type, (void*)pData, rva);
+                            WriteRelocDataSpan(reloc, pData);
+                        }
+                        break;
+                    default:
+                        throw new NotSupportedException($"Unsupported relocation: {reloc.Type}");
                 }
 
-                uint pointerToRawData = lastRawEnd == 0 ? (uint)AlignmentHelper.AlignUp((int)_peSizeOfHeaders, (int)_peFileAlignment) : lastRawEnd;
-                relocHeader.PointerToRawData = pointerToRawData;
-                relocHeader.SizeOfRawData = (uint)AlignmentHelper.AlignUp((int)ms.Length, (int)_peFileAlignment);
-                relocHeader.VirtualAddress = (uint)AlignmentHelper.AlignUp((int)lastVEnd, (int)_peSectionAlignment);
-                relocHeader.VirtualSize = (uint)ms.Length;
+                Span<byte> GetRelocDataSpan(SymbolicRelocation reloc)
+                {
+                    Stream stream = _sections[sectionIndex].Stream;
+                    stream.Position = reloc.Offset;
+                    Span<byte> data = new byte[Relocation.GetSize(reloc.Type)];
+                    stream.ReadExactly(data);
+                    return data;
+                }
 
-                _sections.Add(relocSection);
-                _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
-
-                _baseRelocRva = relocHeader.VirtualAddress;
-                _baseRelocSize = (uint)ms.Length;
+                void WriteRelocDataSpan(SymbolicRelocation reloc, byte* data)
+                {
+                    Stream stream = _sections[sectionIndex].Stream;
+                    stream.Position = reloc.Offset;
+                    stream.Write(new Span<byte>(data, Relocation.GetSize(reloc.Type)));
+                }
             }
         }
 
-        private protected override void EmitObjectFile(string objectFilePath)
+        private void AddRelocSection()
         {
-            using var stream = new FileStream(objectFilePath, FileMode.Create, FileAccess.Write);
+            var ms = new MemoryStream();
+
+            foreach (var kv in _baseRelocMap)
+            {
+                uint pageRva = kv.Key;
+                List<ushort> entries = kv.Value;
+                entries.Sort();
+
+                int entriesSize = entries.Count * 2;
+                int sizeOfBlock = 8 + entriesSize;
+                // Pad to 4-byte alignment as customary
+                if ((sizeOfBlock & 3) != 0)
+                    sizeOfBlock += 2;
+
+                byte[] headerBuf = new byte[8];
+                BinaryPrimitives.WriteUInt32LittleEndian(headerBuf.AsSpan(0, 4), pageRva);
+                BinaryPrimitives.WriteUInt32LittleEndian(headerBuf.AsSpan(4, 4), (uint)sizeOfBlock);
+                ms.Write(headerBuf, 0, headerBuf.Length);
+
+                // Emit entries
+                foreach (ushort e in entries)
+                {
+                    byte[] w = new byte[2];
+                    BinaryPrimitives.WriteUInt16LittleEndian(w.AsSpan(), e);
+                    ms.Write(w, 0, 2);
+                }
+
+                // Ensure block is 4-byte aligned by padding a WORD if needed
+                if (((entriesSize) & 3) != 0)
+                {
+                    byte[] pad = new byte[2];
+                    BinaryPrimitives.WriteUInt16LittleEndian(pad.AsSpan(), 0);
+                    ms.Write(pad, 0, 2);
+                }
+            }
+
+            // Create a new section for .reloc and compute its raw/virtual layout
+            var relocHeader = new CoffSectionHeader
+            {
+                Name = ".reloc",
+                SectionCharacteristics = SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemDiscardable,
+            };
+
+            var relocSection = new SectionDefinition(relocHeader, ms, new List<CoffRelocation>(), null, null, ".reloc");
+
+            // Compute pointer to raw data: find last used raw end and align
+            uint lastRawEnd = 0;
+            uint lastVEnd = 0;
+            foreach (var s in _sections)
+            {
+                if (s.Header.PointerToRawData != 0)
+                {
+                    lastRawEnd = Math.Max(lastRawEnd, s.Header.PointerToRawData + s.Header.SizeOfRawData);
+                }
+                uint vEnd = s.Header.VirtualAddress + (uint)AlignmentHelper.AlignUp((int)s.Header.VirtualSize, (int)_peSectionAlignment);
+                lastVEnd = Math.Max(lastVEnd, vEnd);
+            }
+
+            uint pointerToRawData = lastRawEnd == 0 ? (uint)AlignmentHelper.AlignUp((int)_peSizeOfHeaders, (int)_peFileAlignment) : lastRawEnd;
+            relocHeader.PointerToRawData = pointerToRawData;
+            relocHeader.SizeOfRawData = (uint)AlignmentHelper.AlignUp((int)ms.Length, (int)_peFileAlignment);
+            relocHeader.VirtualAddress = (uint)AlignmentHelper.AlignUp((int)lastVEnd, (int)_peSectionAlignment);
+            relocHeader.VirtualSize = (uint)ms.Length;
+
+            _sections.Add(relocSection);
+            _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
+
+            _baseRelocRva = relocHeader.VirtualAddress;
+            _baseRelocSize = (uint)ms.Length;
+        }
+
+        private protected override void EmitObjectFile(Stream outputFileStream)
+        {
+            if (_baseRelocMap.Count > 0)
+            {
+                AddRelocSection();
+            }
 
             // Write a minimal DOS stub and set the e_lfanew to 0x80 where we'll
             // place the PE headers.
+            // TODO: Add DOS execution program stub.
             var dos = new byte[0x80];
             "MZ"u8.CopyTo(dos);
             BinaryPrimitives.WriteInt32LittleEndian(dos.AsSpan(0x3c), 0x80);
-            stream.Write(dos);
+            outputFileStream.Write(dos);
 
             ushort numberOfSections = (ushort)_sections.Count;
             bool isPE32Plus = _nodeFactory.Target.PointerSize == 8;
@@ -590,11 +657,18 @@ namespace ILCompiler.ObjectWriter
             uint sizeOfImage = _peSizeOfImage;
 
             // Write PE Signature at e_lfanew (0x80)
-            stream.Position = 0x80;
-            stream.Write("PE\0\0"u8);
+            outputFileStream.Position = 0x80;
+            outputFileStream.Write("PE\0\0"u8);
 
             Characteristics characteristics = Characteristics.ExecutableImage | Characteristics.Dll;
             characteristics |= isPE32Plus ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
+
+            Machine machine = _machine;
+#if READYTORUN
+            // On R2R, we encode the target OS into the machine bits to ensure we don't try running
+            // linux or mac R2R code on Windows, or vice versa.
+            machine = (Machine) ((ushort)machine ^ (ushort)_nodeFactory.Target.MachineOSOverrideFromTarget());
+#endif
 
             // COFF File Header
             var coffHeader = new CoffHeader
@@ -608,7 +682,7 @@ namespace ILCompiler.ObjectWriter
                 Characteristics = characteristics,
             };
 
-            coffHeader.Write(stream);
+            coffHeader.Write(outputFileStream);
 
             var peOptional = new PEOptionalHeader(_machine)
             {
@@ -659,7 +733,7 @@ namespace ILCompiler.ObjectWriter
             {
                 dataDirs.Set((int)ImageDirectoryEntry.BaseRelocation, _baseRelocRva, _baseRelocSize);
             }
-            peOptional.Write(stream, dataDirs);
+            peOptional.Write(outputFileStream, dataDirs);
 
             CoffStringTable stringTable = new();
 
@@ -667,7 +741,7 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < _sections.Count; i++)
             {
                 var hdr = _sections[i].Header;
-                hdr.Write(stream, stringTable);
+                hdr.Write(outputFileStream, stringTable);
             }
 
             // Write section content
@@ -675,9 +749,9 @@ namespace ILCompiler.ObjectWriter
             {
                 if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                 {
-                    Debug.Assert(stream.Position == section.Header.PointerToRawData);
+                    Debug.Assert(outputFileStream.Position == section.Header.PointerToRawData);
                     section.Stream.Position = 0;
-                    section.Stream.CopyTo(stream);
+                    section.Stream.CopyTo(outputFileStream);
                 }
             }
 

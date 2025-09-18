@@ -17,7 +17,7 @@ namespace ILCompiler.ObjectWriter
         private readonly SortedSet<string> _reservedStrings = new(StringComparer.Ordinal);
         private Dictionary<string, uint> _stringToOffset = new(StringComparer.Ordinal);
 
-        public void Write(FileStream stream)
+        public void Write(Stream stream)
         {
             _stream.Position = 0;
             _stream.CopyTo(stream);

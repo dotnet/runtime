@@ -273,7 +273,7 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private protected abstract void EmitObjectFile(string objectFilePath);
+        private protected abstract void EmitObjectFile(Stream outputFileStream);
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
@@ -291,7 +291,7 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
-        public void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
+        public void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);
@@ -473,7 +473,7 @@ namespace ILCompiler.ObjectWriter
                 relocSectionIndex++;
             }
 
-            EmitObjectFile(objectFilePath);
+            EmitObjectFile(outputFileStream);
         }
 
         partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, string relocSymbolName);
@@ -490,7 +490,9 @@ namespace ILCompiler.ObjectWriter
                 factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
                 factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
                 new ElfObjectWriter(factory, options);
-            objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
+
+            using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);
+            objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
 
             stopwatch.Stop();
             if (logger.IsVerbose)

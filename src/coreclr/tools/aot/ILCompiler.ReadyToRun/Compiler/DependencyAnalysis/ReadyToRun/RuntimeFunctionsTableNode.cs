@@ -157,6 +157,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return runtimeFunctionsBuilder.ToObjectData();
         }
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => factory.OptimizationFlags.IsComponentModule;
+
         /// <summary>
         /// Returns the runtime functions table size and excludes the 4 byte sentinel entry at the end (used by
         /// the runtime in NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod) so that it's not treated as

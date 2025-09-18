@@ -52,13 +52,14 @@ namespace ILCompiler.DependencyAnalysis
         SkipTypeValidation
     }
 
-    public sealed class NodeFactoryOptimizationFlags
+    public struct NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
         public TypeValidationRule TypeValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
+        public bool IsComponentModule;
     }
 
     // To make the code future compatible to the composite R2R story

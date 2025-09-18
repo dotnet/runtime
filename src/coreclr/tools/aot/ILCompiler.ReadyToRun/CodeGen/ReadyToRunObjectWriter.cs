@@ -5,20 +5,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-
+using System.Security.Cryptography;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Diagnostics;
+using ILCompiler.ObjectWriter;
 using ILCompiler.PEWriter;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using System.Security.Cryptography;
-using ILCompiler.ObjectWriter;
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -195,8 +194,39 @@ namespace ILCompiler.DependencyAnalysis
         {
             var stopwatch = Stopwatch.StartNew();
 
-            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment == 0 ? null : _customPESectionAlignment);
-            objectWriter.EmitObject(_objectFilePath, _nodes, new NoopObjectDumper(), logger);
+            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment);
+            using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
+            objectWriter.EmitObject(stream, _nodes, new NoopObjectDumper(), logger);
+
+            if (_mapFileBuilder != null)
+            {
+                _mapFileBuilder.SetFileSize(stream.Length);
+            }
+
+            if (_nodeFactory.DebugDirectoryNode.PdbEntry is {} nativeDebugDirectoryEntryNode)
+            {
+                Debug.Assert(_generatePdbFile);
+                // Compute hash of the output image and store that in the native DebugDirectory entry
+                using (var hashAlgorithm = SHA256.Create())
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                    byte[] hash = hashAlgorithm.ComputeHash(stream);
+                    byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
+
+                    stream.Seek(objectWriter.DebugSectionOffsetInStream, SeekOrigin.Begin);
+                    stream.Write(rsdsEntry);
+                }
+            }
+
+            if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
+            {
+                Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
+                byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
+                byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
+
+                stream.Seek(objectWriter.DebugSectionOffsetInStream, SeekOrigin.Begin);
+                stream.Write(perfMapEntry);
+            }
 
             stopwatch.Stop();
             if (logger.IsVerbose)

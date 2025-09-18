@@ -161,7 +161,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
 #if !READYTORUN
             _sections.Add(_compactUnwindSection);
@@ -182,8 +182,6 @@ namespace ILCompiler.ObjectWriter
             uint fileOffset = (uint)MachHeader64.HeaderSize + loadCommandsSize;
             uint segmentFileOffset = fileOffset;
             LayoutSections(ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
-
-            using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
 
             MachHeader64 machHeader = new MachHeader64
             {
@@ -354,6 +352,7 @@ namespace ILCompiler.ObjectWriter
                 Log2Alignment = 1,
                 Flags = flags,
             };
+
             _sections.Add(machSection);
 
             base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionIndex, sectionStream);
@@ -720,7 +719,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 32;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -751,7 +750,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 72;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -810,7 +809,7 @@ namespace ILCompiler.ObjectWriter
                 this.relocationCollection = null;
             }
 
-            public void WriteHeader(FileStream stream)
+            public void WriteHeader(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -840,7 +839,7 @@ namespace ILCompiler.ObjectWriter
             public byte Length { get; init; }
             public byte RelocationType { get; init; }
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> relocationBuffer = stackalloc byte[8];
                 uint info = SymbolOrSectionIndex;
@@ -862,7 +861,7 @@ namespace ILCompiler.ObjectWriter
             public ushort Descriptor { get; init; }
             public ulong Value { get; init; }
 
-            public void Write(FileStream stream, MachStringTable stringTable)
+            public void Write(Stream stream, MachStringTable stringTable)
             {
                 Span<byte> buffer = stackalloc byte[16];
                 uint nameIndex = stringTable.GetStringOffset(Name);
@@ -886,7 +885,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 24;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -924,7 +923,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 80;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -961,7 +960,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 24;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 

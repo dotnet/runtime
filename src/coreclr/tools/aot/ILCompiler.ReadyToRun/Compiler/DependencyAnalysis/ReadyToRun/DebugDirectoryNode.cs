@@ -74,6 +74,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             + (_perfMapEntry is not null ? 1 : 0)
             + (_insertDeterministicEntry ? 1 : 0)) * ImageDebugDirectorySize;
 
+        public NativeDebugDirectoryEntryNode PdbEntry => _nativeEntry;
+
+        public PerfMapDebugDirectoryEntryNode PerfMapEntry => _perfMapEntry;
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
