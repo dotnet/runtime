@@ -36,7 +36,7 @@ static int run()
     wasm_add_pinvoke_override();
 
     printf("BEGIN: call wasm_load_icu_data\n");
-    retval = wasm_load_icu_data("/");
+    int retval = wasm_load_icu_data("/");
     printf("END: call wasm_load_icu_data\n");
 
     if (retval == 0)
@@ -46,7 +46,7 @@ static int run()
     }
 
     printf("BEGIN: call coreclr_initialize\n");
-    int retval = coreclr_initialize(exe_path, app_domain_name, (int)propertyKeys.size(), propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
+    retval = coreclr_initialize(exe_path, app_domain_name, (int)propertyKeys.size(), propertyKeys.data(), propertyValues.data(), &CurrentClrInstance, &CurrentAppDomainId);
     printf("END: call coreclr_initialize\n");
 
     if (retval < 0)
