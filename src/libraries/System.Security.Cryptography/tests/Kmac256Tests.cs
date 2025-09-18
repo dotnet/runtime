@@ -77,6 +77,20 @@ namespace System.Security.Cryptography.Tests
             {
                 return Kmac256.HashDataAsync(key, source, outputLength, customizationString, cancellationToken);
             }
+
+            public static bool Verify(
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> customizationString)
+            {
+                return Kmac256.Verify(key, source, hash, customizationString);
+            }
+
+            public static bool Verify(byte[] key, byte[] source, byte[] hash, byte[] customizationString)
+            {
+                return Kmac256.Verify(key, source, hash, customizationString);
+            }
         }
 
         protected override IEnumerable<KmacTestVector> TestVectors

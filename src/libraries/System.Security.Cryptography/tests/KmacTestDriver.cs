@@ -54,6 +54,14 @@ namespace System.Security.Cryptography.Tests
             int outputLength,
             byte[] customizationString,
             CancellationToken cancellationToken);
+
+        static abstract bool Verify(
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString);
+
+        static abstract bool Verify(byte[] key, byte[] source, byte[] hash, byte[] customizationString);
     }
 
     public abstract class KmacTestDriver<TKmacTrait, TKmac>
@@ -732,6 +740,21 @@ namespace System.Security.Cryptography.Tests
 
                     Assert.Equal(testVector.Mac, Convert.ToHexString(destination), ignoreCase: true);
                 }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KNownAnswerTests_Verify_ByteArray()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                bool validHash = TKmacTrait.Verify(
+                    testVector.KeyBytes,
+                    testVector.MsgBytes,
+                    testVector.MacBytes,
+                    testVector.CustomBytes);
+
+                AssertExtensions.TrueExpression(validHash);
             }
         }
 
