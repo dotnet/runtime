@@ -631,7 +631,7 @@ namespace System.Data
                     PropertyCollection? extendedProperties = (PropertyCollection?)list[5];
 
                     //ParentKey Columns.
-                    DataTable parentTable = (allConstraints == false) ? this : DataSet!.Tables[parentInfo[0]];
+                    DataTable parentTable = (!allConstraints) ? this : DataSet!.Tables[parentInfo[0]];
                     DataColumn[] parentkeyColumns = new DataColumn[parentInfo.Length - 1];
                     for (int i = 0; i < parentkeyColumns.Length; i++)
                     {
@@ -639,7 +639,7 @@ namespace System.Data
                     }
 
                     //ChildKey Columns.
-                    DataTable childTable = (allConstraints == false) ? this : DataSet!.Tables[childInfo[0]];
+                    DataTable childTable = (!allConstraints) ? this : DataSet!.Tables[childInfo[0]];
                     DataColumn[] childkeyColumns = new DataColumn[childInfo.Length - 1];
                     for (int i = 0; i < childkeyColumns.Length; i++)
                     {
@@ -6757,10 +6757,7 @@ namespace System.Data
             }
             ReadXmlSerializableInternal(reader);
 
-            if (textReader != null)
-            {
-                textReader.Normalized = fNormalization;
-            }
+            textReader?.Normalized = fNormalization;
         }
 
         [RequiresUnreferencedCode("DataTable.ReadXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
@@ -6845,6 +6842,7 @@ namespace System.Data
             [Conditional("DEBUG")]
             internal void Cleanup()
             {
+#pragma warning disable IDE0031 // Null check can be simplified
                 // cannot assume target table was set
                 if (_targetTable != null)
                 {
@@ -6859,6 +6857,7 @@ namespace System.Data
 #endif
                     _targetTable._rowDiffId = null;
                 }
+#pragma warning restore IDE0031
             }
 
             [Conditional("DEBUG")]

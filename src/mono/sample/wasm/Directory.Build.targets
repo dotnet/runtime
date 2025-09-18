@@ -70,14 +70,21 @@
     </CreateProperty>
   </Target>
 
+  <Target Name="_ComputeMainJSFileName">
+    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+    <PropertyGroup>
+      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm --module $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --experimental-wasm-eh --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --experimental-wasm-eh --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --inspect=9222 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />

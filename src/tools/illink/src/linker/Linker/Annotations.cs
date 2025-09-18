@@ -71,6 +71,7 @@ namespace Mono.Linker
         protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition>();
         protected readonly HashSet<TypeDefinition> types_relevant_to_variant_casting = new HashSet<TypeDefinition>();
         readonly HashSet<IMemberDefinition> reflection_used = new();
+        AssemblyDefinition? entry_assembly;
 
         public AnnotationStore(LinkContext context)
         {
@@ -601,6 +602,17 @@ namespace Mono.Linker
             return attribute != null;
         }
 
+        public AssemblyDefinition? GetEntryPointAssembly()
+        {
+            return entry_assembly;
+        }
+
+        public void SetEntryPointAssembly(AssemblyDefinition asmDef)
+        {
+            Debug.Assert(entry_assembly is null);
+            entry_assembly = asmDef;
+        }
+
         /// <summary>
         /// Determines if method is within a declared RUC scope - this typically means that trim analysis
         /// warnings should be suppressed in such a method.
@@ -614,7 +626,13 @@ namespace Mono.Linker
                 return true;
 
             if (method.DeclaringType is not null && TryGetLinkerAttribute(method.DeclaringType, out attribute))
-                return true;
+            {
+                if (!attribute.ExcludeStatics)
+                    return true;
+
+                if (!method.IsStatic)
+                    return true;
+            }
 
             attribute = null;
             return false;
@@ -664,7 +682,13 @@ namespace Mono.Linker
 
                 if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
                     TryGetLinkerAttribute(method.DeclaringType, out attribute))
-                    return true;
+                {
+                    if (!attribute.ExcludeStatics)
+                        return true;
+
+                    if (method.IsConstructor)
+                        return true;
+                }
             } while (context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(method, out method));
 
             attribute = null;
@@ -679,7 +703,7 @@ namespace Mono.Linker
                 return false;
             }
 
-            return TryGetLinkerAttribute(field.DeclaringType, out attribute);
+            return TryGetLinkerAttribute(field.DeclaringType, out attribute) && !attribute.ExcludeStatics;
         }
 
         /// <Summary>

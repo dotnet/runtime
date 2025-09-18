@@ -116,6 +116,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0059`__ | SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead. |
 |  __`SYSLIB0060`__ | The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead. |
 |  __`SYSLIB0061`__ | The Queryable MinBy and MaxBy taking an IComparer\<TSource\> are obsolete. Use the new ones that take an IComparer\<TKey\>. |
+|  __`SYSLIB0062`__ | XSLT Script blocks are not supported. |
 
 ## Analyzer Warnings
 
@@ -296,7 +297,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 APIs can be marked as `[Experimental]` if their shape or functionality is included in a release but not yet officially supported. Experimental APIs offer the opportunity to collect customer feedback on these APIs in a major release, usually refining the APIs and removing the `[Experimental]` attribute in the next release. The `[Experimental]` attribute differs from `[RequiresPreviewFeatures]`, wherein:
 
 * `[RequiresPreviewFeatures]` APIs require a corresponding preview feature in another product area such as the compiler or SDK
-    - Using these APIs requires enabling preview features for the the project and all its consumers
+    - Using these APIs requires enabling preview features for the project and all its consumers
 * `[Experimental]` APIs are self-contained within the libraries and do not require preview features in other parts of the product
     - These APIs can be used by suppressing specific diagnostics without enabling preview features for the project
 

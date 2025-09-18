@@ -868,6 +868,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
                                                 InfoStoreNew, NULL, // allocator
+                                                BoundsType::Instrumented,
                                                 NULL, NULL,
                                                 &entryCount, &nativeVars);
 
@@ -879,76 +880,6 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
 } // GetNativeVarData
 
 
-//-----------------------------------------------------------------------------
-// Given a instrumented IL map from the profiler that maps:
-//   Original offset IL_A -> Instrumentend offset IL_B
-// And a native mapping from the JIT that maps:
-//   Instrumented offset IL_B -> native offset Native_C
-// This function merges the two maps and stores the result back into the nativeMap.
-// The nativeMap now maps:
-//   Original offset IL_A -> native offset Native_C
-// pEntryCount is the number of valid entries in nativeMap, and it may be adjusted downwards
-// as part of the composition.
-//-----------------------------------------------------------------------------
-void DacDbiInterfaceImpl::ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount)
-{
-    // Translate the IL offset if the profiler has provided us with a mapping.
-    // The ICD public API should always expose the original IL offsets, but GetBoundaries()
-    // directly accesses the debug info, which stores the instrumented IL offsets.
-
-    ULONG32 entryCount = *pEntryCount;
-    // The map pointer could be NULL or there could be no entries in the map, in either case no work to do
-    if (pProfilerILMap && !pProfilerILMap->IsNull())
-    {
-        // If we did instrument, then we can't have any sequence points that
-        // are "in-between" the old-->new map that the profiler gave us.
-        // Ex, if map is:
-        // (6 old -> 36 new)
-        // (8 old -> 50 new)
-        // And the jit gives us an entry for 44 new, that will map back to 6 old.
-        // Since the map can only have one entry for 6 old, we remove 44 new.
-
-        // First Pass: invalidate all the duplicate entries by setting their IL offset to MAX_ILNUM
-        ULONG32 cDuplicate = 0;
-        ULONG32 prevILOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
-        for (ULONG32 i = 0; i < entryCount; i++)
-        {
-            ULONG32 origILOffset = TranslateInstrumentedILOffsetToOriginal(nativeMap[i].ilOffset, pProfilerILMap);
-
-            if (origILOffset == prevILOffset)
-            {
-                // mark this sequence point as invalid; refer to the comment above
-                nativeMap[i].ilOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
-                cDuplicate += 1;
-            }
-            else
-            {
-                // overwrite the instrumented IL offset with the original IL offset
-                nativeMap[i].ilOffset = origILOffset;
-                prevILOffset = origILOffset;
-            }
-        }
-
-        // Second Pass: move all the valid entries up front
-        ULONG32 realIndex = 0;
-        for (ULONG32 curIndex = 0; curIndex < entryCount; curIndex++)
-        {
-            if (nativeMap[curIndex].ilOffset != (ULONG32)(ICorDebugInfo::MAX_ILNUM))
-            {
-                // This is a valid entry.  Move it up front.
-                nativeMap[realIndex] = nativeMap[curIndex];
-                realIndex += 1;
-            }
-        }
-
-        // make sure we have done the bookkeeping correctly
-        _ASSERTE((realIndex + cDuplicate) == entryCount);
-
-        // Final Pass: derecement entryCount
-        entryCount -= cDuplicate;
-        *pEntryCount = entryCount;
-    }
-}
 
 
 //-----------------------------------------------------------------------------
@@ -983,37 +914,13 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 
     ULONG32 entryCount;
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                      InfoStoreNew, NULL, // allocator
+                                                      InfoStoreNew, 
+                                                      NULL, // allocator
+                                                      BoundsType::Uninstrumented,
                                                       &entryCount, &mapCopy,
                                                       NULL, NULL);
     if (!success)
         ThrowHR(E_FAIL);
-
-#ifdef FEATURE_REJIT
-    CodeVersionManager * pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
-    ILCodeVersion ilVersion;
-    NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(dac_cast<PTR_MethodDesc>(pMethodDesc), (PCODE)startAddr);
-    if (!nativeCodeVersion.IsNull())
-    {
-        ilVersion = nativeCodeVersion.GetILCodeVersion();
-    }
-
-    // if there is a rejit IL map for this function, apply that in preference to load-time mapping
-    if (!ilVersion.IsNull() && !ilVersion.IsDefaultVersion())
-    {
-        const InstrumentedILOffsetMapping * pRejitMapping = ilVersion.GetInstrumentedILMap();
-        ComposeMapping(pRejitMapping, mapCopy, &entryCount);
-    }
-    else
-    {
-#endif
-        // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
-        InstrumentedILOffsetMapping loadTimeMapping =
-            pMethodDesc->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(pMethodDesc->GetMemberDef());
-        ComposeMapping(&loadTimeMapping, mapCopy, &entryCount);
-#ifdef FEATURE_REJIT
-    }
-#endif
 
     pSeqPoints->InitSequencePoints(entryCount);
 
@@ -1023,46 +930,6 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
     pSeqPoints->CopyAndSortSequencePoints(mapCopy);
 
 } // GetSequencePoints
-
-// ----------------------------------------------------------------------------
-// DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal
-//
-// Description:
-//    Helper function to convert an instrumented IL offset to the corresponding original IL offset.
-//
-// Arguments:
-//    * ilOffset - offset to be translated
-//    * pMapping - the profiler-provided mapping between original IL offsets and instrumented IL offsets
-//
-// Return Value:
-//    Return the translated offset.
-//
-
-ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
-                                                                   const InstrumentedILOffsetMapping * pMapping)
-{
-    SIZE_T               cMap  = pMapping->GetCount();
-    ARRAY_PTR_COR_IL_MAP rgMap = pMapping->GetOffsets();
-
-    _ASSERTE((cMap == 0) == (rgMap == NULL));
-
-    // Early out if there is no mapping, or if we are dealing with a special IL offset such as
-    // prolog, epilog, etc.
-    if ((cMap == 0) || ((int)ilOffset < 0))
-    {
-        return ilOffset;
-    }
-
-    SIZE_T i = 0;
-    for (i = 1; i < cMap; i++)
-    {
-        if (ilOffset < rgMap[i].newOffset)
-        {
-            return rgMap[i - 1].oldOffset;
-        }
-    }
-    return rgMap[i - 1].oldOffset;
-}
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function Data
@@ -3324,7 +3191,7 @@ HRESULT DacDbiInterfaceImpl::GetMethodDescPtrFromIpEx(TADDR funcIp, VMPTR_Method
     }
 
     // Otherwise try to see if a method desc is available for the method that isn't jitted by walking the code stubs.
-    MethodDesc* pMD = MethodTable::GetMethodDescForSlotAddress(PINSTRToPCODE(funcIp));
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(PINSTRToPCODE(funcIp));
 
     if (pMD == NULL)
         return E_INVALIDARG;
@@ -3556,9 +3423,9 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_
 {
     // We should always have a valid EEJitManager with at least one code heap.
     EEJitManager *pEM = ExecutionManager::GetEEJitManager();
-    _ASSERTE(pEM != NULL && pEM->m_pCodeHeap.IsValid());
+    _ASSERTE(pEM != NULL && pEM->m_pAllCodeHeaps.IsValid());
 
-    PTR_HeapList pHeapList = pEM->m_pCodeHeap;
+    PTR_HeapList pHeapList = pEM->m_pAllCodeHeaps;
     while (pHeapList != NULL)
     {
         CodeHeap *pHeap = pHeapList->pHeap;
@@ -5096,9 +4963,21 @@ void DacDbiInterfaceImpl::Hijack(
     // Setup context for hijack
     //
     T_CONTEXT ctx;
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS) && (defined(DTCONTEXT_IS_AMD64) || defined(DTCONTEXT_IS_ARM64))
+    // If the host or target is not Windows, then we can assume that the DT_CONTEXT
+    // is the same as the T_CONTEXT, except for the XSTATE registers.
+    static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT does not include the XSTATE registers");
+#else
+    // Since Dac + DBI are tightly coupled, context sizes should be the same.
+    static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
+#endif
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
-        CONTEXT_FULL,
+        CONTEXT_FULL | CONTEXT_FLOATING_POINT
+#ifdef CONTEXT_EXTENDED_REGISTERS
+        | CONTEXT_EXTENDED_REGISTERS
+#endif
+        ,
         sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
@@ -7444,6 +7323,23 @@ HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
     EX_CATCH_HRESULT(hr);
     return hr;
 }
+
+HRESULT DacDbiInterfaceImpl::GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (vmModule.IsNull() || pVmDomainAssembly == NULL)
+        return E_INVALIDARG;
+
+    Module *pModule = vmModule.GetDacPtr();
+    if (pModule == NULL)
+        return E_INVALIDARG;
+
+    *pVmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    pVmDomainAssembly->SetHostPtr(pModule->GetDomainAssembly());
+
+    return S_OK;
+}   
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),

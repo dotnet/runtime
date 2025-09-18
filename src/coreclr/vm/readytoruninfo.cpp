@@ -333,14 +333,13 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     }
     CONTRACTL_END;
 
-    IMAGE_DATA_DIRECTORY * pDebugInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
-    if (pDebugInfoDir == NULL)
+    if (m_pSectionDebugInfo == NULL)
         return NULL;
 
     SIZE_T methodIndex = pRuntimeFunction - m_pRuntimeFunctions;
     _ASSERTE(methodIndex < m_nRuntimeFunctions);
 
-    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), pDebugInfoDir->VirtualAddress);
+    NativeArray debugInfoIndex(dac_cast<PTR_NativeReader>(PTR_HOST_INT_TO_TADDR(&m_nativeReader)), m_pSectionDebugInfo->VirtualAddress);
 
     uint offset;
     if (!debugInfoIndex.TryGetAt((DWORD)methodIndex, &offset))
@@ -884,6 +883,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+    m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
 
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
@@ -1251,10 +1251,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            BOOL mayUsePrecompiledNDirectMethods = TRUE;
-            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
 
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
             {
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
                 goto done;
@@ -2033,8 +2033,10 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
     STANDARD_VM_CONTRACT;
 
     size_t size = sizeof(StubPrecode);
-    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
+    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocStub());
     pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+
+    FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);

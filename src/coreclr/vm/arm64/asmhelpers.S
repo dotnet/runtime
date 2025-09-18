@@ -31,15 +31,15 @@ LEAF_END GetDataCacheZeroIDReg, _TEXT
     LEAF_END GetSveLengthFromOS, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     mov x0, x12
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     mov x12, x0
 
     // pop the stack and restore original register state
@@ -47,11 +47,11 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     RESTORE_ARGUMENT_REGISTERS sp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG x12
 
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 
@@ -695,27 +695,40 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
 
-    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
-    // On other Unixes, there is no such guarantee, so we need to always restore the argument registers
-#ifndef TARGET_APPLE
-    ldp x0, x1, [sp, #__PWTB_ArgumentRegisters + 8]
-    ldp x2, x3, [sp, #__PWTB_ArgumentRegisters + 0x18]
-    ldp x4, x5, [sp, #__PWTB_ArgumentRegisters + 0x28]
-    ldp x6, x7, [sp, #__PWTB_ArgumentRegisters + 0x38]
-    ldp q0, q1, [sp, #__PWTB_FloatArgumentRegisters]
-    ldp q2, q3, [sp, #__PWTB_FloatArgumentRegisters + 0x20]
-    ldp q4, q5, [sp, #__PWTB_FloatArgumentRegisters + 0x40]
-    ldp q6, q7, [sp, #__PWTB_FloatArgumentRegisters + 0x60]
-#else // !TARGET_APPLE
-    // Restore the thrashed x0
+    ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
+    cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
+
+#ifdef TARGET_APPLE
+    // There Thread::GetInterpThreadContext can destroy all argument registers, so we
+    // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
+    // Restore x0 thrashed by the INLINE_GETTHREAD
     mov x0, x21
-#endif // !TARGET_APPLE
+    SAVE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+#endif
+
+    mov x0, x20
+    bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+    mov x11, x0
+
+#ifndef TARGET_APPLE
+LOCAL_LABEL(HaveInterpThreadContext):
+#endif
+
+    RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+
+#ifdef TARGET_APPLE
+LOCAL_LABEL(HaveInterpThreadContext):
+    // On Apple, the INLINE_GETTHREAD is guaranteed to not to thrash argument registers other than x0
+    // So we restore just the x0
+    mov x0, x21
+#endif // TARGET_APPLE
 
     ldr x9, [x19] // InterpMethod*
     ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
-    ldr x9, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
-    ldr x9, [x9, #OFFSETOF__InterpThreadContext__pStackPointer]
+    ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
     // x19 contains IR bytecode address
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ldr x11, [x10], #8
@@ -873,6 +886,30 @@ NESTED_ENTRY InterpreterStubRet4Float, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRet4Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVector64, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr d0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVector64, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVector128, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr q0, [x0]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVector128, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
@@ -1820,5 +1857,43 @@ NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Float, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVector64, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str d0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVector64, _TEXT
+
+// X0 - routines array
+// X1 - interpreter stack args location
+// X2 - interpreter stack return value location
+// X3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetVector128, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x2, [sp, #16]
+    sub sp, sp, x3
+    mov x10, x0
+    mov x9, x1
+    ldr x11, [x10], #8
+    blr x11
+    ldr x2, [sp, #16]
+    str q0, [x2]
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVector128, _TEXT
 
 #endif // FEATURE_INTERPRETER

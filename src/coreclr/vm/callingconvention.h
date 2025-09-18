@@ -12,6 +12,10 @@
 #ifndef __CALLING_CONVENTION_INCLUDED
 #define __CALLING_CONVENTION_INCLUDED
 
+#ifdef FEATURE_INTERPRETER
+#include <interpretershared.h>
+#endif // FEATURE_INTERPRETER
+
 BOOL IsRetBuffPassedAsFirstArg();
 
 // Describes how a single argument is laid out in registers and/or stack locations when given as an input to a
@@ -491,31 +495,31 @@ public:
 
                 while (typ == ELEMENT_TYPE_VALUETYPE &&
                     pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()	||
-                    pMT->GetNumInstanceFieldBytes() == 4	
-                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.	
-                {	
-                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();	
+                    pMT->GetNumInstanceFieldBytes() == 4
+                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.
+                {
+                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
                     CorElementType type = pFD->GetFieldType();
 
                     bool exitLoop = false;
-                    switch (type)	
+                    switch (type)
                     {
                         case ELEMENT_TYPE_VALUETYPE:
                         {
-                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
-                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
+                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?
+                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();
                             CONSISTENCY_CHECK(!fldHnd.IsNull());
                             pMT = fldHnd.GetMethodTable();
                             FALLTHROUGH;
-                        }	
+                        }
                         case ELEMENT_TYPE_PTR:
                         case ELEMENT_TYPE_I:
                         case ELEMENT_TYPE_U:
-                        case ELEMENT_TYPE_I4:	
+                        case ELEMENT_TYPE_I4:
                         case ELEMENT_TYPE_U4:
-                        {	
+                        {
                             typ = type;
-                            break;	
+                            break;
                         }
                         default:
                             exitLoop = true;
@@ -676,6 +680,7 @@ public:
     // explicit arguments have been scanned is platform dependent.
     void GetThisLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetThisOffset(), pLoc); }
     void GetParamTypeLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetParamTypeArgOffset(), pLoc); }
+    void GetAsyncContinuationLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetAsyncContinuationArgOffset(), pLoc); }
     void GetVASigCookieLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetVASigCookieOffset(), pLoc); }
 
 #ifndef CALLDESCR_RETBUFFARGREG
@@ -852,7 +857,7 @@ public:
             pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = 1;
         }
-        else 
+        else
 #endif // UNIX_AMD64_ABI
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
@@ -1296,6 +1301,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
+#elif defined(TARGET_WASM)
+        // we put everything on the stack, we don't have registers
+        // WASM_TODO find out whether we can use implicit stack here
+        m_ofsStack = 0;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
 #endif
@@ -1866,6 +1875,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     // Pass argument entirely on stack
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
+
+    return argOfs;
+#elif defined(TARGET_WASM)
+    int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+
+    m_ofsStack += cbArg;
 
     return argOfs;
 #else

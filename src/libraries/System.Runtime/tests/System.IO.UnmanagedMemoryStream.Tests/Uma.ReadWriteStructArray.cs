@@ -115,6 +115,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117166", TestPlatforms.Browser)]
         public static void UmaReadWriteGenericStringStructArray_ThrowsArgumentException()
         {
             const int capacity = 100;

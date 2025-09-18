@@ -32,18 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DirectPInvoke Include="unwinder_cdac_amd64" Condition="'$(TargetArchitecture)' == 'x64'" />
-    <DirectPInvoke Include="unwinder_cdac_arm64" Condition="'$(TargetArchitecture)' == 'arm64' or ('$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64')" />
-
-    <!-- unwinder_cdac_base is supported on all platforms -->
-    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\$(LibPrefix)unwinder_cdac_base$(StaticLibSuffix)" />
-
-    <!-- amd64 and arm64 are supported on windows x64, or on their native platform -->
-    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\$(LibPrefix)unwinder_cdac_amd64$(StaticLibSuffix)" Condition="'$(TargetArchitecture)' == 'x64'" />
-    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\$(LibPrefix)unwinder_cdac_arm64$(StaticLibSuffix)" Condition="'$(TargetArchitecture)' == 'arm64' or ('$(TargetsWindows)' == 'true' and '$(TargetArchitecture)' == 'x64')" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
   </ItemGroup>
 

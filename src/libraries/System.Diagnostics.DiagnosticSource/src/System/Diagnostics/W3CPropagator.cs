@@ -130,6 +130,7 @@ namespace System.Diagnostics
         // key = ( lcalpha / DIGIT ) 0*255 ( keychar )
         // keychar    = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
         // lcalpha    = %x61-7A ; a-z
+        // DIGIT     = %x30-39 ; 0-9
         //
         // value    = 0*255(chr) nblk-chr
         // nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
@@ -421,26 +422,28 @@ namespace System.Diagnostics
         }
 #endif
 
+        // https://www.w3.org/TR/trace-context-2/#key
         // key = ( lcalpha / DIGIT ) 0*255 ( keychar )
         // keychar    = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
         // lcalpha    = %x61-7A ; a-z
+        // DIGIT     = %x30-39 ; 0-9
 
 #if NET
-        private const string TraceStateKeyValidChars = "*-/@_abcdefghijklmnopqrstuvwxyz";
+        private const string TraceStateKeyValidChars = "*-/0123456789@_abcdefghijklmnopqrstuvwxyz";
         private static readonly SearchValues<char> s_validTraceStateChars = SearchValues.Create(TraceStateKeyValidChars);
 
-        private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key) => key.IsEmpty || (key[0] < 'a' || key[0] > 'z') || key.ContainsAnyExcept(s_validTraceStateChars);
+        private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key) => key.IsEmpty || ((uint)('z' - key[0]) > (uint)('z' - 'a') && (uint)('9' - key[0]) > (uint)('9' - '0')) || key.ContainsAnyExcept(s_validTraceStateChars);
 
         private const string TraceStateValueValidChars = "!\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create(TraceStateValueValidChars);
 
         private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value) => value.IsEmpty || value.ContainsAnyExcept(s_validTraceStateValueChars);
 #else
-        private static ulong[] ValidTraceStateKeyCharsMask = [0x0000A40000000000, 0x07FFFFFE80000001];
+        private static ulong[] ValidTraceStateKeyCharsMask = [0x03FFA40000000000, 0x07FFFFFE80000001];
 
         private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key)
         {
-            if (key.IsEmpty || (key[0] < 'a' || key[0] > 'z')) // Key has to start with a lowercase letter
+            if (key.IsEmpty || ((uint)('z' - key[0]) > (uint)('z' - 'a') && (uint)('9' - key[0]) > (uint)('9' - '0'))) // Key has to start with a lowercase letter or digit
             {
                 return true; // invalid key character, skip current entry
             }
@@ -601,14 +604,35 @@ namespace System.Diagnostics
         // Example 00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e1-01
         private static bool IsInvalidTraceParent(string? traceParent)
         {
-            if (string.IsNullOrEmpty(traceParent) || traceParent.Length != 55)
+            if (string.IsNullOrEmpty(traceParent) || traceParent.Length < 55)
             {
                 return true;
             }
 
-            if (traceParent[0] == 'f' || traceParent[1] == 'f' || IsInvalidTraceParentCharacter(traceParent[0]) || IsInvalidTraceParentCharacter(traceParent[1]))
+            if ((traceParent[0] == 'f' && traceParent[1] == 'f') || IsInvalidTraceParentCharacter(traceParent[0]) || IsInvalidTraceParentCharacter(traceParent[1]))
             {
                 return true;
+            }
+
+            if (traceParent[0] == '0' && traceParent[1] == '0')
+            {
+                // version 00 should have exactly 55 characters
+                if (traceParent.Length != 55)
+                {
+                    return true; // invalid length for version 00
+                }
+            }
+            else
+            {
+                // If a higher version is detected, the implementation SHOULD try to parse it by trying the following:
+                //      o If the size of the header is shorter than 55 characters, the vendor should not parse the header and should restart the trace.
+                //      o Parse trace-id (from the first dash through the next 32 characters). Vendors MUST check that the 32 characters are hex, and that they are followed by a dash (-).
+                //      o Parse parent-id (from the second dash at the 35th position through the next 16 characters). Vendors MUST check that the 16 characters are hex and followed by a dash.
+                //      o Parse the sampled bit of flags (2 characters from the third dash). Vendors MUST check that the 2 characters are either the end of the string or a dash.
+                if (traceParent.Length > 55 && traceParent[55] != '-')
+                {
+                    return true; // invalid format for version other than 00
+                }
             }
 
             if (traceParent[2] != '-' || traceParent[35] != '-' || traceParent[52] != '-')

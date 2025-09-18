@@ -29,14 +29,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestNoPointers()
         {
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "NoPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "NoPointers"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "int1":
                         Assert.Equal(0, field.Offset.AsInt);
@@ -48,7 +48,7 @@ namespace TypeSystemTests
                         Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -60,20 +60,20 @@ namespace TypeSystemTests
             // Test that static offsets ignore instance fields preceding them
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "StillNoPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "StillNoPointers"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "bool1":
                         Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -85,14 +85,14 @@ namespace TypeSystemTests
             // Ensure classes behave the same as structs when containing statics
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "ClassNoPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "ClassNoPointers"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "int1":
                         Assert.Equal(0, field.Offset.AsInt);
@@ -104,7 +104,7 @@ namespace TypeSystemTests
                         Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -116,14 +116,14 @@ namespace TypeSystemTests
             // Test a struct containing static types with pointers
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "HasPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "HasPointers"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "string1":
                         Assert.Equal(8, field.Offset.AsInt);
@@ -132,7 +132,7 @@ namespace TypeSystemTests
                         Assert.Equal(16, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -144,14 +144,14 @@ namespace TypeSystemTests
             // Test that static fields with GC pointers get separate offsets from non-GC fields
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "MixPointersAndNonPointers");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "MixPointersAndNonPointers"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "string1":
                         Assert.Equal(8, field.Offset.AsInt);
@@ -169,7 +169,7 @@ namespace TypeSystemTests
                         Assert.Equal(24, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -182,14 +182,14 @@ namespace TypeSystemTests
             // are again offset from 0
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "EnsureInheritanceResetsStaticOffsets");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "EnsureInheritanceResetsStaticOffsets"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "int3":
                         Assert.Equal(0, field.Offset.AsInt);
@@ -198,7 +198,7 @@ namespace TypeSystemTests
                         Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -210,7 +210,7 @@ namespace TypeSystemTests
             // Test that literal fields are not laid out.
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "LiteralFieldsDontAffectLayout");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "LiteralFieldsDontAffectLayout"u8);
 
             Assert.Equal(4, t.GetFields().Count());
 
@@ -219,7 +219,7 @@ namespace TypeSystemTests
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "IntConstant":
                     case "StringConstant":
@@ -233,7 +233,7 @@ namespace TypeSystemTests
                         Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -246,20 +246,20 @@ namespace TypeSystemTests
             // going into an infinite loop
             //
 
-            MetadataType t = _testModule.GetType("StaticFieldLayout", "StaticSelfRef");
+            MetadataType t = _testModule.GetType("StaticFieldLayout"u8, "StaticSelfRef"u8);
 
             foreach (var field in t.GetFields())
             {
                 if (!field.IsStatic)
                     continue;
 
-                switch (field.Name)
+                switch (field.GetName())
                 {
                     case "selfRef1":
                         Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
-                        throw new Exception(field.Name);
+                        throw new Exception(field.GetName());
                 }
             }
         }
@@ -272,8 +272,8 @@ namespace TypeSystemTests
             //
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            var t = ilModule.GetType("StaticFieldLayout", "RvaStatics");
-            var field = t.GetField("StaticInitedInt");
+            var t = ilModule.GetType("StaticFieldLayout"u8, "RvaStatics"u8);
+            var field = t.GetField("StaticInitedInt"u8);
 
             Assert.True(field.HasRva);
 
@@ -294,8 +294,8 @@ namespace TypeSystemTests
             //
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            var t = ilModule.GetType("StaticFieldLayout", "FunctionPointerType");
-            var field = t.GetField("StaticMethodField");
+            var t = ilModule.GetType("StaticFieldLayout"u8, "FunctionPointerType"u8);
+            var field = t.GetField("StaticMethodField"u8);
 
             Assert.Equal(8, field.Offset.AsInt);
             Assert.False(field.HasGCStaticBase);

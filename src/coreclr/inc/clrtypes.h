@@ -20,7 +20,6 @@
 #include "crtwrap.h"
 #include "winwrap.h"
 #include "staticcontract.h"
-#include "static_assert.h"
 
 #if HOST_64BIT
     #define POINTER_BITS (64)
@@ -270,7 +269,7 @@ typedef SIZE_T      CLR_U;
 
     typedef bool            CLR_BOOL;
 
-static_assert_no_msg(sizeof(CLR_BOOL) == 1);
+static_assert(sizeof(CLR_BOOL) == 1);
 
 #define CLR_BOOL_MAX    BOOL_MAX
 #define CLR_BOOL_MIN    BOOL_MIN
@@ -369,6 +368,15 @@ inline UINT64 AlignDown(UINT64 value, UINT alignment)
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value&~(UINT64)(alignment-1));
 }
+
+#ifdef __wasm__
+inline uintptr_t AlignDown(uintptr_t value, UINT alignment)
+{
+    STATIC_CONTRACT_LEAF;
+    STATIC_CONTRACT_SUPPORTS_DAC;
+    return (value&~(uintptr_t)(alignment-1));
+}
+#endif
 
 #ifdef __APPLE__
 inline SIZE_T AlignDown(SIZE_T value, UINT alignment)

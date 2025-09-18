@@ -57,13 +57,6 @@ namespace System.Net
             static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException(nameof(prefixLength));
         }
 
-        // Non-validating ctor
-        private IPNetwork(IPAddress baseAddress, int prefixLength, bool _)
-        {
-            _baseAddress = baseAddress;
-            PrefixLength = prefixLength;
-        }
-
         /// <summary>
         /// Determines whether a given <see cref="IPAddress"/> is part of the network.
         /// </summary>
@@ -196,7 +189,7 @@ namespace System.Net
                     prefixLength <= GetMaxPrefixLength(address))
                 {
                     Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
-                    result = new IPNetwork(address, prefixLength, false);
+                    result = new IPNetwork(address, prefixLength);
                     return true;
                 }
             }
@@ -224,7 +217,7 @@ namespace System.Net
                     prefixLength <= GetMaxPrefixLength(address))
                 {
                     Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
-                    result = new IPNetwork(address, prefixLength, false);
+                    result = new IPNetwork(address, prefixLength);
                     return true;
                 }
             }

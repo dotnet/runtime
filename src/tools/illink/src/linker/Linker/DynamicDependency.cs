@@ -70,7 +70,7 @@ namespace Mono.Linker
 
             // Don't honor the Condition until we have figured out the behavior for DynamicDependencyAttribute:
             // https://github.com/dotnet/linker/issues/1231
-            // if (!ShouldProcess (context, customAttribute))
+            // if (!ShouldProcess(context, customAttribute))
             //   return null;
 
             var dynamicDependency = GetDynamicDependency(customAttribute);
@@ -105,8 +105,7 @@ namespace Mono.Linker
                 _ => null,
             };
 
-            if (result != null)
-                result.OriginalAttribute = ca;
+            result?.OriginalAttribute = ca;
 
             return result;
         }

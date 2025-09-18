@@ -4420,7 +4420,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)span.Length;
+            uint length = (uint)span.Length;
 
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -4579,7 +4579,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;
@@ -4663,7 +4663,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue, IEqualityComparer<T>? comparer = null)
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;

@@ -348,7 +348,7 @@ public class PrecodeStubsTests
     private static Target CreateTarget(PrecodeBuilder precodeBuilder)
     {
         var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
-        TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
+        TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetMemoryContext().ReadFromTarget;
         // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
         (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
         var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);

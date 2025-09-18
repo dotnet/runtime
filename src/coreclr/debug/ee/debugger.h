@@ -1116,8 +1116,8 @@ protected:
 //     different part of the address space (not on the heap).
 // ------------------------------------------------------------------------ */
 
-constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=112;
-constexpr uint64_t EXPECTED_CHUNKSIZE=128;
+constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=120; // sizeof (SharedPatchBypassBuffer)
+constexpr uint64_t EXPECTED_CHUNKSIZE=256; // This must be a power of 2.  It represents the size of DebuggerHeapExecutableMemoryChunk, can be the sizeof (DataChunk) or sizeof (BookkeepingChunk). Changes to DBG_MAX_EXECUTABLE_ALLOC_SIZE can affect this number.  Currently we require 136 bytes, and so the closest power of 2 is 256.
 constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
 constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
 constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
@@ -2105,6 +2105,7 @@ public:
     HRESULT GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap,
                                  COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
+#ifdef DEBUG
     HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -2112,6 +2113,7 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset);
+#endif // DEBUG
 
     PRD_TYPE GetPatchedOpcode(CORDB_ADDRESS_TYPE *ip);
     BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode);
@@ -2615,14 +2617,7 @@ public:
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
 
-    HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
-    HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
-    HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain);
-
-    void SendCreateAppDomainEvent(AppDomain * pAppDomain);
-
-    // Notify the debugger that an assembly has been loaded
-    void LoadAssembly(DomainAssembly * pDomainAssembly);
+    void AppDomainCreated(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been unloaded
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
@@ -2838,9 +2833,6 @@ private:
     DebuggerLaunchSetting GetDbgJITDebugLaunchSetting();
 
 public:
-    HRESULT InitAppDomainIPC(void);
-    HRESULT TerminateAppDomainIPC(void);
-
     bool ResumeThreads(AppDomain* pAppDomain);
 
     void ProcessAnyPendingEvals(Thread *pThread);
@@ -2921,7 +2913,6 @@ private:
     Volatile<BOOL>        m_jitAttachInProgress;
     BOOL                  m_launchingDebugger;
     BOOL                  m_LoggingEnabled;
-    AppDomainEnumerationIPCBlock    *m_pAppDomainCB;
 
     LONG                  m_dClassLoadCallbackCount;
 

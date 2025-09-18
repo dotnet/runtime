@@ -19,7 +19,7 @@
 #include "corhdr.h"
 #include "corjit.h"
 
-#include "interpretershared.h"
+#include <interpretershared.h>
 #include "compiler.h"
 #include "interpconfig.h"
 
@@ -27,6 +27,7 @@
 
 #ifdef DEBUG
 extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+
 #undef assert
 #define assert(p) (void)((p) || (assertAbort(#p, __FILE__, __LINE__), 0))
 #endif // DEBUG

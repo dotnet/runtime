@@ -84,6 +84,7 @@
       <_CommonLinkerArgs Include="-lswiftCore" />
       <_CommonLinkerArgs Include="-lswiftFoundation" />
       <_CommonLinkerArgs Include="-framework Foundation" />
+      <_CommonLinkerArgs Include="-framework Network" />
       <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework CryptoKit" />
       <_CommonLinkerArgs Include="-framework UIKit" />
@@ -98,6 +99,11 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
+
+    <!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)libcoreclr_static.a"
+          DestinationFiles="$(AppleBuildDir)libcoreclr_static.a"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(CoreCLRArtifactsPath)libcoreclr_static.a')" />
   </Target>
 
   <Target Name="_AppleResolveReferences">
@@ -321,6 +327,7 @@
       EnableAppSandbox="$(EnableAppSandbox)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+      EnvironmentVariables="@(EnvironmentVariables)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"

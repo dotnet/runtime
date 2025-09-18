@@ -70,11 +70,13 @@ namespace
             return SystemResolveDllImport(entry_point_name);
         }
 
+#if !defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif
+#endif // !defined(TARGET_OSX)
+#endif // !defined(_WIN32)
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
@@ -222,7 +224,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         // otherwise fail early.
         if (!bundle::info_t::is_single_file_bundle())
         {
-            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting DOTNET_HOST_TRACE environment variable to 1"));
             return StatusCode::CoreClrResolveFailure;
         }
 
