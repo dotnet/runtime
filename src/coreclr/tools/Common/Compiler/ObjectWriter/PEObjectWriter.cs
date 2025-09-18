@@ -55,6 +55,7 @@ namespace ILCompiler.ObjectWriter
         public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int? sectionAlignment = null)
             : base(factory, options)
         {
+            _sectionAlignment = sectionAlignment;
         }
 
         public void AddExportedSymbol(string symbol)
