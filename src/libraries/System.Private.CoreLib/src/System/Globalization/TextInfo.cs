@@ -483,6 +483,11 @@ namespace System.Globalization
             return c;
         }
 
+        /// <summary>
+        /// Converts the specified rune to lowercase.
+        /// </summary>
+        /// <param name="value">The rune to convert to lowercase.</param>
+        /// <returns>The specified rune converted to lowercase.</returns>
         public Rune ToLower(Rune value)
         {
             // Convert rune to span
@@ -503,6 +508,11 @@ namespace System.Globalization
             }
         }
 
+        /// <summary>
+        /// Converts the specified rune to uppercase.
+        /// </summary>
+        /// <param name="value">The rune to convert to uppercase.</param>
+        /// <returns>The specified rune converted to uppercase.</returns>
         public Rune ToUpper(Rune value)
         {
             // Convert rune to span

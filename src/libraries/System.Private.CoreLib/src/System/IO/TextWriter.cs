@@ -125,6 +125,10 @@ namespace System.IO
         {
         }
 
+        /// <summary>
+        /// Writes a rune to the text stream.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
         public virtual void Write(Rune value)
         {
             // Convert value to span
@@ -357,6 +361,10 @@ namespace System.IO
             WriteLine();
         }
 
+        /// <summary>
+        /// Writes a rune followed by a line terminator to the text stream.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
         public virtual void WriteLine(Rune value)
         {
             // Convert value to span
@@ -573,6 +581,11 @@ namespace System.IO
                 t.Item1.Write(t.Item2);
             }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        /// <summary>
+        /// Writes a rune to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         public virtual Task WriteAsync(Rune value)
         {
             Span<char> chars = stackalloc char[2];
@@ -654,6 +667,11 @@ namespace System.IO
                 t.Item1.WriteLine(t.Item2);
             }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        /// <summary>
+        /// Writes a rune followed by a line terminator to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         public virtual Task WriteLineAsync(Rune value)
         {
             Span<char> chars = stackalloc char[2];

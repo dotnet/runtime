@@ -647,6 +647,12 @@ namespace System.Text
 #endregion
         }
 
+        /// <summary>
+        /// Returns an enumeration of <see cref="Rune"/> from this builder.
+        /// </summary>
+        /// <remarks>
+        /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
+        /// </remarks>
         public StringBuilderRuneEnumerator EnumerateRunes() => new StringBuilderRuneEnumerator(this);
 
         /// <summary>
@@ -1031,6 +1037,11 @@ namespace System.Text
             m_ChunkLength++;
         }
 
+        /// <summary>
+        /// Appends the string representation of a specified <see cref="Rune"/> to this instance.
+        /// </summary>
+        /// <param name="value">The UTF-32-encoded code unit to append.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
         public StringBuilder Append(Rune value)
         {
             // Convert value to span
@@ -1342,6 +1353,12 @@ namespace System.Text
             return this;
         }
 
+        /// <summary>
+        /// Inserts the string representation of a specified Unicode rune into this instance at the specified character position.
+        /// </summary>
+        /// <param name="index">The position in this instance where insertion begins.</param>
+        /// <param name="value">The value to insert.</param>
+        /// <returns>A reference to this instance after the insert operation has completed.</returns>
         public StringBuilder Insert(int index, Rune value)
         {
             // Convert value to span
@@ -2274,11 +2291,28 @@ namespace System.Text
             return this;
         }
 
+        /// <summary>
+        /// Replaces all occurrences of a specified rune in this instance with another specified rune.
+        /// </summary>
+        /// <param name="oldRune">The rune to replace.</param>
+        /// <param name="newRune">The rune that replaces <paramref name="oldRune"/>.</param>
+        /// <returns>A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/>.</returns>
         public StringBuilder Replace(Rune oldRune, Rune newRune)
         {
             return Replace(oldRune, newRune, 0, Length);
         }
 
+        /// <summary>
+        /// Replaces, within a substring of this instance, all occurrences of a specified rune with another specified rune.
+        /// </summary>
+        /// <param name="oldRune">The rune to replace.</param>
+        /// <param name="newRune">The rune that replaces <paramref name="oldRune"/>.</param>
+        /// <param name="startIndex">The position in this instance where the substring begins.</param>
+        /// <param name="count">The length of the substring.</param>
+        /// <returns>
+        /// A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/> in the range
+        /// from <paramref name="startIndex"/> to <paramref name="startIndex"/> + <paramref name="count"/> - 1.
+        /// </returns>
         public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
@@ -2845,6 +2879,11 @@ namespace System.Text
             AssertInvariants();
         }
 
+        /// <summary>
+        /// Gets the <see cref="Rune"/> that begins at a specified position in this builder.
+        /// </summary>
+        /// <param name="index">The starting position in this builder at which to decode the rune.</param>
+        /// <returns>The rune obtained from this builder at the specified <paramref name="index"/>.</returns>
         public Rune GetRuneAt(int index)
         {
             if (TryGetRuneAt(index, out Rune value))
@@ -2855,6 +2894,15 @@ namespace System.Text
             return default;
         }
 
+        /// <summary>
+        /// Attempts to get the <see cref="Rune"/> that begins at a specified position in this builder, and return a value that indicates whether the operation succeeded.
+        /// </summary>
+        /// <param name="index">The starting position in this builder at which to decode the rune.</param>
+        /// <param name="value">When this method returns, the decoded rune.</param>
+        /// <returns>
+        /// <see langword="true"/> if a scalar value was successfully extracted from the specified index;
+        /// <see langword="false"/> if a value could not be extracted because of invalid data.
+        /// </returns>
         public bool TryGetRuneAt(int index, out Rune value)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
