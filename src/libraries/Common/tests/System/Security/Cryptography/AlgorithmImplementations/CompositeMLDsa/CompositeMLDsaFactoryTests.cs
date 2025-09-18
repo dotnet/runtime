@@ -577,9 +577,9 @@ namespace System.Security.Cryptography.Tests
             static void AssertThrows(string pem)
             {
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromPem(pem)));
+                    AssertExtensions.Throws<ArgumentException>("source", () => CompositeMLDsa.ImportFromPem(pem)));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromPem(pem.AsSpan())));
+                    AssertExtensions.Throws<ArgumentException>("source", () => CompositeMLDsa.ImportFromPem(pem.AsSpan())));
             }
         }
 
@@ -595,13 +595,13 @@ namespace System.Security.Cryptography.Tests
             static void AssertThrows(string encryptedPem)
             {
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER")));
+                    AssertExtensions.Throws<ArgumentException>("source", () => CompositeMLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER")));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8)));
+                    AssertExtensions.Throws<ArgumentException>("source", () => CompositeMLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8)));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem.AsSpan(), "PLACEHOLDER")));
+                    AssertExtensions.Throws<ArgumentException>("source", () => CompositeMLDsa.ImportFromEncryptedPem(encryptedPem.AsSpan(), "PLACEHOLDER")));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => MLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8.ToArray())));
+                    AssertExtensions.Throws<ArgumentException>("source", () => CompositeMLDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8.ToArray())));
             }
         }
 
