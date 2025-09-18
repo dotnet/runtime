@@ -137,13 +137,13 @@
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
     <!-- The following package versions are present in minimum MSBuild / VS version that this release is supported on -->
-    <MicrosoftBclAsyncInterfacesToolsetVersion>7.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
+    <MicrosoftBclAsyncInterfacesToolsetVersion>8.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
     <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
-    <SystemCollectionsImmutableToolsetVersion>7.0.0</SystemCollectionsImmutableToolsetVersion>
+    <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>7.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
-    <SystemReflectionMetadataToolsetVersion>7.0.0</SystemReflectionMetadataToolsetVersion>
-    <SystemTextEncodingsWebToolsetVersion>7.0.0</SystemTextEncodingsWebToolsetVersion>
+    <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
+    <SystemTextEncodingsWebToolsetVersion>8.0.0</SystemTextEncodingsWebToolsetVersion>
     <SystemTextJsonToolsetVersion>8.0.5</SystemTextJsonToolsetVersion>
     <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
     <SystemTextJsonVersion>8.0.0-rc.1.23406.6</SystemTextJsonVersion>
