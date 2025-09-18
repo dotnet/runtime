@@ -1876,7 +1876,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
     // We care about the following cases:
     // Call from any site -> collectible target
-    if (objectType->GetLoaderAllocator()->IsCollectible())
+    if (objectType->Collectible())
     {
         // The callee's manager
         pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();

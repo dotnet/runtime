@@ -189,7 +189,7 @@ namespace System.Xml.Xsl
         /// True if neither name nor namespace is a wildcard
         /// </summary>
         public bool IsSingleName {
-            get { return (object)this.Name != (object)wildcard && (object)this.Namespace != (object)wildcard  && this.exclude == false; }
+            get { return (object)this.Name != (object)wildcard && (object)this.Namespace != (object)wildcard  && !this.exclude; }
         }
 
         /// <summary>

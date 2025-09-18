@@ -21,7 +21,7 @@ export function advertise () {
     globalThis.crypto.getRandomValues(uuid);
     uuid[7] = (uuid[7] & 0xf) | 0x40;// version 4
 
-    const pid = runtimeHelpers.mono_wasm_process_current_pid();
+    const pid = runtimeHelpers.SystemJS_GetCurrentProcessId();
 
     return Uint8Array.from([
         ...advert1,

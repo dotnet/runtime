@@ -97,6 +97,7 @@
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
     <MicrosoftBclAsyncInterfacesToolsetVersion>8.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
+    <MicrosoftIoRedistToolsetVersion>6.0.1</MicrosoftIoRedistToolsetVersion>
     <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
@@ -120,11 +121,11 @@
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.5.0</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
-    <CoverletCollectorVersion>6.0.0</CoverletCollectorVersion>
+    <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <JsonSchemaNetVersion>7.0.2</JsonSchemaNetVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
@@ -146,10 +147,9 @@
     <CompilerPlatformTestingMicrosoftVisualBasicVersion>10.2.0</CompilerPlatformTestingMicrosoftVisualBasicVersion>
     <CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>17.0.46</CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>9.0.0-preview-20241010.1</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20250912.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.8</MicrosoftNativeQuicMsQuicSchannelVersion>
-    <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.15</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport
