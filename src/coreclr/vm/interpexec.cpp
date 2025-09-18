@@ -732,7 +732,7 @@ MAIN_LOOP:
                     break;
 #endif
                 case INTOP_INITLOCALS:
-                    memset(LOCAL_VAR_ADDR(ip[1], void*), 0, ip[2]);
+                    memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
                     break;
                 case INTOP_MEMBAR:
@@ -784,13 +784,13 @@ MAIN_LOOP:
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
                 case INTOP_RET_VT:
-                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void*), ip[2]);
+                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
                 case INTOP_RET_VOID:
                     goto EXIT_FRAME;
 
                 case INTOP_LDLOCA:
-                    LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void*);
+                    LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void);
                     ip += 3;
                     break;
                 case INTOP_LOAD_FRAMEVAR:
@@ -816,7 +816,7 @@ MAIN_LOOP:
 #undef MOV
 
                 case INTOP_MOV_VT:
-                    memmove(LOCAL_VAR_ADDR(ip[1], void*), LOCAL_VAR_ADDR(ip[2], void*), ip[3]);
+                    memmove(LOCAL_VAR_ADDR(ip[1], void), LOCAL_VAR_ADDR(ip[2], void), ip[3]);
                     ip += 4;
                     break;
 
@@ -1901,7 +1901,7 @@ MAIN_LOOP:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
                     NULL_CHECK(src);
-                    memcpy(LOCAL_VAR_ADDR(ip[1], void*), (char*)src + ip[3], ip[4]);
+                    memcpy(LOCAL_VAR_ADDR(ip[1], void), (char*)src + ip[3], ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1953,7 +1953,7 @@ MAIN_LOOP:
                 {
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void*), ip[4]);
+                    memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1962,7 +1962,7 @@ MAIN_LOOP:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void*), pMT);
+                    CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), pMT);
                     ip += 5;
                     break;
                 }
@@ -2531,7 +2531,7 @@ CALL_INTERP_METHOD:
                     methodSlot = ip[3];
 
                     int32_t vtSize = ip[4];
-                    void *vtThis = LOCAL_VAR_ADDR(returnOffset, void*);
+                    void *vtThis = LOCAL_VAR_ADDR(returnOffset, void);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
@@ -2779,7 +2779,7 @@ do {                                                                           \
                     size_t componentSize = arr->GetMethodTable()->GetComponentSize();
                     void* elemAddr = pData + idx * componentSize;
                     MethodTable* pElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
-                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(ip[1], void*), elemAddr, pElemMT);
+                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(ip[1], void), elemAddr, pElemMT);
                     ip += 5;
                     break;
                 }
@@ -2910,7 +2910,7 @@ do {                                                                           \
                     size_t elemSize = ip[4];
                     void* elemAddr = pData + idx * elemSize;
 
-                    memcpyNoGCRefs(elemAddr, LOCAL_VAR_ADDR(ip[3], void*), elemSize);
+                    memcpyNoGCRefs(elemAddr, LOCAL_VAR_ADDR(ip[3], void), elemSize);
                     ip += 5;
                     break;
                 }
