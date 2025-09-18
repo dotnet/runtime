@@ -434,7 +434,7 @@ namespace ILLink.Shared.TrimAnalysis
                     }
 
 
-                    FieldDefinition backingField = backingFieldFromSetter ?? backingFieldFromGetter!;
+                    FieldDefinition? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
                     if (backingField is not null)
                     {
                         bool validBackingFieldFound = backingFieldFromGetter is null
