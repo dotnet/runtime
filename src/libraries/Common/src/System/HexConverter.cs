@@ -354,7 +354,7 @@ namespace System
                     Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset).AsUInt16();
                     Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count).AsUInt16();
 
-                    vec = Ascii.ExtractAsciiVector(vec1, vec2);
+                    vec = Vector128.NarrowNative(vec1, vec2);
 
                     if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
                     {
