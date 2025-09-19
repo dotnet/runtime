@@ -1207,44 +1207,7 @@ namespace System.Runtime.CompilerServices
     {
         public static bool IsInternalFrame(System.Reflection.MethodBase mb) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public static partial class CallSiteOps
-    {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static void AddRule<T>(System.Runtime.CompilerServices.CallSite<T> site, T rule) where T : class { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Creating arrays at runtime requires dynamic code generation.")]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static T Bind<T>(System.Runtime.CompilerServices.CallSiteBinder binder, System.Runtime.CompilerServices.CallSite<T> site, object[] args) where T : class { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static void ClearMatch(System.Runtime.CompilerServices.CallSite site) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static System.Runtime.CompilerServices.CallSite<T> CreateMatchmaker<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static T[] GetCachedRules<T>(System.Runtime.CompilerServices.RuleCache<T> cache) where T : class { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static bool GetMatch(System.Runtime.CompilerServices.CallSite site) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static System.Runtime.CompilerServices.RuleCache<T> GetRuleCache<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static T[]? GetRules<T>(System.Runtime.CompilerServices.CallSite<T> site) where T : class { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static void MoveRule<T>(System.Runtime.CompilerServices.RuleCache<T> cache, T rule, int i) where T : class { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static bool SetNotMatched(System.Runtime.CompilerServices.CallSite site) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("CallSiteOps has been deprecated and is not supported.", true)]
-        public static void UpdateRules<T>(System.Runtime.CompilerServices.CallSite<T> @this, int matched) where T : class { }
-    }
+
     public partial class CallSite<T> : System.Runtime.CompilerServices.CallSite where T : class
     {
         internal CallSite() { }
@@ -1319,36 +1282,5 @@ namespace System.Runtime.CompilerServices
     {
         internal RuleCache() { }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public static partial class RuntimeOps
-    {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static System.Runtime.CompilerServices.IRuntimeVariables CreateRuntimeVariables() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static System.Runtime.CompilerServices.IRuntimeVariables CreateRuntimeVariables(object[] data, long[] indexes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static bool ExpandoCheckVersion(System.Dynamic.ExpandoObject expando, object? version) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static void ExpandoPromoteClass(System.Dynamic.ExpandoObject expando, object oldClass, object newClass) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static bool ExpandoTryDeleteValue(System.Dynamic.ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static bool ExpandoTryGetValue(System.Dynamic.ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase, out object? value) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static object? ExpandoTrySetValue(System.Dynamic.ExpandoObject expando, object? indexClass, int index, object? value, string name, bool ignoreCase) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        public static System.Runtime.CompilerServices.IRuntimeVariables MergeRuntimeVariables(System.Runtime.CompilerServices.IRuntimeVariables first, System.Runtime.CompilerServices.IRuntimeVariables second, int[] indexes) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("RuntimeOps has been deprecated and is not supported.", true)]
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("expression")]
-        public static System.Linq.Expressions.Expression? Quote(System.Linq.Expressions.Expression? expression, object hoistedLocals, object[] locals) { throw null; }
-    }
+
 }
