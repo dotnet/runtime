@@ -1446,25 +1446,18 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             exInfo.TakeExceptionPointersOwnership(ex);
         }
 
-        TADDR handlingFrameSP;
-        PCODE handlingFramePC;
-        PCODE pCatchHandler;
-
         GCPROTECT_BEGIN(exInfo.m_exception);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_HW_EX_HANDLER);
-        DECLARE_ARGHOLDER_ARRAY(args, 5);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
         args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
         args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-        args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
-        args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
         pThread->IncPreventAbort();
 
-        //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &handlingFramePC, &pCatchHandler)
+        //Ex.RhThrowHwEx(exceptionCode, &exInfo)
         CALL_MANAGED_METHOD_NORET(args)
 
-        DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
+        DispatchExSecondPass(&exInfo);
 
         GCPROTECT_END();
 
@@ -1596,25 +1589,18 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     GCPROTECT_BEGIN(exInfo.m_exception);
 
-    TADDR handlingFrameSP;
-    PCODE handlingFramePC;
-    PCODE pCatchHandler;
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_EX_HANDLER);
-    DECLARE_ARGHOLDER_ARRAY(args, 5);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROW_EX);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
-    args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.FindExHandler(throwable, &exInfo, &handlingFrameSP, &handlingFramePC, &pCatchHandler)
+    //Ex.RhThrowEx(throwable, &exInfo)
     CRITICAL_CALLSITE;
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
+    DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();
     GCPROTECT_END();
@@ -1659,25 +1645,18 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
-    TADDR handlingFrameSP;
-    PCODE handlingFramePC;
-    PCODE pCatchHandler;
-
     GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_RETHROW_EX_HANDLER);
-    DECLARE_ARGHOLDER_ARRAY(args, 5);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
 
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
-    args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out UIntPtr handlingFramePC, out byte* pCatchHandler)
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
-    DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
+    DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();
 
@@ -4225,9 +4204,15 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
     InvokeSecondPass(pExInfo, idxStart, MaxTryRegionIdx);
 }
 
-void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE handlingFramePC, PCODE pCatchHandler)
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
 {
     //GCHeapUtilities::GetGCHeap()->GarbageCollect(2, FALSE, collection_aggressive);
+
+    TADDR handlingFrameSP = pExInfo->m_handlingFrameSP;
+#ifdef TARGET_ARM64
+    PCODE handlingFramePC = pExInfo->m_handlingFramePC;
+#endif
+    PCODE pCatchHandler = pExInfo->m_pCatchHandler;
 
     StackFrameIterator *pFrameIter = &pExInfo->m_frameIter;
     pExInfo->m_passNumber = 2;
@@ -4239,7 +4224,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrame
     for (; isValid && (GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) <= handlingFrameSP); isValid = SfiNextWorker(pFrameIter, &startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
     {
         _ASSERTE_MSG(isValid, "second-pass EH unwind failed unexpectedly");
-        _ASSERTE_MSG(GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) != NULL, "IP address must not be null");
+        _ASSERTE_MSG(GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) != 0, "IP address must not be null");
 
         if (isExceptionIntercepted)
         {
@@ -4281,10 +4266,6 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrame
     UNREACHABLE();
 }
 
-#if defined(DEBUGGING_SUPPORTED)
-
-#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-
 //
 // This function continues exception interception unwind after it crossed native frames using
 // standard EH / SEH.
@@ -4320,7 +4301,7 @@ VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
     for (; isValid && (GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) <= uInterceptStackFrame); isValid = SfiNextWorker(pFrameIter, &startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
     {
         _ASSERTE_MSG(isValid, "Unwind and intercept failed unexpectedly");
-        _ASSERTE_MSG(GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) != NULL, "IP address must not be null");
+        _ASSERTE_MSG(GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) != 0, "IP address must not be null");
 
         if (unwoundReversePInvoke)
         {
@@ -4385,8 +4366,6 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
     ContinueExceptionInterceptionUnwind();
     UNREACHABLE();
 }
-#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-#endif // DEBUGGING_SUPPORTED
 
 namespace AsmOffsetsAsserts
 {

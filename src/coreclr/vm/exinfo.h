@@ -322,6 +322,15 @@ struct ExInfo
     // The exception handling clause for the catch handler that was identified during pass 1
     EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
 
+    // Catch handler address
+    PCODE m_pCatchHandler;
+    // SP of the frame handling the exception
+    TADDR m_handlingFrameSP;
+#ifdef TARGET_ARM64
+    // PC of the frame handling the exception
+    PCODE m_handlingFramePC;
+#endif
+
 #ifdef TARGET_UNIX
     // Set to TRUE to take ownership of the EXCEPTION_RECORD and CONTEXT_RECORD in the m_ptrs. When set, the
     // memory of those records is freed using PAL_FreeExceptionRecords when the ExInfo is destroyed.

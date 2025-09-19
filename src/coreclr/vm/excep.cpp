@@ -6171,25 +6171,18 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
-    TADDR handlingFrameSP;
-    PCODE handlingFramePC;
-    PCODE pCatchHandler;
-
     GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_HW_EX_HANDLER);
-    DECLARE_ARGHOLDER_ARRAY(args, 5);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
-    args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &handlingFramePC, &pCatchHandler)
+    //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
+    DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();
     UNREACHABLE();

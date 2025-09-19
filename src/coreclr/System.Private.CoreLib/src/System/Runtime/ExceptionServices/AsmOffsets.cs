@@ -217,6 +217,18 @@ class AsmOffsets
     public const int OFFSETOF__ExInfo__m_idxCurClause = 0xbc;
     public const int OFFSETOF__ExInfo__m_frameIter = 0xc0;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
+    public const int OFFSETOF__ExInfo__m_pCatchHandler = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x48;
+    public const int OFFSETOF__ExInfo__m_handlingFrameSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x50;
+
+#if TARGET_ARM64
+    public const int OFFSETOF__ExInfo__m_handlingFramePC = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x58;
+#endif
+
+#if TARGET_UNIX
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x30;
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x38;
+#endif
+
 #else // TARGET_64BIT
     public const int SIZEOF__EHEnum = 0x10;
     public const int OFFSETOF__StackFrameIterator__m_pRegDisplay = 0x14;
@@ -268,8 +280,13 @@ class AsmOffsets
     static_assert(offsetof(ExInfo, m_idxCurClause) == OFFSETOF__ExInfo__m_idxCurClause);
     static_assert(offsetof(ExInfo, m_frameIter) == OFFSETOF__ExInfo__m_frameIter);
     static_assert(offsetof(ExInfo, m_notifyDebuggerSP) == OFFSETOF__ExInfo__m_notifyDebuggerSP);
+    static_assert(offsetof(ExInfo, m_pCatchHandler) == OFFSETOF__ExInfo__m_pCatchHandler);
+    static_assert(offsetof(ExInfo, m_handlingFrameSP) == OFFSETOF__ExInfo__m_handlingFrameSP);
+#if TARGET_ARM64
+    static_assert(offsetof(ExInfo, m_handlingFramePC) == OFFSETOF__ExInfo__m_handlingFramePC);
 #endif
 
+#endif
 }
 #if __cplusplus
 ;
