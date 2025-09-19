@@ -2394,6 +2394,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal("Member", retarray.xelements[1].Name);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     public static void ObsoleteAttribute_DoesNotAffectSerialization()
     {
@@ -2448,7 +2449,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         });
     }
 
-#if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
     {
@@ -2497,7 +2497,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", originalSwitchValue);
         }
     }
-    #endif
+#endif
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
