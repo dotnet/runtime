@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.SLHDsa.Tests;
-using Test.Cryptography;
 using Xunit;
 
 using CompositeMLDsaTestVector = System.Security.Cryptography.Tests.CompositeMLDsaTestData.CompositeMLDsaTestVector;
@@ -32,16 +30,14 @@ namespace System.Security.Cryptography.Tests
                 dsa.Dispose();
             }
 
-            PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42);
-
             AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.SignData(null));
             AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.VerifyData(null, null));
 
             AssertExtensions.Throws<ArgumentNullException>("signature", () => dsa.VerifyData(Array.Empty<byte>(), null));
 
-            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.ExportEncryptedPkcs8PrivateKey((string)null, pbeParameters));
-            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, pbeParameters));
-            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.TryExportEncryptedPkcs8PrivateKey((string)null, pbeParameters, Span<byte>.Empty, out _));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.ExportEncryptedPkcs8PrivateKey((string)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.TryExportEncryptedPkcs8PrivateKey((string)null, null, Span<byte>.Empty, out _));
 
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null));
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null));

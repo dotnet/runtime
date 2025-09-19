@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Security.Cryptography.SLHDsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -42,37 +41,19 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void UseAfterDispose()
-        {
-            CompositeMLDsa dsa = CompositeMLDsa.GenerateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
-            dsa.Dispose();
-            dsa.Dispose(); // no throw
-
-            CompositeMLDsaTestHelpers.VerifyDisposed(dsa);
-        }
-
-        [Fact]
         public static void ImportPkcs8_BerEncoding()
         {
+            CompositeMLDsaTestData.CompositeMLDsaTestVector vector = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
+
             // Pkcs8 is DER encoded, so create a BER encoding from it by making it use a non-minimal length encoding.
-            byte[] key = CompositeMLDsaTestData.AllIetfVectors[0].Pkcs8;
+            byte[] key = vector.Pkcs8;
 
-            byte[] nonMinimalEncoding = new byte[key.Length + 1];
-            nonMinimalEncoding[0] = key[0]; // SEQUENCE tag
-
-            // Test data uses long form, so we don't need to handle short form
-            Debug.Assert((key[1] & 0b1000_0000) != 0);
-
-            nonMinimalEncoding[1] = (byte)(key[1] + 1); // extra length byte to make it non-minimal
-            nonMinimalEncoding[2] = 0; // padding byte
-
-            // Copy the rest of the data
-            key.AsSpan(2).CopyTo(nonMinimalEncoding.AsSpan(3));
+            byte[] nonMinimalEncoding = AsnUtils.ConvertDerToNonDerBer(key);
 
             CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
                 CompositeMLDsaTestHelpers.AssertExportPrivateKey(export =>
                     CompositeMLDsaTestHelpers.WithDispose(import(nonMinimalEncoding), mldsa =>
-                        AssertExtensions.SequenceEqual(CompositeMLDsaTestData.AllIetfVectors[0].SecretKey, export(mldsa)))));
+                        AssertExtensions.SequenceEqual(vector.SecretKey, export(mldsa)))));
         }
 
         #region Roundtrip by exporting then importing
@@ -295,6 +276,26 @@ namespace System.Security.Cryptography.Tests
                         CompositeMLDsaTestHelpers.AssertPrivateKeyEquals(info.Algorithm, info.SecretKey, export(dsa)))),
                 info.Algorithm,
                 info.SecretKey);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void RoundTrip_Import_Export_SpkiPublicKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
+        {
+            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+                CompositeMLDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
+                    CompositeMLDsaTestHelpers.WithDispose(import(info.Spki), dsa =>
+                        AssertExtensions.SequenceEqual(info.Spki, export(dsa)))));
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void RoundTrip_Import_Export_Pkcs8PrivateKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
+        {
+            CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
+                CompositeMLDsaTestHelpers.AssertExportPrivateKey(export =>
+                    CompositeMLDsaTestHelpers.WithDispose(import(info.Pkcs8), dsa =>
+                        CompositeMLDsaTestHelpers.AssertPrivateKeyEquals(info.Algorithm, info.SecretKey, export(dsa)))));
         }
 
         #endregion Roundtrip by importing then exporting
