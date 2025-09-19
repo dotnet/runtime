@@ -295,6 +295,13 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
+
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
+
             return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
 
@@ -330,6 +337,7 @@ namespace System.Threading
         /// Tries a fast path to wait on the semaphore without taking the lock.
         /// </summary>
         /// <returns>true if the fast path succeeded; otherwise, false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryWaitFastPath()
         {
             bool result = false;
@@ -924,6 +932,7 @@ namespace System.Threading
         /// Tries to release the semaphore without taking the lock.
         /// </summary>
         /// <returns>The previous count of the <see cref="SemaphoreSlim"/> if successful; otherwise, -1.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int TryReleaseFastPath(int releaseCount)
         {
             int result = -1;
