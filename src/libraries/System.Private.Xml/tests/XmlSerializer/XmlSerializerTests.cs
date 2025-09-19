@@ -1095,17 +1095,11 @@ public static partial class XmlSerializerTests
         var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
         TimeOnly result = default;
         Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<TimeOnly>(xml));
-        var ex = Record.Exception(() =>
-        {
-            result = DeserializeFromXmlString<TimeOnly>(xml);
-        });
-        Assert.NotNull(ex);
-        Assert.IsType<InvalidOperationException>(ex);
 
         // Try with compat-influencing 'timeWithoutOffset' data type
         var xmlWrapper = WithXmlHeader($"<TimeOnlyAsXsdTimeWrapper><TestValue>{timeString}</TestValue></TimeOnlyAsXsdTimeWrapper>");
         var wrapperResult = default(TimeOnlyAsXsdTimeWrapper);
-        ex = Record.Exception(() =>
+        var ex = Record.Exception(() =>
         {
             wrapperResult = DeserializeFromXmlString<TimeOnlyAsXsdTimeWrapper>(xmlWrapper);
         });

@@ -206,10 +206,10 @@ namespace System.Runtime.Serialization.Schema.Tests
                 Assert.Contains("class DateOnlyTimeOnlyContainer : object", code);
                 Assert.Contains("System.DateOnly DateOnlyValueField;", code);
                 Assert.Contains("System.TimeOnly TimeOnlyValueField;", code);
-                // This is AI confusion with how xsd:time maps in XmlSerializer. With DCS,
-                // xsd:time maps to - and should continue to map to - String.
+                // xs:time and xs:dateTime should continue to map to String and DateTime respectively.
+                // Added support for dateOnly/timeOnly does not change existing mappings, and there isn't any
+                // path in DCS to map xsd:time to TimeOnly.
                 Assert.Contains("string XsdTimeValueField;", code);
-                // xsd:dateTime maps to DateTime though
                 Assert.Contains("System.DateTime XsdDateTimeValueField;", code);
             } };
         }
