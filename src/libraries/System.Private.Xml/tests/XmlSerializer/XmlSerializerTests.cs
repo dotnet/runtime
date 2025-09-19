@@ -1135,7 +1135,7 @@ public static partial class XmlSerializerTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateOnlyAndTimeOnly()
     {
         var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
