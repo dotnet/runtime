@@ -17,6 +17,10 @@ target_include_directories(corewasmrun PRIVATE
 )
 
 target_compile_options(corewasmrun PRIVATE -fwasm-exceptions)
+set_target_properties(corewasmrun PROPERTIES
+  LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/libCorewasmrun.pre.js;${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js;"
+  LINK_FLAGS "--pre-js ${CMAKE_CURRENT_SOURCE_DIR}/libCorewasmrun.pre.js --js-library ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_options(corewasmrun PRIVATE
   -fwasm-exceptions
   -sEXIT_RUNTIME=1
@@ -27,6 +31,7 @@ target_link_options(corewasmrun PRIVATE
   -Wl,-error-limit=0)
 target_link_libraries(corewasmrun PRIVATE
   coreclr_static
+  System.Native.Browser-Static
   System.Native-Static
   System.Native.TimeZoneData)
 

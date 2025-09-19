@@ -3,6 +3,10 @@ project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+if(CLR_CMAKE_TARGET_BROWSER)
+#    include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser)
+#    include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native)
+endif(CLR_CMAKE_TARGET_BROWSER)
 
 set(COREHOST_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -79,25 +83,30 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
 
-add_library(fxr_resolver INTERFACE)
-target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
-target_include_directories(fxr_resolver INTERFACE fxr)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    add_library(fxr_resolver INTERFACE)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
+    target_include_directories(fxr_resolver INTERFACE fxr)
 
-add_compile_definitions(RAPIDJSON_HAS_CXX17)
+    add_compile_definitions(RAPIDJSON_HAS_CXX17)
 
-if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+    if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+        include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+    endif()
+
+    add_subdirectory(hostcommon)
+    add_subdirectory(hostmisc)
+    add_subdirectory(fxr)
+    add_subdirectory(hostpolicy)
+
+    add_subdirectory(apphost)
+    add_subdirectory(dotnet)
+    add_subdirectory(nethost)
+    add_subdirectory(test)
+else()
+    add_subdirectory(hostmisc)
+    add_subdirectory(browserhost)
 endif()
-
-add_subdirectory(hostcommon)
-add_subdirectory(hostmisc)
-add_subdirectory(fxr)
-add_subdirectory(hostpolicy)
-
-add_subdirectory(apphost)
-add_subdirectory(dotnet)
-add_subdirectory(nethost)
-add_subdirectory(test)
 
 # If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.
 if (NOT "${ASAN_RUNTIME}" STREQUAL "")

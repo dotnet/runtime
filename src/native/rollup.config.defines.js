@@ -1,0 +1,30 @@
+//! Licensed to the .NET Foundation under one or more agreements.
+//! The .NET Foundation licenses this file to you under the MIT license.
+
+import gitCommitInfo from "git-commit-info";
+
+const productVersion = process.env.ProductVersion || "10.0.0-dev";
+export const configuration = process.env.Configuration || "Debug";
+export const artifactsObjDir = process.env.ArtifactsObjDir ? process.env.ArtifactsObjDir.replace(/"/g, "") : "../../artifacts/obj";
+export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
+export const isDebug = configuration !== "Release";
+
+export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js\n\n";
+export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
+export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
+export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
+
+let gitHash;
+try {
+    const gitInfo = gitCommitInfo();
+    gitHash = gitInfo.hash;
+} catch (e) {
+    gitHash = "unknown";
+}
+
+export const envConstants = {
+    productVersion,
+    configuration,
+    gitHash,
+    isContinuousIntegrationBuild,
+};
