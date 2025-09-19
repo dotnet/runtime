@@ -7705,7 +7705,12 @@ InterpThreadContext* Thread::GetInterpThreadContext()
 
 extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissingThread(Thread *pThread)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+    }
+    CONTRACTL_END;
 
     if (pThread == nullptr)
     {
