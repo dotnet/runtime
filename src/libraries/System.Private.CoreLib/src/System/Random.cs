@@ -369,8 +369,8 @@ namespace System
             {
                 int j = Next(i, n);
 
-                // Benchmarks show that the cost of the branch exceeds the cost of the read
-                // and write when the write size is small.
+                // Benchmarks show that the cost of the branch exceeds the
+                // cost of the read and write when the write size is small.
                 // So, for all reference types and for all small structs,
                 // do the write regardless.
                 if (sizeof(T) <= 16 || j != i)
