@@ -100,6 +100,63 @@ namespace System.Security.Cryptography
                 new ReadOnlySpan<byte>(customizationString)); // null to empty conversion is expected.
         }
 
+        internal static ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            ReadOnlyMemory<byte> customizationString,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ThrowIfEmptyHash(hash);
+            ThrowIfStreamUnreadable(source);
+            ThrowIfNotSupported();
+
+            return VerifyAsyncInner(key, source, hash, customizationString, cancellationToken);
+
+            static async ValueTask<bool> VerifyAsyncInner(
+                ReadOnlyMemory<byte> key,
+                Stream source,
+                ReadOnlyMemory<byte> hash,
+                ReadOnlyMemory<byte> customizationString,
+                CancellationToken cancellationToken)
+            {
+                byte[] mac = new byte[hash.Length];
+
+                using (PinAndClear.Track(mac))
+                {
+                    await LiteHashProvider.KmacStreamAsync(
+                        TKmac.HashAlgorithmName,
+                        key.Span,
+                        source,
+                        TKmac.IsXof,
+                        mac,
+                        customizationString.Span,
+                        cancellationToken).ConfigureAwait(false);
+
+                    return CryptographicOperations.FixedTimeEquals(mac, hash.Span);
+                }
+            }
+        }
+
+        internal static ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            byte[]? customizationString,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(hash);
+
+            return VerifyAsync(
+                new ReadOnlyMemory<byte>(key),
+                source,
+                new ReadOnlyMemory<byte>(hash),
+                new ReadOnlyMemory<byte>(customizationString), // null to empty conversion is expected.
+                cancellationToken);
+        }
+
         private static bool VerifyCore<TSource>(
             ReadOnlySpan<byte> key,
             TSource source,
@@ -137,6 +194,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
         }
 
+        private static void ThrowIfEmptyHash(ReadOnlyMemory<byte> hash)
+        {
+            if (hash.IsEmpty)
+                throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
+        }
 
         private static void ThrowIfStreamUnreadable(Stream source)
         {

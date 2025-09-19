@@ -608,6 +608,65 @@ namespace System.Security.Cryptography
             return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
         }
 
+        /// <inheritdoc cref="VerifyAsync(ReadOnlyMemory{byte}, Stream, ReadOnlyMemory{byte}, ReadOnlyMemory{byte}, CancellationToken)" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            byte[]? customizationString = null,
+            CancellationToken cancellationToken = default)
+        {
+            return KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+        }
+
+        /// <summary>
+        ///   Asynchronously verifies the hash of a stream using the KMACXOF128 algorithm.
+        /// </summary>
+        /// <param name="key">The KMAC key.</param>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="hash">The hash to compare against.</param>
+        /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>
+        ///   A task that, when awaited, produces <see langword="true" /> if the computed hash of
+        ///   <paramref name="source"/> is equal to <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash" /> is empty.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="source" /> does not support reading.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="OperationCanceledException">
+        ///   <paramref name="cancellationToken"/> has been canceled.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support KMACXOF128. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports KMACXOF128.
+        /// </exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public static ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            ReadOnlyMemory<byte> customizationString = default,
+            CancellationToken cancellationToken = default)
+        {
+            return KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+        }
+
         private static void HashDataCore(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> source,
