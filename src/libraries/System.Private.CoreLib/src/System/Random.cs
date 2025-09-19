@@ -369,7 +369,7 @@ namespace System
             {
                 int j = Next(i, n);
 
-                if (j != i)
+                if (Unsafe.SizeOf<T>() <= 16 || j != i)
                 {
                     T temp = values[i];
                     values[i] = values[j];
