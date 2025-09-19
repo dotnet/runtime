@@ -2884,13 +2884,15 @@ namespace System.Text
         /// </summary>
         /// <param name="index">The starting position in this builder at which to decode the rune.</param>
         /// <returns>The rune obtained from this builder at the specified <paramref name="index"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The index is out of the range of the builder.</exception>
+        /// <exception cref="ArgumentException">The rune at the specified index is not valid.</exception>
         public Rune GetRuneAt(int index)
         {
             if (TryGetRuneAt(index, out Rune value))
             {
                 return value;
             }
-            ThrowHelper.ThrowIndexOutOfRangeException();
+            ThrowHelper.ThrowArgumentException_CannotExtractScalar(ExceptionArgument.index);
             return default;
         }
 
@@ -2903,6 +2905,7 @@ namespace System.Text
         /// <see langword="true"/> if a scalar value was successfully extracted from the specified index;
         /// <see langword="false"/> if a value could not be extracted because of invalid data.
         /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">The index is out of the range of the builder.</exception>
         public bool TryGetRuneAt(int index, out Rune value)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
