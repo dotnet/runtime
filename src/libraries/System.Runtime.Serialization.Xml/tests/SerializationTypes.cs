@@ -1655,28 +1655,3 @@ public class XElementArrayWrapper
 {
     public XElement[] xelements;
 }
-
-public class TypeWithObsoleteProperty
-{
-    public string NormalProperty { get; set; }
-
-    [Obsolete("This property is obsolete but should still be serialized")]
-    public string ObsoleteProperty { get; set; }
-
-    [XmlIgnore]
-    public string IgnoredProperty { get; set; }
-}
-
-public class TypeWithObsoleteErrorProperty
-{
-    public string NormalProperty { get; set; }
-
-    [Obsolete("This property is obsolete but should still be serialized")]
-    public string ObsoleteProperty { get; set; }
-
-    [Obsolete("This property is obsolete with error", true)]
-    public string ObsoletePropertyWithError { get; set; } = "error";
-
-    [XmlIgnore]
-    public string IgnoredProperty { get; set; }
-}
