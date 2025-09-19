@@ -240,6 +240,14 @@ class AsmOffsets
     public const int OFFSETOF__ExInfo__m_idxCurClause = 0x68;
     public const int OFFSETOF__ExInfo__m_frameIter = 0x6c;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
+    public const int OFFSETOF__ExInfo__m_pCatchHandler = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x2c;
+    public const int OFFSETOF__ExInfo__m_handlingFrameSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x30;
+
+#if TARGET_UNIX
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x38;
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x3c;
+#endif
+
 #endif // TARGET_64BIT
 
 #if __cplusplus
