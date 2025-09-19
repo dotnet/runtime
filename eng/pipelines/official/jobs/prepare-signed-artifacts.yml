@@ -36,12 +36,13 @@ jobs:
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@1
 
-  - task: MicroBuildSigningPlugin@2
+  - task: MicroBuildSigningPlugin@4
     displayName: Install MicroBuild plugin for Signing
     inputs:
       signType: $(SignType)
       zipSources: false
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+      ConnectedPMEServiceName: 248d384a-b39b-46e3-8ad5-c2c210d5e7ca
     continueOnError: false
     condition: and(succeeded(),
                 in(variables['SignType'], 'real', 'test'))
