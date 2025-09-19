@@ -3112,7 +3112,7 @@ internal sealed unsafe partial class SOSDacImpl
                 nativeCodeAddrs[count] = default;
                 nativeCodeAddrs[count].NativeCodeAddr = nativeCode.ToClrDataAddress(_target);
                 nativeCodeAddrs[count].NativeCodeVersionNodePtr = nativeCodeVersionNodePtr.ToClrDataAddress(_target);
-                nativeCodeAddrs[count++].OptimizationTier = (OptimizationTierEnum)optTier;
+                nativeCodeAddrs[count++].OptimizationTier = (DacpTieredVersionData.OptimizationTierEnum)optTier;
             }
             *pcNativeCodeAddrs = count;
             if (count >= cNativeCodeAddrs)
