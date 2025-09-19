@@ -2447,7 +2447,7 @@ namespace System
                 {
                     return string.Empty;
                 }
-                if (!this.AsSpan(..endIndex).EndsWith(trimCharsSlice))
+                if (!this.AsSpan(index..endIndex).EndsWith(trimCharsSlice))
                 {
                     break;
                 }
