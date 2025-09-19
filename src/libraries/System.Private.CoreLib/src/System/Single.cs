@@ -162,7 +162,7 @@ namespace System
             return bits & TrailingSignificandMask;
         }
 
-        internal static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
+        internal static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle((sign ? SignMask : 0U) + ((uint)exp << BiasedExponentShift) + sig);
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
