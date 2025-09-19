@@ -7705,13 +7705,11 @@ InterpThreadContext* Thread::GetInterpThreadContext()
 
 extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissingThread(Thread *pThread)
 {
+    LIMITED_METHOD_CONTRACT;
+
     if (pThread == nullptr)
     {
-        pThread = SetupThreadNoThrow();
-        if (pThread == nullptr)
-        {
-            COMPlusThrow(kOutOfMemoryException);
-        }
+        pThread = SetupThread();
     }
 
     return pThread->GetInterpThreadContext();
