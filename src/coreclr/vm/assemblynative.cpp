@@ -742,20 +742,18 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE AssemblyNative_GetIsCollectible(QCall::AssemblyHandle pAssembly)
+FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsCollectible, Assembly* pAssembly)
 {
-    QCALL_CONTRACT;
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pAssembly));
+    }
+    CONTRACTL_END;
 
-    BOOL retVal = FALSE;
-
-    BEGIN_QCALL;
-
-    retVal = pAssembly->IsCollectible();
-
-    END_QCALL;
-
-    return retVal;
+    FC_RETURN_BOOL(pAssembly->IsCollectible());
 }
+FCIMPLEND
 
 extern volatile uint32_t g_cAssemblies;
 
@@ -1298,7 +1296,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_InternalTryGetRawMetadata(
     _ASSERTE(blobRef != nullptr);
     _ASSERTE(lengthRef != nullptr);
 
-    static_assert_no_msg(sizeof(*lengthRef) == sizeof(COUNT_T));
+    static_assert(sizeof(*lengthRef) == sizeof(COUNT_T));
     metadata = assembly->GetPEAssembly()->GetLoadedMetadata(reinterpret_cast<COUNT_T *>(lengthRef));
     *blobRef = reinterpret_cast<UINT8 *>(const_cast<PTR_VOID>(metadata));
     _ASSERTE(*lengthRef >= 0);

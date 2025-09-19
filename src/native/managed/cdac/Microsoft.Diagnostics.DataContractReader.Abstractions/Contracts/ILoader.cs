@@ -98,13 +98,17 @@ public interface ILoader : IContract
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
     TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

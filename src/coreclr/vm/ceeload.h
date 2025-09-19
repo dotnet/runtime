@@ -345,7 +345,6 @@ struct VASigCookie
     // so please keep this field first
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pPInvokeILStub;         // will be use if target is PInvoke (tag == 0)
-    PTR_MethodDesc  pMethodDesc;            // Only non-null if this is a PInvoke method
     PTR_Module      pModule;
     PTR_Module      pLoaderModule;
     Signature       signature;
@@ -424,6 +423,16 @@ public:
 
 typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
+
+template<>
+struct cdac_data<DynamicILBlobTable>
+{
+    static constexpr size_t Table = offsetof(DynamicILBlobTable, m_table);
+    static constexpr size_t TableSize = offsetof(DynamicILBlobTable, m_tableSize);
+    static constexpr size_t EntrySize = sizeof(DynamicILBlobEntry);
+    static constexpr size_t EntryMethodToken = offsetof(DynamicILBlobEntry, m_methodToken);
+    static constexpr size_t EntryIL = offsetof(DynamicILBlobEntry, m_il);
+};
 
 #ifdef FEATURE_READYTORUN
 typedef DPTR(class ReadyToRunInfo)      PTR_ReadyToRunInfo;
@@ -644,12 +653,12 @@ private:
         IS_BEING_UNLOADED           = 0x00100000,
     };
 
-    static_assert_no_msg(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
-    static_assert_no_msg(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
-    static_assert_no_msg(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
-    static_assert_no_msg(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
-    static_assert_no_msg(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
-    static_assert_no_msg(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
+    static_assert(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
+    static_assert(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
+    static_assert(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
+    static_assert(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
+    static_assert(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
+    static_assert(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
 
     enum {
         // These are the values set in m_dwPersistedFlags.
@@ -1398,9 +1407,9 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature, MethodDesc* pMD, const SigTypeContext* typeContext);
+    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
 private:
-    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, MethodDesc* pMD, Signature vaSignature, const SigTypeContext* typeContext);
+    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
@@ -1706,6 +1715,7 @@ struct cdac_data<Module>
     static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
     static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
+    static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
 };
 
 //

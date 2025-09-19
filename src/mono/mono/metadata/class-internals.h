@@ -287,11 +287,7 @@ union _MonoClassSizes {
 		int generic_param_token; /* for generic param types, both var and mvar */
 };
 
-/* enabled only with small config for now: we might want to do it unconditionally */
-#ifdef MONO_SMALL_CONFIG
 #define COMPRESSED_INTERFACE_BITMAP 1
-#endif
-
 
 #ifdef ENABLE_CHECKED_BUILD_PRIVATE_TYPES
 #define MONO_CLASS_DEF_PRIVATE 1
@@ -1358,6 +1354,12 @@ mono_class_get_inlinearray_value (MonoClass *klass);
 void
 mono_class_set_inlinearray_value (MonoClass *klass, gint32 value);
 
+MONO_COMPONENT_API gint32
+mono_class_get_extendedlayout_value (MonoClass *klass);
+
+void
+mono_class_set_extendedlayout_value (MonoClass *klass, gint32 value);
+
 void
 mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits);
 
@@ -1417,6 +1419,9 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 
 gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
+
+void
+mono_class_set_skip_generic_constraints (MonoClass *klass);
 
 void
 mono_class_set_deferred_failure (MonoClass *klass);

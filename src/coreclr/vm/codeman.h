@@ -2750,8 +2750,8 @@ public:
     virtual DWORD GetCodeType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        // Interpreter-TODO: consider adding some extra flag for the interpreter
-        return (miManaged | miIL);
+        // Reuse the OPTIL flag to indicate interpreter code
+        return (miManaged | miIL | miOPTIL);
     }
 
     GCInfoToken GetGCInfoToken(const METHODTOKEN& MethodToken);
@@ -2794,6 +2794,11 @@ public:
         OUT ULONG32* pNumInlineTree,
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
+
+#ifndef DACCESS_COMPILE
+    virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
+                                        CrawlFrame *pCf);
+#endif // #ifndef DACCESS_COMPILE
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
@@ -2876,6 +2881,11 @@ public:
     EECodeInfo(PCODE codeAddress)
     {
         Init(codeAddress);
+    }
+
+    EECodeInfo(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
+    {
+        Init(codeAddress, scanFlag);
     }
 
     // Explicit initialization
@@ -3053,5 +3063,7 @@ inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& Me
 #include "codeman.inl"
 
 void ThrowOutOfMemoryWithinRange();
+
+bool SafeToReportGenericParamContext(CrawlFrame* pCF);
 
 #endif // !__CODEMAN_HPP__

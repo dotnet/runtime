@@ -1098,9 +1098,10 @@ DONE:
         }
 
         // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
-        // managed calling convention dictates that the callee widens the value. For explicit tailcalls we don't
-        // want to require this detail of the calling convention to bubble up to the tailcall helpers
-        bool allowWidening = isImplicitTailCall;
+        // managed calling convention dictates that the callee widens the value. For explicit tailcalls or async
+        // functions we don't want to require this detail of the calling convention to bubble up to helper
+        // infrastructure.
+        bool allowWidening = isImplicitTailCall && !call->AsCall()->IsAsync();
         if (canTailCall &&
             !impTailCallRetTypeCompatible(allowWidening, info.compRetType, info.compMethodInfo->args.retTypeClass,
                                           info.compCallConv, callRetTyp, sig->retTypeClass,
@@ -1653,7 +1654,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
     // which is the first field of Nullable<T> struct and is of type 'bool'.
     //
-    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     GenTree*   hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
     GenTreeOp* cond          = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
 
@@ -3114,12 +3115,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (isIntrinsic && (ni > NI_SPECIAL_IMPORT_START) && (ni < NI_PRIMITIVE_END))
     {
-        static_assert_no_msg(NI_SPECIAL_IMPORT_START < NI_SPECIAL_IMPORT_END);
-        static_assert_no_msg(NI_SRCS_UNSAFE_START < NI_SRCS_UNSAFE_END);
-        static_assert_no_msg(NI_PRIMITIVE_START < NI_PRIMITIVE_END);
+        static_assert(NI_SPECIAL_IMPORT_START < NI_SPECIAL_IMPORT_END);
+        static_assert(NI_SRCS_UNSAFE_START < NI_SRCS_UNSAFE_END);
+        static_assert(NI_PRIMITIVE_START < NI_PRIMITIVE_END);
 
-        static_assert_no_msg((NI_SPECIAL_IMPORT_END + 1) == NI_SRCS_UNSAFE_START);
-        static_assert_no_msg((NI_SRCS_UNSAFE_END + 1) == NI_PRIMITIVE_START);
+        static_assert((NI_SPECIAL_IMPORT_END + 1) == NI_SRCS_UNSAFE_START);
+        static_assert((NI_SRCS_UNSAFE_END + 1) == NI_PRIMITIVE_START);
 
         if (ni < NI_SPECIAL_IMPORT_END)
         {
@@ -3249,7 +3250,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef FEATURE_HW_INTRINSICS
     if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
     {
-        static_assert_no_msg(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
+        static_assert(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
 
         if (!isIntrinsic)
         {
@@ -10753,6 +10754,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     // Vector2/3/4 Matrix4x4, Quaternion, or Plane
                                     lookupMethodName = nullptr;
                                 }
+                            }
+                            else if (strcmp(methodName, "SquareRoot") == 0)
+                            {
+                                lookupMethodName = "Sqrt";
                             }
 
                             if (lookupMethodName != nullptr)

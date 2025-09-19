@@ -2001,6 +2001,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             assert(genStackLevel == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
+            assert(op2->TypeIs(TYP_I_IMPL));
+
             regNumber indexReg = op2->GetRegNum();
             regNumber valueReg = op3->GetRegNum(); // New element value to be stored
 
@@ -2034,6 +2036,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // op1 of TYP_SIMD12 should be considered as TYP_SIMD16
                 simdType = TYP_SIMD16;
             }
+
+            assert(op2->TypeIs(TYP_I_IMPL));
 
             // Optimize the case of op1 is in memory and trying to access i'th element.
             if (!op1->isUsedFromReg())
@@ -2326,40 +2330,132 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             //      Vector256<long>   div_i64 = Vector256.ConvertToInt64(div_f64);
             //      Vector128<int> div_i32 = Vector256.Narrow(div_i64.GetLower(), div_i64.GetUpper());
             //      return div_i32;
-            regNumber op2Reg   = op2->GetRegNum();
-            regNumber tmpReg1  = internalRegisters.Extract(node, RBM_ALLFLOAT);
-            regNumber tmpReg2  = internalRegisters.Extract(node, RBM_ALLFLOAT);
-            emitAttr  typeSize = emitTypeSize(node->TypeGet());
-            noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
-            emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
-
-            simd_t negOneIntVec = simd_t::AllBitsSet();
-            simd_t minValueInt{};
-            int    numElements = genTypeSize(node->TypeGet()) / 4;
-            for (int i = 0; i < numElements; i++)
+            regNumber op2Reg  = op2->GetRegNum();
+            regNumber tmpReg1 = REG_NA;
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
-                minValueInt.i32[i] = INT_MIN;
+                tmpReg1 = internalRegisters.Extract(node, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                                                              ? RBM_ALLFLOAT
+                                                              : SRBM_XMM0);
             }
-            CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
-            CORINFO_FIELD_HANDLE negOneFld   = emit->emitSimdConst(&negOneIntVec, typeSize);
+            regNumber tmpReg2  = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            regNumber tmpReg3  = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            var_types nodeType = node->TypeGet();
+            emitAttr  typeSize = emitTypeSize(nodeType);
+            noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
+            emitAttr divTypeSize = typeSize;
+
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
+            }
+            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX) && typeSize == EA_16BYTE)
+            {
+                divTypeSize = EA_32BYTE;
+            }
+            simd_t               negOneIntVec = simd_t::AllBitsSet();
+            CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
 
             // div-by-zero check
-            emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg1, tmpReg1, tmpReg1, instOptions);
-            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg1, tmpReg1, op2Reg, instOptions);
-            emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg2, tmpReg2, tmpReg2, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg2, tmpReg2, op2Reg, instOptions);
+            emit->emitIns_R_R(INS_ptest, typeSize, tmpReg2, tmpReg2, instOptions);
             genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
 
             // overflow check
-            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, minValueFld, 0, instOptions);
-            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op2Reg, negOneFld, 0, instOptions);
-            emit->emitIns_SIMD_R_R_R(INS_pandd, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
-            emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
-            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+            if (varTypeIsSigned(baseType))
+            {
+                simd_t minValueInt{};
+                int    numElements = genTypeSize(nodeType) / 4;
+                for (int i = 0; i < numElements; i++)
+                {
+                    minValueInt.i32[i] = INT_MIN;
+                }
+                CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
 
-            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
-            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
-            emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg1, tmpReg2, instOptions);
-            emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, targetReg, targetReg, instOptions);
+                emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op1Reg, minValueFld, 0, instOptions);
+                emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg3, op2Reg, negOneFld, 0, instOptions);
+                emit->emitIns_SIMD_R_R_R(INS_pandd, typeSize, tmpReg2, tmpReg2, tmpReg3, instOptions);
+                emit->emitIns_R_R(INS_ptest, typeSize, tmpReg2, tmpReg2, instOptions);
+                genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+                emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg2, op1Reg, instOptions);
+                emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg3, op2Reg, instOptions);
+            }
+            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                emit->emitIns_R_R(INS_vcvtudq2pd, divTypeSize, tmpReg2, op1Reg, instOptions);
+                emit->emitIns_R_R(INS_vcvtudq2pd, divTypeSize, tmpReg3, op2Reg, instOptions);
+            }
+            else
+            {
+                simd_t double2To32Const{};
+                int    numElements = genTypeSize(nodeType) / 2;
+                for (int i = 0; i < numElements; i++)
+                {
+                    double2To32Const.f64[i] = 4294967296.0; // 2^32
+                }
+                CORINFO_FIELD_HANDLE double2To32ConstFld = emit->emitSimdConst(&double2To32Const, divTypeSize);
+
+                // Convert uint -> double
+                //   tmpReg2 = double(op1Reg)
+                //   tmpReg3 = double(op2Reg)
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
+                    emit->emitIns_Mov(INS_movups, divTypeSize, tmpReg2, tmpReg1, false, instOptions);
+                    emit->emitIns_R_C(INS_addpd, divTypeSize, tmpReg2, double2To32ConstFld, instOptions);
+                    emit->emitIns_SIMD_R_R_R_R(INS_blendvpd, divTypeSize, tmpReg2, tmpReg1, tmpReg2, tmpReg1,
+                                               instOptions);
+
+                    emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op2Reg, instOptions);
+                    emit->emitIns_Mov(INS_movups, divTypeSize, tmpReg3, tmpReg1, false, instOptions);
+                    emit->emitIns_R_C(INS_addpd, divTypeSize, tmpReg3, double2To32ConstFld, instOptions);
+                    emit->emitIns_SIMD_R_R_R_R(INS_blendvpd, divTypeSize, tmpReg3, tmpReg1, tmpReg3, tmpReg1,
+                                               instOptions);
+                }
+                else
+                {
+                    emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, tmpReg2, tmpReg1, false, instOptions);
+                    emit->emitIns_R_C(INS_addpd, typeSize, tmpReg2, double2To32ConstFld, instOptions);
+                    emit->emitIns_R_R(INS_blendvpd, typeSize, tmpReg1, tmpReg2, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, tmpReg2, tmpReg1, instOptions);
+
+                    emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op2Reg, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, tmpReg3, tmpReg1, false, instOptions);
+                    emit->emitIns_R_C(INS_addpd, typeSize, tmpReg3, double2To32ConstFld, instOptions);
+                    emit->emitIns_R_R(INS_blendvpd, typeSize, tmpReg1, tmpReg3, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, tmpReg3, tmpReg1, instOptions);
+                }
+            }
+
+            if (varTypeIsSigned(baseType) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg2, tmpReg3, instOptions);
+                emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg,
+                                  targetReg, instOptions);
+            }
+            else
+            {
+                assert(varTypeIsUnsigned(baseType));
+                emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, tmpReg1, tmpReg2, tmpReg3, instOptions);
+
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, tmpReg3, tmpReg1, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, tmpReg1, op1Reg, instOptions);
+                    emit->emitIns_SIMD_R_R_R_R(INS_blendvpd, typeSize, targetReg, tmpReg3, tmpReg1, tmpReg3,
+                                               instOptions);
+                }
+                else
+                {
+                    emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, tmpReg1, tmpReg1, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, tmpReg2, op1Reg, instOptions);
+                    emit->emitIns_R_R(INS_blendvpd, typeSize, tmpReg1, tmpReg2, instOptions);
+                    emit->emitIns_Mov(INS_movups, typeSize, targetReg, tmpReg1, false);
+                }
+            }
+
             break;
         }
 

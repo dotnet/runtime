@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -39,7 +41,7 @@ internal readonly struct Loader_1 : ILoader
 
     private enum PEImageFlags : uint
     {
-        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+        FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
     private readonly Target _target;
 
@@ -414,27 +416,23 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    private static (bool Done, uint NextIndex) IterateLookupMap(uint index) => (false, index + 1);
+    private static (bool Done, uint NextIndex) SearchLookupMap(uint index) => (true, index);
+    private delegate (bool Done, uint NextIndex) Delegate(uint index);
+    private IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table, uint index, Delegate iterator)
     {
-        uint rid = EcmaMetadataUtils.GetRowId(token);
-        ArgumentOutOfRangeException.ThrowIfZero(rid);
-        flags = new TargetNUInt(0);
-        if (table == TargetPointer.Null)
-            return TargetPointer.Null;
-        uint index = rid;
-        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        // have to read lookupMap an extra time upfront because only the first map
-        // has valid supportedFlagsMask
-        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        bool doneIterating;
         do
         {
-            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
             if (index < lookupMap.Count)
             {
                 TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
                 TargetPointer rawValue = _target.ReadPointer(entryAddress);
-                flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
-                return rawValue & ~(supportedFlagsMask.Value);
+                yield return (rawValue, index);
+                (doneIterating, index) = iterator(index);
+                if (doneIterating)
+                    yield break;
             }
             else
             {
@@ -442,15 +440,54 @@ internal readonly struct Loader_1 : ILoader
                 index -= lookupMap.Count;
             }
         } while (table != TargetPointer.Null);
-        return TargetPointer.Null;
+    }
+
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    {
+        if (table == TargetPointer.Null)
+        {
+            flags = new TargetNUInt(0);
+            return TargetPointer.Null;
+        }
+
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
+
+        uint rid = EcmaMetadataUtils.GetRowId(token);
+        ArgumentOutOfRangeException.ThrowIfZero(rid);
+        (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
+        flags = new TargetNUInt(rval & supportedFlagsMask);
+        return rval & ~supportedFlagsMask;
+    }
+
+    IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)
+    {
+        if (table == TargetPointer.Null)
+            yield break;
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
+        TargetNUInt flags = new TargetNUInt(0);
+        uint index = 1; // zero is invalid
+        foreach ((TargetPointer targetPointer, uint idx) in IterateModuleLookupMap(table, index, IterateLookupMap))
+        {
+            TargetPointer rval = targetPointer & ~supportedFlagsMask;
+            if (rval != TargetPointer.Null)
+                yield return (rval, idx);
+        }
     }
 
     bool ILoader.IsCollectible(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        TargetPointer assembly = module.Assembly;
-        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsDynamic(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.IsDynamic;
     }
 
     bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
@@ -483,5 +520,69 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         return loaderAllocator.StubHeap;
+    }
+
+    TargetPointer ILoader.GetObjectHandle(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.ObjectHandle.Handle;
+    }
+
+    private int GetRVAFromMetadata(ModuleHandle handle, int token)
+    {
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        return methodDef.RelativeVirtualAddress;
+    }
+
+    TargetPointer ILoader.GetILHeader(ModuleHandle handle, uint token)
+    {
+        // we need module
+        ILoader loader = this;
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
+        TargetPointer headerPtr = GetDynamicIL(handle, token);
+        if (headerPtr == TargetPointer.Null)
+        {
+            int rva = GetRVAFromMetadata(handle, (int)token);
+            headerPtr = loader.GetILAddr(peAssembly, rva);
+        }
+        return headerPtr;
+    }
+
+    private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
+    {
+        public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
+        public bool Equals(uint left, uint right) => left == right;
+        public uint Hash(uint key) => key;
+        public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
+        public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
+        public bool IsDeleted(DynamicILBlobEntry entry) => false;
+    }
+
+    private sealed class DynamicILBlobTable : IData<DynamicILBlobTable>
+    {
+        static DynamicILBlobTable IData<DynamicILBlobTable>.Create(Target target, TargetPointer address)
+            => new DynamicILBlobTable(target, address);
+
+        public DynamicILBlobTable(Target target, TargetPointer address)
+        {
+            ISHash sHashContract = target.Contracts.SHash;
+            Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
+            HashTable = sHashContract.CreateSHash(target, address, type, new DynamicILBlobTraits());
+        }
+        public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
+    }
+
+    private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.DynamicILBlobTable == TargetPointer.Null)
+        {
+            return TargetPointer.Null;
+        }
+        DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
+        ISHash shashContract = _target.Contracts.SHash;
+        return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 }
