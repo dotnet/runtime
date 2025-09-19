@@ -385,7 +385,7 @@ namespace System
 
             for (int index = startIndex; index <= endIndex;)
             {
-                if (Rune.DecodeFromUtf16(this.AsSpan(index..endIndex), out Rune rune, out int charsConsumed) is not OperationStatus.Done)
+                if (Rune.DecodeFromUtf16(this.AsSpan(index..(endIndex + 1)), out Rune rune, out int charsConsumed) is not OperationStatus.Done)
                 {
                     return -1;
                 }
