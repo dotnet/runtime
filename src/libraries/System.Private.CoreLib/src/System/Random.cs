@@ -363,11 +363,9 @@ namespace System
         /// </remarks>
         public unsafe void Shuffle<T>(Span<T> values)
         {
-            int n = values.Length;
-
-            for (int i = 0; i < n - 1; i++)
+            for (int i = 0; i < values.Length - 1; i++)
             {
-                int j = Next(i, n);
+                int j = Next(i, values.Length);
 
                 // Benchmarks show that the cost of the branch exceeds the
                 // cost of the read and write when the write size is small.
