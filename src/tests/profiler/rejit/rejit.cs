@@ -45,6 +45,9 @@ namespace Profiler.Tests
                 return 1234;
             }
 
+            Console.Write("hiiiii");
+            Console.ReadKey();
+
             TriggerRevert();
 
             OutputBuilder.Clear();

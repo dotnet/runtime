@@ -540,10 +540,10 @@ internal readonly struct Loader_1 : ILoader
     {
         // we need module
         ILoader loader = this;
-        TargetPointer peAssembly = loader.GetPEAssembly(handle);
-        TargetPointer headerPtr = GetDynamicIL(handle, token);
+        TargetPointer headerPtr = loader.GetDynamicIL(handle, token);
         if (headerPtr == TargetPointer.Null)
         {
+            TargetPointer peAssembly = loader.GetPEAssembly(handle);
             int rva = GetRVAFromMetadata(handle, (int)token);
             headerPtr = loader.GetILAddr(peAssembly, rva);
         }
@@ -574,7 +574,7 @@ internal readonly struct Loader_1 : ILoader
         public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
     }
 
-    private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+    TargetPointer ILoader.GetDynamicIL(ModuleHandle handle, uint token)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         if (module.DynamicILBlobTable == TargetPointer.Null)
