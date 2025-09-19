@@ -23,4 +23,40 @@
     <Left>lib/netstandard2.0/System.Diagnostics.EventLog.dll</Left>
     <Right>lib/net462/System.Diagnostics.EventLog.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.SourceExists(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>ref/net10.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>runtimes/win/lib/net10.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.SourceExists(System.String)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>ref/net10.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>runtimes/win/lib/net10.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.SourceExists(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>ref/net8.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>runtimes/win/lib/net8.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.SourceExists(System.String)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>ref/net8.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>runtimes/win/lib/net8.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.SourceExists(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>ref/net9.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>runtimes/win/lib/net9.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Diagnostics.EventLog.SourceExists(System.String)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>ref/net9.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>runtimes/win/lib/net9.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
 </Suppressions>
