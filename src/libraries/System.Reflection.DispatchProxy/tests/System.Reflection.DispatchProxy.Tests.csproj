@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
@@ -12,5 +12,5 @@
   <ItemGroup>
     <ProjectReference Include="TestDependency\System.Reflection.DispatchProxy.TestDependency.csproj" />
   </ItemGroup>
-  
+
 </Project>
