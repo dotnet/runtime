@@ -1562,8 +1562,6 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
     if (varTypeIsLong(arg))
     {
-        assert(callArg->AbiInfo.CountRegsAndStackSlots() == 2);
-
         noway_assert(arg->OperIs(GT_LONG));
         GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
         fieldList->AddFieldLIR(comp, arg->gtGetOp1(), 0, TYP_INT);
@@ -4129,7 +4127,37 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTree*       op1 = cmp->gtGetOp1();
     GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+
+    // If 'test' is a single bit test, leaves the tested expr in the left op, the bit index in the right op, and returns
+    // true. Otherwise, returns false.
+    auto tryReduceSingleBitTestOps = [this](GenTreeOp* test) -> bool {
+        assert(test->OperIs(GT_AND, GT_TEST_EQ, GT_TEST_NE));
+        GenTree* testedOp = test->gtOp1;
+        GenTree* bitOp    = test->gtOp2;
+#ifdef TARGET_RISCV64
+        if (bitOp->IsIntegralConstUnsignedPow2())
+        {
+            INT64 bit  = bitOp->AsIntConCommon()->IntegralValue();
+            int   log2 = BitOperations::Log2((UINT64)bit);
+            bitOp->AsIntConCommon()->SetIntegralValue(log2);
+            return true;
+        }
+#endif
+        if (!bitOp->OperIs(GT_LSH))
+            std::swap(bitOp, testedOp);
+
+        if (bitOp->OperIs(GT_LSH) && varTypeIsIntOrI(bitOp) && bitOp->gtGetOp1()->IsIntegralConst(1))
+        {
+            BlockRange().Remove(bitOp->gtGetOp1());
+            BlockRange().Remove(bitOp);
+            test->gtOp1 = testedOp;
+            test->gtOp2 = bitOp->gtGetOp2();
+            return true;
+        }
+        return false;
+    };
+
     ssize_t op2Value = op2->IconValue();
 
 #ifdef TARGET_XARCH
@@ -4167,6 +4195,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             bool removeCast =
 #ifdef TARGET_ARM64
                 (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) && !castOp->isContained() &&
+#elif defined(TARGET_RISCV64)
+                false && // disable, comparisons and bit operations are full-register only
 #endif
                 (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
@@ -4224,6 +4254,52 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
+#ifdef TARGET_RISCV64
+        if (op2Value == 0 && !andOp2->isContained() && tryReduceSingleBitTestOps(op1->AsOp()))
+        {
+            GenTree* testedOp   = op1->gtGetOp1();
+            GenTree* bitIndexOp = op1->gtGetOp2();
+
+            if (bitIndexOp->IsIntegralConst())
+            {
+                // Shift the tested bit into the sign bit, then check if negative/positive.
+                // Work on whole registers because comparisons and compressed shifts are full-register only.
+                INT64 bitIndex     = bitIndexOp->AsIntConCommon()->IntegralValue();
+                INT64 signBitIndex = genTypeSize(TYP_I_IMPL) * 8 - 1;
+                if (bitIndex < signBitIndex)
+                {
+                    bitIndexOp->AsIntConCommon()->SetIntegralValue(signBitIndex - bitIndex);
+                    bitIndexOp->SetContained();
+                    op1->SetOperRaw(GT_LSH);
+                    op1->gtType = TYP_I_IMPL;
+                }
+                else
+                {
+                    // The tested bit is the sign bit, remove "AND bitIndex" and only check if negative/positive
+                    assert(bitIndex == signBitIndex);
+                    assert(genActualType(testedOp) == TYP_I_IMPL);
+                    BlockRange().Remove(bitIndexOp);
+                    BlockRange().Remove(op1);
+                    cmp->AsOp()->gtOp1 = testedOp;
+                }
+
+                op2->gtType = TYP_I_IMPL;
+                cmp->SetOperRaw(cmp->OperIs(GT_NE) ? GT_LT : GT_GE);
+                cmp->ClearUnsigned();
+
+                return cmp;
+            }
+
+            // Shift the tested bit into the lowest bit, then AND with 1.
+            // The "EQ|NE 0" comparison is folded below as necessary.
+            var_types type     = genActualType(testedOp);
+            op1->AsOp()->gtOp1 = andOp1 = comp->gtNewOperNode(GT_RSH, type, testedOp, bitIndexOp);
+            op1->AsOp()->gtOp2 = andOp2 = comp->gtNewIconNode(1, type);
+            BlockRange().InsertBefore(op1, andOp1, andOp2);
+            andOp2->SetContained();
+        }
+#endif // TARGET_RISCV64
+
         // Optimizes (X & 1) != 0 to (X & 1)
         // Optimizes (X & 1) == 0 to ((NOT X) & 1)
         // (== 1 or != 1) cases are transformed to (!= 0 or == 0) above
@@ -4259,6 +4335,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2Value == 0)
         {
+#ifndef TARGET_RISCV64
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
 
@@ -4302,6 +4379,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
             }
 #endif
+#endif // !TARGET_RISCV64
         }
         else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
         {
@@ -4330,31 +4408,15 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // Note that BT has the same behavior as LSH when the bit index exceeds the
         // operand bit size - it uses (bit_index MOD bit_size).
         //
-
-        GenTree* lsh = cmp->AsOp()->gtOp1;
-        GenTree* op  = cmp->AsOp()->gtOp2;
-
-        if (!lsh->OperIs(GT_LSH))
-        {
-            std::swap(lsh, op);
-        }
-
-        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh) && lsh->gtGetOp1()->IsIntegralConst(1))
+        if (tryReduceSingleBitTestOps(cmp->AsOp()))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-
-            BlockRange().Remove(lsh->gtGetOp1());
-            BlockRange().Remove(lsh);
-
-            cmp->AsOp()->gtOp1 = op;
-            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
             cmp->gtGetOp2()->ClearContained();
-
             return cmp->gtNext;
         }
     }
 #endif // TARGET_XARCH
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
     // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
@@ -4988,7 +5050,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 
     auto getRegInfo = [=, &retDesc](unsigned regIndex) {
         unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
-        var_types regType = genActualType(retDesc.GetReturnRegType(regIndex));
+        var_types regType = retDesc.GetReturnRegType(regIndex);
         return LowerFieldListRegisterInfo(offset, regType);
     };
 
@@ -5177,6 +5239,16 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
+            // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
+            // required)
+            if (varTypeUsesIntReg(use->GetNode()) && varTypeUsesFloatReg(regType) &&
+                (genTypeSize(regType) > TARGET_POINTER_SIZE))
+            {
+                JITDUMP("it is not; field [%06u] requires an insertion into float register %u of size %d\n",
+                        Compiler::dspTreeID(use->GetNode()), i, genTypeSize(regType));
+                return false;
+            }
+
             use = use->GetNext();
         } while (use != nullptr);
     }
@@ -5308,6 +5380,27 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             GenTree* bitCast = comp->gtNewBitCastNode(regType, regEntry->GetNode());
             BlockRange().InsertBefore(fieldList, bitCast);
             regEntry->SetNode(bitCast);
+        }
+
+        // If this is the last entry then try to optimize out unnecessary
+        // normalizing casts, similar to how LowerRetSingleRegStructLclVar
+        // avoids inserting them.
+        if ((i == numRegs - 1) && varTypeUsesIntReg(regType))
+        {
+            GenTree* node = regEntry->GetNode();
+            // If this is a truncation that affects only bits after the return
+            // size then it can be removed. Those bits are undefined in all our
+            // ABIs for structs.
+            while (node->OperIs(GT_CAST) && !node->gtOverflow() && (genActualType(node->CastFromType()) == TYP_INT) &&
+                   (genActualType(node->CastToType()) == TYP_INT) &&
+                   (genTypeSize(regType) <= genTypeSize(node->CastToType())))
+            {
+                GenTree* op = node->AsCast()->CastOp();
+                regEntry->SetNode(op);
+                op->ClearContained();
+                node->gtBashToNOP();
+                node = op;
+            }
         }
 
         if (fieldListPrev->gtNext != fieldList)
@@ -7241,8 +7334,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     }
 
 #ifdef TARGET_ARM64
-    const bool hasRcpc2 = comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
-    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() && !hasRcpc2)
+    if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile() &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
     {
         // For Arm64 we avoid using LEA for volatile INDs
         // because we won't be able to use ldar/star
@@ -7285,7 +7378,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // Generally, we try to avoid creating addressing modes for volatile INDs so we can then use
         // ldar/stlr instead of ldr/str + dmb. Although, with Arm 8.4+'s RCPC2 we can handle unscaled
         // addressing modes (if the offset fits into 9 bits)
-        assert(hasRcpc2);
+        assert(comp->compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
+
         if ((scale > 1) || (!emitter::emitIns_valid_imm_for_unscaled_ldst_offset(offset)) || (index != nullptr))
         {
             return false;
@@ -8349,34 +8443,6 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #ifdef FEATURE_SIMD
     if (node->TypeIs(TYP_SIMD12))
     {
-        // Assumption 1:
-        // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
-        // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
-        // reading and writing purposes.
-        //
-        // Assumption 2:
-        // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
-        // registers or on stack, the upper most 4-bytes will be zero.
-        //
-        // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
-        // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is
-        // invalid.
-        //
-        // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
-        // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
-        // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
-        // there is no need to clear upper 4-bytes of Vector3 type args.
-        //
-        // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
-        // Vector3 return values are returned two return registers and Caller assembles them into a
-        // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
-        // type args in prolog and Vector3 type return value of a call
-        //
-        // RyuJIT x86 Windows: all non-param Vector3 local vars are allocated as 16 bytes. Vector3 arguments
-        // are pushed as 12 bytes. For return values, a 16-byte local is allocated and the address passed
-        // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
-        // it either.
-
         if (comp->lvaMapSimd12ToSimd16(node->AsLclVarCommon()->GetLclNum()))
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
@@ -8676,20 +8742,22 @@ void Lowering::FindInducedParameterRegisterLocals()
             assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
             unsigned structAccessedSize =
                 min(genTypeSize(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
-            if ((segment.Offset != fld->GetLclOffs()) || (structAccessedSize > segment.Size) ||
-                (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
+            if ((fld->GetLclOffs() < segment.Offset) ||
+                (fld->GetLclOffs() + structAccessedSize > segment.Offset + segment.Size))
             {
                 continue;
             }
 
-            // This is a match, but check if it is already remapped.
-            // TODO-CQ: If it is already remapped, we can reuse the value from
-            // the remapping.
-            if (comp->FindParameterRegisterLocalMappingByRegister(segment.GetRegister()) == nullptr)
+            // TODO-CQ: Float -> !float extractions are not supported
+            // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+            if (genIsValidFloatReg(segment.GetRegister()) &&
+                (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
             {
-                regSegment = &segment;
+                continue;
             }
 
+            // Found a register segment this field is contained in
+            regSegment = &segment;
             break;
         }
 
@@ -8698,7 +8766,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-        JITDUMP("LCL_FLD use [%06u] of unenregisterable parameter corresponds to ", Compiler::dspTreeID(fld));
+        JITDUMP("LCL_FLD use [%06u] of unenregisterable parameter is contained in ", Compiler::dspTreeID(fld));
         DBEXEC(VERBOSE, regSegment->Dump());
         JITDUMP("\n");
 
@@ -8712,75 +8780,108 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-        unsigned remappedLclNum = TryReuseLocalForParameterAccess(use, storedToLocals);
+        const ParameterRegisterLocalMapping* existingMapping =
+            comp->FindParameterRegisterLocalMappingByRegister(regSegment->GetRegister());
 
-        if (remappedLclNum == BAD_VAR_NUM)
+        unsigned remappedLclNum = BAD_VAR_NUM;
+        if (existingMapping == nullptr)
         {
-            // If we have seen register kills then avoid creating a new local.
-            // The local is going to have to move from the parameter register
-            // into a callee saved register, and the callee saved register will
-            // need to be saved/restored to/from stack anyway.
-            if (hasRegisterKill)
-            {
-                JITDUMP("  ..but use happens after a call and is deemed unprofitable to create a local for\n");
-                continue;
-            }
-
             remappedLclNum = comp->lvaGrabTemp(
                 false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
-            comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
+
+            // We always use the full width for integer registers even if the
+            // width is shorter, because various places in the JIT will type
+            // accesses larger to generate smaller code.
+            var_types registerType =
+                genIsValidIntReg(regSegment->GetRegister()) ? TYP_I_IMPL : regSegment->GetRegisterType();
+            if ((registerType == TYP_I_IMPL) && varTypeIsGC(fld))
+            {
+                registerType = fld->TypeGet();
+            }
+
+            LclVarDsc* varDsc = comp->lvaGetDesc(remappedLclNum);
+            varDsc->lvType    = genActualType(registerType);
             JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
+
+            comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
+            varDsc->lvIsParamRegTarget = true;
+
+            JITDUMP("New mapping: ");
+            DBEXEC(VERBOSE, regSegment->Dump());
+            JITDUMP(" -> V%02u\n", remappedLclNum);
         }
         else
         {
-            JITDUMP("Reusing local V%02u for store from struct parameter register %s. Store:\n", remappedLclNum,
-                    getRegName(regSegment->GetRegister()));
-            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
+            remappedLclNum = existingMapping->LclNum;
+        }
 
-            // The store will be a no-op, so get rid of it
-            LIR::AsRange(comp->fgFirstBB).Remove(use.User(), true);
-            use = LIR::Use();
+        GenTree* value = comp->gtNewLclVarNode(remappedLclNum);
 
-#ifdef DEBUG
-            LclVarDsc* remappedLclDsc = comp->lvaGetDesc(remappedLclNum);
-            remappedLclDsc->lvReason =
-                comp->printfAlloc("%s%sV%02u.%s", remappedLclDsc->lvReason == nullptr ? "" : remappedLclDsc->lvReason,
-                                  remappedLclDsc->lvReason == nullptr ? "" : " ", fld->GetLclNum(),
-                                  getRegName(regSegment->GetRegister()));
+        if (varTypeUsesFloatReg(value))
+        {
+            assert(fld->GetLclOffs() == regSegment->Offset);
+
+            value->gtType = fld->TypeGet();
+
+#ifdef FEATURE_SIMD
+            // SIMD12s should be widened. We cannot do that with
+            // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+            // accesses of SIMD16 locals here.
+            if (value->TypeIs(TYP_SIMD12))
+            {
+                value->gtType = TYP_SIMD16;
+            }
 #endif
         }
-
-        comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
-        comp->lvaGetDesc(remappedLclNum)->lvIsParamRegTarget = true;
-
-        JITDUMP("New mapping: ");
-        DBEXEC(VERBOSE, regSegment->Dump());
-        JITDUMP(" -> V%02u\n", remappedLclNum);
-
-        // Insert explicit normalization for small types (the LCL_FLD we
-        // are replacing comes with this normalization).
-        if (varTypeIsSmall(fld))
+        else
         {
-            GenTree* lcl                = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-            GenTree* normalizeLcl       = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
-            GenTree* storeNormalizedLcl = comp->gtNewStoreLclVarNode(remappedLclNum, normalizeLcl);
-            LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeNormalizedLcl));
+            var_types registerType = value->TypeGet();
 
-            JITDUMP("Parameter normalization:\n");
-            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeNormalizedLcl);
+            if (fld->GetLclOffs() > regSegment->Offset)
+            {
+                assert(value->TypeIs(TYP_INT, TYP_LONG));
+                GenTree* shiftAmount = comp->gtNewIconNode((fld->GetLclOffs() - regSegment->Offset) * 8, TYP_INT);
+                value = comp->gtNewOperNode(varTypeIsSmall(fld) && varTypeIsSigned(fld) ? GT_RSH : GT_RSZ,
+                                            value->TypeGet(), value, shiftAmount);
+            }
+
+            // Insert explicit normalization for small types (the LCL_FLD we
+            // are replacing comes with this normalization). This is only required
+            // if we didn't get the normalization via a right shift.
+            if (varTypeIsSmall(fld) && (regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
+            {
+                value = comp->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
+            }
+
+            // If the node is still too large then get it to the right size
+            if (genTypeSize(value) != genTypeSize(genActualType((fld))))
+            {
+                assert(genTypeSize(value) == 8);
+                assert(genTypeSize(genActualType(fld)) == 4);
+
+                if (value->OperIsScalarLocal())
+                {
+                    // We can use lower bits directly
+                    value->gtType = TYP_INT;
+                }
+                else
+                {
+                    value = comp->gtNewCastNode(TYP_INT, value, false, TYP_INT);
+                }
+            }
+
+            // Finally insert a bitcast if necessary
+            if (value->TypeGet() != genActualType(fld))
+            {
+                value = comp->gtNewBitCastNode(genActualType(fld), value);
+            }
         }
 
-        // If we still have a valid use, then replace the LCL_FLD with a
-        // LCL_VAR of the remapped parameter register local.
-        if (use.IsInitialized())
-        {
-            GenTree* lcl = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-            LIR::AsRange(comp->fgFirstBB).InsertAfter(fld, lcl);
-            use.ReplaceWith(lcl);
-            LowerNode(lcl);
-            JITDUMP("New user tree range:\n");
-            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
-        }
+        // Now replace the LCL_FLD.
+        LIR::AsRange(comp->fgFirstBB).InsertAfter(fld, LIR::SeqTree(comp, value));
+        use.ReplaceWith(value);
+        JITDUMP("New user tree range:\n");
+        DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
 
         fld->gtBashToNOP();
     }
@@ -11659,6 +11760,40 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
         BlockRange().Remove(op1);
     }
     return result;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::NormalizeIndexToNativeSized:
+//   Prepare to use an index for address calculations by ensuring it is native sized.
+//
+//  Arguments:
+//    index - The index that may be an int32
+//
+// Returns:
+//    The node itself, or a cast added on top of the node to perform normalization.
+//
+// Remarks:
+//    May insert a cast or may bash the node type in place for constants. Does
+//    not replace the use.
+//
+GenTree* Lowering::NormalizeIndexToNativeSized(GenTree* index)
+{
+    if (genActualType(index) == TYP_I_IMPL)
+    {
+        return index;
+    }
+
+    if (index->OperIsConst())
+    {
+        index->gtType = TYP_I_IMPL;
+        return index;
+    }
+    else
+    {
+        GenTree* cast = comp->gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+        BlockRange().InsertAfter(index, cast);
+        return cast;
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 

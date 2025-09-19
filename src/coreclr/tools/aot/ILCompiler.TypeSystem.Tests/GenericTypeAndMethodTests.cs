@@ -27,7 +27,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestInstantiation()
         {
-            MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1");
+            MetadataType t = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
 
             // Verify that we get just type definitions.
             Assert.NotNull(t);
@@ -36,7 +36,7 @@ namespace TypeSystemTests
             Assert.True(t.Instantiation[0].IsTypeDefinition);
 
             // Verify that we got a method definition
-            MethodDesc fooMethod = t.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc fooMethod = t.GetMethods().First(m => m.GetName() == "Foo");
             Assert.True(fooMethod.IsTypicalMethodDefinition);
 
             // Verify that instantiating a method definition has no effect
@@ -52,7 +52,7 @@ namespace TypeSystemTests
             Assert.Equal(_context.GetWellKnownType(WellKnownType.Int32), instantiatedType.Instantiation[0]);
 
             // Verify that we get an instantiated method with the proper signature
-            MethodDesc fooInstantiatedMethod = instantiatedType.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc fooInstantiatedMethod = instantiatedType.GetMethods().First(m => m.GetName() == "Foo");
             Assert.False(fooInstantiatedMethod.IsTypicalMethodDefinition);
             Assert.Equal(_context.GetWellKnownType(WellKnownType.Int32), fooInstantiatedMethod.Signature.ReturnType);
             Assert.Same(fooInstantiatedMethod.GetTypicalMethodDefinition(), fooMethod);
@@ -68,13 +68,13 @@ namespace TypeSystemTests
         [Fact]
         public void TestMethodAttributes()
         {
-            MetadataType tGen = _testModule.GetType("GenericTypes", "GenericClass`1");
-            MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
+            MetadataType tGen = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
+            MetadataType tDerivedGen = _testModule.GetType("GenericTypes"u8, "DerivedGenericClass`1"u8);
             InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
-            MethodDesc fooInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Foo");
-            MethodDesc barInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Bar");
-            MethodDesc fooDerivedInstantiatedMethod = derivedGenOfInt.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc fooInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Foo");
+            MethodDesc barInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Bar");
+            MethodDesc fooDerivedInstantiatedMethod = derivedGenOfInt.GetMethods().First(m => m.GetName() == "Foo");
 
             Assert.False(barInstantiatedMethod.IsVirtual);
             Assert.False(barInstantiatedMethod.IsNewSlot);
@@ -95,11 +95,11 @@ namespace TypeSystemTests
         [Fact]
         public void TestFinalize()
         {
-            MetadataType tGen = _testModule.GetType("GenericTypes", "GenericClass`1");
-            MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
+            MetadataType tGen = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
+            MetadataType tDerivedGen = _testModule.GetType("GenericTypes"u8, "DerivedGenericClass`1"u8);
             InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
-            MethodDesc finalizeInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Finalize");
+            MethodDesc finalizeInstantiatedMethod = genOfInt.GetMethods().First(m => m.GetName() == "Finalize");
 
             Assert.Equal(finalizeInstantiatedMethod, genOfInt.GetFinalizer());
             Assert.Equal(finalizeInstantiatedMethod, derivedGenOfInt.GetFinalizer());
@@ -111,10 +111,10 @@ namespace TypeSystemTests
         [Fact]
         public void TestMethodLookup()
         {
-            MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            MetadataType t = _testModule.GetType("GenericTypes"u8, "GenericClass`1"u8).MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
 
             MethodSignature sig = new MethodSignature(MethodSignatureFlags.None, 0, _context.GetSignatureVariable(0, false), System.Array.Empty<TypeDesc>());
-            MethodDesc fooMethod = t.GetMethod("Foo", sig);
+            MethodDesc fooMethod = t.GetMethod("Foo"u8, sig);
             Assert.NotNull(fooMethod);
         }
 
@@ -126,7 +126,7 @@ namespace TypeSystemTests
             TypeDesc charType = _context.GetWellKnownType(WellKnownType.Char);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
+            MetadataType genericOpenType = _testModule.GetType("GenericTypes"u8, "TwoParamGenericClass`2"u8);
 
             InstantiatedType genericOfCharObject = genericOpenType.MakeInstantiatedType(charType, objectType);
             InstantiatedType genericOfCharString = genericOpenType.MakeInstantiatedType(charType, stringType);
@@ -219,22 +219,22 @@ namespace TypeSystemTests
             TypeDesc charType = _context.GetWellKnownType(WellKnownType.Char);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
-            MetadataType nonGenericType = _testModule.GetType("GenericTypes", "NonGenericClass");
+            MetadataType genericOpenType = _testModule.GetType("GenericTypes"u8, "TwoParamGenericClass`2"u8);
+            MetadataType nonGenericType = _testModule.GetType("GenericTypes"u8, "NonGenericClass"u8);
 
-            MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction", null);
+            MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction"u8, null);
 
             InstantiatedType genericIntString = genericOpenType.MakeInstantiatedType(intType, stringType);
             InstantiatedType genericCharString = genericOpenType.MakeInstantiatedType(charType, stringType);
             InstantiatedType genericCharObject = genericOpenType.MakeInstantiatedType(charType, objectType);
 
-            MethodDesc nonGenericOnGenericIntString = genericIntString.GetMethod("NonGenericFunction", null);
-            MethodDesc nonGenericOnGenericCharString = genericCharString.GetMethod("NonGenericFunction", null);
-            MethodDesc nonGenericOnGenericCharObject = genericCharObject.GetMethod("NonGenericFunction", null);
+            MethodDesc nonGenericOnGenericIntString = genericIntString.GetMethod("NonGenericFunction"u8, null);
+            MethodDesc nonGenericOnGenericCharString = genericCharString.GetMethod("NonGenericFunction"u8, null);
+            MethodDesc nonGenericOnGenericCharObject = genericCharObject.GetMethod("NonGenericFunction"u8, null);
 
-            MethodDesc genericIntStringOnGenericIntString = genericIntString.GetMethod("GenericFunction", null).MakeInstantiatedMethod(intType, stringType);
-            MethodDesc genericCharStringOnGenericCharString = genericCharString.GetMethod("GenericFunction", null).MakeInstantiatedMethod(charType, stringType);
-            MethodDesc genericCharObjectOnGenericCharObject = genericCharObject.GetMethod("GenericFunction", null).MakeInstantiatedMethod(charType, objectType);
+            MethodDesc genericIntStringOnGenericIntString = genericIntString.GetMethod("GenericFunction"u8, null).MakeInstantiatedMethod(intType, stringType);
+            MethodDesc genericCharStringOnGenericCharString = genericCharString.GetMethod("GenericFunction"u8, null).MakeInstantiatedMethod(charType, stringType);
+            MethodDesc genericCharObjectOnGenericCharObject = genericCharObject.GetMethod("GenericFunction"u8, null).MakeInstantiatedMethod(charType, objectType);
 
             MethodDesc genericIntStringOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(intType, stringType);
             MethodDesc genericCharStringOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(charType, stringType);

@@ -40,11 +40,14 @@ public class Async2SynchronizationContext
         await WrappedYieldToThreadPool(suspend: false).ConfigureAwait(false);
         Assert.Same(context, SynchronizationContext.Current);
 
-        await WrappedYieldToThreadPool(suspend: true).ConfigureAwait(false);
-        Assert.Null(SynchronizationContext.Current);
-
-        await WrappedYieldToThreadWithCustomSyncContext();
-        Assert.Null(SynchronizationContext.Current);
+        // Currently disabled since ConfigureAwait does not become a runtime async call,
+        // and this has a race condition until it does (where the callee finishes before
+        // we check IsCompleted on the awaiter).
+        //await WrappedYieldToThreadPool(suspend: true).ConfigureAwait(false);
+        //Assert.Null(SynchronizationContext.Current);
+        //
+        //await WrappedYieldToThreadWithCustomSyncContext();
+        //Assert.Null(SynchronizationContext.Current);
     }
 
     private static async Task WrappedYieldToThreadPool(bool suspend)

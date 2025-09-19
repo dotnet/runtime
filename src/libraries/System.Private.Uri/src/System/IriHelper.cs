@@ -70,23 +70,10 @@ namespace System
             => (value - min) <= (max - min);
 
         //
-        // Check reserved chars according to RFC 3987 in a specific component
-        //
-        internal static bool CheckIsReserved(char ch, UriComponents component)
-        {
-            if ((UriComponents.AbsoluteUri & component) == 0)
-            {
-                return component == 0 && UriHelper.IsGenDelim(ch);
-            }
-
-            return UriHelper.RFC3986ReservedMarks.Contains(ch);
-        }
-
-        //
         // IRI normalization for strings containing characters that are not allowed or
         // escaped characters that should be unescaped in the context of the specified Uri component.
         //
-        internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, UriComponents component)
+        internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, bool isQuery)
         {
             Debug.Assert(end >= 0 && start >= 0 && start <= end);
 
@@ -107,7 +94,7 @@ namespace System
                         ch = UriHelper.DecodeHexChars(pInput[i + 1], pInput[i + 2]);
 
                         // Do not unescape a reserved char
-                        if (ch == Uri.c_DummyChar || ch == '%' || CheckIsReserved(ch, component) || UriHelper.IsNotSafeForUnescape(ch))
+                        if (ch == Uri.c_DummyChar || UriHelper.IsNotSafeForUnescape(ch))
                         {
                             // keep as is
                             dest.Append(pInput[i++]);
@@ -117,8 +104,7 @@ namespace System
                         }
                         else if (ch <= '\x7F')
                         {
-                            Debug.Assert(ch < 0xFF, "Expecting ASCII character.");
-                            //ASCII
+                            // ASCII
                             dest.Append(ch);
                             i += 2;
                             continue;
@@ -130,7 +116,7 @@ namespace System
                                 pInput + i,
                                 end - i,
                                 ref dest,
-                                component == UriComponents.Query,
+                                isQuery,
                                 iriParsing: true);
 
                             Debug.Assert(charactersRead > 0);
@@ -154,11 +140,11 @@ namespace System
                     if ((char.IsHighSurrogate(ch)) && (i + 1 < end))
                     {
                         ch2 = pInput[i + 1];
-                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, isQuery);
                     }
                     else
                     {
-                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, isQuery);
                     }
 
                     if (isInIriUnicodeRange)
@@ -197,7 +183,7 @@ namespace System
                 }
                 else
                 {
-                    // just copy the character
+                    // ASCII, just copy the character
                     dest.Append(pInput[i]);
                 }
             }

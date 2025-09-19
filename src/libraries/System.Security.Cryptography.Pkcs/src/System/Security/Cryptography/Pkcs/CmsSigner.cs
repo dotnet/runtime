@@ -133,6 +133,18 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+#if NET || NETSTANDARD2_1
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public
+#else
+        private
+#endif
+        CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, CompositeMLDsa? privateKey)
+            : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         /// <summary>
         /// Initializes a new instance of the CmsSigner class with a specified signer
         /// certificate, subject identifier type, private key object, and RSA signature padding.
