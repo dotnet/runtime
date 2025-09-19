@@ -66,6 +66,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    NativeObjectWrapperObject,
     String,
     MethodDesc,
     MethodDescChunk,
