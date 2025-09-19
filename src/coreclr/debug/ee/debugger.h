@@ -3025,7 +3025,7 @@ private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
-    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool HasActivePatchSkip = false);
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool fHasActivePatchSkip = false, bool fClearSetIP = false);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 
