@@ -189,6 +189,24 @@ namespace System.Security.Cryptography
             return new KmacXof128(_kmacProvider.Clone());
         }
 
+        /// <summary>
+        ///   Verifies the hash for the data accumulated from prior calls to the <c>AppendData</c> methods,
+        ///   without resetting the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash to verify.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
         public bool VerifyCurrentHash(ReadOnlySpan<byte> hash)
         {
             if (hash.IsEmpty)
@@ -199,12 +217,34 @@ namespace System.Security.Cryptography
             return _kmacProvider.VerifyCurrentHash(hash);
         }
 
+        /// <inheritdoc cref="VerifyCurrentHash(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> is <see langword="null" />.
+        /// </exception>
         public bool VerifyCurrentHash(byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(hash);
             return VerifyCurrentHash(new ReadOnlySpan<byte>(hash));
         }
 
+        /// <summary>
+        ///   Verifies the hash for the data accumulated from prior calls to the <c>AppendData</c> methods,
+        ///   and resets the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash to verify.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
         public bool VerifyHashAndReset(ReadOnlySpan<byte> hash)
         {
             if (hash.IsEmpty)
@@ -215,6 +255,10 @@ namespace System.Security.Cryptography
             return _kmacProvider.VerifyHashAndReset(hash);
         }
 
+        /// <inheritdoc cref="VerifyHashAndReset(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> is <see langword="null" />.
+        /// </exception>
         public bool VerifyHashAndReset(byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(hash);
