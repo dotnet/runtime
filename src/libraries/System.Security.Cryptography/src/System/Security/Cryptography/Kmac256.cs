@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
         public bool VerifyCurrentHash(byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(hash);
-            return VerifyCurrentHash(hash);
+            return VerifyCurrentHash(new ReadOnlySpan<byte>(hash));
         }
 
         public bool VerifyHashAndReset(ReadOnlySpan<byte> hash)
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography
         public bool VerifyHashAndReset(byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(hash);
-            return VerifyHashAndReset(hash);
+            return VerifyHashAndReset(new ReadOnlySpan<byte>(hash));
         }
 
         /// <summary>
