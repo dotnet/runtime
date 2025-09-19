@@ -196,7 +196,7 @@ namespace ILCompiler.DependencyAnalysis
 
             PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment);
             using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
-            objectWriter.EmitObject(stream, _nodes, new NoopObjectDumper(), logger);
+            objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
 
             if (_mapFileBuilder != null)
             {
@@ -590,12 +590,6 @@ namespace ILCompiler.DependencyAnalysis
                 callChainProfile,
                 customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
-        }
-
-        private sealed class NoopObjectDumper : IObjectDumper
-        {
-            public void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData) { }
-            public void ReportFoldedNode(NodeFactory factory, ObjectNode originalNode, ISymbolNode targetNode) { }
         }
     }
 }
