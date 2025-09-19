@@ -394,8 +394,8 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 {
     LIMITED_METHOD_CONTRACT;
 
-    pRD->SP         = (TADDR)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (TADDR)GetIP(pRD->pCurrentContext);
+    pRD->SP         = GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = GetIP(pRD->pCurrentContext);
 
 #ifdef DEBUG_REGDISPLAY
     CheckRegDisplaySP(pRD);
