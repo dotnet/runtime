@@ -564,6 +564,50 @@ namespace System.Security.Cryptography
             return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
         }
 
+        /// <summary>
+        ///   Verifies the hash of a stream using the KMAC256 algorithm.
+        /// </summary>
+        /// <param name="key">The KMAC key.</param>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="hash">The hash to compare against.</param>
+        /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash" /> is empty.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support KMAC256. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports KMAC256.
+        /// </exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public static bool Verify(
+            ReadOnlySpan<byte> key,
+            Stream source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString = default)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static bool Verify(byte[] key, Stream source, byte[] hash, byte[]? customizationString = null)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
         private static void HashDataCore(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> source,

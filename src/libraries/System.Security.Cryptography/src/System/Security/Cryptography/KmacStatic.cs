@@ -30,6 +30,83 @@ namespace System.Security.Cryptography
             ThrowIfEmptyHash(hash);
             ThrowIfNotSupported();
 
+            return VerifyCore(
+                key,
+                source,
+                hash,
+                customizationString,
+                static (key, source, hash, customizationString, buffer) =>
+                {
+                    HashProviderDispenser.OneShotHashProvider.KmacData(
+                        TKmac.HashAlgorithmName,
+                        key,
+                        source,
+                        buffer,
+                        customizationString,
+                        TKmac.IsXof);
+                });
+        }
+
+        internal static bool Verify(byte[] key, byte[] source, byte[] hash, byte[]? customizationString)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(hash);
+
+            return Verify(
+                new ReadOnlySpan<byte>(key),
+                new ReadOnlySpan<byte>(source),
+                new ReadOnlySpan<byte>(hash),
+                new ReadOnlySpan<byte>(customizationString)); // null to empty conversion is expected.
+        }
+
+        internal static bool Verify(
+            ReadOnlySpan<byte> key,
+            Stream source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ThrowIfEmptyHash(hash);
+            ThrowIfNotSupported();
+
+            return VerifyCore(
+                key,
+                source,
+                hash,
+                customizationString,
+                static (key, source, hash, customizationString, buffer) =>
+                {
+                    LiteHashProvider.KmacStream(
+                        TKmac.HashAlgorithmName,
+                        key,
+                        customizationString,
+                        source,
+                        TKmac.IsXof,
+                        buffer);
+                });
+        }
+
+        internal static bool Verify(byte[] key, Stream source, byte[] hash, byte[]? customizationString)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(hash);
+
+            return Verify(
+                new ReadOnlySpan<byte>(key),
+                source,
+                new ReadOnlySpan<byte>(hash),
+                new ReadOnlySpan<byte>(customizationString)); // null to empty conversion is expected.
+        }
+
+        private static bool VerifyCore<TSource>(
+            ReadOnlySpan<byte> key,
+            TSource source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString,
+            Action<ReadOnlySpan<byte>, TSource, ReadOnlySpan<byte>, ReadOnlySpan<byte>, Span<byte>> callback)
+            where TSource : allows ref struct
+        {
             Span<byte> hashBuffer = stackalloc byte[MaxStackKmacSize];
 
             if (hash.Length > MaxStackKmacSize)
@@ -45,32 +122,12 @@ namespace System.Security.Cryptography
             {
                 fixed (byte* pHashBuffer = hashBuffer)
                 {
-                    HashProviderDispenser.OneShotHashProvider.KmacData(
-                        TKmac.HashAlgorithmName,
-                        key,
-                        source,
-                        hashBuffer,
-                        customizationString,
-                        TKmac.IsXof);
-
+                    callback(key, source, hash, customizationString, hashBuffer);
                     bool result = CryptographicOperations.FixedTimeEquals(hashBuffer, hash);
                     CryptographicOperations.ZeroMemory(hashBuffer);
                     return result;
                 }
             }
-        }
-
-        internal static bool Verify(byte[] key, byte[] source, byte[] hash, byte[]? customizationString)
-        {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(hash);
-
-            return Verify(
-                new ReadOnlySpan<byte>(key),
-                new ReadOnlySpan<byte>(source),
-                new ReadOnlySpan<byte>(hash),
-                new ReadOnlySpan<byte>(customizationString)); // null to empty conversion is expected.
         }
 
         private static void ThrowIfEmptyHash(ReadOnlySpan<byte> hash)
