@@ -592,6 +592,7 @@
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="System\Security\Cryptography\HashProvider.cs" />
+    <Compile Include="System\Security\Cryptography\HashStatic.cs" />
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\HKDFManagedImplementation.cs" />
