@@ -33,17 +33,20 @@ public unsafe class ManagedPointers
     {
         Console.WriteLine($"Running {nameof(Validate_GeneratedILStubs_NullByRef)}...");
         {
+            Console.WriteLine($"Running {nameof(Validate_GeneratedILStubs_NullByRef)} case 1...");
             var fptr = (delegate*unmanaged<ref int, nint>)(delegate*unmanaged<void*, nint>)&PassByRef;
             Assert.Equal(0, fptr(ref Unsafe.NullRef<int>()));
         }
 
         {
+            Console.WriteLine($"Running {nameof(Validate_GeneratedILStubs_NullByRef)} case 2...");
             var fptr = (delegate*unmanaged<ref Guid, nint>)(delegate*unmanaged<void*, nint>)&PassByRef;
             Assert.Equal(0, fptr(ref Unsafe.NullRef<Guid>()));
         }
 
         Assert.Throws<NullReferenceException>(() =>
         {
+            Console.WriteLine($"Running {nameof(Validate_GeneratedILStubs_NullByRef)} case 3...");
             var fptr = (delegate*unmanaged<ref string, nint>)(delegate*unmanaged<void*, nint>)&PassByRef;
             fptr(ref Unsafe.NullRef<string>());
         });

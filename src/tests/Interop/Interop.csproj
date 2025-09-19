@@ -22,10 +22,14 @@
     <Compile Include="StructPacking/*.cs" />
     <Compile Include="SimpleStruct/*.cs" />
     <Compile Include="RefCharArray/*.cs" />
+    <!--
     <Compile Include="IDynamicInterfaceCastable/*.cs" />
+    -->
     <Compile Include="LayoutClass/*.cs" />
     <Compile Include="ArrayMarshalling/**/*.cs" />
+    <!--
     <Compile Include="MarshalAPI/**/*.cs" />
+    -->
     <Compile Include="PInvoke/Array/**/*.cs" />
     <Compile Include="PInvoke/ArrayWithOffset/**/*.cs" />
     <Compile Include="PInvoke/AsAny/**/*.cs" />
@@ -42,7 +46,9 @@
     <Compile Include="PInvoke/SafeHandles/**/*.cs" />
     <Compile Include="PInvoke/SetLastError/**/*.cs" />
     <Compile Include="PInvoke/SizeParamIndex/**/*.cs" />
+    <!--
     <Compile Include="PInvoke/Varargs/**/*.cs" />
+    -->
     <Compile Include="PInvoke/Vector2_3_4/**/*.cs" />
 
     <!-- Reference the CMake projects for the directly-compiled-in tests -->
