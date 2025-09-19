@@ -964,7 +964,7 @@ internal struct MethodDesc
         }
     }
 
-    public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation);
+    public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation) && && _target.ReadGlobal<byte>("FeatureTieredCompilation") != 0;
 
     // non-vtable slot, native code slot and MethodImpl slots are stored after the MethodDesc itself, packed tightly
     // in the order: [non-vtable; methhod impl; native code].

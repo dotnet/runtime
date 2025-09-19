@@ -207,7 +207,9 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<Loade
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+#ifdef FEATURE_TIERED_COMPILATION
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, CallCountingManager, cdac_data<LoaderAllocator>::CallCountingManager)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(CallCountingManager)
@@ -700,7 +702,9 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<Native
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, Flags, cdac_data<NativeCodeVersionNode>::Flags)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeCodeVersionNode>::ILVersionId)
+#ifdef FEATURE_TIERED_COMPILATION
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, NativeId, cdac_data<NativeCodeVersionNode>::NativeId)
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)

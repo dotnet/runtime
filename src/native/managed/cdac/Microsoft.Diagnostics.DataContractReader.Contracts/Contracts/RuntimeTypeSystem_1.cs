@@ -173,7 +173,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         private bool HasFlags(MethodDescFlags_1.MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
         internal bool HasFlags(MethodDescChunkFlags flags) => (_chunk.FlagsAndTokenRange & (ushort)flags) != 0;
 
-        public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags_1.MethodDescFlags3.IsEligibleForTieredCompilation);
+        public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags_1.MethodDescFlags3.IsEligibleForTieredCompilation) && _target.ReadGlobal<byte>(Constants.Globals.FeatureTieredCompilation) != 0;
 
 
         public bool IsUnboxingStub => HasFlags(MethodDescFlags_1.MethodDescFlags3.IsUnboxingStub);

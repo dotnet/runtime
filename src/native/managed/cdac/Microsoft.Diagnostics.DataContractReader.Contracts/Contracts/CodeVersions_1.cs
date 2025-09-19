@@ -100,7 +100,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         Data.LoaderAllocator loaderAllocatorData = _target.ProcessedData.GetOrAdd<LoaderAllocator>(loaderAllocator);
 
         // get call counting manager and hash
-        TargetPointer callCountingMgr = loaderAllocatorData.CallCountingManager;
+        TargetPointer callCountingMgr = loaderAllocatorData.CallCountingManager!.Value;
         TargetPointer callCountingHash = _target.ProcessedData.GetOrAdd<CallCountingManager>(callCountingMgr).CallCountingHash;
         CallCountingTable callCountingTable = _target.ProcessedData.GetOrAdd<CallCountingTable>(callCountingHash);
 
@@ -181,7 +181,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
                 else
                 {
                     NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);
-                    optTier = (NativeOptimizationTier)nativeCodeVersionNode.OptimizationTier;
+                    optTier = (NativeOptimizationTier)nativeCodeVersionNode.OptimizationTier!.Value;
                 }
                 optimizationTier = GetOptimizationTier(optTier);
             }
