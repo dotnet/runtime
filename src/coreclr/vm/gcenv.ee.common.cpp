@@ -215,7 +215,9 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
         PromoteCarefully(pCtx->f, ppObj, pCtx->sc, flags);
     }
     else
+    {
         (pCtx->f)(ppObj, pCtx->sc, flags);
+    }
 }
 
 //-----------------------------------------------------------------------------
