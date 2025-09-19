@@ -598,11 +598,10 @@ namespace System
         /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
         public bool EndsWith(char value, StringComparison comparisonType)
         {
-            if (Length == 0)
-            {
-                return false;
-            }
-            return this[^1].Equals(value, comparisonType);
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = [value];
+
+            return this.EndsWith(valueChars, comparisonType);
         }
 
         /// <summary>
@@ -623,11 +622,12 @@ namespace System
         /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
         public bool EndsWith(Rune value, StringComparison comparisonType)
         {
-            if (Rune.DecodeLastFromUtf16(this, out Rune result, out _) is OperationStatus.Done)
-            {
-                return result.Equals(value, comparisonType);
-            }
-            return false;
+            // Convert value to span
+            Span<char> valueChars = stackalloc char[2];
+            int valueCharsWritten = value.EncodeToUtf16(valueChars);
+            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
+
+            return this.EndsWith(valueCharsSlice, comparisonType);
         }
 
         // Determines whether two strings match.
@@ -1211,11 +1211,10 @@ namespace System
         /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
         public bool StartsWith(char value, StringComparison comparisonType)
         {
-            if (Length == 0)
-            {
-                return false;
-            }
-            return this[0].Equals(value, comparisonType);
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = [value];
+
+            return this.StartsWith(valueChars, comparisonType);
         }
 
         /// <summary>
@@ -1236,11 +1235,12 @@ namespace System
         /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
         public bool StartsWith(Rune value, StringComparison comparisonType)
         {
-            if (Rune.DecodeFromUtf16(this, out Rune result, out _) is OperationStatus.Done)
-            {
-                return result.Equals(value, comparisonType);
-            }
-            return false;
+            // Convert value to span
+            Span<char> valueChars = stackalloc char[2];
+            int valueCharsWritten = value.EncodeToUtf16(valueChars);
+            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
+
+            return this.StartsWith(valueCharsSlice, comparisonType);
         }
 
         internal static void CheckStringComparison(StringComparison comparisonType)
