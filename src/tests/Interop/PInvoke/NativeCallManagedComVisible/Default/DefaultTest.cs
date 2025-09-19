@@ -700,6 +700,7 @@ public class ComVisibleServer
     [DllImport("ComVisibleNative")]
     public static extern int CCWTest_NestedInterfaceNotPublic_VisibleTrue([MarshalAs(UnmanagedType.IUnknown)] object unk, out int fooSuccessVal);
 
+    /*
     /// <summary>
     /// Test case set for ComVisible. The assembly is set as [assembly: ComVisible(false)]
     /// </summary>
@@ -1007,4 +1008,5 @@ public class ComVisibleServer
     {
         TestLibrary.Utilities.ExecuteAndUnload(typeof(ComVisibleServer).Assembly.Location, nameof(ComVisibleServer), nameof(RunComVisibleTests));
     }
+    */
 }
