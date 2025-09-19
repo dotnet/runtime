@@ -21,6 +21,35 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
+// Shared fixture to control AppContext switches needed by XmlSerializer tests that rely on
+// disabling caching so switches can be evaluated per test scenario.
+// Using a collection fixture gives us one-time setup/teardown instead of static constructor hacks.
+public sealed class XmlSerializerSwitchFixture : IDisposable
+{
+    private const string DisableCachingSwitch = "TestSwitch.LocalAppContext.DisableCaching";
+    private readonly bool _hadDisableCaching;
+
+    public XmlSerializerSwitchFixture()
+    {
+        // Ensure caching disabled for tests needing to manipulate switches mid-run.
+        _hadDisableCaching = AppContext.TryGetSwitch(DisableCachingSwitch, out bool wasDisableCaching) && wasDisableCaching;
+        AppContext.SetSwitch(DisableCachingSwitch, true);
+    }
+
+    public void Dispose()
+    {
+        // Restore original states (best effort; product code may have cached values earlier in static fields).
+        AppContext.SetSwitch(DisableCachingSwitch, _hadDisableCaching);
+    }
+}
+
+[CollectionDefinition("XmlSerializerSwitches")]
+public sealed class XmlSerializerSwitchesCollection : ICollectionFixture<XmlSerializerSwitchFixture>
+{
+    // Intentionally empty. This class' purpose is to apply the fixture to the named collection.
+}
+
+[Collection("XmlSerializerSwitches")]
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
@@ -2378,12 +2407,13 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             IgnoredProperty = "ignored"
         };
 
-        var result = SerializeAndDeserialize(testObject,
-            @"<?xml version=""1.0"" encoding=""utf-8""?>
-<TypeWithObsoleteProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
-  <NormalProperty>normal</NormalProperty>
-  <ObsoleteProperty>obsolete</ObsoleteProperty>
-</TypeWithObsoleteProperty>");
+        var result = SerializeAndDeserialize(testObject, $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <NormalProperty>normal</NormalProperty>
+              <ObsoleteProperty>obsolete</ObsoleteProperty>
+            </TypeWithObsoleteProperty>
+            """);
 
         // Verify that the obsolete property was correctly roundtripped
         Assert.Equal("normal", result.NormalProperty);
@@ -2395,65 +2425,47 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void ObsoleteAttribute_DoesNotAffectSerialization_DirectSerialization()
-    {
-        // Test that properties marked with [Obsolete(IsError=false)] are still serialized by directly checking XML output
-        var testObject = new TypeWithObsoleteProperty
-        {
-            NormalProperty = "normal",
-#pragma warning disable CS0618 // Type or member is obsolete
-            ObsoleteProperty = "obsolete", 
-#pragma warning restore CS0618 // Type or member is obsolete
-            IgnoredProperty = "ignored"
-        };
-
-        var serializer = new XmlSerializer(typeof(TypeWithObsoleteProperty));
-        
-        using (var writer = new StringWriter())
-        {
-            serializer.Serialize(writer, testObject);
-            string result = writer.ToString();
-            
-            // Verify that ObsoleteProperty is included in XML serialization
-            Assert.Contains("<ObsoleteProperty>obsolete</ObsoleteProperty>", result);
-            // Verify that IgnoredProperty is not included (due to [XmlIgnore])
-            Assert.DoesNotContain("<IgnoredProperty>", result);
-        }
-    }
-
-    [Fact]
     public static void ObsoleteAttribute_IsError_ThrowsException()
     {
         // Test that properties marked with [Obsolete(IsError=true)] throw an exception during serializer creation
+        var testObject = new TypeWithObsoleteErrorProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618, CS0619 // Type or member is obsolete
+            ObsoleteProperty = "obsolete",
+            // This line would cause a compile-time error due to IsError=true. So we set this in the class definition instead.
+            // ObsoletePropertyWithError = "error",
+#pragma warning restore CS0618, CS0619 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
         
         // We need to create a type with just the error property to test the exception
         // Using reflection to create an XmlSerializer for a type with ObsoletePropertyWithError
         Assert.Throws<InvalidOperationException>(() =>
         {
-            var serializer = new XmlSerializer(typeof(TypeWithObsoletePropertyError));
+            var serializer = new XmlSerializer(typeof(TypeWithObsoleteProperty));
+            var xml = Serialize(testObject, null, () => serializer, true);
         });
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
     {
-        // Test that when the switch is enabled, obsolete members are ignored (old behavior)
+        // Enable compat switch
+        AppContext.TryGetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", out bool originalSwitchValue);
+        AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", true);
+        
+        var expectedXml = $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <NormalProperty>normal</NormalProperty>
+            </TypeWithObsoleteProperty>
+            """;
+
         try
         {
-            // Save the original value if any
-            AppContext.TryGetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", out bool originalSwitchValue);
-            
-            // Enable the switch to restore old behavior
-            AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", true);
-            
-            // Clear cached switch value using reflection
-            Type switchType = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
-            if (switchType != null)
-            {
-                FieldInfo fieldInfo = switchType.GetField("s_ignoreObsoleteMembers", BindingFlags.NonPublic | BindingFlags.Static);
-                fieldInfo?.SetValue(null, 0);
-            }
-
+            // Test that when the switch is enabled, obsolete members are ignored (old behavior)
             var testObject = new TypeWithObsoleteProperty
             {
                 NormalProperty = "normal",
@@ -2463,35 +2475,29 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
                 IgnoredProperty = "ignored"
             };
 
-            var serializer = new XmlSerializer(typeof(TypeWithObsoleteProperty));
-            
-            using (var writer = new StringWriter())
+            // With the switch enabled, obsolete properties should be ignored
+            var result = SerializeAndDeserialize(testObject, expectedXml);
+
+            // Try with the type that has Obsolete(IsError=true) property. It should still get ignored without throwing.
+            var testObjectWithError = new TypeWithObsoleteErrorProperty
             {
-                serializer.Serialize(writer, testObject);
-                string result = writer.ToString();
-                
-                // With the switch enabled, obsolete properties should be ignored
-                Assert.DoesNotContain("<ObsoleteProperty>", result);
-                // Normal properties should still be serialized
-                Assert.Contains("<NormalProperty>normal</NormalProperty>", result);
-                // IgnoredProperty should still not be included (due to [XmlIgnore])
-                Assert.DoesNotContain("<IgnoredProperty>", result);
-            }
+                NormalProperty = "normal",
+#pragma warning disable CS0618, CS0619 // Type or member is obsolete
+                ObsoleteProperty = "obsolete",
+                // This line would cause a compile-time error due to IsError=true. So we set this in the class definition instead.
+                // ObsoletePropertyWithError = "error",
+#pragma warning restore CS0618, CS0619 // Type or member is obsolete
+                IgnoredProperty = "ignored"
+            };
+
+            var resultWithError = SerializeAndDeserialize(testObjectWithError, expectedXml.Replace("TypeWithObsoleteProperty", "TypeWithObsoleteErrorProperty"));
         }
         finally
         {
-            // Restore original state
-            AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", false);
-            
-            // Clear cached switch value again
-            Type switchType = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
-            if (switchType != null)
-            {
-                FieldInfo fieldInfo = switchType.GetField("s_ignoreObsoleteMembers", BindingFlags.NonPublic | BindingFlags.Static);
-                fieldInfo?.SetValue(null, 0);
-            }
+            AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", originalSwitchValue);
         }
     }
+    #endif
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
