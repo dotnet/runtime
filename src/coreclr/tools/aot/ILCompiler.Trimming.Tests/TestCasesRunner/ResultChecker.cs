@@ -464,8 +464,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 missingMessageWarnings.Add("Unmatched Messages:" + Environment.NewLine);
                 missingMessageWarnings.AddRange(unmatchedMessages.Select(m => m.ToString()));
-                missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
-                missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
+                // Uncomment to show all messages in the log
+                // missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
+                // missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
                 Assert.Fail(string.Join(Environment.NewLine, missingMessageWarnings));
             }
 
