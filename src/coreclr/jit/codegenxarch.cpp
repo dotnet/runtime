@@ -105,7 +105,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // a return register or contain 'this' pointer (keep alive this), or
         // a continuation register, since we are generating GS cookie check
         // after a GT_RETURN block.
-        // ARG_1 is EDX or RSI, depending on platform. Either way it fits our reqirements
+        // ARG_1 is EDX or RSI, depending on platform. Either way it fits our requirements
         regGSCheck = REG_ARG_1;
     }
     else
