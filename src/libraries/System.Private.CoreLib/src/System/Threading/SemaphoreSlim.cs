@@ -75,6 +75,12 @@ namespace System.Threading
         // all threads finish their attempt to use the fast path.
         private volatile int m_threadsTryingFastPathCount;
 
+        private int m_fastPathWaitAcquires;
+        private int m_slowPathWaitAcquires;
+
+        private int m_fastPathReleaseAcquires;
+        private int m_slowPathReleaseAcquires;
+
         // Task in a linked list of asynchronous waiters
         private sealed class TaskNode : Task<bool>
         {
@@ -296,11 +302,21 @@ namespace System.Threading
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
 
+            if (millisecondsTimeout == -2)
+            {
+                Internal.Console.WriteLine("Fast path acquires " + m_fastPathWaitAcquires);
+                Internal.Console.WriteLine("Slow path acquires " + m_slowPathWaitAcquires);
+                Internal.Console.WriteLine("Fast path releases " + m_fastPathReleaseAcquires);
+                Internal.Console.WriteLine("Slow path releases " + m_slowPathReleaseAcquires);
+                return false;
+            }
+
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
+
 
             return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
@@ -323,6 +339,15 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
+
+            if (millisecondsTimeout == -2)
+            {
+                Internal.Console.WriteLine("Fast path acquires " + m_fastPathWaitAcquires);
+                Internal.Console.WriteLine("Slow path acquires " + m_slowPathWaitAcquires);
+                Internal.Console.WriteLine("Fast path releases " + m_fastPathReleaseAcquires);
+                Internal.Console.WriteLine("Slow path releases " + m_slowPathReleaseAcquires);
+                return false;
+            }
 
             if (millisecondsTimeout < -1)
             {
@@ -357,6 +382,7 @@ namespace System.Threading
                     if (currentCount > 0 &&
                         Interlocked.CompareExchange(ref m_currentCount, currentCount - 1, currentCount) == currentCount)
                     {
+                        Interlocked.Increment(ref m_fastPathWaitAcquires);
                         result = true;
                     }
                 }
@@ -408,6 +434,7 @@ namespace System.Threading
                 return true;
             }
 
+            Interlocked.Increment(ref m_slowPathWaitAcquires);
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
@@ -954,6 +981,7 @@ namespace System.Threading
                         Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
                     {
                         result = currentCount;
+                        Interlocked.Increment(ref m_fastPathReleaseAcquires);
                     }
                 }
                 Interlocked.Decrement(ref m_threadsTryingFastPathCount);
@@ -987,6 +1015,8 @@ namespace System.Threading
             {
                 return fastPathResult;
             }
+
+            Interlocked.Increment(ref m_slowPathReleaseAcquires);
 
             int returnCount;
 
