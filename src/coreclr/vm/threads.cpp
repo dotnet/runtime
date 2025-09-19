@@ -7708,8 +7708,10 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
     if (pThread == nullptr)
     {
         pThread = SetupThreadNoThrow();
-        if (pThread == NULL)
+        if (pThread == nullptr)
+        {
             COMPlusThrow(kOutOfMemoryException);
+        }
     }
 
     return pThread->GetInterpThreadContext();
