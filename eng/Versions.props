@@ -168,5 +168,12 @@
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
+    <!-- WiX 5+ dependencies for MSI generation -->
+    <MicrosoftWixVersion>5.0.2-dotnet.2737382</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 </Project>
