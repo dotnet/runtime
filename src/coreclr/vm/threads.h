@@ -3561,6 +3561,12 @@ public:
         _ASSERTE(!m_debuggerActivePatchSkipper.Load());
     }
 
+    bool HasActivePatchSkip() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_debuggerActivePatchSkipper.Load() != NULL;
+    }
+
 private:
 
     static BOOL EnterWorkingOnThreadContext(Thread *pThread)
