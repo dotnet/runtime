@@ -532,7 +532,7 @@ namespace System.Numerics.Tests
                 (BitConverter.UInt32BitsToSingle(0b1_00000000_10000111000000000000001),
                                   UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower,
                 (BitConverter.UInt32BitsToSingle(0b0_00000000_00000000110000000000000),
-                                  UInt16BitsToBFloat16(0b0_00000_000000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
+                                  UInt16BitsToBFloat16(0b0_00000000_0000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((float original, BFloat16 expected) in data)
@@ -566,7 +566,8 @@ namespace System.Numerics.Tests
                 (BitConverter.UInt64BitsToDouble(0xFFFAAAAA_AAAAAAAA), UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
                 (BitConverter.UInt64BitsToDouble(0x7FFAAAAA_AAAAAAAA), UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
                 (double.Epsilon, UInt16BitsToBFloat16(0)), // Underflow
-                (-double.Epsilon, UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow                (1f, UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
+                (-double.Epsilon, UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
+                (1f, UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
                 (-1d, UInt16BitsToBFloat16(0b1_01111111_0000000)), // -1
                 (0d, UInt16BitsToBFloat16(0)), // 0
                 (-0d, UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
@@ -616,7 +617,7 @@ namespace System.Numerics.Tests
                     UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal rounds to even
                 (BitConverter.UInt64BitsToDouble(0xB800E00000000001),
                     UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower
-                (BitConverter.UInt64BitsToDouble(0x3788000000000000), UInt16BitsToBFloat16(0b0_00000_000000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
+                (BitConverter.UInt64BitsToDouble(0x3788000000000000), UInt16BitsToBFloat16(0b0_00000000_0000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((double original, BFloat16 expected) in data)
