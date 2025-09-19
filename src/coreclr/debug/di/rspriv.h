@@ -2924,7 +2924,7 @@ class UnmanagedThreadTracker
     HANDLE m_hThread = INVALID_HANDLE_VALUE; // Handle to the unmanaged thread, used for suspending and resuming the thread
     CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL; // If non-NULL, this is the address to which we should set the IP when resuming the thread.
     DWORD m_dwSuspendCount = 0; // The suspend count of the thread when we last checked it.
-    bool m_pendingSetIP = false; // Set to true if there is a breakpoint or single-step operation on target thread that doesn't have a vmTHread
+    bool m_pendingSetIP = false; // Set to true if there is a breakpoint or outstanding single-step operation on target thread
 #ifdef _DEBUG
     bool m_fIsDebuggerPatchSkip = false; // Set to true if the thread is currently in a debugger patch skip
 #endif
