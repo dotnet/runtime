@@ -2065,6 +2065,69 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
         }
     }
 }
+
+template <typename TSimd, typename TBase>
+void NarrowSimdLong(TSimd* result, const TSimd& arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint64_t input0;
+        memcpy(&input0, &arg0.u8[(i * sizeof(TBase) / sizeof(uint64_t)) * sizeof(uint64_t)], sizeof(uint64_t));
+
+        // Saturate to largest value for TBase
+        if (input0 > (TBase)-1)
+        {
+            input0 = (TBase)-1;
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &input0, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void NarrowSimdLong(var_types baseType, TSimd* result, TSimd arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            NarrowSimdLong<TSimd, uint32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            NarrowSimdLong<TSimd, uint64_t>(result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            NarrowSimdLong<TSimd, uint8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            NarrowSimdLong<TSimd, uint16_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
 #endif // TARGET_ARM64
 
 #endif // FEATURE_MASKED_HW_INTRINSICS
