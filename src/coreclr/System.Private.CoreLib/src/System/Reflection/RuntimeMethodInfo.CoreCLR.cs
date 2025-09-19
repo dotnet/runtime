@@ -322,6 +322,9 @@ namespace System.Reflection
         {
             get
             {
+                if (ReflectedTypeInternal.IsCollectible)
+                    return true;
+
                 bool isCollectible = RuntimeMethodHandle.IsCollectible(new RuntimeMethodHandleInternal(m_handle));
                 GC.KeepAlive(this); // We directly pass the native handle above - make sure this object stays alive for the call
                 return isCollectible;
