@@ -21,35 +21,6 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
-// Shared fixture to control AppContext switches needed by XmlSerializer tests that rely on
-// disabling caching so switches can be evaluated per test scenario.
-// Using a collection fixture gives us one-time setup/teardown instead of static constructor hacks.
-public sealed class XmlSerializerSwitchFixture : IDisposable
-{
-    private const string DisableCachingSwitch = "TestSwitch.LocalAppContext.DisableCaching";
-    private readonly bool _hadDisableCaching;
-
-    public XmlSerializerSwitchFixture()
-    {
-        // Ensure caching disabled for tests needing to manipulate switches mid-run.
-        _hadDisableCaching = AppContext.TryGetSwitch(DisableCachingSwitch, out bool wasDisableCaching) && wasDisableCaching;
-        AppContext.SetSwitch(DisableCachingSwitch, true);
-    }
-
-    public void Dispose()
-    {
-        // Restore original states (best effort; product code may have cached values earlier in static fields).
-        AppContext.SetSwitch(DisableCachingSwitch, _hadDisableCaching);
-    }
-}
-
-[CollectionDefinition("XmlSerializerSwitches")]
-public sealed class XmlSerializerSwitchesCollection : ICollectionFixture<XmlSerializerSwitchFixture>
-{
-    // Intentionally empty. This class' purpose is to apply the fixture to the named collection.
-}
-
-[Collection("XmlSerializerSwitches")]
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
@@ -2439,7 +2410,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 #pragma warning restore CS0618, CS0619 // Type or member is obsolete
             IgnoredProperty = "ignored"
         };
-        
+
         // We need to create a type with just the error property to test the exception
         // Using reflection to create an XmlSerializer for a type with ObsoletePropertyWithError
         Assert.Throws<InvalidOperationException>(() =>
@@ -2453,18 +2424,20 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
     {
         // Enable compat switch
-        AppContext.TryGetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", out bool originalSwitchValue);
-        AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", true);
-        
-        var expectedXml = $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-              <NormalProperty>normal</NormalProperty>
-            </TypeWithObsoleteProperty>
-            """;
-
-        try
+        using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.IgnoreObsoleteMembers", true))
         {
+            Assert.True(compatSwitch.CurrentValue);
+
+            // Even if we just flipped the appContext switch, previous tests might have already created a serializer
+            // for this type. To avoid using a cached serializer, use a different namespace.
+            var cacheBustingNamespace = "http://tempuri.org/DoNotUseCachedSerializer";
+            var expectedXml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"  xmlns="{cacheBustingNamespace}">
+                  <NormalProperty>normal</NormalProperty>
+                </TypeWithObsoleteProperty>
+                """;
+
             // Test that when the switch is enabled, obsolete members are ignored (old behavior)
             var testObject = new TypeWithObsoleteProperty
             {
@@ -2476,7 +2449,8 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             };
 
             // With the switch enabled, obsolete properties should be ignored
-            var result = SerializeAndDeserialize(testObject, expectedXml);
+            var serializerFactory = () => new XmlSerializer(typeof(TypeWithObsoleteProperty), cacheBustingNamespace);
+            var result = SerializeAndDeserialize(testObject, expectedXml, serializerFactory);
 
             // Try with the type that has Obsolete(IsError=true) property. It should still get ignored without throwing.
             var testObjectWithError = new TypeWithObsoleteErrorProperty
@@ -2490,14 +2464,12 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
                 IgnoredProperty = "ignored"
             };
 
-            var resultWithError = SerializeAndDeserialize(testObjectWithError, expectedXml.Replace("TypeWithObsoleteProperty", "TypeWithObsoleteErrorProperty"));
+            serializerFactory = () => new XmlSerializer(typeof(TypeWithObsoleteErrorProperty), cacheBustingNamespace);
+            var resultWithError = SerializeAndDeserialize(testObjectWithError,
+                expectedXml.Replace("TypeWithObsoleteProperty", "TypeWithObsoleteErrorProperty"), serializerFactory);
         }
-        finally
-        {
-            AppContext.SetSwitch("Switch.System.Xml.IgnoreObsoleteMembers", originalSwitchValue);
-        }
-    }
 #endif
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
@@ -2798,5 +2770,58 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         ms.Position = 0;
 
         return ms;
+    }
+}
+
+internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
+{
+    private readonly string _name;
+    private readonly string _cachedName;
+    private readonly bool _hadValue;
+    private readonly bool _originalValue;
+
+    public bool OriginalValue => _originalValue;
+    public bool CurrentValue => AppContext.TryGetSwitch(_name, out bool value) && value;
+
+    public XmlSerializerAppContextSwitchScope(string name, bool value, string cachedName = null)
+    {
+        _name = name;
+        _cachedName = cachedName ?? GuessCachedName(name);
+        _hadValue = AppContext.TryGetSwitch(name, out _originalValue);
+        AppContext.SetSwitch(name, value);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    public void Dispose()
+    {
+        if (_hadValue)
+            AppContext.SetSwitch(_name, _originalValue);
+        else
+            // There's no "unset", so pick a default or false
+            AppContext.SetSwitch(_name, false);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    private static void ClearCachedSwitch(string name)
+    {
+        Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+        Assert.NotNull(t);
+
+        FieldInfo fi = t.GetField(name, BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(fi);
+        fi.SetValue(null, 0);
+    }
+    
+    private static string GuessCachedName(string name)
+    {
+        // Switch names are typically of the form "Switch.System.Xml.SomeFeature"
+        // The cached field is typically "s_someFeature"
+        int idx = name.LastIndexOf('.');
+        if (idx > 0 && idx < name.Length - 1)
+        {
+            string feature = name.Substring(idx + 1);
+            return "s_" + char.ToLowerInvariant(feature[0]) + feature.Substring(1);
+        }
+        throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
     }
 }
