@@ -1848,7 +1848,8 @@ dotnet_diagnostic.IDE0161.severity = silent
 dotnet_diagnostic.IDE0170.severity = warning
 
 # IDE0180: Use tuple swap
-dotnet_diagnostic.IDE0180.severity = suggestion
+# https://github.com/dotnet/roslyn/issues/65815
+dotnet_diagnostic.IDE0180.severity = silent
 
 # IDE0200: Remove unnecessary lambda expression
 dotnet_diagnostic.IDE0200.severity = warning
