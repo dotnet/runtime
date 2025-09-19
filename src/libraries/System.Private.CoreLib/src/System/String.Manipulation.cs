@@ -2447,14 +2447,14 @@ namespace System
                 {
                     return string.Empty;
                 }
-                if (!this.AsSpan(index..endIndex).EndsWith(trimCharsSlice))
+                if (!this.AsSpan(index..(endIndex + 1)).EndsWith(trimCharsSlice))
                 {
                     break;
                 }
                 endIndex -= trimCharsSlice.Length;
             }
 
-            return this[index..endIndex];
+            return this[index..(endIndex + 1)];
         }
 
         // Removes a set of characters from the beginning and end of this string.
@@ -2605,14 +2605,14 @@ namespace System
                 {
                     return string.Empty;
                 }
-                if (!this.AsSpan(..endIndex).EndsWith(trimCharsSlice))
+                if (!this.AsSpan(..(endIndex + 1)).EndsWith(trimCharsSlice))
                 {
                     break;
                 }
                 endIndex -= trimCharsSlice.Length;
             }
 
-            return this[..endIndex];
+            return this[..(endIndex + 1)];
         }
 
         // Removes a set of characters from the end of this string.
