@@ -105,6 +105,26 @@ namespace System.Security.Cryptography.Tests
             {
                 return KmacXof128.Verify(key, source, hash, customizationString);
             }
+
+            public static ValueTask<bool> VerifyAsync(
+                ReadOnlyMemory<byte> key,
+                Stream source,
+                ReadOnlyMemory<byte> hash,
+                ReadOnlyMemory<byte> customizationString,
+                CancellationToken cancellationToken)
+            {
+                return KmacXof128.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+            }
+
+            public static ValueTask<bool> VerifyAsync(
+                byte[] key,
+                Stream source,
+                byte[] hash,
+                byte[] customizationString,
+                CancellationToken cancellationToken)
+            {
+                return KmacXof128.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+            }
         }
 
         protected override IEnumerable<KmacTestVector> TestVectors
