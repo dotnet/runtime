@@ -484,6 +484,12 @@ namespace
         (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3));
     }
 
+    void CallFunc_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3), ARG(4));
+    }
+
     void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -568,7 +574,7 @@ namespace
         (void*)&CallFunc_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_I32_RetVoid,
-        NULL,
+        (void*)&CallFunc_I32_I32_I32_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid,
     };
 
