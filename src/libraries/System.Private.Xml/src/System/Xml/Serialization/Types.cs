@@ -648,6 +648,7 @@ namespace System.Xml.Serialization
             if ((flags & TypeFlags.SecondaryDataType) != 0)
             {
                 // Secondary name registration - Must first have a 'Primary' registered
+                Debug.Assert(s_primitiveNames[dataTypeName, XmlSchema.Namespace] != null);
                 if (s_primitiveNames[dataTypeName, XmlSchema.Namespace] == null)
                     return;
 
@@ -696,8 +697,6 @@ namespace System.Xml.Serialization
 
         internal static TypeDesc? GetMatchingTypeDesc(string name, string ns, string fullName)
         {
-            var flags = (TypeFlags.SecondaryDataType | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.CanBeAttributeValue);
-
             // First, look for the primary match
             var td = GetTypeDesc(name, ns);
             if (td != null && td.FullName == fullName)
@@ -709,6 +708,8 @@ namespace System.Xml.Serialization
             var tdList = (List<TypeDesc>?)s_primitiveNamesSecondary[name, ns];
             if (tdList != null)
             {
+                var flags = (TypeFlags.SecondaryDataType | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.CanBeAttributeValue);
+
                 foreach (var typeDesc in tdList)
                 {
                     if ((typeDesc.Flags & flags) != 0 && typeDesc.FullName == fullName)
