@@ -4164,6 +4164,7 @@ private:
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
+    bool m_fOutOfProcessSetThreadContextEventReceived;
     HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
