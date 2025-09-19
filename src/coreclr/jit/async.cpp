@@ -169,6 +169,8 @@ PhaseStatus Compiler::SaveAsyncContexts()
                 // Await is inside a try, need to insert try-finally around it.
                 restoreBB        = InsertTryFinallyForContextRestore(curBB, stmt, restoreAfterStmt);
                 restoreAfterStmt = nullptr;
+                // we have split the block that could have another await.
+                nextBB           = restoreBB->Next();
 #endif
             }
 
@@ -1506,8 +1508,9 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
     if (layout.ContinuationContextGCDataIndex != UINT_MAX)
     {
         const AsyncCallInfo& callInfo = call->GetAsyncInfo();
-        assert(callInfo.SaveAndRestoreSynchronizationContextField &&
-               (callInfo.SynchronizationContextLclNum != BAD_VAR_NUM));
+        assert(callInfo.SaveAndRestoreSynchronizationContextField);
+        assert(callInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);
+        assert(callInfo.SynchronizationContextLclNum != BAD_VAR_NUM);
 
         // Insert call
         //   AsyncHelpers.CaptureContinuationContext(
@@ -1691,6 +1694,15 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     LIR::AsRange(block).InsertAfter(storeContinuation, null, returnedContinuation, neNull, jtrue);
     *remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
+
+    // HACK: Not sure why it can happen, but we may see the end IL for the block
+    //       to increasing after splitting off its tail.
+    //       This tweak is just to avoid asserts later on.
+    //       This is not a real fix.
+    if (block->bbCodeOffsEnd > (*remainder)->bbCodeOffs)
+    {
+        block->bbCodeOffsEnd = (*remainder)->bbCodeOffs;
+    }
 
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());

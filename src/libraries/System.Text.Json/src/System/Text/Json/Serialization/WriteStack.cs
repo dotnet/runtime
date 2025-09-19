@@ -278,6 +278,8 @@ namespace System.Text.Json
             => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
 
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public readonly async ValueTask DisposeCompletedAsyncDisposables()
         {
             Debug.Assert(CompletedAsyncDisposables?.Count > 0);
@@ -346,6 +348,8 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover I(Async)Disposables
         /// in the event of an exception on async serialization
         /// </summary>
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public readonly async ValueTask DisposePendingDisposablesOnExceptionAsync()
         {
             Exception? exception = null;
