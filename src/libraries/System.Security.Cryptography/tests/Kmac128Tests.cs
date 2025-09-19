@@ -28,6 +28,10 @@ namespace System.Security.Cryptography.Tests
             public static void GetHashAndReset(Kmac128 kmac, Span<byte> destination) => kmac.GetHashAndReset(destination);
             public static byte[] GetCurrentHash(Kmac128 kmac, int outputLength) => kmac.GetCurrentHash(outputLength);
             public static void GetCurrentHash(Kmac128 kmac, Span<byte> destination) => kmac.GetCurrentHash(destination);
+            public static bool VerifyCurrentHash(Kmac128 kmac, ReadOnlySpan<byte> hash) => kmac.VerifyCurrentHash(hash);
+            public static bool VerifyCurrentHash(Kmac128 kmac, byte[] hash) => kmac.VerifyCurrentHash(hash);
+            public static bool VerifyHashAndReset(Kmac128 kmac, ReadOnlySpan<byte> hash) => kmac.VerifyHashAndReset(hash);
+            public static bool VerifyHashAndReset(Kmac128 kmac, byte[] hash) => kmac.VerifyHashAndReset(hash);
             public static Kmac128 Clone(Kmac128 kmac) => kmac.Clone();
 
             public static byte[] HashData(byte[] key, byte[] source, int outputLength, byte[] customizationString) =>

@@ -24,6 +24,10 @@ namespace System.Security.Cryptography.Tests
         static abstract void GetHashAndReset(TKmac kmac, Span<byte> destination);
         static abstract byte[] GetCurrentHash(TKmac kmac, int outputLength);
         static abstract void GetCurrentHash(TKmac kmac, Span<byte> destination);
+        static abstract bool VerifyCurrentHash(TKmac kmac, byte[] hash);
+        static abstract bool VerifyCurrentHash(TKmac kmac, ReadOnlySpan<byte> hash);
+        static abstract bool VerifyHashAndReset(TKmac kmac, byte[] hash);
+        static abstract bool VerifyHashAndReset(TKmac kmac, ReadOnlySpan<byte> hash);
         static abstract TKmac Clone(TKmac kmac);
 
         static abstract byte[] HashData(byte[] key, byte[] source, int outputLength, byte[] customizationString);

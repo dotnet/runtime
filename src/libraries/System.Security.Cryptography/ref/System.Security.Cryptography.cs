@@ -1819,6 +1819,10 @@ namespace System.Security.Cryptography
         public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public bool VerifyCurrentHash(byte[] hash) { throw null; }
+        public bool VerifyCurrentHash(System.ReadOnlySpan<byte> hash) { throw null; }
+        public bool VerifyHashAndReset(byte[] hash) { throw null; }
+        public bool VerifyHashAndReset(System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public sealed partial class Kmac256 : System.IDisposable
     {
@@ -1848,6 +1852,10 @@ namespace System.Security.Cryptography
         public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public bool VerifyCurrentHash(byte[] hash) { throw null; }
+        public bool VerifyCurrentHash(System.ReadOnlySpan<byte> hash) { throw null; }
+        public bool VerifyHashAndReset(byte[] hash) { throw null; }
+        public bool VerifyHashAndReset(System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public sealed partial class KmacXof128 : System.IDisposable
     {
@@ -1877,6 +1885,10 @@ namespace System.Security.Cryptography
         public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public bool VerifyCurrentHash(byte[] hash) { throw null; }
+        public bool VerifyCurrentHash(System.ReadOnlySpan<byte> hash) { throw null; }
+        public bool VerifyHashAndReset(byte[] hash) { throw null; }
+        public bool VerifyHashAndReset(System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public sealed partial class KmacXof256 : System.IDisposable
     {
@@ -1906,6 +1918,10 @@ namespace System.Security.Cryptography
         public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public bool VerifyCurrentHash(byte[] hash) { throw null; }
+        public bool VerifyCurrentHash(System.ReadOnlySpan<byte> hash) { throw null; }
+        public bool VerifyHashAndReset(byte[] hash) { throw null; }
+        public bool VerifyHashAndReset(System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public abstract partial class MaskGenerationMethod
     {

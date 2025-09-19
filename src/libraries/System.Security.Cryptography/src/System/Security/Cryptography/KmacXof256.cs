@@ -189,6 +189,38 @@ namespace System.Security.Cryptography
             return new KmacXof256(_kmacProvider.Clone());
         }
 
+        public bool VerifyCurrentHash(ReadOnlySpan<byte> hash)
+        {
+            if (hash.IsEmpty)
+                throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
+
+            CheckDisposed();
+
+            return _kmacProvider.VerifyCurrentHash(hash);
+        }
+
+        public bool VerifyCurrentHash(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyCurrentHash(hash);
+        }
+
+        public bool VerifyHashAndReset(ReadOnlySpan<byte> hash)
+        {
+            if (hash.IsEmpty)
+                throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
+
+            CheckDisposed();
+
+            return _kmacProvider.VerifyHashAndReset(hash);
+        }
+
+        public bool VerifyHashAndReset(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyHashAndReset(hash);
+        }
+
         /// <summary>
         ///   Release all resources used by the current instance of the <see cref="KmacXof256" /> class.
         /// </summary>
