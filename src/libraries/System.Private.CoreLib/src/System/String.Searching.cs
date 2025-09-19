@@ -381,21 +381,12 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
 
-            int endIndex = startIndex + count;
+            // Convert value to span
+            Span<char> valueChars = stackalloc char[2];
+            int valueCharsWritten = value.EncodeToUtf16(valueChars);
+            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
 
-            for (int index = startIndex; index <= endIndex;)
-            {
-                if (Rune.DecodeFromUtf16(this.AsSpan(index..(endIndex + 1)), out Rune rune, out int charsConsumed) is not OperationStatus.Done)
-                {
-                    return -1;
-                }
-                if (value.Equals(rune, comparisonType))
-                {
-                    return index;
-                }
-                index += charsConsumed;
-            }
-            return -1;
+            return this.IndexOf(valueCharsSlice[startIndex..(startIndex + count)], comparisonType);
         }
 
         // Returns the index of the last occurrence of a specified character in the current instance.
@@ -620,21 +611,12 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex - count + 1, 0);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length - 1);
 
-            int endIndex = startIndex - count;
+            // Convert value to span
+            Span<char> valueChars = stackalloc char[2];
+            int valueCharsWritten = value.EncodeToUtf16(valueChars);
+            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
 
-            for (int index = startIndex; index >= endIndex;)
-            {
-                if (Rune.DecodeLastFromUtf16(this.AsSpan(endIndex..(index + 1)), out Rune rune, out int charsConsumed) is not OperationStatus.Done)
-                {
-                    return -1;
-                }
-                if (value.Equals(rune, comparisonType))
-                {
-                    return index - (charsConsumed - 1);
-                }
-                index -= charsConsumed;
-            }
-            return -1;
+            return this.LastIndexOf(valueCharsSlice[startIndex..(startIndex + count)], comparisonType);
         }
     }
 }
