@@ -1,74 +1,79 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="Caption">[WixBundleName] インストーラー</String>
-  <String Id="Title">[BUNDLEMONIKER]</String>
-  <String Id="Motto">必要なのは、シェル、テキスト エディター、それに時間が 10 分のみです。
+﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="Caption" Value="[WixBundleName] インストーラー" />
+  <String Id="Title" Value="[BUNDLEMONIKER]" />
+  <String Id="Motto" Value="必要なのは、シェル、テキスト エディター、それに時間が 10 分のみです。
 
-では、始めましょう。</String>
-  <String Id="ConfirmCancelMessage">取り消しますか?</String>
-  <String Id="ExecuteUpgradeRelatedBundleMessage">以前のバージョン</String>
-  <String Id="HelpHeader">セットアップのヘルプ</String>
-  <String Id="HelpText">/install | /repair | /uninstall | /layout [directory] - バンドルの完全なローカル コピーに対する
+では、始めましょう。" />
+  <String Id="ConfirmCancelMessage" Value="取り消しますか?" />
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="以前のバージョン" />
+  <String Id="HelpHeader" Value="セットアップのヘルプ" />
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - バンドルの完全なローカル コピーに対する
   ディレクトリへのインストール、修復、ディレクトリからのアンインストール、またはディレクトリ内への作成を行います。既定の設定はインストールです。
 
 /passive | /quiet -  最小限の UI だけを表示しプロンプトは表示しない、または UI もプロンプトも
    表示しません。既定では UI とすべてのプロンプトが表示されます。
 
 /norestart   - 再起動を抑制します。既定では再起動前に確認メッセージが表示されます。
-/log log.txt - 特定のファイルに記録します。ログ ファイルは既定では %TEMP% に作成されます。</String>
-  <String Id="HelpCloseButton">閉じる(&amp;C)</String>
-  <String Id="InstallAcceptCheckbox">ライセンス条項および使用条件に同意する(&amp;A)</String>
-  <String Id="InstallOptionsButton">オプション(&amp;O)</String>
-  <String Id="InstallInstallButton">インストール(&amp;I)</String>
-  <String Id="InstallCloseButton">閉じる(&amp;C)</String>
-  <String Id="OptionsHeader">セットアップ オプション</String>
-  <String Id="OptionsLocationLabel">インストール場所:</String>
-  <String Id="OptionsBrowseButton">参照(&amp;B)</String>
-  <String Id="OptionsOkButton">OK(&amp;O)</String>
-  <String Id="OptionsCancelButton">キャンセル(&amp;C)</String>
-  <String Id="ProgressHeader">セットアップの進行状況</String>
-  <String Id="ProgressLabel">処理中:</String>
-  <String Id="OverallProgressPackageText">初期化しています...</String>
-  <String Id="ProgressCancelButton">キャンセル(&amp;C)</String>
-  <String Id="ModifyHeader">セットアップの変更</String>
-  <String Id="ModifyRepairButton">修復(&amp;R)</String>
-  <String Id="ModifyUninstallButton">アンインストール(&amp;U)</String>
-  <String Id="ModifyCloseButton">閉じる(&amp;C)</String>
-  <String Id="SuccessRepairHeader">修復が正常に完了しました</String>
-  <String Id="SuccessUninstallHeader">アンインストールが正常に完了しました</String>
-  <String Id="SuccessInstallHeader">インストールが正常に終了しました</String>
-  <String Id="SuccessHeader">セットアップ完了</String>
-  <String Id="SuccessLaunchButton">起動(&amp;L)</String>
-  <String Id="SuccessRestartText">ソフトウェアを使用する前にコンピューターを再起動する必要があります。</String>
-  <String Id="SuccessRestartButton">再起動(&amp;R)</String>
-  <String Id="SuccessCloseButton">閉じる(&amp;C)</String>
-  <String Id="FailureHeader">セットアップに失敗しました</String>
-  <String Id="FailureInstallHeader">セットアップに失敗しました</String>
-  <String Id="FailureUninstallHeader">アンインストールに失敗しました</String>
-  <String Id="FailureRepairHeader">修復に失敗しました</String>
-  <String Id="FailureHyperlinkLogText">1 つまたは複数の問題により、セットアップが失敗しました。問題を解決してからセットアップを再試行してください。詳細については、&lt;a href="#"&gt;ログ ファイル&lt;/a&gt;を参照してください。</String>
-  <String Id="FailureRestartText">ソフトウェアのロールバックを完了するには、コンピューターを再起動する必要があります。</String>
-  <String Id="FailureRestartButton">再起動(&amp;R)</String>
-  <String Id="FailureCloseButton">閉じる(&amp;C)</String>
-  <String Id="FailureNotSupportedCurrentOperatingSystem">[PRODUCT_NAME] は、このオペレーティング システムではサポートされていません。詳細については、[LINK_PREREQ_PAGE] を参照してください。</String>
-  <String Id="FailureNotSupportedX86OperatingSystem">x86 オペレーティング システムでは、[PRODUCT_NAME] はサポートされていません。対応する x86 インストーラーを使用してインストールしてください。</String>
-  <String Id="FilesInUseHeader">ファイルが使用中</String>
-  <String Id="FilesInUseLabel">次のアプリケーションは、更新の必要があるファイルを使用しています:</String>
-  <String Id="FilesInUseCloseRadioButton">アプリケーションを閉じて再起動を試みる。(&amp;A)</String>
-  <String Id="FilesInUseDontCloseRadioButton">アプリケーションを終了させない (コンピューターの再起動が必要になります)(&amp;D)</String>
-  <String Id="FilesInUseOkButton">OK(&amp;O)</String>
-  <String Id="FilesInUseCancelButton">キャンセル(&amp;C)</String>
-  <String Id="WelcomeHeaderMessage">.NET Runtime</String>
-  <String Id="WelcomeDescription">.NET Runtime は、Windows コンピューターで .NET アプリケーションを実行するために使用されます。.NET はオープン ソースのクロス プラットフォームで、Microsoft によってサポートされています。ぜひご利用ください。</String>
-  <String Id="LearnMoreTitle">.Net の詳細情報</String>
-  <String Id="SuccessInstallLocation">[DOTNETHOME] に以下がインストールされました</String>
-  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
-  <String Id="ResourcesHeader">リソース</String>
-  <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;ドキュメント&lt;/A&gt;</String>
-  <String Id="ReleaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;リリース ノート&lt;/A&gt;</String>
-  <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;チュートリアル&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET テレメトリ&lt;/A&gt;</String>
-  <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;プライバシーに関する声明&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET のライセンス情報&lt;/A&gt;</String>
-  <String Id="LicenseAssent">インストール をクリックすると、次の条項に同意したものと見なされます。</String>
+/log log.txt - 特定のファイルに記録します。ログ ファイルは既定では %TEMP% に作成されます。" />
+  <String Id="HelpCloseButton" Value="閉じる(&amp;C)" />
+  <String Id="InstallAcceptCheckbox" Value="ライセンス条項および使用条件に同意する(&amp;A)" />
+  <String Id="InstallOptionsButton" Value="オプション(&amp;O)" />
+  <String Id="InstallInstallButton" Value="インストール(&amp;I)" />
+  <String Id="InstallCloseButton" Value="閉じる(&amp;C)" />
+  <String Id="OptionsHeader" Value="セットアップ オプション" />
+  <String Id="OptionsLocationLabel" Value="インストール場所:" />
+  <String Id="OptionsBrowseButton" Value="参照(&amp;B)" />
+  <String Id="OptionsOkButton" Value="OK(&amp;O)" />
+  <String Id="OptionsCancelButton" Value="キャンセル(&amp;C)" />
+  <String Id="ProgressHeader" Value="セットアップの進行状況" />
+  <String Id="ProgressLabel" Value="処理中:" />
+  <String Id="OverallProgressPackageText" Value="初期化しています..." />
+  <String Id="ProgressCancelButton" Value="キャンセル(&amp;C)" />
+  <String Id="ModifyHeader" Value="セットアップの変更" />
+  <String Id="ModifyRepairButton" Value="修復(&amp;R)" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
+  <String Id="ModifyUninstallButton" Value="アンインストール(&amp;U)" />
+  <String Id="ModifyCloseButton" Value="閉じる(&amp;C)" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
+  <String Id="SuccessRepairHeader" Value="修復が正常に完了しました" />
+  <String Id="SuccessUninstallHeader" Value="アンインストールが正常に完了しました" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
+  <String Id="SuccessInstallHeader" Value="インストールが正常に終了しました" />
+  <String Id="SuccessHeader" Value="セットアップ完了" />
+  <String Id="SuccessLaunchButton" Value="起動(&amp;L)" />
+  <String Id="SuccessRestartText" Value="ソフトウェアを使用する前にコンピューターを再起動する必要があります。" />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
+  <String Id="SuccessRestartButton" Value="再起動(&amp;R)" />
+  <String Id="SuccessCloseButton" Value="閉じる(&amp;C)" />
+  <String Id="FailureHeader" Value="セットアップに失敗しました" />
+  <String Id="FailureInstallHeader" Value="セットアップに失敗しました" />
+  <String Id="FailureUninstallHeader" Value="アンインストールに失敗しました" />
+  <String Id="FailureRepairHeader" Value="修復に失敗しました" />
+  <String Id="FailureHyperlinkLogText" Value="1 つまたは複数の問題により、セットアップが失敗しました。問題を解決してからセットアップを再試行してください。詳細については、&lt;a href=&quot;#&quot;&gt;ログ ファイル&lt;/a&gt;を参照してください。" />
+  <String Id="FailureRestartText" Value="ソフトウェアのロールバックを完了するには、コンピューターを再起動する必要があります。" />
+  <String Id="FailureRestartButton" Value="再起動(&amp;R)" />
+  <String Id="FailureCloseButton" Value="閉じる(&amp;C)" />
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] は、このオペレーティング システムではサポートされていません。詳細については、[LINK_PREREQ_PAGE] を参照してください。" />
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="x86 オペレーティング システムでは、[PRODUCT_NAME] はサポートされていません。対応する x86 インストーラーを使用してインストールしてください。" />
+  <String Id="FilesInUseHeader" Value="ファイルが使用中" />
+  <String Id="FilesInUseLabel" Value="次のアプリケーションは、更新の必要があるファイルを使用しています:" />
+  <String Id="FilesInUseCloseRadioButton" Value="アプリケーションを閉じて再起動を試みる。(&amp;A)" />
+  <String Id="FilesInUseDontCloseRadioButton" Value="アプリケーションを終了させない (コンピューターの再起動が必要になります)(&amp;D)" />
+  <String Id="FilesInUseOkButton" Value="OK(&amp;O)" />
+  <String Id="FilesInUseCancelButton" Value="キャンセル(&amp;C)" />
+  <String Id="WelcomeHeaderMessage" Value=".NET Runtime" />
+  <String Id="WelcomeDescription" Value=".NET Runtime は、Windows コンピューターで .NET アプリケーションを実行するために使用されます。.NET はオープン ソースのクロス プラットフォームで、Microsoft によってサポートされています。ぜひご利用ください。" />
+  <String Id="LearnMoreTitle" Value=".Net の詳細情報" />
+  <String Id="SuccessInstallLocation" Value="[DOTNETHOME] に以下がインストールされました" />
+  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] " />
+  <String Id="ResourcesHeader" Value="リソース" />
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;ドキュメント&lt;/A&gt;" />
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;リリース ノート&lt;/A&gt;" />
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;チュートリアル&lt;/A&gt;" />
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET テレメトリ&lt;/A&gt;" />
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;プライバシーに関する声明&lt;/A&gt;" />
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;.NET のライセンス情報&lt;/A&gt;" />
+  <String Id="LicenseAssent" Value="インストール をクリックすると、次の条項に同意したものと見なされます。" />
 </WixLocalization>

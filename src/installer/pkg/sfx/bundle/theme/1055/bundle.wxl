@@ -1,74 +1,79 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="Caption">[WixBundleName] Yükleyicisi</String>
-  <String Id="Title">[BUNDLEMONIKER]</String>
-  <String Id="Motto">Yalnızca bir kabuğa, bir metin düzenleyicisine ve 10 dakikalık bir zamana ihtiyacınız var.
+﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="Caption" Value="[WixBundleName] Yükleyicisi" />
+  <String Id="Title" Value="[BUNDLEMONIKER]" />
+  <String Id="Motto" Value="Yalnızca bir kabuğa, bir metin düzenleyicisine ve 10 dakikalık bir zamana ihtiyacınız var.
 
-Hazır mısınız? Haydi başlayalım!</String>
-  <String Id="ConfirmCancelMessage">İptal etmek istediğinizden emin misiniz?</String>
-  <String Id="ExecuteUpgradeRelatedBundleMessage">Önceki sürüm</String>
-  <String Id="HelpHeader">Kurulum Yardımı</String>
-  <String Id="HelpText">/install | /repair | /uninstall | /layout [dizin] - yükler, onarır, kaldırır ya da
+Hazır mısınız? Haydi başlayalım!" />
+  <String Id="ConfirmCancelMessage" Value="İptal etmek istediğinizden emin misiniz?" />
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Önceki sürüm" />
+  <String Id="HelpHeader" Value="Kurulum Yardımı" />
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [dizin] - yükler, onarır, kaldırır ya da
    dizindeki paketin tam bir yerel kopyasını oluşturur. Varsayılan install değeridir.
 
 /passive | /quiet -  en az düzeyde istemsiz UI gösterir ya da hiç UI göstermez ve
    istem yoktur. Varsayılan olarak UI ve tüm istemler görüntülenir.
 
 /norestart   - yeniden başlama denemelerini engeller. Varsayılan olarak UI yeniden başlatılmadan önce sorar.
-/log log.txt - belirli bir günlük dosyası tutar. Varsayılan olarak %TEMP% içinde bir günlük dosyası oluşturulur.</String>
-  <String Id="HelpCloseButton">&amp;Kapat</String>
-  <String Id="InstallAcceptCheckbox">Lisans hüküm ve koşullarını &amp;kabul ediyorum</String>
-  <String Id="InstallOptionsButton">&amp;Seçenekler</String>
-  <String Id="InstallInstallButton">Yü&amp;kle</String>
-  <String Id="InstallCloseButton">&amp;Kapat</String>
-  <String Id="OptionsHeader">Kurulum Seçenekleri</String>
-  <String Id="OptionsLocationLabel">Yükleme konumu:</String>
-  <String Id="OptionsBrowseButton">&amp;Gözat</String>
-  <String Id="OptionsOkButton">&amp;Tamam</String>
-  <String Id="OptionsCancelButton">İ&amp;ptal</String>
-  <String Id="ProgressHeader">Kurulum İlerleme Durumu</String>
-  <String Id="ProgressLabel">İşleniyor:</String>
-  <String Id="OverallProgressPackageText">Başlatılıyor...</String>
-  <String Id="ProgressCancelButton">İ&amp;ptal</String>
-  <String Id="ModifyHeader">Kurulumu değiştir</String>
-  <String Id="ModifyRepairButton">&amp;Onar</String>
-  <String Id="ModifyUninstallButton">&amp;Kaldır</String>
-  <String Id="ModifyCloseButton">&amp;Kapat</String>
-  <String Id="SuccessRepairHeader">Onarım Başarıyla Tamamlandı</String>
-  <String Id="SuccessUninstallHeader">Kaldırma Başarıyla Tamamlandı</String>
-  <String Id="SuccessInstallHeader">Yükleme başarılı oldu</String>
-  <String Id="SuccessHeader">Kurulum Başarılı</String>
-  <String Id="SuccessLaunchButton">&amp;Başlat</String>
-  <String Id="SuccessRestartText">Yazılımı kullanabilmeniz için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
-  <String Id="SuccessRestartButton">&amp;Yeniden Başlat</String>
-  <String Id="SuccessCloseButton">&amp;Kapat</String>
-  <String Id="FailureHeader">Kurulum Başarısız</String>
-  <String Id="FailureInstallHeader">Kurulum Başarısız</String>
-  <String Id="FailureUninstallHeader">Kaldırma Başarısız</String>
-  <String Id="FailureRepairHeader">Onarım Başarısız</String>
-  <String Id="FailureHyperlinkLogText">Bir ya da daha fazla sorun nedeniyle kurulum başarısız oldu. Lütfen bu sorunları düzeltin ve kurulumu yeniden deneyin. Daha fazla bilgi için &lt;a href="#"&gt;günlük dosyasına&lt;/a&gt; bakın.</String>
-  <String Id="FailureRestartText">Yazılımın geri alınmasını tamamlamak için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
-  <String Id="FailureRestartButton">&amp;Yeniden Başlat</String>
-  <String Id="FailureCloseButton">&amp;Kapat</String>
-  <String Id="FailureNotSupportedCurrentOperatingSystem">[PRODUCT_NAME] bu işletim sisteminde desteklenmiyor. Daha fazla bilgi için bkz. [LINK_PREREQ_PAGE].</String>
-  <String Id="FailureNotSupportedX86OperatingSystem">[PRODUCT_NAME], x86 işletim sistemlerinde desteklenmiyor. Lütfen karşılık gelen x86 yükleyicisini kullanarak yükleyin.</String>
-  <String Id="FilesInUseHeader">Kullanımda Olan Dosyalar</String>
-  <String Id="FilesInUseLabel">Şu uygulamalar güncelleştirilmesi gereken dosyaları kullanıyor:</String>
-  <String Id="FilesInUseCloseRadioButton">&amp;Uygulamaları kapatın ve yeniden başlatmayı deneyin.</String>
-  <String Id="FilesInUseDontCloseRadioButton">&amp;Uygulamaları kapatmayın. Sistemi yeniden başlatmanız gerekir.</String>
-  <String Id="FilesInUseOkButton">&amp;Tamam</String>
-  <String Id="FilesInUseCancelButton">İ&amp;ptal</String>
-  <String Id="WelcomeHeaderMessage">.NET Çalışma Zamanı</String>
-  <String Id="WelcomeDescription">.NET Çalışma Zamanı, Windows bilgisayarınızda .NET uygulamalarını çalıştırmak için kullanılır. .NET açık kaynaktır, platformlar arasında kullanılabilir ve Microsoft tarafından desteklenmektedir. Beğeneceğinizi umuyoruz!</String>
-  <String Id="LearnMoreTitle">.NET hakkında daha fazla bilgi edinin</String>
-  <String Id="SuccessInstallLocation">Aşağıdakiler [DOTNETHOME] konumunda yüklendi</String>
-  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
-  <String Id="ResourcesHeader">Kaynaklar</String>
-  <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Belgeler&lt;/A&gt;</String>
-  <String Id="ReleaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Sürüm Notları&lt;/A&gt;</String>
-  <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Öğreticiler&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET Telemetrisi&lt;/A&gt;</String>
-  <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Gizlilik Bildirimi&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET için Lisans Bilgileri&lt;/A&gt;</String>
-  <String Id="LicenseAssent">Yükle'ye tıklayarak aşağıdaki koşulları kabul etmiş olursunuz.</String>
+/log log.txt - belirli bir günlük dosyası tutar. Varsayılan olarak %TEMP% içinde bir günlük dosyası oluşturulur." />
+  <String Id="HelpCloseButton" Value="&amp;Kapat" />
+  <String Id="InstallAcceptCheckbox" Value="Lisans hüküm ve koşullarını &amp;kabul ediyorum" />
+  <String Id="InstallOptionsButton" Value="&amp;Seçenekler" />
+  <String Id="InstallInstallButton" Value="Yü&amp;kle" />
+  <String Id="InstallCloseButton" Value="&amp;Kapat" />
+  <String Id="OptionsHeader" Value="Kurulum Seçenekleri" />
+  <String Id="OptionsLocationLabel" Value="Yükleme konumu:" />
+  <String Id="OptionsBrowseButton" Value="&amp;Gözat" />
+  <String Id="OptionsOkButton" Value="&amp;Tamam" />
+  <String Id="OptionsCancelButton" Value="İ&amp;ptal" />
+  <String Id="ProgressHeader" Value="Kurulum İlerleme Durumu" />
+  <String Id="ProgressLabel" Value="İşleniyor:" />
+  <String Id="OverallProgressPackageText" Value="Başlatılıyor..." />
+  <String Id="ProgressCancelButton" Value="İ&amp;ptal" />
+  <String Id="ModifyHeader" Value="Kurulumu değiştir" />
+  <String Id="ModifyRepairButton" Value="&amp;Onar" />
+  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
+  <String Id="ModifyUninstallButton" Value="&amp;Kaldır" />
+  <String Id="ModifyCloseButton" Value="&amp;Kapat" />
+  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
+  <String Id="SuccessRepairHeader" Value="Onarım Başarıyla Tamamlandı" />
+  <String Id="SuccessUninstallHeader" Value="Kaldırma Başarıyla Tamamlandı" />
+  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
+  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
+  <String Id="SuccessInstallHeader" Value="Yükleme başarılı oldu" />
+  <String Id="SuccessHeader" Value="Kurulum Başarılı" />
+  <String Id="SuccessLaunchButton" Value="&amp;Başlat" />
+  <String Id="SuccessRestartText" Value="Yazılımı kullanabilmeniz için bilgisayarınızı yeniden başlatmanız gerekiyor." />
+  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
+  <String Id="SuccessRestartButton" Value="&amp;Yeniden Başlat" />
+  <String Id="SuccessCloseButton" Value="&amp;Kapat" />
+  <String Id="FailureHeader" Value="Kurulum Başarısız" />
+  <String Id="FailureInstallHeader" Value="Kurulum Başarısız" />
+  <String Id="FailureUninstallHeader" Value="Kaldırma Başarısız" />
+  <String Id="FailureRepairHeader" Value="Onarım Başarısız" />
+  <String Id="FailureHyperlinkLogText" Value="Bir ya da daha fazla sorun nedeniyle kurulum başarısız oldu. Lütfen bu sorunları düzeltin ve kurulumu yeniden deneyin. Daha fazla bilgi için &lt;a href=&quot;#&quot;&gt;günlük dosyasına&lt;/a&gt; bakın." />
+  <String Id="FailureRestartText" Value="Yazılımın geri alınmasını tamamlamak için bilgisayarınızı yeniden başlatmanız gerekiyor." />
+  <String Id="FailureRestartButton" Value="&amp;Yeniden Başlat" />
+  <String Id="FailureCloseButton" Value="&amp;Kapat" />
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] bu işletim sisteminde desteklenmiyor. Daha fazla bilgi için bkz. [LINK_PREREQ_PAGE]." />
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME], x86 işletim sistemlerinde desteklenmiyor. Lütfen karşılık gelen x86 yükleyicisini kullanarak yükleyin." />
+  <String Id="FilesInUseHeader" Value="Kullanımda Olan Dosyalar" />
+  <String Id="FilesInUseLabel" Value="Şu uygulamalar güncelleştirilmesi gereken dosyaları kullanıyor:" />
+  <String Id="FilesInUseCloseRadioButton" Value="&amp;Uygulamaları kapatın ve yeniden başlatmayı deneyin." />
+  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Uygulamaları kapatmayın. Sistemi yeniden başlatmanız gerekir." />
+  <String Id="FilesInUseOkButton" Value="&amp;Tamam" />
+  <String Id="FilesInUseCancelButton" Value="İ&amp;ptal" />
+  <String Id="WelcomeHeaderMessage" Value=".NET Çalışma Zamanı" />
+  <String Id="WelcomeDescription" Value=".NET Çalışma Zamanı, Windows bilgisayarınızda .NET uygulamalarını çalıştırmak için kullanılır. .NET açık kaynaktır, platformlar arasında kullanılabilir ve Microsoft tarafından desteklenmektedir. Beğeneceğinizi umuyoruz!" />
+  <String Id="LearnMoreTitle" Value=".NET hakkında daha fazla bilgi edinin" />
+  <String Id="SuccessInstallLocation" Value="Aşağıdakiler [DOTNETHOME] konumunda yüklendi" />
+  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] " />
+  <String Id="ResourcesHeader" Value="Kaynaklar" />
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Belgeler&lt;/A&gt;" />
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Sürüm Notları&lt;/A&gt;" />
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Öğreticiler&lt;/A&gt;" />
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET Telemetrisi&lt;/A&gt;" />
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Gizlilik Bildirimi&lt;/A&gt;" />
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;.NET için Lisans Bilgileri&lt;/A&gt;" />
+  <String Id="LicenseAssent" Value="Yükle'ye tıklayarak aşağıdaki koşulları kabul etmiş olursunuz." />
 </WixLocalization>

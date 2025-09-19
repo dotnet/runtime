@@ -43,7 +43,9 @@ void FinalizerThread::EnableFinalization()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifndef TARGET_WASM
     hEventFinalizer->Set();
+#endif // !TARGET_WASM
 }
 
 namespace
@@ -255,6 +257,23 @@ void FinalizerThread::FinalizeAllObjects()
     CALL_MANAGED_METHOD(count, uint32_t, args);
 
     FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
+}
+
+void FinalizerThread::RaiseShutdownEvents()
+{
+    WRAPPER_NO_CONTRACT;
+    fQuitFinalizer = TRUE;
+#ifndef TARGET_WASM
+    EnableFinalization();
+
+    // Do not wait for FinalizerThread if the current one is FinalizerThread.
+    if (GetThreadNULLOk() != GetFinalizerThread())
+    {
+        // This wait must be alertable to handle cases where the current
+        // thread's context is needed (i.e. RCW cleanup)
+        hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
+    }
+#endif // !TARGET_WASM
 }
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)

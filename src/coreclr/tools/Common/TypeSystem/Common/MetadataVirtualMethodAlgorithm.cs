@@ -377,14 +377,14 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
-            string name = targetMethod.Name;
+            ReadOnlySpan<byte> name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
             MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (candidate.Name == name)
+                if (candidate.Name.SequenceEqual(name))
                 {
                     if (candidate.Signature.EquivalentTo(sig))
                     {

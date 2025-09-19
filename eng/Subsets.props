@@ -98,6 +98,7 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
     <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and ($(_subset.Contains('+clr.nativeaotlibs+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsAndroid)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsBrowser)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and '$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">$(PrimaryRuntimeFlavor)</RuntimeFlavor>
@@ -107,6 +108,7 @@
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
