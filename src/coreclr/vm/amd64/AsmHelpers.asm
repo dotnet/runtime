@@ -564,11 +564,14 @@ NESTED_ENTRY InterpreterStub, _TEXT
         mov             rbx, METHODDESC_REGISTER
 
         INLINE_GETTHREAD r10; thrashes rax and r11
+        test            r10, r10
+        jz              NoManagedThread
 
         mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
         test            rax, rax
         jnz             HaveInterpThreadContext
 
+NoManagedThread:
         mov             rcx, r10
         call            Thread_GetInterpThreadContext
         RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
