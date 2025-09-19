@@ -232,7 +232,6 @@ void* DispatchCallSimple(
     for(int i=0; i<numStackSlotsToCopy; i++)
     {
         ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
-        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2+1] = 0;
     }
 #endif // TARGET_WASM
 
