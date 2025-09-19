@@ -394,15 +394,8 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_64BIT)
-    pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (INT_PTR)GetIP(pRD->pCurrentContext);
-#elif defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
-    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#else // TARGET_WASM
-    PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
-#endif
+    pRD->SP         = (TADDR)GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = (TADDR)GetIP(pRD->pCurrentContext);
 
 #ifdef DEBUG_REGDISPLAY
     CheckRegDisplaySP(pRD);
