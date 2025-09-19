@@ -21,10 +21,6 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
-#if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
-// Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
-#endif
 // Shared fixture to control AppContext switches needed by XmlSerializer tests that rely on
 // disabling caching so switches can be evaluated per test scenario.
 // Using a collection fixture gives us one-time setup/teardown instead of static constructor hacks.
@@ -53,10 +49,13 @@ public sealed class XmlSerializerSwitchesCollection : ICollectionFixture<XmlSeri
     // Intentionally empty. This class' purpose is to apply the fixture to the named collection.
 }
 
+#if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
+// Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+#endif
 [Collection("XmlSerializerSwitches")]
 public static partial class XmlSerializerTests
 {
-
 #if ReflectionOnly || XMLSERIALIZERGENERATORTESTS
     private static readonly string SerializationModeSetterName = "set_Mode";
 
@@ -1074,8 +1073,8 @@ public static partial class XmlSerializerTests
     }
 
     [Theory]
-    [InlineData("0001-1-1")]
-    [InlineData("2002-6-17")]
+    [InlineData("0001-01-01")]
+    [InlineData("2002-06-17")]
     [InlineData("2345-12-1")]
     public static void Xml_DateOnlyAsRoot(string dateString)
     {
@@ -1124,9 +1123,10 @@ public static partial class XmlSerializerTests
         const string switchName = "Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss";
         AppContext.TryGetSwitch(switchName, out bool originalEnabled);
 
-        // Try straigt up
+        // Try straight up
         var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
         TimeOnly result = default;
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<TimeOnly>(xml));
         var ex = Record.Exception(() =>
         {
             result = DeserializeFromXmlString<TimeOnly>(xml);
