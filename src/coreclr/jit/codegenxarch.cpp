@@ -101,40 +101,37 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     if (!pushReg)
     {
-#ifndef TARGET_X86
         // Non-tail call: we can use any callee trash register that is not
-        // a return register or contain 'this' pointer (keep alive this), or
-        // a continuation register, since we are generating GS cookie check
-        // after a GT_RETURN block.
-        // ARG_1 is EDX or RSI, depending on platform. Either way it fits our requirements
-        regGSCheck = REG_ARG_1;
-
-#else // TARGET_X86
-      // on x86 REG_ARG_1 could be LNGRET_HI, so we will use REG_ARG_0,
-      // unless that contains 'this' pointer (keep alive this), in which case
-      // we use REG_ARG_1, as it could not be LNGRET_HI in such case.
+        // a return register or contain 'this' pointer (keep alive this), since
+        // we are generating GS cookie check after a GT_RETURN block.
+        // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
+        // as return register for two-register-returned structs.
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
-            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_0))
+            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_1))
         {
-            regGSCheck = REG_ARG_1;
-        }
-        else if (compiler->compIsAsync())
-        {
-            // in an async method, we can't use use REG_ARG_0 as that is also REG_ASYNC_CONTINUATION_RET
-            // so we use REG_ARG_1 and push/pop it if we have a multireg (long) return.
-            regGSCheck                        = REG_ARG_1;
-            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
-            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
-            if (regCount == 2)
+            // ARG_1 is used, we need some other scratch register that is not a return or ARG1
+#ifdef TARGET_X86
+            // the only other option on x86 is ARG_0
+            regGSCheck = REG_ARG_0;
+
+            // If we are in async method, REG_ARG_0 is also REG_ASYNC_CONTINUATION_RET,
+            // so we need to push/pop it around the check.
+            // And we need to suppress GC for that, since we are not in the epilog yet.
+            if (compiler->compIsAsync())
             {
-                regMaskGSCheck = RBM_ARG_1;
+                regMaskGSCheck = RBM_ARG_0;
+                GetEmitter()->emitDisableGC();
             }
+#else
+            // not a return register and not an ARG_1 (and not RCX, so no worries about async)
+            regGSCheck = REG_R8;
+#endif
         }
         else
         {
-            regGSCheck = REG_ARG_0;
+            // ARG_1 does not contain `this`, so just use it.
+            regGSCheck = REG_ARG_1;
         }
-#endif
     }
     else
     {
