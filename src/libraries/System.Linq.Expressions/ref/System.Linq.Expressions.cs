@@ -1207,7 +1207,6 @@ namespace System.Runtime.CompilerServices
     {
         public static bool IsInternalFrame(System.Reflection.MethodBase mb) { throw null; }
     }
-
     public partial class CallSite<T> : System.Runtime.CompilerServices.CallSite where T : class
     {
         internal CallSite() { }
@@ -1282,5 +1281,4 @@ namespace System.Runtime.CompilerServices
     {
         internal RuleCache() { }
     }
-
 }

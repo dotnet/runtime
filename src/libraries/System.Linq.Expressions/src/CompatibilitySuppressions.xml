@@ -13,7 +13,6 @@
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.RuntimeOps</Target>
   </Suppression>
-
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Linq.Expressions.ElementInit.get_ArgumentCount</Target>
