@@ -21,39 +21,10 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
-// Shared fixture to control AppContext switches needed by XmlSerializer tests that rely on
-// disabling caching so switches can be evaluated per test scenario.
-// Using a collection fixture gives us one-time setup/teardown instead of static constructor hacks.
-public sealed class XmlSerializerSwitchFixture : IDisposable
-{
-    private const string DisableCachingSwitch = "TestSwitch.LocalAppContext.DisableCaching";
-    private readonly bool _hadDisableCaching;
-
-    public XmlSerializerSwitchFixture()
-    {
-        // Ensure caching disabled for tests needing to manipulate switches mid-run.
-        _hadDisableCaching = AppContext.TryGetSwitch(DisableCachingSwitch, out bool wasDisableCaching) && wasDisableCaching;
-        AppContext.SetSwitch(DisableCachingSwitch, true);
-    }
-
-    public void Dispose()
-    {
-        // Restore original states (best effort; product code may have cached values earlier in static fields).
-        AppContext.SetSwitch(DisableCachingSwitch, _hadDisableCaching);
-    }
-}
-
-[CollectionDefinition("XmlSerializerSwitches")]
-public sealed class XmlSerializerSwitchesCollection : ICollectionFixture<XmlSerializerSwitchFixture>
-{
-    // Intentionally empty. This class' purpose is to apply the fixture to the named collection.
-}
-
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
 #endif
-[Collection("XmlSerializerSwitches")]
 public static partial class XmlSerializerTests
 {
 #if ReflectionOnly || XMLSERIALIZERGENERATORTESTS
@@ -1120,9 +1091,6 @@ public static partial class XmlSerializerTests
     [InlineData("08:32 AM", false)]       // Helen errupts
     public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
     {
-        const string switchName = "Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss";
-        AppContext.TryGetSwitch(switchName, out bool originalEnabled);
-
         // Try straight up
         var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
         TimeOnly result = default;
@@ -1153,23 +1121,24 @@ public static partial class XmlSerializerTests
         }
 
         // Finally, try with the AppCompat switch
-        AppContext.SetSwitch(switchName, true);
-        result = default;
-        ex = Record.Exception(() =>
+        using (var timeWithOffsetLoss = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", true))
         {
-            result = DeserializeFromXmlString<TimeOnly>(xml);
-        });
-        if (succeedsWithCompat)
-        {
-            Assert.Null(ex);
-            Assert.Equal(expected, FormatTimeString(result));
+            result = default;
+            ex = Record.Exception(() =>
+            {
+                result = DeserializeFromXmlString<TimeOnly>(xml);
+            });
+            if (succeedsWithCompat)
+            {
+                Assert.Null(ex);
+                Assert.Equal(expected, FormatTimeString(result));
+            }
+            else
+            {
+                Assert.NotNull(ex);
+                Assert.IsType<InvalidOperationException>(ex);
+            }
         }
-        else
-        {
-            Assert.NotNull(ex);
-            Assert.IsType<InvalidOperationException>(ex);
-        }
-        AppContext.SetSwitch(switchName, originalEnabled);
     }
 
     [Fact]
