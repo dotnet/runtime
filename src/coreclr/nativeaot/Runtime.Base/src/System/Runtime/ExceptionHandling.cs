@@ -842,7 +842,7 @@ namespace System.Runtime
             exInfo._pCatchHandler = pCatchHandler;
             exInfo._handlingFrameSP = handlingFrameSP;
 #if TARGET_ARM64
-            exInfo._handlingFramePC = prevControlPC;
+            exInfo._handlingFramePC = prevOriginalPC;
 #endif
 #if TARGET_UNIX
             exInfo._pReversePInvokePropagationCallback = pReversePInvokePropagationCallback;
