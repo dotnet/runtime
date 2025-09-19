@@ -113,7 +113,7 @@ namespace Test.Cryptography
                 byte lengthLength = derBytes[index];
                 lengthLength++;
 
-                // X.690 section 8.1.3.5c says: the value 11111111_2 shall not be used
+                // X.690 section 8.1.3.5c says: the value 0b11111111 shall not be used
                 Assert.NotEqual(0b11111111, lengthLength);
 
                 berBytes[index] = lengthLength;
