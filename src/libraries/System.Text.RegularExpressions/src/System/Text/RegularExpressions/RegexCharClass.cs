@@ -1104,24 +1104,6 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
-        /// <summary>Gets whether the specified span contains only ASCII.</summary>
-        public static bool IsAscii(ReadOnlySpan<char> s)
-        {
-#if NET
-            return Ascii.IsValid(s);
-#else
-            foreach (char c in s)
-            {
-                if (c >= 128)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-#endif
-        }
-
         /// <summary>Gets whether the set description string is for two ASCII letters that case to each other under OrdinalIgnoreCase rules.</summary>
         public static bool SetContainsAsciiOrdinalIgnoreCaseCharacter(string set, Span<char> twoChars)
         {
