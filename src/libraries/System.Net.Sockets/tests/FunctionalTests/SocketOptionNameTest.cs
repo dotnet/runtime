@@ -68,6 +68,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/113827", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [SkipOnPlatform(TestPlatforms.OSX, "Multicast interface selection fails on macOS 14+ due to changes in how the system handles network interface parameters")]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
