@@ -42,6 +42,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
     public virtual TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot);
+    public virtual IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle methodTable);
+    public virtual TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot);
 
     public virtual uint GetBaseSize(TypeHandle typeHandle);
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
@@ -57,6 +59,7 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefToken(TypeHandle typeHandle);
+    public virtual ushort GetNumVtableSlots(TypeHandle typeHandle);
     public virtual ushort GetNumMethods(TypeHandle typeHandle);
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
@@ -74,6 +77,7 @@ partial interface IRuntimeTypeSystem : IContract
     public bool IsInitError(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
+    public virtual bool IsCollectible(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
@@ -86,6 +90,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
     public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    public virtual TargetPointer GetLoaderModule(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
 }
@@ -150,6 +155,9 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
+    // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
+    public virtual bool HasMDContextArg(MethodDescHandle);
+
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
@@ -169,10 +177,15 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc);
 
     // Get an instruction pointer that can be called to cause the MethodDesc to be executed
+    // Requires the entry point to be stable
     public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc);
+
+    // Get an instruction pointer that can be called to cause the MethodDesc to be executed
+    public virtual TargetCodePointer GetMethodEntryPointIfExists(MethodDescHandle methodDesc);
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -212,7 +225,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_PrimitiveValueType = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
-
+        Collectible = 0x00200000,
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -258,6 +271,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+        public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
@@ -470,6 +484,15 @@ Contracts used:
         return (uint)(typeHandle.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
     }
 
+    public ushort GetNumVtableSlots(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return 0;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        ushort numNonVirtualSlots = methodTable.IsCanonMT ? GetClassData(typeHandle).NumNonVirtualSlots : (ushort)0;
+        return checked((ushort)(methodTable.NumVirtuals + numNonVirtualSlots));
+    }
+
     public ushort GetNumMethods(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).NumMethods;
 
     public uint GetTypeDefTypeAttributes(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).CorTypeAttr;
@@ -580,6 +603,14 @@ Contracts used:
     }
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
+
+    public bool IsCollectible(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable typeHandle = _methodTables[typeHandle.Address];
+        return typeHandle.Flags.IsCollectible;
+    }
 
     public bool HasTypeParam(TypeHandle typeHandle)
     {
@@ -733,6 +764,28 @@ Contracts used:
         callConv = (byte) // Read CallConv field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress(), and then ignore all but the low 8 bits.
         return true;
     }
+
+    public TargetPointer GetLoaderModule(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsTypeDesc())
+        {
+            // TypeDesc::GetLoaderModule
+            if (HasTypeParam(typeHandle))
+            {
+                return GetLoaderModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                return target.ReadPointer(typeHandle.TypeDescAddress() + /* FnPtrTypeDesc::LoaderModule offset */);
+            }
+        }
+        return target.ReadPointer(mt.AuxiliaryData + /* MethodTableAuxiliaryData::LoaderModule offset */);
+    }
 ```
 
 ### MethodDesc
@@ -832,6 +885,14 @@ And the following enumeration definitions
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     [Flags]
@@ -1105,6 +1166,23 @@ And the various apis are implemented with the following algorithms
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
     }
 
+    public bool HasMDContextArg(MethodDescHandle method)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
+        {
+            return false;
+        }
+
+        uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
+        ILStubType ilStubType = (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        bool isCLRToCOMStub = ilStubType == ILStubType.StubCLRToCOMInterop;
+        bool isPInvokeVarArgStub = ilStubType == ILStubType.StubPInvokeVarArg;
+
+        return isCLRToCOMStub || isPInvokeVarArgStub;
+    }
+
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;
 ```
 
@@ -1302,6 +1380,30 @@ Getting the native code pointer for methods with a NativeCodeSlot or a stable en
 
         return GetStableEntryPoint(methodDescHandle.Address, md);
     }
+
+    public TargetCodePointer IRuntimeTypeSystem.GetMethodEntryPointIfExists(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        return GetMethodEntryPointIfExists(methodDescHandle.Address, md);
+    }
+```
+
+Getting the value of a slot of a MethodTable
+```csharp
+    public TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot)
+    {
+        // based on MethodTable::GetSlot(uint slotNumber)
+        if (!typeHandle.IsMethodTable())
+            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+
+        if (slot < GetNumVtableSlots(typeHandle))
+        {
+            TargetPointer slotPtr = GetAddressOfSlot(typeHandle, slot);
+            return _target.ReadCodePointer(slotPtr);
+        }
+
+        return TargetCodePointer.Null;
+    }
 ```
 
 Getting a MethodDesc for a certain slot in a MethodTable
@@ -1353,33 +1455,78 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    public TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot)
+    public IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle typeHandle)
     {
+        if (!typeHandle.IsMethodTable())
+            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+
+        TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
+        foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+        {
+            yield return mdh.Address;
+        }
+    }
+
+    // Uses GetMethodDescForVtableSlot if slot is less than the number of vtable slots
+    // otherwise looks for the slot in the introduced methods
+    public TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
+    {
+        if (!typeHandle.IsMethodTable())
+            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+
+        TypeHandle canonMT = GetTypeHandle(GetCanonicalMethodTable(typeHandle));
+        if (slot < GetNumVtableSlots(canonMT))
+        {
+            return GetMethodDescForVtableSlot(canonMT, slot);
+        }
+        else
+        {
+            foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+            {
+                MethodDesc md = _methodDescs[mdh.Address];
+                if (md.Slot == slot)
+                {
+                    return mdh.Address;
+                }
+            }
+            return TargetPointer.Null;
+        }
+    }
+
+    private TargetPointer GetMethodDescForVtableSlot(TypeHandle methodTable, ushort slot)
+    {
+        // based on MethodTable::GetMethodDescForSlot_NoThrow
         if (!typeHandle.IsMethodTable())
             throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
 
         TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
         TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
+        if (slot >= GetNumVtableSlots(canonMT))
+            throw new ArgumentException(nameof(slot), "Slot number is greater than the number of slots");
+
         TargetPointer slotPtr = GetAddressOfSlot(canonMT, slot);
         TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
 
         if (pCode == TargetCodePointer.Null)
         {
-            // if pCode is null, we iterate through the method descs in the MT
-            while (true) // arbitrary limit to avoid infinite loop
+            TargetPointer lookupMTPtr = cannonMTPTr;
+            while (lookupMTPtr != TargetPointer.Null)
             {
-                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+                // if pCode is null, we iterate through the method descs in the MT.
+                TypeHandle lookupMT = GetTypeHandle(lookupMTPtr);
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(lookupMT))
                 {
                     MethodDesc md = _methodDescs[mdh.Address];
-
-                    // if a MethodDesc matches the slot, return that MethodDesc
                     if (md.Slot == slot)
                     {
                         return mdh.Address;
                     }
                 }
-                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
+                lookupMTPtr = GetParentMethodTable(lookupMT);
+                if (lookupMTPtr != TargetPointer.Null)
+                    lookupMTPtr = GetCanonicalMethodTable(GetTypeHandle(lookupMTPtr));
             }
+            return TargetPointer.Null;
         }
 
         return GetMethodDescForEntrypoint(pCode);

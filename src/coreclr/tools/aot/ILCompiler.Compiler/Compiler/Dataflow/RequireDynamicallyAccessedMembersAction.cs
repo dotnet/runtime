@@ -13,12 +13,12 @@ namespace ILLink.Shared.TrimAnalysis
     internal partial struct RequireDynamicallyAccessedMembersAction
     {
         private readonly ReflectionMarker _reflectionMarker;
-        private readonly string _reason;
+        private readonly TypeSystemEntity _reason;
 
         public RequireDynamicallyAccessedMembersAction(
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
-            string reason)
+            TypeSystemEntity reason)
         {
             _reflectionMarker = reflectionMarker;
             _diagnosticContext = diagnosticContext;

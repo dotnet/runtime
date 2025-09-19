@@ -480,3 +480,24 @@ extends:
             unifiedBuildConfigOverride: checked
             # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
             timeoutInMinutes: 300
+
+      #
+      # Collection of aspnet/TechEmpower benchmarks (crank-based): aspnet2
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm64
+          # - linux_x64 # currently runs of disk space too often.
+          - windows_x64
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run
+            collectionName: aspnet2

@@ -65,8 +65,6 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
         afterInstantiateWasm: createPromiseController<void>(),
-        beforePreInit: createPromiseController<void>(),
-        afterPreInit: createPromiseController<void>(),
         afterPreRun: createPromiseController<void>(),
         beforeOnRuntimeInitialized: createPromiseController<void>(),
         afterMonoStarted: createPromiseController<void>(),

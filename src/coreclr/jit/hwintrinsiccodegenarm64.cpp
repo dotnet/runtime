@@ -788,6 +788,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
+                            case NI_Sve2_AddPairwise:
+                            case NI_Sve2_MaxNumberPairwise:
+                            case NI_Sve2_MaxPairwise:
+                            case NI_Sve2_MinNumberPairwise:
+                            case NI_Sve2_MinPairwise:
+                                // These instructions have unpredictable behaviour when using predicated movprfx,
+                                // so the unpredicated variant must be used here.
+                                assert(!intrin.op3->isContained() && falseReg != REG_NA);
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                            embOpt, sopt);
+                                GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                              falseReg, opt);
+                                break;
+
                             case NI_Sve2_ConvertToSingleOdd:
                             case NI_Sve2_ConvertToSingleOddRoundToOdd:
                                 // TODO-SVE: Optimise away the explicit copying of `embMaskOp1Reg` to `targetReg`.
@@ -2313,12 +2328,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_Scatter:
             case NI_Sve_Scatter16BitNarrowing:
-            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter32BitNarrowing:
-            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
             case NI_Sve_Scatter8BitNarrowing:
-            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
-            case NI_Sve_ScatterWithByteOffsets:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
@@ -2350,6 +2361,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.numOperands == 3);
                     GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 }
+                break;
+            }
+
+            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
+            case NI_Sve_ScatterWithByteOffsets:
+            {
+                emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+
+                if (baseSize == EA_4BYTE)
+                {
+                    opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
+                                                                      : INS_OPTS_SCALABLE_S_SXTW;
+                }
+
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op2Reg, op3Reg, opt);
                 break;
             }
 
