@@ -402,6 +402,7 @@ private:
 
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
+    GenTree* TryLowerMorphedModIfNotCsed(GenTreeOp* binOp);
 #endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
