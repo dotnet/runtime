@@ -1,16 +1,15 @@
-# System.Runtime.InteropServices.JavaScript
+# System.Runtime.InteropServices.JavaScript.Native
 
-Is TypeScript project that is compiled via `src\native\libs\rollup.config.js` into Emscripten library.
-And native library compiled by CMake into `System.JavaScript.a` as part of `/src/native/libs/CMakeLists.txt`
+This library implements interop between JS and .NET
+It also implements public JS API related JS interop.
 
-# System.Runtime.InteropServices.JavaScript.ts -> dotnet.native.js
+## Emscripten library
+- `libSystem.Runtime.InteropServices.JavaScript.Native.ts` compiled -> `libSystem.Runtime.InteropServices.JavaScript.Native.js` linked -> `dotnet.native.js`
+- `ententrypoints.c` compiled -> `libSystem.Runtime.InteropServices.JavaScript.Native.a` linked -> `dotnet.native.wasm`
 
-This is root of **Emscripten library** that would become part of `dotnet.runtime.js`
-It implements native part of interop between JS and .NET
-Functions exported from `runtime/native-exports.ts` will be added into `dotnet.native.js` in trimmable way.
+## ES6 JavaScript module
+- `dotnet.runtime.ts` compiled -> `dotnet.runtime.js`
 
-# ententrypoints.c -> System.Runtime.InteropServices.JavaScript.a -> dotnet.native.wasm
-
-This is making functions from `runtime/native-exports.ts` visible in C code.
-
-**TODOWASM**: This is preventing trimming and should be replaced by generated P/Invokes that are IL trimmed first.
+TypeScript is driven by `src/native/rollup.config.js`
+Emscripten compilations is part of `/src/native/libs/CMakeLists.txt`
+Final static linking happens in `/src/native/corehost/browserhost/CMakeLists.txt`

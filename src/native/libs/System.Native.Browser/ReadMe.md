@@ -1,15 +1,15 @@
-# System.JavaScript
+# System.Native.Browser
 
-Is TypeScript project that is compiled via `src\native\libs\rollup.config.js` into Emscripten JS library.
-And a native library compiled by CMake into `System.JavaScript.a` as part of `/src/native/libs/CMakeLists.txt`
+This library implements PAL for the VM/runtime.
+It also implements part of public JS API related to memory and runtime hosting.
 
-## System.JavaScript.ts -> dotnet.native.js
+It is a TypeScript project that is compiled via `src\native\rollup.config.js` into **Emscripten library**.
+And a native library compiled by CMake into `libSystem.Native.Browser.a` as part of `/src/native/libs/CMakeLists.txt`
 
-This is root of **Emscripten library** that would become part of `dotnet.runtime.js`
-It implements native parts of PAL for the VM/runtime.
+## Emscripten library
+- `libSystem.Native.Browser.ts` compiled -> `libSystem.Native.Browser.js` linked ->`dotnet.native.js`
+- `ententrypoints.c` compiled -> `libSystem.Native.Browser.a` linked -> `dotnet.native.wasm`
 
-## ententrypoints.c -> System.JavaScript.a -> dotnet.native.wasm
-
-This is making functions from `runtime/native-exports.ts` visible in C code.
-
-**TODOWASM**: This is preventing trimming and should be replaced by generated P/Invokes that are IL trimmed first.
+TypeScript is driven by `src/native/rollup.config.js`
+Emscripten compilations is part of `/src/native/libs/CMakeLists.txt`
+Final static linking happens in `/src/native/corehost/browserhost/CMakeLists.txt`
