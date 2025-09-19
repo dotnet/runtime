@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
                 source,
                 hash,
                 customizationString,
-                static (key, source, hash, customizationString, buffer) =>
+                static (key, source, customizationString, buffer) =>
                 {
                     HashProviderDispenser.OneShotHashProvider.KmacData(
                         TKmac.HashAlgorithmName,
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
                 source,
                 hash,
                 customizationString,
-                static (key, source, hash, customizationString, buffer) =>
+                static (key, source, customizationString, buffer) =>
                 {
                     LiteHashProvider.KmacStream(
                         TKmac.HashAlgorithmName,
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
             TSource source,
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> customizationString,
-            Action<ReadOnlySpan<byte>, TSource, ReadOnlySpan<byte>, ReadOnlySpan<byte>, Span<byte>> callback)
+            Action<ReadOnlySpan<byte>, TSource, ReadOnlySpan<byte>, Span<byte>> callback)
             where TSource : allows ref struct
         {
             Span<byte> hashBuffer = stackalloc byte[MaxStackKmacSize];
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography
             {
                 fixed (byte* pHashBuffer = hashBuffer)
                 {
-                    callback(key, source, hash, customizationString, hashBuffer);
+                    callback(key, source, customizationString, hashBuffer);
                     bool result = CryptographicOperations.FixedTimeEquals(hashBuffer, hash);
                     CryptographicOperations.ZeroMemory(hashBuffer);
                     return result;
