@@ -24,7 +24,6 @@ public interface ICodeVersions : IContract
     public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
     public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
-
     public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc) => throw new NotImplementedException();
 
     public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
