@@ -964,6 +964,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     ,
     m_dwOutOfProcessStepping(0),
+    m_fOutOfProcessSetThreadContextEventReceived(false),
     m_detachSetThreadContextNeededEvent(NULL)
 #endif
 {
@@ -3144,9 +3145,12 @@ void CordbProcess::DetachShim()
             UnsafeGetProcessHandle()             // Signaled when the process exits
         };
 
-        bool fDetachComplete = false;
+        bool fDetachComplete = !m_fOutOfProcessSetThreadContextEventReceived;
         const DWORD DETACH_WAIT_TIMEOUT_MS = 5000; // 5 seconds
-        TryDetach(); // signal ourselves to see if we can detach right away
+        if (!fDetachComplete)
+        {
+            TryDetach(); // signal ourselves to see if we can detach right away
+        }
         while (!fDetachComplete)
         {
             DWORD dwResult = WaitForMultipleObjectsEx(_countof(rghWaitSet), rghWaitSet, FALSE, DETACH_WAIT_TIMEOUT_MS, FALSE);
@@ -11371,6 +11375,8 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
         SetThreadContextNeededInfo * Info() { return &m_Info; }
     };
+
+    m_fOutOfProcessSetThreadContextEventReceived = true;
 
     UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
 
