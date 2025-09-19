@@ -225,7 +225,7 @@ void* DispatchCallSimple(
     callDescrData.pTarget = pTargetAddress;
 
 #ifdef TARGET_WASM
-    ASSERT(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
+    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
     callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
     LPVOID pOrigSrc = callDescrData.pSrc;
     callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
