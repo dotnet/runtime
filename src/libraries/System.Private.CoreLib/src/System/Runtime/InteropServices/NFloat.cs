@@ -287,12 +287,6 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         public static explicit operator Half(NFloat value) => (Half)(value._value);
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="BFloat16" /> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16" /> value.</returns>
-        [NonVersionable]
-        public static explicit operator BFloat16(NFloat value) => (BFloat16)(value._value);
-
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="short" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
@@ -475,12 +469,6 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
         [NonVersionable]
         public static implicit operator NFloat(Half value) => (NFloat)(float)value;
-
-        /// <summary>Implicitly converts a <see cref="BFloat16" /> value to its nearest representable native-sized floating-point value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
-        [NonVersionable]
-        public static implicit operator NFloat(BFloat16 value) => (NFloat)(float)value;
 
         /// <summary>Implicitly converts a <see cref="short" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -1456,12 +1444,6 @@ namespace System.Runtime.InteropServices
                 result = actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualValue = (BFloat16)(object)value;
-                result = actualValue;
-                return true;
-            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -1572,12 +1554,6 @@ namespace System.Runtime.InteropServices
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1709,12 +1685,6 @@ namespace System.Runtime.InteropServices
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

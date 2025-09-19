@@ -1451,7 +1451,6 @@ namespace System.Runtime.InteropServices
         public static explicit operator char (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator decimal (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator System.Half (System.Runtime.InteropServices.NFloat value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator short (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator int (System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -1481,7 +1480,6 @@ namespace System.Runtime.InteropServices
         public static implicit operator System.Runtime.InteropServices.NFloat (long value) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (nint value) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (System.Half value) { throw null; }
-        public static implicit operator System.Runtime.InteropServices.NFloat (System.Numerics.BFloat16 value) { throw null; }
         public static implicit operator double (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Runtime.InteropServices.NFloat (sbyte value) { throw null; }
