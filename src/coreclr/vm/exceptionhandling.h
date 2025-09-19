@@ -34,7 +34,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
-void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE pCatchHandler);
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE handlingFramePC, PCODE pCatchHandler);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 

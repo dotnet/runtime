@@ -1049,8 +1049,6 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_fDidFuncletReportGCReferences = true;
     m_isRuntimeWrappedExceptions = false;
 #endif // FEATURE_EH_FUNCLETS
-    m_movedPastFirstExInfo = false;
-    m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
@@ -1398,8 +1396,6 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFilterFuncletCached = false;
     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
     m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
-    m_crawl.fShouldSaveFuncletInfo = false;
-    m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = false;
 #endif // FEATURE_EH_FUNCLETS
 
     m_crawl.pThread = this->m_pThread;
@@ -1623,33 +1619,6 @@ StackWalkAction StackFrameIterator::Filter(void)
 
         SIZE_T frameSP = (m_frameState == SFITER_FRAME_FUNCTION) ? (SIZE_T)dac_cast<TADDR>(m_crawl.pFrame) : m_crawl.GetRegisterSet()->SP;
 
-        if ((m_flags & GC_FUNCLET_REFERENCE_REPORTING) && (pExInfo != NULL) && (frameSP > (SIZE_T)pExInfo))
-        {
-            if (!m_movedPastFirstExInfo)
-            {
-                if ((pExInfo->m_passNumber == 2) && !pExInfo->m_csfEnclosingClause.IsNull() && m_sfFuncletParent.IsNull() && pExInfo->m_lastReportedFunclet.IP != 0)
-                {
-                    // We are in the 2nd pass and we have already called an exceptionally called
-                    // finally funclet and reported that to GC in a previous GC run. But we have
-                    // not seen any funclet on the call stack yet.
-                    // Simulate that we have actualy seen a finally funclet during this pass and
-                    // that it didn't report GC references to ensure that the references will be
-                    // reported by the parent correctly.
-                    m_sfFuncletParent = (StackFrame)pExInfo->m_csfEnclosingClause;
-                    m_sfParent = m_sfFuncletParent;
-                    m_fProcessNonFilterFunclet = true;
-                    m_fDidFuncletReportGCReferences = false;
-                    m_fFuncletNotSeen = true;
-                    STRESS_LOG3(LF_GCROOTS, LL_INFO100,
-                                        "STACKWALK: Moved over first ExInfo @ %p in second pass, SP: %p, Enclosing clause: %p\n",
-                                        pExInfo, (void*)m_crawl.GetRegisterSet()->SP, (void*)m_sfFuncletParent.SP);
-                }
-                m_movedPastFirstExInfo = true;
-            }
-        }
-
-        m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = false;
-
         // by default, there is no funclet for the current frame
         // that reported GC references
         m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
@@ -1657,8 +1626,6 @@ StackWalkAction StackFrameIterator::Filter(void)
         // By default, assume that we are going to report GC references for this
         // CrawlFrame
         m_crawl.fShouldCrawlframeReportGCReferences = true;
-
-        m_crawl.fShouldSaveFuncletInfo = false;
 
         // By default, assume that parent frame is going to report GC references from
         // the actual location reported by the stack walk.
@@ -1807,18 +1774,6 @@ ProcessFuncletsForGCReporting:
                                         // Set the parent frame so that the funclet skipping logic (further below)
                                         // can use it.
                                         m_sfParent = m_sfFuncletParent;
-
-                                        if (!m_fFoundFirstFunclet && (pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet())) && ((void*)m_sfParent.SP > pExInfo))
-                                        {
-                                            // For the first funclet we encounter below the topmost ExInfo that has a parent above that ExInfo
-                                            // (so it is an exceptionally called funclet for the exception represented by the ExInfo),
-                                            // we instruct the GC scanning of the frame
-                                            // to save information on the funclet so that we can use it to report references in the parent frame if
-                                            // no such funclet is found in future GC scans for the same exception.
-                                            _ASSERTE(pExInfo != NULL);
-                                            m_crawl.fShouldSaveFuncletInfo = true;
-                                            m_fFoundFirstFunclet = true;
-                                        }
 
                                         // For non-filter funclets, we will make the callback for the funclet
                                         // but skip all the frames until we reach the parent method. When we do,
@@ -2012,14 +1967,6 @@ ProcessFuncletsForGCReporting:
                                         }
                                         else if (!m_crawl.IsFunclet())
                                         {
-                                            if (m_fFuncletNotSeen)
-                                            {
-                                                // We have reached a real parent of a funclet that would be on the stack if GC didn't
-                                                // kick in between the calls to funclets in the second pass. We instruct GC to report
-                                                // roots using the info of the saved funclet we've seen during a previous GC.
-                                                m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = true;
-                                                m_fFuncletNotSeen = false;
-                                            }
                                             // we've reached the parent and it's not handling an exception, it's also not
                                             // a funclet so reset our state.  note that we cannot reset the state when the
                                             // parent is a funclet since the leaf funclet didn't report any references and

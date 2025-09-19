@@ -552,13 +552,13 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
-        public static void FindHwExHandler(uint exceptionCode, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
+        public static void FindHwExHandler(uint exceptionCode, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler)
         {
-            FindHwExHandler(exceptionCode, ref exInfo, out handlingFrameSP, out pCatchHandler, out _, out _);
+            FindHwExHandler(exceptionCode, ref exInfo, out handlingFrameSP, out handlingFramePC, out pCatchHandler, out _, out _);
         }
 
         [StackTraceHidden]
-        private static void FindHwExHandler(uint exceptionCode, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
+        private static void FindHwExHandler(uint exceptionCode, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
@@ -629,7 +629,7 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
-            FindExHandler(exceptionToThrow!, ref exInfo, out handlingFrameSP, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
+            FindExHandler(exceptionToThrow!, ref exInfo, out handlingFrameSP, out handlingFramePC, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
         }
 
         //
@@ -637,19 +637,19 @@ namespace System.Runtime
         //
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
-#endif
         [StackTraceHidden]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
         {
-            FindHwExHandler(exceptionCode, ref exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
-            DispatchExSecondPass(ref exInfo, handlingFrameSP, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
+            FindHwExHandler(exceptionCode, ref exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
+            DispatchExSecondPass(ref exInfo, handlingFrameSP, handlingFramePC, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+#endif
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
         [StackTraceHidden]
-        public static void FindExHandler(object exceptionObj, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
+        public static void FindExHandler(object exceptionObj, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler)
         {
             // Transform attempted throws of null to a throw of NullReferenceException.
             if (exceptionObj == null)
@@ -659,11 +659,11 @@ namespace System.Runtime
             }
 
             exInfo.Init(exceptionObj);
-            FindExHandler(exceptionObj, ref exInfo, out handlingFrameSP, out pCatchHandler, out _, out _);
+            FindExHandler(exceptionObj, ref exInfo, out handlingFrameSP, out handlingFramePC, out pCatchHandler, out _, out _);
         }
 
         [StackTraceHidden]
-        private static void FindExHandler(object exceptionObj, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
+        private static void FindExHandler(object exceptionObj, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
 #if NATIVEAOT
 
@@ -678,20 +678,20 @@ namespace System.Runtime
             InternalCalls.RhpValidateExInfoStack();
 #endif // NATIVEAOT
 
-            DispatchExFirstPass(ref exInfo, out handlingFrameSP, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
+            DispatchExFirstPass(ref exInfo, out handlingFrameSP, out handlingFramePC, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
         }
 
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
-#endif
         [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
             exInfo.Init(exceptionObj);
-            FindExHandler(exceptionObj, ref exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
-            DispatchExSecondPass(ref exInfo, handlingFrameSP, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
+            FindExHandler(exceptionObj, ref exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
+            DispatchExSecondPass(ref exInfo, handlingFrameSP, handlingFramePC, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+#endif
 
 #if !NATIVEAOT
         // TODO: move this to native too
@@ -720,7 +720,7 @@ namespace System.Runtime
                     break;
                 }
 
-                InvokeSecondPass(ref exInfo, startIdx);
+//                InvokeSecondPass(ref exInfo, startIdx);
                 if (isExceptionIntercepted)
                 {
                     Debug.Assert(false);
@@ -735,12 +735,12 @@ namespace System.Runtime
             // ------------------------------------------------
             if (unwoundReversePInvoke)
             {
-                object exceptionObj = exInfo.ThrownException;
-                fixed (EH.ExInfo* pExInfo = &exInfo)
-                {
-                    InternalCalls.RhpCallCatchFunclet(
-                        ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
-                }
+            //     object exceptionObj = exInfo.ThrownException;
+            //     fixed (EH.ExInfo* pExInfo = &exInfo)
+            //     {
+            //         InternalCalls.RhpCallCatchFunclet(
+            //             ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
+            //     }
             }
             else
             {
@@ -755,12 +755,9 @@ namespace System.Runtime
 
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
-#endif
         [StackTraceHidden]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
-#if NATIVEAOT
-
 #if TARGET_WINDOWS
             // Alert the debugger that we threw an exception.
             InternalCalls.RhpFirstChanceExceptionNotification();
@@ -770,21 +767,21 @@ namespace System.Runtime
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif // NATIVEAOT
 
-            FindRethrowExHandler(ref activeExInfo, ref exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
-            DispatchExSecondPass(ref exInfo, handlingFrameSP, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
+            FindRethrowExHandler(ref activeExInfo, ref exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext);
+            DispatchExSecondPass(ref exInfo, handlingFrameSP, handlingFramePC, pCatchHandler, pReversePInvokePropagationCallback, pReversePInvokePropagationContext);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+#endif // NATIVEAOT
 
         [StackTraceHidden]
-        public static void FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
+        public static void FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler)
         {
-            FindRethrowExHandler(ref activeExInfo, ref exInfo, out handlingFrameSP, out pCatchHandler, out _, out _);
+            FindRethrowExHandler(ref activeExInfo, ref exInfo, out handlingFrameSP, out handlingFramePC, out pCatchHandler, out _, out _);
         }
 
         [StackTraceHidden]
-        private static void FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
+        private static void FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
 #if NATIVEAOT
 
@@ -804,11 +801,11 @@ namespace System.Runtime
             object rethrownException = activeExInfo.ThrownException;
 
             exInfo.Init(rethrownException, ref activeExInfo);
-            FindExHandler(rethrownException, ref exInfo, out handlingFrameSP, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
+            FindExHandler(rethrownException, ref exInfo, out handlingFrameSP, out handlingFramePC, out pCatchHandler, out pReversePInvokePropagationCallback, out pReversePInvokePropagationContext);
         }
 
         [StackTraceHidden]
-        private static void DispatchExFirstPass(ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
+        private static void DispatchExFirstPass(ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* handlingFramePC, out byte* pCatchHandler, out IntPtr pReversePInvokePropagationCallback, out IntPtr pReversePInvokePropagationContext)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
             object exceptionObj = exInfo.ThrownException;
@@ -924,10 +921,12 @@ namespace System.Runtime
             Debug.Assert(pCatchHandler != null || pReversePInvokePropagationCallback != IntPtr.Zero || unwoundReversePInvoke || isExceptionIntercepted, "We should have a handler if we're starting the second pass");
             Debug.Assert(!isExceptionIntercepted || (pCatchHandler == null), "No catch handler should be returned for intercepted exceptions in the first pass");
             exInfo._idxCurClause = catchingTryRegionIdx;
+            handlingFramePC = prevControlPC;
         }
 
+#if NATIVEAOT
         [StackTraceHidden]
-        private static void DispatchExSecondPass(ref ExInfo exInfo, UIntPtr handlingFrameSP, byte* pCatchHandler, IntPtr pReversePInvokePropagationCallback, IntPtr pReversePInvokePropagationContext)
+        private static void DispatchExSecondPass(ref ExInfo exInfo, UIntPtr handlingFrameSP, byte* prevControlPC, byte* pCatchHandler, IntPtr pReversePInvokePropagationCallback, IntPtr pReversePInvokePropagationContext)
         {
 
             // ------------------------------------------------
@@ -941,9 +940,7 @@ namespace System.Runtime
             // 'collapse' funclets which gets confused when we walk out of the dispatch code and encounter the
             // 'main body' without first encountering the funclet.  The thunks used to invoke 2nd-pass
             // funclets will always toggle this mode off before invoking them.
-#if NATIVEAOT
             InternalCalls.RhpSetThreadDoNotTriggerGC();
-#endif
             scoped ref StackFrameIterator frameIter = ref exInfo._frameIter;
             exInfo._passNumber = 2;
             object exceptionObj = exInfo.ThrownException;
@@ -965,10 +962,8 @@ namespace System.Runtime
 
                 if (unwoundReversePInvoke)
                 {
-#if NATIVEAOT
                     Debug.Assert(pReversePInvokePropagationCallback != IntPtr.Zero, "Unwound to a reverse P/Invoke in the second pass. We should have a propagation handler.");
                     Debug.Assert(frameIter.PreviousTransitionFrame != IntPtr.Zero, "Should have a transition frame for reverse P/Invoke.");
-#endif
                     Debug.Assert(frameIter.SP == handlingFrameSP, "Encountered a different reverse P/Invoke frame in the second pass.");
                     // Found the native frame that called the reverse P/invoke.
                     // It is not possible to run managed second pass handlers on a native frame.
@@ -992,11 +987,9 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
-#if NATIVEAOT
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
-#endif
                 Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
             }
@@ -1009,20 +1002,13 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if NATIVEAOT
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
-#else // NATIVEAOT
-            fixed (EH.ExInfo* pExInfo = &exInfo)
-            {
-                InternalCalls.RhpCallCatchFunclet(
-                    ObjectHandleOnStack.Create(ref exceptionObj), pCatchHandler, frameIter.RegisterSet, pExInfo);
-            }
-#endif // NATIVEAOT
             // currently, RhpCallCatchFunclet will resume after the catch
             Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+#endif // NATIVEAOT
 
         [System.Diagnostics.Conditional("DEBUG")]
         private static void DebugScanCallFrame(int passNumber, byte* ip, UIntPtr sp)
@@ -1227,6 +1213,7 @@ namespace System.Runtime
 #endif
         }
 
+#if NATIVEAOT
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)
         {
             InvokeSecondPass(ref exInfo, idxStart, MaxTryRegionIdx);
@@ -1311,7 +1298,6 @@ namespace System.Runtime
             }
         }
 
-#if NATIVEAOT
 #pragma warning disable IDE0060
         [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp")]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)

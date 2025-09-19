@@ -340,8 +340,6 @@ struct ExInfo
     REGDISPLAY     m_regDisplay;
     // Initial explicit frame for stack walking
     Frame         *m_pInitialFrame;
-    // Info on the last reported funclet used to report references in the parent frame
-    LastReportedFuncletInfo m_lastReportedFunclet;
 
 #ifdef TARGET_WINDOWS
     // Longjmp buffer used to restart longjmp after a block of managed frames when

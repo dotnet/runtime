@@ -1503,22 +1503,24 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         }
 
         TADDR handlingFrameSP;
+        PCODE handlingFramePC;
         PCODE pCatchHandler;
 
         GCPROTECT_BEGIN(exInfo.m_exception);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_HW_EX_HANDLER);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        DECLARE_ARGHOLDER_ARRAY(args, 5);
         args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
         args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
         args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-        args[ARGNUM_3] = PTR_TO_ARGHOLDER(&pCatchHandler);
+        args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
+        args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
         pThread->IncPreventAbort();
 
-        //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &pCatchHandler)
+        //Ex.FindHwExHandler(exceptionCode, &exInfo, &handlingFrameSP, &handlingFramePC, &pCatchHandler)
         CALL_MANAGED_METHOD_NORET(args)
 
-        DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
+        DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
 
         GCPROTECT_END();
 
@@ -1651,22 +1653,24 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     GCPROTECT_BEGIN(exInfo.m_exception);
 
     TADDR handlingFrameSP;
+    PCODE handlingFramePC;
     PCODE pCatchHandler;
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_EX_HANDLER);
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
+    DECLARE_ARGHOLDER_ARRAY(args, 5);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
     args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&pCatchHandler);
+    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
+    args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.FindExHandler(throwable, &exInfo, &handlingFrameSP, &pCatchHandler)
+    //Ex.FindExHandler(throwable, &exInfo, &handlingFrameSP, &handlingFramePC, &pCatchHandler)
     CRITICAL_CALLSITE;
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
+    DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
 
     GCPROTECT_END();
     GCPROTECT_END();
@@ -1712,22 +1716,24 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
     TADDR handlingFrameSP;
+    PCODE handlingFramePC;
     PCODE pCatchHandler;
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__FIND_RETHROW_EX_HANDLER);
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
+    DECLARE_ARGHOLDER_ARRAY(args, 5);
 
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
     args[ARGNUM_2] = PTR_TO_ARGHOLDER(&handlingFrameSP);
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&pCatchHandler);
+    args[ARGNUM_3] = PTR_TO_ARGHOLDER(&handlingFramePC);
+    args[ARGNUM_4] = PTR_TO_ARGHOLDER(&pCatchHandler);
 
     pThread->IncPreventAbort();
 
-    //Ex.FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out byte* pCatchHandler)
+    //Ex.FindRethrowExHandler(ref ExInfo activeExInfo, ref ExInfo exInfo, out UIntPtr handlingFrameSP, out UIntPtr handlingFramePC, out byte* pCatchHandler)
     CALL_MANAGED_METHOD_NORET(args)
-    DispatchExSecondPass(&exInfo, handlingFrameSP, pCatchHandler);
+    DispatchExSecondPass(&exInfo, handlingFrameSP, handlingFramePC, pCatchHandler);
 
     GCPROTECT_END();
 
@@ -4288,8 +4294,10 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
     InvokeSecondPass(pExInfo, idxStart, MaxTryRegionIdx);
 }
 
-void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE pCatchHandler)
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrameSP, PCODE handlingFramePC, PCODE pCatchHandler)
 {
+    //GCHeapUtilities::GetGCHeap()->GarbageCollect(2, FALSE, collection_aggressive);
+
     StackFrameIterator *pFrameIter = &pExInfo->m_frameIter;
     pExInfo->m_passNumber = 2;
     uint startIdx = MaxTryRegionIdx;
@@ -4318,7 +4326,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrame
 
         if ((GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) == handlingFrameSP)
 #if TARGET_ARM64
-            && (GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) == prevControlPC)
+            && (GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) == handlingFramePC)
 #endif  
             )
         {

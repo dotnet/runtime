@@ -411,18 +411,6 @@ public:
         return fShouldParentFrameUseUnwindTargetPCforGCReporting;
     }
 
-    bool ShouldParentToFuncletReportSavedFuncletSlots()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fShouldParentToFuncletReportSavedFuncletSlots;
-    }
-
-    bool ShouldSaveFuncletInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fShouldSaveFuncletInfo;
-    }
-
     const EE_ILEXCEPTION_CLAUSE& GetEHClauseForCatch()
     {
         return ehClauseForCatch;
@@ -473,8 +461,6 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
-    bool              fShouldSaveFuncletInfo;
-    bool              fShouldParentToFuncletReportSavedFuncletSlots;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
@@ -743,10 +729,6 @@ private:
     bool          m_fDidFuncletReportGCReferences;
     bool          m_isRuntimeWrappedExceptions;
 #endif // FEATURE_EH_FUNCLETS
-    // The stack walk has moved past the first ExInfo location on the stack
-    bool          m_movedPastFirstExInfo;
-    // Indicates that no funclet was seen during the current stack walk yet
-    bool          m_fFuncletNotSeen;
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
 #ifdef FEATURE_INTERPRETER
