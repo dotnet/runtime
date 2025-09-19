@@ -371,7 +371,7 @@ namespace System
                 // cost of the read and write when the write size is small.
                 // So, for all reference types and for all small structs,
                 // do the write regardless.
-                if (sizeof(T) <= 16 || j != i)
+                if (sizeof(T) <= 2 * sizeof(nint) || j != i)
                 {
                     T temp = values[i];
                     values[i] = values[j];
