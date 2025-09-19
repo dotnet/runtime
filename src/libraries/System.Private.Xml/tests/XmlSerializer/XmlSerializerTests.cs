@@ -21,39 +21,10 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
-// Shared fixture to control AppContext switches needed by XmlSerializer tests that rely on
-// disabling caching so switches can be evaluated per test scenario.
-// Using a collection fixture gives us one-time setup/teardown instead of static constructor hacks.
-public sealed class XmlSerializerSwitchFixture : IDisposable
-{
-    private const string DisableCachingSwitch = "TestSwitch.LocalAppContext.DisableCaching";
-    private readonly bool _hadDisableCaching;
-
-    public XmlSerializerSwitchFixture()
-    {
-        // Ensure caching disabled for tests needing to manipulate switches mid-run.
-        _hadDisableCaching = AppContext.TryGetSwitch(DisableCachingSwitch, out bool wasDisableCaching) && wasDisableCaching;
-        AppContext.SetSwitch(DisableCachingSwitch, true);
-    }
-
-    public void Dispose()
-    {
-        // Restore original states (best effort; product code may have cached values earlier in static fields).
-        AppContext.SetSwitch(DisableCachingSwitch, _hadDisableCaching);
-    }
-}
-
-[CollectionDefinition("XmlSerializerSwitches")]
-public sealed class XmlSerializerSwitchesCollection : ICollectionFixture<XmlSerializerSwitchFixture>
-{
-    // Intentionally empty. This class' purpose is to apply the fixture to the named collection.
-}
-
 #if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
 // Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
 #endif
-[Collection("XmlSerializerSwitches")]
 public static partial class XmlSerializerTests
 {
 #if ReflectionOnly || XMLSERIALIZERGENERATORTESTS
@@ -1120,9 +1091,6 @@ public static partial class XmlSerializerTests
     [InlineData("08:32 AM", false)]       // Helen errupts
     public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
     {
-        const string switchName = "Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss";
-        AppContext.TryGetSwitch(switchName, out bool originalEnabled);
-
         // Try straight up
         var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
         TimeOnly result = default;
@@ -1153,23 +1121,24 @@ public static partial class XmlSerializerTests
         }
 
         // Finally, try with the AppCompat switch
-        AppContext.SetSwitch(switchName, true);
-        result = default;
-        ex = Record.Exception(() =>
+        using (var timeWithOffsetLoss = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", true))
         {
-            result = DeserializeFromXmlString<TimeOnly>(xml);
-        });
-        if (succeedsWithCompat)
-        {
-            Assert.Null(ex);
-            Assert.Equal(expected, FormatTimeString(result));
+            result = default;
+            ex = Record.Exception(() =>
+            {
+                result = DeserializeFromXmlString<TimeOnly>(xml);
+            });
+            if (succeedsWithCompat)
+            {
+                Assert.Null(ex);
+                Assert.Equal(expected, FormatTimeString(result));
+            }
+            else
+            {
+                Assert.NotNull(ex);
+                Assert.IsType<InvalidOperationException>(ex);
+            }
         }
-        else
-        {
-            Assert.NotNull(ex);
-            Assert.IsType<InvalidOperationException>(ex);
-        }
-        AppContext.SetSwitch(switchName, originalEnabled);
     }
 
     [Fact]
@@ -2968,4 +2937,57 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     private static string FormatTimeString(TimeOnly time) => time.ToString($"HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
     private static string FormatTimeString(DateTime time, bool ignoreUtc)
         => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
+}
+
+internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
+{
+    private readonly string _name;
+    private readonly string _cachedName;
+    private readonly bool _hadValue;
+    private readonly bool _originalValue;
+
+    public bool OriginalValue => _originalValue;
+    public bool CurrentValue => AppContext.TryGetSwitch(_name, out bool value) && value;
+
+    public XmlSerializerAppContextSwitchScope(string name, bool value, string cachedName = null)
+    {
+        _name = name;
+        _cachedName = cachedName ?? GuessCachedName(name);
+        _hadValue = AppContext.TryGetSwitch(name, out _originalValue);
+        AppContext.SetSwitch(name, value);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    public void Dispose()
+    {
+        if (_hadValue)
+            AppContext.SetSwitch(_name, _originalValue);
+        else
+            // There's no "unset", so pick a default or false
+            AppContext.SetSwitch(_name, false);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    private static void ClearCachedSwitch(string name)
+    {
+        Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+        Assert.NotNull(t);
+
+        FieldInfo fi = t.GetField(name, BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(fi);
+        fi.SetValue(null, 0);
+    }
+    
+    private static string GuessCachedName(string name)
+    {
+        // Switch names are typically of the form "Switch.System.Xml.SomeFeature"
+        // The cached field is typically "s_someFeature"
+        int idx = name.LastIndexOf('.');
+        if (idx > 0 && idx < name.Length - 1)
+        {
+            string feature = name.Substring(idx + 1);
+            return "s_" + char.ToLowerInvariant(feature[0]) + feature.Substring(1);
+        }
+        throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
+    }
 }
