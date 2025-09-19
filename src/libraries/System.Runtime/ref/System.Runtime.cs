@@ -11191,7 +11191,7 @@ namespace System.Numerics
         public static System.Numerics.BFloat16 One { get { throw null; } }
         public static System.Numerics.BFloat16 Pi { get { throw null; } }
         public static System.Numerics.BFloat16 PositiveInfinity { get { throw null; } }
-        static System.Numerics.BFloat16 System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16,System.Numerics.BFloat16>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BFloat16 System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>.AdditiveIdentity { get { throw null; } }
         static System.Numerics.BFloat16 System.Numerics.IBinaryNumber<System.Numerics.BFloat16>.AllBitsSet { get { throw null; } }
         static int System.Numerics.INumberBase<System.Numerics.BFloat16>.Radix { get { throw null; } }
         public static System.Numerics.BFloat16 Tau { get { throw null; } }
@@ -11269,75 +11269,76 @@ namespace System.Numerics
         public static System.Numerics.BFloat16 MinMagnitudeNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
         public static System.Numerics.BFloat16 MinNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
         public static System.Numerics.BFloat16 operator +(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
-        public static explicit operator checked byte (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked char (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked short (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked int (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked long (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked System.Int128 (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked nint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked byte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked char(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked short(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked int(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked long(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked System.Int128(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked nint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked sbyte (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked sbyte(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ushort (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked ushort(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked uint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked uint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ulong (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked ulong(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked System.UInt128 (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked System.UInt128(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked nuint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked nuint(System.Numerics.BFloat16 value) { throw null; }
         public static System.Numerics.BFloat16 operator --(System.Numerics.BFloat16 value) { throw null; }
         public static System.Numerics.BFloat16 operator /(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
         public static bool operator ==(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (char value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (decimal value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (double value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (System.Half value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (System.Int128 value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (short value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (int value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (long value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (nint value) { throw null; }
-        public static explicit operator byte (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator char (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator decimal (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator double (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator System.Int128 (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator short (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator int (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator long (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator nint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(char value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(decimal value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(double value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.Half value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.Int128 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(short value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(int value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(long value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(nint value) { throw null; }
+        public static explicit operator byte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator char(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator decimal(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator double(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Half(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Int128(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator short(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator int(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator long(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator nint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator float (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator sbyte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator float(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.UInt128 (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.UInt128(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator ushort(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator uint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator ulong(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator nuint (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (float value) { throw null; }
+        public static explicit operator nuint(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (System.UInt128 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (ushort value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (uint value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (ulong value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (nuint value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(nuint value) { throw null; }
         public static bool operator >(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
         public static bool operator >=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
-        public static implicit operator System.Numerics.BFloat16 (byte value) { throw null; }
+        public static implicit operator System.Numerics.BFloat16(byte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Numerics.BFloat16 (sbyte value) { throw null; }
+        public static implicit operator System.Numerics.BFloat16(sbyte value) { throw null; }
         public static System.Numerics.BFloat16 operator ++(System.Numerics.BFloat16 value) { throw null; }
         public static bool operator !=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
         public static bool operator <(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }

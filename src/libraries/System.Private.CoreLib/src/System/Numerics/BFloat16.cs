@@ -811,6 +811,11 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static explicit operator checked nuint(BFloat16 value) => checked((nuint)(float)value);
 
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="Half" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="Half" /> value.</returns>
+        public static explicit operator Half(BFloat16 value) => (Half)(float)value;
+
         //
         // Implicit Convert To BFloat16
         //
@@ -827,7 +832,7 @@ namespace System.Numerics
         public static implicit operator BFloat16(sbyte value) => (BFloat16)(float)value;
 
         //
-        // Implicit Convert From Half (actually explicit)
+        // Implicit Convert From BFloat16 (actually explicit)
         //
 
         /// <summary>Explicitly converts a <see cref="BFloat16" /> value to its nearest representable <see cref="float"/> value.</summary>
