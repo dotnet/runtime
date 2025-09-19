@@ -68,6 +68,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
             ThrowIfEmptyHash(hash);
+            ThrowIfStreamUnreadable(source);
             ThrowIfNotSupported();
 
             return VerifyCore(
@@ -134,6 +135,13 @@ namespace System.Security.Cryptography
         {
             if (hash.IsEmpty)
                 throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
+        }
+
+
+        private static void ThrowIfStreamUnreadable(Stream source)
+        {
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
         }
 
         private static void ThrowIfNotSupported()

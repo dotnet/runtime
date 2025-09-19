@@ -91,6 +91,20 @@ namespace System.Security.Cryptography.Tests
             {
                 return KmacXof256.Verify(key, source, hash, customizationString);
             }
+
+            public static bool Verify(
+                ReadOnlySpan<byte> key,
+                Stream source,
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> customizationString)
+            {
+                return KmacXof256.Verify(key, source, hash, customizationString);
+            }
+
+            public static bool Verify(byte[] key, Stream source, byte[] hash, byte[] customizationString)
+            {
+                return KmacXof256.Verify(key, source, hash, customizationString);
+            }
         }
 
         protected override IEnumerable<KmacTestVector> TestVectors
