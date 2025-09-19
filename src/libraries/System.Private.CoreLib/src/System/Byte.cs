@@ -906,12 +906,6 @@ namespace System
                 result = (TOther)(object)actualResult;
                 return true;
             }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualResult = value;
@@ -986,12 +980,6 @@ namespace System
                 result = (TOther)(object)actualResult;
                 return true;
             }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualResult = value;
@@ -1063,12 +1051,6 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualResult = value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

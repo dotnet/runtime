@@ -898,12 +898,6 @@ namespace System
                 result = checked((short)actualValue);
                 return true;
             }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualValue = (BFloat16)(object)value;
-                result = checked((short)actualValue);
-                return true;
-            }
             else if (typeof(TOther) == typeof(int))
             {
                 int actualValue = (int)(object)value;
@@ -974,15 +968,8 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue >= BitConverter.UInt16BitsToHalf(0x7800)) /* (Half)MaxValue */ ? MaxValue :
-                         (actualValue <= BitConverter.UInt16BitsToHalf(0xF800)) /* (Half)MinValue */ ? MinValue : (short)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualValue = (BFloat16)(object)value;
-                result = (actualValue >= BitConverter.UInt16BitsToBFloat16(0x4700)) /* (BFloat16)MaxValue */ ? MaxValue :
-                         (actualValue <= BitConverter.UInt16BitsToBFloat16(0xB700)) /* (BFloat16)MinValue */ ? MinValue : (short)actualValue;
+                result = (actualValue >= BitConverter.UInt16BitsToHalf(0x7800)) ? MaxValue :
+                         (actualValue <= BitConverter.UInt16BitsToHalf(0xF800)) ? MinValue : (short)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
@@ -1062,13 +1049,6 @@ namespace System
                 Half actualValue = (Half)(object)value;
                 result = (actualValue >= BitConverter.UInt16BitsToHalf(0x7800)) ? MaxValue :
                          (actualValue <= BitConverter.UInt16BitsToHalf(0xF800)) ? MinValue : (short)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BFloat16))
-            {
-                BFloat16 actualValue = (BFloat16)(object)value;
-                result = (actualValue >= BitConverter.UInt16BitsToBFloat16(0x4700)) ? MaxValue :
-                         (actualValue <= BitConverter.UInt16BitsToBFloat16(0xB700)) ? MinValue : (short)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))

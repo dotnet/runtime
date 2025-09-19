@@ -1563,19 +1563,31 @@ namespace System.Numerics
         private static bool TryConvertFrom<TOther>(TOther value, out BFloat16 result)
             where TOther : INumberBase<TOther>
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the one that handles unsigned will also
-            // handle `Decimal`.
-            //
-            // That is, `ConvertFrom` for `BFloat16` will handle the other signed types and
-            // `ConvertTo` will handle the unsigned types
+            // `BFloat16` is non-first class type in System.Numerics namespace.
+            // It should handle all conversions from/to types under System namespace.
 
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
                 result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1608,21 +1620,51 @@ namespace System.Numerics
                 result = (BFloat16)actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(sbyte))
+            else if (typeof(TOther) == typeof(byte))
             {
-                sbyte actualValue = (sbyte)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                float actualValue = (float)(object)value;
+                byte actualValue = (byte)(object)value;
                 result = (BFloat16)actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(Half))
+            else if (typeof(TOther) == typeof(char))
             {
-                Half actualValue = (Half)(object)value;
+                char actualValue = (char)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = (BFloat16)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
                 result = (BFloat16)actualValue;
                 return true;
             }
@@ -1640,7 +1682,25 @@ namespace System.Numerics
             // `BFloat16` is non-first class type in System.Numerics namespace.
             // It should handle all conversions from/to types under System namespace.
 
-            if (typeof(TOther) == typeof(sbyte))
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
             {
                 sbyte actualResult = checked((sbyte)value);
                 result = (TOther)(object)actualResult;
@@ -1688,12 +1748,6 @@ namespace System.Numerics
                 result = (TOther)(object)actualResult;
                 return true;
             }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                decimal actualResult = checked((decimal)value);
-                result = (TOther)(object)actualResult;
-                return true;
-            }
             else if (typeof(TOther) == typeof(ushort))
             {
                 ushort actualResult = checked((ushort)value);
@@ -1721,6 +1775,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(nuint))
             {
                 nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1752,7 +1812,25 @@ namespace System.Numerics
             // `BFloat16` is non-first class type in System.Numerics namespace.
             // It should handle all conversions from/to types under System namespace.
 
-            if (typeof(TOther) == typeof(sbyte))
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
             {
                 sbyte actualResult = (value >= sbyte.MaxValue) ? sbyte.MaxValue :
                                      (value <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value;
