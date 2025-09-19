@@ -469,7 +469,7 @@ IEnumerable<(TargetPointer, TargetPointer, OptimizationTierEnum)> GetTieredVersi
     Contracts.ILoader loader = target.Contracts.Loader;
     ModuleHandle moduleHandle = // get the module handle from the method desc using rts
 
-    bool isReadyToRun = loader.GetReadyToRunInfo(moduleHandle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
+    bool isReadyToRun = loader.GetReadyToRunImageInfo(moduleHandle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
     bool isEligibleForTieredCompilation = rts.IsEligibleForTieredCompilation(mdh);
     int count = 0;
     foreach (NativeCodeVersionHandle nativeCodeVersionHandle in ((ICodeVersions)this).GetNativeCodeVersions(methodDesc, ilCodeVersion))

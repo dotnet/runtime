@@ -12,6 +12,19 @@ public enum RejitState
     Active
 }
 
+public enum OptimizationTierEnum
+{
+    Unknown = 0,
+    MinOptJitted = 1,
+    Optimized = 2,
+    QuickJitted = 3,
+    OptimizedTier1 = 4,
+    ReadyToRun = 5,
+    OptimizedTier1OSR = 6,
+    QuickJittedInstrumented = 7,
+    OptimizedTier1Instrumented = 8,
+}
+
 public interface IReJIT : IContract
 {
     static string IContract.Name { get; } = nameof(ReJIT);
@@ -21,6 +34,7 @@ public interface IReJIT : IContract
     RejitState GetRejitState(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
     TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer, TargetPointer, OptimizationTierEnum)> GetTieredVersions(TargetPointer methodDesc, int rejitId) => throw new NotImplementedException();
 }
 
 public readonly struct ReJIT : IReJIT

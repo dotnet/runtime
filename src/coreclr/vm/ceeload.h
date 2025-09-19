@@ -831,7 +831,7 @@ public:
 #ifdef FEATURE_READYTORUN
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
-    PTR_PEImageLayout m_pReadyToRunImage; // cached on the module for easy access
+    PTR_PEImageLayout       m_pReadyToRunImage; // cached on the module for easy access
     PTR_NativeImage         m_pNativeImage;
 #endif
 

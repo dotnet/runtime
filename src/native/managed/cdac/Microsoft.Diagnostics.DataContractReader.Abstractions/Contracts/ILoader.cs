@@ -90,7 +90,7 @@ public interface ILoader : IContract
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
-    bool GetReadyToRunInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd) => throw new NotImplementedException();
+    bool GetReadyToRunImageInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
     TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();

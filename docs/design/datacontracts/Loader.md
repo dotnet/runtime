@@ -66,7 +66,7 @@ string GetAppDomainFriendlyName();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
-bool GetReadyToRunInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
+bool GetReadyToRunImageInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
@@ -344,7 +344,7 @@ TargetPointer GetPEAssembly(ModuleHandle handle)
     return target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
 }
 
-bool GetReadyToRunInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd)
+bool GetReadyToRunImageInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd)
 {
     r2rImageBase = TargetPointer.Null;
     r2rImageEnd = TargetPointer.Null;

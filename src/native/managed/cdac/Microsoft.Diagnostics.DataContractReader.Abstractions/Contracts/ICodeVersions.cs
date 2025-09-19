@@ -6,24 +6,9 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public enum OptimizationTierEnum
-{
-    Unknown = 0,
-    MinOptJitted = 1,
-    Optimized = 2,
-    QuickJitted = 3,
-    OptimizedTier1 = 4,
-    ReadyToRun = 5,
-    OptimizedTier1OSR = 6,
-    QuickJittedInstrumented = 7,
-    OptimizedTier1Instrumented = 8,
-}
-
 public interface ICodeVersions : IContract
 {
     static string IContract.Name { get; } = nameof(CodeVersions);
-    public virtual IEnumerable<(TargetPointer, TargetPointer, OptimizationTierEnum)> GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs) => throw new NotImplementedException();
-
     public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc) => throw new NotImplementedException();
 
     public virtual ILCodeVersionHandle GetILCodeVersion(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();

@@ -846,6 +846,7 @@ The contract depends on the following other contracts
 | ReJIT |
 | ExecutionManager |
 | PrecodeStubs |
+| EcmaMetadata |
 
 And the following enumeration definitions
 
