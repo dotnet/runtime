@@ -11,8 +11,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using FxResources.System.Runtime.Numerics;
-using static System.Number;
 
 namespace System
 {
@@ -57,7 +55,8 @@ namespace System
             return true;
         }
 
-        internal static ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static ParsingStatus TryParseBigInteger<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
             {
@@ -66,18 +65,19 @@ namespace System
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
-                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<char>, char>(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<TChar>, TChar>(value, style, out result);
             }
 
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerBinaryParser<char>, char>(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerBinaryParser<TChar>, TChar>(value, style, out result);
             }
 
             return TryParseBigIntegerNumber(value, style, info, out result);
         }
 
-        internal static unsafe ParsingStatus TryParseBigIntegerNumber(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static unsafe ParsingStatus TryParseBigIntegerNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
@@ -87,6 +87,7 @@ namespace System
                 result = default;
                 return ParsingStatus.Failed;
             }
+
             if (value.Length < 255)
             {
                 buffer = stackalloc byte[value.Length + 1 + 1];
@@ -102,7 +103,7 @@ namespace System
             {
                 NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
-                if (!TryStringToNumber(MemoryMarshal.Cast<char, Utf16Char>(value), style, ref number, info))
+                if (!TryStringToNumber(value, style, ref number, info))
                 {
                     result = default;
                     ret = ParsingStatus.Failed;
@@ -121,7 +122,8 @@ namespace System
             return ret;
         }
 
-        internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
+        internal static BigInteger ParseBigInteger<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
             {
@@ -139,7 +141,7 @@ namespace System
 
         internal static ParsingStatus TryParseBigIntegerHexOrBinaryNumberStyle<TParser, TChar>(ReadOnlySpan<TChar> value, NumberStyles style, out BigInteger result)
             where TParser : struct, IBigIntegerHexOrBinaryParser<TParser, TChar>
-            where TChar : unmanaged, IBinaryInteger<TChar>
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             int whiteIndex;
 
@@ -148,7 +150,7 @@ namespace System
             {
                 for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
                 {
-                    if (!IsWhite(uint.CreateTruncating(value[whiteIndex])))
+                    if (!IsWhite(TChar.CastToUInt32(value[whiteIndex])))
                         break;
                 }
 
@@ -160,7 +162,7 @@ namespace System
             {
                 for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
                 {
-                    if (!IsWhite(uint.CreateTruncating(value[whiteIndex])))
+                    if (!IsWhite(TChar.CastToUInt32(value[whiteIndex])))
                         break;
                 }
 
@@ -174,7 +176,7 @@ namespace System
 
             // Remember the sign from original leading input
             // Invalid digits will be caught in parsing below
-            uint signBits = TParser.GetSignBitsIfValid(uint.CreateTruncating(value[0]));
+            uint signBits = TParser.GetSignBitsIfValid(TChar.CastToUInt32(value[0]));
 
             // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
             int leadingBitsCount = value.Length % TParser.DigitsPerBlock;
@@ -263,6 +265,12 @@ namespace System
                 {
                     // For negative values with all-zero trailing digits,
                     // It requires additional leading 1.
+                    if (bits.Length + 1 > BigInteger.MaxLength)
+                    {
+                        result = default;
+                        return ParsingStatus.Overflow;
+                    }
+
                     bits = new uint[bits.Length + 1];
                     bits[^1] = 1;
                 }
@@ -548,7 +556,8 @@ namespace System
             }
         }
 
-        private static string? FormatBigIntegerToHex(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static string? FormatBigIntegerToHex<TChar>(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(format == 'x' || format == 'X');
 
@@ -563,7 +572,7 @@ namespace System
             }
             bits = bits.Slice(0, bytesWrittenOrNeeded);
 
-            var sb = new ValueStringBuilder(stackalloc char[128]); // each byte is typically two chars
+            var sb = new ValueStringBuilder<TChar>(stackalloc TChar[128]); // each byte is typically two chars
 
             int cur = bits.Length - 1;
             if (cur > -1)
@@ -585,22 +594,22 @@ namespace System
                     // {0xF8-0xFF} print as {8-F}
                     // {0x00-0x07} print as {0-7}
                     sb.Append(head < 10 ?
-                        (char)(head + '0') :
-                        format == 'X' ? (char)((head & 0xF) - 10 + 'A') : (char)((head & 0xF) - 10 + 'a'));
+                        TChar.CastFrom(head + '0') :
+                        TChar.CastFrom(format == 'X' ? ((head & 0xF) - 10 + 'A') : ((head & 0xF) - 10 + 'a')));
                     cur--;
                 }
             }
 
             if (cur > -1)
             {
-                Span<char> chars = sb.AppendSpan((cur + 1) * 2);
+                Span<TChar> chars = sb.AppendSpan((cur + 1) * 2);
                 int charsPos = 0;
                 string hexValues = format == 'x' ? "0123456789abcdef" : "0123456789ABCDEF";
                 while (cur > -1)
                 {
                     byte b = bits[cur--];
-                    chars[charsPos++] = hexValues[b >> 4];
-                    chars[charsPos++] = hexValues[b & 0xF];
+                    chars[charsPos++] = TChar.CastFrom(hexValues[b >> 4]);
+                    chars[charsPos++] = TChar.CastFrom(hexValues[b & 0xF]);
                 }
             }
 
@@ -609,7 +618,7 @@ namespace System
                 // Insert leading zeros, e.g. user specified "X5" so we create "0ABCD" instead of "ABCD"
                 sb.Insert(
                     0,
-                    value._sign >= 0 ? '0' : (format == 'x') ? 'f' : 'F',
+                    TChar.CastFrom(value._sign >= 0 ? '0' : (format == 'x') ? 'f' : 'F'),
                     digits - sb.Length);
             }
 
@@ -632,7 +641,8 @@ namespace System
             }
         }
 
-        private static string? FormatBigIntegerToBinary(bool targetSpan, BigInteger value, int digits, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static string? FormatBigIntegerToBinary<TChar>(bool targetSpan, BigInteger value, int digits, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             // Get the bytes that make up the BigInteger.
             byte[]? arrayToReturnToPool = null;
@@ -667,7 +677,7 @@ namespace System
 
             try
             {
-                scoped ValueStringBuilder sb;
+                scoped ValueStringBuilder<TChar> sb;
                 if (targetSpan)
                 {
                     if (charsIncludeDigits > destination.Length)
@@ -677,21 +687,21 @@ namespace System
                         return null;
                     }
 
-                    // Because we have ensured destination can take actual char length, so now just use ValueStringBuilder as wrapper so that subsequent logic can be reused by 2 flows (targetSpan and non-targetSpan);
+                    // Because we have ensured destination can take actual TChar length, so now just use ValueStringBuilder as wrapper so that subsequent logic can be reused by 2 flows (targetSpan and non-targetSpan);
                     // meanwhile there is no need to copy to destination again after format data for targetSpan flow.
-                    sb = new ValueStringBuilder(destination);
+                    sb = new ValueStringBuilder<TChar>(destination);
                 }
                 else
                 {
                     // each byte is typically eight chars
                     sb = charsIncludeDigits > 512
-                        ? new ValueStringBuilder(charsIncludeDigits)
-                        : new ValueStringBuilder(stackalloc char[512]);
+                        ? new ValueStringBuilder<TChar>(charsIncludeDigits)
+                        : new ValueStringBuilder<TChar>(stackalloc TChar[512]);
                 }
 
                 if (digits > charsForBits)
                 {
-                    sb.Append(value._sign >= 0 ? '0' : '1', digits - charsForBits);
+                    sb.Append(TChar.CastFrom(value._sign >= 0 ? '0' : '1'), digits - charsForBits);
                 }
 
                 AppendByte(ref sb, highByte, charsInHighByte - 1);
@@ -722,30 +732,29 @@ namespace System
                 }
             }
 
-            static void AppendByte(ref ValueStringBuilder sb, byte b, int startHighBit = 7)
+            static void AppendByte(ref ValueStringBuilder<TChar> sb, byte b, int startHighBit = 7)
             {
                 for (int i = startHighBit; i >= 0; i--)
                 {
-                    sb.Append((char)('0' + ((b >> i) & 0x1)));
+                    sb.Append(TChar.CastFrom('0' + ((b >> i) & 0x1)));
                 }
             }
         }
 
         internal static string FormatBigInteger(BigInteger value, string? format, NumberFormatInfo info)
         {
-            return FormatBigInteger(targetSpan: false, value, format, format, info, default, out _, out _)!;
+            return FormatBigInteger<Utf16Char>(targetSpan: false, value, format, format, info, default, out _, out _)!;
         }
 
-        internal static bool TryFormatBigInteger(BigInteger value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        internal static bool TryFormatBigInteger<TChar>(BigInteger value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             FormatBigInteger(targetSpan: true, value, null, format, info, destination, out charsWritten, out bool spanSuccess);
             return spanSuccess;
         }
 
-        private static unsafe string? FormatBigInteger(
-            bool targetSpan, BigInteger value,
-            string? formatString, ReadOnlySpan<char> formatSpan,
-            NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static unsafe string? FormatBigInteger<TChar>(bool targetSpan, BigInteger value, string? formatString, ReadOnlySpan<char> formatSpan, NumberFormatInfo info, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);
 
@@ -769,7 +778,15 @@ namespace System
 
                 if (targetSpan)
                 {
-                    spanSuccess = value._sign.TryFormat(destination, out charsWritten, formatSpan, info);
+                    if (typeof(TChar) == typeof(Utf8Char))
+                    {
+                        spanSuccess = value._sign.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), out charsWritten, formatSpan, info);
+                    }
+                    else
+                    {
+                        Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+                        spanSuccess = value._sign.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination), out charsWritten, formatSpan, info);
+                    }
                     return null;
                 }
                 else
@@ -816,8 +833,8 @@ namespace System
             if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
             {
                 int strDigits = Math.Max(digits, valueDigits);
-                string? sNegative = value.Sign < 0 ? info.NegativeSign : null;
-                int strLength = strDigits + (sNegative?.Length ?? 0);
+                ReadOnlySpan<TChar> sNegative = value.Sign < 0 ? info.NegativeSignTChar<TChar>() : default;
+                int strLength = strDigits + sNegative.Length;
 
                 if (targetSpan)
                 {
@@ -828,10 +845,10 @@ namespace System
                     }
                     else
                     {
-                        sNegative?.CopyTo(destination);
-                        fixed (char* ptr = &MemoryMarshal.GetReference(destination))
+                        sNegative.CopyTo(destination);
+                        fixed (TChar* ptr = &MemoryMarshal.GetReference(destination))
                         {
-                            BigIntegerToDecChars((Utf16Char*)ptr + strLength, base1E9Value, digits);
+                            BigIntegerToDecChars(ptr + strLength, base1E9Value, digits);
                         }
                         charsWritten = strLength;
                         spanSuccess = true;
@@ -840,16 +857,26 @@ namespace System
                 }
                 else
                 {
+                    Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+
                     spanSuccess = false;
                     charsWritten = 0;
+
                     fixed (uint* ptr = base1E9Value)
                     {
-                        strResult = string.Create(strLength, (digits, ptr: (IntPtr)ptr, base1E9Value.Length, sNegative), static (span, state) =>
+                        var state = new InterpolatedStringHandlerState
                         {
-                            state.sNegative?.CopyTo(span);
+                            digits = digits,
+                            base1E9Value = base1E9Value,
+                            sNegative = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(sNegative),
+                        };
+
+                        strResult = string.Create(strLength, state, static (span, state) =>
+                        {
+                            state.sNegative.CopyTo(span);
                             fixed (char* ptr = &MemoryMarshal.GetReference(span))
                             {
-                                BigIntegerToDecChars((Utf16Char*)ptr + span.Length, new ReadOnlySpan<uint>((void*)state.ptr, state.Length), state.digits);
+                                BigIntegerToDecChars((Utf16Char*)ptr + span.Length, state.base1E9Value, state.digits);
                             }
                         });
                     }
@@ -870,7 +897,7 @@ namespace System
                     number.Scale = valueDigits;
                     number.IsNegative = value.Sign < 0;
 
-                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[CharStackBufferSize]); // arbitrary stack cut-off
+                    scoped var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]); // arbitrary stack cut-off
 
                     if (fmt != 0)
                     {
@@ -883,14 +910,23 @@ namespace System
 
                     if (targetSpan)
                     {
-                        spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+                        spanSuccess = vlb.TryCopyTo(destination, out charsWritten);
                         strResult = null;
                     }
                     else
                     {
                         charsWritten = 0;
                         spanSuccess = false;
-                        strResult = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
+
+                        if (typeof(TChar) == typeof(Utf8Char))
+                        {
+                            strResult = Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(vlb.AsSpan()));
+                        }
+                        else
+                        {
+                            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+                            strResult = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(vlb.AsSpan()).ToString();
+                        }
                     }
 
                     vlb.Dispose();
@@ -907,6 +943,13 @@ namespace System
             }
 
             return strResult;
+        }
+
+        private unsafe ref struct InterpolatedStringHandlerState
+        {
+            public int digits;
+            public ReadOnlySpan<uint> base1E9Value;
+            public ReadOnlySpan<char> sNegative;
         }
 
         private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
@@ -1347,7 +1390,7 @@ namespace System
 
     internal interface IBigIntegerHexOrBinaryParser<TParser, TChar>
         where TParser : struct, IBigIntegerHexOrBinaryParser<TParser, TChar>
-        where TChar : unmanaged, IBinaryInteger<TChar>
+        where TChar : unmanaged, IUtfChar<TChar>
     {
         static abstract int BitsPerDigit { get; }
 
@@ -1360,12 +1403,15 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static virtual bool TryParseUnalignedBlock(ReadOnlySpan<TChar> input, out uint result)
         {
-            if (typeof(TChar) == typeof(char))
+            if (typeof(TChar) == typeof(Utf8Char))
             {
-                return uint.TryParse(MemoryMarshal.Cast<TChar, char>(input), TParser.BlockNumberStyle, null, out result);
+                return uint.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input), TParser.BlockNumberStyle, null, out result);
             }
-
-            throw new NotSupportedException();
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+                return uint.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(input), TParser.BlockNumberStyle, null, out result);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1392,7 +1438,7 @@ namespace System
     }
 
     internal readonly struct BigIntegerHexParser<TChar> : IBigIntegerHexOrBinaryParser<BigIntegerHexParser<TChar>, TChar>
-        where TChar : unmanaged, IBinaryInteger<TChar>
+        where TChar : unmanaged, IUtfChar<TChar>
     {
         public static int BitsPerDigit => 4;
 
@@ -1404,31 +1450,28 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
         {
-            if (typeof(TChar) == typeof(char))
+            if ((typeof(TChar) == typeof(Utf8Char))
+                ? (Convert.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
+                : (Convert.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done))
             {
-                if (Convert.FromHexString(MemoryMarshal.Cast<TChar, char>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
-                {
-                    return false;
-                }
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    MemoryMarshal.AsBytes(destination).Reverse();
-                }
-                else
-                {
-                    destination.Reverse();
-                }
-
-                return true;
+                return false;
             }
 
-            throw new NotSupportedException();
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.AsBytes(destination).Reverse();
+            }
+            else
+            {
+                destination.Reverse();
+            }
+
+            return true;
         }
     }
 
     internal readonly struct BigIntegerBinaryParser<TChar> : IBigIntegerHexOrBinaryParser<BigIntegerBinaryParser<TChar>, TChar>
-        where TChar : unmanaged, IBinaryInteger<TChar>
+        where TChar : unmanaged, IUtfChar<TChar>
     {
         public static int BitsPerDigit => 1;
 
