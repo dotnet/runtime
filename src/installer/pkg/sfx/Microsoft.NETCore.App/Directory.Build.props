@@ -5,6 +5,7 @@
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
+    <UseWix5>true</UseWix5>
   </PropertyGroup>
 
   <!--
