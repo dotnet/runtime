@@ -1063,8 +1063,3 @@ uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
 {
     return ::WaitForSingleObjectEx(arg1, arg2, arg3);
 }
-
-void PalGetSystemTimeAsFileTime(FILETIME * arg1)
-{
-    ::GetSystemTimeAsFileTime(arg1);
-}

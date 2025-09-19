@@ -519,10 +519,7 @@ int64_t
 ep_rt_aot_system_timestamp_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    FILETIME value;
-    PalGetSystemTimeAsFileTime (&value);
-    return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+    return minipal_get_system_time();
 }
 
 int32_t
