@@ -101,12 +101,40 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     if (!pushReg)
     {
+#ifndef TARGET_X86
         // Non-tail call: we can use any callee trash register that is not
         // a return register or contain 'this' pointer (keep alive this), or
         // a continuation register, since we are generating GS cookie check
         // after a GT_RETURN block.
         // ARG_1 is EDX or RSI, depending on platform. Either way it fits our requirements
         regGSCheck = REG_ARG_1;
+
+#else // TARGET_X86
+      // on x86 REG_ARG_1 could be LNGRET_HI, so we will use REG_ARG_0,
+      // unless that contains 'this' pointer (keep alive this), in which case
+      // we use REG_ARG_1, as it could not be LNGRET_HI in such case.
+        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
+            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_0))
+        {
+            regGSCheck = REG_ARG_1;
+        }
+        else if (compiler->compIsAsync())
+        {
+            // in an async method, we can't use use REG_ARG_0 as that is also REG_ASYNC_CONTINUATION_RET
+            // so we use REG_ARG_1 and push/pop it if we have a multireg (long) return.
+            regGSCheck                        = REG_ARG_1;
+            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+            if (regCount == 2)
+            {
+                regMaskGSCheck = RBM_ECX;
+            }
+        }
+        else
+        {
+            regGSCheck = REG_ARG_0;
+        }
+#endif
     }
     else
     {
