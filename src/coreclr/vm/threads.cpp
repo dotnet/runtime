@@ -7708,7 +7708,6 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
     CONTRACTL
     {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
