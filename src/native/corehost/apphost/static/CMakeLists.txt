@@ -304,3 +304,7 @@ target_link_libraries(
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(apphost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()
