@@ -4,8 +4,6 @@
 include AsmMacros.inc
 include asmconstants.inc
 
-Thread_GetInterpThreadContext  TEXTEQU <?GetInterpThreadContext@Thread@@QEAAPEAUInterpThreadContext@@XZ>
-
 extern PInvokeImportWorker:proc
 extern ThePreStub:proc
 extern  ProfileEnter:proc
@@ -15,7 +13,7 @@ extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
-extern Thread_GetInterpThreadContext:proc
+extern GetInterpThreadContextWithPossiblyMissingThread:proc
 endif
 
 extern g_pPollGC:QWORD
@@ -573,7 +571,7 @@ NESTED_ENTRY InterpreterStub, _TEXT
 
 NoManagedThread:
         mov             rcx, r10
-        call            Thread_GetInterpThreadContext
+        call            GetInterpThreadContextWithPossiblyMissingThread
         RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
 
