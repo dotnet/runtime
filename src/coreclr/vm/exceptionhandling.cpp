@@ -787,62 +787,6 @@ OBJECTREF ExInfo::CreateThrowable(
     return oThrowable;
 }
 
-#if defined(DEBUGGING_SUPPORTED)
-
-#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-//---------------------------------------------------------------------------------------
-//
-// This function is called by DefaultCatchHandler() to intercept an exception and start an unwind.
-//
-// Arguments:
-//    pCurrentEstablisherFrame  - unused on WIN64
-//    pExceptionRecord          - EXCEPTION_RECORD of the exception being intercepted
-//
-// Return Value:
-//    ExceptionContinueSearch if the exception cannot be intercepted
-//
-// Notes:
-//    If the exception is intercepted, this function never returns.
-//
-
-EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_REGISTRATION_RECORD* pCurrentEstablisherFrame)
-                                                      EXCEPTION_RECORD* pExceptionRecord)
-{
-    if (!CheckThreadExceptionStateForInterception())
-    {
-        return ExceptionContinueSearch;
-    }
-
-    Thread*               pThread  = GetThread();
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-
-    UINT_PTR uInterceptStackFrame  = 0;
-
-    pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL,
-                                                           (PBYTE*)&uInterceptStackFrame,
-                                                           NULL, NULL);
-
-
-    GCX_COOP();
-
-    ExInfo* pExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
-    _ASSERTE(pExInfo != NULL);
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__UNWIND_AND_INTERCEPT);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pExInfo);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(uInterceptStackFrame);
-    pThread->IncPreventAbort();
-
-    //Ex.RhUnwindAndIntercept(throwable, &exInfo)
-    CRITICAL_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(args)
-
-    UNREACHABLE();
-}
-#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-#endif // DEBUGGING_SUPPORTED
-
 #ifdef _DEBUG
 //
 // static
@@ -2997,14 +2941,6 @@ void ExInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-// Mark the pinvoke frame as invoking CallCatchFunclet (and similar) for collided unwind detection
-void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
-{
-    _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
-    InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
-}
-
 // Mark the pinvoke frame as invoking any exception handling helper
 void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 {
@@ -3161,8 +3097,6 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
 
-    Frame* pFrame = pThread->GetFrame();
-//    MarkInlinedCallFrameAsFuncletCall(pFrame);
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
     DWORD_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
@@ -3339,13 +3273,10 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     }
 }
 
-extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
+void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 {
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
-
-    Frame* pFrame = pThread->GetFrame();
-    MarkInlinedCallFrameAsFuncletCall(pFrame);
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -4216,8 +4147,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     return result;
 }
 
-const uint32_t MaxTryRegionIdx = 0xFFFFFFFFu;
-
 static uint32_t CalculateCodeOffset(PCODE pbControlPC, IJitManager::MethodRegionInfo *pMethodRegionInfo)
 {
     uint codeOffset = (uint)(pbControlPC - pMethodRegionInfo->hotStartAddress);
@@ -4229,6 +4158,8 @@ static uint32_t CalculateCodeOffset(PCODE pbControlPC, IJitManager::MethodRegion
 
     return codeOffset;
 }
+
+const uint32_t MaxTryRegionIdx = 0xFFFFFFFFu;
 
 static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
 {
@@ -4312,7 +4243,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrame
 
         if (isExceptionIntercepted)
         {
-            pCatchHandler = NULL;
+            pCatchHandler = 0;
             break;
         }
 
@@ -4349,6 +4280,113 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo, TADDR handlingFrame
     // CallCatchFunclet will resume after the catch and never return here.
     UNREACHABLE();
 }
+
+#if defined(DEBUGGING_SUPPORTED)
+
+#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
+
+//
+// This function continues exception interception unwind after it crossed native frames using
+// standard EH / SEH.
+//
+VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    Thread*               pThread  = GetThread();
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
+
+    UINT_PTR uInterceptStackFrame  = 0;
+
+    pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL,
+                                                           (PBYTE*)&uInterceptStackFrame,
+                                                           NULL, NULL);
+
+
+    GCX_COOP();
+
+    ExInfo* pExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
+    _ASSERTE(pExInfo != NULL);
+    StackFrameIterator *pFrameIter = &pExInfo->m_frameIter;
+
+    pExInfo->m_passNumber = 2;
+    pExInfo->m_idxCurClause = MaxTryRegionIdx;
+    uint32_t startIdx = MaxTryRegionIdx;
+    CLR_BOOL unwoundReversePInvoke = false;
+    CLR_BOOL isExceptionIntercepted = false;
+    CLR_BOOL isValid = SfiInitWorker(pFrameIter, pExInfo->m_pExContext, ((uint8_t)pExInfo->m_kind & (uint8_t)ExKind::InstructionFaultFlag) != 0, &isExceptionIntercepted);
+    for (; isValid && (GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) <= uInterceptStackFrame); isValid = SfiNextWorker(pFrameIter, &startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
+    {
+        _ASSERTE_MSG(isValid, "Unwind and intercept failed unexpectedly");
+        _ASSERTE_MSG(GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) != NULL, "IP address must not be null");
+
+        if (unwoundReversePInvoke)
+        {
+            // Found the native frame that called the reverse P/invoke.
+            // It is not possible to run managed second pass handlers on a native frame.
+            break;
+        }
+
+        if (GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) == uInterceptStackFrame)
+        {
+            break;
+        }
+
+        InvokeSecondPass(pExInfo, startIdx);
+        if (isExceptionIntercepted)
+        {
+            _ASSERTE(FALSE);
+            break;
+        }
+    }
+
+    // ------------------------------------------------
+    //
+    // Call the interception code
+    //
+    // ------------------------------------------------
+    if (unwoundReversePInvoke)
+    {
+        CallCatchFunclet(pExInfo->m_exception, NULL, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
+    }
+    else
+    {
+        ResumeAtInterceptionLocation(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
+    }
+
+    UNREACHABLE();
+}
+
+//---------------------------------------------------------------------------------------
+//
+// This function is called by DefaultCatchHandler() to intercept an exception and start an unwind.
+//
+// Arguments:
+//    pCurrentEstablisherFrame  - unused on WIN64
+//    pExceptionRecord          - EXCEPTION_RECORD of the exception being intercepted
+//
+// Return Value:
+//    ExceptionContinueSearch if the exception cannot be intercepted
+//
+// Notes:
+//    If the exception is intercepted, this function never returns.
+//
+
+EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_REGISTRATION_RECORD* pCurrentEstablisherFrame)
+                                                      EXCEPTION_RECORD* pExceptionRecord)
+{
+    if (!CheckThreadExceptionStateForInterception())
+    {
+        return ExceptionContinueSearch;
+    }
+
+    ContinueExceptionInterceptionUnwind();
+    UNREACHABLE();
+}
+#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
 
 namespace AsmOffsetsAsserts
 {

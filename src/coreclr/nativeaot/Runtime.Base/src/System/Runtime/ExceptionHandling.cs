@@ -693,66 +693,6 @@ namespace System.Runtime
         }
 #endif
 
-#if !NATIVEAOT
-        // TODO: move this to native too
-        public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
-        {
-            exInfo._passNumber = 2;
-            exInfo._idxCurClause = MaxTryRegionIdx;
-            uint startIdx = MaxTryRegionIdx;
-            bool unwoundReversePInvoke = false;
-            bool isExceptionIntercepted = false;
-            bool isValid = exInfo._frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
-            for (; isValid && !isExceptionIntercepted && ((byte*)exInfo._frameIter.SP <= (byte*)interceptStackFrameSP); isValid = exInfo._frameIter.Next(&startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
-            {
-                Debug.Assert(isValid, "Unwind and intercept failed unexpectedly");
-                DebugScanCallFrame(exInfo._passNumber, exInfo._frameIter.ControlPC, exInfo._frameIter.SP);
-
-                if (unwoundReversePInvoke)
-                {
-                    // Found the native frame that called the reverse P/invoke.
-                    // It is not possible to run managed second pass handlers on a native frame.
-                    break;
-                }
-
-                if (exInfo._frameIter.SP == interceptStackFrameSP)
-                {
-                    break;
-                }
-
-//                InvokeSecondPass(ref exInfo, startIdx);
-                if (isExceptionIntercepted)
-                {
-                    Debug.Assert(false);
-                    break;
-                }
-            }
-
-            // ------------------------------------------------
-            //
-            // Call the interception code
-            //
-            // ------------------------------------------------
-            if (unwoundReversePInvoke)
-            {
-            //     object exceptionObj = exInfo.ThrownException;
-            //     fixed (EH.ExInfo* pExInfo = &exInfo)
-            //     {
-            //         InternalCalls.RhpCallCatchFunclet(
-            //             ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
-            //     }
-            }
-            else
-            {
-                InternalCalls.ResumeAtInterceptionLocation(exInfo._frameIter.RegisterSet);
-            }
-
-            Debug.Fail("unreachable");
-            FallbackFailFast(RhFailFastReason.InternalError, null);
-        }
-#endif // !NATIVEAOT
-
-
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
         [StackTraceHidden]
@@ -941,6 +881,7 @@ namespace System.Runtime
             // 'main body' without first encountering the funclet.  The thunks used to invoke 2nd-pass
             // funclets will always toggle this mode off before invoking them.
             InternalCalls.RhpSetThreadDoNotTriggerGC();
+
             scoped ref StackFrameIterator frameIter = ref exInfo._frameIter;
             exInfo._passNumber = 2;
             object exceptionObj = exInfo.ThrownException;

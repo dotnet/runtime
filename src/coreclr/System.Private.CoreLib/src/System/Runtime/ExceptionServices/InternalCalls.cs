@@ -20,9 +20,6 @@ namespace System.Runtime.ExceptionServices
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ResumeAtInterceptionLocation")]
-        internal static unsafe partial void ResumeAtInterceptionLocation(void* pvRegDisplay);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFilterFunclet")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpCallFilterFunclet(

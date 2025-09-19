@@ -1347,7 +1347,6 @@ DEFINE_CLASS(EH, Runtime, EH)
 DEFINE_METHOD(EH, FIND_EX_HANDLER, FindExHandler, SM_Obj_RefExInfo_RefUIntPtr_RefBytePtr_RefBytePtr_RetVoid)
 DEFINE_METHOD(EH, FIND_HW_EX_HANDLER, FindHwExHandler, SM_UInt_RefExInfo_RefUIntPtr_RefBytePtr_RefBytePtr_RetVoid)
 DEFINE_METHOD(EH, FIND_RETHROW_EX_HANDLER, FindRethrowExHandler, SM_RefExInfo_RefExInfo_RefUIntPtr_RefBytePtr_RefBytePtr_RetVoid)
-DEFINE_METHOD(EH, UNWIND_AND_INTERCEPT, RhUnwindAndIntercept, SM_RefExInfo_UIntPtr_RetVoid)
 DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 #endif // FEATURE_EH_FUNCLETS

@@ -529,7 +529,6 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_EH_FUNCLETS
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
-    DllImportEntry(ResumeAtInterceptionLocation)
     DllImportEntry(CallFilterFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
