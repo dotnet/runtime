@@ -411,5 +411,12 @@ ep_system_time_set (
 	uint16_t second,
 	uint16_t milliseconds);
 
+/*
+ * EventPipe-specific container type definitions.
+ */
+
+DN_UMAP_IT_KEY_T (threadid, ep_rt_thread_id_t)
+DN_UMAP_T (threadid, ep_rt_thread_id_t, uint32, uint32_t)
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_TYPES_H__ */
