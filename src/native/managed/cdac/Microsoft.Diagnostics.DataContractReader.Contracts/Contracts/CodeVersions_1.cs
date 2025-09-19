@@ -20,12 +20,12 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
     private enum NativeOptimizationTier : uint
     {
-        OptimizationTier0 = 0,
-        OptimizationTier1 = 1,
-        OptimizationTier1OSR = 2,
-        OptimizationTierOptimized = 3,
-        OptimizationTier0Instrumented = 4,
-        OptimizationTier1Instrumented = 5,
+        Tier0 = 0,
+        Tier1 = 1,
+        Tier1OSR = 2,
+        TierOptimized = 3,
+        Tier0Instrumented = 4,
+        Tier1Instrumented = 5,
     };
 
     private enum Stage : byte
@@ -113,14 +113,16 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (_target.ReadGlobal<byte>(Constants.Globals.FeatureTieredCompilation) == 0
                 || !IsCallCountingEnabled(mdh))
             return NativeOptimizationTier.TierOptimized;
-        else
+        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
+        if (eeConfig.TieredPGO!.Value)
         {
-            Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
-            if (eeConfig.TieredPGO_InstrumentOnlyHotCode || isReadyToRun)
+            if (eeConfig.TieredPGO_InstrumentOnlyHotCode!.Value || isReadyToRun)
                 return NativeOptimizationTier.Tier0;
             else
                 return NativeOptimizationTier.Tier0Instrumented;
         }
+        else
+            return NativeOptimizationTier.Tier0;
     }
 
     private static OptimizationTierEnum GetOptimizationTier(NativeOptimizationTier nativeOptimizationTier)

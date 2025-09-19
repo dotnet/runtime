@@ -439,15 +439,18 @@ private NativeOptimizationTier GetInitialOptimizationTier(bool isReadyToRun, Met
     if (target.ReadGlobal<byte>("FeatureTieredCompilation") == 0
             || !IsCallCountingEnabled(mdh))
         return NativeOptimizationTier.TierOptimized;
-    else
+
+    TargetPointer eeConfig = // read EEConfig global variable
+    if (/* eeConfig is TieredPGO enabled */)
     {
-        TargetPointer eeConfig = // read EEConfig global variable
         bool tieredPGO_InstrumentOnlyHotCode = // read from EEConfig
         if (tieredPGO_InstrumentOnlyHotCode || isReadyToRun)
             return NativeOptimizationTier.Tier0;
         else
             return NativeOptimizationTier.Tier0Instrumented;
     }
+    else
+        return NativeOptimizationTier.Tier0;
 }
 
 IEnumerable<(TargetPointer, TargetPointer, OptimizationTierEnum)> GetTieredVersions(TargetPointer methodDesc, int rejitId, int cNativeCodeAddrs)
