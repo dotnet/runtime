@@ -127,7 +127,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
             if (regCount == 2)
             {
-                regMaskGSCheck = RBM_ECX;
+                regMaskGSCheck = RBM_ARG_1;
             }
         }
         else
