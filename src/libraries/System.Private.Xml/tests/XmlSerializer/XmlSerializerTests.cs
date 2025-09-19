@@ -2444,7 +2444,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         // Using reflection to create an XmlSerializer for a type with ObsoletePropertyWithError
         Assert.Throws<InvalidOperationException>(() =>
         {
-            var serializer = new XmlSerializer(typeof(TypeWithObsoleteProperty));
+            var serializer = new XmlSerializer(typeof(TypeWithObsoleteErrorProperty));
             var xml = Serialize(testObject, null, () => serializer, true);
         });
     }
