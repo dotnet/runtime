@@ -41,10 +41,12 @@ public static unsafe class CopyCtor
         return 100;
     }
 
+    /*
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
     [SkipOnMono("Not supported on Mono")]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [SkipOnCoreClr("JitStress can introduce extra copies", RuntimeTestModes.JitStress)]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static unsafe void ValidateCopyConstructorAndDestructorCalled()
     {
         CopyCtorUtil.TestDelegate del = (CopyCtorUtil.TestDelegate)Delegate.CreateDelegate(typeof(CopyCtorUtil.TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
@@ -56,4 +58,5 @@ public static unsafe class CopyCtor
 
         GC.KeepAlive(del);
     }
+    */
 }

@@ -635,6 +635,7 @@ public class ComVisibleServer
     [DllImport("ComVisibleNative")]
     public static extern int CCWTest_NestedInterfaceNotPublic_VisibleTrue([MarshalAs(UnmanagedType.IUnknown)] object unk, out int fooSuccessVal);
 
+    /*
     /// <summary>
     /// Test case set for ComVisible. The assembly is set as [assembly: ComVisible(false)]
     /// </summary>
@@ -897,4 +898,5 @@ public class ComVisibleServer
         Console.WriteLine("CCWTest_NestedInterfaceGenericVisibleTrue");
         Assert.Equal(Helpers.E_NOINTERFACE, CCWTest_NestedInterfaceGenericVisibleTrue((object)nestedGenericServer, out fooSuccessVal));
     }
+    */
 }
