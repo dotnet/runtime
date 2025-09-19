@@ -1133,6 +1133,14 @@ bool interceptor_ICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return result;
 }
 
+bool interceptor_ICJI::canOmitPinning(CORINFO_FIELD_HANDLE fldHnd)
+{
+    mc->cr->AddCall("canOmitPinning");
+    bool result = original_ICorJitInfo->canOmitPinning(fldHnd);
+    mc->recCanOmitPinning(fldHnd, result);
+    return result;
+}
+
 int interceptor_ICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
     mc->cr->AddCall("getArrayOrStringLength");
