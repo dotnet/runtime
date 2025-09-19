@@ -47,12 +47,12 @@ namespace System.Diagnostics.Eventing.Reader
         /// </summary>
         private readonly ProviderMetadataCachedInformation _cachedMetadataInformation;
 
-        public EventLogReader(string path)
+        public EventLogReader(string? path)
             : this(new EventLogQuery(path, PathType.LogName), null)
         {
         }
 
-        public EventLogReader(string path, PathType pathType)
+        public EventLogReader(string? path, PathType pathType)
             : this(new EventLogQuery(path, pathType), null)
         {
         }
@@ -62,11 +62,11 @@ namespace System.Diagnostics.Eventing.Reader
         {
         }
 
-        public EventLogReader(EventLogQuery eventQuery, EventBookmark bookmark)
+        public EventLogReader(EventLogQuery eventQuery, EventBookmark? bookmark)
         {
             ArgumentNullException.ThrowIfNull(eventQuery);
 
-            string logfile = null;
+            string? logfile = null;
             if (eventQuery.ThePathType == PathType.FilePath)
                 logfile = eventQuery.Path;
 
@@ -149,12 +149,12 @@ namespace System.Diagnostics.Eventing.Reader
             return true;
         }
 
-        public EventRecord ReadEvent()
+        public EventRecord? ReadEvent()
         {
             return ReadEvent(TimeSpan.MaxValue);
         }
 
-        public EventRecord ReadEvent(TimeSpan timeout)
+        public EventRecord? ReadEvent(TimeSpan timeout)
         {
             if (_isEof)
                 throw new InvalidOperationException();
@@ -306,8 +306,8 @@ namespace System.Diagnostics.Eventing.Reader
                 if (queryHandle.IsInvalid)
                     throw new InvalidOperationException();
 
-                string[] channelNames = (string[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryNames);
-                int[] errorStatuses = (int[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryStatuses);
+                string?[] channelNames = (string?[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryNames)!;
+                int[] errorStatuses = (int[])NativeWrapper.EvtGetQueryInfo(queryHandle, UnsafeNativeMethods.EvtQueryPropertyId.EvtQueryStatuses)!;
 
                 if (channelNames.Length != errorStatuses.Length)
                     throw new InvalidOperationException();
