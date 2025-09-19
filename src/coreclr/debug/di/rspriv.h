@@ -3328,7 +3328,7 @@ public:
     }
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+    bool HandleSetThreadContextNeeded(DWORD dwThreadId);
     bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
     bool SetPendingSetIP(DWORD dwThreadId);
 #endif
@@ -4164,10 +4164,12 @@ private:
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
+    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
     void TryDetach(); // Sets detach state to TryDetach, starting the detach evacuation counter.
+    bool IsOutOfProcessStepping() { return m_dwOutOfProcessStepping != 0; }
 private:
     HANDLE m_detachSetThreadContextNeededEvent;
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
