@@ -136,10 +136,16 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>9.0.0-rtm.24511.16</runtimenativeSystemIOPortsVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
+    <MicrosoftBclAsyncInterfacesToolsetVersion>8.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
+    <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
-    <SystemTextJsonToolsetVersion>8.0.4</SystemTextJsonToolsetVersion>
+    <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
+    <SystemTextJsonToolsetVersion>8.0.5</SystemTextJsonToolsetVersion>
+    <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>    
+    <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion> 
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
-    <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
+    <SystemTextEncodingsWebToolsetVersion>8.0.0</SystemTextEncodingsWebToolsetVersion>
+    <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.25462.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.25462.1</SystemComponentModelTypeConverterTestDataVersion>
