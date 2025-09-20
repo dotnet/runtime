@@ -361,15 +361,17 @@ namespace System
         ///   This method uses <see cref="Next(int, int)" /> to choose values for shuffling.
         ///   This method is an O(n) operation.
         /// </remarks>
-        public void Shuffle<T>(Span<T> values)
+        public unsafe void Shuffle<T>(Span<T> values)
         {
-            int n = values.Length;
-
-            for (int i = 0; i < n - 1; i++)
+            for (int i = 0; i < values.Length - 1; i++)
             {
-                int j = Next(i, n);
+                int j = Next(i, values.Length);
 
-                if (j != i)
+                // Benchmarks show that the cost of the branch exceeds the
+                // cost of the read and write when the write size is small.
+                // So, for all reference types and for all small structs,
+                // do the write regardless.
+                if (sizeof(T) <= 2 * sizeof(nint) || j != i)
                 {
                     T temp = values[i];
                     values[i] = values[j];
