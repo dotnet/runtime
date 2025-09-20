@@ -193,9 +193,9 @@ namespace System.Linq
                 return Enumerable.SequenceEqual(immutableArray.array, itemsCol, comparer);
             }
 
-            return Impl(immutableArray, items, comparer);
+            return Enumerate(immutableArray, items, comparer);
 
-            static bool Impl(ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer)
+            static bool Enumerate(ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer)
             {
                 Requires.NotNull(items, nameof(items));
 
