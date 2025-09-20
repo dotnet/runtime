@@ -1840,7 +1840,7 @@ int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* thread
     threadInfo->Priority = pr.pr_pri;
     threadInfo->NiceVal = pr.pr_nice;
     // Status code, a char: ...
-    threadInfo->StatusCode = (char)pr.pr_sname;
+    threadInfo->StatusCode = (uchar_t)pr.pr_sname;
     // Thread start time and CPU time
     threadInfo->StartTime = pr.pr_start.tv_sec;
     threadInfo->StartTimeNsec = pr.pr_start.tv_nsec;

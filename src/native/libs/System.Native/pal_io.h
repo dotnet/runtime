@@ -62,7 +62,7 @@ typedef struct
     int32_t Tid;
     int32_t Priority;
     int32_t NiceVal;
-    uint8_t StatusCode;    // [ORSTWZ] See ProcFsStateToThreadState()
+    uint16_t StatusCode;        // See ProcFsStateToThreadState()
 } ThreadInfo;
 
 // NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are

@@ -7,7 +7,6 @@ namespace System.Diagnostics
 {
     public partial class ProcessThread
     {
-
         /// <summary>Gets the time this thread was started.</summary>
         internal DateTime GetStartTime()
         {
@@ -128,6 +127,5 @@ namespace System.Diagnostics
             }
             return iinfo;
         }
-
     }
 }

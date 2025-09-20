@@ -7,17 +7,38 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+// See callers:
+// ProcessManager.SunOS.cs
+// Environment.SunOS etc.
+
 internal static partial class Interop
 {
     internal static partial class @procfs
     {
 
-        // See caller: ProcessManager.SunOS.cs
+        // Constants from sys/procfs.h
+        private const int PRARGSZ = 80;
+
+        // Output type for TryGetProcessInfoById()
+        // Keep in sync with pal_io.h ProcessInfo
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ProcessInfo
+        {
+            internal ulong VirtualSize;
+            internal ulong ResidentSetSize;
+            internal long StartTime;
+            internal long StartTimeNsec;
+            internal long CpuTotalTime;
+            internal long CpuTotalTimeNsec;
+            internal int Pid;
+            internal int ParentPid;
+            internal int SessionId;
+            internal int Priority;
+            internal int NiceVal;
+        }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadProcessInfo", SetLastError = true)]
         private static unsafe partial int ReadProcessInfo(int pid, ProcessInfo* processInfo, byte* argBuf, int argBufSize);
-
-        // Handy helpers for Environment.SunOS etc.
 
         /// <summary>
         /// Attempts to get status info for the specified process ID.
@@ -29,33 +50,31 @@ internal static partial class Interop
         /// </returns>
         internal static unsafe bool TryGetProcessInfoById(int pid, out ProcessInfo processInfo)
         {
-            ProcessInfo info = default;
-            if (ReadProcessInfo(pid, &info, null, 0) < 0)
+            fixed (ProcessInfo* pProcessInfo = &processInfo)
             {
-                Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
-                throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                if (ReadProcessInfo(pid, pProcessInfo, null, 0) < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
+                    throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                }
             }
-            processInfo = info;
-
             return true;
         }
 
         // Variant that also gets the arg string.
         internal static unsafe bool TryGetProcessInfoById(int pid, out ProcessInfo processInfo, out  string argString)
         {
-            ProcessInfo info = default;
             byte* argBuf = stackalloc byte[PRARGSZ];
-            if (ReadProcessInfo(pid, &info, argBuf, PRARGSZ) < 0)
+            fixed (ProcessInfo* pProcessInfo = &processInfo)
             {
-                Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
-                throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                if (ReadProcessInfo(pid, pProcessInfo, argBuf, PRARGSZ) < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Sys.GetLastErrorInfo();
+                    throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                }
             }
-            processInfo = info;
             argString = Marshal.PtrToStringUTF8((IntPtr)argBuf)!;
-
             return true;
         }
-
-
     }
 }

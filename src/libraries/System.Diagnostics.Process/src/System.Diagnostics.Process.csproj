@@ -374,8 +374,6 @@
     <Compile Include="System\Diagnostics\Process.SunOS.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.SunOS.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.SunOS.cs" />
-    <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFs.Definitions.cs"
-             Link="Common\Interop\SunOS\procfs\Interop.ProcFs.Definitions.cs" />
     <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFs.TryGetProcessInfoById.cs"
              Link="Common\Interop\SunOS\procfs\Interop.ProcFs.TryGetProcessInfoById.cs" />
     <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFs.TryGetThreadInfoById.cs"

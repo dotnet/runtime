@@ -16,7 +16,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-
         /// <summary>Gets the time the associated process was started.</summary>
         internal DateTime StartTimeCore
         {

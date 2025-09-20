@@ -105,7 +105,8 @@ namespace System.Diagnostics
         {
             // Parse /proc for any directory that's named with a number.  Each such
             // directory represents a process.
-            foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
+            const string dir = "/proc";
+            foreach (string procDir in Directory.EnumerateDirectories(dir))
             {
                 string dirName = Path.GetFileName(procDir);
                 int pid;
@@ -122,7 +123,7 @@ namespace System.Diagnostics
         {
             // Parse /proc/$pid/lwp for any directory that's named with a number.
             // Each such directory represents a thread.
-            string dir = Interop.procfs.GetLwpDirForProcess(pid);
+            string dir = $"/proc/{(uint)pid}/lwp";
             foreach (string lwpDir in Directory.EnumerateDirectories(dir))
             {
                 string dirName = Path.GetFileName(lwpDir);
@@ -249,6 +250,5 @@ namespace System.Diagnostics
                     return ThreadState.Unknown;
             }
         }
-
     }
 }
