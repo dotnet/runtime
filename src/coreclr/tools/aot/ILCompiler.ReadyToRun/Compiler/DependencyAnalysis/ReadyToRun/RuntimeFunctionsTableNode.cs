@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            if (factory.Target.IsWindows)
+            if (factory.Target.IsWindows && !factory.OptimizationFlags.IsComponentModule)
                 return ObjectNodeSection.PDataSection;
             else
                 return ObjectNodeSection.DataSection;
@@ -156,8 +156,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _tableSize = runtimeFunctionsBuilder.CountBytes;
             return runtimeFunctionsBuilder.ToObjectData();
         }
-
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => factory.OptimizationFlags.IsComponentModule;
 
         /// <summary>
         /// Returns the runtime functions table size and excludes the 4 byte sentinel entry at the end (used by
