@@ -308,9 +308,10 @@ namespace System.Diagnostics
                             throw new ArgumentException(SR.Format(SR.InvalidCustomerLogName, logName));
                     }
 
-                    bool createLogKey = (logKey == null);
+                    bool createLogKey = false;
                     if (logKey == null)
                     {
+                        createLogKey = true;
                         if (SourceExists(logName, machineName, true))
                         {
                             if (".".Equals(machineName))
