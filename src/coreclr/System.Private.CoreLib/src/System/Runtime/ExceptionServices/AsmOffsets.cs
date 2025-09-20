@@ -122,9 +122,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0xba0;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xba8;
 #elif TARGET_WASM
-    public const int SIZEOF__REGDISPLAY = 0x34;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x2c;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x30;
+    public const int SIZEOF__REGDISPLAY = 0x54;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x4c;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x50;
 #endif
 
 #if TARGET_64BIT
