@@ -34,6 +34,13 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
 endif()
 
+# Force usage of classic linker on Xcode 15
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15 AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+    add_link_options("-Wl,-ld_classic")
+endif()
+
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
     set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
 endif (CMAKE_CONFIGURATION_TYPES)
