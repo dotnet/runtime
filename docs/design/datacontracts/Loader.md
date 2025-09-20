@@ -15,9 +15,15 @@ readonly struct ModuleHandle
 [Flags]
 enum ModuleFlags
 {
-    Tenured = 0x00000001, // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
+
+    ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+    ProfilerDisableOptimizations = 0x80,
+
+    DebuggerUserOverridePriv = 0x400,
+    DebuggerAllowJitOptsPriv = 0x800,
+    DebuggerTrackJitInfoPriv = 0x1000
 }
 
 [Flags]
@@ -60,6 +66,7 @@ string GetAppDomainFriendlyName();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
+bool GetReadyToRunInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
@@ -95,6 +102,8 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `Flags` | Assembly of the Module |
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
+| `Module` | `ReadyToRunInfo` | Pointer to ready to run info |
+| `Module` | `ReadyToRunImage` | Pointer to PE image layout structure |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
@@ -333,6 +342,20 @@ TargetPointer GetAssembly(ModuleHandle handle)
 TargetPointer GetPEAssembly(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+}
+
+bool GetReadyToRunInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd)
+{
+    r2rImageBase = TargetPointer.Null;
+    r2rImageEnd = TargetPointer.Null;
+    TargetPointer readyToRunInfo = target.ReadPointer(handle.Address + /* Module::ReadyToRunInfo offset */);
+    if (readyToRunInfo == TargetPointer.Null)
+        return false;
+
+    TargetPointer pEImageLayout = target.ReadPointer(handle.Address + /*Module::ReadyToRunImage offset */);
+    uint r2rImageBase = target.Read<uint>(pEImageLayout + /* pEImageLayout::Base offset */);
+    uint r2rImageEnd = r2rImageBase + target.Read<uint>(pEImageLayout + /*PEImageLayout::Size offset */);
+    return true;
 }
 
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)

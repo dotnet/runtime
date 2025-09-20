@@ -3097,8 +3097,55 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
-    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/ void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
-        => _legacyImpl5 is not null ? _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs) : HResults.E_NOTIMPL;
+    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, DacpTieredVersionData* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodDesc == 0 || cNativeCodeAddrs == 0 || pcNativeCodeAddrs == null)
+                throw new ArgumentException();
+
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            int count = 0;
+            foreach ((TargetPointer nativeCode, TargetPointer nativeCodeVersionNodePtr, Contracts.OptimizationTierEnum optTier) in _target.Contracts.CodeVersions.GetTieredVersions(methodDescPtr, rejitId, cNativeCodeAddrs))
+            {
+                nativeCodeAddrs[count] = default;
+                nativeCodeAddrs[count].NativeCodeAddr = nativeCode.ToClrDataAddress(_target);
+                nativeCodeAddrs[count].NativeCodeVersionNodePtr = nativeCodeVersionNodePtr.ToClrDataAddress(_target);
+                nativeCodeAddrs[count++].OptimizationTier = (DacpTieredVersionData.OptimizationTierEnum)optTier;
+            }
+            *pcNativeCodeAddrs = count;
+            if (count >= cNativeCodeAddrs)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl5 is not null)
+        {
+            DacpTieredVersionData[] nativeCodeAddrsLocal = new DacpTieredVersionData[cNativeCodeAddrs];
+            int neededLocal;
+            fixed (DacpTieredVersionData* ptr = nativeCodeAddrsLocal)
+            {
+                int hrLocal = _legacyImpl5.GetTieredVersions(methodDesc, rejitId, ptr, cNativeCodeAddrs, &neededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+                {
+                    Debug.Assert(*pcNativeCodeAddrs == neededLocal, $"cDAC: {*pcNativeCodeAddrs}, DAC: {neededLocal}");
+                    for (int i = 0; i < *pcNativeCodeAddrs; i++)
+                    {
+                        Debug.Assert(nativeCodeAddrs[i].NativeCodeAddr == nativeCodeAddrsLocal[i].NativeCodeAddr, $"cDAC: {nativeCodeAddrs[i].NativeCodeAddr:x}, DAC: {nativeCodeAddrsLocal[i].NativeCodeAddr:x}");
+                        Debug.Assert(nativeCodeAddrs[i].NativeCodeVersionNodePtr == nativeCodeAddrsLocal[i].NativeCodeVersionNodePtr, $"cDAC: {nativeCodeAddrs[i].NativeCodeVersionNodePtr:x}, DAC: {nativeCodeAddrsLocal[i].NativeCodeVersionNodePtr:x}");
+                        Debug.Assert(nativeCodeAddrs[i].OptimizationTier == nativeCodeAddrsLocal[i].OptimizationTier, $"cDAC: {nativeCodeAddrs[i].OptimizationTier}, DAC: {nativeCodeAddrsLocal[i].OptimizationTier}");
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface5
 
     #region ISOSDacInterface6

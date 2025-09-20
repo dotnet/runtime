@@ -230,6 +230,25 @@ internal struct DacpReJitData
     public ClrDataAddress NativeCodeAddr;
 };
 
+internal struct DacpTieredVersionData
+{
+    public enum OptimizationTierEnum
+    {
+        Unknown = 0,
+        MinOptJitted = 1,
+        Optimized = 2,
+        QuickJitted = 3,
+        OptimizedTier1 = 4,
+        ReadyToRun = 5,
+        OptimizedTier1OSR = 6,
+        QuickJittedInstrumented = 7,
+        OptimizedTier1Instrumented = 8,
+    }
+    public ClrDataAddress NativeCodeAddr;
+    public OptimizationTierEnum OptimizationTier;
+    public ClrDataAddress NativeCodeVersionNodePtr;
+};
+
 internal struct DacpMethodDescData
 {
     public int bHasNativeCode;
@@ -638,7 +657,7 @@ internal unsafe partial interface ISOSDacInterface4
 internal unsafe partial interface ISOSDacInterface5
 {
     [PreserveSig]
-    int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
+    int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, DacpTieredVersionData* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
 };
 
 internal struct DacpMethodTableCollectibleData

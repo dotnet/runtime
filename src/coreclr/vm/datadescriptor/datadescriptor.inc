@@ -173,6 +173,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::Dynamic
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
+CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunImage, cdac_data<Module>::ReadyToRunImage)
 CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
 CDAC_TYPE_FIELD(Module, /*pointer*/, AvailableTypeParams, offsetof(Module, m_pAvailableParamTypes))
 CDAC_TYPE_FIELD(Module, /*pointer*/, InstMethodHashTable, offsetof(Module, m_pInstMethodHashTable))
@@ -213,7 +214,25 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<Loade
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, CallCountingManager, cdac_data<LoaderAllocator>::CallCountingManager)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(CallCountingManager)
+CDAC_TYPE_INDETERMINATE(CallCountingManager)
+CDAC_TYPE_FIELD(CallCountingManager, /*pointer*/, CallCountingHash, cdac_data<CallCountingManager>::CallCountingHash)
+CDAC_TYPE_END(CallCountingManager)
+
+// the size is pointer size because this is for an SHash
+// and the entry is a pointer to this data structure
+CDAC_TYPE_BEGIN(CallCountingInfo)
+CDAC_TYPE_SIZE(sizeof(uintptr_t))
+CDAC_TYPE_FIELD(CallCountingInfo, /*pointer*/, CodeVersion, cdac_data<CallCountingManager>::CodeVersion)
+CDAC_TYPE_FIELD(CallCountingInfo, /*int8*/, Stage, cdac_data<CallCountingManager>::Stage)
+CDAC_TYPE_FIELD(CallCountingInfo, /*pointer*/, Table, cdac_data<CallCountingManager>::Table)
+CDAC_TYPE_FIELD(CallCountingInfo, /*int32*/, TableSize, cdac_data<CallCountingManager>::TableSize)
+CDAC_TYPE_END(CallCountingInfo)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
@@ -316,6 +335,16 @@ CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumStaticFields, cdac_data<EEClass>::NumSta
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEConfig)
+CDAC_TYPE_INDETERMINATE(EEConfig)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, JitMinOpts, cdac_data<EEConfig>::JitMinOpts)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, Debuggable, cdac_data<EEConfig>::Debuggable)
+#if defined(FEATURE_PGO)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, TieredPGO, cdac_data<EEConfig>::TieredPGO)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, TieredPGO_InstrumentOnlyHotCode, cdac_data<EEConfig>::TieredPGO_InstrumentOnlyHotCode)
+#endif
+CDAC_TYPE_END(EEConfig)
 
 CDAC_TYPE_BEGIN(ArrayClass)
 CDAC_TYPE_INDETERMINATE(ArrayClass)
@@ -680,10 +709,20 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<Native
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, Flags, cdac_data<NativeCodeVersionNode>::Flags)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeCodeVersionNode>::ILVersionId)
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
+#endif // FEATURE_TIERED_COMPILATION
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, NativeId, cdac_data<NativeCodeVersionNode>::NativeId)
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
 #endif // HAVE_GCCOVER
 CDAC_TYPE_END(NativeCodeVersionNode)
+
+CDAC_TYPE_BEGIN(NativeCodeVersion)
+CDAC_TYPE_INDETERMINATE(NativeCodeVersion)
+CDAC_TYPE_FIELD(NativeCodeVersion, /*uint32*/, StorageKind, cdac_data<NativeCodeVersion>::StorageKind)
+CDAC_TYPE_FIELD(NativeCodeVersion, /*pointer*/, MethodDescOrNode, cdac_data<NativeCodeVersion>::MethodDescOrNode)
+CDAC_TYPE_END(NativeCodeVersion)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
 CDAC_TYPE_INDETERMINATE(ILCodeVersionNode)
@@ -983,6 +1022,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_GLOBAL(FeatureTieredCompilation, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureTieredCompilation, uint8, 0)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
@@ -999,6 +1043,8 @@ CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMAS
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)

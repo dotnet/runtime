@@ -436,9 +436,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
+    m_pReadyToRunImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
+        m_pReadyToRunImage = m_pReadyToRunInfo->GetImage();
         if (m_pNativeImage != NULL)
         {
             m_NativeMetadataAssemblyRefMap = m_pNativeImage->GetManifestMetadataAssemblyRefMap();
@@ -2052,7 +2054,7 @@ PEImageLayout * Module::GetReadyToRunImage()
 
 #ifdef FEATURE_READYTORUN
     if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetImage();
+        return m_pReadyToRunImage;
 #endif
 
     return NULL;
