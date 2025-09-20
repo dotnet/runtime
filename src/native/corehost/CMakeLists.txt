@@ -3,10 +3,6 @@ project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
-if(CLR_CMAKE_TARGET_BROWSER)
-#    include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser)
-#    include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native)
-endif(CLR_CMAKE_TARGET_BROWSER)
 
 set(COREHOST_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
