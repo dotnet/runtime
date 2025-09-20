@@ -21,6 +21,8 @@ namespace System.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(',', Count));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(',', Count, Options));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new Rune(','), Count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new Rune(','), Count, Options));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new[] { ',' }, Count));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new[] { ',' }, Count, Options));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(",", Count));
@@ -38,6 +40,8 @@ namespace System.Tests
             {
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(',', options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(',', Count, options));
+                AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new Rune(','), options));
+                AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new Rune(','), Count, options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new[] { ',' }, options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new[] { ',' }, Count, options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(",", options));
@@ -59,10 +63,12 @@ namespace System.Tests
             const int Count = 0;
             const StringSplitOptions Options = StringSplitOptions.None;
 
-            string[] expected = new string[0];
+            string[] expected = Array.Empty<string>();
 
             Assert.Equal(expected, Value.Split(',', Count));
             Assert.Equal(expected, Value.Split(',', Count, Options));
+            Assert.Equal(expected, Value.Split(new Rune(','), Count));
+            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
             Assert.Equal(expected, Value.Split(",", Count));
@@ -85,6 +91,8 @@ namespace System.Tests
 
             Assert.Equal(expected, Value.Split(',', Options));
             Assert.Equal(expected, Value.Split(',', Count, Options));
+            Assert.Equal(expected, Value.Split(new Rune(','), Options));
+            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
             Assert.Equal(expected, Value.Split(",", Options));
@@ -109,6 +117,8 @@ namespace System.Tests
 
             Assert.Equal(expected, Value.Split(',', Count));
             Assert.Equal(expected, Value.Split(',', Count, Options));
+            Assert.Equal(expected, Value.Split(new Rune(','), Count));
+            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
             Assert.Equal(expected, Value.Split(",", Count));
@@ -142,6 +152,9 @@ namespace System.Tests
             Assert.Equal(expected, Value.Split(','));
             Assert.Equal(expected, Value.Split(',', Options));
             Assert.Equal(expected, Value.Split(',', Count, Options));
+            Assert.Equal(expected, Value.Split(new Rune(',')));
+            Assert.Equal(expected, Value.Split(new Rune(','), Options));
+            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }));
             Assert.Equal(expected, Value.Split((ReadOnlySpan<char>)new[] { ',' }));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Options));
@@ -167,6 +180,7 @@ namespace System.Tests
             Array.Clear(ranges);
 
             AssertEqual(expected, SpanValue, SpanValue.Split(','));
+            AssertEqual(expected, SpanValue, SpanValue.Split(new Rune(',')));
             AssertEqual(expected, SpanValue, SpanValue.Split(","));
             AssertEqual(expected, SpanValue, SpanValue.SplitAny(','));
             AssertEqual(expected, SpanValue, SpanValue.SplitAny(Buffers.SearchValues.Create([','])));
