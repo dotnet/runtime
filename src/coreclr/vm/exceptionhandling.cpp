@@ -409,6 +409,8 @@ void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRe
     UPDATEREG(S11);
     UPDATEREG(Fp);
 
+#elif defined(TARGET_WASM)
+    // nothing to do, wasm doesn't have registers
 #else
     PORTABILITY_ASSERT("ExInfo::UpdateNonvolatileRegisters");
 #endif
