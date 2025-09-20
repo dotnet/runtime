@@ -18,6 +18,7 @@ namespace System.Security.Cryptography
         {
             static int IHMACStatic.HashSizeInBytes => HashSizeInBytes;
             static string IHMACStatic.HashAlgorithmName => HashAlgorithmNames.SHA3_512;
+            static bool IHMACStatic.IsSupported => IsSupported;
         }
 
         private HMACCommon _hMacCommon;
@@ -64,7 +65,7 @@ namespace System.Security.Cryptography
         public HMACSHA3_512(byte[] key)
         {
             ArgumentNullException.ThrowIfNull(key);
-            CheckSha3Support();
+            HMACStatic<HMACTrait>.CheckPlatformSupport();
 
             this.HashName = HashAlgorithmNames.SHA3_512;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA3_512, key, BlockSize);
@@ -127,10 +128,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, byte[] source)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(source);
-
-            return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -141,12 +139,7 @@ namespace System.Security.Cryptography
         /// <returns>The HMAC of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
         {
-            byte[] buffer = new byte[HashSizeInBytes];
-
-            int written = HashData(key, source, buffer.AsSpan());
-            Debug.Assert(written == buffer.Length);
-
-            return buffer;
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -162,12 +155,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (!TryHashData(key, source, destination, out int bytesWritten))
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
-            return bytesWritten;
+            return HMACStatic<HMACTrait>.HashData(key, source, destination);
         }
 
         /// <summary>
@@ -185,18 +173,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            CheckSha3Support();
-
-            if (destination.Length < HashSizeInBytes)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            bytesWritten = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA3_512, key, source, destination);
-            Debug.Assert(bytesWritten == HashSizeInBytes);
-
-            return true;
+            return HMACStatic<HMACTrait>.TryHashData(key, source, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -221,16 +198,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA3_512, key, source, destination);
+            return HMACStatic<HMACTrait>.HashData(key, source, destination);
         }
 
         /// <summary>
@@ -247,13 +215,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(ReadOnlySpan<byte> key, Stream source)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA3_512, HashSizeInBytes, key, source);
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -270,9 +232,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, Stream source)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            return HashData(new ReadOnlySpan<byte>(key), source);
+            return HMACStatic<HMACTrait>.HashData(key, source);
         }
 
         /// <summary>
@@ -293,13 +253,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA3_512, key.Span, source, cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
         }
 
         /// <summary>
@@ -320,9 +274,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, cancellationToken);
         }
 
         /// <summary>
@@ -355,21 +307,7 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HmacStreamAsync(
-                HashAlgorithmNames.SHA3_512,
-                key.Span,
-                source,
-                destination,
-                cancellationToken);
+            return HMACStatic<HMACTrait>.HashDataAsync(key, source, destination, cancellationToken);
         }
 
         /// <summary>
@@ -394,7 +332,6 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
         {
-            CheckSha3Support();
             return HMACStatic<HMACTrait>.Verify(key, source, hash);
         }
 
@@ -404,7 +341,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool Verify(byte[] key, byte[] source, byte[] hash)
         {
-            CheckSha3Support();
             return HMACStatic<HMACTrait>.Verify(key, source, hash);
         }
 
@@ -435,7 +371,6 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
         {
-            CheckSha3Support();
             return HMACStatic<HMACTrait>.Verify(key, source, hash);
         }
 
@@ -445,7 +380,6 @@ namespace System.Security.Cryptography
         /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte})" />
         public static bool Verify(byte[] key, Stream source, byte[] hash)
         {
-            CheckSha3Support();
             return HMACStatic<HMACTrait>.Verify(key, source, hash);
         }
 
@@ -484,7 +418,6 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> hash,
             CancellationToken cancellationToken = default)
         {
-            CheckSha3Support();
             return HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
@@ -498,7 +431,6 @@ namespace System.Security.Cryptography
             byte[] hash,
             CancellationToken cancellationToken = default)
         {
-            CheckSha3Support();
             return HMACStatic<HMACTrait>.VerifyAsync(key, source, hash, cancellationToken);
         }
 
@@ -515,12 +447,6 @@ namespace System.Security.Cryptography
                 }
             }
             base.Dispose(disposing);
-        }
-
-        private static void CheckSha3Support()
-        {
-            if (!IsSupported)
-                throw new PlatformNotSupportedException();
         }
     }
 }
