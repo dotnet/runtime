@@ -4504,9 +4504,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgNodeThreading = NodeThreading::AllLocals;
     }
 
-    // Figure out what locals are address-taken.
+    // Simplify local accesses and analyze address exposure.
     //
-    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+    DoPhase(this, PHASE_LOCAL_MORPH, &Compiler::fgLocalMorph);
 
     // Optimize away conversions to/from masks in local variables.
     //
@@ -5872,10 +5872,10 @@ bool Compiler::skipMethod()
 
 /*****************************************************************************/
 
-int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
-                          void**                methodCodePtr,
-                          uint32_t*             methodCodeSize,
-                          JitFlags*             compileFlags)
+int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
+                                   void**                methodCodePtr,
+                                   uint32_t*             methodCodeSize,
+                                   JitFlags*             compileFlags)
 {
     // compInit should have set these already.
     noway_assert(info.compMethodInfo != nullptr);
@@ -7724,7 +7724,7 @@ START:
 
             // Now generate the code
             pParam->result =
-                pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+                pParam->pComp->compCompileAfterInit(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
         }
         finallyErrorTrap()
         {
