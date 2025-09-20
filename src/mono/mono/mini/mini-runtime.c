@@ -5080,9 +5080,9 @@ register_icalls (void)
 #endif
 	register_icall (mono_ckfinite, mono_icall_sig_double_double, FALSE);
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
-	register_icall (mono_class_interface_match, mono_icall_sig_uint32_ptr_int32, TRUE);
-#endif
+	// opt is initialized because mono_metadata_init is ran before this
+	if (mono_opt_compressed_interface_bitmap)
+		register_icall (mono_class_interface_match_compressed, mono_icall_sig_uint32_ptr_int32, TRUE);
 
 	/* other jit icalls */
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);

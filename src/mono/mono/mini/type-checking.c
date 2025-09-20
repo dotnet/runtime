@@ -134,40 +134,41 @@ static void
 mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_reg, intptr_t offset, MonoClass *klass)
 {
 	int ibitmap_reg = alloc_preg (cfg);
-#ifdef COMPRESSED_INTERFACE_BITMAP
-	MonoInst *args [2];
-	MonoInst *res, *ins;
-	NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, ibitmap_reg, base_reg, (target_mgreg_t)offset);
-	MONO_ADD_INS (cfg->cbb, ins);
-	args [0] = ins;
-	args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_IID, klass);
-	res = mono_emit_jit_icall (cfg, mono_class_interface_match, args);
-	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, intf_bit_reg, res->dreg);
-#else
-	int ibitmap_byte_reg = alloc_preg (cfg);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, base_reg, GINTPTR_TO_TMREG (offset));
-
-	if (cfg->compile_aot) {
-		int iid_reg = alloc_preg (cfg);
-		int shifted_iid_reg = alloc_preg (cfg);
-		int ibitmap_byte_address_reg = alloc_preg (cfg);
-		int masked_iid_reg = alloc_preg (cfg);
-		int iid_one_bit_reg = alloc_preg (cfg);
-		int iid_bit_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_AOTCONST (cfg, iid_reg, klass, MONO_PATCH_INFO_IID);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, shifted_iid_reg, iid_reg, 3);
-		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, ibitmap_byte_address_reg, ibitmap_reg, shifted_iid_reg);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, ibitmap_byte_reg, ibitmap_byte_address_reg, 0);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, masked_iid_reg, iid_reg, 7);
-		MONO_EMIT_NEW_ICONST (cfg, iid_one_bit_reg, 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_ISHL, iid_bit_reg, iid_one_bit_reg, masked_iid_reg);
-		MONO_EMIT_NEW_BIALU (cfg, OP_IAND, intf_bit_reg, ibitmap_byte_reg, iid_bit_reg);
+	if (mono_opt_compressed_interface_bitmap) {
+		MonoInst *args [2];
+		MonoInst *res, *ins;
+		NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, ibitmap_reg, base_reg, (target_mgreg_t)offset);
+		MONO_ADD_INS (cfg->cbb, ins);
+		args [0] = ins;
+		args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_IID, klass);
+		res = mono_emit_jit_icall (cfg, mono_class_interface_match_compressed, args);
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, intf_bit_reg, res->dreg);
 	} else {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, ibitmap_byte_reg, ibitmap_reg, m_class_get_interface_id (klass) >> 3);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, intf_bit_reg, ibitmap_byte_reg, ((target_mgreg_t)1) << (m_class_get_interface_id (klass) & 7));
+		int ibitmap_byte_reg = alloc_preg (cfg);
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, base_reg, GINTPTR_TO_TMREG (offset));
+
+		if (cfg->compile_aot) {
+			int iid_reg = alloc_preg (cfg);
+			int shifted_iid_reg = alloc_preg (cfg);
+			int ibitmap_byte_address_reg = alloc_preg (cfg);
+			int masked_iid_reg = alloc_preg (cfg);
+			int iid_one_bit_reg = alloc_preg (cfg);
+			int iid_bit_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_AOTCONST (cfg, iid_reg, klass, MONO_PATCH_INFO_IID);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, shifted_iid_reg, iid_reg, 3);
+			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, ibitmap_byte_address_reg, ibitmap_reg, shifted_iid_reg);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, ibitmap_byte_reg, ibitmap_byte_address_reg, 0);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, masked_iid_reg, iid_reg, 7);
+			MONO_EMIT_NEW_ICONST (cfg, iid_one_bit_reg, 1);
+			MONO_EMIT_NEW_BIALU (cfg, OP_ISHL, iid_bit_reg, iid_one_bit_reg, masked_iid_reg);
+			MONO_EMIT_NEW_BIALU (cfg, OP_IAND, intf_bit_reg, ibitmap_byte_reg, iid_bit_reg);
+		} else {
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, ibitmap_byte_reg, ibitmap_reg, m_class_get_interface_id (klass) >> 3);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, intf_bit_reg, ibitmap_byte_reg, ((target_mgreg_t)1) << (m_class_get_interface_id (klass) & 7));
+	    }
 	}
-#endif
 }
 
 /*

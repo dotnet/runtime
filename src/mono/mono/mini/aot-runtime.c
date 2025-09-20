@@ -1631,7 +1631,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 	char *build_info;
 	char *msg = NULL;
 	gboolean usable = TRUE;
-	gboolean full_aot, interp, safepoints;
+	gboolean full_aot, interp, safepoints, compressed_interface_bmap;
 	guint32 excluded_cpu_optimizations;
 
 	if (strcmp (assembly->image->guid, (const char*)info->assembly_guid)) {
@@ -1712,6 +1712,13 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		usable = FALSE;
 	}
 #endif
+
+	compressed_interface_bmap = info->flags & MONO_AOT_FILE_FLAG_COMPRESSED_INTERFACE_BITMAP;
+	if ((mono_opt_compressed_interface_bitmap && !compressed_interface_bmap) ||
+			(!mono_opt_compressed_interface_bitmap && compressed_interface_bmap)) {
+		msg = g_strdup ("mismatch with compressed interface bitmap feature");
+		usable = FALSE;
+	}
 
 	*out_msg = msg;
 	return usable;
