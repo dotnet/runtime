@@ -1,6 +1,6 @@
 # browserhost
 
-Is **Emscripten application** and **JavaScript wrapper and a loader**
+Is **Emscripten application** and **JavaScript wrapper and a loader** for it.
 
 ## Loader dotnet.js
 
@@ -15,7 +15,7 @@ It's **JavaScript ES6 module**
 ## Native host
 
 Implements native part of the CoreCLR host and exposes it as an internal JavaScript interface to the loader.
-It is **Emscripten application**
+It is **Emscripten application** statically linked from libraries.
 
 - `libBrowserHost.js` linked -> `dotnet.native.js`
 - `libSystem.Native.Browser.js` linked -> `dotnet.native.js`
