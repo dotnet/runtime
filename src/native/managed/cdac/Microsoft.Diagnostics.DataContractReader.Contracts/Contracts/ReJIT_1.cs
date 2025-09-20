@@ -38,24 +38,14 @@ internal readonly partial struct ReJIT_1 : IReJIT
     [Flags]
     private enum NativeOptimizationTier : uint
     {
-        Tier0 = 0,
-        Tier1 = 1,
-        Tier1OSR = 2,
-        TierOptimized = 3,
-        Tier0Instrumented = 4,
-        Tier1Instrumented = 5,
+        OptimizationTier0 = 0,
+        OptimizationTier1 = 1,
+        OptimizationTier1OSR = 2,
+        OptimizationTierOptimized = 3,
+        OptimizationTier0Instrumented = 4,
+        OptimizationTier1Instrumented = 5,
+        OptimizationTierUnknown = 0xffffffff
     };
-
-
-    public enum CallCountingStage : byte
-    {
-        StubIsNotActive = 0,
-        StubMayBeActive = 1,
-        PendingCompletion = 2,
-        Complete = 3,
-        Disabled = 4
-    };
-
 
     public ReJIT_1(Target target, Data.ProfControlBlock profControlBlock)
     {
@@ -100,96 +90,25 @@ internal readonly partial struct ReJIT_1 : IReJIT
         return ilCodeVersionNode.VersionId;
     }
 
-    private sealed class CodeVersionHashTraits : ITraits<NativeCodeVersion, CallCountingInfo>
+    private NativeOptimizationTier GetInitialOptimizationTier(TargetPointer mdPointer)
     {
-        private readonly Target _target;
-        public CodeVersionHashTraits(Target target)
-        {
-            _target = target;
-        }
-        public NativeCodeVersion GetKey(CallCountingInfo entry)
-        {
-            return _target.ProcessedData.GetOrAdd<NativeCodeVersion>(entry.CodeVersion);
-        }
-        public bool Equals(NativeCodeVersion left, NativeCodeVersion right) => left.StorageKind == right.StorageKind && left.MethodDescOrNode == right.MethodDescOrNode;
-        public uint Hash(NativeCodeVersion key)
-        {
-            switch (key.StorageKind)
-            {
-                case 1:
-                    return (uint)key.MethodDescOrNode;
-                case 2:
-                    NativeCodeVersionNode node = _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(key.MethodDescOrNode);
-                    return (uint)node.MethodDesc + node.NativeId;
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-        public bool IsNull(CallCountingInfo entry) => entry.Address == TargetPointer.Null;
-        public CallCountingInfo Null() => new CallCountingInfo(TargetPointer.Null);
-        public bool IsDeleted(CallCountingInfo entry) => false;
-    }
-
-    private sealed class CallCountingTable : IData<CallCountingTable>
-    {
-        static CallCountingTable IData<CallCountingTable>.Create(Target target, TargetPointer address)
-            => new CallCountingTable(target, address);
-
-        public CallCountingTable(Target target, TargetPointer address)
-        {
-            ISHash sHashContract = target.Contracts.SHash;
-            Target.TypeInfo type = target.GetTypeInfo(DataType.CallCountingInfo);
-            HashTable = sHashContract.CreateSHash(target, address, type, new CodeVersionHashTraits(target));
-        }
-        public ISHash<NativeCodeVersion, CallCountingInfo> HashTable { get; init; }
-    }
-    private bool IsCallCountingEnabled(MethodDescHandle mdh)
-    {
-        // get loader allocator
-        Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-        Contracts.ILoader loaderContract = _target.Contracts.Loader;
-        TargetPointer mt = rtsContract.GetMethodTable(mdh);
-        TargetPointer modulePtr = rtsContract.GetLoaderModule(rtsContract.GetTypeHandle(mt));
-        Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
-        TargetPointer loaderAllocator = loaderContract.GetLoaderAllocator(moduleHandle);
-        Data.LoaderAllocator loaderAllocatorData = _target.ProcessedData.GetOrAdd<LoaderAllocator>(loaderAllocator);
-
-        // get call counting manager and hash
-        TargetPointer callCountingMgr = loaderAllocatorData.CallCountingManager!.Value;
-        TargetPointer callCountingHash = _target.ProcessedData.GetOrAdd<CallCountingManager>(callCountingMgr).CallCountingHash;
-        CallCountingTable callCountingTable = _target.ProcessedData.GetOrAdd<CallCountingTable>(callCountingHash);
-
-        ISHash shashContract = _target.Contracts.SHash;
-        CallCountingInfo entry = shashContract.LookupSHash(callCountingTable.HashTable, new NativeCodeVersion(2, mdh.Address));
-        return entry.Address != TargetPointer.Null && entry.Stage != (byte)CallCountingStage.Disabled;
-    }
-    private NativeOptimizationTier GetInitialOptimizationTier(bool isReadyToRun, MethodDescHandle mdh)
-    {
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureTieredCompilation) == 0
-                || !IsCallCountingEnabled(mdh))
-            return NativeOptimizationTier.TierOptimized;
-        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
-        if (eeConfig.TieredPGO!.Value)
-        {
-            if (eeConfig.TieredPGO_InstrumentOnlyHotCode!.Value || isReadyToRun)
-                return NativeOptimizationTier.Tier0;
-            else
-                return NativeOptimizationTier.Tier0Instrumented;
-        }
-        else
-            return NativeOptimizationTier.Tier0;
+        // validation of the method desc
+        MethodDescHandle _ = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(mdPointer);
+        Data.MethodDesc md = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(mdPointer);
+        Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(md.CodeData);
+        return (NativeOptimizationTier)codeData.OptimizationTier;
     }
 
     private static OptimizationTierEnum GetOptimizationTier(NativeOptimizationTier nativeOptimizationTier)
     {
         return nativeOptimizationTier switch
         {
-            NativeOptimizationTier.Tier0 => OptimizationTierEnum.QuickJitted,
-            NativeOptimizationTier.Tier1 => OptimizationTierEnum.OptimizedTier1,
-            NativeOptimizationTier.Tier1OSR => OptimizationTierEnum.OptimizedTier1OSR,
-            NativeOptimizationTier.TierOptimized => OptimizationTierEnum.Optimized,
-            NativeOptimizationTier.Tier0Instrumented => OptimizationTierEnum.QuickJittedInstrumented,
-            NativeOptimizationTier.Tier1Instrumented => OptimizationTierEnum.OptimizedTier1Instrumented,
+            NativeOptimizationTier.OptimizationTier0 => OptimizationTierEnum.QuickJitted,
+            NativeOptimizationTier.OptimizationTier1 => OptimizationTierEnum.OptimizedTier1,
+            NativeOptimizationTier.OptimizationTier1OSR => OptimizationTierEnum.OptimizedTier1OSR,
+            NativeOptimizationTier.OptimizationTierOptimized => OptimizationTierEnum.Optimized,
+            NativeOptimizationTier.OptimizationTier0Instrumented => OptimizationTierEnum.QuickJittedInstrumented,
+            NativeOptimizationTier.OptimizationTier1Instrumented => OptimizationTierEnum.OptimizedTier1Instrumented,
             _ => OptimizationTierEnum.Unknown,
         };
     }
@@ -232,7 +151,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
             {
                 NativeOptimizationTier optTier;
                 if (!nativeCodeVersionHandle.IsExplicit)
-                    optTier = GetInitialOptimizationTier(isReadyToRun, mdh);
+                    optTier = GetInitialOptimizationTier(nativeCodeVersionHandle.MethodDescAddress);
                 else
                 {
                     NativeCodeVersionNode nativeCodeVersionNode = AsNode(nativeCodeVersionHandle);

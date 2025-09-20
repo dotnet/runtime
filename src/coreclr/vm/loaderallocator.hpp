@@ -912,9 +912,6 @@ struct cdac_data<LoaderAllocator>
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
     static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
     static constexpr size_t ObjectHandle = offsetof(LoaderAllocator, m_hLoaderAllocatorObjectHandle);
-#ifdef FEATURE_TIERED_COMPILATION
-    static constexpr size_t CallCountingManager = offsetof(LoaderAllocator, m_callCountingManager);
-#endif // FEATURE_TIERED_COMPILATION
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

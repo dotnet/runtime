@@ -4,7 +4,6 @@
 #pragma once
 
 #include "codeversion.h"
-#include "cdacdata.h"
 
 #ifdef FEATURE_TIERED_COMPILATION
 
@@ -249,12 +248,9 @@ private:
             static BOOL Equals(const key_t &k1, const key_t &k2);
             static count_t Hash(const key_t &k);
         };
-    friend struct ::cdac_data<CallCountingManager>;
-    friend struct ::cdac_data<SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>>;
     };
 
     typedef SHash<CallCountingInfo::CodeVersionHashTraits> CallCountingInfoByCodeVersionHash;
-    friend struct ::cdac_data<SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>>;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager::CallCountingStubAllocator
@@ -392,27 +388,10 @@ public:
 #ifdef DACCESS_COMPILE
     static void DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemoryFlags flags);
 #endif
-    friend struct ::cdac_data<CallCountingManager>;
 
     DISABLE_COPY(CallCountingManager);
 };
 
-template<>
-struct cdac_data<SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>>
-{
-    static constexpr size_t Table = offsetof(SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>, m_table);
-    static constexpr size_t TableSize = offsetof(SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>, m_tableSize);
-};
-
-template<>
-struct cdac_data<CallCountingManager>
-{
-    static constexpr size_t CallCountingHash = offsetof(CallCountingManager, m_callCountingInfoByCodeVersionHash);
-    static constexpr size_t CodeVersion = offsetof(CallCountingManager::CallCountingInfo, m_codeVersion);
-    static constexpr size_t Stage = offsetof(CallCountingManager::CallCountingInfo, m_stage);
-    static constexpr size_t Table = cdac_data<SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>>::Table;
-    static constexpr size_t TableSize = cdac_data<SHash<CallCountingManager::CallCountingInfo::CodeVersionHashTraits>>::TableSize;
-};
 ////////////////////////////////////////////////////////////////
 // CallCountingStub definitions
 

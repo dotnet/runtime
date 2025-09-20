@@ -806,6 +806,7 @@ The version 1 `MethodDesc` APIs depend on the following globals:
 | `CORDebuggerControlFlags` | A pointer to debugger control flags, that the debugger can set to control optimizations, etc. |
 | `EEConfig` | A pointer to the global EEConfig that contains global settings, etc. |
 
+
 In the runtime a `MethodDesc` implicitly belongs to a single `MethodDescChunk` and some common data is shared between method descriptors that belong to the same chunk.  A single method table
 will typically have multiple chunks.  There are subkinds of MethodDescs at runtime of varying sizes (but the sizes must be mutliples of `MethodDescAlignment`) and each chunk contains method descriptors of the same size.
 

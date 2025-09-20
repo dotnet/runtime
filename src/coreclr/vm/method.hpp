@@ -239,6 +239,7 @@ struct MethodDescCodeData final
 #ifdef FEATURE_INTERPRETER
     CallStubHeader *CallStub;
 #endif // FEATURE_INTERPRETER
+    NativeCodeVersion::OptimizationTier OptimizationTier;
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -1844,6 +1845,7 @@ public:
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+    HRESULT SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
 #ifdef FEATURE_INTERPRETER
     bool SetCallStub(CallStubHeader *pHeader);
     CallStubHeader *GetCallStub();
@@ -1852,6 +1854,7 @@ public:
 #endif //!DACCESS_COMPILE
 
     PTR_MethodDescVersioningState GetMethodDescVersionState();
+    NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
 
 public:
     inline DWORD GetClassification() const

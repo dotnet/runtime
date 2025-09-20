@@ -253,6 +253,20 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
     return S_OK;
 }
 
+HRESULT MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    if (InterlockedExchangeT(&m_codeData->OptimizationTier, tier) != NativeCodeVersion::OptimizationTierUnknown)
+        return S_FALSE;
+
+    return S_OK;
+}
+
 #ifdef FEATURE_INTERPRETER
 // Set the call stub for the interpreter to JIT/AOT calls
 // Returns true if the current call set the stub, false if it was already set
@@ -286,6 +300,15 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
     if (codeData == NULL)
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
+}
+
+NativeCodeVersion::OptimizationTier MethodDesc::GetMethodDescOptimizationTier()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NativeCodeVersion::OptimizationTierUnknown;
+    return VolatileLoadWithoutBarrier(&codeData->OptimizationTier);
 }
 
 //*******************************************************************************
@@ -2766,6 +2789,7 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         IfFailThrow(EnsureCodeDataExists(pamTracker));
+        InterlockedExchangeT(&m_codeData->OptimizationTier, NativeCodeVersion::OptimizationTierUnknown);
 
         if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, entryPoint, (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated

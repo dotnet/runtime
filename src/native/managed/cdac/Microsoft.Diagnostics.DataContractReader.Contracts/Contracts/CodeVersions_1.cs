@@ -234,69 +234,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
     }
 
-    private enum NativeStorageKind
-    {
-        Unknown = 0,
-        Explicit = 1,
-        Synthetic = 2
-    };
-
-    internal sealed class CodeVersionHashTraits : ITraits<NativeCodeVersionHandle, CallCountingInfo>
-    {
-        private readonly Target _target;
-        public CodeVersionHashTraits(Target target)
-        {
-            _target = target;
-        }
-        public NativeCodeVersionHandle GetKey(CallCountingInfo entry)
-        {
-            if (entry.CodeVersion == TargetPointer.Null)
-            {
-                return NativeCodeVersionHandle.Invalid;
-            }
-
-            Data.NativeCodeVersion codeVersion = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersion>(entry.CodeVersion);
-            switch ((NativeStorageKind)codeVersion.StorageKind)
-            {
-                case NativeStorageKind.Explicit:
-                    return NativeCodeVersionHandle.CreateExplicit(codeVersion.MethodDescOrNode);
-                case NativeStorageKind.Synthetic:
-                    return NativeCodeVersionHandle.CreateSynthetic(codeVersion.MethodDescOrNode);
-                default:
-                    throw new InvalidOperationException($"Unknown NativeCodeVersionKind {codeVersion.StorageKind}");
-            }
-        }
-        public bool Equals(NativeCodeVersionHandle left, NativeCodeVersionHandle right)
-        {
-            if (!left.Valid || !right.Valid)
-                return !left.Valid && !right.Valid;
-
-            if (left.IsExplicit != right.IsExplicit)
-                return false;
-
-            if (left.IsExplicit)
-                return left.CodeVersionNodeAddress == right.CodeVersionNodeAddress;
-            return left.MethodDescAddress == right.MethodDescAddress;
-        }
-        public uint Hash(NativeCodeVersionHandle key)
-        {
-            if (!key.Valid)
-            {
-                return 0;
-            }
-
-            if (key.IsExplicit)
-            {
-                return (uint)key.CodeVersionNodeAddress;
-            }
-            NativeCodeVersionNode node = _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(key.CodeVersionNodeAddress);
-            return (uint)(node.NativeId + node.MethodDesc);
-        }
-        public bool IsNull(CallCountingInfo entry) => entry.Address == TargetPointer.Null;
-        public CallCountingInfo Null() => new CallCountingInfo(TargetPointer.Null);
-        public bool IsDeleted(CallCountingInfo entry) => false;
-    }
-
     [Flags]
     internal enum MethodDescVersioningStateFlags : byte
     {

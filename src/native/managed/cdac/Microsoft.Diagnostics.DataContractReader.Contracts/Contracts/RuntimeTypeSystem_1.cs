@@ -114,7 +114,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer Address { get; init; }
 
         internal TargetPointer ChunkAddress { get; init; }
-        internal bool IsJitOptimizationDisabledForSpecificMethod { get; init; }
 
         internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, TargetPointer methodDescChunkAddress, Data.MethodDescChunk chunk)
         {
@@ -133,6 +132,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public ushort Slot => _desc.Slot;
         public uint Token { get; }
         public uint Size { get; }
+        internal bool IsJitOptimizationDisabledForSpecificMethod { get; }
 
         private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
