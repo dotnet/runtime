@@ -437,7 +437,7 @@ namespace System.Security.Cryptography.Tests
 
             static void AssertThrows(byte[] encodedBytes)
             {
-                CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => Assert.Throws<CryptographicException>(() => import(encodedBytes)),
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
 
@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.Tests
             byte[] spki = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).Spki;
             byte[] berSpki = AsnUtils.ConvertDerToNonDerBer(spki);
 
-            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 AssertThrowIfNotSupported(() =>
                     Assert.Throws<CryptographicException>(() => import(berSpki))));
         }
@@ -474,7 +474,7 @@ namespace System.Security.Cryptography.Tests
             algorithmIdentifier.Encode(writer);
             byte[] wrongAsnType = writer.Encode();
 
-            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
 
             CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
+        public static void ImportSubjectPublicKeyInfo_AlgorithmErrorsInAsn()
         {
 #if !NETFRAMEWORK // Does not support exporting RSA SPKI
             if (!OperatingSystem.IsBrowser())
@@ -493,7 +493,7 @@ namespace System.Security.Cryptography.Tests
                 // RSA key
                 using RSA rsa = RSA.Create();
                 byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
-                CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
             }
 #endif
@@ -509,17 +509,17 @@ namespace System.Security.Cryptography.Tests
                 SubjectPublicKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).PublicKey,
             };
 
-            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             spki.Algorithm.Parameters = AsnUtils.DerNull;
 
-            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             // Sanity check
             spki.Algorithm.Parameters = null;
-            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
         }
 
         [Fact]
