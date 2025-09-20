@@ -108,7 +108,7 @@ endif ()
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_BROWSER AND NOT MONO_LIB_NAME)
     add_subdirectory(System.Native.Browser)
     add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
 endif ()
