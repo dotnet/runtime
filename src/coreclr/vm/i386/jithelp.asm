@@ -427,14 +427,6 @@ _JIT_WriteBarrierGroup@0 PROC
 ret
 _JIT_WriteBarrierGroup@0 ENDP
 
-        ALIGN 4
-PUBLIC @JIT_WriteBarrier_Callable@8
-@JIT_WriteBarrier_Callable@8 PROC
-        mov eax,edx
-        mov edx,ecx
-        jmp DWORD PTR [_JIT_WriteBarrierEAX_Loc]
-
-@JIT_WriteBarrier_Callable@8 ENDP
 
 UniversalWriteBarrierHelper MACRO name
         ALIGN 4
