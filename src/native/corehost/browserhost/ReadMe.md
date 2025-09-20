@@ -1,6 +1,6 @@
 # browserhost
 
-Is **Emscripten application** and **JavaScript wrapper and a loader** for it.
+**Emscripten application** and **JavaScript wrapper and a loader** for it.
 
 ## Loader dotnet.js
 
