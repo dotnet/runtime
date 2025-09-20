@@ -47,7 +47,7 @@ Data descriptors used:
 | ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
 | ILCodeVersionNode | RejitState | a `RejitFlags` value |
 | MethodDesc | CodeData | Pointer to CodeData (additional info about native code) |
-| MethodDescCodeData | OptimizationTier | Optimization tier of default native code version | 
+| MethodDescCodeData | OptimizationTier | Optimization tier of default native code version |
 
 Global variables used:
 | Global Name | Type | Purpose |
