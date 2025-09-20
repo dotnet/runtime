@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using ErrorCode = Interop.NCrypt.ErrorCode;
@@ -365,9 +366,9 @@ namespace System.Security.Cryptography
 
                             NCRYPT_UI_POLICY* pNcryptUiPolicy = (NCRYPT_UI_POLICY*)pNcryptUiPolicyAndStrings;
                             uiProtectionLevel = pNcryptUiPolicy->dwFlags;
-                            friendlyName = Marshal.PtrToStringUni(pNcryptUiPolicy->pszFriendlyName);
-                            description = Marshal.PtrToStringUni(pNcryptUiPolicy->pszDescription);
-                            creationTitle = Marshal.PtrToStringUni(pNcryptUiPolicy->pszCreationTitle);
+                            friendlyName = Utf16StringMarshaller.ConvertToManaged(pNcryptUiPolicy->pszFriendlyName);
+                            description = Utf16StringMarshaller.ConvertToManaged(pNcryptUiPolicy->pszDescription);
+                            creationTitle = Utf16StringMarshaller.ConvertToManaged(pNcryptUiPolicy->pszCreationTitle);
                         }
                     }
                 }
