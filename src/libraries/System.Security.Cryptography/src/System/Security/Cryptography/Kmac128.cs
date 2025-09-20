@@ -19,6 +19,13 @@ namespace System.Security.Cryptography
     /// </remarks>
     public sealed class Kmac128 : IDisposable
     {
+        private sealed class KmacTrait : IKmacStatic
+        {
+            static string IKmacStatic.HashAlgorithmName => HashAlgorithmNames.KMAC128;
+            static bool IKmacStatic.IsSupported => IsSupported;
+            static bool IKmacStatic.IsXof => false;
+        }
+
         private ConcurrentSafeKmac _kmacProvider;
         private bool _disposed;
 
@@ -180,6 +187,82 @@ namespace System.Security.Cryptography
         {
             CheckDisposed();
             return new Kmac128(_kmacProvider.Clone());
+        }
+
+        /// <summary>
+        ///   Verifies the hash for the data accumulated from prior calls to the <c>AppendData</c> methods,
+        ///   without resetting the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash to verify.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public bool VerifyCurrentHash(ReadOnlySpan<byte> hash)
+        {
+            if (hash.IsEmpty)
+                throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
+
+            CheckDisposed();
+
+            return _kmacProvider.VerifyCurrentHash(hash);
+        }
+
+        /// <inheritdoc cref="VerifyCurrentHash(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> is <see langword="null" />.
+        /// </exception>
+        public bool VerifyCurrentHash(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyCurrentHash(new ReadOnlySpan<byte>(hash));
+        }
+
+        /// <summary>
+        ///   Verifies the hash for the data accumulated from prior calls to the <c>AppendData</c> methods,
+        ///   and resets the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash to verify.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public bool VerifyHashAndReset(ReadOnlySpan<byte> hash)
+        {
+            if (hash.IsEmpty)
+                throw new ArgumentException(SR.Argument_HashEmpty, nameof(hash));
+
+            CheckDisposed();
+
+            return _kmacProvider.VerifyHashAndReset(hash);
+        }
+
+        /// <inheritdoc cref="VerifyHashAndReset(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> is <see langword="null" />.
+        /// </exception>
+        public bool VerifyHashAndReset(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyHashAndReset(new ReadOnlySpan<byte>(hash));
         }
 
         /// <summary>
@@ -514,6 +597,150 @@ namespace System.Security.Cryptography
             CheckStreamCanRead(source);
             CheckPlatformSupport();
             return LiteHashProvider.KmacStreamAsync(HashAlgorithmNames.KMAC128, key.Span, source, xof: false, destination, customizationString.Span, cancellationToken);
+        }
+
+        /// <summary>
+        ///   Verifies the hash of data using the KMAC128 algorithm.
+        /// </summary>
+        /// <param name="key">The KMAC key.</param>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="hash">The hash to compare against.</param>
+        /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support KMAC128. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports KMAC128.
+        /// </exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public static bool Verify(
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString = default)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static bool Verify(byte[] key, byte[] source, byte[] hash, byte[]? customizationString = null)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
+        /// <summary>
+        ///   Verifies the hash of a stream using the KMAC128 algorithm.
+        /// </summary>
+        /// <param name="key">The KMAC key.</param>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="hash">The hash to compare against.</param>
+        /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash of <paramref name="source"/> is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash" /> is empty.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support KMAC128. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports KMAC128.
+        /// </exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public static bool Verify(
+            ReadOnlySpan<byte> key,
+            Stream source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString = default)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
+        /// <inheritdoc cref="Verify(ReadOnlySpan{byte}, Stream, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static bool Verify(byte[] key, Stream source, byte[] hash, byte[]? customizationString = null)
+        {
+            return KmacStatic<KmacTrait>.Verify(key, source, hash, customizationString);
+        }
+
+        /// <inheritdoc cref="VerifyAsync(ReadOnlyMemory{byte}, Stream, ReadOnlyMemory{byte}, ReadOnlyMemory{byte}, CancellationToken)" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" />, <paramref name="source" />, or <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public static ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            byte[]? customizationString = null,
+            CancellationToken cancellationToken = default)
+        {
+            return KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+        }
+
+        /// <summary>
+        ///   Asynchronously verifies the hash of a stream using the KMAC128 algorithm.
+        /// </summary>
+        /// <param name="key">The KMAC key.</param>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="hash">The hash to compare against.</param>
+        /// <param name="customizationString">An optional customization string. The default is no customization string.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>
+        ///   A task that, when awaited, produces <see langword="true" /> if the computed hash of
+        ///   <paramref name="source"/> is equal to <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="hash" /> is empty.</para>
+        ///   <para> -or- </para>
+        ///   <para><paramref name="source" /> does not support reading.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="OperationCanceledException">
+        ///   <paramref name="cancellationToken"/> has been canceled.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support KMAC128. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports KMAC128.
+        /// </exception>
+        /// <remarks>
+        ///   The length of the hash to produce and verify is determined by the length of <paramref name="hash" />.
+        ///   Callers should ensure the length of the hash meets the desired security requirements.
+        /// </remarks>
+        public static ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            ReadOnlyMemory<byte> customizationString = default,
+            CancellationToken cancellationToken = default)
+        {
+            return KmacStatic<KmacTrait>.VerifyAsync(key, source, hash, customizationString, cancellationToken);
         }
 
         private static void HashDataCore(
