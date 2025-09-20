@@ -1379,18 +1379,40 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".IndexOf('o', StringComparison.OrdinalIgnoreCase + 1));
         }
 
+        public static IEnumerable<object[]> IndexOf_Rune_StringComparison_TestData()
+        {
+            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC4f'), StringComparison.Ordinal, -1};
+            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), StringComparison.OrdinalIgnoreCase, 5};
+
+            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 5};
+            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), StringComparison.Ordinal, -1};
+
+            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uDC00'), StringComparison.Ordinal, 6};
+            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uDC00'), StringComparison.OrdinalIgnoreCase, 6};
+            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uD801'), StringComparison.OrdinalIgnoreCase, 5};
+            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uD801', '\uDC00'), StringComparison.Ordinal, 5};
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(IndexOf_Rune_StringComparison_TestData))]
+        public static void IndexOf_Ordinal_Misc(string source, Rune target, StringComparison stringComparison, int expected)
+        {
+            Assert.Equal(expected, source.IndexOf(target, stringComparison));
+        }
+
         public static IEnumerable<object[]> IndexOf_String_StringComparison_TestData()
         {
             yield return new object[] { "Hello\uD801\uDC28", "\uD801\uDC4f", StringComparison.Ordinal, -1};
             yield return new object[] { "Hello\uD801\uDC28", "\uD801\uDC00", StringComparison.OrdinalIgnoreCase, 5};
+
             yield return new object[] { "Hello\u0200\u0202", "\u0201\u0203", StringComparison.OrdinalIgnoreCase, 5};
             yield return new object[] { "Hello\u0200\u0202", "\u0201\u0203", StringComparison.Ordinal, -1};
+
             yield return new object[] { "Hello\uD801\uDC00", "\uDC00", StringComparison.Ordinal, 6};
             yield return new object[] { "Hello\uD801\uDC00", "\uDC00", StringComparison.OrdinalIgnoreCase, 6};
             yield return new object[] { "Hello\uD801\uDC00", "\uD801", StringComparison.OrdinalIgnoreCase, 5};
             yield return new object[] { "Hello\uD801\uDC00", "\uD801\uDC00", StringComparison.Ordinal, 5};
         }
-
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(IndexOf_String_StringComparison_TestData))]
@@ -1399,14 +1421,42 @@ namespace System.Tests
             Assert.Equal(expected, source.IndexOf(target, stringComparison));
         }
 
+        public static IEnumerable<object[]> LastIndexOf_Rune_StringComparison_TestData()
+        {
+            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC4f'), 6, StringComparison.Ordinal, -1};
+            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC00'), 6, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), 1, StringComparison.OrdinalIgnoreCase, 0};
+
+            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), 6, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello\u0200\u0202", new Rune('\u0201'), 1, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), 6, StringComparison.Ordinal, -1};
+
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), 6, StringComparison.Ordinal, 1};
+            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), 3, StringComparison.Ordinal, 1};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), 6, StringComparison.OrdinalIgnoreCase, 1};
+            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), 4, StringComparison.OrdinalIgnoreCase, 1};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801'), 6, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uD801Hello", new Rune('\uD801'), 0, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801', '\uDC00'), 6, StringComparison.Ordinal, 0};
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(LastIndexOf_Rune_StringComparison_TestData))]
+        public static void LastIndexOf_Ordinal_Misc(string source, Rune target, int startIndex, StringComparison stringComparison, int expected)
+        {
+            Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
+        }
+
         public static IEnumerable<object[]> LastIndexOf_String_StringComparison_TestData()
         {
             yield return new object[] { "\uD801\uDC28Hello", "\uD801\uDC4f", 6, StringComparison.Ordinal, -1};
             yield return new object[] { "\uD801\uDC28Hello", "\uD801\uDC00", 6, StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", "\uD801\uDC00", 1, StringComparison.OrdinalIgnoreCase, 0};
+
             yield return new object[] { "\u0200\u0202Hello", "\u0201\u0203", 6, StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello\u0200\u0202", "\u0201\u0203", 1, StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello", "\u0201\u0203", 6, StringComparison.Ordinal, -1};
+
             yield return new object[] { "\uD801\uDC00Hello", "\uDC00", 6, StringComparison.Ordinal, 1};
             yield return new object[] { "\uD801\uDC00Hello\uDC00", "\uDC00", 3, StringComparison.Ordinal, 1};
             yield return new object[] { "\uD801\uDC00Hello", "\uDC00", 6, StringComparison.OrdinalIgnoreCase, 1};
