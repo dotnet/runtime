@@ -144,7 +144,13 @@ internal sealed class FrameIterator
             return false;
         }
         Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
-        return inlinedCallFrame.CallerReturnAddress != 0;
+        return InlinedCallFrameHasActiveCall(inlinedCallFrame);
+    }
+
+    public static bool IsInlinedCallFrame(Target target, TargetPointer framePointer)
+    {
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePointer);
+        return GetFrameType(target, frame.Identifier) == FrameType.InlinedCallFrame;
     }
 
     public static string GetFrameName(Target target, TargetPointer frameIdentifier)
@@ -187,24 +193,7 @@ internal sealed class FrameIterator
         };
     }
 
-    private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
-    {
-        if (target.PointerSize == 4)
-        {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
-        }
-        else
-        {
-            return ((long)frame.Datum.Value & ~0xffff) != 0;
-        }
-    }
-
-    private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
-    {
-        return frame.CallerReturnAddress != TargetPointer.Null;
-    }
-
-    public static TargetPointer GetMethodDescPtr(TargetPointer framePtr, Target target)
+    public static TargetPointer GetMethodDescPtr(Target target, TargetPointer framePtr)
     {
         Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
         FrameType frameType = GetFrameType(target, frame.Identifier);
@@ -246,5 +235,37 @@ internal sealed class FrameIterator
             default:
                 return TargetPointer.Null;
         }
+    }
+
+    public static TargetPointer GetReturnAddress(Target target, TargetPointer framePtr)
+    {
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
+        FrameType frameType = GetFrameType(target, frame.Identifier);
+        switch (frameType)
+        {
+            case FrameType.InlinedCallFrame:
+                Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
+                return InlinedCallFrameHasActiveCall(inlinedCallFrame) ? inlinedCallFrame.CallerReturnAddress : TargetPointer.Null;
+            default:
+                // NotImplemented for other frame types
+                return TargetPointer.Null;
+        }
+    }
+
+    private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
+    {
+        if (target.PointerSize == 4)
+        {
+            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
+        }
+        else
+        {
+            return ((long)frame.Datum.Value & ~0xffff) != 0;
+        }
+    }
+
+    private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
+    {
+        return frame.CallerReturnAddress != TargetPointer.Null;
     }
 }

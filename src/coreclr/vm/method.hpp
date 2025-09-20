@@ -595,6 +595,8 @@ public:
 
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
 
+    bool IsCollectible();
+
     PTR_LoaderAllocator GetLoaderAllocator();
 
     Module* GetLoaderModule();

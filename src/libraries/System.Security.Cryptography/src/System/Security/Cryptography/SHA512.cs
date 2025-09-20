@@ -18,6 +18,13 @@ namespace System.Security.Cryptography
 
     public abstract class SHA512 : HashAlgorithm
     {
+        private sealed class HashTrait : IHashStatic
+        {
+            static int IHashStatic.HashSizeInBytes => HashSizeInBytes;
+            static string IHashStatic.HashAlgorithmName => HashAlgorithmNames.SHA512;
+            static bool IHashStatic.IsSupported => true;
+        }
+
         /// <summary>
         /// The hash size produced by the SHA512 algorithm, in bits.
         /// </summary>
@@ -47,27 +54,14 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         /// <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static byte[] HashData(byte[] source)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-
-            return HashData(new ReadOnlySpan<byte>(source));
-        }
+        public static byte[] HashData(byte[] source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Computes the hash of data using the SHA512 algorithm.
         /// </summary>
         /// <param name="source">The data to hash.</param>
         /// <returns>The hash of the data.</returns>
-        public static byte[] HashData(ReadOnlySpan<byte> source)
-        {
-            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeInBytes);
-
-            int written = HashData(source, buffer.AsSpan());
-            Debug.Assert(written == buffer.Length);
-
-            return buffer;
-        }
+        public static byte[] HashData(ReadOnlySpan<byte> source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Computes the hash of data using the SHA512 algorithm.
@@ -81,10 +75,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (!TryHashData(source, destination, out int bytesWritten))
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            return bytesWritten;
+            return HashStatic<HashTrait>.HashData(source, destination);
         }
 
         /// <summary>
@@ -101,16 +92,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HashSizeInBytes)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.SHA512, source, destination);
-            Debug.Assert(bytesWritten == HashSizeInBytes);
-
-            return true;
+            return HashStatic<HashTrait>.TryHashData(source, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -134,15 +116,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(Stream source, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, source, destination);
+            return HashStatic<HashTrait>.HashData(source, destination);
         }
 
         /// <summary>
@@ -156,15 +130,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException">
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
-        public static byte[] HashData(Stream source)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, HashSizeInBytes, source);
-        }
+        public static byte[] HashData(Stream source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Asynchronously computes the hash of a stream using the SHA512 algorithm.
@@ -183,12 +149,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA512, source, cancellationToken);
+            return HashStatic<HashTrait>.HashDataAsync(source, cancellationToken);
         }
 
         /// <summary>
@@ -219,19 +180,7 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStreamAsync(
-                HashAlgorithmNames.SHA512,
-                source,
-                destination,
-                cancellationToken);
+            return HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken);
         }
 
         private sealed class Implementation : SHA512

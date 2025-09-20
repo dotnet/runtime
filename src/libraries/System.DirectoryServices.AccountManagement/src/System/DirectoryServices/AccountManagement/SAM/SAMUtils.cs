@@ -144,7 +144,7 @@ namespace System.DirectoryServices.AccountManagement
 
             foreach (char c in papiString)
             {
-                if (escapeMode == false)
+                if (!escapeMode)
                 {
                     switch (c)
                     {

@@ -161,7 +161,7 @@ const typescriptConfigOptions = {
 };
 
 const outputCodePlugins = [consts(envConstants), typescript(typescriptConfigOptions)];
-const externalDependencies = ["module", "process"];
+const externalDependencies = ["module", "process", "url", "fs"];
 
 const loaderConfig = {
     treeshake: !isDebug,

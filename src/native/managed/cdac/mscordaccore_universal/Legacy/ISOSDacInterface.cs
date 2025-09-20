@@ -11,7 +11,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // See src/coreclr/inc/sospriv.idl
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-
 internal enum CLRDataOtherNotifyFlag
 {
     CLRDATA_NOTIFY_ON_MODULE_LOAD = 0x1,
@@ -656,6 +655,22 @@ internal unsafe partial interface ISOSDacInterface6
     int GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data);
 };
 
+internal struct DacpReJitData2
+{
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+        kReverted = 3,
+    };
+
+    public uint rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ClrDataAddress il;
+    public ClrDataAddress ilCodeVersionNodePtr;
+}
+
 [GeneratedComInterface]
 [Guid("c1020dde-fe98-4536-a53b-f35a74c327eb")]
 internal unsafe partial interface ISOSDacInterface7
@@ -663,7 +678,7 @@ internal unsafe partial interface ISOSDacInterface7
     [PreserveSig]
     int GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId);
     [PreserveSig]
-    int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData);
+    int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData);
     [PreserveSig]
     int GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData);
     [PreserveSig]

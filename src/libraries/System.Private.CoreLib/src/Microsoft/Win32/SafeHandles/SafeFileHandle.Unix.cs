@@ -71,7 +71,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             set
             {
-                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                Debug.Assert(!value); // We should only use the setter to disable random access.
                 _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
             }
         }

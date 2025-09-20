@@ -2030,7 +2030,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (typeInfo == null || (typeInfo.Name == "object" && !invokeToStringInObject))
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
-                    if (isEnum != true && methodInfo == null)
+                    if (!isEnum && methodInfo == null)
                         continue;
                     int[] methodIds = await GetMethodIdsByName(typeId, "ToString", extraFlags, token);
                     if (methodIds == null)

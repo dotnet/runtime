@@ -66,6 +66,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    NativeObjectWrapperObject,
     String,
     MethodDesc,
     MethodDescChunk,
@@ -112,6 +113,7 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
 

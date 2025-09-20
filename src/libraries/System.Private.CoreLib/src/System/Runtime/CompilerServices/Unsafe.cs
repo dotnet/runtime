@@ -61,7 +61,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull(nameof(o))]
-        public static T As<T>(object? o) where T : class?
+        public static T? As<T>(object? o) where T : class?
         {
             throw new PlatformNotSupportedException();
 

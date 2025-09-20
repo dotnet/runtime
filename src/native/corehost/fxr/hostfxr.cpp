@@ -166,6 +166,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
 enum hostfxr_resolve_sdk2_flags_t : int32_t
 {
     disallow_prerelease = 0x1,
+    do_not_print_errors = 0x2,
 };
 
 enum class hostfxr_resolve_sdk2_result_key_t : int32_t
@@ -218,6 +219,8 @@ namespace
 //         disallow_prerelease (0x1)
 //           do not allow resolution to return a prerelease SDK version
 //           unless  prerelease version was specified via global.json.
+//         do_not_print_errors (0x2)
+//           do not write any error messages to stderr.
 //
 //   result
 //      Callback invoked to return values. It can be invoked more
@@ -282,7 +285,9 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
         working_dir,
         (flags & hostfxr_resolve_sdk2_flags_t::disallow_prerelease) == 0);
 
-    auto resolved_sdk_dir = resolver.resolve(exe_dir);
+    auto resolved_sdk_dir = resolver.resolve(
+        exe_dir,
+        (flags & hostfxr_resolve_sdk2_flags_t::do_not_print_errors) == 0);
     if (!resolved_sdk_dir.empty())
     {
         result(

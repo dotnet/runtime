@@ -162,9 +162,8 @@ namespace System.Net.Test.Common
                 }
             }
 
-            internal static PkiHolder GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false)
+            internal static PkiHolder GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false, bool forceRsaCertificate = false)
             {
-                const int keySize = 2048;
                 if (PlatformDetection.IsWindows && testName != null)
                 {
                     CleanupCertificates(testName);
@@ -182,7 +181,9 @@ namespace System.Net.Test.Common
                     intermediateAuthorityCount: longChain ? 3 : 1,
                     subjectName: targetName,
                     testName: testName,
-                    keyFactory: CertificateAuthority.KeyFactory.RSASize(keySize),
+                    forTls: true,
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/119641")]
+                    keyFactory: !forceRsaCertificate ? null : CertificateAuthority.KeyFactory.RSASize(2048),
                     extensions: extensions);
 
                 if (!ephemeralKey && PlatformDetection.IsWindows)

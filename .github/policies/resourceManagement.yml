@@ -1772,6 +1772,7 @@ configuration:
       - mentionUsers:
           mentionees:
           - lewing
+          - pavelsavara
           replyTemplate: >-
             Tagging subscribers to 'arch-wasm': ${mentionees}
 

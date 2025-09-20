@@ -9,6 +9,10 @@
 #include "corerun.hpp"
 #include "dotenv.hpp"
 
+#ifdef TARGET_WASM
+#include "corerun.wasm.hpp"
+#endif
+
 #include <fstream>
 
 using char_t = pal::char_t;
@@ -485,6 +489,11 @@ static int run(const configuration& config)
     {
         coreclr_set_error_writer_func(log_error_info);
     }
+
+#ifdef TARGET_WASM
+    // install the pinvoke override callback to resolve p/invokes to statically linked libraries
+    wasm_add_pinvoke_override();
+#endif
 
     int result;
     result = coreclr_init_func(

@@ -5,7 +5,7 @@
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
 
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
-    <RunScriptCommand>$(ExecXHarnessVar) wasm test --app=. --engine=V8 --engine-arg=--stack-trace-limit=1000 --engine-arg=--module --js-file=main.mjs --output-directory=$(XHarnessOutputVar) -- --run $(MSBuildProjectName).dll</RunScriptCommand>
+    <RunScriptCommand>$(ExecXHarnessVar) wasm test --app=. --engine=V8 --engine-arg=--stack-trace-limit=1000 --js-file=main.mjs --output-directory=$(XHarnessOutputVar)</RunScriptCommand>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />

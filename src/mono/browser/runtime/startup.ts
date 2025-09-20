@@ -9,10 +9,9 @@ import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, cr
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
-import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_wasm_init_log_profiler } from "./profiler";
+import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_wasm_init_log_profiler, TimeStamp } from "./profiler";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
-import { init_polyfills_async } from "./polyfills";
 import { strings_init, stringToUTF8Ptr, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
@@ -37,7 +36,7 @@ import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 // make pid positive 31bit integer based on startup time
 const pid = ((globalThis.performance?.timeOrigin ?? Date.now()) | 0) & 0x7FFFFFFF;
 
-export function mono_wasm_process_current_pid ():number {
+export function SystemJS_GetCurrentProcessId ():number {
     return pid;
 }
 
@@ -58,25 +57,39 @@ export async function configureRuntimeStartup (module: DotnetModuleInternal): Pr
     }
     loaderHelpers.out = module.print;
     loaderHelpers.err = module.printErr;
-    await init_polyfills_async();
+    await ensureUsedWasmFeatures();
 }
 
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
 export function configureEmscriptenStartup (module: DotnetModuleInternal): void {
-    const mark = startMeasure();
+    const startMark = startMeasure();
 
     if (!module.locateFile) {
         // this is dummy plug so that wasmBinaryFile doesn't try to use URL class
         module.locateFile = module.__locateFile = (path) => loaderHelpers.scriptDirectory + path;
     }
 
+    if (loaderHelpers.gitHash !== runtimeHelpers.gitHash) {
+        mono_log_warn(`The version of dotnet.runtime.js ${runtimeHelpers.gitHash} is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
+    }
+    if (loaderHelpers.gitHash !== runtimeHelpers.emscriptenBuildOptions.gitHash) {
+        mono_log_warn(`The version of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.gitHash} is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
+    }
+    if (WasmEnableThreads !== runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads) {
+        mono_log_warn(`The threads of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads} is different from the version of dotnet.runtime.js ${WasmEnableThreads}!`);
+    }
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
+        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
+        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
     const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any) = module.instantiateWasm;
-    const userPreInit: ((module:EmscriptenModule) => void)[] = !module.preInit ? [] : typeof module.preInit === "function" ? [module.preInit] : module.preInit;
     const userPreRun: ((module:EmscriptenModule) => void)[] = !module.preRun ? [] : typeof module.preRun === "function" ? [module.preRun] : module.preRun as any;
     const userpostRun: ((module:EmscriptenModule) => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -86,27 +99,14 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
     // - default or user Module.instantiateWasm (will start downloading dotnet.native.wasm)
     module.instantiateWasm = (imports, callback) => instantiateWasm(imports, callback, userInstantiateWasm);
     // execution order == [1] ==
-    module.preInit = [() => preInit(userPreInit)];
+    // module.preInit
     // execution order == [2] ==
     module.preRun = [() => preRunAsync(userPreRun)];
     // execution order == [4] ==
     module.onRuntimeInitialized = () => onRuntimeInitializedAsync(userOnRuntimeInitialized);
     // execution order == [5] ==
-    module.postRun = [() => postRunAsync(userpostRun)];
+    module.postRun = [() => postRunAsync(userpostRun, startMark)];
     // execution order == [6] ==
-
-    module.ready.then(async () => {
-        // wait for previous stage
-        await runtimeHelpers.afterPostRun.promise;
-        // startup end
-        endMeasure(mark, MeasuredBlock.emscriptenStartup);
-        // - here we resolve the promise returned by createDotnetRuntime export
-        // - any code after createDotnetRuntime is executed now
-        runtimeHelpers.dotnetReady.promise_control.resolve(exportedRuntimeAPI);
-    }).catch(err => {
-        runtimeHelpers.dotnetReady.promise_control.reject(err);
-    });
-    module.ready = runtimeHelpers.dotnetReady.promise;
 }
 
 function instantiateWasm (
@@ -135,8 +135,6 @@ async function instantiateWasmWorker (
 ): Promise<void> {
     if (!WasmEnableThreads) return;
 
-    await ensureUsedWasmFeatures();
-
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
@@ -150,67 +148,15 @@ async function instantiateWasmWorker (
     Module.wasmModule = null;
 }
 
-function preInit (userPreInit: ((module:EmscriptenModule) => void)[]) {
-    Module.addRunDependency("mono_pre_init");
-    const mark = startMeasure();
-    try {
-        mono_wasm_pre_init_essential(false);
-        mono_log_debug("preInit");
-        runtimeHelpers.beforePreInit.promise_control.resolve();
-        // all user Module.preInit callbacks
-        userPreInit.forEach(fn => fn(Module));
-    } catch (err) {
-        mono_log_error("user preInint() failed", err);
-        loaderHelpers.mono_exit(1, err);
-        throw err;
-    }
-    // this will start immediately but return on first await.
-    // It will block our `preRun` by afterPreInit promise
-    // It will block emscripten `userOnRuntimeInitialized` by pending addRunDependency("mono_pre_init")
-    (async () => {
-        try {
-            // - init the rest of the polyfills
-            await mono_wasm_pre_init_essential_async();
-
-            endMeasure(mark, MeasuredBlock.preInit);
-        } catch (err) {
-            loaderHelpers.mono_exit(1, err);
-            throw err;
-        }
-        // signal next stage
-        runtimeHelpers.afterPreInit.promise_control.resolve();
-        Module.removeRunDependency("mono_pre_init");
-    })();
-}
-
-async function preInitWorkerAsync () {
-    if (!WasmEnableThreads) return;
-    const mark = startMeasure();
-    try {
-        mono_log_debug("preInitWorker");
-        runtimeHelpers.beforePreInit.promise_control.resolve();
-        mono_wasm_pre_init_essential(true);
-        await ensureUsedWasmFeatures();
-        await init_polyfills_async();
-        if (loaderHelpers.config.exitOnUnhandledError) {
-            loaderHelpers.installUnhandledErrorHandler();
-        }
-        runtimeHelpers.afterPreInit.promise_control.resolve();
-        exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
-        runtimeList.registerRuntime(exportedRuntimeAPI);
-        endMeasure(mark, MeasuredBlock.preInitWorker);
-    } catch (err) {
-        mono_log_error("preInitWorker() failed", err);
-        loaderHelpers.mono_exit(1, err);
-        throw err;
-    }
-}
 
 // runs for each re-attached worker
 export function preRunWorker () {
     if (!WasmEnableThreads) return;
     const mark = startMeasure();
     try {
+        mono_log_debug("preRunWorker");
+        init_c_exports();
+        cwraps_internal(INTERNAL);
         jiterpreter_allocate_tables(); // this will return quickly if already allocated
         runtimeHelpers.nativeExit = nativeExit;
         runtimeHelpers.nativeAbort = nativeAbort;
@@ -229,10 +175,14 @@ async function preRunAsync (userPreRun: ((module:EmscriptenModule) => void)[]) {
     Module.addRunDependency("mono_pre_run_async");
     // wait for previous stages
     try {
-        await runtimeHelpers.afterInstantiateWasm.promise;
-        await runtimeHelpers.afterPreInit.promise;
         mono_log_debug("preRunAsync");
         const mark = startMeasure();
+        init_c_exports();
+        cwraps_internal(INTERNAL);
+        if (WasmEnableThreads) {
+            await populateEmscriptenPool();
+        }
+        await runtimeHelpers.afterInstantiateWasm.promise;
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn(Module));
         endMeasure(mark, MeasuredBlock.preRun);
@@ -359,7 +309,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
     runtimeHelpers.afterOnRuntimeInitialized.promise_control.resolve();
 }
 
-async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[]) {
+async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[], startMark:TimeStamp) {
     // wait for previous stage
     try {
         await runtimeHelpers.afterOnRuntimeInitialized.promise;
@@ -373,6 +323,8 @@ async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[])
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn(Module));
         endMeasure(mark, MeasuredBlock.postRun);
+        // startup end
+        endMeasure(startMark, MeasuredBlock.emscriptenStartup);
     } catch (err) {
         mono_log_error("postRunAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
@@ -380,6 +332,9 @@ async function postRunAsync (userpostRun: ((module:EmscriptenModule) => void)[])
     }
     // signal next stage
     runtimeHelpers.afterPostRun.promise_control.resolve();
+    // - here we resolve the promise returned by createDotnetRuntime export
+    // - any code after createDotnetRuntime is executed now
+    runtimeHelpers.dotnetReady.promise_control.resolve(exportedRuntimeAPI);
 }
 
 // runs for each re-detached worker
@@ -402,44 +357,6 @@ export function postRunWorker () {
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
-}
-
-function mono_wasm_pre_init_essential (isWorker: boolean): void {
-    if (!isWorker)
-        Module.addRunDependency("mono_wasm_pre_init_essential");
-
-    mono_log_debug("mono_wasm_pre_init_essential");
-
-    if (loaderHelpers.gitHash !== runtimeHelpers.gitHash) {
-        mono_log_warn(`The version of dotnet.runtime.js ${runtimeHelpers.gitHash} is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
-    }
-    if (loaderHelpers.gitHash !== runtimeHelpers.emscriptenBuildOptions.gitHash) {
-        mono_log_warn(`The version of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.gitHash}  is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
-    }
-    if (WasmEnableThreads !== runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads) {
-        mono_log_warn(`The threads of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads} is different from the version of dotnet.runtime.js ${WasmEnableThreads}!`);
-    }
-
-    init_c_exports();
-    cwraps_internal(INTERNAL);
-    // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
-    // emscripten - on a worker since we don't have any other dependencies that causes run() to get
-    // called too soon; and then it will get called a second time when dotnet.native.js calls it directly.
-    // on a worker run() short-cirtcuits and just calls   readyPromiseResolve, initRuntime and postMessage.
-    // sending postMessage twice will break instantiateWasmPThreadWorkerPool on the main thread.
-    if (!isWorker)
-        Module.removeRunDependency("mono_wasm_pre_init_essential");
-}
-
-async function mono_wasm_pre_init_essential_async (): Promise<void> {
-    mono_log_debug("mono_wasm_pre_init_essential_async");
-    Module.addRunDependency("mono_wasm_pre_init_essential_async");
-
-    if (WasmEnableThreads) {
-        await populateEmscriptenPool();
-    }
-
-    Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
 
 async function mono_wasm_after_user_runtime_initialized (): Promise<void> {
@@ -490,10 +407,8 @@ async function instantiate_wasm_module (
         await loaderHelpers.afterConfigLoaded;
         mono_log_debug("instantiate_wasm_module");
 
-        await runtimeHelpers.beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
-        await ensureUsedWasmFeatures();
 
         replace_linker_placeholders(imports);
         const compiledModule = await loaderHelpers.wasmCompilePromise.promise;
@@ -518,12 +433,6 @@ async function ensureUsedWasmFeatures () {
     runtimeHelpers.featureWasmSimd = await simd;
     runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
     runtimeHelpers.featureWasmEh = await exceptions;
-    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
-        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
-    }
-    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
-        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
-    }
 }
 
 export async function start_runtime () {
@@ -725,13 +634,16 @@ export function mono_wasm_set_main_args (name: string, allRuntimeArguments: stri
 export async function configureWorkerStartup (module: DotnetModuleInternal): Promise<void> {
     if (!WasmEnableThreads) return;
 
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        loaderHelpers.installUnhandledErrorHandler();
+    }
+    exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
+    runtimeList.registerRuntime(exportedRuntimeAPI);
     initWorkerThreadEvents();
     currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, () => {
         // mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));
     });
 
     // these are the only events which are called on worker
-    module.preInit = [() => preInitWorkerAsync()];
     module.instantiateWasm = instantiateWasmWorker;
-    await runtimeHelpers.afterPreInit.promise;
 }

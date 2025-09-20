@@ -100,4 +100,6 @@ CDAC_GLOBAL_POINTER(Heaps, cdac_data<GC_NAMESPACE::gc_heap>::Heaps)
 CDAC_GLOBAL_POINTER(CurrentGCState, cdac_data<GC_NAMESPACE::gc_heap>::CurrentGCState)
 #endif // BACKGROUND_GC
 
+CDAC_GLOBAL_CONTRACT(GC, 1)
+
 CDAC_GLOBALS_END()

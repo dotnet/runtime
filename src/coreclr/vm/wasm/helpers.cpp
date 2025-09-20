@@ -379,9 +379,9 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength)
+extern "C" int32_t SystemJS_RandomBytes(uint8_t* buffer, int32_t bufferLength)
 {
-    PORTABILITY_ASSERT("mono_wasm_browser_entropy is not implemented");
+    PORTABILITY_ASSERT("SystemJS_RandomBytes is not implemented");
     return -1;
 }
 

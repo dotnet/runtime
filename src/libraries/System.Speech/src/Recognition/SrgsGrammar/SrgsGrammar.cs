@@ -8,8 +8,6 @@ using System.Speech.Internal;
 using System.Speech.Internal.SrgsParser;
 using System.Xml;
 
-#pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
-
 namespace System.Speech.Recognition.SrgsGrammar
 {
     [Serializable]

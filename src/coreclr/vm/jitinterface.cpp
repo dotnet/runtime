@@ -12912,7 +12912,6 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
         if (FAILED(ret))
         {
             comp->ResetForJitRetry();
-            ret = CORJIT_SKIPPED;
         }
     }
 

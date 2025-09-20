@@ -114,7 +114,7 @@ EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t n
     return OBJECTREFToObject(newobj);
 }
 
-EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock)
+EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, intptr_t numElements, TransitionBlock* pTransitionBlock)
 {
     OBJECTREF newobj = NULL;
 

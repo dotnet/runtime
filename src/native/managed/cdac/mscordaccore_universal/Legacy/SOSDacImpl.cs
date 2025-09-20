@@ -2047,17 +2047,12 @@ internal sealed unsafe partial class SOSDacImpl
                     }
                     catch
                     {
-                        try
+                        string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
+                        if (fallbackName != null)
                         {
-                            string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
-                            if (fallbackName != null)
-                            {
-                                methodTableName.Clear();
-                                methodTableName.Append(fallbackName);
-                            }
+                            methodTableName.Clear();
+                            methodTableName.Append(fallbackName);
                         }
-                        catch
-                        { }
                     }
                     OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, methodTableName.ToString());
                 }
@@ -3193,8 +3188,66 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData) : HResults.E_NOTIMPL;
+    int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodDesc == 0 || pRejitData == null || rejitId < 0)
+                throw new ArgumentException();
+            ICodeVersions cv = _target.Contracts.CodeVersions;
+            IReJIT rejitContract = _target.Contracts.ReJIT;
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersions(methodDescPtr)
+                .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
+                    ILCodeVersionHandle.Invalid);
+
+            if (!ilCodeVersion.IsValid)
+                throw new ArgumentException();
+            else
+            {
+                pRejitData->rejitID = (uint)rejitId;
+                switch (rejitContract.GetRejitState(ilCodeVersion))
+                {
+                    case RejitState.Requested:
+                        pRejitData->flags = DacpReJitData2.Flags.kRequested;
+                        break;
+                    case RejitState.Active:
+                        pRejitData->flags = DacpReJitData2.Flags.kActive;
+                        break;
+                    default:
+                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
+                }
+                pRejitData->il = cv.GetIL(ilCodeVersion).ToClrDataAddress(_target);
+                if (ilCodeVersion.IsExplicit)
+                    pRejitData->ilCodeVersionNodePtr = ilCodeVersion.ILCodeVersionNode.ToClrDataAddress(_target);
+                else
+                    pRejitData->ilCodeVersionNodePtr = 0;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl7 is not null)
+        {
+            DacpReJitData2 rejitDataLocal;
+            int hrLocal = _legacyImpl7.GetReJITInformation(methodDesc, rejitId, &rejitDataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pRejitData->rejitID == rejitDataLocal.rejitID);
+                Debug.Assert(pRejitData->il == rejitDataLocal.il);
+                Debug.Assert(pRejitData->flags == rejitDataLocal.flags);
+                Debug.Assert(pRejitData->ilCodeVersionNodePtr == rejitDataLocal.ilCodeVersionNodePtr);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
         => _legacyImpl7 is not null ? _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, pILData) : HResults.E_NOTIMPL;
     int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)
@@ -3306,7 +3359,40 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
         => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersRCWData(rcw, identity) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            ulong rcwMask = 1UL;
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            if (rcw == 0 || identity == null)
+                throw new ArgumentException();
+            else if ((rcw & rcwMask) == 0)
+                *identity = 0;
+            else if (identity != null)
+            {
+                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity((rcw.ToTargetPointer(_target) & ~rcwMask));
+                *identity = identityPtr.ToClrDataAddress(_target);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            ClrDataAddress identityLocal;
+            int hrLocal = _legacyImpl10.GetComWrappersRCWData(rcw, &identityLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*identity == identityLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface10
 
     #region ISOSDacInterface11

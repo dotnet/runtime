@@ -176,7 +176,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         this.__count = capacity;
         this.length = capacity;
         mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
-        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
+        this.__handle = cwraps.SystemInteropJS_RegisterGCRoot(offset, capacityBytes, name || "noname");
         this.__ownsAllocation = ownsAllocation;
     }
 
@@ -236,7 +236,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     release (): void {
         if (this.__offset && this.__ownsAllocation) {
             mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
-            cwraps.mono_wasm_deregister_root(this.__offset);
+            cwraps.SystemInteropJS_UnregisterGCRoot(this.__offset);
             _zero_region(this.__offset, this.__count * 4);
             free(this.__offset);
         }

@@ -60,7 +60,6 @@ namespace System.Runtime.Serialization
             {
                 CompileSchemaSet(_schemaSet);
             }
-#pragma warning suppress 56500 // covered by FxCOP
             catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
                 throw new ArgumentException(SR.Format(SR.CannotImportInvalidSchemas), ex);

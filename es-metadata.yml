@@ -1,0 +1,8 @@
+schemaVersion: 0.0.1
+isProduction: true
+accountableOwners:
+  service: 1dc8dedc-8f5f-4b94-b182-ec3bdfb207b0
+routing:
+  defaultAreaPath:
+    org: devdiv
+    path: DevDiv\NET Runtime

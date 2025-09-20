@@ -2807,13 +2807,11 @@ namespace System
                     if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
                         break;
                     keys[lo + i - 1] = keys[lo + child - 1];
-                    if (items != null)
-                        items[lo + i - 1] = items[lo + child - 1];
+                    items?[lo + i - 1] = items[lo + child - 1];
                     i = child;
                 }
                 keys[lo + i - 1] = d;
-                if (items != null)
-                    items[lo + i - 1] = dt;
+                items?[lo + i - 1] = dt;
             }
 
             private void InsertionSort(int lo, int hi)
@@ -2829,13 +2827,11 @@ namespace System
                     while (j >= lo && comparer.Compare(t, keys[j]) < 0)
                     {
                         keys[j + 1] = keys[j];
-                        if (items != null)
-                            items[j + 1] = items[j];
+                        items?[j + 1] = items[j];
                         j--;
                     }
                     keys[j + 1] = t;
-                    if (items != null)
-                        items[j + 1] = ti;
+                    items?[j + 1] = ti;
                 }
             }
         }

@@ -386,7 +386,7 @@ namespace Microsoft.NET.HostModel.Bundle
                         }
                         if (_macosCodesign)
                         {
-                            endOfBundle = (ulong)machFile.AdHocSignFile(machFileReader!, _hostName, signatureBlob);
+                            endOfBundle = (ulong)machFile.AdHocSignFile(machFileReader!, _hostName);
                         }
                     }
 

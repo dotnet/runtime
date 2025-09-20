@@ -9,6 +9,7 @@
 #define _INTEROPLIBINTERFACE_COMWRAPPERS_H_
 
 #include <interoplibabi.h>
+#include "cdacdata.h"
 
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
@@ -98,6 +99,14 @@ public:
     {
         return _externalComObject;
     }
+
+    friend struct ::cdac_data<NativeObjectWrapperObject>;
+};
+
+template<>
+struct cdac_data<NativeObjectWrapperObject>
+{
+    static constexpr size_t ExternalComObject = offsetof(NativeObjectWrapperObject, _externalComObject);
 };
 
 class ReferenceTrackerNativeObjectWrapperObject final : public NativeObjectWrapperObject

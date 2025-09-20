@@ -78,6 +78,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     // on MethodDescChunk.FlagsAndTokenRange
@@ -154,8 +162,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
 
         private bool HasFlags(MethodDescFlags_1.MethodDescFlags flags) => (_desc.Flags & (ushort)flags) != 0;
-        internal bool HasFlags(MethodDescFlags_1.MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
-
+        private bool HasFlags(MethodDescFlags_1.MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
         internal bool HasFlags(MethodDescChunkFlags flags) => (_chunk.FlagsAndTokenRange & (ushort)flags) != 0;
 
         public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags_1.MethodDescFlags3.IsEligibleForTieredCompilation);
@@ -255,6 +262,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public bool IsDynamicMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
         public bool IsILStub => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+        public ILStubType ILStubType => (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        public bool IsCLRToCOMStub => ILStubType == ILStubType.StubCLRToCOMInterop;
+        public bool IsPInvokeVarArgStub => ILStubType == ILStubType.StubPInvokeVarArg;
+        public bool HasMDContextArg => IsCLRToCOMStub || IsPInvokeVarArgStub;
     }
 
     private sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
@@ -905,6 +916,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsDynamicMethodDesc(methodDesc).IsILStub;
     }
 
+    public bool HasMDContextArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        return AsDynamicMethodDesc(methodDesc).HasMDContextArg;
+    }
+
     private MethodTable GetOrCreateMethodTable(MethodDesc methodDesc)
     {
         // Ensures that the method table is valid, created, and cached
@@ -1294,5 +1317,4 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
         return slot < GetNumVtableSlots(typeHandle);
     }
-
 }

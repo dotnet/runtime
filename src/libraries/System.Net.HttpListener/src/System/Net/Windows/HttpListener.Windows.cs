@@ -722,10 +722,7 @@ namespace System.Net
                 {
                     // They sent an authorization - destroy their previous credentials.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Clearing principal cache");
-                    if (disconnectResult != null)
-                    {
-                        disconnectResult.AuthenticatedConnection = null;
-                    }
+                    disconnectResult?.AuthenticatedConnection = null;
                 }
             }
 

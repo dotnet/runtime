@@ -159,7 +159,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakeSZArray(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakeArray(QCall::TypeHandle pTypeHandle, INT32 rank, QCall::ObjectHandleOnStack retType);
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsCollectible(QCall::TypeHandle pTypeHandle);
 extern "C" void QCALLTYPE RuntimeTypeHandle_PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCall::ObjectHandleOnStack result);
@@ -185,6 +184,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QC
 class RuntimeMethodHandle
 {
 public:
+    static FCDECL1(FC_BOOL_RET, IsCollectible, MethodDesc *pMethod);
     static FCDECL1(INT32, GetAttributes, MethodDesc *pMethod);
     static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(MethodTable*, GetMethodTable, MethodDesc *pMethod);

@@ -71,11 +71,13 @@
 #define STRESS_LOG_WRITE(facility, level, msg, ...) do {                                      \
             if (StressLog::StressLogOn(facility, level))                                      \
                 StressLog::LogMsgOL(facility, level, msg, __VA_ARGS__);                       \
+            LOG((facility, level, msg, __VA_ARGS__));                                         \
             } while(0)
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
                 StressLog::LogMsg(level, facility, 0, msg);                         \
+            LOG((facility, level, msg));                                            \
             } while(0)
 
 #define STRESS_LOG1(facility, level, msg, data1) \

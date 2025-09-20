@@ -32,9 +32,9 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(FEATURE_PORTABLE_HELPERS)
-EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
-static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
+static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
 {
     Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
     if (pObject == nullptr)

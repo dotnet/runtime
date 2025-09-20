@@ -752,7 +752,6 @@ namespace System.Threading
         [ThreadStatic]
         public static bool WarnOnBlockingWaitOnJSInteropThread;
 
-#pragma warning disable CS3001
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
 
@@ -771,8 +770,6 @@ namespace System.Threading
                 }
             }
         }
-
-#pragma warning restore CS3001
 
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {

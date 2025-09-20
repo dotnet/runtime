@@ -83,7 +83,7 @@ namespace System.Configuration
         internal void ChangeSourceInfo(string key, PropertySourceInfo sourceInfo)
         {
             ConfigurationValue configurationValue = GetConfigValue(key);
-            if (configurationValue != null) configurationValue.SourceInfo = sourceInfo;
+            configurationValue?.SourceInfo = sourceInfo;
         }
 
         private ConfigurationValue CreateConfigValue(object value, ConfigurationValueFlags valueFlags,

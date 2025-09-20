@@ -533,7 +533,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             IEnumerable<ExecutionContext> validContexts = null;
             if (ignoreDestroyedContext)
-                validContexts = contextBag.Where(context => context.Destroyed == false);
+                validContexts = contextBag.Where(context => !context.Destroyed);
             else
                 validContexts = contextBag;
             if (!validContexts.Any())
