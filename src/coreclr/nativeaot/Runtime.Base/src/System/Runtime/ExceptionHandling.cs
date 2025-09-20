@@ -867,6 +867,7 @@ namespace System.Runtime
 
             InternalCalls.RhpSetThreadDoNotTriggerGC();
 
+
             exInfo._passNumber = 2;
             exInfo._idxCurClause = catchingTryRegionIdx;
             startIdx = MaxTryRegionIdx;
