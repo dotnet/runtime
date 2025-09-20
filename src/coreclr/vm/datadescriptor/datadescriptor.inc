@@ -148,6 +148,13 @@ CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
 CDAC_TYPE_END(SyncBlock)
 
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
+CDAC_TYPE_INDETERMINATE(NativeObjectWrapperObject)
+CDAC_TYPE_FIELD(NativeObjectWrapperObject, /*pointer*/, ExternalComObject, cdac_data<NativeObjectWrapperObject>::ExternalComObject)
+CDAC_TYPE_END(NativeObjectWrapperObject)
+#endif // FEATURE_COMWRAPPERS
+
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
@@ -1028,5 +1035,26 @@ CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
+
+CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
+#ifdef FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
+#endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+CDAC_GLOBAL_CONTRACT(DebugInfo, 1)
+CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
+CDAC_GLOBAL_CONTRACT(Exception, 1)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
+CDAC_GLOBAL_CONTRACT(Loader, 1)
+CDAC_GLOBAL_CONTRACT(Object, 1)
+CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
+CDAC_GLOBAL_CONTRACT(ReJIT, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
+CDAC_GLOBAL_CONTRACT(SHash, 1)
+CDAC_GLOBAL_CONTRACT(StackWalk, 1)
+CDAC_GLOBAL_CONTRACT(StressLog, 2)
+CDAC_GLOBAL_CONTRACT(Thread, 1)
 
 CDAC_GLOBALS_END()
