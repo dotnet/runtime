@@ -594,7 +594,67 @@ namespace System.Tests
         [InlineData("\0", '\0', true)]
         [InlineData("", 'a', false)]
         [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
-        public static void EndsWith(string s, char value, bool expected)
+        public static void EndsWith_Char(string s, char value, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(value));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'o', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'O', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'o', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void EndsWith_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(value));
+        }
+
+        [Theory]
+        [InlineData("Hello", new Rune('o'), true)]
+        [InlineData("Hello", new Rune('O'), false)]
+        [InlineData("o", new Rune('o'), true)]
+        [InlineData("o", new Rune('O'), false)]
+        [InlineData("Hello", new Rune('e'), false)]
+        [InlineData("Hello", new Rune('\0'), false)]
+        [InlineData("", new Rune('\0'), false)]
+        [InlineData("\0", new Rune('\0'), true)]
+        [InlineData("", new Rune('a'), false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", new Rune('z'), true)]
+        public static void EndsWith_Rune(string s, Rune value, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(value));
+        }
+
+        [Theory]
+        [InlineData("Hello", new Rune('o'), StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", new Rune('O'), StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", new Rune('o'), StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", new Rune('O'), StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", new Rune('o'), StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", new Rune('O'), StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", new Rune('o'), StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", new Rune('O'), StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", new Rune('o'), StringComparison.Ordinal, true)]
+        [InlineData("Hello", new Rune('O'), StringComparison.Ordinal, false)]
+        [InlineData("Hello", new Rune('o'), StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", new Rune('O'), StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", new Rune('\0'), StringComparison.Ordinal, false)]
+        [InlineData("\0", new Rune('\0'), StringComparison.Ordinal, true)]
+        [InlineData("", new Rune('\0'), StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", new Rune('\0'), StringComparison.OrdinalIgnoreCase, true)]
+        public static void EndsWith_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.EndsWith(value));
         }
