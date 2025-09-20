@@ -1178,6 +1178,16 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
                     }
                 }
+                else if (o is DateOnly)
+                {
+                    stringValue = FromDateOnly((DateOnly)o);
+                    return true;
+                }
+                else if (o is TimeOnly)
+                {
+                    stringValue = FromTimeOnly((TimeOnly)o);
+                    return true;
+                }
                 else if (typeDesc == ReflectionXmlSerializationReader.QnameTypeDesc)
                 {
                     stringValue = FromXmlQualifiedName((XmlQualifiedName?)o);
