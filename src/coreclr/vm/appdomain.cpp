@@ -2778,7 +2778,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
     CONTRACTL
     {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -2835,7 +2835,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
     CONTRACT (LPCWSTR)
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL));
     }

@@ -127,7 +127,7 @@ HRESULT CorHost2::Stop()
     {
         NOTHROW;
         ENTRY_POINT;    // We're bringing the EE down, so no point in probing
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
     }
     CONTRACTL_END;
     if (!g_fEEStarted)
@@ -491,7 +491,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -527,7 +527,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -686,7 +686,7 @@ HRESULT CorHost2::CreateDelegate(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -770,7 +770,7 @@ HRESULT CorHost2::Authenticate(ULONGLONG authKey)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -784,7 +784,7 @@ HRESULT CorHost2::RegisterMacEHPort()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -797,7 +797,7 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
