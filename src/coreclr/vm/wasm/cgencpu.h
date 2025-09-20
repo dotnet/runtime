@@ -68,7 +68,7 @@ struct ArgumentRegisters {
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16  // not sure here, 16 bytes is v128
 
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 0
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 1
 
 class StubLinkerCPU : public StubLinker
 {
