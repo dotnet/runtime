@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "noEmitOnError": true,
+        "removeComments": false,
+        "module": "esnext",
+        "sourceMap": true,
+        "target": "ES2018",
+        "moduleResolution": "Node",
+        "strict": true,
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "types": [
+            "node"
+        ],
+        "typeRoots": [
+            "./node_modules/@types",
+            "./libs/Common/JavaScript/types"
+        ],
+        "rootDirs": [
+            "./corehost/browserhost/loader",
+            "./libs/Common/JavaScript",
+            "./libs/System.Native.Browser",
+            "./libs/System.Runtime.InteropServices.JavaScript.Native",
+            "../../artifacts/bin/native/generated"
+        ]
+    },
+    "exclude": [
+        "./corehost/loader/dotnet.d.ts"
+    ]
+}

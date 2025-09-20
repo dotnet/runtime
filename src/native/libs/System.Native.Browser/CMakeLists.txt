@@ -1,0 +1,53 @@
+project(System.Native.Browser C)
+
+set(BROWSER_SOURCES)
+
+if (NOT GEN_PINVOKE)
+    set (BROWSER_SOURCES ${BROWSER_SOURCES} entrypoints.c)
+endif()
+
+add_library(System.Native.Browser-Static
+    STATIC
+    ${BROWSER_SOURCES}
+)
+set_target_properties(System.Native.Browser-Static PROPERTIES OUTPUT_NAME System.Native.Browser CLEAN_DIRECT_OUTPUT 1)
+install(TARGETS System.Native.Browser-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+
+file(GLOB_RECURSE ROLLUP_TS_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../System.Runtime.InteropServices.JavaScript.Native/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../System.Runtime.InteropServices.JavaScript.Native/*.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Common/JavaScript/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Common/JavaScript/*.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/*.js"
+)
+
+set(ROLLUP_OUTPUTS
+    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map"
+    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.d.ts"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js.map"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js.map"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
+)
+
+add_custom_command(
+    OUTPUT ${ROLLUP_OUTPUTS}
+    COMMAND npm run rollup
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
+    COMMENT "Running 'npm run rollup' to generate JavaScript bundles"
+    DEPENDS ${ROLLUP_TS_SOURCES}
+    VERBATIM
+)
+
+add_custom_target(System.Native.Browser-Rollup
+    DEPENDS ${ROLLUP_OUTPUTS}
+)
+
+add_dependencies(System.Native.Browser-Static System.Native.Browser-Rollup)

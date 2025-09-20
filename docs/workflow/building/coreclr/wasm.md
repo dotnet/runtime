@@ -117,6 +117,20 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
                     "/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
                 ],
                 "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/"
+            },
+            {
+                "name": "browserhost",
+                "type": "node",
+                "request": "launch",
+                "skipFiles": [
+                    "<node_internals>/**"
+                ],
+                "args": [
+                    "HelloWorld.dll"
+                ],
+                "outputCapture": "std",
+                "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/corehost",
+                "program": "main.mjs",
             }
         ]
     }
