@@ -211,6 +211,7 @@ namespace ILCompiler.PEWriter
             switch (section.Type)
             {
                 case SectionType.ReadOnly:
+                case SectionType.Debug:
                     // We put ReadOnly data into the text section to limit the number of sections.
                 case SectionType.Executable:
                     targetSectionIndex = _textSectionIndex;
