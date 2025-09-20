@@ -203,8 +203,11 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            int resourceId = (int)logkey.GetValue("DisplayNameID")!;
-                            logDisplayName = FormatMessageWrapper(resourceDll, (uint)resourceId, null);
+                            object? resourceIdObject = logkey.GetValue("DisplayNameID");
+                            if (resourceIdObject is not null)
+                            {
+                                logDisplayName = FormatMessageWrapper(resourceDll, (uint)(int)resourceIdObject, null);
+                            }
                             logDisplayName ??= GetLogName(currentMachineName);
                         }
                     }
@@ -349,6 +352,7 @@ namespace System.Diagnostics
             }
         }
 
+        [MemberNotNull(nameof(readHandle))]
         private int OldestEntryNumber
         {
             get
@@ -873,11 +877,11 @@ namespace System.Diagnostics
         private EventLogEntry GetEntryWithOldest(int index)
         {
             Debug.Assert(readHandle != null);
-            Debug.Assert(cache != null);
 
             int entryPos = GetCachedEntryPos(index);
             if (entryPos >= 0)
             {
+                Debug.Assert(cache != null, "Cannot get a non-negative position out of GetCachedEntryPos unless we have a cache");
                 return new EventLogEntry(cache, entryPos, this);
             }
 
@@ -1152,7 +1156,7 @@ namespace System.Diagnostics
                 // if that was the last interested compononent, destroy the handles and stop listening.
                 info.handleOwner.Dispose();
                 //Unregister the thread pool wait handle
-                info.registeredWaitHandle?.Unregister(info.waitHandle);
+                info.registeredWaitHandle.Unregister(info.waitHandle);
                 // close the handle
                 info.waitHandle.Close();
                 listenerInfos[compLogName] = null;
@@ -1413,7 +1417,7 @@ namespace System.Diagnostics
                 this.waitHandle = waitHandle;
             }
             public EventLogInternal handleOwner;
-            public RegisteredWaitHandle? registeredWaitHandle;
+            public RegisteredWaitHandle registeredWaitHandle = null!; // Initialized in AddListenerComponent
             public AutoResetEvent waitHandle;
             public List<EventLogInternal> listeningComponents = new();
         }
