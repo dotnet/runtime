@@ -468,7 +468,7 @@ namespace System.Numerics
             // Exponent displacement #2
             const ulong Exponent45 = 0x02D0_0000_0000_0000u;
             // The maximum infinitely precise value that will round down to MaxValue
-            const double BFloat16AboveMaxValue = 3.39617752923046E+38;
+            const double MaxBFloat16ValueBelowInfinity = 3.39617752923046E+38;
             // Mask for exponent bits in BFloat16
             const ulong ExponentMask = BiasedExponentMask;
             ulong bitValue = BitConverter.DoubleToUInt64Bits(value);
@@ -479,7 +479,7 @@ namespace System.Numerics
             // Clear sign bit
             value = double.Abs(value);
             // Rectify values that are Infinity in BFloat16. (float.Min now emits vminps instruction if one of two arguments is a constant)
-            value = double.Min(BFloat16AboveMaxValue, value);
+            value = double.Min(MaxBFloat16ValueBelowInfinity, value);
             // Rectify lower exponent
             ulong exponentOffset0 = BitConverter.DoubleToUInt64Bits(double.Max(value, BitConverter.UInt64BitsToDouble(MinExp)));
             // Extract exponent
