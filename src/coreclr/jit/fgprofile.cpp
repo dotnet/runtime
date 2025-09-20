@@ -484,14 +484,6 @@ void BlockCountInstrumentor::RelocateProbes()
 
     JITDUMP("Optimized + instrumented + potential tail calls --- preparing to relocate edge probes\n");
 
-    // We should be in a root method compiler instance. We currently do not instrument inlinees.
-    //
-    // Relaxing this will require changes below because inlinee compilers
-    // share the root compiler flow graph (and hence bb epoch), and flow
-    // from inlinee tail calls to returns can be more complex.
-    //
-    assert(!m_comp->compIsForInlining());
-
     // Keep track of return blocks needing special treatment.
     //
     ArrayStack<BasicBlock*> criticalPreds(m_comp->getAllocator(CMK_Pgo));
@@ -850,26 +842,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // Push the method entry and all EH handler region entries on the stack.
     // (push method entry last so it's visited first).
     //
-    // Note inlinees are "contaminated" with root method EH structures.
-    // We know the inlinee itself doesn't have EH, so we only look at
-    // handlers for root methods.
-    //
-    // If we ever want to support inlining methods with EH, we'll
-    // have to revisit this.
-    //
-    if (!compIsForInlining())
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        for (EHblkDsc* const HBtab : EHClauses(this))
+        BasicBlock* hndBegBB = HBtab->ebdHndBeg;
+        stack.Push(hndBegBB);
+        BitVecOps::AddElemD(&traits, marked, hndBegBB->bbID);
+        if (HBtab->HasFilter())
         {
-            BasicBlock* hndBegBB = HBtab->ebdHndBeg;
-            stack.Push(hndBegBB);
-            BitVecOps::AddElemD(&traits, marked, hndBegBB->bbID);
-            if (HBtab->HasFilter())
-            {
-                BasicBlock* filterBB = HBtab->ebdFilter;
-                stack.Push(filterBB);
-                BitVecOps::AddElemD(&traits, marked, filterBB->bbID);
-            }
+            BasicBlock* filterBB = HBtab->ebdFilter;
+            stack.Push(filterBB);
+            BitVecOps::AddElemD(&traits, marked, filterBB->bbID);
         }
     }
 
@@ -1558,14 +1540,6 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
     }
 
     JITDUMP("Optimized + instrumented + potential tail calls --- preparing to relocate edge probes\n");
-
-    // We should be in a root method compiler instance. We currently do not instrument inlinees.
-    //
-    // Relaxing this will require changes below because inlinee compilers
-    // share the root compiler flow graph (and hence bb epoch), and flow
-    // from inlinee tail calls to returns can be more complex.
-    //
-    assert(!m_comp->compIsForInlining());
 
     // We may need to track the critical predecessors of some blocks.
     //
@@ -2508,7 +2482,11 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 //
 PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 {
-    noway_assert(!compIsForInlining());
+    if (compIsForInlining() && JitConfig.JitInstrumentInlinees() == 0)
+    {
+        JITDUMP("Inlinee instrumentation disabled by config\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     // Choose instrumentation technology.
     //
@@ -2626,6 +2604,59 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 //   appropriate phase status
 //
 // Note:
+//   Wrapper around fgInstrumentMethodCore, which handles
+//   special cases when instrumenting inlinees.
+//
+PhaseStatus Compiler::fgInstrumentMethod()
+{
+    // If this is an inlinee that returns a value, and we don't have a return
+    // value temp, the return value tree may not be linked into the return block.
+    //
+    // Temporarily link it in so the passes below can operate on it as needed.
+    //
+    BasicBlock* retBB                 = nullptr;
+    Statement*  tempInlineeReturnStmt = nullptr;
+
+    if (compIsForInlining())
+    {
+        if (JitConfig.JitInstrumentInlinees() == 0)
+        {
+            JITDUMP("Inlinee instrumentation disabled by config\n");
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+
+        GenTreeRetExpr* const retExpr = impInlineInfo->inlineCandidateInfo->retExpr;
+
+        // If there's a retExpr but no gtSubstBB, we assume the retExpr is a temp
+        // and so not interesting to instrumentation.
+        //
+        if ((retExpr != nullptr) && (retExpr->gtSubstBB != nullptr))
+        {
+            assert(retExpr->gtSubstExpr != nullptr);
+            retBB                 = retExpr->gtSubstBB;
+            tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, retExpr->gtSubstExpr);
+            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(retExpr->gtSubstExpr),
+                    retBB->bbNum);
+        }
+    }
+
+    PhaseStatus status = fgInstrumentMethodCore();
+
+    if (tempInlineeReturnStmt != nullptr)
+    {
+        fgRemoveStmt(retBB, tempInlineeReturnStmt);
+    }
+
+    return status;
+}
+
+//------------------------------------------------------------------------
+// fgInstrumentMethodCore: add instrumentation probes to the method
+//
+// Returns:
+//   appropriate phase status
+//
+// Note:
 //
 //   By default this instruments each non-internal block with
 //   a counter probe.
@@ -2635,10 +2666,9 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 //   Probe structure is described by a schema array, which is created
 //   here based on flowgraph and IR structure.
 //
-PhaseStatus Compiler::fgInstrumentMethod()
-{
-    noway_assert(!compIsForInlining());
 
+PhaseStatus Compiler::fgInstrumentMethodCore()
+{
     // Make post-import preparations.
     //
     const bool isPreImport = false;
@@ -2718,7 +2748,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     // If this is an OSR method, we should use the same buffer that the Tier0 method used.
     //
-    // This is supported by allocPgoInsrumentationDataBySchema, which will verify the schema
+    // This is supported by allocPgoInstrumentationBySchema, which will verify the schema
     // we provide here matches the one from Tier0, and will fill in the data offsets in
     // our schema properly.
     //
