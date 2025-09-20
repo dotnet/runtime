@@ -50,9 +50,9 @@ namespace System
     internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
         where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
     {
-        /// <remarks>
+        /// <summary>
         /// Ceiling(Log10(5^(Abs(MinBinaryExponent) - 1))) + NormalMantissaBits + 1 + 1
-        /// </remarks>
+        /// </summary>
         static abstract int NumberBufferLength { get; }
 
         static abstract ulong ZeroBits { get; }
@@ -64,14 +64,14 @@ namespace System
         static abstract int MinBinaryExponent { get; }
         static abstract int MaxBinaryExponent { get; }
 
-        /// <remarks>
+        /// <summary>
         /// Floor(Log10(Epsilon))
-        /// </remarks>
+        /// </summary>
         static abstract int MinDecimalExponent { get; }
 
-        /// <remarks>
+        /// <summary>
         /// Ceiling(Log10(MaxValue))
-        /// </remarks>
+        /// </summary>
         static abstract int MaxDecimalExponent { get; }
 
         static abstract int ExponentBias { get; }
@@ -83,24 +83,24 @@ namespace System
         static abstract ushort NormalMantissaBits { get; }
         static abstract ushort DenormalMantissaBits { get; }
 
-        /// <remarks>
+        /// <summary>
         /// Ceiling(Log10(2^(MinBinaryExponent - 1 - DenormalMantissaBits - 64)))
-        /// </remarks>
+        /// </summary>
         static abstract int MinFastFloatDecimalExponent { get; }
 
-        /// <remarks>
+        /// <summary>
         /// MaxDecimalExponent - 1
-        /// </remarks>
+        /// </summary>
         static abstract int MaxFastFloatDecimalExponent { get; }
 
-        /// <remarks>
+        /// <summary>
         /// -Floor(Log5(2^(64 - NormalMantissaBits)))
-        /// </remarks>
+        /// </summary>
         static abstract int MinExponentRoundToEven { get; }
 
-        /// <remarks>
+        /// <summary>
         /// Floor(Log5(2^(NormalMantissaBits + 1)))
-        /// </remarks>
+        /// </summary>
         static abstract int MaxExponentRoundToEven { get; }
 
         /// <summary>
