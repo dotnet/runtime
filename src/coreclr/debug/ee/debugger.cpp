@@ -5451,6 +5451,14 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     bool retVal;
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     DebuggerSteppingInfo debuggerSteppingInfo;
+    if ((void*)GetIP(context) == (void*)SetThreadContextNeededFlare)
+    {
+        // The out-of-proc debugger is ignoring the SetThreadContextNeeded flare
+        // SSP will be pointing to the instruction after the breakpoint, so advance the IP to that instruction and continue
+        PCODE ip = ::GetIP(context);
+        ::SetIP(context, ip + CORDbg_BREAK_INSTRUCTION_SIZE);
+        return true;
+    }
 #endif
 
     {
@@ -5473,11 +5481,15 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
-    if (retVal && fIsVEH)
+    // NOTE: During detach, the right-side will wait until all SendSetThreadContextNeeded flares have been sent
+    // We assume that any breakpoint debug event caught on the right-side will result in a SendSetThreadContextNeeded flare
+    // If there is an active patch skip on the thread, then we assume there will be an additional
+    // SendSetThreadContextNeeded flare to move the instruction pointer out of the patch buffer
+    if ((retVal || code == EXCEPTION_BREAKPOINT) && fIsVEH)
     {
-        // This does not return. Out-of-proc debugger will update the thread context
-        // within this call.
-        SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
+        // If retVal is true, the out-of-proc debugger will update the thread context within this call.
+        // Otherwise we are sending a ClearSetIP request, and in which case the out-of-proc debugger will ignore the SetThreadContextNeeded request and simply clear the PendingSetIP flag
+        SendSetThreadContextNeeded(context, &debuggerSteppingInfo, thread->HasActivePatchSkip(), !retVal);
     }
 #endif
     return retVal;
@@ -16168,7 +16180,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip, bool fClearSetIP)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16223,10 +16235,20 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     PRD_TYPE opcode = pDebuggerSteppingInfo != NULL ? pDebuggerSteppingInfo->GetOpcode() : CORDbg_BREAK_INSTRUCTION;
 
     // send the context to the right side
-    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode));
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x fHasDebuggerPatchSkip=%d\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode, fHasDebuggerPatchSkip));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize, fIsInPlaceSingleStep, opcode);
+        DWORD flag = fIsInPlaceSingleStep ? 0x1 : 0;
+        if (fHasDebuggerPatchSkip)
+        {
+            flag |= 0x2;
+        }
+        if (fClearSetIP)
+        {
+            _ASSERTE(!fIsInPlaceSingleStep && !fHasDebuggerPatchSkip);
+            flag |= 0x4;
+        }
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, flag, opcode);
     }
     EX_CATCH
     {
@@ -16237,7 +16259,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
 #endif
 
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
-    _ASSERTE(!"We failed to SetThreadContext from out of process!");
+    _ASSERTE(fClearSetIP);
 }
 
 BOOL Debugger::IsOutOfProcessSetContextEnabled()
@@ -16245,7 +16267,7 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
     return m_fOutOfProcessSetContextEnabled;
 }
 #else
-void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip, bool fClearSetIP)
 {
     _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }
