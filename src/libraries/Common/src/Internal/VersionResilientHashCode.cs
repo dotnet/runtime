@@ -20,7 +20,7 @@ namespace Internal
             private int _hash2;
             private int _numCharactersHashed;
 
-            public HashCodeBuilder(ReadOnlySpan<byte> seed)
+            public HashCodeBuilder(ReadOnlySpan<byte> _)
             {
                 _hash1 = 0x6DA3B944;
                 _hash2 = 0;

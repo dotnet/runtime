@@ -73,6 +73,18 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
     }
 
+    void IStackWalk.WalkStackReferences(ThreadData threadData)
+    {
+        // TODO(cdacStackRef): This isn't quite right. We need to check if the FilterContext or ProfilerFilterContext
+        // is set and prefer that if either is not null.
+        IEnumerable<IStackDataFrameHandle> stackFrames = ((IStackWalk)this).CreateStackWalk(threadData);
+
+        foreach (IStackDataFrameHandle stackFrameHandle in stackFrames)
+        {
+            Console.WriteLine(stackFrameHandle);
+        }
+    }
+
     private bool Next(StackWalkData handle)
     {
         switch (handle.State)

@@ -74,4 +74,8 @@ public abstract class ContractRegistry
     /// Gets an instance of the GC contract for the target.
     /// </summary>
     public abstract IGC GC { get; }
+    /// <summary>
+    /// Gets an instance of the GCInfo contract for the target.
+    /// </summary>
+    public abstract IGCInfo GCInfo { get; }
 }
