@@ -25,6 +25,7 @@ file(GLOB_RECURSE ROLLUP_TS_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/*.js"
     "${CMAKE_CURRENT_SOURCE_DIR}../../package.json"
     "${CMAKE_CURRENT_SOURCE_DIR}../../tsconfig.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../node_modules/.npm-stamp"
 )
 
 set(ROLLUP_OUTPUTS
