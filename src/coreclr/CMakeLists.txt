@@ -71,6 +71,8 @@ else()
     if(CLR_CMAKE_TARGET_BROWSER)
       # TODOWASM set GEN_PINVOKE to 1 once we generate them. static entrypoint.c prevents C linker from trimming, when IL trimming trims PInvokes
       set(GEN_PINVOKE 0)
+      # TODOWASM should we start using System.Native.Browser and System.Runtime.InteropServices.JavaScript.Native also for Mono ?
+      set(BUILD_LIBS_NATIVE_BROWSER 1)
       add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost browserhost)
       add_dependencies(runtime browserhost)
     endif()
