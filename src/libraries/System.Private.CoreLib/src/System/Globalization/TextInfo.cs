@@ -180,6 +180,17 @@ namespace System.Globalization
             return ChangeCaseCommon<ToLowerConversion>(str);
         }
 
+        internal void ToLower(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToLower(source, destination);
+                return;
+            }
+
+            ChangeCaseCommon<ToLowerConversion>(source, destination);
+        }
+
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -451,6 +462,17 @@ namespace System.Globalization
             return ChangeCaseCommon<ToUpperConversion>(str);
         }
 
+        internal void ToUpper(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToUpper(source, destination);
+                return;
+            }
+
+            ChangeCaseCommon<ToUpperConversion>(source, destination);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpperAsciiInvariant(char c)
         {
@@ -459,6 +481,56 @@ namespace System.Globalization
                 c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
             return c;
+        }
+
+        /// <summary>
+        /// Converts the specified rune to lowercase.
+        /// </summary>
+        /// <param name="value">The rune to convert to lowercase.</param>
+        /// <returns>The specified rune converted to lowercase.</returns>
+        public Rune ToLower(Rune value)
+        {
+            // Convert rune to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+
+            // Change span to lower and convert to rune
+            if (charsWritten == 2)
+            {
+                Span<char> lowerChars = stackalloc char[2];
+                ToLower(chars, lowerChars);
+                return new Rune(lowerChars[0], lowerChars[1]);
+            }
+            else
+            {
+                char lowerChar = ToLower(chars[0]);
+                return new Rune(lowerChar);
+            }
+        }
+
+        /// <summary>
+        /// Converts the specified rune to uppercase.
+        /// </summary>
+        /// <param name="value">The rune to convert to uppercase.</param>
+        /// <returns>The specified rune converted to uppercase.</returns>
+        public Rune ToUpper(Rune value)
+        {
+            // Convert rune to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+
+            // Change span to upper and convert to rune
+            if (charsWritten == 2)
+            {
+                Span<char> upperChars = stackalloc char[2];
+                ToUpper(chars, upperChars);
+                return new Rune(upperChars[0], upperChars[1]);
+            }
+            else
+            {
+                char upperChar = ToUpper(chars[0]);
+                return new Rune(upperChar);
+            }
         }
 
         private bool IsAsciiCasingSameAsInvariant

@@ -780,6 +780,35 @@ namespace System.Text
 
         public bool Equals(Rune other) => this == other;
 
+#if SYSTEM_PRIVATE_CORELIB
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified rune are equal.
+        /// </summary>
+        /// <param name="other">The rune to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns></returns>
+        public bool Equals(Rune other, StringComparison comparisonType)
+        {
+            if (comparisonType is StringComparison.Ordinal)
+            {
+                return this == other;
+            }
+
+            // Convert this to span
+            Span<char> thisChars = stackalloc char[2];
+            int thisCharsWritten = EncodeToUtf16(thisChars);
+            ReadOnlySpan<char> thisCharsSlice = thisChars[..thisCharsWritten];
+
+            // Convert other to span
+            Span<char> otherChars = stackalloc char[2];
+            int otherCharsWritten = other.EncodeToUtf16(otherChars);
+            ReadOnlySpan<char> otherCharsSlice = otherChars[..otherCharsWritten];
+
+            // Compare span equality
+            return thisCharsSlice.Equals(otherCharsSlice, comparisonType);
+        }
+#endif
+
         public override int GetHashCode() => Value;
 
 #if SYSTEM_PRIVATE_CORELIB

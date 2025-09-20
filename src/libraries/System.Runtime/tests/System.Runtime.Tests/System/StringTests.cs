@@ -203,6 +203,28 @@ namespace System.Tests
             Assert.Equal(expected, span.Contains(value));
         }
 
+        public static IEnumerable<object[]> Contains_Rune_TestData()
+        {
+            yield return new object[] { "Hello", new Rune('H'), true };
+            yield return new object[] { "Hello", new Rune('Z'), false };
+            yield return new object[] { "Hello", new Rune('e'), false };
+            yield return new object[] { "Hello", new Rune('E'), false };
+            yield return new object[] { "", new Rune('H'), false };
+
+            // Non-BMP rune (GRINNING FACE)
+            yield return new object[] { "hello world", new Rune(0x1F600), false };
+            yield return new object[] { "hello \U0001F600 world", new Rune(0x1F600), true };
+            yield return new object[] { "hello world \U0001F600", new Rune(0x1F600), true };
+            yield return new object[] { "\U0001F600 hello world", new Rune(0x1F600), true };
+        }
+
+        [Theory]
+        [MemberData(nameof(Contains_Rune_TestData))]
+        public static void Contains_Rune(string s, Rune value, bool expected)
+        {
+            Assert.Equal(expected, s.Contains(value));
+        }
+
         [Theory]
         // CurrentCulture
         [InlineData("Hello", 'H', StringComparison.CurrentCulture, true)]
@@ -242,6 +264,65 @@ namespace System.Tests
         [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
         public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.Contains(value, comparisonType));
+        }
+
+        public static IEnumerable<object[]> Contains_Rune_StringComparison_TestData()
+        {
+            // CurrentCulture
+            yield return new object[] { "Hello", 'H', StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", 'e', StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", 'E', StringComparison.CurrentCulture, false };
+            yield return new object[] { "", 'H', StringComparison.CurrentCulture, false };
+            yield return new object[] { "", '\u0301', StringComparison.CurrentCulture, false }; // Using non-ASCII character to test ICU path
+
+            // CurrentCultureIgnoreCase
+            yield return new object[] { "Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "Hello", 'e', StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'E', StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "", 'H', StringComparison.CurrentCultureIgnoreCase, false };
+
+            // InvariantCulture
+            yield return new object[] { "Hello", 'H', StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", 'e', StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", 'E', StringComparison.InvariantCulture, false };
+            yield return new object[] { "", 'H', StringComparison.InvariantCulture, false };
+
+            // InvariantCultureIgnoreCase
+            yield return new object[] { "Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "Hello", 'e', StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'E', StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "", 'H', StringComparison.InvariantCultureIgnoreCase, false };
+
+            // Ordinal
+            yield return new object[] { "Hello", 'H', StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", 'e', StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", 'E', StringComparison.Ordinal, false };
+            yield return new object[] { "", 'H', StringComparison.Ordinal, false };
+
+            // OrdinalIgnoreCase
+            yield return new object[] { "Hello", 'H', StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", 'e', StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", 'E', StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "", 'H', StringComparison.OrdinalIgnoreCase, false };
+
+            // Non-BMP rune (GRINNING FACE) with OrdinalIgnoreCase
+            yield return new object[] { "hello world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "hello \U0001F600 world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "hello world \U0001F600", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "\U0001F600 hello world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(Contains_Rune_StringComparison_TestData))]
+        public static void Contains_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
         }
