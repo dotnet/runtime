@@ -1515,6 +1515,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
     SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
     SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+#ifdef FEATURE_INTERPRETER
+    // May contain InterpreterFrame address
+    SetFirstArgReg(pRD->pCurrentContext, GetFirstArgReg(pOtherRD->pCurrentContext));
+#endif
+
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     pRD->SSP = pOtherRD->SSP;
 #endif
@@ -1533,6 +1538,10 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
         *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
         SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
         SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
+#ifdef FEATURE_INTERPRETER
+        // May contain InterpreterFrame address
+        SetFirstArgReg(pRD->pCallerContext, GetFirstArgReg(pOtherRD->pCallerContext));
+#endif
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
@@ -2851,6 +2860,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     // Switch to walking the underlying interpreted frames.
                     // Save the registers the interpreter frames walking reuses so that we can restore them
                     // after we are done with the interpreter frames.
+                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p, saving SP=%p, IP=%p\n", m_crawl.pFrame, GetIP(pRD->pCurrentContext), GetSP(pRD->pCurrentContext)));
                     m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
                     m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                     m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
@@ -2870,6 +2880,8 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
                     // Restore the registers to the values they had before we started walking the interpreter frames.
+                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Completed walking of interpreted frames for InterpreterFrame %p, restoring SP=%p, IP=%p\n", m_crawl.pFrame, m_interpExecMethodSP, m_interpExecMethodIP));
+                    _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(pRD->pCurrentContext));
                     SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
                     SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
