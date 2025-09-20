@@ -804,7 +804,7 @@ namespace System.Tests
             yield return new object[] { "abc", new Rune('a'), new Rune('a'), StringComparison.CurrentCulture, "abc" };
             yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), StringComparison.CurrentCulture, "abcabccbacba" };
             yield return new object[] { "私は私", new Rune('私'), new Rune('海'), StringComparison.CurrentCulture, "海は海" };
-            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F600), StringComparison.CurrentCulture, "Cat dog Bear." };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.CurrentCulture, "Cat dog Bear." };
             yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.CurrentCulture, "Cat dog\U0001F601 Bear." };
 
             // CurrentCultureIgnoreCase
@@ -812,7 +812,7 @@ namespace System.Tests
             yield return new object[] { "abc", new Rune('a'), new Rune('a'), StringComparison.CurrentCultureIgnoreCase, "abc" };
             yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), StringComparison.CurrentCultureIgnoreCase, "abFabFFbaFba" };
             yield return new object[] { "私は私", new Rune('私'), new Rune('海'), StringComparison.CurrentCultureIgnoreCase, "海は海" };
-            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F600), StringComparison.CurrentCultureIgnoreCase, "Cat dog Bear." };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.CurrentCultureIgnoreCase, "Cat dog Bear." };
             yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.CurrentCultureIgnoreCase, "Cat dog\U0001F601 Bear." };
 
             // InvariantCulture
@@ -820,7 +820,7 @@ namespace System.Tests
             yield return new object[] { "abc", new Rune('a'), new Rune('a'), StringComparison.InvariantCulture, "abc" };
             yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), StringComparison.InvariantCulture, "abcabccbacba" };
             yield return new object[] { "私は私", new Rune('私'), new Rune('海'), StringComparison.InvariantCulture, "海は海" };
-            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F600), StringComparison.InvariantCulture, "Cat dog Bear." };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.InvariantCulture, "Cat dog Bear." };
             yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.InvariantCulture, "Cat dog\U0001F601 Bear." };
 
             // InvariantCultureIgnoreCase
@@ -828,7 +828,7 @@ namespace System.Tests
             yield return new object[] { "abc", new Rune('a'), new Rune('a'), StringComparison.InvariantCultureIgnoreCase, "abc" };
             yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), StringComparison.InvariantCultureIgnoreCase, "abFabFFbaFba" };
             yield return new object[] { "私は私", new Rune('私'), new Rune('海'), StringComparison.InvariantCultureIgnoreCase, "海は海" };
-            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F600), StringComparison.InvariantCultureIgnoreCase, "Cat dog Bear." };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.InvariantCultureIgnoreCase, "Cat dog Bear." };
             yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.InvariantCultureIgnoreCase, "Cat dog\U0001F601 Bear." };
 
             // Ordinal
@@ -836,7 +836,7 @@ namespace System.Tests
             yield return new object[] { "abc", new Rune('a'), new Rune('a'), StringComparison.Ordinal, "abc" };
             yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), StringComparison.Ordinal, "abcabccbacba" };
             yield return new object[] { "私は私", new Rune('私'), new Rune('海'), StringComparison.Ordinal, "海は海" };
-            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F600), StringComparison.Ordinal, "Cat dog Bear." };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.Ordinal, "Cat dog Bear." };
             yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.Ordinal, "Cat dog\U0001F601 Bear." };
 
             // OrdinalIgnoreCase
@@ -844,7 +844,7 @@ namespace System.Tests
             yield return new object[] { "abc", new Rune('a'), new Rune('a'), StringComparison.OrdinalIgnoreCase, "abc" };
             yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), StringComparison.OrdinalIgnoreCase, "abFabFFbaFba" };
             yield return new object[] { "私は私", new Rune('私'), new Rune('海'), StringComparison.OrdinalIgnoreCase, "海は海" };
-            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, "Cat dog Bear." };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.OrdinalIgnoreCase, "Cat dog Bear." };
             yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), StringComparison.OrdinalIgnoreCase, "Cat dog\U0001F601 Bear." };
 
             // To catch regressions when dealing with zero-length "this" inputs
