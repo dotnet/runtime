@@ -117,11 +117,11 @@ namespace ILLink.Shared.TrimAnalysis
             if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: field.RefKind is not RefKind.None))
                 return DynamicallyAccessedMemberTypes.None;
 
-            if (field.AssociatedSymbol is IPropertySymbol property)
+            if (field.AssociatedSymbol is IPropertySymbol property
+                && property.IsAutoProperty())
             {
                 // If this is an auto property, we get the property annotation
-                if (property.IsAutoProperty())
-                    return property.GetDynamicallyAccessedMemberTypes();
+                return property.GetDynamicallyAccessedMemberTypes();
             }
 
             return field.GetDynamicallyAccessedMemberTypes();

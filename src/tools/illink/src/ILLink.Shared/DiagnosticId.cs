@@ -101,7 +101,7 @@ namespace ILLink.Shared
         XmlInvalidValueForAttributeActionForResource = 2039,
         XmlCouldNotFindResourceToRemoveInAssembly = 2040,
         DynamicallyAccessedMembersIsNotAllowedOnMethods = 2041,
-        DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
+        unused_DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
         DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor = 2043,
         XmlCouldNotFindAnyTypeInNamespace = 2044,
         AttributeIsReferencedButTrimmerRemoveAllInstances = 2045,
