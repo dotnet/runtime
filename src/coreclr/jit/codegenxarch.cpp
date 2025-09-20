@@ -107,13 +107,30 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
         // as return register for two-register-returned structs.
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
-            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_0))
+            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_1))
         {
-            regGSCheck = REG_ARG_1;
+            // ARG_1 is used, we need some other scratch register that is not a return or ARG1
+#ifdef TARGET_X86
+            // the only other option on x86 is ARG_0
+            regGSCheck = REG_ARG_0;
+
+            // If we are in async method, REG_ARG_0 is also REG_ASYNC_CONTINUATION_RET,
+            // so we need to push/pop it around the check.
+            // And we need to suppress GC for that, since we are not in the epilog yet.
+            if (compiler->compIsAsync())
+            {
+                regMaskGSCheck = RBM_ARG_0;
+                GetEmitter()->emitDisableGC();
+            }
+#else
+            // not a return register and not an ARG_1 (and not RCX, so no worries about async)
+            regGSCheck = REG_R8;
+#endif
         }
         else
         {
-            regGSCheck = REG_ARG_0;
+            // ARG_1 does not contain `this`, so just use it.
+            regGSCheck = REG_ARG_1;
         }
     }
     else
