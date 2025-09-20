@@ -2240,9 +2240,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     emitAttr baseSize = emitActualTypeSize(intrin.baseType);
                     bool     isLoadingBytes =
                         ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting) ||
+                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend) ||
                          (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting) ||
-                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting));
+                         (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)
