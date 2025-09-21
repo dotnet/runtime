@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <interoplib.h>
+#include "../../vm/cdacdata.h"
 
 namespace InteropLib
 {
@@ -22,7 +23,7 @@ namespace InteropLib
         constexpr size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
 #endif
 
-        constexpr intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
+        constexpr uintptr_t DispatchThisPtrMask = ~(static_cast<uintptr_t>((DispatchAlignmentThisPtr) - 1u));
 
         static_assert(sizeof(void*) < DispatchAlignmentThisPtr, "DispatchAlignmentThisPtr must be larger than sizeof(void*).");
 
@@ -55,6 +56,7 @@ namespace InteropLib
         // This is designed to codify the binary layout.
         struct ManagedObjectWrapperLayout
         {
+        friend struct ::cdac_data<InteropLib::ABI::ManagedObjectWrapperLayout>;
         public:
             LONGLONG GetRawRefCount() const
             {
@@ -80,5 +82,11 @@ namespace InteropLib
         }
     }
 }
+
+template<>
+struct cdac_data<InteropLib::ABI::ManagedObjectWrapperLayout>
+{
+    static constexpr size_t RefCount = offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, _refCount);
+};
 
 #endif // _INTEROP_INC_INTEROPLIBABI_H_

@@ -3353,11 +3353,119 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded)
         => _legacyImpl10 is not null ? _legacyImpl10.GetObjectComWrappersData(objAddr, rcw, count, mowList, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW)
-        => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersCCW(ccw, isComWrappersCCW) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            if (ccw == 0)
+                throw new ArgumentException();
+
+            if (isComWrappersCCW != null)
+            {
+                TargetPointer ccwPtr = comWrappersContract.GetManagedObjectWrapperFromCCW(ccw.ToTargetPointer(_target));
+                *isComWrappersCCW = (ccwPtr != TargetPointer.Null) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                hr = (ccwPtr != TargetPointer.Null) ? HResults.S_OK : HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            Interop.BOOL isComWrappersCCWLocal;
+            int hrLocal = _legacyImpl10.IsComWrappersCCW(ccw, &isComWrappersCCWLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*isComWrappersCCW == isComWrappersCCWLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersCCWData(ccw, managedObject, refCount) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ccw == 0)
+                throw new ArgumentException();
+            TargetPointer ccwPtr = ccw.ToTargetPointer(_target);
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            TargetPointer managedObjectPtr = comWrappersContract.GetManagedObjectWrapperFromCCW(ccwPtr);
+            if (managedObjectPtr == TargetPointer.Null)
+                throw new ArgumentException();
+
+            if (managedObject != null)
+                *managedObject = comWrappersContract.GetComWrappersObjectFromMOW(managedObjectPtr).ToClrDataAddress(_target);
+
+            if (refCount != null)
+                *refCount = (int)comWrappersContract.GetMOWReferenceCount(managedObjectPtr);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            ClrDataAddress managedObjectLocal;
+            int refCountLocal;
+            int hrLocal = _legacyImpl10.GetComWrappersCCWData(ccw, &managedObjectLocal, &refCountLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                if (managedObject != null)
+                    Debug.Assert(*managedObject == managedObjectLocal);
+                if (refCount != null)
+                    Debug.Assert(*refCount == refCountLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
-        => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            ulong rcwMask = 1UL;
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            if (rcw == 0)
+                throw new ArgumentException();
+            else if (isComWrappersRCW != null)
+            {
+                if ((rcw & rcwMask) == 0)
+                    *isComWrappersRCW = Interop.BOOL.FALSE;
+                else
+                {
+                    TargetPointer rcwPtr = rcw.ToTargetPointer(_target) & ~rcwMask;
+                    *isComWrappersRCW = comWrappersContract.IsComWrappersRCW(rcwPtr) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    hr = (*isComWrappersRCW != Interop.BOOL.FALSE) ? HResults.S_OK : HResults.S_FALSE;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            Interop.BOOL isComWrappersRCWLocal;
+            int hrLocal = _legacyImpl10.IsComWrappersRCW(rcw, &isComWrappersRCWLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*isComWrappersRCW == isComWrappersRCWLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
     {
         int hr = HResults.S_OK;
