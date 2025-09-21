@@ -1463,15 +1463,10 @@ namespace System
                 return this;
             }
 
-            Span<char> oldChars = stackalloc char[2];
-            int oldCharsWritten = oldRune.EncodeToUtf16(oldChars);
-            ReadOnlySpan<char> oldCharsSlice = oldChars[..oldCharsWritten];
+            ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            ReadOnlySpan<char> newChars = newRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            Span<char> newChars = stackalloc char[2];
-            int newCharsWritten = newRune.EncodeToUtf16(newChars);
-            ReadOnlySpan<char> newCharsSlice = newChars[..newCharsWritten];
-
-            return ReplaceCore(this, oldCharsSlice, newCharsSlice, CompareInfo.Invariant, CompareOptions.Ordinal)
+            return ReplaceCore(this, oldChars, newChars, CompareInfo.Invariant, CompareOptions.Ordinal)
                 ?? this;
         }
 
@@ -1696,11 +1691,9 @@ namespace System
                 return [];
             }
 
-            Span<char> separatorChars = stackalloc char[2];
-            int separatorCharsWritten = separator.EncodeToUtf16(separatorChars);
-            ReadOnlySpan<char> separatorCharsSlice = separatorChars[..separatorCharsWritten];
+            ReadOnlySpan<char> separatorChars = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return SplitInternal(separatorCharsSlice, count, options);
+            return SplitInternal(separatorChars, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -2420,9 +2413,7 @@ namespace System
             }
 
             // Convert trimRune to span
-            Span<char> trimChars = stackalloc char[2];
-            int trimCharsWritten = trimRune.EncodeToUtf16(trimChars);
-            ReadOnlySpan<char> trimCharsSlice = trimChars[..trimCharsWritten];
+            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Trim start
             int index = 0;
@@ -2432,11 +2423,11 @@ namespace System
                 {
                     return Empty;
                 }
-                if (!this.AsSpan(index).StartsWith(trimCharsSlice))
+                if (!this.AsSpan(index).StartsWith(trimChars))
                 {
                     break;
                 }
-                index += trimCharsSlice.Length;
+                index += trimChars.Length;
             }
 
             // Trim end
@@ -2447,11 +2438,11 @@ namespace System
                 {
                     return Empty;
                 }
-                if (!this.AsSpan(index..(endIndex + 1)).EndsWith(trimCharsSlice))
+                if (!this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
                 {
                     break;
                 }
-                endIndex -= trimCharsSlice.Length;
+                endIndex -= trimChars.Length;
             }
 
             return this[index..(endIndex + 1)];
@@ -2514,9 +2505,7 @@ namespace System
             }
 
             // Convert trimRune to span
-            Span<char> trimChars = stackalloc char[2];
-            int trimCharsWritten = trimRune.EncodeToUtf16(trimChars);
-            ReadOnlySpan<char> trimCharsSlice = trimChars[..trimCharsWritten];
+            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Trim start
             int index = 0;
@@ -2526,11 +2515,11 @@ namespace System
                 {
                     return Empty;
                 }
-                if (!this.AsSpan(index).StartsWith(trimCharsSlice))
+                if (!this.AsSpan(index).StartsWith(trimChars))
                 {
                     break;
                 }
-                index += trimCharsSlice.Length;
+                index += trimChars.Length;
             }
 
             return this[index..];
@@ -2593,9 +2582,7 @@ namespace System
             }
 
             // Convert trimRune to span
-            Span<char> trimChars = stackalloc char[2];
-            int trimCharsWritten = trimRune.EncodeToUtf16(trimChars);
-            ReadOnlySpan<char> trimCharsSlice = trimChars[..trimCharsWritten];
+            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Trim end
             int endIndex = Length - 1;
@@ -2605,11 +2592,11 @@ namespace System
                 {
                     return string.Empty;
                 }
-                if (!this.AsSpan(..(endIndex + 1)).EndsWith(trimCharsSlice))
+                if (!this.AsSpan(..(endIndex + 1)).EndsWith(trimChars))
                 {
                     break;
                 }
-                endIndex -= trimCharsSlice.Length;
+                endIndex -= trimChars.Length;
             }
 
             return this[..(endIndex + 1)];

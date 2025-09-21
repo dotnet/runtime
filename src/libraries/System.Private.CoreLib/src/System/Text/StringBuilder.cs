@@ -1045,12 +1045,10 @@ namespace System.Text
         public StringBuilder Append(Rune value)
         {
             // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Append span
-            return Append(charsSlice);
+            return Append(valueChars);
         }
 
         [CLSCompliant(false)]
@@ -1362,12 +1360,10 @@ namespace System.Text
         public StringBuilder Insert(int index, Rune value)
         {
             // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
-            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Insert span
-            return Insert(index, charsSlice);
+            return Insert(index, valueChars);
         }
 
         public StringBuilder Insert(int index, char[]? value)
@@ -2316,17 +2312,13 @@ namespace System.Text
         public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
-            Span<char> oldChars = stackalloc char[2];
-            int oldCharsWritten = oldRune.EncodeToUtf16(oldChars);
-            ReadOnlySpan<char> oldCharsSlice = oldChars[..oldCharsWritten];
+            ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Convert newRune to span
-            Span<char> newChars = stackalloc char[2];
-            int newCharsWritten = newRune.EncodeToUtf16(newChars);
-            ReadOnlySpan<char> newCharsSlice = newChars[..newCharsWritten];
+            ReadOnlySpan<char> newChars = newRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Replace span with span
-            return Replace(oldCharsSlice, newCharsSlice, startIndex, count);
+            return Replace(oldChars, newChars, startIndex, count);
         }
 
         /// <summary>
