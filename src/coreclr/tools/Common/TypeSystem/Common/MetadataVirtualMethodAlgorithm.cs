@@ -896,7 +896,7 @@ namespace Internal.TypeSystem
                                     impl = implRecord.Body;
                                     diamondCase = false;
                                 }
-                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) == -1)
+                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) < 0)
                                 {
                                     diamondCase = true;
                                 }
