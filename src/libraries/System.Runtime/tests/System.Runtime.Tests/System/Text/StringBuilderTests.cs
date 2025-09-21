@@ -561,12 +561,12 @@ namespace System.Text.Tests
         [InlineData("Hello", 'c', "Hellocc")]
         [InlineData("Hello", '\0', "Hello")]
         [InlineData("Hello", 0x1F600, "Hello\U0001F600")]
-        public static void Append_Rune(string original, int value, string expected)
+        public static void Append_Rune(string original, int valueAsInt, string expected)
         {
-            var valueRune = new Rune(value);
+            var value = new Rune(valueAsInt);
 
             var builder = new StringBuilder(original);
-            builder.Append(valueRune);
+            builder.Append(value);
             Assert.Equal(expected, builder.ToString());
         }
 
@@ -1380,12 +1380,12 @@ namespace System.Text.Tests
         [InlineData("Hello", 5, 'b', "Hellob")]
         [InlineData("Hello", 5, 'b', "Hellob")]
         [InlineData("hi\U0001F600hello", 7, "hi\U0001F600hel\U0001F600lo")]
-        public static void Insert_Rune(string original, int index, int value, string expected)
+        public static void Insert_Rune(string original, int index, int valueAsInt, string expected)
         {
-            var valueRune = new Rune(value);
+            var value = new Rune(valueAsInt);
 
             var builder = new StringBuilder(original);
-            builder.Insert(index, valueRune);
+            builder.Insert(index, value);
             Assert.Equal(expected, builder.ToString());
         }
 
@@ -1813,6 +1813,55 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace('a', 'b', 6, 0)); // Count + start index > builder.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace('a', 'b', 5, 1)); // Count + start index > builder.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace('a', 'b', 4, 2)); // Count + start index > builder.Length
+        }
+
+        [Theory]
+        [InlineData("", 'a', '!', 0, 0, "")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 0, 16, "!!!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 0, 4, "!!!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 2, 3, "aa!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 4, 1, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'b', '!', 0, 0, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 16, 0, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'e', '!', 0, 16, "aaaabbbbccccdddd")]
+        [InlineData("a\U0001F600b\U0001F600c\U0001F600", 0x0001F600, '!', 0, 9, "a!b!c!")]
+        public static void Replace_Rune(string value, int oldRuneAsInt, int newRuneAsInt, string expected)
+        {
+            var oldRune = new Rune(oldRuneAsInt);
+            var newRune = new Rune(newRuneAsInt);
+
+            StringBuilder builder;
+            if (startIndex == 0 && count == value.Length)
+            {
+                // Use Replace(Rune, Rune)
+                builder = new StringBuilder(value);
+                builder.Replace(oldRune, newRune);
+                Assert.Equal(expected, builder.ToString());
+            }
+            // Use Replace(Rune, Rune, int, int)
+            builder = new StringBuilder(value);
+            builder.Replace(oldRune, newRune, startIndex, count);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_Rune_StringBuilderWithMultipleChunks()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            builder.Replace(new Rune('a'), new Rune('b'), 0, builder.Length);
+            Assert.Equal(new string('b', builder.Length), builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_Rune_Invalid()
+        {
+            var builder = new StringBuilder("Hello");
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace(new Rune('a'), new Rune('b'), -1, 0)); // Start index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new Rune('a'), new Rune('b'), 0, -1)); // Count < 0
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace(new Rune('a'), new Rune('b'), 6, 0)); // Count + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new Rune('a'), new Rune('b'), 5, 1)); // Count + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new Rune('a'), new Rune('b'), 4, 2)); // Count + start index > builder.Length
         }
 
         [Theory]
