@@ -361,7 +361,7 @@ namespace System
         ///   This method uses <see cref="Next(int, int)" /> to choose values for shuffling.
         ///   This method is an O(n) operation.
         /// </remarks>
-        public unsafe void Shuffle<T>(Span<T> values)
+        public void Shuffle<T>(Span<T> values)
         {
             // This loop is unrolled 2x to improve performance for small spans.
             for (int i = 0; i < values.Length - 2; i += 2)
