@@ -1374,6 +1374,32 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, '\0')); // New length > builder.MaxCapacity
         }
 
+        [Theory]
+        [InlineData("Hello", 0, '\0', "\0Hello")]
+        [InlineData("Hello", 3, 'a', "Helalo")]
+        [InlineData("Hello", 5, 'b', "Hellob")]
+        [InlineData("Hello", 5, 'b', "Hellob")]
+        [InlineData("hi\U0001F600hello", 7, "hi\U0001F600hel\U0001F600lo")]
+        public static void Insert_Rune(string original, int index, int value, string expected)
+        {
+            Rune valueRune = new(value);
+
+            var builder = new StringBuilder(original);
+            builder.Insert(index, valueRune);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Fact]
+        public static void Insert_Rune_Invalid()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, new Rune('\0'))); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new Rune('\0'))); // Index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new Rune('\0'))); // New length > builder.MaxCapacity
+        }
+
         public static IEnumerable<object[]> Insert_Float_TestData()
         {
             yield return new object[] { "Hello", 0, (float)0, "0Hello" };
