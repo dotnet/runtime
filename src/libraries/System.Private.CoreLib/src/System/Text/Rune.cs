@@ -789,11 +789,11 @@ namespace System.Text
 
 #if SYSTEM_PRIVATE_CORELIB
         /// <summary>
-        /// Returns a value that indicates whether the current instance and a specified rune are equal.
+        /// Returns a value that indicates whether the current instance and a specified rune are equal using the specified comparison option.
         /// </summary>
         /// <param name="other">The rune to compare with the current instance.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns></returns>
+        /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
         public bool Equals(Rune other, StringComparison comparisonType)
         {
             if (comparisonType is StringComparison.Ordinal)

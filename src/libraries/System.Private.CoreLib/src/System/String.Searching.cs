@@ -46,7 +46,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a value indicating whether a specified rune occurs within this string.
+        /// Returns a value indicating whether a specified rune occurs within this string using an ordinal comparison.
         /// </summary>
         /// <param name="value">The rune to seek.</param>
         /// <returns><see langword="true"/> if <paramref name="value"/> occurs within this string; otherwise, <see langword="false"/>.</returns>
@@ -56,7 +56,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a value indicating whether a specified rune occurs within this string.
+        /// Returns a value indicating whether a specified rune occurs within this string using the specified comparison option.
         /// </summary>
         /// <param name="value">The rune to seek.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>

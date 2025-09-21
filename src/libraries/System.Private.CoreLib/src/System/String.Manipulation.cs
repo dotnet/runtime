@@ -1448,7 +1448,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a new string in which all occurrences of a specified Unicode rune in this instance are replaced with another specified Unicode rune.
+        /// Returns a new string in which all occurrences of a specified Unicode rune in this instance are replaced with another specified Unicode rune using an ordinal comparison.
         /// </summary>
         /// <param name="oldRune">The Unicode character to be replaced.</param>
         /// <param name="newRune">The Unicode character to replace all occurrences of <paramref name="oldRune"/>.</param>

@@ -2288,7 +2288,7 @@ namespace System.Text
         }
 
         /// <summary>
-        /// Replaces all occurrences of a specified rune in this instance with another specified rune.
+        /// Replaces all occurrences of a specified rune in this instance with another specified rune using an ordinal comparison.
         /// </summary>
         /// <param name="oldRune">The rune to replace.</param>
         /// <param name="newRune">The rune that replaces <paramref name="oldRune"/>.</param>
@@ -2299,7 +2299,7 @@ namespace System.Text
         }
 
         /// <summary>
-        /// Replaces, within a substring of this instance, all occurrences of a specified rune with another specified rune.
+        /// Replaces, within a substring of this instance, all occurrences of a specified rune with another specified rune using an ordinal comparison.
         /// </summary>
         /// <param name="oldRune">The rune to replace.</param>
         /// <param name="newRune">The rune that replaces <paramref name="oldRune"/>.</param>

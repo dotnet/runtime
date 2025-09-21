@@ -605,7 +605,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether the end of this string instance matches the specified rune.
+        /// Determines whether the end of this string instance matches the specified rune using an ordinal comparison.
         /// </summary>
         /// <param name="value">The character to compare to the character at the end of this instance.</param>
         /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
@@ -1216,7 +1216,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether the beginning of this string instance matches the specified rune.
+        /// Determines whether the beginning of this string instance matches the specified rune using an ordinal comparison.
         /// </summary>
         /// <param name="value">The rune to compare.</param>
         /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
