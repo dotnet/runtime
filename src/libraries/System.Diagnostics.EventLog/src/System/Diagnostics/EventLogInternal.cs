@@ -567,10 +567,17 @@ namespace System.Diagnostics
                     while (i < count)
                     {
                         EventLogEntry entry = GetEntryWithOldest(i);
-                        if (this.SynchronizingObject != null && this.SynchronizingObject.InvokeRequired)
-                            this.SynchronizingObject.BeginInvoke(this.onEntryWrittenHandler!, new object[] { this, new EntryWrittenEventArgs(entry) });
-                        else
-                            onEntryWrittenHandler!(this, new EntryWrittenEventArgs(entry));
+                        if (onEntryWrittenHandler != null)
+                        {
+                            if (this.SynchronizingObject != null && this.SynchronizingObject.InvokeRequired)
+                            {
+                                this.SynchronizingObject.BeginInvoke(this.onEntryWrittenHandler, new object[] { this, new EntryWrittenEventArgs(entry) });
+                            }
+                            else
+                            {
+                                onEntryWrittenHandler(this, new EntryWrittenEventArgs(entry));
+                            }
+                        }
 
                         i++;
                     }
