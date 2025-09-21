@@ -102,14 +102,6 @@ namespace System.Diagnostics
             }
         }
 
-        public EventLogInternal(string logName, string machineName) : this(logName, machineName, "", null! /* Special case with no parent */)
-        {
-        }
-
-        public EventLogInternal(string logName, string machineName, string source) : this(logName, machineName, source, null! /* Special case with no parent */)
-        {
-        }
-
         public EventLogInternal(string logName, string machineName, string source, EventLog parent)
         {
             ArgumentNullException.ThrowIfNull(logName);
@@ -426,7 +418,7 @@ namespace System.Diagnostics
 
 
                 info = new LogListeningInfo(
-                    handleOwner: new EventLogInternal(compLogName, compMachineName),
+                    handleOwner: new EventLogInternal(compLogName, compMachineName, string.Empty, parent: null! /* Special handling for EventLogInternals in listenerInfos; no parent is applicable */),
                     waitHandle: new AutoResetEvent(false));
                 info.listeningComponents.Add(component);
 

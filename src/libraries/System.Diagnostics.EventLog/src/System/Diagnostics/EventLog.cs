@@ -1014,7 +1014,7 @@ namespace System.Diagnostics
 
         public static void WriteEntry(string source, string? message, EventLogEntryType type, int eventID, short category, byte[]? rawData)
         {
-            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
+            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source), parent: null! /* Special case - EventLogInternal instance is immediately used */))
             {
                 log.WriteEntry(message, type, eventID, category, rawData);
             }
@@ -1037,7 +1037,7 @@ namespace System.Diagnostics
 
         public static void WriteEvent(string source, EventInstance instance, params object?[]? values)
         {
-            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
+            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source), parent: null! /* Special case - EventLogInternal instance is immediately used */))
             {
                 log.WriteEvent(instance, null, values);
             }
@@ -1045,7 +1045,7 @@ namespace System.Diagnostics
 
         public static void WriteEvent(string source, EventInstance instance, byte[] data, params object?[]? values)
         {
-            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
+            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source), parent: null! /* Special case - EventLogInternal instance is immediately used */))
             {
                 log.WriteEvent(instance, data, values);
             }
