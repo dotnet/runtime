@@ -223,6 +223,22 @@ namespace System.Reflection.Emit
             {
                 signature.GenericTypeParameter(type.GenericParameterPosition);
             }
+            else if (type.IsFunctionPointer)
+            {
+                SignatureCallingConvention callConv = SignatureCallingConvention.Default;
+                // TODO: Support other calling conventions
+                // TODO: Support custom modifiers
+
+                MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv);
+                sigEncoder.Parameters(type.GetFunctionPointerParameterTypes().Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
+                WriteSignatureForType(retTypeEncoder.Type(), type.GetFunctionPointerReturnType(), module);
+
+                foreach (Type paramType in type.GetFunctionPointerParameterTypes())
+                {
+                    ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
+                    WriteSignatureForType(paramEncoder.Type(), paramType, module);
+                }
+            }
             else
             {
                 WriteSimpleSignature(signature, type, module);
