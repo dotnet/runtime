@@ -563,9 +563,9 @@ namespace System.Text.Tests
         [InlineData("Hello", 0x1F600, "Hello\U0001F600")]
         public static void Append_Rune(string original, int value, string expected)
         {
-            Rune valueRune = new(value);
+            var valueRune = new Rune(value);
 
-            StringBuilder builder = new(original);
+            var builder = new StringBuilder(original);
             builder.Append(valueRune);
             Assert.Equal(expected, builder.ToString());
         }
@@ -1203,7 +1203,7 @@ namespace System.Text.Tests
         [InlineData("x\U0001F46Ey", 1, 0x1F46E)] // U+1F46E POLICE OFFICER
         public static void GetRuneAt_TryGetRuneAt_Utf16_Success(string inputString, int index, int expectedScalarValue)
         {
-            StringBuilder inputStringBuilder = new(inputString);
+            var inputStringBuilder = new StringBuilder(inputString);
 
             // GetRuneAt
             Assert.Equal(expectedScalarValue, inputStringBuilder.GetRuneAt(index).Value);
@@ -1222,7 +1222,7 @@ namespace System.Text.Tests
         [InlineData(new char[] { 'x', '\uD800' }, 1)] // end of string reached before could complete surrogate pair
         public static void GetRuneAt_TryGetRuneAt_Utf16_InvalidData(char[] inputCharArray, int index)
         {
-            StringBuilder inputStringBuilder = new(new string(inputCharArray));
+            var inputStringBuilder = new StringBuilder(new string(inputCharArray));
 
             // GetRuneAt
             Assert.Throws<ArgumentException>("index", () => inputStringBuilder.GetRuneAt(index));
@@ -1382,7 +1382,7 @@ namespace System.Text.Tests
         [InlineData("hi\U0001F600hello", 7, "hi\U0001F600hel\U0001F600lo")]
         public static void Insert_Rune(string original, int index, int value, string expected)
         {
-            Rune valueRune = new(value);
+            var valueRune = new Rune(value);
 
             var builder = new StringBuilder(original);
             builder.Insert(index, valueRune);
