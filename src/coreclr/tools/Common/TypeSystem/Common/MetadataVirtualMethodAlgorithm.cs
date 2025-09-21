@@ -878,7 +878,7 @@ namespace Internal.TypeSystem
                         impl = interfaceMethodDefinition;
                     }
                 }
-                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) != -1)
+                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) >= 0)
                 {
                     // This interface might provide a default implementation
                     MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
@@ -890,7 +890,7 @@ namespace Internal.TypeSystem
                             {
                                 // This interface provides a default implementation.
                                 // Is it also most specific?
-                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) != -1)
+                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) >= 0)
                                 {
                                     mostSpecificInterface = runtimeInterface;
                                     impl = implRecord.Body;
