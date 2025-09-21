@@ -518,12 +518,14 @@ namespace System.Tests
         public static void SplitCharSeparator(string value, char separator, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separator, count, options));
+            Assert.Equal(expected, value.Split(new Rune(separator), count, options));
             Assert.Equal(expected, value.Split(new[] { separator }, count, options));
             Assert.Equal(expected, value.Split(separator.ToString(), count, options));
             Assert.Equal(expected, value.Split(new[] { separator.ToString() }, count, options));
             if (count == int.MaxValue)
             {
                 Assert.Equal(expected, value.Split(separator, options));
+                Assert.Equal(expected, value.Split(new Rune(separator), options));
                 Assert.Equal(expected, value.Split(new[] { separator }, options));
                 Assert.Equal(expected, value.Split(separator.ToString(), options));
                 Assert.Equal(expected, value.Split(new[] { separator.ToString() }, options));
@@ -531,12 +533,14 @@ namespace System.Tests
             if (options == StringSplitOptions.None)
             {
                 Assert.Equal(expected, value.Split(separator, count));
+                Assert.Equal(expected, value.Split(new Rune(separator), count));
                 Assert.Equal(expected, value.Split(new[] { separator }, count));
                 Assert.Equal(expected, value.Split(separator.ToString(), count));
             }
             if (count == int.MaxValue && options == StringSplitOptions.None)
             {
                 Assert.Equal(expected, value.Split(separator));
+                Assert.Equal(expected, value.Split(new Rune(separator)));
                 Assert.Equal(expected, value.Split(new[] { separator }));
                 Assert.Equal(expected, value.Split((ReadOnlySpan<char>)new[] { separator }));
                 Assert.Equal(expected, value.Split(separator.ToString()));
