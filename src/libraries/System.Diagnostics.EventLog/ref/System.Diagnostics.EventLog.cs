@@ -149,9 +149,13 @@ namespace System.Diagnostics
         public override string Name { get { throw null; } set { } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType severity, int id, object? data) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType severity, int id, params object?[]? data) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string? message) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string? format, params object?[]? args) { }
         public override void Write(string? message) { }
         public override void WriteLine(string? message) { }
