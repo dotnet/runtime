@@ -367,10 +367,9 @@ namespace System
             {
                 int j = Next(i, values.Length);
 
-                // Benchmarks show that the cost of the branch exceeds the
-                // cost of the read and write when the write size is small.
-                // We are not too worried about massive  types, so we
-                // exclude the j != i checks unconditionally.
+                // The i != j check is excluded intentionally.
+                // Microbenchmarks show that the extra branch costs more than the redundant read/write for small value types.
+                // Since large value types are uncommon in shuffle scenarios, the trade-off favors removing the branch.
                 T temp = values[i];
                 values[i] = values[j];
                 values[j] = temp;
