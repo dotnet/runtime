@@ -23,7 +23,9 @@ const copies = [
 ];
 
 for (const [src, dest] of copies) {
-    const destDir = path.dirname(dest);
+    const absoluteSrc = path.resolve(src);
+    const destDir = path.resolve(path.dirname(dest));
+    console.log(`Copying ${absoluteSrc} to ${destDir}`);
     await fs.mkdir(destDir, { recursive: true });
-    await fs.copyFile(src, dest);
+    await fs.copyFile(absoluteSrc, dest);
 }
