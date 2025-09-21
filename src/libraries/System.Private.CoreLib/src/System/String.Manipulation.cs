@@ -2430,7 +2430,7 @@ namespace System
             {
                 if (index >= Length)
                 {
-                    return string.Empty;
+                    return Empty;
                 }
                 if (!this.AsSpan(index).StartsWith(trimCharsSlice))
                 {
@@ -2445,7 +2445,7 @@ namespace System
             {
                 if (endIndex < index)
                 {
-                    return string.Empty;
+                    return Empty;
                 }
                 if (!this.AsSpan(index..(endIndex + 1)).EndsWith(trimCharsSlice))
                 {
@@ -2524,7 +2524,7 @@ namespace System
             {
                 if (index >= Length)
                 {
-                    return string.Empty;
+                    return Empty;
                 }
                 if (!this.AsSpan(index).StartsWith(trimCharsSlice))
                 {
