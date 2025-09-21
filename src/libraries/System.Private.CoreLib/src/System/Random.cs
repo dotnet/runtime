@@ -363,20 +363,24 @@ namespace System
         /// </remarks>
         public unsafe void Shuffle<T>(Span<T> values)
         {
-            for (int i = 0; i < values.Length - 1; i++)
+            // This loop is unrolled 2x to improve performance for small spans.
+            for (int i = 0; i < values.Length - 2; i += 2)
             {
-                int j = Next(i, values.Length);
+                // Get the j for the i position and the position after.
+                // If i + 1 is the last position of the list, we will just get i + 1 back.
+                int j0 = Next(i, values.Length);
+                int j1 = Next(i + 1, values.Length);
 
                 // Benchmarks show that the cost of the branch exceeds the
                 // cost of the read and write when the write size is small.
-                // So, for all reference types and for all small structs,
-                // do the write regardless.
-                if (sizeof(T) <= 2 * sizeof(nint) || j != i)
-                {
-                    T temp = values[i];
-                    values[i] = values[j];
-                    values[j] = temp;
-                }
+                // We are not too worried about massive  types, so we
+                // exclude the j != i checks unconditionally.
+                T temp0 = values[i];
+                T temp1 = values[i + 1];
+                values[i] = values[j0];
+                values[i + 1] = values[j1];
+                values[j0] = temp0;
+                values[j1] = temp1;
             }
         }
 
