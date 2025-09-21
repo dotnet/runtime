@@ -294,6 +294,13 @@ namespace System.Text
 
         public int CompareTo(Rune other) => this.Value - other.Value; // values don't span entire 32-bit domain; won't integer overflow
 
+        internal ReadOnlySpan<char> AsSpan(Span<char> buffer)
+        {
+            Debug.Assert(buffer.Length >= MaxUtf16CharsPerRune);
+            int charsWritten = EncodeToUtf16(buffer);
+            return buffer[..charsWritten];
+        }
+
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
         /// </summary>
@@ -795,17 +802,13 @@ namespace System.Text
             }
 
             // Convert this to span
-            Span<char> thisChars = stackalloc char[2];
-            int thisCharsWritten = EncodeToUtf16(thisChars);
-            ReadOnlySpan<char> thisCharsSlice = thisChars[..thisCharsWritten];
+            ReadOnlySpan<char> thisChars = AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
 
             // Convert other to span
-            Span<char> otherChars = stackalloc char[2];
-            int otherCharsWritten = other.EncodeToUtf16(otherChars);
-            ReadOnlySpan<char> otherCharsSlice = otherChars[..otherCharsWritten];
+            ReadOnlySpan<char> otherChars = other.AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
 
             // Compare span equality
-            return thisCharsSlice.Equals(otherCharsSlice, comparisonType);
+            return thisChars.Equals(otherChars, comparisonType);
         }
 #endif
 

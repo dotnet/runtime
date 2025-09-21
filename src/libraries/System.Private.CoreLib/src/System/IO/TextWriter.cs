@@ -132,14 +132,13 @@ namespace System.IO
         public virtual void Write(Rune value)
         {
             // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             // Write span
-            Write(chars[0]);
-            if (charsWritten > 1)
+            Write(valueChars[0]);
+            if (valueChars.Length > 1)
             {
-                Write(chars[1]);
+                Write(valueChars[1]);
             }
         }
 
@@ -368,17 +367,16 @@ namespace System.IO
         public virtual void WriteLine(Rune value)
         {
             // Convert value to span
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            if (charsWritten > 1)
+            if (valueChars.Length > 1)
             {
-                Write(chars[0]);
-                WriteLine(chars[1]);
+                Write(valueChars[0]);
+                WriteLine(valueChars[1]);
             }
             else
             {
-                WriteLine(chars[0]);
+                WriteLine(valueChars[0]);
             }
         }
 
@@ -588,20 +586,19 @@ namespace System.IO
         /// <returns>A task that represents the asynchronous write operation.</returns>
         public virtual Task WriteAsync(Rune value)
         {
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            if (charsWritten > 1)
+            if (valueChars.Length > 1)
             {
                 return Task.Factory.StartNew(static state =>
                 {
                     var t = (TupleSlim<TextWriter, char, char>)state!;
                     t.Item1.Write(t.Item2);
                     t.Item1.Write(t.Item3);
-                }, new TupleSlim<TextWriter, char, char>(this, chars[0], chars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                }, new TupleSlim<TextWriter, char, char>(this, valueChars[0], valueChars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
-            return WriteAsync(chars[0]);
+            return WriteAsync(valueChars[0]);
         }
 
         public virtual Task WriteAsync(string? value) =>
@@ -674,20 +671,19 @@ namespace System.IO
         /// <returns>A task that represents the asynchronous write operation.</returns>
         public virtual Task WriteLineAsync(Rune value)
         {
-            Span<char> chars = stackalloc char[2];
-            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            if (charsWritten > 1)
+            if (valueChars.Length > 1)
             {
                 return Task.Factory.StartNew(static state =>
                 {
                     var t = (TupleSlim<TextWriter, char, char>)state!;
                     t.Item1.Write(t.Item2);
                     t.Item1.WriteLine(t.Item3);
-                }, new TupleSlim<TextWriter, char, char>(this, chars[0], chars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                }, new TupleSlim<TextWriter, char, char>(this, valueChars[0], valueChars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
-            return WriteLineAsync(chars[0]);
+            return WriteLineAsync(valueChars[0]);
         }
 
         public virtual Task WriteLineAsync(string? value) =>

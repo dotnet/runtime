@@ -382,11 +382,9 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
 
             // Convert value to span
-            Span<char> valueChars = stackalloc char[2];
-            int valueCharsWritten = value.EncodeToUtf16(valueChars);
-            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return this.IndexOf(valueCharsSlice[startIndex..(startIndex + count)], comparisonType);
+            return this.IndexOf(valueChars[startIndex..(startIndex + count)], comparisonType);
         }
 
         // Returns the index of the last occurrence of a specified character in the current instance.
@@ -612,11 +610,9 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length - 1);
 
             // Convert value to span
-            Span<char> valueChars = stackalloc char[2];
-            int valueCharsWritten = value.EncodeToUtf16(valueChars);
-            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return this.LastIndexOf(valueCharsSlice[startIndex..(startIndex + count)], comparisonType);
+            return this.LastIndexOf(valueChars[startIndex..(startIndex + count)], comparisonType);
         }
     }
 }

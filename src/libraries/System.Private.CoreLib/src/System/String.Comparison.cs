@@ -623,11 +623,9 @@ namespace System
         public bool EndsWith(Rune value, StringComparison comparisonType)
         {
             // Convert value to span
-            Span<char> valueChars = stackalloc char[2];
-            int valueCharsWritten = value.EncodeToUtf16(valueChars);
-            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return this.EndsWith(valueCharsSlice, comparisonType);
+            return this.EndsWith(valueChars, comparisonType);
         }
 
         // Determines whether two strings match.
@@ -1236,11 +1234,9 @@ namespace System
         public bool StartsWith(Rune value, StringComparison comparisonType)
         {
             // Convert value to span
-            Span<char> valueChars = stackalloc char[2];
-            int valueCharsWritten = value.EncodeToUtf16(valueChars);
-            ReadOnlySpan<char> valueCharsSlice = valueChars[..valueCharsWritten];
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return this.StartsWith(valueCharsSlice, comparisonType);
+            return this.StartsWith(valueChars, comparisonType);
         }
 
         internal static void CheckStringComparison(StringComparison comparisonType)
