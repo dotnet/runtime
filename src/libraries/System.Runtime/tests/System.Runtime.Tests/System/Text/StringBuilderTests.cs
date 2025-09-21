@@ -1197,6 +1197,52 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("a", 0, (int)'a')]
+        [InlineData("ab", 1, (int)'b')]
+        [InlineData("x\U0001F46Ey", 3, (int)'y')]
+        [InlineData("x\U0001F46Ey", 1, 0x1F46E)] // U+1F46E POLICE OFFICER
+        public static void GetRuneAt_TryGetRuneAt_Utf16_Success(string inputString, int index, int expectedScalarValue)
+        {
+            StringBuilder inputStringBuilder = new(inputString);
+
+            // GetRuneAt
+            Assert.Equal(expectedScalarValue, inputStringBuilder.GetRuneAt(index).Value);
+
+            // TryGetRuneAt
+            Assert.True(inputStringBuilder.TryGetRuneAt(index, out Rune rune));
+            Assert.Equal(expectedScalarValue, rune.Value);
+        }
+
+        // Our unit test runner doesn't deal well with malformed literal strings, so
+        // we smuggle it as a char[] and turn it into a string within the test itself.
+        [Theory]
+        [InlineData(new char[] { 'x', '\uD83D', '\uDC6E', 'y' }, 2)] // attempt to index into the middle of a UTF-16 surrogate pair
+        [InlineData(new char[] { 'x', '\uD800', 'y' }, 1)] // high surrogate not followed by low surrogate
+        [InlineData(new char[] { 'x', '\uDFFF', '\uDFFF' }, 1)] // attempt to start at a low surrogate
+        [InlineData(new char[] { 'x', '\uD800' }, 1)] // end of string reached before could complete surrogate pair
+        public static void GetRuneAt_TryGetRuneAt_Utf16_InvalidData(char[] inputCharArray, int index)
+        {
+            StringBuilder inputStringBuilder = new(new string(inputCharArray));
+
+            // GetRuneAt
+            Assert.Throws<ArgumentException>("index", () => inputStringBuilder.GetRuneAt(index));
+
+            // TryGetRuneAt
+            Assert.False(inputStringBuilder.TryGetRuneAt(index, out Rune rune));
+            Assert.Equal(0, rune.Value);
+        }
+
+        [Fact]
+        public static void GetRuneAt_TryGetRuneAt_Utf16_BadArgs()
+        {
+            // negative index specified
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new StringBuilder("hello").GetRuneAt(-1));
+
+            // index goes past end of string
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new StringBuilder(string.Empty).GetRuneAt(0));
+        }
+
+        [Theory]
         [InlineData("Hello", 0, (uint)0, "0Hello")]
         [InlineData("Hello", 3, (uint)123, "Hel123lo")]
         [InlineData("Hello", 5, (uint)456, "Hello456")]
