@@ -2428,7 +2428,7 @@ namespace System
             int index = 0;
             while (true)
             {
-                if (index > Length)
+                if (index >= Length)
                 {
                     return string.Empty;
                 }
