@@ -671,24 +671,49 @@ namespace System.Tests
         [InlineData(new char[] { 'x', '\uFFFD', 'y' }, new int[] { 'x', 0xFFFD, 'y' })] // literal U+FFFD
         public static void EnumerateRunes(char[] chars, int[] expected)
         {
-            // Test data is smuggled as char[] instead of straight-up string since the test framework
-            // doesn't like invalid UTF-16 literals.
-
-            string asString = new string(chars);
-
-            // First, use a straight-up foreach keyword to ensure pattern matching works as expected
-
-            List<int> enumeratedScalarValues = new List<int>();
-            foreach (Rune rune in asString.EnumerateRunes())
+            // String
             {
-                enumeratedScalarValues.Add(rune.Value);
+                // Test data is smuggled as char[] instead of straight-up string since the test framework
+                // doesn't like invalid UTF-16 literals.
+
+                string asString = new string(chars);
+
+                // First, use a straight-up foreach keyword to ensure pattern matching works as expected
+
+                List<int> enumeratedScalarValues = new List<int>();
+                foreach (Rune rune in asString.EnumerateRunes())
+                {
+                    enumeratedScalarValues.Add(rune.Value);
+                }
+                Assert.Equal(expected, enumeratedScalarValues.ToArray());
+
+                // Then use LINQ to ensure IEnumerator<...> works as expected
+
+                int[] enumeratedValues = asString.EnumerateRunes().Select(r => r.Value).ToArray();
+                Assert.Equal(expected, enumeratedValues);
             }
-            Assert.Equal(expected, enumeratedScalarValues.ToArray());
 
-            // Then use LINQ to ensure IEnumerator<...> works as expected
+            // StringBuilder
+            {
+                // Test data is smuggled as char[] instead of straight-up string since the test framework
+                // doesn't like invalid UTF-16 literals.
 
-            int[] enumeratedValues = new string(chars).EnumerateRunes().Select(r => r.Value).ToArray();
-            Assert.Equal(expected, enumeratedValues);
+                StringBuilder asStringBuilder = new StringBuilder(new string(chars));
+
+                // First, use a straight-up foreach keyword to ensure pattern matching works as expected
+
+                List<int> enumeratedScalarValues = new List<int>();
+                foreach (Rune rune in asStringBuilder.EnumerateRunes())
+                {
+                    enumeratedScalarValues.Add(rune.Value);
+                }
+                Assert.Equal(expected, enumeratedScalarValues.ToArray());
+
+                // Then use LINQ to ensure IEnumerator<...> works as expected
+
+                int[] enumeratedValues = asStringBuilder.EnumerateRunes().Select(r => r.Value).ToArray();
+                Assert.Equal(expected, enumeratedValues);
+            }
         }
 
         [Fact]
