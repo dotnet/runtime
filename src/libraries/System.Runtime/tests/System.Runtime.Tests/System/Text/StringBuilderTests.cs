@@ -555,6 +555,22 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("Hello", '\0', "Hello\0")]
+        [InlineData("Hello", 'a', "Helloa")]
+        [InlineData("", 'b', "b")]
+        [InlineData("Hello", 'c', "Hellocc")]
+        [InlineData("Hello", '\0', "Hello")]
+        [InlineData("Hello", 0x1F600, "Hello\U0001F600")]
+        public static void Append_Rune(string original, int value, string expected)
+        {
+            Rune valueRune = new(value);
+
+            StringBuilder builder = new(original);
+            builder.Append(valueRune);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Theory]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 1, "Helloa")]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 2, "Helloab")]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 3, "Helloabc")]
