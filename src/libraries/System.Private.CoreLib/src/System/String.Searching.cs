@@ -384,7 +384,8 @@ namespace System
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return this.AsSpan(startIndex..(startIndex + count)).IndexOf(valueChars, comparisonType);
+            int subIndex = this.AsSpan(startIndex..(startIndex + count)).IndexOf(valueChars, comparisonType);
+            return subIndex < 0 ? subIndex : startIndex + subIndex;
         }
 
         // Returns the index of the last occurrence of a specified character in the current instance.
@@ -612,7 +613,8 @@ namespace System
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            return this.AsSpan(startIndex..(startIndex + count)).LastIndexOf(valueChars, comparisonType);
+            int subIndex = this.AsSpan(startIndex..(startIndex + count)).LastIndexOf(valueChars, comparisonType);
+            return subIndex < 0 ? subIndex : startIndex + subIndex;
         }
     }
 }
