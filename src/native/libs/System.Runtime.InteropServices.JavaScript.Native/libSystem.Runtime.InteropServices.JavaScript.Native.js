@@ -3,16 +3,16 @@
 //! This is generated file, see src/native/libs/Browser/rollup.config.defines.js
 
 
-var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (exports) {
+var libInteropJavaScriptNative = (function (exports) {
     'use strict';
 
     // Licensed to the .NET Foundation under one or more agreements.
     // The .NET Foundation licenses this file to you under the MIT license.
-    let JSEngine;
     let Module;
     let runtimeApi;
     let Logger = {};
     let Assert = {};
+    let JSEngine = {};
     let loaderExports = {};
     let runtimeExports = {};
     let nativeExports = {};
@@ -35,38 +35,24 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
         }
     }
     function updateInternalsImpl() {
-        if (!JSEngine) {
-            const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-            const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
-            const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
-            const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
-            const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
-            const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
-            JSEngine = {
-                IS_NODE: ENVIRONMENT_IS_NODE,
-                IS_SHELL: ENVIRONMENT_IS_SHELL,
-                IS_WEB: ENVIRONMENT_IS_WEB,
-                IS_WORKER: ENVIRONMENT_IS_WORKER,
-                IS_SIDECAR: ENVIRONMENT_IS_SIDECAR,
-            };
-        }
         if (Object.keys(loaderExports).length === 0 && dotnetInternals.loaderExportsTable) {
             loaderExports = {};
             Logger = {};
             Assert = {};
-            loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, loaderExports);
+            JSEngine = {};
+            loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
         }
         if (Object.keys(runtimeExports).length === 0 && dotnetInternals.runtimeExportsTable) {
             runtimeExports = {};
             runtimeExportsFromTable(dotnetInternals.runtimeExportsTable, runtimeExports);
         }
-        if (Object.keys(nativeExports).length === 0 && dotnetInternals.nativeExportsTable) {
+        if (Object.keys(nativeExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
             nativeExports = {};
-            nativeExportsFromTable(dotnetInternals.nativeExportsTable, nativeExports);
+            hostNativeExportsFromTable(dotnetInternals.hostNativeExportsTable, nativeExports);
         }
-        if (Object.keys(interopExports).length === 0 && dotnetInternals.interopExportsTable) {
+        if (Object.keys(interopExports).length === 0 && dotnetInternals.interopJavaScriptNativeExportsTable) {
             interopExports = {};
-            interopExportsFromTable(dotnetInternals.interopExportsTable, interopExports);
+            interopJavaScriptNativeExportsFromTable(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
         }
     }
     /**
@@ -79,12 +65,17 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
             logger.warn,
             logger.error,
             assert.check,
+            loaderExports.ENVIRONMENT_IS_NODE,
+            loaderExports.ENVIRONMENT_IS_SHELL,
+            loaderExports.ENVIRONMENT_IS_WEB,
+            loaderExports.ENVIRONMENT_IS_WORKER,
+            loaderExports.ENVIRONMENT_IS_SIDECAR,
             loaderExports.browserHostResolveMain,
             loaderExports.browserHostRejectMain,
             loaderExports.getRunMainPromise,
         ];
     }
-    function loaderExportsFromTable(table, logger, assert, loaderExports) {
+    function loaderExportsFromTable(table, logger, assert, jsEngine, loaderExports) {
         const loggerLocal = {
             info: table[0],
             warn: table[1],
@@ -94,13 +85,26 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
             check: table[3],
         };
         const loaderExportsLocal = {
-            browserHostResolveMain: table[4],
-            browserHostRejectMain: table[5],
-            getRunMainPromise: table[6],
+            ENVIRONMENT_IS_NODE: table[4],
+            ENVIRONMENT_IS_SHELL: table[5],
+            ENVIRONMENT_IS_WEB: table[6],
+            ENVIRONMENT_IS_WORKER: table[7],
+            ENVIRONMENT_IS_SIDECAR: table[8],
+            browserHostResolveMain: table[9],
+            browserHostRejectMain: table[10],
+            getRunMainPromise: table[11],
         };
+        const jsEngineLocal = {
+            IS_NODE: loaderExportsLocal.ENVIRONMENT_IS_NODE(),
+            IS_SHELL: loaderExportsLocal.ENVIRONMENT_IS_SHELL(),
+            IS_WEB: loaderExportsLocal.ENVIRONMENT_IS_WEB(),
+            IS_WORKER: loaderExportsLocal.ENVIRONMENT_IS_WORKER(),
+            IS_SIDECAR: loaderExportsLocal.ENVIRONMENT_IS_SIDECAR(),
+        };
+        Object.assign(loaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
         Object.assign(assert, assertLocal);
-        Object.assign(loaderExports, loaderExportsLocal);
+        Object.assign(jsEngine, jsEngineLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function runtimeExportsToTable(map) {
@@ -109,13 +113,13 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
     function runtimeExportsFromTable(table, runtime) {
         Object.assign(runtime, {});
     }
-    function nativeExportsToTable(map) {
+    function hostNativeExportsToTable(map) {
         return [
             map.registerDllBytes,
             map.isSharedArrayBuffer,
         ];
     }
-    function nativeExportsFromTable(table, native) {
+    function hostNativeExportsFromTable(table, native) {
         const nativeLocal = {
             registerDllBytes: table[0],
             isSharedArrayBuffer: table[1],
@@ -123,10 +127,18 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
         Object.assign(native, nativeLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function interopExportsToTable(map) {
+    function interopJavaScriptNativeExportsToTable(map) {
         return [];
     }
-    function interopExportsFromTable(table, interop) {
+    function interopJavaScriptNativeExportsFromTable(table, interop) {
+        const interopLocal = {};
+        Object.assign(interop, interopLocal);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function nativeBrowserExportsToTable(map) {
+        return [];
+    }
+    function nativeBrowserExportsFromTable(table, interop) {
         const interopLocal = {};
         Object.assign(interop, interopLocal);
     }
@@ -142,15 +154,17 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
         get Module() { return Module; },
         get dotnetInternals() { return dotnetInternals; },
         getInternals: getInternals,
+        hostNativeExportsFromTable: hostNativeExportsFromTable,
+        hostNativeExportsToTable: hostNativeExportsToTable,
         get interopExports() { return interopExports; },
-        interopExportsFromTable: interopExportsFromTable,
-        interopExportsToTable: interopExportsToTable,
+        interopJavaScriptNativeExportsFromTable: interopJavaScriptNativeExportsFromTable,
+        interopJavaScriptNativeExportsToTable: interopJavaScriptNativeExportsToTable,
         get loaderExports() { return loaderExports; },
         loaderExportsFromTable: loaderExportsFromTable,
         loaderExportsToTable: loaderExportsToTable,
+        nativeBrowserExportsFromTable: nativeBrowserExportsFromTable,
+        nativeBrowserExportsToTable: nativeBrowserExportsToTable,
         get nativeExports() { return nativeExports; },
-        nativeExportsFromTable: nativeExportsFromTable,
-        nativeExportsToTable: nativeExportsToTable,
         get runtimeApi() { return runtimeApi; },
         get runtimeExports() { return runtimeExports; },
         runtimeExportsFromTable: runtimeExportsFromTable,
@@ -162,51 +176,37 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
 
     // Licensed to the .NET Foundation under one or more agreements.
     // The .NET Foundation licenses this file to you under the MIT license.
-    async function initialize(internals) {
-        const interopExportsFunctions = {};
-        Object.assign(interopExports, interopExportsFunctions);
-        internals.interopExportsTable = [...interopExportsToTable(interopExportsFunctions)];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function SystemInteropJS_InvokeJSImportST(function_handle, args) {
+        // WASM-TODO implementation
+        Logger.error("SystemInteropJS_InvokeJSImportST called");
+        return -1;
+    }
+    function initialize(internals) {
+        const interopJavaScriptNativeExportsLocal = {};
+        setInternals(internals);
+        internals.interopJavaScriptNativeExportsTable = [...interopJavaScriptNativeExportsToTable(interopJavaScriptNativeExportsLocal)];
         internals.updates.push(updateInternalsImpl);
         updateInternals();
     }
 
-    var nativeExchange = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        initialize: initialize
-    });
+    exports.SystemInteropJS_InvokeJSImportST = SystemInteropJS_InvokeJSImportST;
+    exports.cross = crossModule;
+    exports.initialize = initialize;
 
-    // Licensed to the .NET Foundation under one or more agreements.
-    // The .NET Foundation licenses this file to you under the MIT license.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function SystemInteropJS_InvokeJSImportST(function_handle, args) {
-        // WASMTODO implementation
-        Logger.error("SystemInteropJS_InvokeJSImportST called");
-        return -1;
-    }
-    SystemInteropJS_InvokeJSImportST["__deps"] = ["loadedAssemblies"];
+    return exports;
 
-    var trimmableExports = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        SystemInteropJS_InvokeJSImportST: SystemInteropJS_InvokeJSImportST
-    });
+});
+//! Licensed to the .NET Foundation under one or more agreements.
+//! The .NET Foundation licenses this file to you under the MIT license.
 
-    // Licensed to the .NET Foundation under one or more agreements.
-    // The .NET Foundation licenses this file to you under the MIT license.
-    /**
-     * This is root of **Emscripten library** that would become part of `dotnet.native.js`
-     * It implements interop between JS and .NET
-     */
-    function DotnetInteropLibFactory() {
-        // Symbols that would be protected from emscripten linker
-        const moduleDeps = ["$DOTNET"];
-        const trimmableDeps = {};
-        for (const exportName of Reflect.ownKeys(trimmableExports)) {
-            const emName = exportName.toString() + "__deps";
-            const deps = trimmableExports[exportName]["__deps"];
-            if (deps) {
-                trimmableDeps[emName] = deps;
-            }
-        }
+/**
+ * This is root of **Emscripten library** that would become part of `dotnet.native.js`
+ * It implements interop between JS and .NET
+ */
+
+(function (exports) {
+    function libFactory() {
         const lib = {
             $DOTNET_INTEROP: {
                 selfInitialize: () => {
@@ -215,22 +215,34 @@ var libSystemRuntimeInteropServicesJavaScriptNativeBrowserJS = (function (export
                         DOTNET_INTEROP.initialize(dotnetInternals);
                     }
                 },
-                initialize: initialize,
             },
-            "$DOTNET_INTEROP__deps": moduleDeps,
+            "$DOTNET_INTEROP__deps": ["$DOTNET"],
             "$DOTNET_INTEROP__postset": "DOTNET_INTEROP.selfInitialize();",
-            ...trimmableExports,
-            ...trimmableDeps,
         };
+
+        // this executes the function at compile time in order to capture exports
+        const exports = libInteropJavaScriptNative({});
+        let commonDeps = [];
+        for (const exportName of Reflect.ownKeys(exports.cross)) {
+            const name = String(exportName);
+            if (name === "dotnetInternals") continue;
+            if (name === "Module") continue;
+            const emName = "$" + name;
+            commonDeps.push(emName);
+        }
+        for (const exportName of Reflect.ownKeys(exports)) {
+            const name = String(exportName);
+            if (name === "cross") continue;
+            if (name === "initialize") continue;
+            lib[name] = exports[name];
+        }
+
+        lib["$DOTNET_INTEROP__deps"] = commonDeps;
+        lib.$DOTNET_INTEROP.initialize = exports.initialize;
+
         autoAddDeps(lib, "$DOTNET_INTEROP");
         addToLibrary(lib);
     }
-    DotnetInteropLibFactory();
-
-    exports.commonInfra = crossModule;
-    exports.exchange = nativeExchange;
-    exports.trimmableExports = trimmableExports;
-
+    libFactory();
     return exports;
-
 })({});

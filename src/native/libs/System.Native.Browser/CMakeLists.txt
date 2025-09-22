@@ -52,7 +52,7 @@ endif()
 
 add_custom_command(
     OUTPUT ${ROLLUP_OUTPUTS}
-    COMMAND npm run rollup ${CMAKE_BUILD_TYPE} ${PRODUCT_VERSION_JS} ${CI_BUILD_JS}
+    COMMAND npm run rollup:stub -- ${CMAKE_BUILD_TYPE} ${PRODUCT_VERSION_JS} ${CI_BUILD_JS}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
     COMMENT "Running 'npm run rollup' to generate JavaScript bundles"
     DEPENDS ${ROLLUP_TS_SOURCES}

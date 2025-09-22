@@ -7,11 +7,11 @@
 
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-let JSEngine;
 let Module;
 let runtimeApi;
 let Logger = {};
 let Assert = {};
+let JSEngine = {};
 let loaderExports = {};
 let runtimeExports = {};
 let nativeExports = {};
@@ -34,38 +34,24 @@ function updateInternals() {
     }
 }
 function updateInternalsImpl() {
-    if (!JSEngine) {
-        const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-        const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
-        const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
-        const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
-        const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
-        const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
-        JSEngine = {
-            IS_NODE: ENVIRONMENT_IS_NODE,
-            IS_SHELL: ENVIRONMENT_IS_SHELL,
-            IS_WEB: ENVIRONMENT_IS_WEB,
-            IS_WORKER: ENVIRONMENT_IS_WORKER,
-            IS_SIDECAR: ENVIRONMENT_IS_SIDECAR,
-        };
-    }
     if (Object.keys(loaderExports).length === 0 && dotnetInternals.loaderExportsTable) {
         loaderExports = {};
         Logger = {};
         Assert = {};
-        loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, loaderExports);
+        JSEngine = {};
+        loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
     }
     if (Object.keys(runtimeExports).length === 0 && dotnetInternals.runtimeExportsTable) {
         runtimeExports = {};
         runtimeExportsFromTable(dotnetInternals.runtimeExportsTable, runtimeExports);
     }
-    if (Object.keys(nativeExports).length === 0 && dotnetInternals.nativeExportsTable) {
+    if (Object.keys(nativeExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
         nativeExports = {};
-        nativeExportsFromTable(dotnetInternals.nativeExportsTable, nativeExports);
+        hostNativeExportsFromTable(dotnetInternals.hostNativeExportsTable, nativeExports);
     }
-    if (Object.keys(interopExports).length === 0 && dotnetInternals.interopExportsTable) {
+    if (Object.keys(interopExports).length === 0 && dotnetInternals.interopJavaScriptNativeExportsTable) {
         interopExports = {};
-        interopExportsFromTable(dotnetInternals.interopExportsTable, interopExports);
+        interopJavaScriptNativeExportsFromTable(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
     }
 }
 /**
@@ -78,12 +64,17 @@ function loaderExportsToTable(logger, assert, loaderExports) {
         logger.warn,
         logger.error,
         assert.check,
+        loaderExports.ENVIRONMENT_IS_NODE,
+        loaderExports.ENVIRONMENT_IS_SHELL,
+        loaderExports.ENVIRONMENT_IS_WEB,
+        loaderExports.ENVIRONMENT_IS_WORKER,
+        loaderExports.ENVIRONMENT_IS_SIDECAR,
         loaderExports.browserHostResolveMain,
         loaderExports.browserHostRejectMain,
         loaderExports.getRunMainPromise,
     ];
 }
-function loaderExportsFromTable(table, logger, assert, loaderExports) {
+function loaderExportsFromTable(table, logger, assert, jsEngine, loaderExports) {
     const loggerLocal = {
         info: table[0],
         warn: table[1],
@@ -93,13 +84,26 @@ function loaderExportsFromTable(table, logger, assert, loaderExports) {
         check: table[3],
     };
     const loaderExportsLocal = {
-        browserHostResolveMain: table[4],
-        browserHostRejectMain: table[5],
-        getRunMainPromise: table[6],
+        ENVIRONMENT_IS_NODE: table[4],
+        ENVIRONMENT_IS_SHELL: table[5],
+        ENVIRONMENT_IS_WEB: table[6],
+        ENVIRONMENT_IS_WORKER: table[7],
+        ENVIRONMENT_IS_SIDECAR: table[8],
+        browserHostResolveMain: table[9],
+        browserHostRejectMain: table[10],
+        getRunMainPromise: table[11],
     };
+    const jsEngineLocal = {
+        IS_NODE: loaderExportsLocal.ENVIRONMENT_IS_NODE(),
+        IS_SHELL: loaderExportsLocal.ENVIRONMENT_IS_SHELL(),
+        IS_WEB: loaderExportsLocal.ENVIRONMENT_IS_WEB(),
+        IS_WORKER: loaderExportsLocal.ENVIRONMENT_IS_WORKER(),
+        IS_SIDECAR: loaderExportsLocal.ENVIRONMENT_IS_SIDECAR(),
+    };
+    Object.assign(loaderExports, loaderExportsLocal);
     Object.assign(logger, loggerLocal);
     Object.assign(assert, assertLocal);
-    Object.assign(loaderExports, loaderExportsLocal);
+    Object.assign(jsEngine, jsEngineLocal);
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function runtimeExportsToTable(map) {
@@ -108,13 +112,13 @@ function runtimeExportsToTable(map) {
 function runtimeExportsFromTable(table, runtime) {
     Object.assign(runtime, {});
 }
-function nativeExportsToTable(map) {
+function hostNativeExportsToTable(map) {
     return [
         map.registerDllBytes,
         map.isSharedArrayBuffer,
     ];
 }
-function nativeExportsFromTable(table, native) {
+function hostNativeExportsFromTable(table, native) {
     const nativeLocal = {
         registerDllBytes: table[0],
         isSharedArrayBuffer: table[1],
@@ -122,13 +126,24 @@ function nativeExportsFromTable(table, native) {
     Object.assign(native, nativeLocal);
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function interopExportsToTable(map) {
+function interopJavaScriptNativeExportsToTable(map) {
     return [];
 }
-function interopExportsFromTable(table, interop) {
+function interopJavaScriptNativeExportsFromTable(table, interop) {
     const interopLocal = {};
     Object.assign(interop, interopLocal);
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function nativeBrowserExportsToTable(map) {
+    return [];
+}
+function nativeBrowserExportsFromTable(table, interop) {
+    const interopLocal = {};
+    Object.assign(interop, interopLocal);
+}
+
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
@@ -810,7 +825,7 @@ var ProductVersion = "10.0.0-dev";
 
 var BuildConfiguration = "Debug";
 
-var GitHash = "becd20635d51b17f7f344df90775c63e7e744d11";
+var GitHash = "b45b9a54d6619520903f5be728767b66e5a37429";
 
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
@@ -821,7 +836,7 @@ async function invokeLibraryInitializers(functionName, args) {
 
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// WASMTODO inline the code
+// WASM-TODO inline the code
 function check(condition, messageFactory) {
     if (!condition) {
         const message = typeof messageFactory === "string" ? messageFactory : messageFactory();
@@ -853,6 +868,12 @@ function error(msg, ...data) {
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 function initialize() {
+    const ENVIRONMENT_IS_NODE = () => typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
+    const ENVIRONMENT_IS_WEB_WORKER = () => typeof importScripts == "function";
+    const ENVIRONMENT_IS_SIDECAR = () => ENVIRONMENT_IS_WEB_WORKER() && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
+    const ENVIRONMENT_IS_WORKER = () => ENVIRONMENT_IS_WEB_WORKER() && !ENVIRONMENT_IS_SIDECAR(); // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
+    const ENVIRONMENT_IS_WEB = () => typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER() && !ENVIRONMENT_IS_NODE());
+    const ENVIRONMENT_IS_SHELL = () => !ENVIRONMENT_IS_WEB() && !ENVIRONMENT_IS_NODE();
     const runtimeApi = {
         INTERNAL: {},
         Module: {},
@@ -878,9 +899,21 @@ function initialize() {
         invokeLibraryInitializers,
     };
     const loaderFunctions = {
+        ENVIRONMENT_IS_NODE,
+        ENVIRONMENT_IS_SHELL,
+        ENVIRONMENT_IS_WEB,
+        ENVIRONMENT_IS_WORKER,
+        ENVIRONMENT_IS_SIDECAR,
         getRunMainPromise,
         browserHostRejectMain,
         browserHostResolveMain,
+    };
+    const jsEngine = {
+        IS_NODE: ENVIRONMENT_IS_NODE(),
+        IS_SHELL: ENVIRONMENT_IS_SHELL(),
+        IS_WEB: ENVIRONMENT_IS_WEB(),
+        IS_WORKER: ENVIRONMENT_IS_WORKER(),
+        IS_SIDECAR: ENVIRONMENT_IS_SIDECAR(),
     };
     const logger = {
         info,
@@ -893,6 +926,7 @@ function initialize() {
     Object.assign(runtimeApi, runtimeApiFunctions);
     Object.assign(Logger, logger);
     Object.assign(Assert, assert);
+    Object.assign(JSEngine, jsEngine);
     Object.assign(loaderExports, loaderFunctions);
     dotnetInternals.loaderExportsTable = [...loaderExportsToTable(Logger, Assert, loaderExports)];
     updates.push(updateInternalsImpl);

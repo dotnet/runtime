@@ -10,6 +10,7 @@
   "type": "module",
   "types": "dotnet.d.ts",
   "scripts": {
+    "rollup:stub": "node rollup.stub.js",
     "rollup:cmake": "rollup -c --environment ",
     "rollup:release": "rollup -c --environment Configuration:Release,ProductVersion:10.0.0-dev,ContinuousIntegrationBuild:false",
     "rollup:debug": "rollup -c --environment Configuration:Debug,ProductVersion:10.0.0-dev,ContinuousIntegrationBuild:false",

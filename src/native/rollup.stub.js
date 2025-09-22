@@ -3,11 +3,18 @@
 
 import { promises as fs } from "fs";
 import path from "path";
-import { artifactsObjDir, configuration } from "./rollup.config.defines.js"
 
 /**
  * This would be replace by real rollup with TypeScript compilation in next iteration
  */
+
+
+const artifactsObjDir = "../../artifacts/obj";
+const configuration = process.argv[2] || "Debug";
+const productVersion = process.argv[3] || "10.0.0-dev";
+const isContinuousIntegrationBuild = process.argv[4] === "true" ? true : false;
+
+console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
 const copies = [
     ["./corehost/browserhost/loader/dotnet.d.ts",
