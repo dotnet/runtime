@@ -4054,34 +4054,27 @@ void Thread::SetExposedObject(OBJECTREF exposed)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    if (exposed != NULL)
-    {
-        _ASSERTE (GetThreadNULLOk() != this);
-        _ASSERTE(IsUnstarted());
-        _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
-        // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
-        // physical thread continues to run, of course.
-        StoreObjectInHandle(m_ExposedObject, exposed);
-        // This makes sure the contexts on the backing thread
-        // and the managed thread start off in sync with each other.
-        // BEWARE: the IncExternalCount call below may cause GC to happen.
+    _ASSERTE(exposed);
 
-        // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
-        // If the creating thread is killed before the target thread is killed in Thread.Start, Thread object
-        // will be kept alive forever.
-        // Instead, IncExternalCount should be called after the target thread has been started in Thread.Start.
-        // IncExternalCount();
-    }
-    else
-    {
-        // Simply set both of the handles to NULL. The GC of the old exposed thread
-        // object will take care of decrementing the external ref count.
-        StoreObjectInHandle(m_ExposedObject, NULL);
-        StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
-    }
+    _ASSERTE(GetThreadNULLOk() != this);
+    _ASSERTE(IsUnstarted());
+    _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
+    // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
+    // physical thread continues to run, of course.
+    StoreObjectInHandle(m_ExposedObject, exposed);
+    // This makes sure the contexts on the backing thread
+    // and the managed thread start off in sync with each other.
+    // BEWARE: the IncExternalCount call below may cause GC to happen.
+
+    // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
+    // If the creating thread is killed before the target thread is killed in Thread.Start, Thread object
+    // will be kept alive forever.
+    // Instead, IncExternalCount should be called after the target thread has been started in Thread.Start.
+    // IncExternalCount();
 }
 
 void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
