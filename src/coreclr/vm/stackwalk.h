@@ -597,6 +597,11 @@ public:
         m_AdjustedControlPC = pc;
     }
 
+    TADDR GetAdjustedControlPC()
+    {
+        return m_AdjustedControlPC;
+    }
+
     void UpdateIsRuntimeWrappedExceptions()
     {
         CONTRACTL

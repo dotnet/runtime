@@ -3412,8 +3412,8 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterato
     return TRUE;
 }
 
-// The onlyFinallys option makes the function return only finally and fault clauses. It is used in
-// the 2nd path of EH primarily to avoid calls to ResolveEHClause that can trigger GC.
+// The doNotCalculateCatchType option makes the function skip calculation of the catch type. It is used in
+// the 2nd path of EH to avoid possible GC stemming from a call to ResolveEHClause.
 CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, bool doNotCalculateCatchType = false)
 {
     CLR_BOOL result = FALSE;
@@ -4164,6 +4164,8 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
 static uint32_t CalculateCodeOffset(PCODE pbControlPC, IJitManager::MethodRegionInfo *pMethodRegionInfo)
 {
+    STATIC_CONTRACT_LEAF;
+
     uint codeOffset = (uint)(pbControlPC - pMethodRegionInfo->hotStartAddress);
     // If the PC is in the cold region, adjust the offset to be relative to the start of the method.
     if ((pMethodRegionInfo->coldSize != 0) && (codeOffset >= pMethodRegionInfo->hotSize))
@@ -4176,15 +4178,24 @@ static uint32_t CalculateCodeOffset(PCODE pbControlPC, IJitManager::MethodRegion
 
 const uint32_t MaxTryRegionIdx = 0xFFFFFFFFu;
 
+// This function is a copy of the code in ExceptionHandling.cs converted to native code.
+// The only difference is the ehClause._isSameTry check that is coreclr specific.
 static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     ExtendedEHClauseEnumerator ehEnum;
     IJitManager::MethodRegionInfo methodRegionInfo;
 
     if (!EHEnumInitFromStackFrameIterator(&pExInfo->m_frameIter, &methodRegionInfo, &ehEnum))
         return;
 
-    PCODE pbControlPC = GetControlPC(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
+    PCODE pbControlPC = pExInfo->m_frameIter.GetAdjustedControlPC();
 
     uint codeOffset = CalculateCodeOffset(pbControlPC, &methodRegionInfo);
 
@@ -4237,6 +4248,13 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
 
 static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     InvokeSecondPass(pExInfo, idxStart, MaxTryRegionIdx);
 }
 
@@ -4248,8 +4266,6 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    //GCHeapUtilities::GetGCHeap()->GarbageCollect(2, FALSE, collection_aggressive);
 
     TADDR handlingFrameSP = pExInfo->m_handlingFrameSP;
 #ifdef TARGET_ARM64
