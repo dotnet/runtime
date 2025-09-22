@@ -23,10 +23,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new DateOnly(2025, 4, 16))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(Half.MaxValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(Half.MaxValue)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(Int128.MaxValue)

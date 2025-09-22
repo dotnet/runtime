@@ -1,10 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text.Json.Nodes;
+using System.Text.Json.Extensions;
 using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
@@ -26,41 +25,12 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
             }
 
-            return ReadCore(ref reader);
+            return reader.GetHalf();
         }
 
         public override void Write(Utf8JsonWriter writer, Half value, JsonSerializerOptions options)
         {
             WriteCore(writer, value);
-        }
-
-        private static Half ReadCore(ref Utf8JsonReader reader)
-        {
-            Half result;
-
-            byte[]? rentedByteBuffer = null;
-            int bufferLength = reader.ValueLength;
-
-            Span<byte> byteBuffer = bufferLength <= JsonConstants.StackallocByteThreshold
-                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
-                : (rentedByteBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
-
-            int written = reader.CopyValue(byteBuffer);
-            byteBuffer = byteBuffer.Slice(0, written);
-
-            bool success = TryParse(byteBuffer, out result);
-            if (rentedByteBuffer != null)
-            {
-                ArrayPool<byte>.Shared.Return(rentedByteBuffer);
-            }
-
-            if (!success)
-            {
-                ThrowHelper.ThrowFormatException(NumericType.Half);
-            }
-
-            Debug.Assert(!Half.IsNaN(result) && !Half.IsInfinity(result));
-            return result;
         }
 
         private static void WriteCore(Utf8JsonWriter writer, Half value)
@@ -73,7 +43,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override Half ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-            return ReadCore(ref reader);
+            return reader.GetHalf();
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Half value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
@@ -94,7 +64,7 @@ namespace System.Text.Json.Serialization.Converters
                         return value;
                     }
 
-                    return ReadCore(ref reader);
+                    return reader.GetHalf();
                 }
                 else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
                 {
@@ -191,18 +161,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 WriteCore(writer, value);
             }
-        }
-
-        private static bool TryParse(ReadOnlySpan<byte> buffer, out Half result)
-        {
-            bool success = Half.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
-
-            // Half.TryParse is more lax with floating-point literals than other S.T.Json floating-point types
-            // e.g: it parses "naN" successfully. Only succeed with the exact match.
-            return success &&
-                (!Half.IsNaN(result) || buffer.SequenceEqual(JsonConstants.NaNValue)) &&
-                (!Half.IsPositiveInfinity(result) || buffer.SequenceEqual(JsonConstants.PositiveInfinityValue)) &&
-                (!Half.IsNegativeInfinity(result) || buffer.SequenceEqual(JsonConstants.NegativeInfinityValue));
         }
 
         private static void Format(

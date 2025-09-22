@@ -205,6 +205,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<Half> HalfConverter => s_halfConverter ??= new HalfConverter();
         private static JsonConverter<Half>? s_halfConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Half}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Half>?> JsonValuePrimitiveHalfConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Half>>();
 #endif
 
         /// <summary>

@@ -31,6 +31,11 @@ namespace System.Text.Json.Nodes
                     byte[] buffer = new byte[reader.ValueLength];
                     ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));
                     return new JsonValueOfJsonString(utf8String, options);
+#if NET
+                case JsonTokenType.Number
+                    when typeof(T) == typeof(JsonValuePrimitive<Half>):
+                    return JsonValue.Create(reader.GetHalf(), options);
+#endif
                 case JsonTokenType.Number:
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
                     return new JsonValueOfJsonNumber(numberValue, options);
