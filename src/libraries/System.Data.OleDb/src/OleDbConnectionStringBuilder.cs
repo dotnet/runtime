@@ -631,7 +631,7 @@ namespace System.Data.OleDb
                     }
                     else
                     {
-                        if (svalue.IndexOf(',') != -1)
+                        if (svalue.Contains(','))
                         {
                             int convertedValue = 0;
                             string[] values = svalue.Split(OleDbConnectionInternal.s_comma);

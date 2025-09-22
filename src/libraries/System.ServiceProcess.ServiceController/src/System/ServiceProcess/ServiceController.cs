@@ -456,7 +456,7 @@ namespace System.ServiceProcess
         private static bool CheckMachineName(string value)
         {
             // string.Contains(char) is .NetCore2.1+ specific
-            return !string.IsNullOrWhiteSpace(value) && value.IndexOf('\\') == -1;
+            return !string.IsNullOrWhiteSpace(value) && !value.Contains('\\');
         }
 
         /// <summary>

@@ -138,4 +138,8 @@
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
     <Compile Include="StringExtensions.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="$(CommonPath)System\NetStandardShims.String.cs" />
+  </ItemGroup>
 </Project>

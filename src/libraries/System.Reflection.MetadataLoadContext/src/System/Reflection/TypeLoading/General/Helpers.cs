@@ -134,11 +134,7 @@ namespace System.Reflection.TypeLoading
 
         public static string UnescapeTypeNameIdentifier(this string identifier)
         {
-#if NET
             if (identifier.Contains('\\'))
-#else
-            if (identifier.IndexOf('\\') != -1)
-#endif
             {
                 StringBuilder sbUnescapedName = new StringBuilder(identifier.Length);
                 for (int i = 0; i < identifier.Length; i++)

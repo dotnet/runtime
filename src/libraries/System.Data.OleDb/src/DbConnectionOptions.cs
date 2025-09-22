@@ -237,7 +237,7 @@ namespace System.Data.Common
                     // <value> -> <value>
                     builder.Append(keyValue);
                 }
-                else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
+                else if (keyValue.Contains('\"') && keyValue.Contains('\''))
                 {
                     // <val"ue> -> <'val"ue'>
                     builder.Append('\'');
@@ -760,7 +760,7 @@ namespace System.Data.Common
         {
             if (null != keyvalue)
             {
-                return (-1 == keyvalue.IndexOf('\u0000'));
+                return !keyvalue.Contains('\u0000');
             }
             return true;
         }
@@ -771,9 +771,9 @@ namespace System.Data.Common
             {
 #if DEBUG
                 bool compValue = ConnectionStringValidKeyRegex.IsMatch(keyname);
-                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000'))) == compValue, "IsValueValid mismatch with regex");
+                Debug.Assert(((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && !keyname.Contains('\u0000')) == compValue, "IsValueValid mismatch with regex");
 #endif
-                return ((0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && (-1 == keyname.IndexOf('\u0000')));
+                return (0 < keyname.Length) && (';' != keyname[0]) && !char.IsWhiteSpace(keyname[0]) && !keyname.Contains('\u0000');
             }
             return false;
         }

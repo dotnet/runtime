@@ -97,6 +97,9 @@
     <Compile Include="System\Diagnostics\TraceSourceConfigurationTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="$(CommonPath)System\NetStandardShims.String.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
     <!-- Apple mobile trimming descriptor for Mono runtime -->
