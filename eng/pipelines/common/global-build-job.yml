@@ -81,10 +81,6 @@ jobs:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
 
     variables:
-      - name: "MSBUILDUSESERVER"
-        value: "1"
-      - name: "DOTNET_CLI_USE_MSBUILD_SERVER"
-        value: "1"
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
           - group: AzureDevOps-Artifact-Feeds-Pats
