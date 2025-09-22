@@ -15,7 +15,7 @@ namespace System.Threading
     public sealed partial class Thread
     {
         [ThreadStatic]
-        private static ApartmentType t_apartmentType;
+        private static sbyte t_apartmentState; // ApartmentState shifted by ApartmentState.Unknonw to represent Unknown as the default value
 
         [ThreadStatic]
         private static ComState t_comState;
@@ -334,14 +334,15 @@ namespace System.Threading
                 return _initialApartmentState;
             }
 
-            switch (GetCurrentApartmentType())
+            switch (GetCurrentApartmentState())
             {
-                case ApartmentType.STA:
+                case ApartmentState.STA:
                     return ApartmentState.STA;
-                case ApartmentType.MTA:
+                case ApartmentState.MTA:
                     return ApartmentState.MTA;
                 default:
-                    return ApartmentState.Unknown;
+                    // If COM is uninitialized on the current thread, it is assumed to be implicit MTA.
+                    return ApartmentState.MTA;
             }
         }
 
@@ -374,14 +375,15 @@ namespace System.Threading
                     }
                     else
                     {
+                        // Compat: Setting ApartmentState to Unknown uninitializes COM
                         UninitializeCom();
                     }
                 }
 
                 // Clear the cache and check whether new state matches the desired state
-                t_apartmentType = ApartmentType.Unknown;
+                t_apartmentState = 0;
 
-                retState = GetApartmentState();
+                retState = GetCurrentApartmentState();
             }
 
             if (retState != state)
@@ -527,24 +529,25 @@ namespace System.Threading
         }
 
         internal static bool ReentrantWaitsEnabled =>
-            GetCurrentApartmentType() == ApartmentType.STA;
+            GetCurrentApartmentState() == ApartmentState.STA;
 
-        internal static ApartmentType GetCurrentApartmentType()
+        internal static ApartmentState GetCurrentApartmentState()
         {
-            ApartmentType currentThreadType = t_apartmentType;
-            if (currentThreadType != ApartmentType.Unknown)
-                return currentThreadType;
+            sbyte current = t_apartmentState;
+            if (current != 0)
+                return (ApartmentState)(current + (sbyte)ApartmentState.Unknown);
 
             Interop.APTTYPE aptType;
             Interop.APTTYPEQUALIFIER aptTypeQualifier;
             int result = Interop.Ole32.CoGetApartmentType(out aptType, out aptTypeQualifier);
 
-            ApartmentType type = ApartmentType.Unknown;
+            ApartmentState state = ApartmentState.Unknown;
 
             switch (result)
             {
                 case HResults.CO_E_NOTINITIALIZED:
-                    type = ApartmentType.None;
+                    Debug.Fail("COM is not initialized");
+                    state = ApartmentState.Unknown;
                     break;
 
                 case HResults.S_OK:
@@ -552,24 +555,27 @@ namespace System.Threading
                     {
                         case Interop.APTTYPE.APTTYPE_STA:
                         case Interop.APTTYPE.APTTYPE_MAINSTA:
-                            type = ApartmentType.STA;
+                            state = ApartmentState.STA;
                             break;
 
                         case Interop.APTTYPE.APTTYPE_MTA:
-                            type = ApartmentType.MTA;
+                            state = ApartmentState.MTA;
                             break;
 
                         case Interop.APTTYPE.APTTYPE_NA:
                             switch (aptTypeQualifier)
                             {
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MTA:
+                                    state = ApartmentState.MTA;
+                                    break;
+
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_IMPLICIT_MTA:
-                                    type = ApartmentType.MTA;
+                                    state = ApartmentState.Unknown;
                                     break;
 
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_STA:
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MAINSTA:
-                                    type = ApartmentType.STA;
+                                    state = ApartmentState.STA;
                                     break;
 
                                 default:
@@ -581,21 +587,13 @@ namespace System.Threading
                     break;
 
                 default:
-                    Debug.Fail("bad return from CoGetApartmentType");
+                    Debug.Fail("bad return from CoGetApartmentState");
                     break;
             }
 
-            if (type != ApartmentType.Unknown)
-                t_apartmentType = type;
-            return type;
-        }
-
-        internal enum ApartmentType : byte
-        {
-            Unknown = 0,
-            None,
-            STA,
-            MTA
+            if (state != ApartmentState.Unknown)
+                t_apartmentState = (sbyte)(state - ApartmentState.Unknown);
+            return state;
         }
 
         [Flags]
