@@ -11,13 +11,16 @@ namespace System.Text.Json.Nodes
 {
     internal static class JsonValueOfJsonPrimitive
     {
-        internal static JsonValue CreatePrimitiveValue(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonValue CreatePrimitiveValue<T>(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             switch (reader.TokenType)
             {
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                     return new JsonValueOfJsonBool(reader.GetBoolean(), options);
+                case JsonTokenType.String
+                    when typeof(T) == typeof(JsonValuePrimitive<DateTime>):
+                    return JsonValue.Create(reader.GetDateTime(), options);
                 case JsonTokenType.String:
                     byte[] buffer = new byte[reader.ValueLength];
                     ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));

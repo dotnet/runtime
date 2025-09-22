@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -19,7 +18,6 @@ namespace System.Text.Json.Nodes.Tests
         {
             get
             {
-                return Enumerable.Empty<object[]>();
 #if NET
                 //yield return new object[]
                 //{
@@ -42,10 +40,10 @@ namespace System.Text.Json.Nodes.Tests
                 //    JsonValue.Create(UInt128.MaxValue)
                 //};
 #endif
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(new DateTime(2025, 4, 16, 17, 18, 19))
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(new DateTime(2025, 4, 16, 17, 18, 19))
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(new DateTimeOffset(2025, 4, 16, 17, 18, 19, new TimeSpan(10, 0, 0)))

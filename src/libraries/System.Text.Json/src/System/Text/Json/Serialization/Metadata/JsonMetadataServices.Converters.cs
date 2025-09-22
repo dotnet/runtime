@@ -44,6 +44,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<DateTime>? s_dateTimeConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{DateTime}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<DateTime>?> JsonValuePrimitiveDateTimeConverter { get; } = new JsonValueConverter<JsonValuePrimitive<DateTime>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="DateTimeOffset"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

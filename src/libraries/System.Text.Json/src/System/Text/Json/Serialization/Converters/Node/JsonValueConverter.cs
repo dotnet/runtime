@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
         internal static JsonValue ReadNonNullPrimitiveValue(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.False or JsonTokenType.True or JsonTokenType.Number);
-            return JsonValueOfJsonPrimitive.CreatePrimitiveValue(ref reader, options);
+            return JsonValueOfJsonPrimitive.CreatePrimitiveValue<T>(ref reader, options);
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
