@@ -6,6 +6,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Encodings.Web;
+using System.Text.Json.Extensions;
 
 namespace System.Text.Json.Nodes
 {
@@ -21,6 +22,11 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.String
                     when typeof(T) == typeof(JsonValuePrimitive<DateTime>):
                     return JsonValue.Create(reader.GetDateTime(), options);
+#if NET
+                case JsonTokenType.String
+                    when typeof(T) == typeof(JsonValuePrimitive<DateOnly>):
+                    return JsonValue.Create(reader.GetDateOnly(), options);
+#endif
                 case JsonTokenType.String:
                     byte[] buffer = new byte[reader.ValueLength];
                     ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));

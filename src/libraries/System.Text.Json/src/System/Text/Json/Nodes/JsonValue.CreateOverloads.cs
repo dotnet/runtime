@@ -56,6 +56,16 @@ namespace System.Text.Json.Nodes
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(char? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValuePrimitive<char>(value.Value, JsonMetadataServices.CharConverter, options) : null;
 
+#if NET
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(DateOnly value, JsonNodeOptions? options = null) => new JsonValuePrimitive<DateOnly>(value, JsonMetadataServices.DateOnlyConverter, options);
+#endif
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
