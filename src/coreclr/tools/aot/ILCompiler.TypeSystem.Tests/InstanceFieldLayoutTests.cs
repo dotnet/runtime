@@ -28,7 +28,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestExplicitLayout()
         {
-            MetadataType t = _testModule.GetType("Explicit", "Class1");
+            MetadataType t = _testModule.GetType("Explicit"u8, "Class1"u8);
 
             // With 64bit, there should be 8 bytes for the System.Object EE data pointer +
             // 10 bytes up until the offset of the char field + the char size of 2 + we
@@ -40,13 +40,13 @@ namespace TypeSystemTests
                 if (field.IsStatic)
                     continue;
 
-                if (field.Name == "Bar")
+                if (field.GetName() == "Bar")
                 {
                     // Bar has explicit offset 4 and is in a class (with S.O size overhead of <pointer size>)
                     // Therefore it should have offset 4 + 8 = 12
                   Assert.Equal(12, field.Offset.AsInt);
                 }
-                else if (field.Name == "Baz")
+                else if (field.GetName() == "Baz")
                 {
                     // Baz has explicit offset 10. 10 + 8 = 18
                     Assert.Equal(18, field.Offset.AsInt);
@@ -61,12 +61,12 @@ namespace TypeSystemTests
         [Fact]
         public void TestExplicitLayoutThatIsEmpty()
         {
-            var explicitEmptyClassType = _testModule.GetType("Explicit", "ExplicitEmptyClass");
+            var explicitEmptyClassType = _testModule.GetType("Explicit"u8, "ExplicitEmptyClass"u8);
 
             // ExplicitEmpty class has 8 from System.Object overhead = 8
             Assert.Equal(8, explicitEmptyClassType.InstanceByteCount.AsInt);
 
-            var explicitEmptyStructType = _testModule.GetType("Explicit", "ExplicitEmptyStruct");
+            var explicitEmptyStructType = _testModule.GetType("Explicit"u8, "ExplicitEmptyStruct"u8);
 
             // ExplicitEmpty class has 0 bytes in it... so instance field size gets pushed up to 1.
             Assert.Equal(1, explicitEmptyStructType.InstanceFieldSize.AsInt);
@@ -75,14 +75,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestExplicitTypeLayoutWithSize()
         {
-            var explicitSizeType = _testModule.GetType("Explicit", "ExplicitSize");
+            var explicitSizeType = _testModule.GetType("Explicit"u8, "ExplicitSize"u8);
             Assert.Equal(32, explicitSizeType.InstanceByteCount.AsInt);
         }
 
         [Fact]
         public void TestExplicitTypeLayoutWithInheritance()
         {
-            MetadataType class2Type = _testModule.GetType("Explicit", "Class2");
+            MetadataType class2Type = _testModule.GetType("Explicit"u8, "Class2"u8);
 
             // Class1 has size 24 which Class2 inherits from.  Class2 adds a byte at offset 20, so + 21
             // = 45, rounding up to the next pointer size = 48
@@ -93,13 +93,13 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                if (f.Name == "Lol")
+                if (f.GetName() == "Lol")
                 {
                     // First field after base class, with offset 0 so it should lie on the byte count of
                     // the base class = 20
                     Assert.Equal(20, f.Offset.AsInt);
                 }
-                else if (f.Name == "Omg")
+                else if (f.GetName() == "Omg")
                 {
                     // Offset 20 from base class byte count = 40
                     Assert.Equal(40, f.Offset.AsInt);
@@ -115,12 +115,12 @@ namespace TypeSystemTests
         public void TestInvalidExplicitTypeLayout()
         {
             {
-                DefType type = _testModule.GetType("Explicit", "MisalignedPointer");
+                DefType type = _testModule.GetType("Explicit"u8, "MisalignedPointer"u8);
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
 
             {
-                DefType type = _testModule.GetType("Explicit", "MisalignedByRef");
+                DefType type = _testModule.GetType("Explicit"u8, "MisalignedByRef"u8);
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
         }
@@ -128,7 +128,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSequentialTypeLayout()
         {
-            MetadataType class1Type = _testModule.GetType("Sequential", "Class1");
+            MetadataType class1Type = _testModule.GetType("Sequential"u8, "Class1"u8);
 
             // Byte count
             // Base Class       8
@@ -147,7 +147,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyInt":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -177,7 +177,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSequentialTypeLayoutInheritance()
         {
-            MetadataType class2Type = _testModule.GetType("Sequential", "Class2");
+            MetadataType class2Type = _testModule.GetType("Sequential"u8, "Class2"u8);
 
             // Byte count
             // Base Class       40
@@ -191,7 +191,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyInt2":
                         Assert.Equal(0x28, f.Offset.AsInt);
@@ -206,7 +206,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSequentialTypeLayoutStruct()
         {
-            MetadataType struct0Type = _testModule.GetType("Sequential", "Struct0");
+            MetadataType struct0Type = _testModule.GetType("Sequential"u8, "Struct0"u8);
 
             // Byte count
             // bool     b1      1
@@ -223,7 +223,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "b1":
                         Assert.Equal(0x0, f.Offset.AsInt);
@@ -252,7 +252,7 @@ namespace TypeSystemTests
         // as a value type) and not a pointer size.
         public void TestSequentialTypeLayoutStructEmbedded()
         {
-            MetadataType struct1Type = _testModule.GetType("Sequential", "Struct1");
+            MetadataType struct1Type = _testModule.GetType("Sequential"u8, "Struct1"u8);
 
             // Byte count
             // struct   MyStruct0   16
@@ -266,7 +266,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyStruct0":
                         Assert.Equal(0x0, f.Offset.AsInt);
@@ -284,14 +284,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestSequentialTypeLayoutClass16Align()
         {
-            MetadataType classType = _testModule.GetType("Sequential", "Class16Align");
+            MetadataType classType = _testModule.GetType("Sequential"u8, "Class16Align"u8);
             Assert.Equal(0x18, classType.InstanceByteCount.AsInt);
             foreach (var f in classType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector16Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -306,14 +306,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestSequentialTypeLayoutClass32Align()
         {
-            MetadataType classType = _testModule.GetType("Sequential", "Class32Align");
+            MetadataType classType = _testModule.GetType("Sequential"u8, "Class32Align"u8);
             Assert.Equal(0x28, classType.InstanceByteCount.AsInt);
             foreach (var f in classType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector32Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -328,14 +328,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestSequentialTypeLayoutClass64Align()
         {
-            MetadataType classType = _testModule.GetType("Sequential", "Class64Align");
+            MetadataType classType = _testModule.GetType("Sequential"u8, "Class64Align"u8);
             Assert.Equal(0x48, classType.InstanceByteCount.AsInt);
             foreach (var f in classType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector64Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -350,7 +350,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoLayoutStruct()
         {
-            MetadataType structWithIntCharType = _testModule.GetType("Auto", "StructWithIntChar");
+            MetadataType structWithIntCharType = _testModule.GetType("Auto"u8, "StructWithIntChar"u8);
 
             // Byte count
             // MyStructInt       4
@@ -364,7 +364,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyStructInt":
                         Assert.Equal(0x00, f.Offset.AsInt);
@@ -382,7 +382,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutClassContainingStructs()
         {
-            MetadataType classContainingStructsType = _testModule.GetType("Auto", "ClassContainingStructs");
+            MetadataType classContainingStructsType = _testModule.GetType("Auto"u8, "ClassContainingStructs"u8);
 
             // Byte count
             // Base Class           8
@@ -407,7 +407,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyByteArray":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -452,7 +452,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutBaseClass7BytesRemaining()
         {
-            MetadataType baseClass7BytesRemainingType = _testModule.GetType("Auto", "BaseClass7BytesRemaining");
+            MetadataType baseClass7BytesRemainingType = _testModule.GetType("Auto"u8, "BaseClass7BytesRemaining"u8);
 
             // Byte count
             // Base Class       8
@@ -470,7 +470,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyByteArray1":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -497,7 +497,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutBaseClass4BytesRemaining()
         {
-            MetadataType baseClass4BytesRemainingType = _testModule.GetType("Auto", "BaseClass4BytesRemaining");
+            MetadataType baseClass4BytesRemainingType = _testModule.GetType("Auto"u8, "BaseClass4BytesRemaining"u8);
 
             // Byte count
             // Base Class       8
@@ -512,7 +512,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyLong1":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -530,7 +530,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutBaseClass3BytesRemaining()
         {
-            MetadataType baseClass3BytesRemainingType = _testModule.GetType("Auto", "BaseClass3BytesRemaining");
+            MetadataType baseClass3BytesRemainingType = _testModule.GetType("Auto"u8, "BaseClass3BytesRemaining"u8);
 
             // Byte count
             // Base Class       8
@@ -546,7 +546,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "MyString1":
                         Assert.Equal(0x08, f.Offset.AsInt);
@@ -567,7 +567,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutOptimizePartial()
         {
-            MetadataType optimizePartialType = _testModule.GetType("Auto", "OptimizePartial");
+            MetadataType optimizePartialType = _testModule.GetType("Auto"u8, "OptimizePartial"u8);
 
             // Byte count
             // Base Class       41 (unaligned)
@@ -584,7 +584,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptBool":
                         Assert.Equal(0x29, f.Offset.AsInt);
@@ -608,7 +608,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutOptimize7Bools()
         {
-            MetadataType optimize7BoolsType = _testModule.GetType("Auto", "Optimize7Bools");
+            MetadataType optimize7BoolsType = _testModule.GetType("Auto"u8, "Optimize7Bools"u8);
 
             // Byte count
             // Base Class       41 (unaligned)
@@ -630,7 +630,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptBool1":
                         Assert.Equal(0x29, f.Offset.AsInt);
@@ -669,7 +669,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutOptimizeAlignedFields()
         {
-            MetadataType optimizeAlignedFieldsType = _testModule.GetType("Auto", "OptimizeAlignedFields");
+            MetadataType optimizeAlignedFieldsType = _testModule.GetType("Auto"u8, "OptimizeAlignedFields"u8);
 
             // Byte count
             // Base Class       41 (unaligned)
@@ -689,7 +689,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptBool1":
                         Assert.Equal(0x29, f.Offset.AsInt);
@@ -722,7 +722,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutOptimizeLargestField()
         {
-            MetadataType optimizeLargestFieldType = _testModule.GetType("Auto", "OptimizeLargestField");
+            MetadataType optimizeLargestFieldType = _testModule.GetType("Auto"u8, "OptimizeLargestField"u8);
 
             // Byte count
             // Base Class       20 (unaligned)
@@ -739,7 +739,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "OptInt":
                         Assert.Equal(0x14, f.Offset.AsInt);
@@ -763,7 +763,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutNoOptimizeMisaligned()
         {
-            MetadataType noOptimizeMisalignedType = _testModule.GetType("Auto", "NoOptimizeMisaligned");
+            MetadataType noOptimizeMisalignedType = _testModule.GetType("Auto"u8, "NoOptimizeMisaligned"u8);
 
             // Byte count
             // Base Class       21 (unaligned) + 3 byte padding to make class size % pointer size == 0
@@ -779,7 +779,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "NoOptString":
                         Assert.Equal(0x18, f.Offset.AsInt);
@@ -800,7 +800,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutNoOptimizeCharAtSize2Alignment()
         {
-            MetadataType noOptimizeCharAtSize2AlignmentType = _testModule.GetType("Auto", "NoOptimizeCharAtSize2Alignment");
+            MetadataType noOptimizeCharAtSize2AlignmentType = _testModule.GetType("Auto"u8, "NoOptimizeCharAtSize2Alignment"u8);
 
             // Byte count
             // Base Class       21 (unaligned) + 1 byte padding to align char
@@ -814,7 +814,7 @@ namespace TypeSystemTests
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "NoOptChar":
                         Assert.Equal(0x16, f.Offset.AsInt);
@@ -843,7 +843,7 @@ namespace TypeSystemTests
         [MemberData(nameof(AutoTypeLayoutMinPackingData))]
         public void TestAutoTypeLayoutMinPacking(WellKnownType type, int expectedSize)
         {
-            MetadataType minPackingType = _testModule.GetType("Auto", "MinPacking`1");
+            MetadataType minPackingType = _testModule.GetType("Auto"u8, "MinPacking`1"u8);
             InstantiatedType inst = minPackingType.MakeInstantiatedType(_context.GetWellKnownType(type));
             Assert.Equal(expectedSize, inst.InstanceFieldSize.AsInt);
         }
@@ -851,14 +851,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutClass16Align()
         {
-            MetadataType classType = _testModule.GetType("Auto", "Class16Align");
+            MetadataType classType = _testModule.GetType("Auto"u8, "Class16Align"u8);
             Assert.Equal(0x18, classType.InstanceByteCount.AsInt);
             foreach (var f in classType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector16Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -873,14 +873,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutClass32Align()
         {
-            MetadataType classType = _testModule.GetType("Auto", "Class32Align");
+            MetadataType classType = _testModule.GetType("Auto"u8, "Class32Align"u8);
             Assert.Equal(0x28, classType.InstanceByteCount.AsInt);
             foreach (var f in classType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector32Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -895,14 +895,14 @@ namespace TypeSystemTests
         [Fact]
         public void TestAutoTypeLayoutClass64Align()
         {
-            MetadataType classType = _testModule.GetType("Auto", "Class64Align");
+            MetadataType classType = _testModule.GetType("Auto"u8, "Class64Align"u8);
             Assert.Equal(0x48, classType.InstanceByteCount.AsInt);
             foreach (var f in classType.GetFields())
             {
                 if (f.IsStatic)
                     continue;
 
-                switch (f.Name)
+                switch (f.GetName())
                 {
                     case "vector64Align":
                         Assert.Equal(0x8, f.Offset.AsInt);
@@ -917,31 +917,31 @@ namespace TypeSystemTests
         [Fact]
         public void TestTypeContainsGCPointers()
         {
-            MetadataType type = _testModule.GetType("ContainsGCPointers", "NoPointers");
+            MetadataType type = _testModule.GetType("ContainsGCPointers"u8, "NoPointers"u8);
             Assert.False(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "StillNoPointers");
+            type = _testModule.GetType("ContainsGCPointers"u8, "StillNoPointers"u8);
             Assert.False(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "ClassNoPointers");
+            type = _testModule.GetType("ContainsGCPointers"u8, "ClassNoPointers"u8);
             Assert.False(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "HasPointers");
+            type = _testModule.GetType("ContainsGCPointers"u8, "HasPointers"u8);
             Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "FieldHasPointers");
+            type = _testModule.GetType("ContainsGCPointers"u8, "FieldHasPointers"u8);
             Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "ClassHasPointers");
+            type = _testModule.GetType("ContainsGCPointers"u8, "ClassHasPointers"u8);
             Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "BaseClassHasPointers");
+            type = _testModule.GetType("ContainsGCPointers"u8, "BaseClassHasPointers"u8);
             Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "ClassHasIntArray");
+            type = _testModule.GetType("ContainsGCPointers"u8, "ClassHasIntArray"u8);
             Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsGCPointers", "ClassHasArrayOfClassType");
+            type = _testModule.GetType("ContainsGCPointers"u8, "ClassHasArrayOfClassType"u8);
             Assert.True(type.ContainsGCPointers);
         }
 
@@ -954,12 +954,12 @@ namespace TypeSystemTests
             }
 
             {
-                DefType type = _testModule.GetType("IsByRefLike", "ByRefLikeStruct");
+                DefType type = _testModule.GetType("IsByRefLike"u8, "ByRefLikeStruct"u8);
                 Assert.True(type.IsByRefLike);
             }
 
             {
-                DefType type = _testModule.GetType("IsByRefLike", "NotByRefLike");
+                DefType type = _testModule.GetType("IsByRefLike"u8, "NotByRefLike"u8);
                 Assert.False(type.IsByRefLike);
             }
         }
@@ -968,17 +968,17 @@ namespace TypeSystemTests
         public void TestInvalidByRefLikeTypes()
         {
             {
-                DefType type = _ilTestModule.GetType("IsByRefLike", "InvalidClass1");
+                DefType type = _ilTestModule.GetType("IsByRefLike"u8, "InvalidClass1"u8);
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
 
             {
-                DefType type = _ilTestModule.GetType("IsByRefLike", "InvalidClass2");
+                DefType type = _ilTestModule.GetType("IsByRefLike"u8, "InvalidClass2"u8);
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
 
             {
-                DefType type = _ilTestModule.GetType("IsByRefLike", "InvalidStruct");
+                DefType type = _ilTestModule.GetType("IsByRefLike"u8, "InvalidStruct"u8);
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
         }
@@ -987,50 +987,50 @@ namespace TypeSystemTests
         public void TestWrapperAroundVectorTypes()
         {
             {
-                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics", "Vector128`1");
+                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics"u8, "Vector128`1"u8);
                 MetadataType instantiatedType = type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Byte));
                 Assert.Equal(16, instantiatedType.InstanceFieldAlignment.AsInt);
             }
 
             {
-                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics", "Vector256`1");
+                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics"u8, "Vector256`1"u8);
                 MetadataType instantiatedType = type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Byte));
                 Assert.Equal(32, instantiatedType.InstanceFieldAlignment.AsInt);
             }
 
             {
-                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics", "Vector512`1");
+                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics"u8, "Vector512`1"u8);
                 MetadataType instantiatedType = type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Byte));
                 Assert.Equal(64, instantiatedType.InstanceFieldAlignment.AsInt);
             }
 
             {
-                DefType type = _testModule.GetType("Auto", "int8x16x2");
+                DefType type = _testModule.GetType("Auto"u8, "int8x16x2"u8);
                 Assert.Equal(16, type.InstanceFieldAlignment.AsInt);
             }
 
             {
-                DefType type = _testModule.GetType("Auto", "int8x32x2");
+                DefType type = _testModule.GetType("Auto"u8, "int8x32x2"u8);
                 Assert.Equal(32, type.InstanceFieldAlignment.AsInt);
             }
 
             {
-                DefType type = _testModule.GetType("Auto", "int8x64x2");
+                DefType type = _testModule.GetType("Auto"u8, "int8x64x2"u8);
                 Assert.Equal(64, type.InstanceFieldAlignment.AsInt);
             }
 
             {
-                DefType type = _testModule.GetType("Auto", "Wrapper_int8x16x2");
+                DefType type = _testModule.GetType("Auto"u8, "Wrapper_int8x16x2"u8);
                 Assert.Equal(16, type.InstanceFieldAlignment.AsInt);
             }
 
             {
-                DefType type = _testModule.GetType("Auto", "Wrapper_int8x32x2");
+                DefType type = _testModule.GetType("Auto"u8, "Wrapper_int8x32x2"u8);
                 Assert.Equal(32, type.InstanceFieldAlignment.AsInt);
             }
 
             {
-                DefType type = _testModule.GetType("Auto", "Wrapper_int8x64x2");
+                DefType type = _testModule.GetType("Auto"u8, "Wrapper_int8x64x2"u8);
                 Assert.Equal(64, type.InstanceFieldAlignment.AsInt);
             }
         }

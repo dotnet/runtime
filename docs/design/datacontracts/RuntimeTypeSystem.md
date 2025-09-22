@@ -77,6 +77,7 @@ partial interface IRuntimeTypeSystem : IContract
     public bool IsInitError(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
+    public virtual bool IsCollectible(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
@@ -89,6 +90,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
     public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
     public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    public virtual TargetPointer GetLoaderModule(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
 }
@@ -153,6 +155,9 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
+    // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
+    public virtual bool HasMDContextArg(MethodDescHandle);
+
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
@@ -180,6 +185,7 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -219,7 +225,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_PrimitiveValueType = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
-
+        Collectible = 0x00200000,
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -265,6 +271,7 @@ internal partial struct RuntimeTypeSystem_1
         public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+        public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
@@ -597,6 +604,14 @@ Contracts used:
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
 
+    public bool IsCollectible(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable typeHandle = _methodTables[typeHandle.Address];
+        return typeHandle.Flags.IsCollectible;
+    }
+
     public bool HasTypeParam(TypeHandle typeHandle)
     {
         if (typeHandle.IsMethodTable())
@@ -749,6 +764,28 @@ Contracts used:
         callConv = (byte) // Read CallConv field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress(), and then ignore all but the low 8 bits.
         return true;
     }
+
+    public TargetPointer GetLoaderModule(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsTypeDesc())
+        {
+            // TypeDesc::GetLoaderModule
+            if (HasTypeParam(typeHandle))
+            {
+                return GetLoaderModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                return target.ReadPointer(typeHandle.TypeDescAddress() + /* FnPtrTypeDesc::LoaderModule offset */);
+            }
+        }
+        return target.ReadPointer(mt.AuxiliaryData + /* MethodTableAuxiliaryData::LoaderModule offset */);
+    }
 ```
 
 ### MethodDesc
@@ -848,6 +885,14 @@ And the following enumeration definitions
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     [Flags]
@@ -1119,6 +1164,23 @@ And the various apis are implemented with the following algorithms
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+    }
+
+    public bool HasMDContextArg(MethodDescHandle method)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
+        {
+            return false;
+        }
+
+        uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
+        ILStubType ilStubType = (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        bool isCLRToCOMStub = ilStubType == ILStubType.StubCLRToCOMInterop;
+        bool isPInvokeVarArgStub = ilStubType == ILStubType.StubPInvokeVarArg;
+
+        return isCLRToCOMStub || isPInvokeVarArgStub;
     }
 
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;

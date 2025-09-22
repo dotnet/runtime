@@ -592,6 +592,7 @@
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="System\Security\Cryptography\HashProvider.cs" />
+    <Compile Include="System\Security\Cryptography\HashStatic.cs" />
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\HKDFManagedImplementation.cs" />
@@ -605,6 +606,7 @@
     <Compile Include="System\Security\Cryptography\HMACSHA3_256.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA3_384.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA3_512.cs" />
+    <Compile Include="System\Security\Cryptography\HMACStatic.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ILiteSymmetricCipher.cs" />

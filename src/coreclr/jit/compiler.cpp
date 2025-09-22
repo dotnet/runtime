@@ -2086,8 +2086,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
@@ -4912,6 +4910,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Conditional to switch conversion, and switch peeling
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
@@ -4919,10 +4921,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-
-        // Conditional to switch conversion, and switch peeling
-        //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
         // Run flow optimizations before reordering blocks
         //
@@ -7023,6 +7021,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     compSetOptimizationLevel();
+
+#ifdef DEBUG
+    if (JitConfig.JitInstrumentIfOptimizing() && opts.OptimizationEnabled() && !IsReadyToRun())
+    {
+        JITDUMP("\nForcibly enabling instrumentation\n");
+        opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+    }
+#endif
 
     if ((JitConfig.JitDisasmOnlyOptimized() != 0) && (!opts.OptimizationEnabled()))
     {
