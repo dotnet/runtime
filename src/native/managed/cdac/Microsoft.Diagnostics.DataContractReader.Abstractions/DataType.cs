@@ -49,6 +49,7 @@ public enum DataType
     ProbeExtensionResult,
     MethodTable,
     DynamicStaticsInfo,
+    EEConfig,
     EEClass,
     ArrayClass,
     MethodTableAuxiliaryData,

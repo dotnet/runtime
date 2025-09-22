@@ -82,6 +82,7 @@ public:
         OptimizationTierOptimized, // may do less optimizations than tier 1
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
+        OptimizationTierUnknown = 0xFFFFFFFF
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
@@ -140,12 +141,7 @@ private:
             PTR_MethodDesc m_pMethodDesc;
         } m_synthetic;
     };
-#endif // FEATURE_CODE_VERSIONING
 };
-
-
-
-#ifdef FEATURE_CODE_VERSIONING
 
 enum class RejitFlags : uint32_t
 {

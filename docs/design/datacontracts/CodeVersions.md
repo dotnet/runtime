@@ -193,9 +193,9 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
     // CodeVersionManager::GetILCodeVersions
     GetModuleAndMethodDesc(methodDesc, out TargetPointer module, out uint methodDefToken);
 
-    ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
-    TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-    TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+    ModuleHandle moduleHandle = target.Contracts.Loader.GetModuleHandleFromModulePtr(module);
+    TargetPointer ilCodeVersionTable = target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
+    TargetPointer ilVersionStateAddress = target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
 
     // always add the synthetic version
     yield return new ILCodeVersionHandle(module, methodDefToken, TargetPointer.Null);
@@ -203,11 +203,11 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
     // if explicit versions exist, iterate linked list and return them
     if (ilVersionStateAddress != TargetPointer.Null)
     {
-        Data.ILCodeVersioningState ilState = _target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
+        Data.ILCodeVersioningState ilState = target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
         TargetPointer nodePointer = ilState.FirstVersionNode;
         while (nodePointer != TargetPointer.Null)
         {
-            Data.ILCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.ILCodeVersionNode>(nodePointer);
+            Data.ILCodeVersionNode current = target.ProcessedData.GetOrAdd<Data.ILCodeVersionNode>(nodePointer);
             yield return new ILCodeVersionHandle(TargetPointer.Null, 0, nodePointer);
             nodePointer = current.Next;
         }
@@ -220,7 +220,7 @@ IEnumerable<ILCodeVersionHandle> ICodeVersions.GetILCodeVersions(TargetPointer m
 ```csharp
 NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointer ip)
 {
-    Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+    Contracts.IExecutionManager executionManager = target.Contracts.ExecutionManager;
     EECodeInfoHandle? info = executionManager.GetEECodeInfoHandle(ip);
     if (!info.HasValue)
     {
@@ -231,7 +231,7 @@ NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointe
     {
         return NativeCodeVersionHandle.Invalid;
     }
-    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
     if (!rts.IsVersionable(md))
     {
@@ -267,13 +267,13 @@ IEnumerable<NativeCodeVersionHandle> FindNativeCodeVersionNodes(IRuntimeTypeSyst
     if (versioningStateAddr == TargetPointer.Null)
         yield break;
 
-    Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
+    Data.MethodDescVersioningState versioningState = target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
 
     // LinkedList stage of NativeCodeVersion::Next, heavily inlined
     TargetPointer currentAddress = versioningState.NativeCodeVersionNode;
     while (currentAddress != TargetPointer.Null)
     {
-        Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
+        Data.NativeCodeVersionNode current = target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
         if (predicate(current))
         {
             yield return NativeCodeVersionHandle.OfExplicit(currentAddress);
@@ -300,7 +300,7 @@ IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetP
     }
 
     // Iterate through versioning state nodes and return the active one, matching any IL code version
-    Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
     TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
     IEnumerable<NativeCodeVersionHandle> nativeCodeVersions = FindNativeCodeVersionNodes(
@@ -329,7 +329,7 @@ public virtual NativeCodeVersionHandle GetActiveNativeCodeVersionForILCodeVersio
 ```csharp
 bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddress)
 {
-    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
     if (rts.IsDynamicMethod(md))
         return false;
@@ -338,7 +338,7 @@ bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddr
     TargetPointer mtAddr = rts.GetMethodTable(md);
     TypeHandle mt = rts.GetTypeHandle(mtAddr);
     TargetPointer modAddr = rts.GetModule(mt);
-    ILoader loader = _target.Contracts.Loader;
+    ILoader loader = target.Contracts.Loader;
     ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
     ModuleFlags modFlags = loader.GetFlags(mod);
     if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
@@ -372,7 +372,7 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
     {
         // Synthetic ILCodeVersion, get the IL from the module and method def
 
-        ILoader loader = _target.Contracts.Loader;
+        ILoader loader = target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
         ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
     }

@@ -143,6 +143,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
             new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
+            new(nameof(Data.Module.ReadyToRunImage), DataType.pointer),
             new(nameof(Data.Module.GrowableSymbolStream), DataType.pointer),
             new(nameof(Data.Module.AvailableTypeParams), DataType.pointer),
             new(nameof(Data.Module.InstMethodHashTable), DataType.pointer),

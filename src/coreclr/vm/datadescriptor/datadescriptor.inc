@@ -173,6 +173,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::Dynamic
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
+CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunImage, cdac_data<Module>::ReadyToRunImage)
 CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
 CDAC_TYPE_FIELD(Module, /*pointer*/, AvailableTypeParams, offsetof(Module, m_pAvailableParamTypes))
 CDAC_TYPE_FIELD(Module, /*pointer*/, InstMethodHashTable, offsetof(Module, m_pInstMethodHashTable))
@@ -316,6 +317,12 @@ CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumStaticFields, cdac_data<EEClass>::NumSta
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEConfig)
+CDAC_TYPE_INDETERMINATE(EEConfig)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, JitMinOpts, cdac_data<EEConfig>::JitMinOpts)
+CDAC_TYPE_FIELD(EEConfig, /*bool*/, Debuggable, cdac_data<EEConfig>::Debuggable)
+CDAC_TYPE_END(EEConfig)
 
 CDAC_TYPE_BEGIN(ArrayClass)
 CDAC_TYPE_INDETERMINATE(ArrayClass)
@@ -493,6 +500,7 @@ CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
 CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+CDAC_TYPE_FIELD(MethodDescCodeData, /*OptimizationTier*/, OptimizationTier, offsetof(MethodDescCodeData,OptimizationTier))
 CDAC_TYPE_END(MethodDescCodeData)
 
 CDAC_TYPE_BEGIN(MethodDescVersioningState)
@@ -983,6 +991,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_GLOBAL(FeatureTieredCompilation, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureTieredCompilation, uint8, 0)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
@@ -999,6 +1012,8 @@ CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMAS
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
@@ -1049,7 +1064,9 @@ CDAC_GLOBAL_CONTRACT(Loader, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
+#ifdef FEATURE_REJIT
 CDAC_GLOBAL_CONTRACT(ReJIT, 1)
+#endif // FEATURE_REJIT
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)

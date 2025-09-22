@@ -173,6 +173,20 @@ internal readonly struct Loader_1 : ILoader
         return module.PEAssembly;
     }
 
+    bool ILoader.GetReadyToRunImageInfo(ModuleHandle handle, out TargetPointer r2rImageBase, out TargetPointer r2rImageEnd)
+    {
+        r2rImageBase = TargetPointer.Null;
+        r2rImageEnd = TargetPointer.Null;
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.ReadyToRunInfo == TargetPointer.Null)
+            return false;
+
+        Data.PEImageLayout pEImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(module.ReadyToRunImage);
+        r2rImageBase = pEImageLayout.Base;
+        r2rImageEnd = pEImageLayout.Base + pEImageLayout.Size;
+        return true;
+    }
+
     bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
     {
         baseAddress = TargetPointer.Null;

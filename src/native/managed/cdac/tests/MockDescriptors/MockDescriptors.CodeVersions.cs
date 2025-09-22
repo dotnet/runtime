@@ -24,6 +24,7 @@ internal partial class MockDescriptors
             ]
         };
 
+        // note: we aren't testing this on wasm so we can go ahead and include OptimizationTier
         private static readonly TypeFields NativeCodeVersionNodeFields = new TypeFields()
         {
             DataType = DataType.NativeCodeVersionNode,
@@ -34,6 +35,7 @@ internal partial class MockDescriptors
                 new(nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
                 new(nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
                 new(nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
+                new(nameof(Data.NativeCodeVersionNode.OptimizationTier), DataType.uint32),
                 new(nameof(Data.NativeCodeVersionNode.GCCoverageInfo), DataType.pointer),
             ]
         };

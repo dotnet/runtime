@@ -91,25 +91,27 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != NULL);
-
+    NativeCodeVersion::OptimizationTier initialTier = pMethodDesc->GetMethodDescOptimizationTier();
+    if (initialTier != NativeCodeVersion::OptimizationTierUnknown)
+    {
+        return initialTier;
+    }
 #ifdef FEATURE_TIERED_COMPILATION
     if (!pMethodDesc->IsEligibleForTieredCompilation())
     {
         // The optimization tier is not used
-        return NativeCodeVersion::OptimizationTierOptimized;
+        initialTier = NativeCodeVersion::OptimizationTierOptimized;
     }
 
-    _ASSERT(!pMethodDesc->RequestedAggressiveOptimization());
-
-    if (!pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
+    else if (!pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
     {
         // Tier 0 call counting may have been disabled for several reasons, the intention is to start with and stay at an
         // optimized tier
-        return NativeCodeVersion::OptimizationTierOptimized;
+        initialTier = NativeCodeVersion::OptimizationTierOptimized;
     }
 
 #ifdef FEATURE_PGO
-    if (g_pConfig->TieredPGO())
+    else if (g_pConfig->TieredPGO())
     {
         // Initial tier for R2R is always just OptimizationTier0
         // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
@@ -118,16 +120,23 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() ||
             ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
         {
-            return NativeCodeVersion::OptimizationTier0;
+            initialTier = NativeCodeVersion::OptimizationTier0;
         }
-        return NativeCodeVersion::OptimizationTier0Instrumented;
+        else
+        {
+            initialTier = NativeCodeVersion::OptimizationTier0Instrumented;
+        }
     }
-#endif
-
-    return NativeCodeVersion::OptimizationTier0;
+#endif // FEATURE_PGO
+    else
+        initialTier = NativeCodeVersion::OptimizationTier0;
 #else
-    return NativeCodeVersion::OptimizationTierOptimized;
-#endif
+    initialTier = NativeCodeVersion::OptimizationTierOptimized;
+#endif // FEATURE_TIERED_COMPILATION
+#ifndef DACCESS_COMPILE
+    pMethodDesc->SetMethodDescOptimizationTier(initialTier);
+#endif // DACCESS_COMPILE
+    return initialTier;
 }
 
 bool TieredCompilationManager::IsTieringDelayActive()
