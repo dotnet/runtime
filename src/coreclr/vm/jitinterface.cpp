@@ -10884,7 +10884,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                 }
             }
 
-            if (IndirectionAllowedForJitHelper(ftnNum) && helperMD->HasPrecode())
+            if (IndirectionAllowedForJitHelper(ftnNum))
             {
                 Precode* pPrecode = helperMD->GetPrecode();
                 _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
