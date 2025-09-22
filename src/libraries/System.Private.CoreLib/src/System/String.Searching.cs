@@ -614,7 +614,7 @@ namespace System
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
             int searchIndex = startIndex - count + 1;
-            int subIndex = this.AsSpan(searchIndex..(startIndex + count)).LastIndexOf(valueChars, comparisonType);
+            int subIndex = this.AsSpan(searchIndex..(startIndex + 1)).LastIndexOf(valueChars, comparisonType);
             return subIndex < 0 ? subIndex : searchIndex + subIndex;
         }
     }
