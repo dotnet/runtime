@@ -27,6 +27,7 @@ Contracts used:
 | --- |
 | RuntimeTypeSystem |
 | Loader |
+| EcmaMetadata |
 
 ### SignatureTypeProvider
 The cDAC implements the ISignatureTypeProvider<TType,TGenericContext> with TType=TypeHandle. TGenericContext can either be a MethodDescHandle or TypeHandle; MethodDescHandle context is used to look up generic method parameters, and TypeHandle context is used to look up generic type parameters.

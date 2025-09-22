@@ -923,6 +923,7 @@ CDAC_TYPE_BEGIN(CoreLibBinder)
 CDAC_TYPE_INDETERMINATE(CoreLibBinder)
 CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, Classes, cdac_data<CoreLibBinder>::Classes)
 CDAC_TYPE_END(CoreLibBinder)
+
 // this is an SHash type
 CDAC_TYPE_BEGIN(DynamicILBlobTable)
 CDAC_TYPE_SIZE(cdac_data<DynamicILBlobTable>::EntrySize)

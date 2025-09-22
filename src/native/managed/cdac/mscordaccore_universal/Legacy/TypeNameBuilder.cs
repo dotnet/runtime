@@ -137,7 +137,7 @@ internal struct TypeNameBuilder
             MetadataReader? reader = default;
             if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
             {
-                reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
                 if (reader is not null)
                 {
                     MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
