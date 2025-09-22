@@ -24,16 +24,16 @@ namespace Mono.Linker.Tests.Cases.Warnings
     }
 
 #if IN_TEST_BUILD
-	public class CanWarnAsError
-	{
-		class HelperClass
-		{
-			private int helperField = 0;
-			int HelperMethod ()
-			{
-				return 0;
-			}
-		}
-	}
+    public class CanWarnAsError
+    {
+        class HelperClass
+        {
+            private int helperField = 0;
+            int HelperMethod()
+            {
+                return 0;
+            }
+        }
+    }
 #endif
 }

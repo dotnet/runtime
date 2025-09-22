@@ -247,8 +247,7 @@ namespace System.Reflection.Emit
             type = RuntimeTypeBuilder.ResolveUserType(type);
             RuntimeTypeBuilder.ResolveUserTypes(modReq);
             RuntimeTypeBuilder.ResolveUserTypes(modOpt);
-            if (marshal_info != null)
-                marshal_info.marshaltyperef = RuntimeTypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
+            marshal_info?.marshaltyperef = RuntimeTypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
         }
 
         internal FieldInfo RuntimeResolve()

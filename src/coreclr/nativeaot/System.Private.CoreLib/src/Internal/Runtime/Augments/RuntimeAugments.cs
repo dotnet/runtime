@@ -168,7 +168,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetNewObjectHelper(type.ToMethodTable());
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -545,6 +545,11 @@ namespace Internal.Runtime.Augments
             else
                 genericContext = default;
             return result;
+        }
+
+        public static unsafe IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
+        {
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot));
         }
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)

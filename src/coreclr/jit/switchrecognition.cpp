@@ -9,7 +9,16 @@
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
-#define SWITCH_MIN_TESTS    3
+
+#if TARGET_ARM64
+// ARM64 has conditional instructions which can be more efficient than a switch->bittest (optOptimizeBools)
+#define SWITCH_MIN_TESTS 5
+#else
+#define SWITCH_MIN_TESTS 3
+#endif
+
+// This is a heuristics based value tuned for optimal performance
+#define CONVERT_SWITCH_TO_CCMP_MIN_TEST 5
 
 //-----------------------------------------------------------------------------
 //  optRecognizeAndOptimizeSwitchJumps: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
@@ -32,9 +41,6 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             continue;
         }
 
-// Limit to XARCH, ARM is already doing a great job with such comparisons using
-// a series of ccmp instruction (see ifConvert phase).
-#ifdef TARGET_XARCH
         // block->KindIs(BBJ_COND) check is for better throughput.
         if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
@@ -42,12 +48,9 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             modified = true;
 
             // Converted switches won't have dominant cases, so we can skip the switch peeling check.
-            assert(!block->GetSwitchTargets()->bbsHasDominantCase);
+            assert(!block->GetSwitchTargets()->HasDominantCase());
         }
-        else
-#endif
-
-            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->bbsHasDominantCase)
+        else if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
             modified = true;
@@ -64,10 +67,48 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 }
 
 //------------------------------------------------------------------------------
+// SkipFallthroughBlocks : Skip all fallthrough blocks (empty BBJ_ALWAYS blocks)
+//
+// Arguments:
+//    compiler - The compiler instance.
+//    block    - the block to process
+//
+// Return Value:
+//    block that is not an empty fallthrough block
+//
+static BasicBlock* SkipFallthroughBlocks(Compiler* comp, BasicBlock* block)
+{
+    BasicBlock* origBlock = block;
+    if (!block->KindIs(BBJ_ALWAYS) || (block->firstStmt() != nullptr))
+    {
+        // Fast path
+        return block;
+    }
+
+    // We might consider ignoring statements with only NOPs if that is profitable.
+
+    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVec       visited = BitVecOps::MakeEmpty(&traits);
+    BitVecOps::AddElemD(&traits, visited, block->bbID);
+    while (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
+           BasicBlock::sameEHRegion(block, block->GetTarget()))
+    {
+        block = block->GetTarget();
+        if (!BitVecOps::TryAddElemD(&traits, visited, block->bbID))
+        {
+            // A cycle detected, bail out.
+            return origBlock;
+        }
+    }
+    return block;
+}
+
+//------------------------------------------------------------------------------
 // IsConstantTestCondBlock : Does the given block represent a simple BBJ_COND
 //    constant test? e.g. JTRUE(EQ/NE(X, CNS)).
 //
 // Arguments:
+//    compiler         - The compiler instance.
 //    block            - The block to check
 //    allowSideEffects - is variableNode allowed to have side-effects (COMMA)?
 //    trueTarget       - [out] The successor visited if X == CNS
@@ -79,7 +120,8 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 // Return Value:
 //    True if the block represents a constant test, false otherwise
 //
-bool IsConstantTestCondBlock(const BasicBlock* block,
+bool IsConstantTestCondBlock(Compiler*         comp,
+                             const BasicBlock* block,
                              bool              allowSideEffects,
                              BasicBlock**      trueTarget,
                              BasicBlock**      falseTarget,
@@ -120,9 +162,11 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                     return false;
                 }
 
-                *isReversed  = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *trueTarget  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
-                *falseTarget = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
+                *isReversed = rootNode->gtGetOp1()->OperIs(GT_NE);
+                *trueTarget =
+                    SkipFallthroughBlocks(comp, *isReversed ? block->GetFalseTarget() : block->GetTrueTarget());
+                *falseTarget =
+                    SkipFallthroughBlocks(comp, *isReversed ? block->GetTrueTarget() : block->GetFalseTarget());
 
                 if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
@@ -160,24 +204,34 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
 //    testingForConversion - Test if its likely a switch conversion will happen.
 //    Used to prevent a pessimization when optimizing for conditional chaining.
 //    Done in this function to prevent maintaining the check in two places.
+//    ccmpVec - BitVec to use to track all the nodes participating in a single switch
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion)
+bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion, BitVec* ccmpVec)
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
-    GenTree*    variableNode = nullptr;
-    ssize_t     cns          = 0;
-    BasicBlock* trueTarget   = nullptr;
-    BasicBlock* falseTarget  = nullptr;
+#ifdef TARGET_ARM
+    // Bitmap test (TryLowerSwitchToBitTest) is quite verbose on ARM32 (~6 instructions), it results in massive size
+    // regressions.
+    return false;
+#endif
+
+    GenTree*    variableNode                    = nullptr;
+    ssize_t     cns                             = 0;
+    BasicBlock* trueTarget                      = nullptr;
+    BasicBlock* falseTarget                     = nullptr;
+    int         testValueIndex                  = 0;
+    ssize_t     testValues[SWITCH_MAX_DISTANCE] = {};
+    weight_t    falseLikelihood                 = firstBlock->GetFalseEdge()->getLikelihood();
 
     // The algorithm is simple - we check that the given block is a constant test block
     // and then try to accumulate as many constant test blocks as possible. Once we hit
     // a block that doesn't match the pattern, we start processing the accumulated blocks.
     bool isReversed = false;
-    if (IsConstantTestCondBlock(firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
+    if (IsConstantTestCondBlock(this, firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
     {
         if (isReversed)
         {
@@ -186,17 +240,30 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             // TODO: make it more flexible and support cases like "x != cns1 && x != cns2 && ..."
             return false;
         }
+        if (testingForConversion)
+        {
+            assert(ccmpVec != nullptr);
+            BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
+            if (BitVecOps::IsMember(&ccmpTraits, *ccmpVec, firstBlock->bbNum))
+            {
+                BitVecOps::RemoveElemD(&ccmpTraits, *ccmpVec, firstBlock->bbNum);
+                return true;
+            }
+            else
+            {
+                BitVecOps::ClearD(&ccmpTraits, *ccmpVec);
+            }
+        }
 
         // No more than SWITCH_MAX_TABLE_SIZE blocks are allowed (arbitrary limit in this context)
-        int     testValueIndex                  = 0;
-        ssize_t testValues[SWITCH_MAX_DISTANCE] = {};
-        testValues[testValueIndex]              = cns;
+        testValueIndex             = 0;
+        testValues[testValueIndex] = cns;
         testValueIndex++;
 
         // Track likelihood of reaching the false block
         //
-        weight_t          falseLikelihood = firstBlock->GetFalseEdge()->getLikelihood();
-        const BasicBlock* prevBlock       = firstBlock;
+        falseLikelihood             = firstBlock->GetFalseEdge()->getLikelihood();
+        const BasicBlock* prevBlock = firstBlock;
 
         // Now walk the chain of test blocks, and see if they are basically the same type of test
         for (BasicBlock *currBb = falseTarget, *currFalseTarget; currBb != nullptr; currBb = currFalseTarget)
@@ -209,40 +276,40 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             {
                 // Only the first conditional block can have multiple statements.
                 // Stop searching and process what we already have.
-                return !testingForConversion &&
-                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                        testingForConversion, ccmpVec);
             }
 
             // Inspect secondary blocks
-            if (IsConstantTestCondBlock(currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
+            if (IsConstantTestCondBlock(this, currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
                                         &currVariableNode, &currCns))
             {
                 if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
-                    return !testingForConversion &&
-                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode->gtEffectiveVal()))
                 {
                     // A different variable node is used, stop searching and process what we already have.
-                    return !testingForConversion &&
-                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Multiple preds in a secondary block, stop searching and process what we already have.
-                    return !testingForConversion &&
-                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
                     // Current block is in a different EH region, stop searching and process what we already have.
-                    return !testingForConversion &&
-                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 // Ok we can work with that, add the test value to the list
@@ -252,27 +319,23 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
                     // Too many suitable tests found - stop and process what we already have.
-                    return !testingForConversion &&
-                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
 
                 if (isReversed)
                 {
                     // We only support reversed test (GT_NE) for the last block.
-                    return !testingForConversion &&
-                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                            testingForConversion, ccmpVec);
                 }
-
-                if (testingForConversion)
-                    return true;
-
                 prevBlock = currBb;
             }
             else
             {
                 // Current block is not a suitable test, stop searching and process what we already have.
-                return !testingForConversion &&
-                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode,
+                                        testingForConversion, ccmpVec);
             }
         }
     }
@@ -292,15 +355,29 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
 //    testValues - Array of constants that are tested against the variable
 //    falseLikelihood - Likelihood of control flow reaching the false block
 //    nodeToTest - Variable node that is tested against the constants
+//    testingForConversion - Test if its likely a switch conversion will happen.
+//    Used to prevent a pessimization when optimizing for conditional chaining.
+//    Done in this function to prevent maintaining the check in two places.
+//    ccmpVec - BitVec to use to track all the nodes participating in a single switch
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchConvert(
-    BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest)
+bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
+                                int         testsCount,
+                                ssize_t*    testValues,
+                                weight_t    falseLikelihood,
+                                GenTree*    nodeToTest,
+                                bool        testingForConversion,
+                                BitVec*     ccmpVec)
 {
     assert(firstBlock->KindIs(BBJ_COND));
     assert(!varTypeIsSmall(nodeToTest));
+
+    if (testingForConversion && (testsCount < CONVERT_SWITCH_TO_CCMP_MIN_TEST))
+    {
+        return false;
+    }
 
     if (testsCount < SWITCH_MIN_TESTS)
     {
@@ -308,7 +385,7 @@ bool Compiler::optSwitchConvert(
         return false;
     }
 
-    static_assert_no_msg(SWITCH_MIN_TESTS > 0);
+    static_assert(SWITCH_MIN_TESTS > 0);
 
     // Find max and min values in the testValues array
     // At this point we have at least SWITCH_MIN_TESTS values in the array
@@ -369,15 +446,34 @@ bool Compiler::optSwitchConvert(
     BasicBlock* blockIfTrue  = nullptr;
     BasicBlock* blockIfFalse = nullptr;
     bool        isReversed   = false;
-    const bool  isTest       = IsConstantTestCondBlock(lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
+    const bool  isTest = IsConstantTestCondBlock(this, lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
     assert(isTest);
 
-    assert(firstBlock->TrueTargetIs(blockIfTrue));
+    assert(SkipFallthroughBlocks(this, firstBlock->GetTrueTarget()) == SkipFallthroughBlocks(this, blockIfTrue));
     FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
     FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
 
+    if (testingForConversion)
+    {
+        assert(ccmpVec != nullptr);
+        BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
+        // Return if we are just checking for a possibility of a switch convert and not actually making the conversion
+        // to switch here.
+        BasicBlock* iterBlock = firstBlock;
+        for (int i = 0; i < testsCount; i++)
+        {
+            BitVecOps::AddElemD(&ccmpTraits, *ccmpVec, iterBlock->bbNum);
+            iterBlock = iterBlock->GetFalseTarget();
+        }
+        return true;
+    }
     // Convert firstBlock to a switch block
-    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc);
+    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
+    assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
+    FlowEdge** const jmpTab =
+        new (this, CMK_FlowEdge) FlowEdge*[2 + jumpCount + 1 /* true/false edges | cases | default case */];
+
+    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(jmpTab, 2, jmpTab + 2, jumpCount + 1, true));
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -406,14 +502,7 @@ bool Compiler::optSwitchConvert(
         blockToRemove = nextBlockToRemove;
     }
 
-    const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
-    assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
-    FlowEdge** jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jumpCount + 1 /*default case*/];
-
-    fgHasSwitch                                   = true;
-    firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
-    firstBlock->GetSwitchTargets()->bbsHasDefault = true;
-    firstBlock->GetSwitchTargets()->bbsDstTab     = jmpTab;
+    fgHasSwitch = true;
 
     // Splitting doesn't work well with jump-tables currently
     opts.compProcedureSplitting = false;
@@ -430,7 +519,8 @@ bool Compiler::optSwitchConvert(
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
     fgRemoveRefPred(trueEdge);
 
-    FlowEdge* switchTrueEdge = nullptr;
+    FlowEdge*        switchTrueEdge = nullptr;
+    FlowEdge** const cases          = jmpTab + 2;
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
@@ -438,7 +528,7 @@ bool Compiler::optSwitchConvert(
         const bool isTrue = (bitVector & static_cast<ssize_t>(1ULL << i)) != 0;
 
         FlowEdge* const newEdge = fgAddRefPred((isTrue ? blockIfTrue : blockIfFalse), firstBlock);
-        jmpTab[i]               = newEdge;
+        cases[i]                = newEdge;
 
         if ((switchTrueEdge == nullptr) && isTrue)
         {
@@ -450,11 +540,15 @@ bool Compiler::optSwitchConvert(
 
     // Link the 'default' case
     FlowEdge* const switchDefaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
-    jmpTab[jumpCount]                 = switchDefaultEdge;
+    cases[jumpCount]                  = switchDefaultEdge;
 
     // Fix likelihoods
     switchDefaultEdge->setLikelihood(falseLikelihood);
     switchTrueEdge->setLikelihood(1.0 - falseLikelihood);
+
+    // Initialize unique successor table
+    firstBlock->GetSwitchTargets()->GetSuccs()[0] = cases[0];
+    firstBlock->GetSwitchTargets()->GetSuccs()[1] = (cases[0] == switchTrueEdge) ? switchDefaultEdge : switchTrueEdge;
 
     return true;
 }

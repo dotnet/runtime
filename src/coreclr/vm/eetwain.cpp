@@ -1120,6 +1120,17 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     return true;
 }
 
+void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pContext)));
+    Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
+}
+
 /*****************************************************************************/
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2009,7 +2020,7 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 #ifndef TARGET_WASM
 
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
@@ -2022,26 +2033,6 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
-#endif
-}
-
-static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_AMD64)
-    return (UINT_PTR*)&(pContextRecord->Rbx);
-#elif defined(TARGET_ARM)
-    return (UINT_PTR*)&(pContextRecord->R4);
-#elif defined(TARGET_ARM64)
-    return (UINT_PTR*)&(pContextRecord->X19);
-#elif defined(TARGET_LOONGARCH64)
-    return (UINT_PTR*)&(pContextRecord->S0);
-#elif defined(TARGET_X86)
-    return (UINT_PTR*)&(pContextRecord->Edi);
-#elif defined(TARGET_RISCV64)
-    return (UINT_PTR*)&(pContextRecord->Fp);
-#else
-    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
-    return NULL;
 #endif
 }
 
@@ -2078,7 +2069,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     {
         dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
                                  CastHandlerFn(pfnHandler),
-                                 GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
+                                 pRD->pCurrentContext,
                                  pFuncletCallerSP);
     }
 
@@ -2220,53 +2211,32 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 
     ClrCaptureContext(pContext);
 
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = GetSSPForFrameOnCurrentStack(GetIP(pContext));
-#endif // HOST_AMD64 && HOST_WINDOWS
-
-    CONTEXT firstNativeContext;
-    size_t firstNativeSSP;
-
-    // Find the native frames chain that contains the resumeSP
+    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
+    // the resumeSP
     do
     {
-        // Skip all managed frames upto a native frame
-        while (ExecutionManager::IsManagedCode(GetIP(pContext)))
+        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
         {
+            // JIT / AOT generated managed code
             Thread::VirtualUnwindCallFrame(pContext);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-            if (targetSSP != 0)
-            {
-                targetSSP += sizeof(size_t);
-            }
-#endif
         }
-
-        // Save the first native context after managed frames. This will be the context where we throw the resume after catch exception from.
-        firstNativeContext = *pContext;
-        firstNativeSSP = targetSSP;
-        // Move over all native frames until we move over the resumeSP
-        while ((GetSP(pContext) < resumeSP) && !ExecutionManager::IsManagedCode(GetIP(pContext)))
+        else
         {
 #ifdef TARGET_UNIX
             PAL_VirtualUnwind(pContext, NULL);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-            if (targetSSP != 0)
-            {
-                targetSSP += sizeof(size_t);
-            }
-#endif
         }
     }
-    while (GetSP(pContext) < resumeSP);
+    while (GetSP(pContext) != targetSP);
 
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &firstNativeContext, firstNativeSSP, resumeSP, resumeIP);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
+#endif    
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -2479,6 +2449,20 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     return true;
 }
 
+void InterpreterCodeManager::UnwindStackFrame(T_CONTEXT *pContext)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pContext != NULL);
+    VirtualUnwindInterpreterCallFrame(GetSP(pContext), pContext);
+}
+
 void InterpreterCodeManager::EnsureCallerContextIsValid(PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)
 {
     CONTRACTL
@@ -2619,22 +2603,49 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
-    return NULL;
+    PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+    TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
                                                  EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+    InterpreterGcInfoDecoder gcInfoDecoder(
+            gcInfoToken,
+            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
+            );
+
+    INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
+    if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
+    {
+        PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+        TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+        TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
+        TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
+        return PTR_VOID(taExactGenericsToken);
+    }
     return NULL;
 }
 
 GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
                                             EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
-    return GENERIC_PARAM_CONTEXT_NONE;
+    MethodDesc *pMD = pCodeInfo->GetMethodDesc();
+    GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
+
+    if (pMD->RequiresInstMethodDescArg())
+        paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
+    else if (pMD->RequiresInstMethodTableArg())
+        paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+    else if (pMD->AcquiresInstMethodTableFromThis())
+        paramContextType = GENERIC_PARAM_CONTEXT_THIS;
+
+    return paramContextType;
 }
 
 size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)

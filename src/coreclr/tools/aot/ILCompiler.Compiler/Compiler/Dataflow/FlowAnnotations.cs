@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
@@ -270,16 +271,16 @@ namespace ILLink.Shared.TrimAnalysis
 
             foreach (var intf in type.RuntimeInterfaces)
             {
-                if (intf.Name == "IReflect" && intf.Namespace == "System.Reflection")
+                if (intf.Name.SequenceEqual("IReflect"u8) && intf.Namespace.SequenceEqual("System.Reflection"u8))
                     return true;
             }
 
-            if (metadataType.Name == "IReflect" && metadataType.Namespace == "System.Reflection")
+            if (metadataType.Name.SequenceEqual("IReflect"u8) && metadataType.Namespace.SequenceEqual("System.Reflection"u8))
                 return true;
 
             do
             {
-                if (metadataType.Name == "Type" && metadataType.Namespace == "System")
+                if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
             } while ((metadataType = metadataType.MetadataBaseType) != null);
 
@@ -523,7 +524,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
                             // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
                             // that the field (which ever it is) must be annotated as well.
-                            ScanMethodBodyForFieldAccess(methodBody, write: true, out backingFieldFromSetter);
+                            backingFieldFromSetter = GetAutoPropertyCompilerGeneratedField(methodBody, isWriteAccessor: true);
                         }
 
                         MethodAnnotations? setterAnnotation = null;
@@ -560,16 +561,14 @@ namespace ILLink.Shared.TrimAnalysis
                     MethodDesc getMethod = property.GetMethod;
                     if (getMethod != null)
                     {
-
-                        // Abstract property backing field propagation doesn't make sense, and any derived property will be validated
-                        // to have the exact same annotations on getter/setter, and thus if it has a detectable backing field that will be validated as well.
+                        // Look only at compiler-generated accessors
                         MethodIL methodBody = _ilProvider.GetMethodIL(getMethod);
                         if (methodBody != null)
                         {
                             // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
                             // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
                             // that the field (which ever it is) must be annotated as well.
-                            ScanMethodBodyForFieldAccess(methodBody, write: false, out backingFieldFromGetter);
+                            backingFieldFromGetter = GetAutoPropertyCompilerGeneratedField(methodBody, isWriteAccessor: false);
                         }
 
                         MethodAnnotations? getterAnnotation = null;
@@ -593,27 +592,23 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    FieldDesc? backingField;
-                    if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
-                        backingFieldFromGetter != backingFieldFromSetter)
+                    FieldDesc? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
+                    if (backingField is not null)
                     {
-                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        backingField = null;
-                    }
-                    else
-                    {
-                        backingField = backingFieldFromGetter ?? backingFieldFromSetter;
-                    }
-
-                    if (backingField != null)
-                    {
-                        if (annotatedFields.Any(a => a.Field == backingField))
+                        bool validBackingFieldFound = backingFieldFromGetter is null
+                            || backingFieldFromSetter is null
+                            || backingFieldFromGetter == backingFieldFromSetter;
+                        if (validBackingFieldFound)
                         {
-                            _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
-                        }
-                        else
-                        {
-                            annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            if (annotatedFields.Any(a => a.Field == backingField && a.Annotation != annotation))
+                            {
+                                _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                            }
+                            else
+                            {
+                                // Unique backing field with no conflicts with property or existing field
+                                annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            }
                         }
                     }
                 }
@@ -651,13 +646,33 @@ namespace ILLink.Shared.TrimAnalysis
                 return attrs;
             }
 
-            private static bool ScanMethodBodyForFieldAccess(MethodIL body, bool write, out FieldDesc? found)
+            /// <summary>
+            /// Returns true if the property has a single accessor which is compiler generated,
+            /// indicating that it is an auto-property.
+            /// </summary>
+            /// <remarks>
+            /// Ideally this would be tightened to only return true if both accessors are auto-property accessors,
+            /// but it allows for either for back compatibility with existing behavior.
+            /// </remarks>
+            private static bool IsAutoProperty(PropertyPseudoDesc property)
+            {
+                return property.SetMethod?.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") == true
+                    || property.GetMethod?.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") == true;
+            }
+
+            private static FieldDesc? GetAutoPropertyCompilerGeneratedField(MethodIL body, bool isWriteAccessor)
             {
                 // Tries to find the backing field for a property getter/setter.
                 // Returns true if this is a method body that we can unambiguously analyze.
                 // The found field could still be null if there's no backing store.
-                found = null;
 
+                // Only analyze compiler-generated accessors
+                if (!body.OwningMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute"))
+                {
+                    return null;
+                }
+
+                FieldDesc? found = null;
                 ILReader ilReader = new ILReader(body.GetILBytes());
 
                 while (ilReader.HasNext)
@@ -665,45 +680,35 @@ namespace ILLink.Shared.TrimAnalysis
                     ILOpcode opcode = ilReader.ReadILOpcode();
                     switch (opcode)
                     {
-                        case ILOpcode.ldsfld when !write:
-                        case ILOpcode.ldfld when !write:
-                        case ILOpcode.stsfld when write:
-                        case ILOpcode.stfld when write:
+                        case ILOpcode.ldsfld when !isWriteAccessor:
+                        case ILOpcode.ldfld when !isWriteAccessor:
+                        case ILOpcode.stsfld when isWriteAccessor:
+                        case ILOpcode.stfld when isWriteAccessor:
+                        {
+                            // Multiple field accesses - ambiguous, fail
+                            if (found != null)
                             {
-                                // This writes/reads multiple fields - can't guess which one is the backing store.
-                                // Return failure.
-                                if (found != null)
-                                {
-                                    found = null;
-                                    return false;
-                                }
-                                found = (FieldDesc)body.GetObject(ilReader.ReadILToken());
+                                return null;
                             }
+                            found = (FieldDesc)body.GetObject(ilReader.ReadILToken());
                             break;
+                        }
                         default:
                             ilReader.Skip(opcode);
                             break;
                     }
                 }
 
-                if (found == null)
-                {
-                    // Doesn't access any fields. Could be e.g. "Type Foo => typeof(Bar);"
-                    // Return success.
-                    return true;
-                }
-
-                if (found.OwningType != body.OwningMethod.OwningType ||
+                if (found is null ||
+                    found.OwningType != body.OwningMethod.OwningType ||
                     found.IsStatic != body.OwningMethod.Signature.IsStatic ||
                     !found.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute"))
                 {
-                    // A couple heuristics to make sure we got the right field.
-                    // Return failure.
-                    found = null;
-                    return false;
+                    // Heuristics failed - not a backing field
+                    return null;
                 }
 
-                return true;
+                return found;
             }
         }
 
@@ -994,7 +999,7 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal SingleValue GetFieldValue(FieldDesc field)
-            => field.Name switch
+            => field.GetName() switch
             {
                 "EmptyTypes" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Type) => ArrayValue.Create(0, field.OwningType),
                 "Empty" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_String) => new KnownStringValue(string.Empty),

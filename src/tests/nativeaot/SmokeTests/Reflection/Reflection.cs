@@ -76,6 +76,8 @@ internal static class ReflectionTest
         Test105034Regression.Run();
         TestMethodsNeededFromNativeLayout.Run();
         TestFieldAndParamMetadata.Run();
+        TestActivationWithoutConstructor.Run();
+        TestNestedMakeGeneric.Run();
 
         //
         // Mostly functionality tests
@@ -856,6 +858,60 @@ internal static class ReflectionTest
             Type parameterType = typeof(TestFieldAndParamMetadata).GetMethod(nameof(TheMethod)).GetParameters()[0].ParameterType;
             if (parameterType.Name != nameof(ParameterType))
                 throw new Exception();
+        }
+    }
+
+    class TestActivationWithoutConstructor
+    {
+        public static void Run()
+        {
+            {
+                object o = Activator.CreateInstance(typeof(StructForCreateInstanceDirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceDirect<>)))
+                    throw new Exception();
+            }
+
+            {
+                object o = CreateInstance(typeof(StructForCreateInstanceIndirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceIndirect<>)))
+                    throw new Exception();
+
+                static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t)
+                    => Activator.CreateInstance(t);
+            }
+
+            {
+                object o = RuntimeHelpers.GetUninitializedObject(typeof(StructForGetUninitializedObject<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForGetUninitializedObject<>)))
+                    throw new Exception();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetTheType() => typeof(Atom);
+        }
+
+        class Atom;
+
+        struct StructForCreateInstanceDirect<T> where T : class;
+        struct StructForCreateInstanceIndirect<T> where T : class;
+        struct StructForGetUninitializedObject<T> where T : class;
+    }
+
+    class TestNestedMakeGeneric
+    {
+        class Outie<T> where T : class;
+        class Innie<T> where T : class;
+        class Atom;
+
+        public static void Run()
+        {
+            Type inner = typeof(Innie<>).MakeGenericType(GetAtom());
+            Type outer = typeof(Outie<>).MakeGenericType(inner);
+
+            Console.WriteLine(Activator.CreateInstance(outer));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
         }
     }
 

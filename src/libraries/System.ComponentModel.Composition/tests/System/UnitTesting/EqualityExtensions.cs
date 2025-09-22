@@ -91,13 +91,13 @@ namespace System.UnitTesting
 
             if (objA is IEnumerable objAEnumerable && objB is IEnumerable objBEnumerable)
             {
-                return CheckSequenceEquals(objAEnumerable, objBEnumerable);
+                return CheckSequenceEqual(objAEnumerable, objBEnumerable);
             }
 
             return objA.Equals(objB);
         }
 
-        public static bool CheckSequenceEquals(this IEnumerable @this, IEnumerable other)
+        public static bool CheckSequenceEqual(this IEnumerable @this, IEnumerable other)
         {
             if (@this == null || other == null)
                 return @this == other;

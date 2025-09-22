@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         Debug.Assert(_testKey != Compiler.InvalidQueryKey);
                         bool value = processor.EvaluateBoolean(frame, _testKey);
-                        if (value == false)
+                        if (!value)
                         {
                             frame.Finished();
                             break;

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler;
@@ -50,7 +51,7 @@ namespace Internal.IL.Stubs
                 {
                     TypeSystemContext context = _owningType.Context;
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
-                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable").MakePointerType();
+                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8).MakePointerType();
 
                     _signature = new MethodSignature(0, 0, int32Type, [ int32Type, eeTypePtrType.MakeByRefType() ]);
                 }
@@ -72,25 +73,33 @@ namespace Internal.IL.Stubs
 
         private MethodIL EmitILCommon(MethodDesc contextMethod)
         {
-            var owningType = (MetadataType)_owningType.InstantiateAsOpen();
-
             ILEmitter emitter = new ILEmitter();
 
             // Types marked as InlineArray aren't supported by
             // the built-in Equals() or GetHashCode().
-            if (owningType.IsInlineArray)
+            if (_owningType.IsInlineArray)
             {
                 var stream = emitter.NewCodeStream();
-                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
+                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedInlineArrayEqualsGetHashCode"u8);
                 stream.EmitCallThrowHelper(emitter, thrower);
                 return emitter.Link(this);
             }
 
-            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
-            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
+            if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null), out int lastFieldEndOffset))
+            {
+                var stream = emitter.NewCodeStream();
+                stream.EmitLdc(-lastFieldEndOffset);
+                stream.Emit(ILOpcode.ret);
+                return emitter.Link(this);
+            }
+
+            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8);
+            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of"u8, null);
+
+            var owningType = (MetadataType)_owningType.InstantiateAsOpen();
 
             ILToken rawDataToken = owningType.IsValueType ? default :
-                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"));
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetKnownField("Data"u8));
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
@@ -206,9 +215,9 @@ namespace Internal.IL.Stubs
             }
         }
 
-        internal const string MetadataName = "__GetFieldHelper";
+        internal static ReadOnlySpan<byte> MetadataName => "__GetFieldHelper"u8;
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -220,7 +229,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return MetadataName;
+                return "__GetFieldHelper";
             }
         }
     }

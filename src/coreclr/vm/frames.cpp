@@ -636,10 +636,11 @@ void Frame::PopIfChained()
 
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
 /* static */
-void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
 {
     _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
-    while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+
+    do
     {
 #ifdef TARGET_UNIX
         PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
@@ -647,11 +648,54 @@ void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
         Thread::VirtualUnwindCallFrame(pRD);
 #endif
     }
+    while (::GetSP(pRD->pCurrentContext) < targetSP);
+
+    _ASSERTE(::GetSP(pRD->pCurrentContext) == targetSP);
+}
+
+void InlinedCallFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+{
+#ifdef FEATURE_INTERPRETER
+    if (IsInInterpreter())
+    {
+        InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)m_Next;
+        Frame::UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
+        pInterpreterFrame->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+        return;
+    }
+#endif // FEATURE_INTERPRETER
+    {
+        _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
+        while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
+        {
+    #ifdef TARGET_UNIX
+            PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+    #else
+            Thread::VirtualUnwindCallFrame(pRD);
+    #endif
+        }
+    }
 }
 #endif // !TARGET_X86 || TARGET_UNIX
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
+
+#ifdef FEATURE_INTERPRETER
+BOOL InlinedCallFrame::IsInInterpreter()
+{
+    PTR_InterpreterFrame pInterpreterFrame = NULL;
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_Next;
+        // The interpreter frame is in the interpreter when its top method context frame matches the m_pCallSiteSP
+        return (dac_cast<PTR_VOID>(pInterpreterFrame->GetTopInterpMethodContextFrame()) == m_pCallSiteSP);
+    }
+
+    return FALSE;
+}
+#endif // FEATURE_INTERPRETER
+
 //---------------------------------------------------------------
 // Get the extra param for shared generic code.
 //---------------------------------------------------------------
@@ -1530,6 +1574,17 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
             (fn)(PTR_PTR_Object(pThis), sc, CHECK_APP_DOMAIN);
     }
 
+    // Promote async continuation for async methods
+    if (argit.HasAsyncContinuation())
+    {
+        PTR_PTR_VOID pAsyncCont = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetAsyncContinuationArgOffset());
+        LOG((LF_GC, INFO3,
+             "    async continuation argument at " FMT_ADDR "promoted from" FMT_ADDR "\n",
+             DBG_ADDR(pAsyncCont), DBG_ADDR(*pAsyncCont) ));
+
+        (fn)(PTR_PTR_Object(pAsyncCont), sc, CHECK_APP_DOMAIN);
+    }
+
     int argOffset;
     while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
@@ -1905,6 +1960,18 @@ void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 {
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
+    // Update the SSP to match the updated regdisplay
+    size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();
+    if (targetSSP != NULL)
+    {
+        while (*targetSSP++ != pRD->ControlPC)
+        {
+        }
+        _ASSERTE(targetSSP != NULL);
+        pRD->SSP = (TADDR)targetSSP;
+    }
+#endif // TARGET_AMD64 && TARGET_WINDOWS
 }
 
 #ifndef DACCESS_COMPILE

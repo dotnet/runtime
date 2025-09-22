@@ -7,7 +7,7 @@
 
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
-    IMPORT NDirectImportWorker
+    IMPORT PInvokeImportWorker
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
 #endif
@@ -24,6 +24,7 @@
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
 #ifdef FEATURE_INTERPRETER
+    IMPORT GetInterpThreadContextWithPossiblyMissingThread
     IMPORT ExecuteInterpretedMethod
 #endif
 
@@ -94,15 +95,15 @@
     LEAF_END
 
 ; ------------------------------------------------------------------
-; The call in ndirect import precode points to this function.
-        NESTED_ENTRY NDirectImportThunk
+; The call in PInvokeImportPrecode points to this function.
+        NESTED_ENTRY PInvokeImportThunk
 
         PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
         SAVE_ARGUMENT_REGISTERS        sp, 16
         SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
 
         mov     x0, x12
-        bl      NDirectImportWorker
+        bl      PInvokeImportWorker
         mov     x12, x0
 
         ; pop the stack and restore original register state
@@ -110,7 +111,7 @@
         RESTORE_ARGUMENT_REGISTERS        sp, 16
         EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
 
-        ; If we got back from NDirectImportWorker, the MD has been successfully
+        ; If we got back from PInvokeImportWorker, the MD has been successfully
         ; linked. Proceed to execute the original DLL call.
         EPILOG_BRANCH_REG x12
 
@@ -523,7 +524,7 @@ COMToCLRDispatchHelper_RegSetup
         ;
         ; X0 = throwable
         ; X1 = PC to invoke
-        ; X2 = address of X19 register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; X2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
@@ -545,12 +546,12 @@ COMToCLRDispatchHelper_RegSetup
         mov fp, sp
         str fp, [x3]
 
-        ldp x19, x20, [x2, #0]
-        ldp x21, x22, [x2, #16]
-        ldp x23, x24, [x2, #32]
-        ldp x25, x26, [x2, #48]
-        ldp x27, x28, [x2, #64]
-        ldr fp, [x2, #80] ; offset of fp in CONTEXT relative to X19
+        ldp x19, x20, [x2, #OFFSETOF__CONTEXT__X19]
+        ldp x21, x22, [x2, #(OFFSETOF__CONTEXT__X19 + 16)]
+        ldp x23, x24, [x2, #(OFFSETOF__CONTEXT__X19 + 32)]
+        ldp x25, x26, [x2, #(OFFSETOF__CONTEXT__X19 + 48)]
+        ldp x27, x28, [x2, #(OFFSETOF__CONTEXT__X19 + 64)]
+        ldr fp, [x2, #OFFSETOF__CONTEXT__Fp]
 
         ; Invoke the funclet
         blr x1
@@ -1063,14 +1064,25 @@ JIT_PollGCRarePath
         PROLOG_WITH_TRANSITION_BLOCK
 
         INLINE_GETTHREAD x20, x19
+        cbz x20, NoManagedThread
 
+        ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
+        cbnz x11, HaveInterpThreadContext
+
+NoManagedThread
+        mov x0, x20
+        bl GetInterpThreadContextWithPossiblyMissingThread
+        mov x11, x0
+        RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
+        RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+
+HaveInterpThreadContext
         ; IR bytecode address
         mov x19, METHODDESC_REGISTER
         ldr x9, [METHODDESC_REGISTER]
         ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
         add x10, x9, #OFFSETOF__CallStubHeader__Routines
-        ldr x9, [x20, #OFFSETOF__Thread__m_pInterpThreadContext] 
-        ldr x9, [x9, #OFFSETOF__InterpThreadContext__pStackPointer]
+        ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
         ; x19 contains IR bytecode address
         ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         ldr x11, [x10], #8
@@ -1229,6 +1241,30 @@ JIT_PollGCRarePath
         EPILOG_RETURN
     NESTED_END InterpreterStubRet4Float
 
+     NESTED_ENTRY InterpreterStubRetVector64
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
+        ; The +16 is for the fp, lr above
+        add x0, sp, #__PWTB_TransitionBlock + 16
+        mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
+        bl ExecuteInterpretedMethod
+        ldr d0, [x0]
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+    NESTED_END InterpreterStubRetVector64
+
+    NESTED_ENTRY InterpreterStubRetVector128
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
+        ; The +16 is for the fp, lr above
+        add x0, sp, #__PWTB_TransitionBlock + 16
+        mov x1, x19 ; the IR bytecode pointer
+        mov x2, xzr
+        bl ExecuteInterpretedMethod
+        ldr q0, [x0]
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+    NESTED_END InterpreterStubRetVector128
+
     ; Routines for passing value type arguments by reference in general purpose registers X0..X7
     ; from native code to the interpreter
 
@@ -1247,13 +1283,23 @@ StoreCopyLoop
         bne StoreCopyLoop
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
-    LEAF_END Load_Stack
-    
-    MACRO 
-        Store_Ref $argReg
+    LEAF_END Store_Stack
 
-    LEAF_ENTRY Store_Ref_$argReg
-        ldr x11, [x10], #8 ; size of the value type
+    LEAF_ENTRY Load_Stack_Ref
+        ldr w11, [x10], #4 ; SP offset
+        ldr w12, [x10], #4 ; size of the value type
+        add x11, sp, x11
+        str x9, [x11]
+        add x9, x9, x12
+        ; Align x9 to the stack slot size
+        add x9, x9, 7
+        and x9, x9, 0xfffffffffffffff8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_Stack_Ref
+
+    MACRO
+        Copy_Ref $argReg
         cmp x11, #16
         blt CopyBy8$argReg
 RefCopyLoop16$argReg
@@ -1282,6 +1328,24 @@ RefCopyDone$argReg
         ; Align x9 to the stack slot size
         add x9, x9, 7
         and x9, x9, 0xfffffffffffffff8
+    MEND
+
+    LEAF_ENTRY Store_Stack_Ref
+        ldr w12, [x10], #4 ; SP offset
+        ldr w11, [x10], #4 ; size of the value type
+        add x12, sp, x12
+        ldr x12, [x12, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+        Copy_Ref x12
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_Stack_Ref
+
+    MACRO
+        Store_Ref $argReg
+
+    LEAF_ENTRY Store_Ref_$argReg
+        ldr x11, [x10], #8 ; size of the value type
+        Copy_Ref $argReg
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Store_Ref_$argReg
@@ -2077,6 +2141,44 @@ CopyLoop
         EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Float
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    NESTED_ENTRY CallJittedMethodRetVector64
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        str x2, [sp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        ldr x11, [x10], #8
+        blr x11
+        ldr x2, [sp, #16]
+        str d0, [x2]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetVector64
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    NESTED_ENTRY CallJittedMethodRetVector128
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        str x2, [sp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        ldr x11, [x10], #8
+        blr x11
+        ldr x2, [sp, #16]
+        str q0, [x2]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetVector128
 
 #endif // FEATURE_INTERPRETER
 

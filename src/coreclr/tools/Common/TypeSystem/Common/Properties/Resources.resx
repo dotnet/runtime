@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -137,6 +137,9 @@
   </data>
   <data name="ClassLoadInlineArrayExplicit" xml:space="preserve">
     <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'. Assembly: '{1}'.'</value>
+  </data>
+  <data name="ClassLoadInlineArrayExplicitSize" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit size. Type: '{0}'. Assembly: '{1}'.'</value>
   </data>
   <data name="ClassLoadValueClassTooLarge" xml:space="preserve">
     <value>Array of type '{0}' from assembly '{1}' cannot be created because base value type is too large</value>

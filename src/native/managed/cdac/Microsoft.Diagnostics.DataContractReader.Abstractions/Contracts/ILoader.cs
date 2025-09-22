@@ -41,15 +41,6 @@ public enum ModuleFlags
     BeingUnloaded = 0x100000,
 }
 
-public record struct ModuleLookupTables(
-    TargetPointer FieldDefToDesc,
-    TargetPointer ManifestModuleReferences,
-    TargetPointer MemberRefToDesc,
-    TargetPointer MethodDefToDesc,
-    TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
-
 [Flags]
 public enum AssemblyIterationFlags
 {
@@ -71,30 +62,53 @@ public enum AssemblyIterationFlags
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
 
+public record struct ModuleLookupTables(
+    TargetPointer FieldDefToDesc,
+    TargetPointer ManifestModuleReferences,
+    TargetPointer MemberRefToDesc,
+    TargetPointer MethodDefToDesc,
+    TargetPointer TypeDefToMethodTable,
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
+
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
-    ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
-
-    IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandleFromModulePtr(TargetPointer modulePointer) => throw new NotImplementedException();
+    ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer) => throw new NotImplementedException();
+    IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
+    string GetAppDomainFriendlyName() => throw new NotImplementedException();
+    TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
+    TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();
+
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
-
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
-
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
+
+    TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
+    TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

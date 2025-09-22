@@ -116,10 +116,7 @@ namespace System.Diagnostics.Tracing
                 current |= (byte)(more ? 0x80 : 0x00);
                 tagsLeft <<= 7;
 
-                if (metadata != null)
-                {
-                    metadata[pos] = current;
-                }
+                metadata?[pos] = current;
                 pos++;
             }
             while (more);

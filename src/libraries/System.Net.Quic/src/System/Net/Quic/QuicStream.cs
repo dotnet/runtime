@@ -668,7 +668,7 @@ public sealed partial class QuicStream
         };
 
 #pragma warning disable CS3016
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
     private static unsafe int NativeCallback(QUIC_HANDLE* stream, void* context, QUIC_STREAM_EVENT* streamEvent)
     {

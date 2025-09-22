@@ -183,6 +183,13 @@ public:
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
     void Clear();
 
+    bool IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive);
+
+    bool IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode);
+
+    bool IsLirRangeInvariantInRange(
+        Compiler* comp, GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive, GenTree* ignoreNode);
+
     bool WritesLocal(unsigned lclNum) const
     {
         return m_aliasSet.WritesLocal(lclNum);

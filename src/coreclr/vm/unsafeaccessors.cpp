@@ -941,7 +941,7 @@ namespace
                 {
                     // Use the method declaration Instantiation to find the instantiated MethodDesc target.
                     Instantiation methodInst = cxt.Declaration->GetMethodInstantiation();
-                    MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, TRUE);
+                    MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, FALSE);
 
                     // Create a MethodSpec
                     target = pDispatchCode->GetToken(instantiatedTarget, targetTypeSigToken, methodSpecSigToken);
@@ -1019,7 +1019,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     _ASSERTE(methodILDecoder != NULL);
     _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
     _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
+    _ASSERTE(!HasILHeader());
 
     // The UnsafeAccessorAttribute is applied to methods with an
     // RVA of 0 (for example, C#'s extern keyword).

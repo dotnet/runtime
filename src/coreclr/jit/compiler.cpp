@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "fgprofilesynthesis.h"
 #include "jitstd/algorithm.h"
 #include "minipal/time.h"
+#include "minipal/utf8.h"
 
 extern ICorJitHost* g_jitHost;
 
@@ -2085,8 +2086,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
@@ -2550,8 +2549,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.genFPorder = true;
     opts.genFPopt   = true;
 
-    opts.instrCount = 0;
-    opts.lvRefCount = 0;
+    opts.instrCount     = 0;
+    opts.callInstrCount = 0;
+    opts.lvRefCount     = 0;
 
 #ifdef PROFILING_SUPPORTED
     opts.compJitELTHookEnabled = false;
@@ -2888,10 +2888,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (RunningSuperPmiReplay())
         {
 #ifdef HOST_64BIT
-            static_assert_no_msg(sizeof(void*) == 8);
+            static_assert(sizeof(void*) == 8);
             compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
 #else
-            static_assert_no_msg(sizeof(void*) == 4);
+            static_assert(sizeof(void*) == 4);
             compProfilerMethHnd = (void*)0x0BADF00D;
 #endif
         }
@@ -4910,6 +4910,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Conditional to switch conversion, and switch peeling
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
@@ -4917,10 +4921,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-
-        // Conditional to switch conversion, and switch peeling
-        //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
         // Run flow optimizations before reordering blocks
         //
@@ -6059,11 +6059,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
         instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
 
-        if (JitConfig.EnableSSE42() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
-        }
-
         if (JitConfig.EnableAVX() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX);
@@ -7026,6 +7021,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     compSetOptimizationLevel();
+
+#ifdef DEBUG
+    if (JitConfig.JitInstrumentIfOptimizing() && opts.OptimizationEnabled() && !IsReadyToRun())
+    {
+        JITDUMP("\nForcibly enabling instrumentation\n");
+        opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+    }
+#endif
 
     if ((JitConfig.JitDisasmOnlyOptimized() != 0) && (!opts.OptimizationEnabled()))
     {
@@ -9241,7 +9244,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVars,       dVars          : Display the local variable table (call lvaTableDump()).
  *      cVarsFinal,  dVarsFinal     : Display the local variable table (call lvaTableDump(FINAL_FRAME_LAYOUT)).
  *      cBlockPreds, dBlockPreds    : Display a block's predecessors (call block->dspPreds()).
- *      cBlockSuccs, dBlockSuccs    : Display a block's successors (call block->dspSuccs(compiler)).
+ *      cBlockSuccs, dBlockSuccs    : Display a block's successors (call block->dspSuccs()).
  *      cReach,      dReach         : Display all block reachability (call BlockReachabilitySets::Dump).
  *      cDoms,       dDoms          : Display all block dominators (call FlowGraphDominatorTree::Dump).
  *      cLiveness,   dLiveness      : Display per-block variable liveness (call fgDispBBLiveness()).
@@ -9535,7 +9538,7 @@ JITDBGAPI void __cdecl cBlockSuccs(Compiler* comp, BasicBlock* block)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *BlockSuccs %u\n", sequenceNumber++);
-    block->dspSuccs(comp);
+    block->dspSuccs();
 }
 
 JITDBGAPI void __cdecl cReach(Compiler* comp)
@@ -10505,20 +10508,18 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 // Arguments:
 //    tree  - the node to change;
-//    block - basic block of the node.
 //
 // Notes:
 //    the function should not be called after lowering for platforms that do not support
 //    emitting NULLCHECK nodes, like arm32. Use `Lowering::TransformUnusedIndirection`
 //    that handles it and calls this function when appropriate.
 //
-void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
+void Compiler::gtChangeOperToNullCheck(GenTree* tree)
 {
     assert(tree->OperIs(GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);
-    block->SetFlags(BBF_HAS_NULLCHECK);
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
 
@@ -10613,26 +10614,30 @@ const char* Compiler::printfAlloc(const char* format, ...)
 //   Convert a string from UTF16 to UTF8 to be printed to output.
 //
 // Arguments:
-//    utf16String - The string
+//    utf16Src     - source string in UTF16 encoding
+//    utf16SrcLen  - length of the source string in UTF16 encoding
+//    utf8Dst      - destination buffer for the UTF8 string
+//    utf8DstLen   - length of the destination buffer in bytes
 //
-// Returns:
-//    Converted string, or a marker string if conversion failed.
+// Notes:
+//     "<string is too long>" is written to the destination buffer if the
+//     converted string exceeds the buffer size.
 //
-const char* Compiler::convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String)
+void Compiler::convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src,
+                                             size_t          utf16SrcLen,
+                                             char*           utf8Dst,
+                                             size_t          utf8DstLen)
 {
-    const char* utf8Str = "<utf8 conversion failure>";
-    int         utf8Len = WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8Len == 0)
+    const CHAR16_T* utf16src      = reinterpret_cast<const CHAR16_T*>(utf16Src);
+    size_t          actualUtf8Len = minipal_get_length_utf16_to_utf8(utf16src, utf16SrcLen, 0);
+    if (actualUtf8Len >= utf8DstLen)
     {
-        char* allocated = new (this, CMK_DebugOnly) char[utf8Len];
-
-        if (WideCharToMultiByte(CP_UTF8, 0, (WCHAR*)utf16String, -1, allocated, utf8Len, nullptr, nullptr) != 0)
-        {
-            utf8Str = allocated;
-        }
+        strcpy_s(utf8Dst, utf8DstLen, "<string is too long>");
+        return;
     }
-
-    return utf8Str;
+    size_t written = minipal_convert_utf16_to_utf8(utf16src, utf16SrcLen, utf8Dst, utf8DstLen, 0);
+    assert(written < utf8DstLen);
+    utf8Dst[written] = '\0';
 }
 
 #endif // defined(DEBUG)

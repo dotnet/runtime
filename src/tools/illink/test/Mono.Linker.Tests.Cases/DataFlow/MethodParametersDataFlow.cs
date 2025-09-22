@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     [ExpectedNoWarnings]
     [SetupCompileArgument("/unsafe")]
     [SetupLinkerArgument("--keep-metadata", "parametername")]
+    [SandboxDependency("Dependencies/TestSystemTypeBase.cs")]
     public class MethodParametersDataFlow
     {
         public static void Main()
@@ -47,10 +48,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             AnnotationOnUnsupportedParameter.Test();
             AnnotationOnByRefParameter.Test();
             WriteCapturedParameter.Test();
+            OperatorParameters.Test();
         }
 
         // Validate the error message when annotated parameter is passed to another annotated parameter
-        [ExpectedWarning("IL2067", "'sourceType'", "PublicParameterlessConstructorParameter(Type)", "'type'", "RequiresPublicConstructors(Type)")]
+        [ExpectedWarning("IL2067", "'sourceType'", "PublicParameterlessConstructorParameter(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)")]
         [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors))]
         private static void PublicParameterlessConstructorParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -159,7 +161,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Validate the error message for the case of unannotated method return value passed to an annotated parameter.
-        [ExpectedWarning("IL2067", "'type'", "NoAnnotation(Type)", "'type'", "RequiresPublicParameterlessConstructor(Type)")]
+        [ExpectedWarning("IL2067", "'type'", "NoAnnotation(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)")]
         private void NoAnnotation(Type type)
         {
             type.RequiresPublicParameterlessConstructor();
@@ -247,7 +249,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098", nameof(UnsupportedType))]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 UnsupportedType unsupportedTypeInstance)
             {
                 RequirePublicFields(unsupportedTypeInstance);
@@ -255,7 +257,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098", nameof(UnsupportedType))]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 UnsupportedType unsupportedTypeInstance)
             {
             }
@@ -270,7 +272,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type[] types)
             {
                 RequirePublicFields(types);
@@ -278,7 +280,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type[] types)
             {
             }
@@ -293,7 +295,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static unsafe void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type* typePtr)
             {
                 RequirePublicFields(typePtr);
@@ -301,7 +303,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static unsafe void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type* typePtr)
             {
             }
@@ -316,7 +318,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicMethods<T>(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 T t) where T : Type
             {
                 RequirePublicFields(t);
@@ -324,7 +326,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields<T>(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 T t) where T : Type
             {
             }
@@ -339,7 +341,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 ref string stringRef)
             {
                 RequirePublicFields(ref stringRef);
@@ -347,7 +349,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 ref string stringRef)
             {
             }
@@ -375,14 +377,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2067")]
             [ExpectedWarning("IL2067", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101734")]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 ref Type typeRef)
             {
                 RequirePublicFields(ref typeRef);
             }
 
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 ref Type typeRef)
             {
             }
@@ -436,6 +438,68 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public TestType() { }
             public TestType(int arg) { }
             private TestType(int arg1, int arg2) { }
+        }
+
+        class OperatorParameters
+        {
+            public static void Test()
+            {
+                TestMatch();
+                TestMismatch();
+            }
+
+            static void Use(Type t)
+            {
+            }
+
+            static void TestMatch()
+            {
+                var left = GetWithFields();
+                var right = GetWithFields();
+                Use(left + right);
+            }
+
+            [ExpectedWarning("IL2072", "left", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+            [ExpectedWarning("IL2072", "right", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+            static void TestMismatch()
+            {
+                var left = GetWithMethods();
+                var right = GetWithMethods();
+                Use(left - right);
+            }
+
+            [ExpectedWarning("IL2063")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+            static OperatorType GetWithFields() => new OperatorType();
+
+            [ExpectedWarning("IL2063")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static OperatorType GetWithMethods() => new OperatorType();
+
+            sealed class OperatorType : TestSystemTypeBase
+            {
+                // Matching implementation
+                public static OperatorType operator +(
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] OperatorType left,
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] OperatorType right)
+                {
+                    left.RequiresPublicFields();
+                    right.RequiresPublicFields();
+                    return new OperatorType();
+                }
+
+                // Mismatch in implementation
+                [ExpectedWarning("IL2067", "left", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+                [ExpectedWarning("IL2067", "right", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+                public static OperatorType operator -(
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] OperatorType left,
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] OperatorType right)
+                {
+                    left.RequiresPublicMethods();
+                    right.RequiresPublicMethods();
+                    return new OperatorType();
+                }
+            }
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]

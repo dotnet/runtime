@@ -1,5 +1,13 @@
 trigger: none
 
+schedules:
+- cron: "0 13 * * 1,3,5"
+  displayName: Every Monday, Wednesday and Friday at 5:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
