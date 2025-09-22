@@ -298,7 +298,7 @@ namespace System.Text
         {
             Debug.Assert(buffer.Length >= MaxUtf16CharsPerRune);
             int charsWritten = EncodeToUtf16(buffer);
-            return buffer[..charsWritten];
+            return buffer.Slice(0, charsWritten);
         }
 
         /// <summary>
@@ -787,7 +787,6 @@ namespace System.Text
 
         public bool Equals(Rune other) => this == other;
 
-#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Returns a value that indicates whether the current instance and a specified rune are equal using the specified comparison option.
         /// </summary>
@@ -810,7 +809,6 @@ namespace System.Text
             // Compare span equality
             return thisChars.Equals(otherChars, comparisonType);
         }
-#endif
 
         public override int GetHashCode() => Value;
 
