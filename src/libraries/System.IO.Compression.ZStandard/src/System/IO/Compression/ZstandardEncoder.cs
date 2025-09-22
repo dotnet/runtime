@@ -251,6 +251,23 @@ namespace System.IO.Compression
             return encoder.Compress(source, destination, out _, out bytesWritten, isFinalBlock: true) == OperationStatus.Done;
         }
 
+        /// <summary>Resets the encoder session, allowing reuse for the next compression operation.</summary>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        /// <exception cref="IOException">Failed to reset the encoder session.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+
+            if (_context is null)
+                return;
+
+            nuint result = Interop.Zstd.ZSTD_CCtx_reset(_context, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only);
+            if (ZstandardUtils.IsError(result))
+            {
+                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
+            }
+        }
+
         /// <summary>Releases all resources used by the <see cref="ZstandardEncoder"/>.</summary>
         public void Dispose()
         {

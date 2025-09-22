@@ -126,7 +126,7 @@ namespace System.IO.Compression
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
                     if (bytesWritten > 0)
-                        await _stream.WriteAsync(output.Slice(0, bytesWritten)).ConfigureAwait(false);
+                        await _stream.WriteAsync(output.Slice(0, bytesWritten), cancellationToken).ConfigureAwait(false);
                     if (bytesConsumed > 0)
                         buffer = buffer.Slice(bytesConsumed);
                 }

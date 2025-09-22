@@ -15,6 +15,9 @@ namespace System.IO.Compression
         /// <summary>The maximum compression quality level.</summary>
         public static int MaxQuality => ZstandardUtils.Quality_Max;
 
+        /// <summary>The default window size to use for Zstandard compression.</summary>
+        public static int DefaultWindow => ZstandardUtils.WindowBits_Default;
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class.</summary>
         public ZstandardCompressionOptions()
         {

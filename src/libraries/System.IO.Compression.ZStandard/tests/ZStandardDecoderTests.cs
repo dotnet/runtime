@@ -27,6 +27,56 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        public void Reset_AfterDispose_ThrowsObjectDisposedException()
+        {
+            var decoder = new ZstandardDecoder();
+            decoder.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => decoder.Reset());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Reset_AllowsReuseForMultipleDecompressions(bool useDictionary)
+        {
+            byte[] dictionaryData = CreateSampleDictionary();
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData, ZstandardCompressionOptions.DefaultQuality);
+
+            // First compress some data to have something to decompress
+            byte[] input = CreateTestData();
+            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+            bool compressResult = useDictionary
+                ? ZstandardEncoder.TryCompress(input, compressed, out int compressedLength, dictionary, ZstandardCompressionOptions.DefaultWindow)
+                : ZstandardEncoder.TryCompress(input, compressed, out compressedLength);
+            Assert.True(compressResult);
+
+            // Resize compressed to actual length
+            Array.Resize(ref compressed, compressedLength);
+
+            using var decoder = useDictionary
+                ? new ZstandardDecoder(dictionary)
+                : new ZstandardDecoder();
+            byte[] output1 = new byte[input.Length];
+            byte[] output2 = new byte[input.Length];
+
+            // First decompression
+            OperationStatus result1 = decoder.Decompress(compressed, output1, out int consumed1, out int written1);
+            Assert.Equal(OperationStatus.Done, result1);
+            Assert.Equal(compressed.Length, consumed1);
+            Assert.Equal(input.Length, written1);
+            Assert.Equal(input, output1);
+
+            // Reset and decompress again
+            decoder.Reset();
+            OperationStatus result2 = decoder.Decompress(compressed, output2, out int consumed2, out int written2);
+            Assert.Equal(OperationStatus.Done, result2);
+            Assert.Equal(compressed.Length, consumed2);
+            Assert.Equal(input.Length, written2);
+            Assert.Equal(input, output2);
+        }
+
+        [Fact]
         public void GetMaxDecompressedLength_WithEmptyData_ReturnsZero()
         {
             ReadOnlySpan<byte> emptyData = ReadOnlySpan<byte>.Empty;
@@ -192,5 +242,16 @@ namespace System.IO.Compression
         }
 
         private static byte[] CreateSampleDictionary() => ZstandardTestUtils.CreateSampleDictionary();
+
+        private static byte[] CreateTestData()
+        {
+            // Create some test data that compresses well
+            byte[] data = new byte[1000];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)(i % 10); // Repeating pattern
+            }
+            return data;
+        }
     }
 }
