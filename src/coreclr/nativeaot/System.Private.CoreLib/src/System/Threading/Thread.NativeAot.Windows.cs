@@ -402,7 +402,7 @@ namespace System.Threading
         internal static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentState() == ApartmentState.STA;
 
-        // Unlike the public API, this returns ApartmentState.Unknown when the COM is uninitialized on current thread
+        // Unlike the public API, this returns ApartmentState.Unknown when COM is uninitialized on the current thread
         internal static ApartmentState GetCurrentApartmentState()
         {
             if ((t_comState & (ComState.MTA | ComState.STA)) != 0)
