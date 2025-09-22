@@ -7706,6 +7706,22 @@ InterpThreadContext* Thread::GetInterpThreadContext()
 
     return m_pInterpThreadContext;
 }
+
+extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissingThread(Thread *pThread)
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    if (pThread == nullptr)
+    {
+        pThread = SetupThread();
+    }
+
+    return pThread->GetInterpThreadContext();
+}
 #endif // FEATURE_INTERPRETER
 
 /* static */
