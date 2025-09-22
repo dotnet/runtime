@@ -31,10 +31,14 @@ const copies = [
         `${artifactsObjDir}/native/browser-${configuration}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js`]
 ];
 
+const now = new Date();
 for (const [src, dest] of copies) {
     const absoluteSrc = path.resolve(src);
+    const absoluteDest = path.resolve(dest);
     const destDir = path.resolve(path.dirname(dest));
     console.log(`Copying ${absoluteSrc} to ${destDir}`);
     await fs.mkdir(destDir, { recursive: true });
-    await fs.copyFile(absoluteSrc, dest);
+    await fs.copyFile(absoluteSrc, absoluteDest);
+    // await fs.utimes(absoluteDest, now, now);
 }
+await fs.writeFile(`${artifactsObjDir}/coreclr/browser.wasm.${configuration}/corehost/.rollup.stamp`, new Date().toISOString());
