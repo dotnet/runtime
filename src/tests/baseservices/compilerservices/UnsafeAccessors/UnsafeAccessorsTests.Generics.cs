@@ -181,21 +181,66 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
     }
 
-    class Base
+    class AmbiguousName
     {
-        protected virtual string CreateMessageGeneric<T>(T t) => $"{nameof(Base)}:{t}";
+        private void M() { }
+        private void M<T>() { }
+
+        private static void SM() { }
+        private static void SM<U>() { }
     }
 
-    class GenericBase<T> : Base
+    static class AmbiguousName_Accessors
     {
-        protected virtual string CreateMessage(T t) => $"{nameof(GenericBase<T>)}:{t}";
-        protected override string CreateMessageGeneric<U>(U u) => $"{nameof(GenericBase<T>)}:{u}";
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static void CallM(AmbiguousName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static void CallM<T>(AmbiguousName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static void CallSM(AmbiguousName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static void CallSM<U>(AmbiguousName a);
+    }
+
+    [Fact]
+    public static void Verify_Generic_AmbiguousMethodName()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_AmbiguousMethodName)}");
+
+        {
+            AmbiguousName a = new();
+            AmbiguousName_Accessors.CallM(a);
+            AmbiguousName_Accessors.CallM<int>(a);
+            AmbiguousName_Accessors.CallM<string>(a);
+            AmbiguousName_Accessors.CallM<Guid>(a);
+        }
+
+        {
+            AmbiguousName_Accessors.CallSM(null);
+            AmbiguousName_Accessors.CallSM<int>(null);
+            AmbiguousName_Accessors.CallSM<string>(null);
+            AmbiguousName_Accessors.CallSM<Guid>(null);
+        }
+    }
+
+    class Base
+    {
+        protected virtual string CreateMessage<T>(T t) => $"{nameof(Base)}<>:{t}";
+    }
+
+    class GenericBase<U> : Base
+    {
+        protected virtual string CreateMessage(U u) => $"{nameof(GenericBase<U>)}:{u}";
+        protected override string CreateMessage<V>(V v) => $"{nameof(GenericBase<U>)}<>:{v}";
     }
 
     sealed class Derived1 : GenericBase<string>
     {
         protected override string CreateMessage(string u) => $"{nameof(Derived1)}:{u}";
-        protected override string CreateMessageGeneric<U>(U t) => $"{nameof(Derived1)}:{t}";
+        protected override string CreateMessage<W>(W w) => $"{nameof(Derived1)}<>:{w}";
     }
 
     sealed class Derived2 : GenericBase<string>
@@ -209,33 +254,33 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Console.WriteLine($"Running {nameof(Verify_Generic_InheritanceMethodResolution)}");
         {
             Base a = new();
-            Assert.Equal($"{nameof(Base)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Base)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Base)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(Base)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Base)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Base)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<int> a = new();
-            Assert.Equal($"{nameof(GenericBase<int>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<int>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<int>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<string> a = new();
-            Assert.Equal($"{nameof(GenericBase<string>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<string>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<Struct> a = new();
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             Derived1 a = new();
-            Assert.Equal($"{nameof(Derived1)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Derived1)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Derived1)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(Derived1)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Derived1)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Derived1)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             // Verify resolution of generic override logic.
@@ -245,7 +290,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", Accessors<string>.CreateMessage(a2, expect));
         }
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessageGeneric")]
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
         extern static string CreateMessage<W>(Base b, W w);
     }
 
