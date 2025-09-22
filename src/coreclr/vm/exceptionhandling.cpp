@@ -3068,7 +3068,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     CONTRACTL
     {
         MODE_COOPERATIVE;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         THROWS;
     }
     CONTRACTL_END;
@@ -3112,7 +3112,10 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
         EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
 
-        dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
+        {
+            CONTRACT_VIOLATION(GCViolation);
+            dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
+        }
 
         FixContext(pvRegDisplay->pCurrentContext);
 
@@ -3121,6 +3124,8 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
         callerTargetSp = CallerStackFrame::FromRegDisplay(pvRegDisplay).SP;
     }
+
+    CONTRACT_VIOLATION(GCViolation);
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
@@ -3303,6 +3308,14 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
 void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_NOTRIGGER;
+        THROWS;
+    }
+    CONTRACTL_END;
+
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
 
@@ -3315,7 +3328,10 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
     EH_LOG((LL_INFO100, "Calling finally funclet at %p\n", pHandlerIP));
 
-    exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(NULL, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
+    {
+        CONTRACT_VIOLATION(GCViolation);
+        exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(NULL, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
+    }
 
     pThread->IncPreventAbort();
 
@@ -3692,6 +3708,14 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
 
 CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        THROWS;
+        if (GET_THREAD()->GetExceptionState()->GetCurrentExceptionTracker()->m_passNumber == 1) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+    }
+    CONTRACTL_END;
+
     CLR_BOOL result = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -3833,6 +3857,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
+    GCX_COOP();
     result = SfiInitWorker(pThis, pStackwalkCtx, instructionFault, pfIsExceptionIntercepted);
     END_QCALL;
 
@@ -3858,6 +3883,14 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
 
 CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        THROWS;
+        if (GET_THREAD()->GetExceptionState()->GetCurrentExceptionTracker()->m_passNumber == 1) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+    }
+    CONTRACTL_END;
+
     StackWalkAction retVal = SWA_FAILED;
     CLR_BOOL isPropagatingToNativeCode = FALSE;
     Thread* pThread = GET_THREAD();
@@ -3984,6 +4017,8 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 {
 #ifdef HOST_WINDOWS
                     GetThread()->SetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
+                    CONTRACT_VIOLATION(GCViolation);
+                    GCX_PREEMP_NO_DTOR();
                     RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
@@ -4119,6 +4154,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
+    GCX_COOP();
     result = SfiNextWorker(pThis, uExCollideClauseIdx, fUnwoundReversePInvoke, pfIsExceptionIntercepted);
 
     END_QCALL;
@@ -4206,6 +4242,13 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
 
 void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     //GCHeapUtilities::GetGCHeap()->GarbageCollect(2, FALSE, collection_aggressive);
 
     TADDR handlingFrameSP = pExInfo->m_handlingFrameSP;
