@@ -15,7 +15,7 @@ namespace System.Threading
     public sealed partial class Thread
     {
         [ThreadStatic]
-        private static sbyte t_apartmentState; // ApartmentState shifted by ApartmentState.Unknonw to represent Unknown as the default value
+        private static sbyte t_apartmentState; // ApartmentState shifted by ApartmentState.Unknown to represent Unknown as the default value
 
         [ThreadStatic]
         private static ComState t_comState;

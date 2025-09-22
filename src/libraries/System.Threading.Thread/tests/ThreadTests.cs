@@ -252,7 +252,7 @@ namespace System.Threading.Threads.Tests
 
                 if (!PlatformDetection.IsWindowsNanoServer)
                 {
-                    Assert.Equal(0, setApartmentState(t, ApartmentState.Unknown)); // Compat quirk: MTA<->STA can be changed by going throught Unknown
+                    Assert.Equal(0, setApartmentState(t, ApartmentState.Unknown)); // Compat quirk: MTA<->STA can be changed by going through Unknown
                     Assert.Equal(ApartmentState.MTA, getApartmentState(t));
                     Assert.Equal(0, setApartmentState(t, ApartmentState.STA));
                     Assert.Equal(ApartmentState.STA, getApartmentState(t));
