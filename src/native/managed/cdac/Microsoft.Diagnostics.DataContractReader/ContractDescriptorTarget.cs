@@ -771,7 +771,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     }
 
     internal bool TryGetContractVersion(string contractName, out int version)
-        => _contracts.TryGetValue(contractName, out version);
+    {
+        return _contracts.TryGetValue(contractName, out version);
+    }
 
     /// <summary>
     /// Store of addresses that have already been read into corresponding data models.

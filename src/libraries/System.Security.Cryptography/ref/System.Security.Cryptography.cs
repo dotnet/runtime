@@ -694,6 +694,12 @@ namespace System.Security.Cryptography
         public static System.Threading.Tasks.ValueTask<byte[]> HmacDataAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static bool TryHashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHmacData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool VerifyHmac(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyHmacAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyHmacAsync(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void ZeroMemory(System.Span<byte> buffer) { }
     }
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
@@ -1548,6 +1554,18 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA1 : System.Security.Cryptography.HMAC
     {
@@ -1575,6 +1593,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA256 : System.Security.Cryptography.HMAC
     {
@@ -1599,6 +1623,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA384 : System.Security.Cryptography.HMAC
     {
@@ -1625,6 +1655,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA3_256 : System.Security.Cryptography.HMAC
     {
@@ -1650,6 +1686,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA3_384 : System.Security.Cryptography.HMAC
     {
@@ -1675,6 +1717,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA3_512 : System.Security.Cryptography.HMAC
     {
@@ -1700,6 +1748,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class HMACSHA512 : System.Security.Cryptography.HMAC
     {
@@ -1726,6 +1780,12 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool Verify(byte[] key, byte[] source, byte[] hash) { throw null; }
+        public static bool Verify(byte[] key, System.IO.Stream source, byte[] hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static bool Verify(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.ReadOnlySpan<byte> hash) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(byte[] key, System.IO.Stream source, byte[] hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<bool> VerifyAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.ReadOnlyMemory<byte> hash, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial interface ICryptoTransform : System.IDisposable
     {
@@ -1761,6 +1821,10 @@ namespace System.Security.Cryptography
         public int GetHashAndReset(System.Span<byte> destination) { throw null; }
         public bool TryGetCurrentHash(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryGetHashAndReset(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool VerifyCurrentHash(byte[] hash) { throw null; }
+        public bool VerifyCurrentHash(System.ReadOnlySpan<byte> hash) { throw null; }
+        public bool VerifyHashAndReset(byte[] hash) { throw null; }
+        public bool VerifyHashAndReset(System.ReadOnlySpan<byte> hash) { throw null; }
     }
     public abstract partial class KeyedHashAlgorithm : System.Security.Cryptography.HashAlgorithm
     {

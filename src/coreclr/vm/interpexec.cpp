@@ -321,20 +321,22 @@ static void InterpBreakpoint()
 }
 #endif
 
+#define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
+#define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
+#define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
+
+
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
 {
     int32_t* dims = (int32_t*)alloca(numArgs * sizeof(int32_t));
+    int8_t* dimsBase = LOCAL_VAR_ADDR(dimsOffset, int8_t);
     for (int i = 0; i < numArgs; i++)
     {
-        dims[i] = *(int32_t*)(stack + dimsOffset + i * 8);
+        dims[i] = *(int32_t*)(dimsBase + i * 8);
     }
 
     return AllocateArrayEx(arrayClass, dims, numArgs);
 }
-
-#define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
-#define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
-#define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
 template <typename THelper> static THelper GetPossiblyIndirectHelper(const InterpMethod* pMethod, int32_t _data, MethodDesc** pILTargetMethod = NULL)
 {
@@ -730,7 +732,7 @@ MAIN_LOOP:
                     break;
 #endif
                 case INTOP_INITLOCALS:
-                    memset(stack + ip[1], 0, ip[2]);
+                    memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
                     break;
                 case INTOP_MEMBAR:
@@ -782,13 +784,13 @@ MAIN_LOOP:
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
                 case INTOP_RET_VT:
-                    memmove(pFrame->pRetVal, stack + ip[1], ip[2]);
+                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
                 case INTOP_RET_VOID:
                     goto EXIT_FRAME;
 
                 case INTOP_LDLOCA:
-                    LOCAL_VAR(ip[1], void*) = stack + ip[2];
+                    LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void);
                     ip += 3;
                     break;
                 case INTOP_LOAD_FRAMEVAR:
@@ -814,7 +816,7 @@ MAIN_LOOP:
 #undef MOV
 
                 case INTOP_MOV_VT:
-                    memmove(stack + ip[1], stack + ip[2], ip[3]);
+                    memmove(LOCAL_VAR_ADDR(ip[1], void), LOCAL_VAR_ADDR(ip[2], void), ip[3]);
                     ip += 4;
                     break;
 
@@ -1899,7 +1901,7 @@ MAIN_LOOP:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
                     NULL_CHECK(src);
-                    memcpy(stack + ip[1], (char*)src + ip[3], ip[4]);
+                    memcpy(LOCAL_VAR_ADDR(ip[1], void), (char*)src + ip[3], ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1951,7 +1953,7 @@ MAIN_LOOP:
                 {
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    memcpyNoGCRefs(dest + ip[3], stack + ip[2], ip[4]);
+                    memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), ip[4]);
                     ip += 5;
                     break;
                 }
@@ -1960,7 +1962,7 @@ MAIN_LOOP:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     char *dest = LOCAL_VAR(ip[1], char*);
                     NULL_CHECK(dest);
-                    CopyValueClassUnchecked(dest + ip[3], stack + ip[2], pMT);
+                    CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), pMT);
                     ip += 5;
                     break;
                 }
@@ -2269,7 +2271,9 @@ MAIN_LOOP:
                 {
                     isTailcall = (*ip == INTOP_CALLI_TAIL);
                     returnOffset = ip[1];
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     callArgsOffset = ip[2];
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
                     int32_t calliFunctionPointerVar = ip[3];
                     int32_t calliCookie = ip[4];
                     int32_t flags = ip[5];
@@ -2285,11 +2289,11 @@ MAIN_LOOP:
                     {
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
                         {
-                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack + callArgsOffset, stack + returnOffset);
+                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, callArgsAddress, returnValueAddress);
                         }
                         else
                         {
-                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, stack + callArgsOffset, stack + returnOffset);
+                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, callArgsAddress, returnValueAddress);
                         }
                     }
                     else
@@ -2306,7 +2310,7 @@ MAIN_LOOP:
                             goto CALL_INTERP_METHOD;
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-                        InvokeCalliStub(calliFunctionPointer, cookie, stack + callArgsOffset, stack + returnOffset);
+                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress);
                     }
 
                     break;
@@ -2320,6 +2324,8 @@ MAIN_LOOP:
                     isTailcall = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
                     int32_t flags = ip[5];
@@ -2335,11 +2341,11 @@ MAIN_LOOP:
 
                     if (flags & (int32_t)PInvokeCallFlags::SuppressGCTransition)
                     {
-                        InvokeUnmanagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        InvokeUnmanagedMethod(targetMethod, callArgsAddress, returnValueAddress, callTarget);
                     }
                     else
                     {
-                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
                     }
 
                     break;
@@ -2352,6 +2358,7 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
 
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 
@@ -2362,6 +2369,7 @@ MAIN_LOOP:
                     PCODE targetAddress = delegateObj->GetMethodPtr();
                     OBJECTREF targetMethodObj = delegateObj->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
 
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
@@ -2369,7 +2377,7 @@ MAIN_LOOP:
                     // TODO! Once we are investigating performance here, we may want to optimize this so that
                     // delegate calls to interpeted methods don't have to go through the native invoke here, but for
                     // now this should work well.
-                    InvokeDelegateInvokeMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetAddress);
+                    InvokeDelegateInvokeMethod(targetMethod, callArgsAddress, returnValueAddress, targetAddress);
                     break;
                 }
 
@@ -2389,6 +2397,9 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 CALL_INTERP_METHOD:
+
+                    int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
+                    int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
@@ -2413,7 +2424,7 @@ CALL_INTERP_METHOD:
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
-                            InvokeManagedMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
                             break;
                         }
                     }
@@ -2426,7 +2437,7 @@ CALL_INTERP_METHOD:
                         // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
                         // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
                         //  different signature from the caller.
-                        memcpy(pFrame->pStack, stack + callArgsOffset, pTargetMethod->argsSize);
+                        memcpy(pFrame->pStack, callArgsAddress, pTargetMethod->argsSize);
                         // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
                         //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
                         pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
@@ -2447,7 +2458,7 @@ CALL_INTERP_METHOD:
                                 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                                 pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
                             }
-                            pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
+                            pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
                         }
                         assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
@@ -2520,7 +2531,7 @@ CALL_INTERP_METHOD:
                     methodSlot = ip[3];
 
                     int32_t vtSize = ip[4];
-                    void *vtThis = stack + returnOffset;
+                    void *vtThis = LOCAL_VAR_ADDR(returnOffset, void);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
@@ -2768,7 +2779,7 @@ do {                                                                           \
                     size_t componentSize = arr->GetMethodTable()->GetComponentSize();
                     void* elemAddr = pData + idx * componentSize;
                     MethodTable* pElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
-                    CopyValueClassUnchecked(stack + ip[1], elemAddr, pElemMT);
+                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(ip[1], void), elemAddr, pElemMT);
                     ip += 5;
                     break;
                 }
@@ -2879,7 +2890,7 @@ do {                                                                           \
                     void* elemAddr = pData + idx * elemSize;
                     MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[5]];
 
-                    CopyValueClassUnchecked(elemAddr, stack + ip[3], pMT);
+                    CopyValueClassUnchecked(elemAddr, LOCAL_VAR_ADDR(ip[3], void), pMT);
                     ip += 6;
                     break;
                 }
@@ -2899,7 +2910,7 @@ do {                                                                           \
                     size_t elemSize = ip[4];
                     void* elemAddr = pData + idx * elemSize;
 
-                    memcpyNoGCRefs(elemAddr, stack + ip[3], elemSize);
+                    memcpyNoGCRefs(elemAddr, LOCAL_VAR_ADDR(ip[3], void), elemSize);
                     ip += 5;
                     break;
                 }
@@ -2987,6 +2998,74 @@ do {                                                                           \
                     break;
                 }
 
+                case INTOP_COMPARE_EXCHANGE_U1:
+                {
+                    uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
+                    NULL_CHECK(dst);
+                    uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
+                    uint8_t comparand = LOCAL_VAR(ip[4], uint8_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint8_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    ULONG mask = ~(((ULONG)0xFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        ULONG comparandUINT32 = ((uint32_t)comparand << shift) | (oldULONG & mask);
+                        ULONG compareExchangeResult = InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, comparandUINT32);
+                        if (((compareExchangeResult & ~mask) == (comparandUINT32 & ~mask)) && (compareExchangeResult != comparandUINT32))
+                        {
+                            // Compare exchange failed, but doesn't look like it, since some other bytes changed
+                            // rerun the CompareExchange
+                            continue;
+                        }
+                        // CompareExchange succeeded
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(oldULONG >> shift);
+                        break;
+                    } while (true);
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_COMPARE_EXCHANGE_U2:
+                {
+                    uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
+                    NULL_CHECK(dst);
+                    uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
+                    uint16_t comparand = LOCAL_VAR(ip[4], uint16_t);
+                    // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 16-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    if (shift & 1)
+                    {
+                        // Attempt to do 16-bit exchange on 2-byte unaligned address
+                        COMPlusThrow(kAccessViolationException);
+                    }
+                    ULONG mask = ~(((ULONG)0xFFFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        ULONG comparandUINT32 = ((uint32_t)comparand << shift) | (oldULONG & mask);
+                        ULONG compareExchangeResult = InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, comparandUINT32);
+                        if (((compareExchangeResult & ~mask) == (comparandUINT32 & ~mask)) && (compareExchangeResult != comparandUINT32))
+                        {
+                            // Compare exchange failed, but doesn't look like it, since some other bytes changed
+                            // rerun the CompareExchange
+                            continue;
+                        }
+                        // CompareExchange succeeded
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(oldULONG >> shift);
+                        break;
+                    } while (true);
+                    ip += 5;
+                    break;
+                }
+
+
 #define COMPARE_EXCHANGE(type)                                          \
 do                                                                      \
 {                                                                       \
@@ -3022,6 +3101,59 @@ do                                                                      \
     ip += 4;                                                            \
 } while (0)
 
+                case INTOP_EXCHANGE_U1:
+                {
+                    uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
+                    NULL_CHECK(dst);
+                    uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
+                    // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 8-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint8_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    ULONG mask = ~(((ULONG)0xFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
+                        {
+                            LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(oldULONG >> shift);
+                            break;
+                        }
+                    } while (true);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGE_U2:
+                {
+                    uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
+                    NULL_CHECK(dst);
+                    uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
+                    // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
+                    // This is not optimal, but 16-bit exchange is not a common operation.
+                    ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
+                    int32_t shift = ((size_t)dst & 3) * 8;
+                    if (shift & 1)
+                    {
+                        // Attempt to do 16-bit exchange on 2-byte unaligned address
+                        COMPlusThrow(kAccessViolationException);
+                    }
+                    ULONG mask = ~(((ULONG)0xFFFF) << shift);
+                    do
+                    {
+                        ULONG oldULONG = *dstUINT32Aligned;
+                        ULONG newValueUINT32 = ((uint32_t)newValue << shift) | (oldULONG & mask);
+                        if (InterlockedCompareExchangeT(dstUINT32Aligned, newValueUINT32, oldULONG) == oldULONG)
+                        {
+                            LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(oldULONG >> shift);
+                            break;
+                        }
+                    } while (true);
+                    ip += 4;
+                    break;
+                }
+
                 case INTOP_EXCHANGE_I4:
                 {
                     EXCHANGE(int32_t);
@@ -3034,6 +3166,44 @@ do                                                                      \
                     break;
                 }
 #undef EXCHANGE
+
+                case INTOP_EXCHANGEADD_I4:
+                {
+                    LONG* dst = LOCAL_VAR(ip[2], LONG*);
+                    NULL_CHECK(dst);
+                    LONG newValue = LOCAL_VAR(ip[3], LONG);
+                    LONG old = InterlockedExchangeAdd(dst, newValue);
+                    LOCAL_VAR(ip[1], LONG) = old;
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_EXCHANGEADD_I8:
+                {
+                    LONG64* dst = LOCAL_VAR(ip[2], LONG64*);
+                    NULL_CHECK(dst);
+                    LONG64 newValue = LOCAL_VAR(ip[3], LONG64);
+                    LONG64 old = InterlockedExchangeAdd64(dst, newValue);
+                    LOCAL_VAR(ip[1], LONG64) = old;
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_SQRT_R4:
+                {
+                    float value = LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], float) = sqrtf(value);
+                    ip += 3;
+                    break;
+                }
+
+                case INTOP_SQRT_R8:
+                {
+                    double value = LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], double) = sqrt(value);
+                    ip += 3;
+                    break;
+                }
 
                 case INTOP_CALL_FINALLY:
                 {
