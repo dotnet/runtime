@@ -324,8 +324,8 @@ namespace System.Reflection.Metadata
         }
 
         // FieldRVA update tests are not supported on the Mono runtime.
-        //[ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void TestAddFieldRVA()
         {
             ApplyUpdateUtil.TestCase(static () =>
@@ -338,7 +338,7 @@ namespace System.Reflection.Metadata
                     var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
                     Assert.Equal(-1, mfaLen);
                     // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
-                    // Assert.Equal(-1, mfaLen);
+                    // Assert.Equal(-1, lsarosLen);
                     var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
                     Assert.Equal(1, utf8ros.Length);
                     var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
@@ -353,7 +353,7 @@ namespace System.Reflection.Metadata
                     var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
                     Assert.Equal(4, mfaLen);
                     // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
-                    // Assert.Equal(5, mfaLen);
+                    // Assert.Equal(5, lsarosLen);
                     var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
                     Assert.Equal(6, utf8ros.Length);
                     var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
