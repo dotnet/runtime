@@ -2830,48 +2830,6 @@ LPCWSTR AppDomain::GetFriendlyName()
 
 #ifndef DACCESS_COMPILE
 
-LPCWSTR AppDomain::GetFriendlyNameForDebugger()
-{
-    CONTRACT (LPCWSTR)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-
-    if (m_friendlyName == NULL)
-    {
-        BOOL fSuccess = FALSE;
-
-        EX_TRY
-        {
-            SetFriendlyName(NULL);
-
-            fSuccess = TRUE;
-        }
-        EX_CATCH
-        {
-            // Gobble all exceptions.
-        }
-        EX_END_CATCH
-
-        if (!fSuccess)
-        {
-            RETURN W("");
-        }
-    }
-
-    RETURN m_friendlyName;
-}
-
-
-#endif // !DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-
 BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
 {
     CONTRACTL
