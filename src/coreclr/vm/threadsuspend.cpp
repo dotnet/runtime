@@ -3590,7 +3590,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
-        GC_NOTRIGGERS;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
