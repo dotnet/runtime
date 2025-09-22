@@ -8317,8 +8317,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         if (oper != GT_NONE)
         {
-            // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
-            assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
+
+            // These nodes should only be produced in lowering
+#if !defined(TARGET_ARM64)
+            assert(oper != GT_AND_NOT);
+#endif // !TARGET_ARM64
+            assert((oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
             if (varTypeIsMask(type))
             {
@@ -8339,9 +8343,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
             }
 
-#if defined(TARGET_XARCH)
             if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
+#if defined(TARGET_XARCH)
                 if (TypeOfVN(arg1VN) == TYP_SIMD16)
                 {
                     if (!HWIntrinsicInfo::IsVariableShift(ni))
@@ -8367,8 +8371,25 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         }
                     }
                 }
-            }
+#elif defined(TARGET_ARM64)
+                CorInfoType auxJitType = tree->GetAuxiliaryJitType();
+                if (auxJitType != CORINFO_TYPE_UNDEF &&
+                    genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(baseType))
+                {
+                    // Handle the "wide elements" variant of shift, where otherNode is a vector of ulongs,
+                    // which is looped over to read the shift values. The values can safely be narrowed
+                    // to the result type.
+                    assert(auxJitType == CORINFO_TYPE_ULONG);
+                    assert(tree->TypeIs(TYP_SIMD16));
+
+                    simd16_t arg1 = GetConstantSimd16(arg1VN);
+
+                    simd16_t result = {};
+                    NarrowSimdLong<simd16_t>(baseType, &result, arg1);
+                    arg1VN = VNForSimd16Con(result);
+                }
 #endif // TARGET_XARCH
+            }
 
             return EvaluateBinarySimd(this, oper, isScalar, type, baseType, arg0VN, arg1VN);
         }
@@ -8460,8 +8481,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
-        // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
+        // These nodes should only be produced in lowering
+#if !defined(TARGET_ARM64)
+        assert(oper != GT_AND_NOT);
+#endif // !TARGET_ARM64
+        assert((oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
@@ -9007,8 +9031,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
-        // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
+        // These nodes should only be produced in lowering
+#if !defined(TARGET_ARM64)
+        assert(oper != GT_AND_NOT);
+#endif // !TARGET_ARM64
+        assert((oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
