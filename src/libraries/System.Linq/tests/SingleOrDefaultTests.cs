@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -251,5 +252,166 @@ namespace System.Linq.Tests
             Func<int, bool> nullPredicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate, 5));
         }
+
+        [Fact]
+        public void AllowMultiple_EmptySource()
+        {
+            foreach (IEnumerable<int?> source in CreateSources<int?>([]))
+            {
+                Assert.Null(source.SingleOrDefault(allowMultiple: false));
+                Assert.Null(source.SingleOrDefault(allowMultiple: true));
+                Assert.Equal(5, source.SingleOrDefault(allowMultiple: false, defaultValue: 5));
+                Assert.Equal(5, source.SingleOrDefault(allowMultiple: true, defaultValue: 5));
+            }
+        }
+
+        [Fact]
+        public void AllowMultiple_SingleElement()
+        {
+            foreach (IEnumerable<int?> source in CreateSources<int?>([4]))
+            {
+                Assert.Equal(4, source.SingleOrDefault(allowMultiple: false));
+                Assert.Equal(4, source.SingleOrDefault(allowMultiple: true));
+                Assert.Equal(4, source.SingleOrDefault(allowMultiple: false, defaultValue: 5));
+                Assert.Equal(4, source.SingleOrDefault(allowMultiple: true, defaultValue: 5));
+            }
+        }
+
+        [Fact]
+        public void AllowMultiple_ManyElements()
+        {
+            foreach (IEnumerable<int?> source in CreateSources<int?>([4, 4, 4, 4, 4]))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(allowMultiple: false));
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(allowMultiple: false, defaultValue: 5));
+
+                Assert.Null(source.SingleOrDefault(allowMultiple: true));
+                Assert.Equal(5, source.SingleOrDefault(allowMultiple: true, defaultValue: 5));
+            }
+        }
+
+        [Fact]
+        public void AllowMultiple_WithPredicate_EmptySource()
+        {
+            int[] source = [];
+
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(0, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false));
+                Assert.Equal(0, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true));
+                Assert.Equal(5, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false, defaultValue: 5));
+                Assert.Equal(5, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true, defaultValue: 5));
+            });
+        }
+
+        [Fact]
+        public void AllowMultiple_WithPredicate_SingleMatch()
+        {
+            int[] source = [3, 1, 7, 9, 13, 19, 20];
+
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(20, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false));
+                Assert.Equal(20, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true));
+                Assert.Equal(20, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false, defaultValue: 5));
+                Assert.Equal(20, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true, defaultValue: 5));
+            });
+        }
+
+        [Fact]
+        public void AllowMultiple_WithPredicate_NoMatches()
+        {
+            int[] source = [3, 1, 7, 9, 13, 19];
+
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(0, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false));
+                Assert.Equal(0, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true));
+                Assert.Equal(5, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false, defaultValue: 5));
+                Assert.Equal(5, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true, defaultValue: 5));
+            });
+        }
+
+        [Fact]
+        public void AllowMultiple_WithPredicate_MultipleMatches()
+        {
+            int[] source = [2, 3, 1, 7, 10, 13, 19, 8];
+
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false));
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false, defaultValue: 5));
+
+                Assert.Equal(0, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true));
+                Assert.Equal(5, source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true, defaultValue: 5));
+            });
+        }
+
+        [Fact]
+        public void AllowMultiple_ThrowsOnNullSource()
+        {
+            int[] source = null;
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(allowMultiple: false));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(allowMultiple: true));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(allowMultiple: false, defaultValue: 5));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(allowMultiple: true, defaultValue: 5));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0, allowMultiple: false, defaultValue: 5));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.SingleOrDefault(i => i % 2 == 0, allowMultiple: true, defaultValue: 5));
+        }
+
+        [Fact]
+        public void AllowMultiple_ThrowsOnNullPredicate()
+        {
+            int[] source = [];
+            Func<int, bool> nullPredicate = null;
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate, allowMultiple: false));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate, allowMultiple: true));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate, allowMultiple: false, defaultValue: 5));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate, allowMultiple: true, defaultValue: 5));
+        }
+
+        [Theory]
+        [InlineData(1, 100)]
+        [InlineData(42, 100)]
+        public void AllowMultiple_FindSingleMatch(int target, int range)
+        {
+            Assert.All(CreateSources(Enumerable.Range(0, range)), source =>
+            {
+                Assert.Equal(target, source.SingleOrDefault(i => i == target, allowMultiple: false));
+                Assert.Equal(target, source.SingleOrDefault(i => i == target, allowMultiple: true));
+            });
+        }
+
+        [Fact]
+        public void AllowMultiple_ConsistentBehaviorWithExisting()
+        {
+            int[] emptySource = [];
+            int[] singleSource = [42];
+            int[] multipleSource = [1, 2, 3];
+
+            Assert.All(CreateSources(emptySource), source =>
+            {
+                Assert.Equal(source.SingleOrDefault(), source.SingleOrDefault(allowMultiple: false));
+                Assert.Equal(source.SingleOrDefault(99), source.SingleOrDefault(allowMultiple: false, defaultValue: 99));
+            });
+
+            Assert.All(CreateSources(singleSource), source =>
+            {
+                Assert.Equal(source.SingleOrDefault(), source.SingleOrDefault(allowMultiple: false));
+                Assert.Equal(source.SingleOrDefault(99), source.SingleOrDefault(allowMultiple: false, defaultValue: 99));
+            });
+
+            Assert.All(CreateSources(multipleSource), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(allowMultiple: false));
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(99));
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(allowMultiple: false, defaultValue: 99));
+            });
+        }
     }
 }
+
+

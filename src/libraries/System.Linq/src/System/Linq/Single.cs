@@ -45,6 +45,30 @@ namespace System.Linq
             return found ? single! : defaultValue;
         }
 
+        /// <summary>Returns the only element of a sequence, or a default value if the sequence is empty or contains more than one element when <paramref name="allowMultiple"/> is <see langword="true"/>.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return the single element of.</param>
+        /// <param name="allowMultiple">If <see langword="true"/>, returns the default value when the sequence contains more than one element; otherwise, throws an exception.</param>
+        /// <returns>The single element of the input sequence, or the default value if the sequence contains no elements or more than one element when <paramref name="allowMultiple"/> is <see langword="true"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="InvalidOperationException">The input sequence contains more than one element and <paramref name="allowMultiple"/> is <see langword="false"/>.</exception>
+        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source, bool allowMultiple)
+            => source.TryGetSingle(allowMultiple, out _);
+
+        /// <summary>Returns the only element of a sequence, or a default value if the sequence is empty or contains more than one element when <paramref name="allowMultiple"/> is <see langword="true"/>.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return the single element of.</param>
+        /// <param name="allowMultiple">If <see langword="true"/>, returns <paramref name="defaultValue"/> when the sequence contains more than one element; otherwise, throws an exception.</param>
+        /// <param name="defaultValue">The default value to return if the sequence is empty or contains more than one element when <paramref name="allowMultiple"/> is <see langword="true"/>.</param>
+        /// <returns>The single element of the input sequence, or <paramref name="defaultValue"/> if the sequence contains no elements or more than one element when <paramref name="allowMultiple"/> is <see langword="true"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="InvalidOperationException">The input sequence contains more than one element and <paramref name="allowMultiple"/> is <see langword="false"/>.</exception>
+        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, bool allowMultiple, TSource defaultValue)
+        {
+            var single = source.TryGetSingle(allowMultiple, out bool found);
+            return found ? single! : defaultValue;
+        }
+
         public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
             => source.TryGetSingle(predicate, out _);
 
@@ -59,6 +83,32 @@ namespace System.Linq
         public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
         {
             var single = source.TryGetSingle(predicate, out bool found);
+            return found ? single! : defaultValue;
+        }
+
+        /// <summary>Returns the only element of a sequence that satisfies a specified condition, or a default value if no such element exists or if more than one element satisfies the condition when <paramref name="allowMultiple"/> is <see langword="true"/>.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return a single element from.</param>
+        /// <param name="predicate">A function to test an element for a condition.</param>
+        /// <param name="allowMultiple">If <see langword="true"/>, returns the default value when more than one element satisfies the condition; otherwise, throws an exception.</param>
+        /// <returns>The single element of the input sequence that satisfies the condition, or the default value if no such element is found or if more than one element satisfies the condition when <paramref name="allowMultiple"/> is <see langword="true"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
+        /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate" /> and <paramref name="allowMultiple"/> is <see langword="false"/>.</exception>
+        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, bool allowMultiple)
+            => source.TryGetSingle(predicate, allowMultiple, out _);
+
+        /// <summary>Returns the only element of a sequence that satisfies a specified condition, or a default value if no such element exists or if more than one element satisfies the condition when <paramref name="allowMultiple"/> is <see langword="true"/>.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return a single element from.</param>
+        /// <param name="predicate">A function to test an element for a condition.</param>
+        /// <param name="allowMultiple">If <see langword="true"/>, returns <paramref name="defaultValue"/> when more than one element satisfies the condition; otherwise, throws an exception.</param>
+        /// <param name="defaultValue">The default value to return if no such element is found or if more than one element satisfies the condition when <paramref name="allowMultiple"/> is <see langword="true"/>.</param>
+        /// <returns>The single element of the input sequence that satisfies the condition, or <paramref name="defaultValue"/> if no such element is found or if more than one element satisfies the condition when <paramref name="allowMultiple"/> is <see langword="true"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
+        /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate" /> and <paramref name="allowMultiple"/> is <see langword="false"/>.</exception>
+        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, bool allowMultiple, TSource defaultValue)
+        {
+            var single = source.TryGetSingle(predicate, allowMultiple, out bool found);
             return found ? single! : defaultValue;
         }
 
@@ -100,6 +150,50 @@ namespace System.Linq
 
             found = false;
             ThrowHelper.ThrowMoreThanOneElementException();
+            return default;
+        }
+
+        private static TSource? TryGetSingle<TSource>(this IEnumerable<TSource> source, bool allowMultiple, out bool found)
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (source is IList<TSource> list)
+            {
+                switch (list.Count)
+                {
+                    case 0:
+                        found = false;
+                        return default;
+                    case 1:
+                        found = true;
+                        return list[0];
+                }
+            }
+            else
+            {
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                if (!e.MoveNext())
+                {
+                    found = false;
+                    return default;
+                }
+
+                TSource result = e.Current;
+                if (!e.MoveNext())
+                {
+                    found = true;
+                    return result;
+                }
+            }
+
+            found = false;
+            if (!allowMultiple)
+            {
+                ThrowHelper.ThrowMoreThanOneElementException();
+            }
             return default;
         }
 
@@ -149,6 +243,74 @@ namespace System.Linq
                             if (predicate(e.Current))
                             {
                                 ThrowHelper.ThrowMoreThanOneMatchException();
+                            }
+                        }
+                        found = true;
+                        return result;
+                    }
+                }
+            }
+
+            found = false;
+            return default;
+        }
+
+        private static TSource? TryGetSingle<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, bool allowMultiple, out bool found)
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (predicate is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+            {
+                for (int i = 0; i < span.Length; i++)
+                {
+                    TSource result = span[i];
+                    if (predicate(result))
+                    {
+                        for (i++; (uint)i < (uint)span.Length; i++)
+                        {
+                            if (predicate(span[i]))
+                            {
+                                found = false;
+                                if (!allowMultiple)
+                                {
+                                    ThrowHelper.ThrowMoreThanOneMatchException();
+                                }
+                                return default;
+                            }
+                        }
+
+                        found = true;
+                        return result;
+                    }
+                }
+            }
+            else
+            {
+                using IEnumerator<TSource> e = source.GetEnumerator();
+
+                while (e.MoveNext())
+                {
+                    TSource result = e.Current;
+                    if (predicate(result))
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (predicate(e.Current))
+                            {
+                                found = false;
+                                if (!allowMultiple)
+                                {
+                                    ThrowHelper.ThrowMoreThanOneMatchException();
+                                }
+                                return default;
                             }
                         }
                         found = true;
