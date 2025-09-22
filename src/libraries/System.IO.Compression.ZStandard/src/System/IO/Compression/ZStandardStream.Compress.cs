@@ -8,35 +8,35 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    public sealed partial class ZStandardStream
+    public sealed partial class ZstandardStream
     {
-        private ZStandardEncoder _encoder;
+        private ZstandardEncoder _encoder;
 
-        /// <summary>Initializes a new instance of the <see cref="ZStandardStream" /> class by using the specified stream and compression level.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        public ZStandardStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false) { }
+        public ZstandardStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false) { }
 
-        /// <summary>Initializes a new instance of the <see cref="ZStandardStream" /> class by using the specified stream and compression level, and optionally leaves the stream open.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression level, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZStandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZStandardStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        public ZstandardStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
         {
-            _encoder.SetQuality(ZStandardUtils.GetQualityFromCompressionLevel(compressionLevel));
+            _encoder.SetQuality(ZstandardUtils.GetQualityFromCompressionLevel(compressionLevel));
         }
 
-        /// <summary>Initializes a new instance of the <see cref="ZStandardStream" /> class by using the specified stream, options, and optionally leaves the stream open.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream, options, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="compressionOptions">The options to use for ZStandard compression or decompression.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZStandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZStandardStream(Stream stream, ZStandardCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
+        /// <param name="compressionOptions">The options to use for Zstandard compression or decompression.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
         {
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            if (compressionOptions.Dictionary is ZStandardDictionary dictionary)
+            if (compressionOptions.Dictionary is ZstandardDictionary dictionary)
             {
-                _encoder = new ZStandardEncoder(dictionary, ZStandardUtils.WindowBits_Default);
+                _encoder = new ZstandardEncoder(dictionary, ZstandardUtils.WindowBits_Default);
             }
             else
             {
@@ -76,7 +76,7 @@ namespace System.IO.Compression
                     }
 
                     if (lastResult == OperationStatus.InvalidData)
-                        throw new InvalidOperationException(SR.ZStandardStream_Compress_InvalidData);
+                        throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
                     if (bytesWritten > 0)
                         _stream.Write(output.Slice(0, bytesWritten));
                     if (bytesConsumed > 0)
@@ -124,7 +124,7 @@ namespace System.IO.Compression
                     }
 
                     if (lastResult == OperationStatus.InvalidData)
-                        throw new InvalidOperationException(SR.ZStandardStream_Compress_InvalidData);
+                        throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
                     if (bytesWritten > 0)
                         await _stream.WriteAsync(output.Slice(0, bytesWritten)).ConfigureAwait(false);
                     if (bytesConsumed > 0)

@@ -27,8 +27,8 @@
   <data name="InvalidCompressionLevel" xml:space="preserve">
     <value>Invalid compression level specified.</value>
   </data>
-  <data name="IOCompressionZStandard_PlatformNotSupported" xml:space="preserve">
-    <value>System.IO.Compression.ZStandard is not supported on this platform.</value>
+  <data name="IOCompressionZstandard_PlatformNotSupported" xml:space="preserve">
+    <value>System.IO.Compression.Zstandard is not supported on this platform.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed stream.</value>
@@ -39,64 +39,64 @@
   <data name="Stream_FalseCanWrite" xml:space="preserve">
     <value>The base stream is not writable.</value>
   </data>
-  <data name="ZStandardEncoder_Create" xml:space="preserve">
-    <value>Failed to create the ZStandard encoder instance.</value>
+  <data name="ZstandardEncoder_Create" xml:space="preserve">
+    <value>Failed to create the Zstandard encoder instance.</value>
   </data>
-  <data name="ZStandardEncoder_Disposed" xml:space="preserve">
+  <data name="ZstandardEncoder_Disposed" xml:space="preserve">
     <value>The encoder has been disposed.</value>
   </data>
-  <data name="ZStandardEncoder_InvalidQuality" xml:space="preserve">
+  <data name="ZstandardEncoder_InvalidQuality" xml:space="preserve">
     <value>The quality must be between {0} and {1}.</value>
   </data>
-  <data name="ZStandardEncoder_InvalidWindow" xml:space="preserve">
+  <data name="ZstandardEncoder_InvalidWindow" xml:space="preserve">
     <value>The window size must be between {0} and {1}.</value>
   </data>
-  <data name="ZStandardEncoder_InvalidDictionary" xml:space="preserve">
+  <data name="ZstandardEncoder_InvalidDictionary" xml:space="preserve">
     <value>The provided dictionary wasn't created for encoding data.</value>
   </data>
-  <data name="ZStandardEncoder_CompressError" xml:space="preserve">
+  <data name="ZstandardEncoder_CompressError" xml:space="preserve">
     <value>An error occurred during compression: '{0}'.</value>
   </data>
-  <data name="ZStandardEncoder_FlushError" xml:space="preserve">
+  <data name="ZstandardEncoder_FlushError" xml:space="preserve">
     <value>An error occurred during flush operation.</value>
   </data>
-  <data name="ZStandardEncoder_DictionaryAttachFailed" xml:space="preserve">
-    <value>Failed to attach dictionary to ZStandard encoder context.</value>
+  <data name="ZstandardEncoder_DictionaryAttachFailed" xml:space="preserve">
+    <value>Failed to attach dictionary to Zstandard encoder context.</value>
   </data>
-  <data name="ZStandardDecoder_Create" xml:space="preserve">
-    <value>Failed to create the ZStandard decoder instance.</value>
+  <data name="ZstandardDecoder_Create" xml:space="preserve">
+    <value>Failed to create the Zstandard decoder instance.</value>
   </data>
-  <data name="ZStandardDecoder_Disposed" xml:space="preserve">
+  <data name="ZstandardDecoder_Disposed" xml:space="preserve">
     <value>The decoder has been disposed.</value>
   </data>
-  <data name="ZStandardDecoder_DecompressError" xml:space="preserve">
+  <data name="ZstandardDecoder_DecompressError" xml:space="preserve">
     <value>An error occurred during decompression: '{0}'.</value>
   </data>
-  <data name="ZStandardDecoder_DictionaryAttachFailed" xml:space="preserve">
-    <value>Failed to attach dictionary to ZStandard decoder context.</value>
+  <data name="ZstandardDecoder_DictionaryAttachFailed" xml:space="preserve">
+    <value>Failed to attach dictionary to Zstandard decoder context.</value>
   </data>
-  <data name="ZStandardStream_Decompress_TruncatedData" xml:space="preserve">
+  <data name="ZstandardStream_Decompress_TruncatedData" xml:space="preserve">
     <value>Found truncated data while decoding.</value>
   </data>
-  <data name="ZStandardStream_Decompress_InvalidData" xml:space="preserve">
+  <data name="ZstandardStream_Decompress_InvalidData" xml:space="preserve">
     <value>Decoder ran into invalid data.</value>
   </data>
-  <data name="ZStandardStream_Decompress_InvalidStream" xml:space="preserve">
-    <value>ZStandardStream.BaseStream returned more bytes than requested in Read.</value>
+  <data name="ZstandardStream_Decompress_InvalidStream" xml:space="preserve">
+    <value>ZstandardStream.BaseStream returned more bytes than requested in Read.</value>
   </data>
-  <data name="ZStandardStream_Compress_InvalidData" xml:space="preserve">
+  <data name="ZstandardStream_Compress_InvalidData" xml:space="preserve">
     <value>Encoder ran into invalid data.</value>
   </data>
-  <data name="ZStandardStream_ConcurrentRWOperation" xml:space="preserve">
+  <data name="ZstandardStream_ConcurrentRWOperation" xml:space="preserve">
     <value>Only one pending read/write operation is supported.</value>
   </data>
-  <data name="ZStandardDictionary_EmptyBuffer" xml:space="preserve">
+  <data name="ZstandardDictionary_EmptyBuffer" xml:space="preserve">
     <value>Buffer cannot be empty.</value>
   </data>
-  <data name="ZStandardDictionary_CreateCompressionFailed" xml:space="preserve">
-    <value>Failed to create ZStandard compression dictionary.</value>
+  <data name="ZstandardDictionary_CreateCompressionFailed" xml:space="preserve">
+    <value>Failed to create Zstandard compression dictionary.</value>
   </data>
-  <data name="ZStandardDictionary_CreateDecompressionFailed" xml:space="preserve">
-    <value>Failed to create ZStandard decompression dictionary.</value>
+  <data name="ZstandardDictionary_CreateDecompressionFailed" xml:space="preserve">
+    <value>Failed to create Zstandard decompression dictionary.</value>
   </data>
 </root>

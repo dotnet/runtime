@@ -7,18 +7,18 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Compression
 {
-    /// <summary>Provides methods and properties to decompress data using ZStandard decompression.</summary>
-    public struct ZStandardDecoder : IDisposable
+    /// <summary>Provides methods and properties to decompress data using Zstandard decompression.</summary>
+    public struct ZstandardDecoder : IDisposable
     {
-        private SafeZStdDecompressHandle? _context;
+        private SafeZstdDecompressHandle? _context;
         private bool _disposed;
         // True if we finished decompressing the entire input.
         private bool _finished;
 
-        /// <summary>Initializes a new instance of the <see cref="ZStandardDecoder"/> struct with the specified dictionary.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        public ZStandardDecoder(ZStandardDictionary dictionary)
+        public ZstandardDecoder(ZstandardDictionary dictionary)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -41,7 +41,7 @@ namespace System.IO.Compression
         {
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
-                throw new Interop.Zstd.ZstdNativeException(SR.ZStandardDecoder_Create);
+                throw new Interop.Zstd.ZstdNativeException(SR.ZstandardDecoder_Create);
         }
 
         internal void EnsureInitialized()
@@ -76,14 +76,14 @@ namespace System.IO.Compression
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
                 fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
                 {
-                    var input = new Interop.Zstd.ZStdInBuffer
+                    var input = new Interop.Zstd.ZstdInBuffer
                     {
                         src = (IntPtr)sourcePtr,
                         size = (nuint)source.Length,
                         pos = 0
                     };
 
-                    var output = new Interop.Zstd.ZStdOutBuffer
+                    var output = new Interop.Zstd.ZstdOutBuffer
                     {
                         dst = (IntPtr)destPtr,
                         size = (nuint)destination.Length,
@@ -176,7 +176,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns>True if decompression was successful; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        public static bool TryDecompress(ReadOnlySpan<byte> source, ZStandardDictionary dictionary, Span<byte> destination, out int bytesWritten)
+        public static bool TryDecompress(ReadOnlySpan<byte> source, ZstandardDictionary dictionary, Span<byte> destination, out int bytesWritten)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -207,7 +207,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Releases all resources used by the <see cref="ZStandardDecoder"/>.</summary>
+        /// <summary>Releases all resources used by the <see cref="ZstandardDecoder"/>.</summary>
         public void Dispose()
         {
             _disposed = true;
@@ -222,7 +222,7 @@ namespace System.IO.Compression
         private readonly void ThrowIfDisposed()
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(ZStandardDecoder), SR.ZStandardDecoder_Disposed);
+                throw new ObjectDisposedException(nameof(ZstandardDecoder), SR.ZstandardDecoder_Disposed);
         }
     }
 }

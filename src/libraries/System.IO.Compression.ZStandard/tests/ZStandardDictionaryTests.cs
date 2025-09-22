@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Compression
 {
-    public class ZStandardDictionaryTests
+    public class ZstandardDictionaryTests
     {
         [Fact]
         public void Create_WithValidBuffer_Succeeds()
@@ -15,7 +15,7 @@ namespace System.IO.Compression
             byte[] dictionaryData = CreateSampleDictionary();
 
             // Act
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(dictionaryData);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
 
             // Assert
             Assert.NotNull(dictionary);
@@ -29,7 +29,7 @@ namespace System.IO.Compression
             int quality = 5;
 
             // Act
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(dictionaryData, quality);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData, quality);
 
             // Assert
             Assert.NotNull(dictionary);
@@ -42,7 +42,7 @@ namespace System.IO.Compression
             ReadOnlyMemory<byte> emptyBuffer = ReadOnlyMemory<byte>.Empty;
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => ZStandardDictionary.Create(emptyBuffer));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Create(emptyBuffer));
         }
 
         [Fact]
@@ -53,7 +53,7 @@ namespace System.IO.Compression
             int quality = 5;
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => ZStandardDictionary.Create(emptyBuffer, quality));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Create(emptyBuffer, quality));
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.IO.Compression
         {
             // Arrange
             byte[] dictionaryData = CreateSampleDictionary();
-            ZStandardDictionary dictionary = ZStandardDictionary.Create(dictionaryData);
+            ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
 
             // Act & Assert - Should not throw
             dictionary.Dispose();
@@ -75,7 +75,7 @@ namespace System.IO.Compression
             byte[] dictionaryData = CreateSampleDictionary();
 
             // Act & Assert - Should not throw
-            using (ZStandardDictionary dictionary = ZStandardDictionary.Create(dictionaryData))
+            using (ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData))
             {
                 Assert.NotNull(dictionary);
             }
@@ -90,7 +90,7 @@ namespace System.IO.Compression
             ReadOnlyMemory<byte> memory = new ReadOnlyMemory<byte>(dictionaryData);
 
             // Act
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(memory);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(memory);
 
             // Assert
             Assert.NotNull(dictionary);
@@ -105,12 +105,12 @@ namespace System.IO.Compression
             int quality = 10;
 
             // Act
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(memory, quality);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(memory, quality);
 
             // Assert
             Assert.NotNull(dictionary);
         }
 
-        private static byte[] CreateSampleDictionary() => ZStandardTestUtils.CreateSampleDictionary();
+        private static byte[] CreateSampleDictionary() => ZstandardTestUtils.CreateSampleDictionary();
     }
 }
