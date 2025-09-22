@@ -36,6 +36,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_Math_ReciprocalEstimate;
             else if (!strcmp(methodName, "ReciprocalSqrtEstimate"))
                 return NI_System_Math_ReciprocalSqrtEstimate;
+            else if (!strcmp(methodName, "Sqrt"))
+                return NI_System_Math_Sqrt;
         }
     }
     else if (!strcmp(namespaceName, "System.StubHelpers"))
@@ -44,6 +46,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(methodName, "NextCallReturnAddress"))
                 return NI_System_StubHelpers_NextCallReturnAddress;
+            else if (!strcmp(methodName, "GetStubContext"))
+                return NI_System_StubHelpers_GetStubContext;
         }
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
@@ -104,6 +108,10 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(methodName, "CompareExchange"))
                 return NI_System_Threading_Interlocked_CompareExchange;
+            else if (!strcmp(methodName, "Exchange"))
+                return NI_System_Threading_Interlocked_Exchange;
+            else if (!strcmp(methodName, "ExchangeAdd"))
+                return NI_System_Threading_Interlocked_ExchangeAdd;
             else if (!strcmp(methodName, "MemoryBarrier"))
                 return NI_System_Threading_Interlocked_MemoryBarrier;
         }

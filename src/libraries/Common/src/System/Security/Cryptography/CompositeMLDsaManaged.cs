@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -367,29 +368,67 @@ namespace System.Security.Cryptography
             return And(_mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.DomainSeparator), _componentAlgorithm.VerifyData(M_prime, tradSig));
         }
 
-        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
-            throw new PlatformNotSupportedException();
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            AsnWriter? writer = null;
 
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(Span<byte> destination, out int bytesWritten)
+            try
+            {
+                using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxPrivateKeySizeInBytes))
+                {
+                    int privateKeySize = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
+
+                    // Add some overhead for the ASN.1 structure.
+                    int initialCapacity = 32 + privateKeySize;
+
+                    writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity);
+
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteInteger(0); // Version
+
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteObjectIdentifier(Algorithm.Oid);
+                        }
+
+                        writer.WriteOctetString(lease.Span.Slice(0, privateKeySize));
+                    }
+
+                    Debug.Assert(writer.GetEncodedLength() <= initialCapacity);
+                }
+
+                return writer.TryEncode(destination, out bytesWritten);
+            }
+            finally
+            {
+                writer?.Reset();
+            }
+        }
+
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination)
         {
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 5.1
             //  1.  Combine and output the encoded public key
             //
             //      output mldsaPK || tradPK
 
-            _mldsa.ExportMLDsaPublicKey(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes));
+            int bytesWritten = 0;
 
-            if (_componentAlgorithm.TryExportPublicKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes), out int componentBytesWritten))
+            _mldsa.ExportMLDsaPublicKey(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes));
+            bytesWritten += AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes;
+
+            if (!_componentAlgorithm.TryExportPublicKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes), out int componentBytesWritten))
             {
-                bytesWritten = AlgorithmDetails.MLDsaAlgorithm.PublicKeySizeInBytes + componentBytesWritten;
-                return true;
+                throw new CryptographicException();
             }
 
-            bytesWritten = 0;
-            return false;
+            bytesWritten += componentBytesWritten;
+
+            return bytesWritten;
         }
 
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination)
         {
             // draft-ietf-lamps-pq-composite-sigs-latest (June 20, 2025), 5.2
             //  1.  Combine and output the encoded private key
@@ -398,16 +437,19 @@ namespace System.Security.Cryptography
 
             try
             {
-                _mldsa.ExportMLDsaPrivateSeed(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes));
+                int bytesWritten = 0;
 
-                if (_componentAlgorithm.TryExportPrivateKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes), out int componentBytesWritten))
+                _mldsa.ExportMLDsaPrivateSeed(destination.Slice(0, AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes));
+                bytesWritten += AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes;
+
+                if (!_componentAlgorithm.TryExportPrivateKey(destination.Slice(AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes), out int componentBytesWritten))
                 {
-                    bytesWritten = AlgorithmDetails.MLDsaAlgorithm.PrivateSeedSizeInBytes + componentBytesWritten;
-                    return true;
+                    throw new CryptographicException();
                 }
 
-                bytesWritten = 0;
-                return false;
+                bytesWritten += componentBytesWritten;
+
+                return bytesWritten;
             }
             catch (CryptographicException)
             {

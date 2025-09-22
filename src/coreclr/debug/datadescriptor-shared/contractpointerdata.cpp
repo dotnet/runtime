@@ -14,4 +14,3 @@ extern "C"
     #include "wrappeddatadescriptor.inc"
     };
 };
-

@@ -46,7 +46,6 @@ namespace BenchmarksGame
         const byte Lf = (byte)'\n';
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118475")]
         public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);

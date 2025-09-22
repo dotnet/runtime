@@ -26,14 +26,14 @@ namespace Internal.TypeSystem
             _systemModule = systemModule;
 
             // initialize interfaces
-            _arrayRuntimeInterfaces = _systemModule.GetType("System", "Array")?.RuntimeInterfaces
+            _arrayRuntimeInterfaces = _systemModule.GetType("System"u8, "Array"u8)?.RuntimeInterfaces
                 ?? Array.Empty<DefType>();
 
             _genericRuntimeInterfaces = new MetadataType[s_genericRuntimeInterfacesNames.Length];
             int count = 0;
             for (int i = 0; i < s_genericRuntimeInterfacesNames.Length; ++i)
             {
-                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic", s_genericRuntimeInterfacesNames[i], throwIfNotFound: false);
+                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic"u8, System.Text.Encoding.UTF8.GetBytes(s_genericRuntimeInterfacesNames[i]), throwIfNotFound: false);
                 if (runtimeInterface != null)
                     _genericRuntimeInterfaces[count++] = runtimeInterface;
             };

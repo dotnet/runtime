@@ -222,7 +222,7 @@ namespace ILCompiler.PEWriter
             }
             output.Append(typeNameFormatter.FormatName(method.OwningType));
             output.Append("::");
-            output.Append(method.Name);
+            output.Append(method.GetName());
             output.Append("(");
             for (int paramIndex = 0; paramIndex < method.Signature.Length; paramIndex++)
             {

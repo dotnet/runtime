@@ -102,5 +102,18 @@ namespace Wasm.Build.Tests
             (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
             Assert.Contains("WasmBuildNative is required", output);
         }
+
+        [Fact]
+        public async Task ZipArchiveInteropTest()
+        {
+            Configuration config = Configuration.Debug;
+            ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ZipArchiveInteropTest", extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "ZipArchiveInteropTest"));
+            Assert.Collection(
+                result.TestOutput,
+                m => Assert.Equal("Zip file created successfully.", m)
+            );
+        }
     }
 }
