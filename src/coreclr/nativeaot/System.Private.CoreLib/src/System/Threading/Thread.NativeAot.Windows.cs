@@ -587,7 +587,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    Debug.Fail("bad return from CoGetApartmentState");
+                    Debug.Fail("bad return from CoGetApartmentType");
                     break;
             }
 
