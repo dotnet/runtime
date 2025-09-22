@@ -400,6 +400,7 @@ namespace System.Threading
         internal static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentState() == ApartmentState.STA;
 
+        // Unlike the public API, this returns ApartmentState.Unknown when the COM is uninitialized on current thread
         internal static ApartmentState GetCurrentApartmentState()
         {
             sbyte current = t_apartmentState;
