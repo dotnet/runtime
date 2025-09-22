@@ -15,9 +15,6 @@ namespace System.Threading
     public sealed partial class Thread
     {
         [ThreadStatic]
-        private static sbyte t_apartmentState; // ApartmentState shifted by ApartmentState.Unknown to represent Unknown as the default value
-
-        [ThreadStatic]
         private static ComState t_comState;
 
         private SafeWaitHandle _osHandle;
@@ -279,12 +276,17 @@ namespace System.Threading
                         // Compat: Setting ApartmentState to Unknown uninitializes COM
                         UninitializeCom();
                     }
+
+                    // Clear the cache and check whether new state matches the desired state
+                    t_comState &= ~(ComState.STA | ComState.MTA);
+
+                    retState = GetCurrentApartmentState();
                 }
-
-                // Clear the cache and check whether new state matches the desired state
-                t_apartmentState = 0;
-
-                retState = GetCurrentApartmentState();
+                else
+                {
+                    Debug.Assert((t_comState & ComState.MTA) != 0);
+                    retState = ApartmentState.MTA;
+                }
             }
 
             if (retState != state)
@@ -318,7 +320,7 @@ namespace System.Threading
             // Process-wide COM is initialized very early before any managed code can run.
             // Assume it is done.
             // Prevent re-initialization of COM model on threadpool threads from the default one.
-            t_comState |= ComState.Locked;
+            t_comState |= ComState.Locked | ComState.MTA;
         }
 
         private static void InitializeCom(ApartmentState state = ApartmentState.MTA)
@@ -403,9 +405,8 @@ namespace System.Threading
         // Unlike the public API, this returns ApartmentState.Unknown when the COM is uninitialized on current thread
         internal static ApartmentState GetCurrentApartmentState()
         {
-            sbyte current = t_apartmentState;
-            if (current != 0)
-                return (ApartmentState)(current + (sbyte)ApartmentState.Unknown);
+            if ((t_comState & (ComState.MTA | ComState.STA)) != 0)
+                return ((t_comState & ComState.STA) != 0) ? ApartmentState.STA : ApartmentState.MTA;
 
             Interop.APTTYPE aptType;
             Interop.APTTYPEQUALIFIER aptTypeQualifier;
@@ -462,7 +463,7 @@ namespace System.Threading
             }
 
             if (state != ApartmentState.Unknown)
-                t_apartmentState = (sbyte)(state - ApartmentState.Unknown);
+                t_comState |= (state == ApartmentState.STA) ? ComState.STA : ComState.MTA;
             return state;
         }
 
@@ -471,6 +472,8 @@ namespace System.Threading
         {
             InitializedByUs = 1,
             Locked = 2,
+            MTA = 4,
+            STA = 8
         }
     }
 }
