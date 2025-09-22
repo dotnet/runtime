@@ -204,6 +204,45 @@ namespace System.IO.Compression
             encoder.Dispose();
         }
 
+        [Fact]
+        public void Reset_AfterDispose_ThrowsObjectDisposedException()
+        {
+            var encoder = new ZstandardEncoder(ValidQuality, ValidWindow);
+            encoder.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => encoder.Reset());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Reset_AllowsReuseForMultipleCompressions(bool useDictionary)
+        {
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary(), ValidQuality);
+            using var encoder = useDictionary
+                ? new ZstandardEncoder(dictionary, ValidWindow)
+                : new ZstandardEncoder(ValidQuality, ValidWindow);
+
+            byte[] input = CreateTestData();
+            byte[] output1 = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+            byte[] output2 = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+            // First compression
+            OperationStatus result1 = encoder.Compress(input, output1, out int consumed1, out int written1, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, result1);
+            Assert.Equal(input.Length, consumed1);
+            Assert.True(written1 > 0);
+
+            // Reset and compress again
+            encoder.Reset();
+            OperationStatus result2 = encoder.Compress(input, output2, out int consumed2, out int written2, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, result2);
+            Assert.Equal(input.Length, consumed2);
+            Assert.True(written2 > 0);
+
+            Assert.Equal(output1, output2);
+        }
+
         private static byte[] CreateTestData()
         {
             // Create some test data that compresses well

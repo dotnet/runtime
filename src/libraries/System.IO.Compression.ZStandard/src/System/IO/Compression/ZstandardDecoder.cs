@@ -207,6 +207,25 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Resets the decoder session, allowing reuse for the next decompression operation.</summary>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        /// <exception cref="IOException">Failed to reset the decoder session.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+
+            if (_context is null)
+                return;
+
+            nuint result = Interop.Zstd.ZSTD_DCtx_reset(_context, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only);
+            if (Interop.Zstd.ZSTD_isError(result) != 0)
+            {
+                throw new IOException(string.Format(SR.ZstandardDecoder_DecompressError, ZstandardUtils.GetErrorMessage(result)));
+            }
+
+            _finished = false;
+        }
+
         /// <summary>Releases all resources used by the <see cref="ZstandardDecoder"/>.</summary>
         public void Dispose()
         {

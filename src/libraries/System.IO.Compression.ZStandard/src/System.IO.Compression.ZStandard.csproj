@@ -5,6 +5,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>true</UseCompilerGeneratedDocXmlFile>
 
+    <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+
     <!--missing xml comments on net10.0 (not supported stubs)-->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
