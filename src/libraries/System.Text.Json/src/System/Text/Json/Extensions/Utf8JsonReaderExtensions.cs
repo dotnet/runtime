@@ -77,6 +77,29 @@ namespace System.Text.Json.Extensions
             return result;
         }
 
+        internal static Int128 GetInt128(this ref Utf8JsonReader reader)
+        {
+            int bufferLength = reader.ValueLength;
+
+            byte[]? rentedBuffer = null;
+            Span<byte> buffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
+                : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
+
+            int written = reader.CopyValue(buffer);
+            if (!Int128.TryParse(buffer.Slice(0, written), CultureInfo.InvariantCulture, out Int128 result))
+            {
+                ThrowHelper.ThrowFormatException(NumericType.Int128);
+            }
+
+            if (rentedBuffer != null)
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
+
+            return result;
+        }
+
         private static bool TryParse(ReadOnlySpan<byte> buffer, out Half result)
         {
             bool success = Half.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);

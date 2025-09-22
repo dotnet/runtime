@@ -106,6 +106,14 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         internal static JsonValue Create(Half value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Half>(value, JsonMetadataServices.HalfConverter, options);
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(Int128 value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Int128>(value, JsonMetadataServices.Int128Converter, options);
 #endif
 
         /// <summary>

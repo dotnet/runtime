@@ -127,6 +127,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Int128>? s_int128Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Int128}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Int128>?> JsonValuePrimitiveInt128Converter { get; } = new JsonValueConverter<JsonValuePrimitive<Int128>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="UInt128"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

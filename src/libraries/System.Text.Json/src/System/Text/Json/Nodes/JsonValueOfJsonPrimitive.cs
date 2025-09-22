@@ -35,6 +35,9 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.Number
                     when typeof(T) == typeof(JsonValuePrimitive<Half>):
                     return JsonValue.Create(reader.GetHalf(), options);
+                case JsonTokenType.Number
+                    when typeof(T) == typeof(JsonValuePrimitive<Int128>):
+                    return JsonValue.Create(reader.GetInt128(), options);
 #endif
                 case JsonTokenType.Number:
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
