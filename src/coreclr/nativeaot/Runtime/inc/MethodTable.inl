@@ -18,7 +18,7 @@ inline TypeManagerHandle* MethodTable::GetTypeManagerPtr()
 {
     uint32_t cbOffset = GetFieldOffset(ETF_TypeManagerIndirection);
 
-#if !defined(USE_PORTABLE_HELPERS)
+#if !defined(FEATURE_PORTABLE_HELPERS)
     if (!IsDynamicType())
     {
         return (TypeManagerHandle*)FollowRelativePointer((int32_t*)((uint8_t*)this + cbOffset));
@@ -48,7 +48,7 @@ FORCEINLINE uint32_t MethodTable::GetFieldOffset(EETypeField eField)
     cbOffset += sizeof(MethodTable*) * GetNumInterfaces();
 
     const uint32_t relativeOrFullPointerOffset =
-#if USE_PORTABLE_HELPERS
+#if FEATURE_PORTABLE_HELPERS
         sizeof(UIntTarget);
 #else
         IsDynamicType() ? sizeof(UIntTarget) : sizeof(uint32_t);

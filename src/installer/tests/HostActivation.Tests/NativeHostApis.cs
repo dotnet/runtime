@@ -159,6 +159,30 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Hostfxr_resolve_sdk2_NoGlobalJson_NoWriteToStdResolvesTheSame(bool do_not_print_errors)
+        {
+            // With no global.json and disallowing previews, pick latest non-preview
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            string expectedData = string.Join(';', new[]
+            {
+                ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "1.2.300")),
+                ("global_json_state", "not_found"),
+            });
+
+            string api = ApiNames.hostfxr_resolve_sdk2;
+            string flags = do_not_print_errors ? "disallow_prerelease,do_not_print_errors" : "disallow_prerelease";
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, flags)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+        }
+
         [Fact]
         public void Hostfxr_resolve_sdk2_GlobalJson_DisallowPrerelease()
         {
@@ -301,6 +325,32 @@ namespace HostActivation.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Hostfxr_resolve_sdk2_FailsToResolve_NoWriteToStd(bool do_not_print_errors)
+        {
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            string api = ApiNames.hostfxr_resolve_sdk2;
+            using TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_FailsToResolve_NoWriteToStd));
+
+            string invalidVersion = "1.2.0"; // feature band < 1 triggers __invalid_data_no_fallback
+            GlobalJson.CreateWithVersion(workingDir.Location, invalidVersion);
+
+            var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, do_not_print_errors ? "do_not_print_errors" : "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute();
+
+            result.Should().Pass()
+                .And.ReturnStatusCode(api, Constants.ErrorCode.SdkResolveFailure);
+
+            if (do_not_print_errors)
+                result.StdErr.Should().BeEmpty();
+            else
+                result.StdErr.Should().Contain("A compatible .NET SDK was not found.");
+        }
+
         [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
@@ -317,26 +367,10 @@ namespace HostActivation.Tests
             string expectedSdkVersions = string.Join(";", f.LocalSdks);
             string expectedSdkPaths = string.Join(';', f.LocalSdkPaths);
 
-            string expectedFrameworkNames = string.Join(';', new[]
-            {
-                "HostFxr.Test.B",
-                "HostFxr.Test.B",
-                "HostFxr.Test.C"
-            });
-
-            string expectedFrameworkVersions = string.Join(';', new[]
-            {
-                "4.0.0",
-                "5.6.7-A",
-                "3.0.0"
-            });
-
-            string expectedFrameworkPaths = string.Join(';', new[]
-            {
-                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
-                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
-                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.C")
-            });
+            IEnumerable<(string Name, string Version)> frameworks = f.LocalFrameworks.SelectMany(fw => fw.fwVersions.Select(v => (fw.fwName, v)));
+            string expectedFrameworkNames = string.Join(';', frameworks.Select(fw => fw.Name));
+            string expectedFrameworkVersions = string.Join(';', frameworks.Select(fw => fw.Version));
+            string expectedFrameworkPaths = string.Join(';', frameworks.Select(fw => Path.Combine(f.LocalFrameworksDir, fw.Name)));
 
             string api = ApiNames.hostfxr_get_dotnet_environment_info;
             TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
@@ -349,6 +383,40 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
                 .And.HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
                 .And.HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
+        }
+
+        [Fact]
+        public void Hostfxr_get_dotnet_environment_info_DisabledVersions()
+        {
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            string expectedSdkVersions = string.Join(";", f.LocalSdks);
+            string expectedSdkPaths = string.Join(';', f.LocalSdkPaths);
+
+            string[] disabledVersions = [ "4.0.0", "3.0.0"];
+            IEnumerable<(string Name, string Version)> frameworks = f.LocalFrameworks
+                .SelectMany(fw => fw.fwVersions
+                    .Where(v => !disabledVersions.Contains(v))
+                    .Select(v => (fw.fwName, v)));
+            string expectedFrameworkNames = string.Join(';', frameworks.Select(fw => fw.Name));
+            string expectedFrameworkVersions = string.Join(';', frameworks.Select(fw => fw.Version));
+            string expectedFrameworkPaths = string.Join(';', frameworks.Select(fw => Path.Combine(f.LocalFrameworksDir, fw.Name)));
+
+            string api = ApiNames.hostfxr_get_dotnet_environment_info;
+            var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
+                .EnableTracingAndCaptureOutputs()
+                .EnvironmentVariable(Constants.DisableRuntimeVersions.EnvironmentVariable, string.Join(';', disabledVersions))
+                .Execute();
+            result.Should().Pass()
+                .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                .And.HaveStdOutContaining($"{api} sdk versions:[{expectedSdkVersions}]")
+                .And.HaveStdOutContaining($"{api} sdk paths:[{expectedSdkPaths}]")
+                .And.HaveStdOutContaining($"{api} framework names:[{expectedFrameworkNames}]")
+                .And.HaveStdOutContaining($"{api} framework versions:[{expectedFrameworkVersions}]")
+                .And.HaveStdOutContaining($"{api} framework paths:[{expectedFrameworkPaths}]");
+            foreach (string version in disabledVersions)
+            {
+                result.Should().HaveStdErrContaining($"Ignoring disabled version [{version}]");
+            }
         }
 
         [Fact]

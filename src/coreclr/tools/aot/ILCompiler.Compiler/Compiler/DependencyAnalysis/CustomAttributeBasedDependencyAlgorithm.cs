@@ -23,11 +23,11 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal static class CustomAttributeBasedDependencyAlgorithm
     {
-        private static IMethodNode GetMetadataApiDependency(NodeFactory factory, string entityName, string propertyName)
-            => factory.MethodEntrypoint(factory.TypeSystemContext.SystemModule.GetType("Internal.Metadata.NativeFormat", entityName).GetMethod(propertyName, null));
+        private static IMethodNode GetMetadataApiDependency(NodeFactory factory, ReadOnlySpan<byte> entityName, ReadOnlySpan<byte> propertyName)
+            => factory.MethodEntrypoint(factory.TypeSystemContext.SystemModule.GetType("Internal.Metadata.NativeFormat"u8, entityName).GetMethod(propertyName, null));
 
-        private static IMethodNode GetMetadataApiDependency(NodeFactory factory, string entityName)
-            => GetMetadataApiDependency(factory, entityName, "get_CustomAttributes");
+        private static IMethodNode GetMetadataApiDependency(NodeFactory factory, ReadOnlySpan<byte> entityName)
+            => GetMetadataApiDependency(factory, entityName, "get_CustomAttributes"u8);
 
         public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
@@ -36,10 +36,10 @@ namespace ILCompiler.DependencyAnalysis
             MethodDefinition methodDef = reader.GetMethodDefinition(methodHandle);
 
             // Handle custom attributes on the method
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Method"), factory, method.Module, methodDef.GetCustomAttributes(), method);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Method"u8), factory, method.Module, methodDef.GetCustomAttributes(), method);
 
             // Handle custom attributes on method parameters
-            object parameterCondition = GetMetadataApiDependency(factory, "Parameter");
+            object parameterCondition = GetMetadataApiDependency(factory, "Parameter"u8);
             foreach (ParameterHandle parameterHandle in methodDef.GetParameters())
             {
                 Parameter parameter = reader.GetParameter(parameterHandle);
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Handle custom attributes on generic method parameters
-            object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter");
+            object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter"u8);
             foreach (GenericParameterHandle genericParameterHandle in methodDef.GetGenericParameters())
             {
                 GenericParameter parameter = reader.GetGenericParameter(genericParameterHandle);
@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             // As a performance optimization, we look for associated events and properties only
             // if the method is SpecialName. This is required for CLS compliance and compilers we
             // care about emit accessors like this.
-            object propertyCondition = GetMetadataApiDependency(factory, "Property");
+            object propertyCondition = GetMetadataApiDependency(factory, "Property"u8);
             if ((methodDef.Attributes & MethodAttributes.SpecialName) != 0)
             {
                 TypeDefinition declaringType = reader.GetTypeDefinition(methodDef.GetDeclaringType());
@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddDependenciesDueToCustomAttributes(ref dependencies, propertyCondition, factory, method.Module, property.GetCustomAttributes(), new PropertyPseudoDesc((EcmaType)method.OwningType, propertyHandle));
                 }
 
-                object eventCondition = GetMetadataApiDependency(factory, "Event");
+                object eventCondition = GetMetadataApiDependency(factory, "Event"u8);
                 foreach (EventDefinitionHandle eventHandle in declaringType.GetEvents())
                 {
                     EventDefinition @event = reader.GetEventDefinition(eventHandle);
@@ -91,10 +91,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataReader reader = type.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(type.Handle);
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"), factory, type.EcmaModule, typeDef.GetCustomAttributes(), type);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.EcmaModule, typeDef.GetCustomAttributes(), type);
 
             // Handle custom attributes on generic type parameters
-            object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter");
+            object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter"u8);
             foreach (GenericParameterHandle genericParameterHandle in typeDef.GetGenericParameters())
             {
                 GenericParameter parameter = reader.GetGenericParameter(genericParameterHandle);
@@ -105,16 +105,16 @@ namespace ILCompiler.DependencyAnalysis
         public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EcmaField field)
         {
             FieldDefinition fieldDef = field.MetadataReader.GetFieldDefinition(field.Handle);
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Field"), factory, field.Module, fieldDef.GetCustomAttributes(), field);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "Field"u8), factory, field.Module, fieldDef.GetCustomAttributes(), field);
         }
 
         public static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, NodeFactory factory, EcmaAssembly assembly)
         {
             AssemblyDefinition asmDef = assembly.MetadataReader.GetAssemblyDefinition();
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition"), factory, assembly, asmDef.GetCustomAttributes(), assembly);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition"u8), factory, assembly, asmDef.GetCustomAttributes(), assembly);
 
             ModuleDefinition moduleDef = assembly.MetadataReader.GetModuleDefinition();
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition", "get_ModuleCustomAttributes"), factory, assembly, moduleDef.GetCustomAttributes(), assembly);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "ScopeDefinition"u8, "get_ModuleCustomAttributes"u8), factory, assembly, moduleDef.GetCustomAttributes(), assembly);
         }
 
         private static void AddDependenciesDueToCustomAttributes(ref CombinedDependencyList dependencies, object condition, NodeFactory factory, EcmaModule module, CustomAttributeHandleCollection attributeHandles, TypeSystemEntity parent)
@@ -213,7 +213,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static bool AddDependenciesFromField(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
         {
-            FieldDesc field = attributeType.GetField(fieldName);
+            FieldDesc field = attributeType.GetField(System.Text.Encoding.UTF8.GetBytes(fieldName));
             if (field is not null)
             {
                 if (factory.MetadataManager.IsReflectionBlocked(field))

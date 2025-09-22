@@ -22,7 +22,7 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-unknown-warning-option)
 
     # The mobile configurations in particular bring their own ICU, so skip
-    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT DEFINED CMAKE_ICU_DIR AND NOT CLR_CMAKE_TARGET_BROWSER)
+    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT DEFINED CMAKE_ICU_DIR AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
         if (CLR_CMAKE_TARGET_OSX)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
             set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
@@ -181,13 +181,16 @@ if (GEN_SHARED_LIB)
     endif()
 endif()
 
+if (NOT GEN_PINVOKE)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} entrypoints.c)
+endif()
+
 add_library(System.Globalization.Native-Static
     STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
-    entrypoints.c
 )
 
-if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_BROWSER)
     set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()
 
@@ -217,4 +220,15 @@ if(CLR_CMAKE_TARGET_WIN32)
         set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
     endif()
+endif()
+
+if((CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI) AND DEFINED CMAKE_ICU_DIR)
+    file(TO_CMAKE_PATH "${CMAKE_ICU_DIR}" CMAKE_ICU_DIR)
+    file(GLOB ICU_DATA_AND_LIB_FILES "${CMAKE_ICU_DIR}/lib/*.dat")
+    list(APPEND ICU_DATA_AND_LIB_FILES
+        "${CMAKE_ICU_DIR}/lib/libicuuc.a"
+        "${CMAKE_ICU_DIR}/lib/libicui18n.a"
+        "${CMAKE_ICU_DIR}/lib/libicudata.a"
+    )
+    install(FILES ${ICU_DATA_AND_LIB_FILES} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 endif()

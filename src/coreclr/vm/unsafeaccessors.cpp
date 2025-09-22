@@ -941,7 +941,7 @@ namespace
                 {
                     // Use the method declaration Instantiation to find the instantiated MethodDesc target.
                     Instantiation methodInst = cxt.Declaration->GetMethodInstantiation();
-                    MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, TRUE);
+                    MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, FALSE);
 
                     // Create a MethodSpec
                     target = pDispatchCode->GetToken(instantiatedTarget, targetTypeSigToken, methodSpecSigToken);

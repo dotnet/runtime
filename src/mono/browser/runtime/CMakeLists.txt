@@ -15,8 +15,6 @@ set_target_properties(dotnet.native PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMC
 
 target_link_libraries(dotnet.native
     PRIVATE
-    ${ICU_LIB_DIR}/libicuuc.a
-    ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
@@ -30,6 +28,9 @@ target_link_libraries(dotnet.native
     ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libicudata.a
+    ${NATIVE_BIN_DIR}/libicuuc.a
+    ${NATIVE_BIN_DIR}/libicui18n.a
     ${NATIVE_BIN_DIR}/libz.a)
 
 set_target_properties(dotnet.native PROPERTIES
