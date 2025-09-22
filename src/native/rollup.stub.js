@@ -39,6 +39,7 @@ for (const [src, dest] of copies) {
     console.log(`Copying ${absoluteSrc} to ${destDir}`);
     await fs.mkdir(destDir, { recursive: true });
     await fs.copyFile(absoluteSrc, absoluteDest);
+    // TODO-WASM: make rollup incremental
     // await fs.utimes(absoluteDest, now, now);
 }
 await fs.writeFile(`${artifactsObjDir}/coreclr/browser.wasm.${configuration}/corehost/.rollup.stamp`, new Date().toISOString());

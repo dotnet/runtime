@@ -85,13 +85,14 @@ static const void* pinvoke_override(const char* library_name, const char* entry_
     {
         return SystemJSInteropResolveDllImport(entry_point_name);
     }
-    if (strcmp(library_name, "libSystem.Globalization.Native") == 0)
-    {
-        return GlobalizationResolveDllImport(entry_point_name);
-    }
     if (strcmp(library_name, "libSystem.IO.Compression.Native") == 0)
     {
         return CompressionResolveDllImport(entry_point_name);
+    }
+    // duplicates https://github.com/dotnet/runtime/blob/7a33b4bb6ced097f081b1eeab575cfb1c8c88bb5/src/coreclr/vm/pinvokeoverride.cpp#L21-L36 for clarity
+    if (strcmp(library_name, "libSystem.Globalization.Native") == 0)
+    {
+        return GlobalizationResolveDllImport(entry_point_name);
     }
 
     return nullptr;
@@ -104,7 +105,7 @@ static const pal::string_t app_domain_name = "corehost";
 static const pal::string_t exe_path = "/managed";
 static std::vector<const char*> propertyKeys;
 static std::vector<const char*> propertyValues;
-static pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
+static pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
 
 extern "C" int browserHostInitializeCoreCLR(void)
 {
@@ -125,10 +126,10 @@ extern "C" int browserHostInitializeCoreCLR(void)
     host_contract.pinvoke_override = &pinvoke_override;
     host_contract.external_assembly_probe = &external_assembly_probe;
 
-    pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
+    pal::snwprintf(ptr_to_string_buffer, ARRAY_SIZE(ptr_to_string_buffer), _X("0x%zx"), (size_t)(&host_contract));
 
     propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
-    propertyValues.push_back(buffer);
+    propertyValues.push_back(ptr_to_string_buffer);
 
     coreclr_set_error_writer(log_error_info);
 

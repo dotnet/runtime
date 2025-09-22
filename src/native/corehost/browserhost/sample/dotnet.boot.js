@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// WASM-TODO: this is dummy configuration until WASM SDK for corehost
+// WASM-TODO: this is dummy configuration until we have MSBuild WASM SDK for corehost, which will generate this file
 
 export const config = /*json-start*/{
   "mainAssemblyName": "HelloWorld.dll",
@@ -20,20 +20,6 @@ export const config = /*json-start*/{
     "wasmNative": [
       {
         "name": "dotnet.native.wasm",
-      }
-    ],
-    "icu": [
-      {
-        "virtualPath": "icudt_CJK.dat",
-        "name": "icudt_CJK.dat",
-      },
-      {
-        "virtualPath": "icudt_EFIGS.dat",
-        "name": "icudt_EFIGS.dat",
-      },
-      {
-        "virtualPath": "icudt_no_CJK.dat",
-        "name": "icudt_no_CJK.dat",
       }
     ],
     "coreAssembly": [
@@ -62,40 +48,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "/HelloWorld.dll",
         "name": "HelloWorld.dll"
-      },
-      {
-        "virtualPath": "/System.Runtime.InteropServices.JavaScript.dll",
-        "name": "System.Runtime.InteropServices.JavaScript.dll"
-      },
-    ]
-  },
-  "debugLevel": -1,
-  "globalizationMode": "sharded",
-  "runtimeConfig": {
-    "runtimeOptions": {
-      "configProperties": {
-        "System.Net.Http.dllEnableStreamingResponse": true,
-        "Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability": true,
-        "System.ComponentModel.DefaultValueAttribute.IsSupported": false,
-        "System.ComponentModel.Design.IDesignerHost.IsSupported": false,
-        "System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization": false,
-        "System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported": false,
-        "System.Data.DataSet.XmlSerializationIsSupported": false,
-        "System.Diagnostics.Metrics.Meter.IsSupported": false,
-        "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
-        "System.Resources.ResourceManager.AllowCustomResourceTypes": false,
-        "System.Resources.UseSystemResourceKeys": false,
-        "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported": true,
-        "System.Runtime.InteropServices.BuiltInComInterop.IsSupported": false,
-        "System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting": false,
-        "System.Runtime.InteropServices.EnableCppCLIHostActivation": false,
-        "System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop": false,
-        "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
-        "System.StartupHookProvider.IsSupported": false,
-        "System.Text.Encoding.EnableUnsafeUTF7Encoding": false,
-        "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault": false,
-        "System.Threading.Thread.EnableAutoreleasePool": false
       }
-    }
+    ]
   }
 }/*json-end*/;

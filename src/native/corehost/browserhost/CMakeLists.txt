@@ -106,21 +106,4 @@ target_link_libraries(
     ${END_WHOLE_ARCHIVE}
 )
 
-# WASM-TODO: this is temporary locations
-set(SAMPLE_ASSETS
-    sample/index.html
-    sample/main.mjs
-    sample/dotnet.boot.js
-    # ${CLR_ARTIFACTS_OBJ_DIR}/sfx-finish/${CMAKE_BUILD_TYPE}/net10.0-browser/illink-wasm/System.Console.dll
-    # ${CLR_ARTIFACTS_OBJ_DIR}/sfx-finish/${CMAKE_BUILD_TYPE}/net10.0-browser/illink-wasm/System.Private.CoreLib.dll
-    # ${CLR_ARTIFACTS_OBJ_DIR}/sfx-finish/${CMAKE_BUILD_TYPE}/net10.0-browser/illink-wasm/System.Runtime.dll
-    # ${CLR_ARTIFACTS_OBJ_DIR}/sfx-finish/${CMAKE_BUILD_TYPE}/net10.0-browser/illink-wasm/System.Runtime.InteropServices.dll
-    # ${CLR_ARTIFACTS_OBJ_DIR}/sfx-finish/${CMAKE_BUILD_TYPE}/net10.0-browser/illink-wasm/System.Threading.dll
-    # ${CLR_ARTIFACTS_BIN_DIR}/artifacts/bin/HelloWorld/${CMAKE_BUILD_TYPE}/net10.0/win-x64/HelloWorld.dll
-    ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js
-    ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map
-    ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.d.ts
-    ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js
-    ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js.map
-)
-install(FILES ${SAMPLE_ASSETS} DESTINATION corehost COMPONENT runtime)
+add_subdirectory(sample)

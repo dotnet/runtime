@@ -13,5 +13,7 @@ This library also implements public JS API related JS interop.
 
 ## Build
 TypeScript is compiled by `src/native/rollup.config.js`
+JavaScript tools like `npm`, `tsc`, `rollup` are installed in `src/native/package.json`. 
+JS tools depend on `nodeJS` installation of Emscripten.
 Emscripten compilations is part of `/src/native/libs/CMakeLists.txt`
 Final static linking happens in `/src/native/corehost/browserhost/CMakeLists.txt`
