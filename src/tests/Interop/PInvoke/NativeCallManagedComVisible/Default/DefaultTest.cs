@@ -700,12 +700,12 @@ public class ComVisibleServer
     [DllImport("ComVisibleNative")]
     public static extern int CCWTest_NestedInterfaceNotPublic_VisibleTrue([MarshalAs(UnmanagedType.IUnknown)] object unk, out int fooSuccessVal);
 
-    /*
     /// <summary>
     /// Test case set for ComVisible. The assembly is set as [assembly: ComVisible(false)]
     /// </summary>
     /// <returns></returns>
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
@@ -1004,9 +1004,9 @@ public class ComVisibleServer
     }
 
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunTestsInALC()
     {
         TestLibrary.Utilities.ExecuteAndUnload(typeof(ComVisibleServer).Assembly.Location, nameof(ComVisibleServer), nameof(RunComVisibleTests));
     }
-    */
 }

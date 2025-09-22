@@ -41,7 +41,6 @@ public static unsafe class CopyCtor
         return 100;
     }
 
-    /*
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
     [SkipOnMono("Not supported on Mono")]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
@@ -58,5 +57,4 @@ public static unsafe class CopyCtor
 
         GC.KeepAlive(del);
     }
-    */
 }
