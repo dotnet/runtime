@@ -17,9 +17,14 @@ target_include_directories(corewasmrun PRIVATE
 )
 
 target_compile_options(corewasmrun PRIVATE -fwasm-exceptions)
+
+set(JS_SYSTEM_NATIVE_BROWSER
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+set(JS_CORE_WASM_RUN_PRE
+    "${CMAKE_CURRENT_SOURCE_DIR}/libCorewasmrun.pre.js")
 set_target_properties(corewasmrun PROPERTIES
-  LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/libCorewasmrun.pre.js;${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js;"
-  LINK_FLAGS "--pre-js ${CMAKE_CURRENT_SOURCE_DIR}/libCorewasmrun.pre.js --js-library ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js"
+  LINK_DEPENDS "${JS_CORE_WASM_RUN_PRE};${JS_SYSTEM_NATIVE_BROWSER};"
+  LINK_FLAGS "--pre-js ${JS_CORE_WASM_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER}"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_options(corewasmrun PRIVATE
   -fwasm-exceptions

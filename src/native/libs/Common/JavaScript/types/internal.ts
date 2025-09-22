@@ -3,7 +3,7 @@
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptNativeExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExports } from "./exchange";
+import { InteropJavaScriptNativeExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -112,7 +112,7 @@ export type InternalApis = {
     loaderExportsTable: LoaderExportsTable,
     hostNativeExportsTable: HostNativeExportsTable,
     interopJavaScriptNativeExportsTable: InteropJavaScriptNativeExportsTable,
-    nativeBrowserExportsTable: NativeBrowserExports,
+    nativeBrowserExportsTable: NativeBrowserExportsTable,
     config: LoaderConfigInternal,
     updates: (() => void)[],
 }

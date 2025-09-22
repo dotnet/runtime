@@ -43,25 +43,55 @@ LIST(APPEND NATIVE_LIBS
 
 # WASM-TODO set(RUNTIMEINFO_LIB runtimeinfo)
 
-target_compile_options(browserhost PRIVATE -fwasm-exceptions)
+target_compile_options(browserhost PRIVATE 
+        -fwasm-exceptions
+        -msimd128
+    )
+
+set(JS_SYSTEM_NATIVE_BROWSER
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js")
+set(JS_BROWSER_HOST
+    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js")
+set(JS_SYSTEM_NATIVE_BROWSER_EXPOST
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js")
 
 set_target_properties(browserhost PROPERTIES
-    LINK_DEPENDS "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js;${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js;${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js;${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js;"
-    LINK_FLAGS "--js-library ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js --js-library ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js --js-library ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js --extern-post-js ${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js "
+    LINK_DEPENDS "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST};"
+    LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE} --js-library ${JS_BROWSER_HOST} --extern-post-js ${JS_SYSTEM_NATIVE_BROWSER_EXPOST}"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
-# WASM-TODO -Oz -sVERBOSE
+if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+    target_link_options(browserhost PRIVATE
+        -sVERBOSE
+        -sASSERTIONS=1
+        --emit-symbol-map
+    )
+endif ()
+
 target_link_options(browserhost PRIVATE
     -fwasm-exceptions
     -sEXIT_RUNTIME=0
     -sINITIAL_MEMORY=134217728
+    -sMAXIMUM_MEMORY=2147483648
+    -sALLOW_MEMORY_GROWTH=1
+    -sALLOW_TABLE_GROWTH=1
     -sSTACK_SIZE=5MB
     -sMODULARIZE=1
     -sEXPORT_ES6=1
+    -sWASM_BIGINT=1
     -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_browserHostInitializeCoreCLR,_browserHostExecuteAssembly
+    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_browserHostInitializeCoreCLR,_browserHostExecuteAssembly,___cpp_exception
     -sEXPORT_NAME=createDotnetRuntime
+    -msimd128
+    -fwasm-exceptions
     -lnodefs.js
+    -emit-llvm
+    --source-map-base http://microsoft.com
+    -sLLD_REPORT_UNDEFINED
+    -sERROR_ON_UNDEFINED_SYMBOLS=1
+    -Wno-unused-command-line-argument
     -Wl,-error-limit=0)
 
 target_link_libraries(
@@ -88,9 +118,9 @@ set(SAMPLE_ASSETS
     # ${CLR_ARTIFACTS_OBJ_DIR}/sfx-finish/${CMAKE_BUILD_TYPE}/net10.0-browser/illink-wasm/System.Threading.dll
     # ${CLR_ARTIFACTS_BIN_DIR}/artifacts/bin/HelloWorld/${CMAKE_BUILD_TYPE}/net10.0/win-x64/HelloWorld.dll
     ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js
-    # WASM-TODO ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map
+    ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map
     ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.d.ts
     ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js
-    # WASM-TODO ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js.map
+    ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js.map
 )
 install(FILES ${SAMPLE_ASSETS} DESTINATION corehost COMPONENT runtime)
