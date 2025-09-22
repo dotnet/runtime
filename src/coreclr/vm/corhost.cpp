@@ -770,7 +770,7 @@ HRESULT CorHost2::Authenticate(ULONGLONG authKey)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -784,7 +784,7 @@ HRESULT CorHost2::RegisterMacEHPort()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -797,7 +797,7 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
