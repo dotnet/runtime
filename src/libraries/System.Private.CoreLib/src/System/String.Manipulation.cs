@@ -2417,32 +2417,24 @@ namespace System
 
             // Trim start
             int index = 0;
-            while (true)
+            while (index < Length && this.AsSpan(index).StartsWith(trimChars))
             {
-                if (index >= Length)
-                {
-                    return Empty;
-                }
-                if (!this.AsSpan(index).StartsWith(trimChars))
-                {
-                    break;
-                }
                 index += trimChars.Length;
+            }
+            if (index >= Length)
+            {
+                return Empty;
             }
 
             // Trim end
             int endIndex = Length - 1;
-            while (true)
+            while (endIndex >= index && this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
             {
-                if (endIndex < index)
-                {
-                    return Empty;
-                }
-                if (!this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
-                {
-                    break;
-                }
                 endIndex -= trimChars.Length;
+            }
+            if (endIndex < 0)
+            {
+                return Empty;
             }
 
             return this[index..(endIndex + 1)];
@@ -2509,17 +2501,13 @@ namespace System
 
             // Trim start
             int index = 0;
-            while (true)
+            while (index < Length && this.AsSpan(index).StartsWith(trimChars))
             {
-                if (index >= Length)
-                {
-                    return Empty;
-                }
-                if (!this.AsSpan(index).StartsWith(trimChars))
-                {
-                    break;
-                }
                 index += trimChars.Length;
+            }
+            if (index >= Length)
+            {
+                return Empty;
             }
 
             return this[index..];
@@ -2586,17 +2574,13 @@ namespace System
 
             // Trim end
             int endIndex = Length - 1;
-            while (true)
+            while (endIndex >= index && this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
             {
-                if (endIndex < 0)
-                {
-                    return string.Empty;
-                }
-                if (!this.AsSpan(..(endIndex + 1)).EndsWith(trimChars))
-                {
-                    break;
-                }
                 endIndex -= trimChars.Length;
+            }
+            if (endIndex < 0)
+            {
+                return Empty;
             }
 
             return this[..(endIndex + 1)];
