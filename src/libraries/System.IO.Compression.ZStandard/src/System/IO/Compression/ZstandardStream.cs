@@ -18,6 +18,11 @@ namespace System.IO.Compression
         private readonly CompressionMode _mode;
         private volatile bool _activeRwOperation;
 
+        // These fields track whether the encoder/decoder are owned by this stream instance
+        // When owned, they are disposed; when not owned, they are reset
+        private bool _encoderOwned = true;
+        private bool _decoderOwned = true;
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
@@ -163,8 +168,24 @@ namespace System.IO.Compression
         private void ReleaseStateForDispose()
         {
             _stream = null!;
-            _encoder.Dispose();
-            _decoder.Dispose();
+
+            if (_encoderOwned)
+            {
+                _encoder.Dispose();
+            }
+            else
+            {
+                _encoder.Reset();
+            }
+
+            if (_decoderOwned)
+            {
+                _decoder.Dispose();
+            }
+            else
+            {
+                _decoder.Reset();
+            }
 
             byte[] buffer = _buffer;
             if (buffer != null)
