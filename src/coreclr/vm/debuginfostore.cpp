@@ -1407,7 +1407,7 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
     }
 
     NibbleReader r(pDebugInfo, 24 /* maximum size of compressed 4 UINT32s */);
-    
+
     ULONG cbBounds = r.ReadEncodedU32();
     ULONG cbUninstrumentedBounds = 0;
     if (cbBounds == DebugInfoBoundsHasInstrumentedBounds)
