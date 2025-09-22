@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
-                    return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
+                    return JsonValueConverter<JsonValue>.ReadNonNullPrimitiveValue(ref reader, options);
                 case JsonTokenType.StartObject:
                     return JsonObjectConverter.ReadAsJsonElement(ref reader, options);
                 case JsonTokenType.StartArray:
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
-                    return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
+                    return JsonValueConverter<JsonValue>.ReadNonNullPrimitiveValue(ref reader, options);
                 case JsonTokenType.StartObject:
                     return JsonObjectConverter.ReadAsJsonNode(ref reader, options);
                 case JsonTokenType.StartArray:

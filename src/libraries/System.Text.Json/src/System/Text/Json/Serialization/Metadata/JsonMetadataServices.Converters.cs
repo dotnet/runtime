@@ -154,10 +154,10 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<JsonObject?>? s_jsonObjectConverter;
 
         /// <summary>
-        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValue"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonConverter<JsonValue?> JsonValueConverter => s_jsonValueConverter ??= new JsonValueConverter();
+        public static JsonConverter<JsonValue?> JsonValueConverter => s_jsonValueConverter ??= new JsonValueConverter<JsonValue>();
         private static JsonConverter<JsonValue?>? s_jsonValueConverter;
 
         /// <summary>

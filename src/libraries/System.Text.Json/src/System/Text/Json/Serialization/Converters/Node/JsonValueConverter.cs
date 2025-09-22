@@ -7,9 +7,10 @@ using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverter : JsonConverter<JsonValue?>
+    internal sealed class JsonValueConverter<T> : JsonConverter<T?>
+        where T : JsonValue
     {
-        public override void Write(Utf8JsonWriter writer, JsonValue? value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
         {
             if (value is null)
             {
@@ -20,8 +21,10 @@ namespace System.Text.Json.Serialization.Converters
             value.WriteTo(writer, options);
         }
 
-        public override JsonValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            JsonValue? rawValue;
+
             if (reader.TokenType is JsonTokenType.Null)
             {
                 return null;
@@ -33,10 +36,29 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.False:
                 case JsonTokenType.True:
                 case JsonTokenType.Number:
-                    return ReadNonNullPrimitiveValue(ref reader, options.GetNodeOptions());
+                    rawValue = ReadNonNullPrimitiveValue(ref reader, options.GetNodeOptions());
+                    break;
                 default:
                     JsonElement element = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
-                    return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
+                    rawValue = JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
+                    break;
+            }
+
+            switch (rawValue)
+            {
+                case null:
+                {
+                    return null;
+                }
+                case T valueOfT:
+                {
+                    return valueOfT;
+                }
+                default:
+                {
+                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue: rawValue.GetType(), typeof(T));
+                    return default;
+                }
             }
         }
 
