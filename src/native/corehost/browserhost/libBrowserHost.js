@@ -15,8 +15,9 @@ var libBrowserHost = (function (exports) {
     let JSEngine = {};
     let loaderExports = {};
     let runtimeExports = {};
-    let nativeExports = {};
+    let hostExports = {};
     let interopExports = {};
+    let nativeBrowserExports = {};
     let dotnetInternals;
     function getInternals() {
         return dotnetInternals;
@@ -26,7 +27,7 @@ var libBrowserHost = (function (exports) {
         runtimeApi = dotnetInternals.runtimeApi;
         Module = dotnetInternals.runtimeApi.Module;
     }
-    function updateInternals() {
+    function updateAllInternals() {
         if (dotnetInternals.updates === undefined) {
             dotnetInternals.updates = [];
         }
@@ -34,32 +35,36 @@ var libBrowserHost = (function (exports) {
             updateImpl();
         }
     }
-    function updateInternalsImpl() {
+    function updateMyInternals() {
         if (Object.keys(loaderExports).length === 0 && dotnetInternals.loaderExportsTable) {
             loaderExports = {};
             Logger = {};
             Assert = {};
             JSEngine = {};
-            loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
+            expandLE(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
         }
         if (Object.keys(runtimeExports).length === 0 && dotnetInternals.runtimeExportsTable) {
             runtimeExports = {};
-            runtimeExportsFromTable(dotnetInternals.runtimeExportsTable, runtimeExports);
+            expandRE(dotnetInternals.runtimeExportsTable, runtimeExports);
         }
-        if (Object.keys(nativeExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
-            nativeExports = {};
-            hostNativeExportsFromTable(dotnetInternals.hostNativeExportsTable, nativeExports);
+        if (Object.keys(hostExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
+            hostExports = {};
+            expandHE(dotnetInternals.hostNativeExportsTable, hostExports);
         }
         if (Object.keys(interopExports).length === 0 && dotnetInternals.interopJavaScriptNativeExportsTable) {
             interopExports = {};
-            interopJavaScriptNativeExportsFromTable(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
+            expandJSNE(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
+        }
+        if (Object.keys(nativeBrowserExports).length === 0 && dotnetInternals.nativeBrowserExportsTable) {
+            nativeBrowserExports = {};
+            expandNBE(dotnetInternals.nativeBrowserExportsTable, nativeBrowserExports);
         }
     }
     /**
      * Functions below allow our JS modules to exchange internal interfaces by passing tables of functions in known order instead of using string symbols.
      * IMPORTANT: If you need to add more functions, make sure that you add them at the end of the table, so that the order of existing functions does not change.
      */
-    function loaderExportsToTable(logger, assert, loaderExports) {
+    function tabulateLE(logger, assert, loaderExports) {
         return [
             logger.info,
             logger.warn,
@@ -75,7 +80,7 @@ var libBrowserHost = (function (exports) {
             loaderExports.getRunMainPromise,
         ];
     }
-    function loaderExportsFromTable(table, logger, assert, jsEngine, loaderExports) {
+    function expandLE(table, logger, assert, jsEngine, loaderExports) {
         const loggerLocal = {
             info: table[0],
             warn: table[1],
@@ -107,19 +112,19 @@ var libBrowserHost = (function (exports) {
         Object.assign(jsEngine, jsEngineLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function runtimeExportsToTable(map) {
+    function tabulateRE(map) {
         return [];
     }
-    function runtimeExportsFromTable(table, runtime) {
+    function expandRE(table, runtime) {
         Object.assign(runtime, {});
     }
-    function hostNativeExportsToTable(map) {
+    function tabulateHE(map) {
         return [
             map.registerDllBytes,
             map.isSharedArrayBuffer,
         ];
     }
-    function hostNativeExportsFromTable(table, native) {
+    function expandHE(table, native) {
         const nativeLocal = {
             registerDllBytes: table[0],
             isSharedArrayBuffer: table[1],
@@ -127,18 +132,18 @@ var libBrowserHost = (function (exports) {
         Object.assign(native, nativeLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function interopJavaScriptNativeExportsToTable(map) {
+    function tabulateJSNE(map) {
         return [];
     }
-    function interopJavaScriptNativeExportsFromTable(table, interop) {
+    function expandJSNE(table, interop) {
         const interopLocal = {};
         Object.assign(interop, interopLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function nativeBrowserExportsToTable(map) {
+    function tabulateNBE(map) {
         return [];
     }
-    function nativeBrowserExportsFromTable(table, interop) {
+    function expandNBE(table, interop) {
         const interopLocal = {};
         Object.assign(interop, interopLocal);
     }
@@ -462,9 +467,9 @@ var libBrowserHost = (function (exports) {
         };
         setInternals(internals);
         Object.assign(internals.runtimeApi, runtimeApiLocal);
-        internals.hostNativeExportsTable = [...hostNativeExportsToTable(hostNativeExportsLocal)];
-        internals.updates.push(updateInternalsImpl);
-        updateInternals();
+        internals.hostNativeExportsTable = [...tabulateHE(hostNativeExportsLocal)];
+        internals.updates.push(updateMyInternals);
+        updateAllInternals();
     }
 
     exports.browserHostExternalAssemblyProbe = browserHostExternalAssemblyProbe;
@@ -491,7 +496,7 @@ var libBrowserHost = (function (exports) {
                     if (typeof dotnetInternals !== "undefined") {
                         BROWSER_HOST.dotnetInternals = dotnetInternals;
 
-                        const exports = libBrowserHost(BROWSER_HOST);
+                        const exports = libBrowserHostFn(BROWSER_HOST);
                         exports.initialize(dotnetInternals);
                         BROWSER_HOST.assignExports(exports, BROWSER_HOST);
 
@@ -510,13 +515,13 @@ var libBrowserHost = (function (exports) {
                     }
                 },
             },
-            "$libBrowserHost": libBrowserHost,
+            "$libBrowserHostFn": libBrowserHost,
             "$BROWSER_HOST__postset": "BROWSER_HOST.selfInitialize();",
         };
 
         // this executes the function at compile time in order to capture export names
         const exports = libBrowserHost({});
-        let commonDeps = ["$libBrowserHost", "$DOTNET", "$DOTNET_INTEROP", "browserHostInitializeCoreCLR", "browserHostExecuteAssembly"];
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP"];
         let assignExportsBuilder = "";
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
@@ -526,7 +531,7 @@ var libBrowserHost = (function (exports) {
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
         }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
-        lib["$DOTNET_INTEROP__deps"] = commonDeps;
+        lib["$BROWSER_HOST__deps"] = commonDeps;
 
         autoAddDeps(lib, "$BROWSER_HOST");
         addToLibrary(lib);
@@ -534,3 +539,4 @@ var libBrowserHost = (function (exports) {
     libFactory();
     return exports;
 })({});
+//# sourceMappingURL=libBrowserHost.js.map

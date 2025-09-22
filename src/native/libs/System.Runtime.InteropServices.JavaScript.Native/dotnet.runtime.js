@@ -12,8 +12,9 @@ let Assert = {};
 let JSEngine = {};
 let loaderExports = {};
 let runtimeExports = {};
-let nativeExports = {};
+let hostExports = {};
 let interopExports = {};
+let nativeBrowserExports = {};
 let dotnetInternals;
 function getInternals() {
     return dotnetInternals;
@@ -23,7 +24,7 @@ function setInternals(internal) {
     runtimeApi = dotnetInternals.runtimeApi;
     Module = dotnetInternals.runtimeApi.Module;
 }
-function updateInternals() {
+function updateAllInternals() {
     if (dotnetInternals.updates === undefined) {
         dotnetInternals.updates = [];
     }
@@ -31,32 +32,36 @@ function updateInternals() {
         updateImpl();
     }
 }
-function updateInternalsImpl() {
+function updateMyInternals() {
     if (Object.keys(loaderExports).length === 0 && dotnetInternals.loaderExportsTable) {
         loaderExports = {};
         Logger = {};
         Assert = {};
         JSEngine = {};
-        loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
+        expandLE(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
     }
     if (Object.keys(runtimeExports).length === 0 && dotnetInternals.runtimeExportsTable) {
         runtimeExports = {};
-        runtimeExportsFromTable(dotnetInternals.runtimeExportsTable, runtimeExports);
+        expandRE(dotnetInternals.runtimeExportsTable, runtimeExports);
     }
-    if (Object.keys(nativeExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
-        nativeExports = {};
-        hostNativeExportsFromTable(dotnetInternals.hostNativeExportsTable, nativeExports);
+    if (Object.keys(hostExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
+        hostExports = {};
+        expandHE(dotnetInternals.hostNativeExportsTable, hostExports);
     }
     if (Object.keys(interopExports).length === 0 && dotnetInternals.interopJavaScriptNativeExportsTable) {
         interopExports = {};
-        interopJavaScriptNativeExportsFromTable(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
+        expandJSNE(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
+    }
+    if (Object.keys(nativeBrowserExports).length === 0 && dotnetInternals.nativeBrowserExportsTable) {
+        nativeBrowserExports = {};
+        expandNBE(dotnetInternals.nativeBrowserExportsTable, nativeBrowserExports);
     }
 }
 /**
  * Functions below allow our JS modules to exchange internal interfaces by passing tables of functions in known order instead of using string symbols.
  * IMPORTANT: If you need to add more functions, make sure that you add them at the end of the table, so that the order of existing functions does not change.
  */
-function loaderExportsToTable(logger, assert, loaderExports) {
+function tabulateLE(logger, assert, loaderExports) {
     return [
         logger.info,
         logger.warn,
@@ -72,7 +77,7 @@ function loaderExportsToTable(logger, assert, loaderExports) {
         loaderExports.getRunMainPromise,
     ];
 }
-function loaderExportsFromTable(table, logger, assert, jsEngine, loaderExports) {
+function expandLE(table, logger, assert, jsEngine, loaderExports) {
     const loggerLocal = {
         info: table[0],
         warn: table[1],
@@ -104,19 +109,19 @@ function loaderExportsFromTable(table, logger, assert, jsEngine, loaderExports) 
     Object.assign(jsEngine, jsEngineLocal);
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function runtimeExportsToTable(map) {
+function tabulateRE(map) {
     return [];
 }
-function runtimeExportsFromTable(table, runtime) {
+function expandRE(table, runtime) {
     Object.assign(runtime, {});
 }
-function hostNativeExportsToTable(map) {
+function tabulateHE(map) {
     return [
         map.registerDllBytes,
         map.isSharedArrayBuffer,
     ];
 }
-function hostNativeExportsFromTable(table, native) {
+function expandHE(table, native) {
     const nativeLocal = {
         registerDllBytes: table[0],
         isSharedArrayBuffer: table[1],
@@ -124,18 +129,18 @@ function hostNativeExportsFromTable(table, native) {
     Object.assign(native, nativeLocal);
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function interopJavaScriptNativeExportsToTable(map) {
+function tabulateJSNE(map) {
     return [];
 }
-function interopJavaScriptNativeExportsFromTable(table, interop) {
+function expandJSNE(table, interop) {
     const interopLocal = {};
     Object.assign(interop, interopLocal);
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function nativeBrowserExportsToTable(map) {
+function tabulateNBE(map) {
     return [];
 }
-function nativeBrowserExportsFromTable(table, interop) {
+function expandNBE(table, interop) {
     const interopLocal = {};
     Object.assign(interop, interopLocal);
 }
@@ -153,9 +158,9 @@ function initialize(internals) {
     const runtimeExportsLocal = {};
     setInternals(internals);
     Object.assign(internals.runtimeApi, runtimeApiLocal);
-    internals.runtimeExportsTable = [...runtimeExportsToTable(runtimeExportsLocal)];
-    internals.updates.push(updateInternalsImpl);
-    updateInternals();
+    internals.runtimeExportsTable = [...tabulateRE(runtimeExportsLocal)];
+    internals.updates.push(updateMyInternals);
+    updateAllInternals();
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getAssemblyExports(assemblyName) {

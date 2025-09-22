@@ -15,8 +15,9 @@ var libNativeBrowser = (function (exports) {
     let JSEngine = {};
     let loaderExports = {};
     let runtimeExports = {};
-    let nativeExports = {};
+    let hostExports = {};
     let interopExports = {};
+    let nativeBrowserExports = {};
     let dotnetInternals;
     function getInternals() {
         return dotnetInternals;
@@ -26,7 +27,7 @@ var libNativeBrowser = (function (exports) {
         runtimeApi = dotnetInternals.runtimeApi;
         Module = dotnetInternals.runtimeApi.Module;
     }
-    function updateInternals() {
+    function updateAllInternals() {
         if (dotnetInternals.updates === undefined) {
             dotnetInternals.updates = [];
         }
@@ -34,32 +35,36 @@ var libNativeBrowser = (function (exports) {
             updateImpl();
         }
     }
-    function updateInternalsImpl() {
+    function updateMyInternals() {
         if (Object.keys(loaderExports).length === 0 && dotnetInternals.loaderExportsTable) {
             loaderExports = {};
             Logger = {};
             Assert = {};
             JSEngine = {};
-            loaderExportsFromTable(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
+            expandLE(dotnetInternals.loaderExportsTable, Logger, Assert, JSEngine, loaderExports);
         }
         if (Object.keys(runtimeExports).length === 0 && dotnetInternals.runtimeExportsTable) {
             runtimeExports = {};
-            runtimeExportsFromTable(dotnetInternals.runtimeExportsTable, runtimeExports);
+            expandRE(dotnetInternals.runtimeExportsTable, runtimeExports);
         }
-        if (Object.keys(nativeExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
-            nativeExports = {};
-            hostNativeExportsFromTable(dotnetInternals.hostNativeExportsTable, nativeExports);
+        if (Object.keys(hostExports).length === 0 && dotnetInternals.hostNativeExportsTable) {
+            hostExports = {};
+            expandHE(dotnetInternals.hostNativeExportsTable, hostExports);
         }
         if (Object.keys(interopExports).length === 0 && dotnetInternals.interopJavaScriptNativeExportsTable) {
             interopExports = {};
-            interopJavaScriptNativeExportsFromTable(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
+            expandJSNE(dotnetInternals.interopJavaScriptNativeExportsTable, interopExports);
+        }
+        if (Object.keys(nativeBrowserExports).length === 0 && dotnetInternals.nativeBrowserExportsTable) {
+            nativeBrowserExports = {};
+            expandNBE(dotnetInternals.nativeBrowserExportsTable, nativeBrowserExports);
         }
     }
     /**
      * Functions below allow our JS modules to exchange internal interfaces by passing tables of functions in known order instead of using string symbols.
      * IMPORTANT: If you need to add more functions, make sure that you add them at the end of the table, so that the order of existing functions does not change.
      */
-    function loaderExportsToTable(logger, assert, loaderExports) {
+    function tabulateLE(logger, assert, loaderExports) {
         return [
             logger.info,
             logger.warn,
@@ -75,7 +80,7 @@ var libNativeBrowser = (function (exports) {
             loaderExports.getRunMainPromise,
         ];
     }
-    function loaderExportsFromTable(table, logger, assert, jsEngine, loaderExports) {
+    function expandLE(table, logger, assert, jsEngine, loaderExports) {
         const loggerLocal = {
             info: table[0],
             warn: table[1],
@@ -107,19 +112,19 @@ var libNativeBrowser = (function (exports) {
         Object.assign(jsEngine, jsEngineLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function runtimeExportsToTable(map) {
+    function tabulateRE(map) {
         return [];
     }
-    function runtimeExportsFromTable(table, runtime) {
+    function expandRE(table, runtime) {
         Object.assign(runtime, {});
     }
-    function hostNativeExportsToTable(map) {
+    function tabulateHE(map) {
         return [
             map.registerDllBytes,
             map.isSharedArrayBuffer,
         ];
     }
-    function hostNativeExportsFromTable(table, native) {
+    function expandHE(table, native) {
         const nativeLocal = {
             registerDllBytes: table[0],
             isSharedArrayBuffer: table[1],
@@ -127,18 +132,18 @@ var libNativeBrowser = (function (exports) {
         Object.assign(native, nativeLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function interopJavaScriptNativeExportsToTable(map) {
+    function tabulateJSNE(map) {
         return [];
     }
-    function interopJavaScriptNativeExportsFromTable(table, interop) {
+    function expandJSNE(table, interop) {
         const interopLocal = {};
         Object.assign(interop, interopLocal);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function nativeBrowserExportsToTable(map) {
+    function tabulateNBE(map) {
         return [];
     }
-    function nativeBrowserExportsFromTable(table, interop) {
+    function expandNBE(table, interop) {
         const interopLocal = {};
         Object.assign(interop, interopLocal);
     }
@@ -153,25 +158,26 @@ var libNativeBrowser = (function (exports) {
         get Logger() { return Logger; },
         get Module() { return Module; },
         get dotnetInternals() { return dotnetInternals; },
+        expandHE: expandHE,
+        expandJSNE: expandJSNE,
+        expandLE: expandLE,
+        expandNBE: expandNBE,
+        expandRE: expandRE,
         getInternals: getInternals,
-        hostNativeExportsFromTable: hostNativeExportsFromTable,
-        hostNativeExportsToTable: hostNativeExportsToTable,
+        get hostExports() { return hostExports; },
         get interopExports() { return interopExports; },
-        interopJavaScriptNativeExportsFromTable: interopJavaScriptNativeExportsFromTable,
-        interopJavaScriptNativeExportsToTable: interopJavaScriptNativeExportsToTable,
         get loaderExports() { return loaderExports; },
-        loaderExportsFromTable: loaderExportsFromTable,
-        loaderExportsToTable: loaderExportsToTable,
-        nativeBrowserExportsFromTable: nativeBrowserExportsFromTable,
-        nativeBrowserExportsToTable: nativeBrowserExportsToTable,
-        get nativeExports() { return nativeExports; },
+        get nativeBrowserExports() { return nativeBrowserExports; },
         get runtimeApi() { return runtimeApi; },
         get runtimeExports() { return runtimeExports; },
-        runtimeExportsFromTable: runtimeExportsFromTable,
-        runtimeExportsToTable: runtimeExportsToTable,
         setInternals: setInternals,
-        updateInternals: updateInternals,
-        updateInternalsImpl: updateInternalsImpl
+        tabulateHE: tabulateHE,
+        tabulateJSNE: tabulateJSNE,
+        tabulateLE: tabulateLE,
+        tabulateNBE: tabulateNBE,
+        tabulateRE: tabulateRE,
+        updateAllInternals: updateAllInternals,
+        updateMyInternals: updateMyInternals
     });
 
     // Licensed to the .NET Foundation under one or more agreements.
@@ -191,7 +197,7 @@ var libNativeBrowser = (function (exports) {
         const memoryView = runtimeApi.localHeapViewU8();
         const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
         // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-        const needsCopy = nativeExports.isSharedArrayBuffer(memoryView.buffer);
+        const needsCopy = hostExports.isSharedArrayBuffer(memoryView.buffer);
         const targetBuffer = needsCopy
             ? new Uint8Array(bufferLength)
             : targetView;
@@ -211,9 +217,9 @@ var libNativeBrowser = (function (exports) {
     function initialize(internals) {
         const nativeBrowserExportsLocal = {};
         setInternals(internals);
-        internals.nativeBrowserExportsTable = [...nativeBrowserExportsToTable(nativeBrowserExportsLocal)];
-        internals.updates.push(updateInternalsImpl);
-        updateInternals();
+        internals.nativeBrowserExportsTable = [...tabulateNBE(nativeBrowserExportsLocal)];
+        internals.updates.push(updateMyInternals);
+        updateAllInternals();
     }
 
     exports.SystemJS_RandomBytes = SystemJS_RandomBytes;

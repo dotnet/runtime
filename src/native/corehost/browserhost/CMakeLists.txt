@@ -64,7 +64,7 @@ set_target_properties(browserhost PROPERTIES
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     target_link_options(browserhost PRIVATE
-        -sVERBOSE
+#        -sVERBOSE
         -sASSERTIONS=1
         --emit-symbol-map
     )
