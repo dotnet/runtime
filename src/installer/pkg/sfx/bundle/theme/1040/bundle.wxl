@@ -1,30 +1,30 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
   <String Id="Caption" Value="Programma di installazione di [WixBundleName]"/>
   <String Id="Title" Value="[BUNDLEMONIKER]"/>
-  <String Id="Motto" Value="You just need a shell, a text editor and 10 minutes of your time.
+  <String Id="Motto" Value="Bastano solo una shell, un editor di testo e 10 minuti di tempo.
 
-Ready? Set? Let's go!"/>
+Pronti? Partenza? Via!"/>
   <String Id="ConfirmCancelMessage" Value="Annullare?"/>
   <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Versione precedente"/>
   <String Id="HelpHeader" Value="Guida all'installazione"/>
-  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - installs, repairs, uninstalls or
-   creates a complete local copy of the bundle in directory. Install is the default.
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - installa, ripara, disinstalla oppure
+   crea una copia locale completa dell'aggregazione presente nella directory. Install è l'opzione predefinita.
 
-/passive | /quiet -  displays minimal UI with no prompts or displays no UI and
-   no prompts. By default UI and all prompts are displayed.
+/passive | /quiet - consente di visualizzare un'interfaccia utente minima senza messaggi o di non visualizzare alcuna interfaccia utente e
+   nessuna richiesta. Per impostazione predefinita, vengono visualizzate l'interfaccia utente e tutte le richieste.
 
-/norestart   - suppress any attempts to restart. By default UI will prompt before restart.
-/log log.txt - logs to a specific file. By default a log file is created in %TEMP%."/>
+/norestart - Consente di sopprimere qualsiasi tentativo di riavvio. Per impostazione predefinita, prima del riavvio verrà visualizzata una richiesta nell'interfaccia utente.
+/log log.txt - Esegue la registrazione in un file specifico. Per impostazione predefinita, viene creato un file di log in %TEMP%."/>
   <String Id="HelpCloseButton" Value="&amp;Chiudi"/>
   <String Id="InstallAcceptCheckbox" Value="A&amp;ccetto i termini e le condizioni di licenza"/>
   <String Id="InstallOptionsButton" Value="&amp;Opzioni"/>
   <String Id="InstallInstallButton" Value="&amp;Installa"/>
   <String Id="InstallCloseButton" Value="&amp;Chiudi"/>
-  <String Id="OptionsHeader" Value="Setup Options"/>
-  <String Id="OptionsLocationLabel" Value="Install location:"/>
-  <String Id="OptionsBrowseButton" Value="&amp;Browse"/>
+  <String Id="OptionsHeader" Value="Opzioni di installazione"/>
+  <String Id="OptionsLocationLabel" Value="Percorso di installazione:"/>
+  <String Id="OptionsBrowseButton" Value="&amp;Sfoglia"/>
   <String Id="OptionsOkButton" Value="&amp;OK"/>
-  <String Id="OptionsCancelButton" Value="&amp;Cancel"/>
+  <String Id="OptionsCancelButton" Value="&amp;Annulla"/>
   <String Id="ProgressHeader" Value="Stato dell'installazione"/>
   <String Id="ProgressLabel" Value="Elaborazione:"/>
   <String Id="OverallProgressPackageText" Value="Inizializzazione in corso..."/>
@@ -40,7 +40,7 @@ Ready? Set? Let's go!"/>
   <String Id="SuccessLayoutHeader" Value="Layout completato"/>
   <String Id="SuccessModifyHeader" Value="Modifica completata"/>
   <String Id="SuccessUnsafeUninstallHeader" Value="Disinstallazione completata"/>
-  <String Id="SuccessInstallHeader" Value="Installation was successful"/>
+  <String Id="SuccessInstallHeader" Value="L'installazione è riuscita"/>
   <String Id="SuccessHeader" Value="Configurazione completata"/>
   <String Id="SuccessLaunchButton" Value="&amp;Avvio"/>
   <String Id="SuccessRestartText" Value="Per poter usare il software, è necessario riavviare il computer."/>
@@ -57,22 +57,22 @@ Ready? Set? Let's go!"/>
   <String Id="FailureCloseButton" Value="&amp;Chiudi"/>
   <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] non è supportato in questo sistema operativo. Per altre informazioni, vedere [LINK_PREREQ_PAGE]."/>
   <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] non è supportato in sistemi operativi x86. Eseguire l'installazione usando il programma di installazione x86 corrispondente."/>
-  <String Id="FilesInUseHeader" Value="Files In Use"/>
+  <String Id="FilesInUseHeader" Value="File in uso"/>
   <String Id="FilesInUseLabel" Value="Le applicazioni seguenti usano file che necessitano di aggiornamento:"/>
   <String Id="FilesInUseCloseRadioButton" Value="&amp;Chiudi tutte le applicazioni e tenta di riavviarle."/>
   <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Non chiudere le applicazioni. Sarà necessario riavviare il sistema."/>
   <String Id="FilesInUseOkButton" Value="&amp;OK"/>
-  <String Id="FilesInUseCancelButton" Value="&amp;Cancel"/>
-  <String Id="WelcomeHeaderMessage" Value=".NET Runtime"/>
+  <String Id="FilesInUseCancelButton" Value="&amp;Annulla"/>
+  <String Id="WelcomeHeaderMessage" Value="Runtime .NET"/>
   <String Id="WelcomeDescription" Value="Runtime di .NET consente di eseguire applicazioni .NET nel computer Windows. .NET è open source, multipiattaforma e supportato da Microsoft."/>
   <String Id="LearnMoreTitle" Value="Altre informazioni su .NET"/>
   <String Id="SuccessInstallLocation" Value="I componenti seguenti sono stati installati in [DOTNETHOME]"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Risorse"/>
-  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentation&lt;/A&gt;"/>
-  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Release Notes&lt;/A&gt;"/>
-  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;"/>
-  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET Telemetry&lt;/A&gt;"/>
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentazione&lt;/A&gt;"/>
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Note sulla versione&lt;/A&gt;"/>
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Esercitazioni&lt;/A&gt;"/>
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;Telemetria .NET&lt;/A&gt;"/>
   <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Informativa sulla privacy&lt;/A&gt;"/>
   <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Informazioni sulle licenze per .NET&lt;/A&gt;"/>
   <String Id="LicenseAssent" Value="Facendo clic su Installa, si accettano le condizioni seguenti."/>
