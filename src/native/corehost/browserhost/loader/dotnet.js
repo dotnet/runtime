@@ -373,11 +373,11 @@ const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 const nativeModulePromiseController = createPromiseController(() => {
     updateInternals();
 });
-// TODOWASM: retry logic
-// TODOWASM: throttling logic
-// TODOWASM: load icu data
-// TODOWASM: invokeLibraryInitializers
-// TODOWASM: webCIL
+// WASM-TODO: retry logic
+// WASM-TODO: throttling logic
+// WASM-TODO: load icu data
+// WASM-TODO: invokeLibraryInitializers
+// WASM-TODO: webCIL
 async function createRuntime(downloadOnly, loadBootResource) {
     const config = getConfig();
     if (!config.resources || !config.resources.coreAssembly || !config.resources.coreAssembly.length)

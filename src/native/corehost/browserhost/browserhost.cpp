@@ -108,7 +108,7 @@ static pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
 
 extern "C" int browserHostInitializeCoreCLR(void)
 {
-    //TODOWASM: does getenv return UTF8 ?
+    //WASM-TODO: does getenv return UTF8 ?
     pal::getenv(HOST_PROPERTY_APP_PATHS, &app_path);
     pal::getenv(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, &search_paths);
     pal::getenv(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, &tpa);
@@ -142,7 +142,7 @@ extern "C" int browserHostInitializeCoreCLR(void)
     return 0;
 }
 
-// TODOWASM: browser needs async entrypoint
+// WASM-TODO: browser needs async entrypoint
 extern "C" int browserHostExecuteAssembly(const char* assemblyPath)
 {
     int exit_code;
@@ -162,11 +162,11 @@ extern "C" int browserHostExecuteAssembly(const char* assemblyPath)
     {
         std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", retval);
         exit_code = -1;
-        // TODOWASM: this is too trivial
+        // WASM-TODO: this is too trivial
         browserHostRejectMain("coreclr_shutdown_2 failed");
     }
 
-    // TODOWASM: this is too trivial
+    // WASM-TODO: this is too trivial
     // because nothing runs continuations yet and also coreclr_execute_assembly is sync looping
     browserHostResolveMain(exit_code);
     return retval;

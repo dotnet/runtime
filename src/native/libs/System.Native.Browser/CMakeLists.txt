@@ -30,21 +30,21 @@ file(GLOB_RECURSE ROLLUP_TS_SOURCES
 
 set(ROLLUP_OUTPUTS
     "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js"
-    # TODOWASM "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map"
+    # WASM-TODO "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.d.ts"
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js"
-    # TODOWASM "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js.map"
+    # WASM-TODO "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js"
-    # TODOWASM "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js.map"
+    # WASM-TODO "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js"
-    # TODOWASM "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
+    # WASM-TODO "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
 )
 if(NOT PRODUCT_VERSION_JS)
-    # TODOWASM get dotnet ProductVersion from MSBuild
+    # WASM-TODO get dotnet ProductVersion from MSBuild
     set(PRODUCT_VERSION_JS "10.0.0-dev")
 endif()
 if(NOT CI_BUILD_JS)
-    # TODOWASM get ContinuousIntegrationBuild from MSBuild
+    # WASM-TODO get ContinuousIntegrationBuild from MSBuild
     set(CI_BUILD_JS "false")
 endif()
 

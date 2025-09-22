@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODOWASM: this is dummy configuration until WASM SDK for corehost
+// WASM-TODO: this is dummy configuration until WASM SDK for corehost
 
 export const config = /*json-start*/{
   "mainAssemblyName": "HelloWorld.dll",
