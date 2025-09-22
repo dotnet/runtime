@@ -158,6 +158,9 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
+    // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
+    public virtual bool HasMDContextArg(MethodDescHandle);
+
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
@@ -993,6 +996,14 @@ And the following enumeration definitions
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     [Flags]
@@ -1270,6 +1281,23 @@ And the various apis are implemented with the following algorithms
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+    }
+
+    public bool HasMDContextArg(MethodDescHandle method)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
+        {
+            return false;
+        }
+
+        uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
+        ILStubType ilStubType = (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        bool isCLRToCOMStub = ilStubType == ILStubType.StubCLRToCOMInterop;
+        bool isPInvokeVarArgStub = ilStubType == ILStubType.StubPInvokeVarArg;
+
+        return isCLRToCOMStub || isPInvokeVarArgStub;
     }
 
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;

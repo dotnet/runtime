@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
+using System.Text;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -531,12 +532,19 @@ namespace System.Numerics.Tests
             // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format.
             // Currently disabled since these would still allocate a 2GB buffer before
             // returning, leading to OOM in CI.
-            //Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "E999999999")); // Should not throw
-            //Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "E00000999999999")); // Should not throw
+            // Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "E999999999")); // Should not throw
+            // Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "E00000999999999")); // Should not throw
+            //
+            // Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "E999999999")); // Should not throw
+            // Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "E00000999999999")); // Should not throw
 
             // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
             Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "G999999999")); // Should not throw
             Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "G00000999999999")); // Should not throw
+
+            // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
+            Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "G999999999")); // Should not throw
+            Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "G00000999999999")); // Should not throw
         }
 
         [Fact]
@@ -1625,6 +1633,7 @@ namespace System.Numerics.Tests
             }
 
             VerifyTryFormat(test, format, provider, expectError, expectedResult);
+            VerifyTryFormatUtf8(test, format, provider, expectError, expectedResult);
         }
 
         private static void VerifyExpectedStringResult(string expectedResult, string result)
@@ -1667,6 +1676,30 @@ namespace System.Numerics.Tests
                 {
                     Assert.False(bi.TryFormat(new char[expectedResult.Length - 1], out charsWritten, format, provider));
                     Assert.Equal(0, charsWritten);
+                }
+            }
+            catch (FormatException)
+            {
+                Assert.True(expectError);
+            }
+        }
+
+        static void VerifyTryFormatUtf8(string test, string format, IFormatProvider provider, bool expectError, string expectedResult)
+        {
+            try
+            {
+                BigInteger bi = BigInteger.Parse(test, provider);
+
+                byte[] utf8Destination = expectedResult != null ? new byte[Encoding.UTF8.GetByteCount(expectedResult)] : Array.Empty<byte>();
+                Assert.True(bi.TryFormat(utf8Destination, out int bytesWritten, format, provider));
+                Assert.False(expectError);
+
+                VerifyExpectedStringResult(expectedResult, Encoding.UTF8.GetString(utf8Destination[..bytesWritten]));
+
+                if (expectedResult.Length > 0)
+                {
+                    Assert.False(bi.TryFormat(new byte[Encoding.UTF8.GetByteCount(expectedResult) - 1], out bytesWritten, format, provider));
+                    Assert.Equal(0, bytesWritten);
                 }
             }
             catch (FormatException)
