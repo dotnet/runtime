@@ -44,6 +44,18 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and encoder instance.</summary>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="encoder">The encoder instance to use for compression. The stream will not dispose this encoder; instead, it will reset it when the stream is disposed.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
+        public ZstandardStream(Stream stream, ZstandardEncoder encoder, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
+        {
+            _encoder = encoder;
+            _encoderOwned = false;
+        }
+
         private void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)
         {
             if (_mode != CompressionMode.Compress)

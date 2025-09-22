@@ -15,6 +15,18 @@ namespace System.IO.Compression
         private int _bufferCount;
         private bool _nonEmptyInput;
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and decoder instance.</summary>
+        /// <param name="stream">The stream from which data to decompress is read.</param>
+        /// <param name="decoder">The decoder instance to use for decompression. The stream will not dispose this decoder; instead, it will reset it when the stream is disposed.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> does not support reading.</exception>
+        public ZstandardStream(Stream stream, ZstandardDecoder decoder, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen)
+        {
+            _decoder = decoder;
+            _decoderOwned = false;
+        }
+
         private bool TryDecompress(Span<byte> destination, out int bytesWritten)
         {
             // Decompress any data we may have in our buffer.
