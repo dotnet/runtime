@@ -36,12 +36,12 @@ LIST(APPEND NATIVE_LIBS
     System.IO.Compression.Native-Static
     nativeresourcestring
     gcinfo
-    # WASMTODO respect  $(InvariantTimezone)
+    # WASM-TODO respect  $(InvariantTimezone)
     # System.Native.TimeZoneData.Invariant
     System.Native.TimeZoneData
 )
 
-# WASMTODO set(RUNTIMEINFO_LIB runtimeinfo)
+# WASM-TODO set(RUNTIMEINFO_LIB runtimeinfo)
 
 target_compile_options(browserhost PRIVATE -fwasm-exceptions)
 
@@ -50,7 +50,7 @@ set_target_properties(browserhost PROPERTIES
     LINK_FLAGS "--js-library ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js --js-library ${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js --js-library ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js --extern-post-js ${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js "
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
-# WASMTODO -Oz -sVERBOSE
+# WASM-TODO -Oz -sVERBOSE
 target_link_options(browserhost PRIVATE
     -fwasm-exceptions
     -sEXIT_RUNTIME=0
