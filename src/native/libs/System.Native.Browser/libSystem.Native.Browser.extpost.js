@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 var fetch = fetch || undefined; var _nativeModuleLoaded = false; var dotnetInternals = null;
-export async function initialize(internals) {
+export function initialize(internals) {
     if (_nativeModuleLoaded) throw new Error("Native module already loaded");
     dotnetInternals = internals;
     _nativeModuleLoaded = true;

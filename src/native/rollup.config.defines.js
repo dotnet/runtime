@@ -12,6 +12,7 @@ console.log(`Rollup configuration: Configuration=${configuration}, ProductVersio
 export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
 export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
+export const reserved = ["Assert", "JSEngine", "Logger", "Module", "dotnetInternals", "interopExports", "loaderExports", "nativeExports", "runtimeApi", "runtimeExports"];
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
 export const isDebug = configuration !== "Release";

@@ -20,10 +20,7 @@
             "./libs/Common/JavaScript/types"
         ],
         "rootDirs": [
-            "./corehost/browserhost/loader",
-            "./libs/Common/JavaScript",
-            "./libs/System.Native.Browser",
-            "./libs/System.Runtime.InteropServices.JavaScript.Native",
+            "./",
             "../../artifacts/bin/native/generated"
         ]
     },

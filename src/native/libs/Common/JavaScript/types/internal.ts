@@ -3,7 +3,7 @@
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropExportsTable, LoaderExportsTable, NativeExportsTable, RuntimeExportsTable } from "./exchange";
+import { InteropJavaScriptNativeExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExports } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -41,7 +41,7 @@ export type EmscriptenInternals = {
     updateMemoryViews: () => void,
 };
 
-export declare interface EmscriptenModuleInternal {
+export declare interface EmscriptenModuleInternal extends EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
@@ -110,8 +110,9 @@ export type InternalApis = {
     runtimeApi: RuntimeAPI,
     runtimeExportsTable: RuntimeExportsTable,
     loaderExportsTable: LoaderExportsTable,
-    nativeExportsTable: NativeExportsTable,
-    interopExportsTable: InteropExportsTable,
+    hostNativeExportsTable: HostNativeExportsTable,
+    interopJavaScriptNativeExportsTable: InteropJavaScriptNativeExportsTable,
+    nativeBrowserExportsTable: NativeBrowserExports,
     config: LoaderConfigInternal,
     updates: (() => void)[],
 }

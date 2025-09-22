@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import terser from "@rollup/plugin-terser";
 
-import { isContinuousIntegrationBuild, keep_classnames } from "./rollup.config.defines.js"
+import { isContinuousIntegrationBuild, keep_classnames, reserved } from "./rollup.config.defines.js"
 
 export const terserPlugin = () => terser({
     compress: {
@@ -17,9 +17,16 @@ export const terserPlugin = () => terser({
         drop_debugger: false, // we invoke debugger
         drop_console: false, // we log to console
         keep_classnames,
+        ecma: "2015",
+        toplevel: true,
+        module: true,
+    },
     },
     mangle: {
         keep_classnames,
+        reserved,
+        toplevel: true,
+        module: true,
     },
 });
 
@@ -28,6 +35,24 @@ export const writeOnChangePlugin = () => ({
     name: "writeOnChange",
     generateBundle: writeWhenChanged
 });
+
+// Drop invocation from IIFE
+export function iife2fe() {
+    return {
+        name: "iife2fe",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            if (name.endsWith(".map")) return;
+            const asset = bundle[name];
+            const code = asset.code;
+            //throw new Error("iife2fe " + code);
+            asset.code = code
+                .replace(/}\({}\);/, "};") // }({}); ->};
+                .replace(/}\)\({}\);/, "});") // })({}); ->});
+                ;
+        }
+    };
+}
 
 // force always unix line ending
 export const alwaysLF = () => ({

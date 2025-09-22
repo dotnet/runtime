@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { isSharedArrayBuffer } from "../../../System.Native.Browser/memory";
+import type { registerDllBytes } from "../../../../corehost/browserhost/host/host";
+import type { isSharedArrayBuffer } from "../../../../corehost/browserhost/host/memory";
 import type { check, error, info, warn } from "../../../../corehost/browserhost/loader/logging";
 import type { browserHostResolveMain, browserHostRejectMain, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
 
@@ -30,6 +31,11 @@ export type AssertType = {
 }
 
 export type LoaderExports = {
+    ENVIRONMENT_IS_NODE: ()=> boolean,
+    ENVIRONMENT_IS_SHELL: ()=> boolean,
+    ENVIRONMENT_IS_WEB: ()=> boolean,
+    ENVIRONMENT_IS_WORKER: ()=> boolean,
+    ENVIRONMENT_IS_SIDECAR: ()=> boolean,
     browserHostResolveMain:typeof browserHostResolveMain,
     browserHostRejectMain:typeof browserHostRejectMain,
     getRunMainPromise:typeof getRunMainPromise,
@@ -40,25 +46,34 @@ export type LoaderExportsTable = [
     typeof warn,
     typeof error,
     typeof check,
+    ()=> boolean,
+    ()=> boolean,
+    ()=> boolean,
+    ()=> boolean,
+    ()=> boolean,
     typeof browserHostResolveMain,
     typeof browserHostRejectMain,
     typeof getRunMainPromise,
 ]
 
-type registerDllBytesType = (bytes: Uint8Array, asset: { name: string })=>void;
-
-export type NativeExports = {
+export type HostNativeExports = {
     isSharedArrayBuffer : typeof isSharedArrayBuffer,
-    registerDllBytes: registerDllBytesType
+    registerDllBytes: typeof registerDllBytes
 }
 
-export type NativeExportsTable = [
-    registerDllBytesType,
+export type HostNativeExportsTable = [
+    typeof registerDllBytes,
     typeof isSharedArrayBuffer,
 ]
 
-export type InteropExports = {
+export type InteropJavaScriptNativeExports = {
 }
 
-export type InteropExportsTable = [
+export type InteropJavaScriptNativeExportsTable = [
+]
+
+export type NativeBrowserExports = {
+}
+
+export type NativeBrowserExportsTable = [
 ]

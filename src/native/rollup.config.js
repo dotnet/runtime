@@ -14,6 +14,8 @@ const copies = [
         `${artifactsObjDir}/coreclr/browser.wasm.${configuration}/corehost/dotnet.d.ts`],
     ["./corehost/browserhost/loader/dotnet.js",
         `${artifactsObjDir}/coreclr/browser.wasm.${configuration}/corehost/dotnet.js`],
+    ["./corehost/browserhost/libBrowserHost.js",
+        `${artifactsObjDir}/coreclr/browser.wasm.${configuration}/corehost/libBrowserHost.js`],
     ["./libs/System.Native.Browser/libSystem.Native.Browser.js",
         `${artifactsObjDir}/native/browser-${configuration}-wasm/System.Native.Browser/libSystem.Native.Browser.js`],
     ["./libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js",
