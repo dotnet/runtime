@@ -127,7 +127,7 @@ HRESULT CorHost2::Stop()
     {
         NOTHROW;
         ENTRY_POINT;    // We're bringing the EE down, so no point in probing
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
     if (!g_fEEStarted)
@@ -491,7 +491,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -527,7 +527,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -686,7 +686,7 @@ HRESULT CorHost2::CreateDelegate(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
