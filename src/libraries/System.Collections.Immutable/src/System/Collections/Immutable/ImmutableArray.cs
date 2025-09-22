@@ -225,11 +225,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new T[length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = items[start + i];
-            }
-
+            Array.Copy(items, start, array, 0, length);
             return new ImmutableArray<T>(array);
         }
 
