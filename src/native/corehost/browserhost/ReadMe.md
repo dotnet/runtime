@@ -26,7 +26,7 @@ It is **Emscripten application** statically linked from libraries.
 
 ## Build
 TypeScript is compiled by `src/native/rollup.config.js`
-JavaScript tools like `npm`, `tsc`, `rollup` are installed in `src/native/package.json`. 
+JavaScript tools like `npm`, `tsc`, `rollup` are installed in `src/native/package.json`.
 JS tools depend on `nodeJS` installation of Emscripten.
 Emscripten compilations is part of `src/native/corehost/CMakeLists.txt`
 Final app static linking happens here in `CMakeLists.txt`
