@@ -152,7 +152,16 @@ namespace JIT.HardwareIntrinsics.Arm
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
 
                 // Ensure all values of _data3 fit within the number of _data2 elements
-                for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp3} % ({Op3BaseType})Op2ElementCount; }
+                for (var i = 0; i < Op3ElementCount; i++)
+                {
+                    _data3[i] = {NextValueOp3} % ({Op3BaseType})Op2ElementCount;
+
+                    if (AreOffsets)
+                    {
+                        // Make offsets Op2BaseType aligned
+                        _data3[i] = (_data3[i] / sizeof({Op2BaseType})) * sizeof({Op2BaseType});
+                    }
+                }
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref testStruct._fld3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
@@ -175,6 +184,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         // A large enough buffer to hold many values. Op3 will index into Op2.
         private static readonly int Op2ElementCount = 1024;
+
+        // Is Op3 contains indices or offsets
+        private static readonly bool AreOffsets = {AreOffsets};
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int Op3ElementCount = Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>() / sizeof({Op3BaseType});
@@ -204,7 +216,16 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
 
             // Ensure all values of _data3 fit within the number of _data2 elements
-            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp3} % ({Op3BaseType})Op2ElementCount; }
+            for (var i = 0; i < Op3ElementCount; i++)
+            {
+                _data3[i] = {NextValueOp3} % ({Op3BaseType})Op2ElementCount;
+
+                if (AreOffsets)
+                {
+                    // Make offsets Op2BaseType aligned
+                    _data3[i] = (_data3[i] / sizeof({Op2BaseType})) * sizeof({Op2BaseType});
+                }
+            }
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _fld3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
@@ -460,6 +481,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
+            if (AreOffsets)
+            {
+                for (var i = 0; i < thirdOp.Length; i++)
+                {
+                    thirdOp[i] /= sizeof({Op2BaseType});
+                }
+            }
+
             var succeeded = Helpers.CheckGatherVectorBehavior<{RetBaseType}, {ExtendedElementType}, {Op3BaseType}>(firstOp, secondOp, thirdOp, result);
 
             if (!succeeded)
@@ -552,6 +581,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_TrueValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
+            if (AreOffsets)
+            {
+                for (var i = 0; i < thirdOp.Length; i++)
+                {
+                    thirdOp[i] /= sizeof({Op2BaseType});
+                }
+            }
+
             var succeeded = Helpers.CheckGatherVectorConditionalSelectBehavior(maskOp, firstOp, secondOp, thirdOp, falseOp, result);
 
             if (!succeeded)
@@ -590,6 +627,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_FalseValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] trueOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
+            if (AreOffsets)
+            {
+                for (var i = 0; i < thirdOp.Length; i++)
+                {
+                    thirdOp[i] /= sizeof({Op2BaseType});
+                }
+            }
+
             var succeeded = Helpers.CheckGatherVectorConditionalSelectTrueBehavior(maskOp, firstOp, secondOp, thirdOp, trueOp, result);
 
             if (!succeeded)
