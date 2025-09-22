@@ -406,7 +406,6 @@ async function createRuntime(downloadOnly, loadBootResource) {
     const assembliesPromise = Promise.all(config.resources.assembly.map(fetchDll));
     const runtimeModulePromise = loadModule(config.resources.jsModuleRuntime[0], loadBootResource);
     const nativeModulePromise = loadModule(config.resources.jsModuleNative[0], loadBootResource);
-    fetchWasm(config.resources.wasmNative[0]); // start loading early, no await
     const nativeModule = await nativeModulePromise;
     const modulePromise = nativeModule.initialize(getInternals());
     nativeModulePromiseController.propagateFrom(modulePromise);

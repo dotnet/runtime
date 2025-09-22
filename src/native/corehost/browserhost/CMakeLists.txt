@@ -62,35 +62,34 @@ set_target_properties(browserhost PROPERTIES
     LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE} --js-library ${JS_BROWSER_HOST} --extern-post-js ${JS_SYSTEM_NATIVE_BROWSER_EXPOST}"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     target_link_options(browserhost PRIVATE
 #        -sVERBOSE
-        -sASSERTIONS=1
+#        -sASSERTIONS=1
         --emit-symbol-map
+        -sLLD_REPORT_UNDEFINED
+        -sERROR_ON_UNDEFINED_SYMBOLS=1
     )
 endif ()
 
 target_link_options(browserhost PRIVATE
-    -fwasm-exceptions
-    -sEXIT_RUNTIME=0
-    -sINITIAL_MEMORY=134217728
-    -sMAXIMUM_MEMORY=2147483648
-    -sALLOW_MEMORY_GROWTH=1
-    -sALLOW_TABLE_GROWTH=1
+    -sINITIAL_MEMORY=33554432
+# TODO-WASM    -sMAXIMUM_MEMORY=2147483648
+# TODO-WASM    -sALLOW_MEMORY_GROWTH=1
+# TODO-WASM    -sALLOW_TABLE_GROWTH=1
     -sSTACK_SIZE=5MB
     -sMODULARIZE=1
     -sEXPORT_ES6=1
-    -sWASM_BIGINT=1
+# TODO-WASM    -sWASM_BIGINT=1
+    -sEXIT_RUNTIME=0
     -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
     -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_browserHostInitializeCoreCLR,_browserHostExecuteAssembly,___cpp_exception
     -sEXPORT_NAME=createDotnetRuntime
-    -msimd128
+# TODO-WASM    -msimd128
     -fwasm-exceptions
     -lnodefs.js
-    -emit-llvm
-    --source-map-base http://microsoft.com
-    -sLLD_REPORT_UNDEFINED
-    -sERROR_ON_UNDEFINED_SYMBOLS=1
+# TODO-WASM    -emit-llvm
+# TODO-WASM    --source-map-base http://microsoft.com
     -Wno-unused-command-line-argument
     -Wl,-error-limit=0)
 

@@ -64,7 +64,6 @@ else(CLR_CMAKE_HOST_WIN32)
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -fwasm-exceptions
-                -sEXPORTED_RUNTIME_METHODS=FS
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
                 -sENVIRONMENT=node,shell
