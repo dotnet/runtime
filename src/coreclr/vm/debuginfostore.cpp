@@ -1406,12 +1406,19 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
         _ASSERTE(flagByte == 0);
     }
 
-    NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
-
+    NibbleReader r(pDebugInfo, 24 /* maximum size of compressed 4 UINT32s */);
+    
     ULONG cbBounds = r.ReadEncodedU32();
+    ULONG cbUninstrumentedBounds = 0;
+    if (cbBounds == DebugInfoBoundsHasInstrumentedBounds)
+    {
+        // This means we have instrumented bounds.
+        cbBounds = r.ReadEncodedU32();
+        cbUninstrumentedBounds = r.ReadEncodedU32();
+    }
     ULONG cbVars   = r.ReadEncodedU32();
 
-    pDebugInfo += r.GetNextByteIndex() + cbBounds + cbVars;
+    pDebugInfo += r.GetNextByteIndex() + cbBounds + cbUninstrumentedBounds + cbVars;
 
     DacEnumMemoryRegion(dac_cast<TADDR>(pStart), pDebugInfo - pStart);
 }
