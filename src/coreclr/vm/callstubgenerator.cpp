@@ -981,92 +981,92 @@ PCODE FPRegsRoutines[] =
 
 #ifdef TARGET_ARM
 
-extern "C" void Load_X0();
-extern "C" void Load_X0_X1();
-extern "C" void Load_X0_X1_X2();
-extern "C" void Load_X0_X1_X2_X3();
-extern "C" void Load_X1();
-extern "C" void Load_X1_X2();
-extern "C" void Load_X1_X2_X3();
-extern "C" void Load_X2();
-extern "C" void Load_X2_X3();
-extern "C" void Load_X3();
+extern "C" void Load_R0();
+extern "C" void Load_R0_R1();
+extern "C" void Load_R0_R1_R2();
+extern "C" void Load_R0_R1_R2_R3();
+extern "C" void Load_R1();
+extern "C" void Load_R1_R2();
+extern "C" void Load_R1_R2_R3();
+extern "C" void Load_R2();
+extern "C" void Load_R2_R3();
+extern "C" void Load_R3();
 
-extern "C" void Store_X0();
-extern "C" void Store_X0_X1();
-extern "C" void Store_X0_X1_X2();
-extern "C" void Store_X0_X1_X2_X3();
-extern "C" void Store_X1();
-extern "C" void Store_X1_X2();
-extern "C" void Store_X1_X2_X3();
-extern "C" void Store_X2();
-extern "C" void Store_X2_X3();
-extern "C" void Store_X3();
+extern "C" void Store_R0();
+extern "C" void Store_R0_R1();
+extern "C" void Store_R0_R1_R2();
+extern "C" void Store_R0_R1_R2_R3();
+extern "C" void Store_R1();
+extern "C" void Store_R1_R2();
+extern "C" void Store_R1_R2_R3();
+extern "C" void Store_R2();
+extern "C" void Store_R2_R3();
+extern "C" void Store_R3();
 
-extern "C" void Load_Ref_X0();
-extern "C" void Load_Ref_X1();
-extern "C" void Load_Ref_X2();
-extern "C" void Load_Ref_X3();
+extern "C" void Load_Ref_R0();
+extern "C" void Load_Ref_R1();
+extern "C" void Load_Ref_R2();
+extern "C" void Load_Ref_R3();
 
-extern "C" void Store_Ref_X0();
-extern "C" void Store_Ref_X1();
-extern "C" void Store_Ref_X2();
-extern "C" void Store_Ref_X3();
+extern "C" void Store_Ref_R0();
+extern "C" void Store_Ref_R1();
+extern "C" void Store_Ref_R2();
+extern "C" void Store_Ref_R3();
 
 PCODE GPRegsRoutines[] =
 {
-    (PCODE)Load_X0,                         // 00
-    (PCODE)Load_X0_X1,                      // 01
-    (PCODE)Load_X0_X1_X2,                   // 02
-    (PCODE)Load_X0_X1_X2_X3,                // 03
+    (PCODE)Load_R0,                         // 00
+    (PCODE)Load_R0_R1,                      // 01
+    (PCODE)Load_R0_R1_R2,                   // 02
+    (PCODE)Load_R0_R1_R2_R3,                // 03
     (PCODE)0,                               // 04
-    (PCODE)Load_X1,                         // 05
-    (PCODE)Load_X1_X2,                      // 06
-    (PCODE)Load_X1_X2_X3,                   // 07
+    (PCODE)Load_R1,                         // 05
+    (PCODE)Load_R1_R2,                      // 06
+    (PCODE)Load_R1_R2_R3,                   // 07
     (PCODE)0,                               // 08
     (PCODE)0,                               // 09
-    (PCODE)Load_X2,                         // 10
-    (PCODE)Load_X2_X3,                      // 11
+    (PCODE)Load_R2,                         // 10
+    (PCODE)Load_R2_R3,                      // 11
     (PCODE)0,                               // 12
     (PCODE)0,                               // 13
     (PCODE)0,                               // 14
-    (PCODE)Load_X3,                         // 15
+    (PCODE)Load_R3,                         // 15
 };
 
 PCODE GPRegsStoreRoutines[] =
 {
-    (PCODE)Store_X0,                         // 00
-    (PCODE)Store_X0_X1,                      // 01
-    (PCODE)Store_X0_X1_X2,                   // 02
-    (PCODE)Store_X0_X1_X2_X3,                // 03
+    (PCODE)Store_R0,                         // 00
+    (PCODE)Store_R0_R1,                      // 01
+    (PCODE)Store_R0_R1_R2,                   // 02
+    (PCODE)Store_R0_R1_R2_R3,                // 03
     (PCODE)0,                                // 04
-    (PCODE)Store_X1,                         // 05
-    (PCODE)Store_X1_X2,                      // 06
-    (PCODE)Store_X1_X2_X3,                   // 07
+    (PCODE)Store_R1,                         // 05
+    (PCODE)Store_R1_R2,                      // 06
+    (PCODE)Store_R1_R2_R3,                   // 07
     (PCODE)0,                                // 08
     (PCODE)0,                                // 09
-    (PCODE)Store_X2,                         // 10
-    (PCODE)Store_X2_X3,                      // 11
+    (PCODE)Store_R2,                         // 10
+    (PCODE)Store_R2_R3,                      // 11
     (PCODE)0,                                // 12
     (PCODE)0,                                // 13
     (PCODE)0,                                // 14
-    (PCODE)Store_X3,                         // 15
+    (PCODE)Store_R3,                         // 15
 };
 
 PCODE GPRegsRefRoutines[] =
 {
-    (PCODE)Load_Ref_X0,        // 0
-    (PCODE)Load_Ref_X1,        // 1
-    (PCODE)Load_Ref_X2,        // 2
-    (PCODE)Load_Ref_X3,        // 3
+    (PCODE)Load_Ref_R0,        // 0
+    (PCODE)Load_Ref_R1,        // 1
+    (PCODE)Load_Ref_R2,        // 2
+    (PCODE)Load_Ref_R3,        // 3
 };
 
 PCODE GPRegsRefStoreRoutines[] =
 {
-    (PCODE)Store_Ref_X0,        // 0
-    (PCODE)Store_Ref_X1,        // 1
-    (PCODE)Store_Ref_X2,        // 2
-    (PCODE)Store_Ref_X3,        // 3
+    (PCODE)Store_Ref_R0,        // 0
+    (PCODE)Store_Ref_R1,        // 1
+    (PCODE)Store_Ref_R2,        // 2
+    (PCODE)Store_Ref_R3,        // 3
 };
 
 #endif // TARGET_ARM
