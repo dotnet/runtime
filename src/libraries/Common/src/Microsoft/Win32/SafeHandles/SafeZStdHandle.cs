@@ -7,10 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeZStdCompressHandle : SafeHandle
+    internal sealed class SafeZstdCompressHandle : SafeHandle
     {
-        internal SafeZStdCDictHandle? _dictionary;
-        public SafeZStdCompressHandle() : base(IntPtr.Zero, true) { }
+        internal SafeZstdCDictHandle? _dictionary;
+        public SafeZstdCompressHandle() : base(IntPtr.Zero, true) { }
 
         protected override bool ReleaseHandle()
         {
@@ -21,7 +21,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        public void SetDictionary(SafeZStdCDictHandle dictionary)
+        public void SetDictionary(SafeZstdCDictHandle dictionary)
         {
             Debug.Assert(dictionary != null);
 
@@ -32,17 +32,17 @@ namespace Microsoft.Win32.SafeHandles
             nuint result = Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary);
             if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
-                throw new Interop.Zstd.ZstdNativeException(SR.ZStandardEncoder_DictionaryAttachFailed);
+                throw new Interop.Zstd.ZstdNativeException(SR.ZstandardEncoder_DictionaryAttachFailed);
             }
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
 
-    internal sealed class SafeZStdDecompressHandle : SafeHandle
+    internal sealed class SafeZstdDecompressHandle : SafeHandle
     {
-        internal SafeZStdDDictHandle? _dictionary;
-        public SafeZStdDecompressHandle() : base(IntPtr.Zero, true) { }
+        internal SafeZstdDDictHandle? _dictionary;
+        public SafeZstdDecompressHandle() : base(IntPtr.Zero, true) { }
 
         protected override bool ReleaseHandle()
         {
@@ -53,7 +53,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        public void SetDictionary(SafeZStdDDictHandle dictionary)
+        public void SetDictionary(SafeZstdDDictHandle dictionary)
         {
             Debug.Assert(dictionary != null);
 
@@ -64,16 +64,16 @@ namespace Microsoft.Win32.SafeHandles
             nuint result = Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary);
             if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
-                throw new Interop.Zstd.ZstdNativeException(SR.ZStandardDecoder_DictionaryAttachFailed);
+                throw new Interop.Zstd.ZstdNativeException(SR.ZstandardDecoder_DictionaryAttachFailed);
             }
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
 
-    internal sealed class SafeZStdCDictHandle : SafeHandle
+    internal sealed class SafeZstdCDictHandle : SafeHandle
     {
-        public SafeZStdCDictHandle() : base(IntPtr.Zero, true) { }
+        public SafeZstdCDictHandle() : base(IntPtr.Zero, true) { }
 
         protected override bool ReleaseHandle()
         {
@@ -86,9 +86,9 @@ namespace Microsoft.Win32.SafeHandles
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
 
-    internal sealed class SafeZStdDDictHandle : SafeHandle
+    internal sealed class SafeZstdDDictHandle : SafeHandle
     {
-        public SafeZStdDDictHandle() : base(IntPtr.Zero, true) { }
+        public SafeZstdDDictHandle() : base(IntPtr.Zero, true) { }
 
         protected override bool ReleaseHandle()
         {

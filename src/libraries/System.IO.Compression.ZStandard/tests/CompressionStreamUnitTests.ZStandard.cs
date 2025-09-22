@@ -6,16 +6,16 @@ using Xunit;
 
 namespace System.IO.Compression
 {
-    public class ZStandardStreamUnitTests : CompressionStreamUnitTestBase
+    public class ZstandardStreamUnitTests : CompressionStreamUnitTestBase
     {
-        public override Stream CreateStream(Stream stream, CompressionMode mode) => new ZStandardStream(stream, mode);
-        public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new ZStandardStream(stream, mode, leaveOpen);
-        public override Stream CreateStream(Stream stream, CompressionLevel level) => new ZStandardStream(stream, level);
-        public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new ZStandardStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, CompressionMode mode) => new ZstandardStream(stream, mode);
+        public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new ZstandardStream(stream, mode, leaveOpen);
+        public override Stream CreateStream(Stream stream, CompressionLevel level) => new ZstandardStream(stream, level);
+        public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new ZstandardStream(stream, level, leaveOpen);
         public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) =>
-            new ZStandardStream(stream, options == null ? null : new ZStandardCompressionOptions(options.CompressionLevel), leaveOpen);
+            new ZstandardStream(stream, options == null ? null : new ZstandardCompressionOptions(options.CompressionLevel), leaveOpen);
 
-        public override Stream BaseStream(Stream stream) => ((ZStandardStream)stream).BaseStream;
+        public override Stream BaseStream(Stream stream) => ((ZstandardStream)stream).BaseStream;
 
         // The tests are relying on an implementation detail of BrotliStream, using knowledge of its internal buffer size
         // in various test calculations.  Currently the implementation is using the ArrayPool, which will round up to a
@@ -23,6 +23,6 @@ namespace System.IO.Compression
         // out different array sizes), the tests will need to be tweaked.
         public override int BufferSize => 1 << 16;
 
-        protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("ZStandardTestData", Path.GetFileName(uncompressedPath) + ".zst");
+        protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("ZstandardTestData", Path.GetFileName(uncompressedPath) + ".zst");
     }
 }

@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    public sealed partial class ZStandardStream
+    public sealed partial class ZstandardStream
     {
-        private ZStandardDecoder _decoder;
+        private ZstandardDecoder _decoder;
         private int _bufferOffset;
         private int _bufferCount;
         private bool _nonEmptyInput;
@@ -21,7 +21,7 @@ namespace System.IO.Compression
             OperationStatus lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
             if (lastResult == OperationStatus.InvalidData)
             {
-                throw new InvalidOperationException(SR.ZStandardStream_Decompress_InvalidData);
+                throw new InvalidOperationException(SR.ZstandardStream_Decompress_InvalidData);
             }
 
             if (bytesConsumed != 0)
@@ -229,9 +229,9 @@ namespace System.IO.Compression
         private static void ThrowInvalidStream() =>
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes larger than the buffer supplied to it.
-            throw new InvalidDataException(SR.ZStandardStream_Decompress_InvalidStream);
+            throw new InvalidDataException(SR.ZstandardStream_Decompress_InvalidStream);
 
         private static void ThrowTruncatedInvalidData() =>
-            throw new InvalidDataException(SR.ZStandardStream_Decompress_TruncatedData);
+            throw new InvalidDataException(SR.ZstandardStream_Decompress_TruncatedData);
     }
 }

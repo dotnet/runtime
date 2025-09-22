@@ -7,20 +7,20 @@ using Xunit;
 
 namespace System.IO.Compression
 {
-    public class ZStandardDecoderTests
+    public class ZstandardDecoderTests
     {
         [Fact]
         public void Constructor_WithNullDictionary_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new ZStandardDecoder(null!));
+            Assert.Throws<ArgumentNullException>(() => new ZstandardDecoder(null!));
         }
 
         [Fact]
         public void Dispose_CanBeCalledMultipleTimes()
         {
             byte[] dictionaryData = CreateSampleDictionary();
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(dictionaryData);
-            ZStandardDecoder decoder = new ZStandardDecoder(dictionary);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
+            ZstandardDecoder decoder = new ZstandardDecoder(dictionary);
 
             decoder.Dispose();
             decoder.Dispose();
@@ -31,7 +31,7 @@ namespace System.IO.Compression
         {
             ReadOnlySpan<byte> emptyData = ReadOnlySpan<byte>.Empty;
 
-            int result = ZStandardDecoder.GetMaxDecompressedLength(emptyData);
+            int result = ZstandardDecoder.GetMaxDecompressedLength(emptyData);
 
             Assert.Equal(0, result);
         }
@@ -44,11 +44,11 @@ namespace System.IO.Compression
             ReadOnlySpan<byte> emptySource = ReadOnlySpan<byte>.Empty;
             Span<byte> destination = new byte[100];
 
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(CreateSampleDictionary());
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(CreateSampleDictionary());
 
             bool result = useDictionary
-                ? ZStandardDecoder.TryDecompress(emptySource, dictionary, destination, out int bytesWritten)
-                : ZStandardDecoder.TryDecompress(emptySource, destination, out bytesWritten);
+                ? ZstandardDecoder.TryDecompress(emptySource, dictionary, destination, out int bytesWritten)
+                : ZstandardDecoder.TryDecompress(emptySource, destination, out bytesWritten);
 
             Assert.False(result);
             Assert.Equal(0, bytesWritten);
@@ -61,14 +61,14 @@ namespace System.IO.Compression
             byte[] destination = new byte[100];
 
             Assert.Throws<ArgumentNullException>(() =>
-                ZStandardDecoder.TryDecompress(source, null!, destination, out _));
+                ZstandardDecoder.TryDecompress(source, null!, destination, out _));
         }
 
         [Fact]
         public void Decompress_AfterDispose_ThrowsObjectDisposedException()
         {
             byte[] dictionaryData = CreateSampleDictionary();
-            ZStandardDecoder decoder = new ZStandardDecoder();
+            ZstandardDecoder decoder = new ZstandardDecoder();
             decoder.Dispose();
 
             byte[] source = new byte[] { 1, 2, 3, 4 };
@@ -81,7 +81,7 @@ namespace System.IO.Compression
         [Fact]
         public void Decompress_WithEmptySource_ReturnsNeedMoreData()
         {
-            using ZStandardDecoder decoder = new ZStandardDecoder();
+            using ZstandardDecoder decoder = new ZstandardDecoder();
 
             ReadOnlySpan<byte> emptySource = ReadOnlySpan<byte>.Empty;
             Span<byte> destination = new byte[100];
@@ -92,7 +92,7 @@ namespace System.IO.Compression
             Assert.Equal(0, bytesConsumed);
             Assert.Equal(0, bytesWritten);
 
-            Assert.False(ZStandardDecoder.TryDecompress(emptySource, destination, out bytesWritten));
+            Assert.False(ZstandardDecoder.TryDecompress(emptySource, destination, out bytesWritten));
             Assert.Equal(0, bytesWritten);
         }
 
@@ -102,10 +102,10 @@ namespace System.IO.Compression
             Span<byte> destination = Span<byte>.Empty;
             Span<byte> source = new byte[100];
 
-            Assert.True(ZStandardEncoder.TryCompress("This is a test content"u8, source, out int bytesWritten));
+            Assert.True(ZstandardEncoder.TryCompress("This is a test content"u8, source, out int bytesWritten));
             source = source.Slice(0, bytesWritten);
 
-            using ZStandardDecoder decoder = new ZStandardDecoder();
+            using ZstandardDecoder decoder = new ZstandardDecoder();
             OperationStatus result = decoder.Decompress(source, destination, out int bytesConsumed, out bytesWritten);
 
             Assert.Equal(OperationStatus.DestinationTooSmall, result);
@@ -134,11 +134,11 @@ namespace System.IO.Compression
         [MemberData(nameof(GetRoundTripTestData))]
         public void RoundTrip_SuccessfullyCompressesAndDecompresses(int quality, bool useDictionary, bool staticEncode, bool staticDecode)
         {
-            byte[] originalData = "Hello, World! This is a test string for ZStandard compression and decompression."u8.ToArray();
-            byte[] compressedBuffer = new byte[ZStandardEncoder.GetMaxCompressedLength(originalData.Length)];
+            byte[] originalData = "Hello, World! This is a test string for Zstandard compression and decompression."u8.ToArray();
+            byte[] compressedBuffer = new byte[ZstandardEncoder.GetMaxCompressedLength(originalData.Length)];
             byte[] decompressedBuffer = new byte[originalData.Length * 2];
 
-            using ZStandardDictionary dictionary = ZStandardDictionary.Create(CreateSampleDictionary(), quality);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(CreateSampleDictionary(), quality);
 
             int window = 10;
 
@@ -150,15 +150,15 @@ namespace System.IO.Compression
             {
                 bool result =
                     useDictionary
-                    ? ZStandardEncoder.TryCompress(originalData, compressedBuffer, out bytesWritten, dictionary, window)
-                    : ZStandardEncoder.TryCompress(originalData, compressedBuffer, out bytesWritten, quality, window);
+                    ? ZstandardEncoder.TryCompress(originalData, compressedBuffer, out bytesWritten, dictionary, window)
+                    : ZstandardEncoder.TryCompress(originalData, compressedBuffer, out bytesWritten, quality, window);
                 bytesConsumed = originalData.Length;
 
                 Assert.True(result);
             }
             else
             {
-                using var encoder = useDictionary ? new ZStandardEncoder(dictionary, window) : new ZStandardEncoder(quality, window);
+                using var encoder = useDictionary ? new ZstandardEncoder(dictionary, window) : new ZstandardEncoder(quality, window);
                 OperationStatus compressResult = encoder.Compress(originalData, compressedBuffer, out bytesConsumed, out bytesWritten, true);
                 Assert.Equal(OperationStatus.Done, compressResult);
             }
@@ -172,15 +172,15 @@ namespace System.IO.Compression
             {
                 bool result =
                     useDictionary
-                    ? ZStandardDecoder.TryDecompress(compressedBuffer.AsSpan(0, compressedLength), dictionary, decompressedBuffer, out bytesWritten)
-                    : ZStandardDecoder.TryDecompress(compressedBuffer.AsSpan(0, compressedLength), decompressedBuffer, out bytesWritten);
+                    ? ZstandardDecoder.TryDecompress(compressedBuffer.AsSpan(0, compressedLength), dictionary, decompressedBuffer, out bytesWritten)
+                    : ZstandardDecoder.TryDecompress(compressedBuffer.AsSpan(0, compressedLength), decompressedBuffer, out bytesWritten);
                 bytesConsumed = compressedLength;
 
                 Assert.True(result);
             }
             else
             {
-                using var decoder = useDictionary ? new ZStandardDecoder(dictionary) : new ZStandardDecoder();
+                using var decoder = useDictionary ? new ZstandardDecoder(dictionary) : new ZstandardDecoder();
                 OperationStatus decompressResult = decoder.Decompress(compressedBuffer.AsSpan(0, compressedLength), decompressedBuffer, out bytesConsumed, out bytesWritten);
 
                 Assert.Equal(OperationStatus.Done, decompressResult);
@@ -191,6 +191,6 @@ namespace System.IO.Compression
             Assert.Equal(originalData, decompressedBuffer.AsSpan(0, bytesWritten));
         }
 
-        private static byte[] CreateSampleDictionary() => ZStandardTestUtils.CreateSampleDictionary();
+        private static byte[] CreateSampleDictionary() => ZstandardTestUtils.CreateSampleDictionary();
     }
 }

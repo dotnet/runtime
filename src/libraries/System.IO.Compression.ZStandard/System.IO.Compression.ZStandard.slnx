@@ -124,7 +124,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="ref/System.IO.Compression.ZStandard.csproj">
+    <Project Path="ref/System.IO.Compression.Zstandard.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -213,7 +213,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="src/System.IO.Compression.ZStandard.csproj">
+    <Project Path="src/System.IO.Compression.Zstandard.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -239,7 +239,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="tests/System.IO.Compression.ZStandard.Tests.csproj">
+    <Project Path="tests/System.IO.Compression.Zstandard.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
