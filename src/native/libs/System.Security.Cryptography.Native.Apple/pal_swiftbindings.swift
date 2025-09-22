@@ -118,7 +118,7 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
         cipherText: cipherText,
         tag: tag,
         aad: aad)
- }
+}
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
 @available(iOS 13, tvOS 13, *)
@@ -158,7 +158,7 @@ public func AppleCryptoNative_AesGcmEncrypt(
         cipherText: cipherText,
         tag: tag,
         aad: aad)
- }
+}
 
 @_silgen_name("AppleCryptoNative_AesGcmDecrypt")
 @available(iOS 13, tvOS 13, *)
@@ -192,4 +192,127 @@ public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
         }
     }
     return false
+}
+
+// Must remain in sync with PAL_HashAlgorithm from managed side.
+enum PAL_HashAlgorithm: Int32 {
+    case unknown = 0
+    case md5 = 1
+    case sha1 = 2
+    case sha256 = 3
+    case sha384 = 4
+    case sha512 = 5
+}
+
+enum HKDFError: Error {
+    case unknownHashAlgorithm
+}
+
+@_silgen_name("AppleCryptoNative_HKDFExpand")
+@available(iOS 14, tvOS 14, *)
+public func AppleCryptoNative_HKDFExpand(
+    hashAlgorithm: Int32,
+    prk: UnsafeBufferPointer<UInt8>,
+    info: UnsafeBufferPointer<UInt8>,
+    destination: UnsafeMutableBufferPointer<UInt8>) throws {
+
+    if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
+        let key = try {
+            switch algorithm {
+                case .unknown:
+                    throw HKDFError.unknownHashAlgorithm
+                case .md5:
+                    HKDF<Insecure.MD5>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                case .sha1:
+                    HKDF<Insecure.SHA1>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                case .sha256:
+                    HKDF<SHA256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                case .sha384:
+                    HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                case .sha512:
+                    HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+            }
+        }()
+
+        _ = key.withUnsafeBytes { keyBytes in
+            keyBytes.copyBytes(to: destination)
+        }
+    }
+    else {
+        throw HKDFError.unknownHashAlgorithm
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HKDFExtract")
+@available(iOS 14, tvOS 14, *)
+public func AppleCryptoNative_HKDFExtract(
+    hashAlgorithm: Int32,
+    ikm: UnsafeBufferPointer<UInt8>,
+    salt: UnsafeBufferPointer<UInt8>,
+    destination: UnsafeMutableBufferPointer<UInt8>) throws {
+
+    let key = SymmetricKey(data: ikm)
+
+    if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
+        let prk : ContiguousBytes = try {
+            switch algorithm {
+                case .unknown:
+                    throw HKDFError.unknownHashAlgorithm
+                case .md5:
+                    HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha1:
+                    HKDF<Insecure.SHA1>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha256:
+                    HKDF<SHA256>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha384:
+                    HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha512:
+                    HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+            }
+        }()
+
+        _ = prk.withUnsafeBytes { keyBytes in
+            keyBytes.copyBytes(to: destination)
+        }
+    }
+    else {
+        throw HKDFError.unknownHashAlgorithm
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HKDFDeriveKey")
+@available(iOS 14, tvOS 14, *)
+public func AppleCryptoNative_HKDFDeriveKey(
+    hashAlgorithm: Int32,
+    ikm: UnsafeBufferPointer<UInt8>,
+    salt: UnsafeBufferPointer<UInt8>,
+    destination: UnsafeMutableBufferPointer<UInt8>) throws {
+
+    let key = SymmetricKey(data: ikm)
+
+    if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
+        let prk : ContiguousBytes = try {
+            switch algorithm {
+                case .unknown:
+                    throw HKDFError.unknownHashAlgorithm
+                case .md5:
+                    HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha1:
+                    HKDF<Insecure.SHA1>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha256:
+                    HKDF<SHA256>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha384:
+                    HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
+                case .sha512:
+                    HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+            }
+        }()
+
+        _ = prk.withUnsafeBytes { keyBytes in
+            keyBytes.copyBytes(to: destination)
+        }
+    }
+    else {
+        throw HKDFError.unknownHashAlgorithm
+    }
 }
