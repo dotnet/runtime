@@ -3303,13 +3303,9 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
 void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        THROWS;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
 
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
