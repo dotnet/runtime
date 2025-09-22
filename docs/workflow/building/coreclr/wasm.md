@@ -71,6 +71,19 @@ node ./corerun.js -c /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL /runt
 
 Note that path in the node args need to be **absolute path** on your host file system in **unix format** (even on Windows).
 
+### Console Testing with corehost
+
+You can also run the corehost directly in Node.js:
+
+```bash
+cp /runtime3/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/corehost
+cp helloworld.dll /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/corehost
+cd /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/corehost
+node ./main.mjs
+```
+
+Note that paths to assemblies are in the `src/native/corehost/browserhost/sample/dotnet.boot.js`
+
 ## Debugging
 
 ### Chrome DevTools with DWARF Support
