@@ -158,7 +158,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(TestHelpers.SequenceEqualsNullData), MemberType = typeof(TestHelpers))]
-        public static void SequenceEqualsNullData_String(string[] firstInput, string[] secondInput, bool expected)
+        public static void SequenceEqual_NullData_String(string[] firstInput, string[] secondInput, bool expected)
         {
             ReadOnlySpan<string> theStrings = firstInput;
 
