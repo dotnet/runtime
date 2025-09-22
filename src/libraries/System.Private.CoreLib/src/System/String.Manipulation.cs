@@ -2574,7 +2574,7 @@ namespace System
 
             // Trim end
             int endIndex = Length - 1;
-            while (endIndex >= index && this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
+            while (endIndex >= 0 && this.AsSpan(..(endIndex + 1)).EndsWith(trimChars))
             {
                 endIndex -= trimChars.Length;
             }
