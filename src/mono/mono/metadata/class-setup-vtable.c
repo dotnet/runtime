@@ -56,8 +56,7 @@ print_implemented_interfaces (MonoClass *klass)
 			printf ("(%d,F)", i);
 	printf ("\n");
 	printf ("Dump interface flags:");
-#ifdef COMPRESSED_INTERFACE_BITMAP
-	{
+	if (mono_opt_compressed_interface_bitmap) {
 		const uint8_t* p = klass->interface_bitmap;
 		guint32 i = klass->max_interface_id;
 		while (i > 0) {
@@ -65,11 +64,10 @@ print_implemented_interfaces (MonoClass *klass)
 			i -= p [0] * 8;
 			i -= 8;
 		}
+	} else {
+		for (guint32 i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7) ? 1 : 0)); i++)
+			printf (" %02X", klass->interface_bitmap [i]);
 	}
-#else
-	for (guint32 i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7)? 1 :0)); i++)
-		printf (" %02X", klass->interface_bitmap [i]);
-#endif
 	printf ("\n");
 	while (klass != NULL) {
 		printf ("[LEVEL %d] Implemented interfaces by class %s:\n", ancestor_level, klass->name);
@@ -329,11 +327,12 @@ publish:
 			klass->interface_offsets_packed = (guint16 *)mono_class_alloc (klass, sizeof (guint16) * interface_offsets_count);
 		}
 		bsize = (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0);
-#ifdef COMPRESSED_INTERFACE_BITMAP
-		bitmap = g_malloc0 (bsize);
-#else
-		bitmap = (uint8_t *)mono_class_alloc0 (klass, bsize);
-#endif
+
+		if (mono_opt_compressed_interface_bitmap)
+			bitmap = g_malloc0 (bsize);
+		else
+			bitmap = (uint8_t *)mono_class_alloc0 (klass, bsize);
+
 		for (int i = 0; i < interface_offsets_count; i++) {
 			guint32 id = interfaces_full [i]->interface_id;
 			bitmap [id >> 3] |= (1 << (id & 7));
@@ -343,16 +342,16 @@ publish:
 			}
 		}
 		if (!klass->interface_bitmap) {
-#ifdef COMPRESSED_INTERFACE_BITMAP
-			int len = mono_compress_bitmap (NULL, bitmap, bsize);
-			uint8_t *compressed_bitmap = mono_class_alloc0 (klass, len);
-			mono_compress_bitmap (compressed_bitmap, bitmap, bsize);
-			g_free (bitmap);
+			if (mono_opt_compressed_interface_bitmap) {
+				int len = mono_compress_bitmap (NULL, bitmap, bsize);
+				uint8_t *compressed_bitmap = mono_class_alloc0 (klass, len);
+				mono_compress_bitmap (compressed_bitmap, bitmap, bsize);
+				g_free (bitmap);
 
-			klass->interface_bitmap = compressed_bitmap;
-#else
-			klass->interface_bitmap = bitmap;
-#endif
+				klass->interface_bitmap = compressed_bitmap;
+			} else {
+				klass->interface_bitmap = bitmap;
+			}
 		}
 	}
 end:
