@@ -87,12 +87,14 @@ internal static partial class Interop
 
             fixed (byte* pIkm = &GetSwiftRef(ikm))
             fixed (byte* pSalt = &GetSwiftRef(salt))
+            fixed (byte* pInfo = &GetSwiftRef(info))
             fixed (byte* pDestination = destination)
             {
-                AppleCryptoNative_HKDFExtract(
+                AppleCryptoNative_HKDFDeriveKey(
                     algorithm,
                     new UnsafeBufferPointer<byte>(pIkm, ikm.Length),
                     new UnsafeBufferPointer<byte>(pSalt, salt.Length),
+                    new UnsafeBufferPointer<byte>(pInfo, info.Length),
                     new UnsafeMutableBufferPointer<byte>(pDestination, destination.Length),
                     out SwiftError error);
 

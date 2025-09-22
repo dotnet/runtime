@@ -20,6 +20,8 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             Span<byte> prk)
         {
+            ThrowForUnsupportedHashAlgorithm(hashAlgorithmName);
+
             if (s_hasCryptoKitImplementation)
             {
                 Interop.AppleCrypto.HKDFExtract(hashAlgorithmName, ikm, salt, prk);
@@ -37,6 +39,8 @@ namespace System.Security.Cryptography
             Span<byte> output,
             ReadOnlySpan<byte> info)
         {
+            ThrowForUnsupportedHashAlgorithm(hashAlgorithmName);
+
             if (s_hasCryptoKitImplementation)
             {
                 Interop.AppleCrypto.HkdfExpand(hashAlgorithmName, prk, info, output);
@@ -55,23 +59,28 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             ReadOnlySpan<byte> info)
         {
-            // if (s_hasCryptoKitImplementation)
-            // {
-            //     Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
-            //     Debug.Assert(hashAlgorithmName.Name is not null);
+            ThrowForUnsupportedHashAlgorithm(hashAlgorithmName);
 
-            //     Interop.Crypto.HkdfDeriveKey(
-            //         Interop.Crypto.EvpKdfAlgs.Hkdf,
-            //         ikm,
-            //         hashAlgorithmName.Name,
-            //         salt,
-            //         info,
-            //         output);
-            // }
-            // else
+            if (s_hasCryptoKitImplementation)
+            {
+                Interop.AppleCrypto.HKDFDeriveKey(hashAlgorithmName, ikm, salt, info, output);
+            }
+            else
             {
                 HKDFManagedImplementation.DeriveKey(hashAlgorithmName, hashLength, ikm, output, salt, info);
             }
+        }
+
+        private static void ThrowForUnsupportedHashAlgorithm(HashAlgorithmName hashAlgorithmName)
+        {
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_256 || hashAlgorithmName == HashAlgorithmName.SHA3_384 ||
+                hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // Unknown alogorithms are handled outside of this as a CryptographicException. SHA-3 is known, its just
+            // not supported.
         }
     }
 }

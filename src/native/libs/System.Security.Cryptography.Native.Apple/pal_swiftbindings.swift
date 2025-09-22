@@ -286,29 +286,30 @@ public func AppleCryptoNative_HKDFDeriveKey(
     hashAlgorithm: Int32,
     ikm: UnsafeBufferPointer<UInt8>,
     salt: UnsafeBufferPointer<UInt8>,
+    info: UnsafeBufferPointer<UInt8>,
     destination: UnsafeMutableBufferPointer<UInt8>) throws {
 
     let key = SymmetricKey(data: ikm)
 
     if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
-        let prk : ContiguousBytes = try {
+        let derivedKey = try {
             switch algorithm {
                 case .unknown:
                     throw HKDFError.unknownHashAlgorithm
                 case .md5:
-                    HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
+                    HKDF<Insecure.MD5>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha1:
-                    HKDF<Insecure.SHA1>.extract(inputKeyMaterial: key, salt: salt)
+                    HKDF<Insecure.SHA1>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha256:
-                    HKDF<SHA256>.extract(inputKeyMaterial: key, salt: salt)
+                    HKDF<SHA256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha384:
-                    HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
+                    HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha512:
-                    HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+                    HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
             }
         }()
 
-        _ = prk.withUnsafeBytes { keyBytes in
+        _ = derivedKey.withUnsafeBytes { keyBytes in
             keyBytes.copyBytes(to: destination)
         }
     }
