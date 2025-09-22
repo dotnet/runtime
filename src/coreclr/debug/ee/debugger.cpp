@@ -7780,7 +7780,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS_FROM_GETJITINFO;
         MODE_ANY;
     }
     CONTRACTL_END;

@@ -3068,7 +3068,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     CONTRACTL
     {
         MODE_COOPERATIVE;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
     }
     CONTRACTL_END;
@@ -3112,10 +3112,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
         EH_LOG((LL_INFO100, "Calling catch funclet at %p\n", pHandlerIP));
 
-        {
-            CONTRACT_VIOLATION(GCViolation);
-            dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
-        }
+        dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
         FixContext(pvRegDisplay->pCurrentContext);
 
@@ -3124,8 +3121,6 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
         callerTargetSp = CallerStackFrame::FromRegDisplay(pvRegDisplay).SP;
     }
-
-    CONTRACT_VIOLATION(GCViolation);
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
@@ -3328,10 +3323,9 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
     EH_LOG((LL_INFO100, "Calling finally funclet at %p\n", pHandlerIP));
 
-    {
-        CONTRACT_VIOLATION(GCViolation);
-        exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(NULL, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
-    }
+    ENDFORBIDGC();
+    exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(NULL, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
+    BEGINFORBIDGC();
 
     pThread->IncPreventAbort();
 
@@ -3712,7 +3706,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
     {
         MODE_COOPERATIVE;
         THROWS;
-        if (GET_THREAD()->GetExceptionState()->GetCurrentExceptionTracker()->m_passNumber == 1) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -3887,7 +3881,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     {
         MODE_COOPERATIVE;
         THROWS;
-        if (GET_THREAD()->GetExceptionState()->GetCurrentExceptionTracker()->m_passNumber == 1) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -4017,7 +4011,6 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 {
 #ifdef HOST_WINDOWS
                     GetThread()->SetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
-                    CONTRACT_VIOLATION(GCViolation);
                     GCX_PREEMP_NO_DTOR();
                     RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
@@ -4185,7 +4178,7 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
     CONTRACTL
     {
         MODE_COOPERATIVE;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -4200,6 +4193,9 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
     uint codeOffset = CalculateCodeOffset(pbControlPC, &methodRegionInfo);
 
     uint lastTryStart = 0, lastTryEnd = 0;
+
+    // We need to forbid any GC to happen between successive funclet invocations.
+    BEGINFORBIDGC();
 
     // Search the clauses for one that contains the current offset.
     RhEHClause ehClause;
@@ -4244,6 +4240,8 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
         CallFinallyFunclet(pFinallyHandler, pExInfo->m_frameIter.m_crawl.GetRegisterSet(), pExInfo);
         pExInfo->m_idxCurClause = MaxTryRegionIdx;
     }
+
+    ENDFORBIDGC();
 }
 
 static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
@@ -4251,7 +4249,7 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart)
     CONTRACTL
     {
         MODE_COOPERATIVE;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -4263,7 +4261,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
     CONTRACTL
     {
         MODE_COOPERATIVE;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
