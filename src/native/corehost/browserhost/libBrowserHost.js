@@ -166,7 +166,7 @@ var libBrowserHost = (function (exports) {
             if (Module._posix_memalign(ptrPtr, 16, bytes.length)) {
                 throw new Error("posix_memalign failed");
             }
-            const ptr = Module.HEAPU32[ptrPtr >> 2];
+            const ptr = Module.HEAPU32[ptrPtr >>> 2];
             Module.HEAPU8.set(bytes, ptr);
             loadedAssemblies[asset.name] = { ptr, length: bytes.length };
         }
@@ -178,13 +178,17 @@ var libBrowserHost = (function (exports) {
     function browserHostExternalAssemblyProbe(pathPtr, outDataStartPtr, outSize) {
         const path = Module.UTF8ToString(pathPtr);
         const assembly = loadedAssemblies[path];
-        if (!assembly) {
-            return false;
+        if (assembly) {
+            Module.HEAPU32[outDataStartPtr >>> 2] = assembly.ptr;
+            // int64_t target
+            Module.HEAPU32[outSize >>> 2] = assembly.length;
+            Module.HEAPU32[(outSize + 4) >>> 2] = 0;
+            return true;
         }
-        Module.HEAPU32[outDataStartPtr >> 2] = assembly.ptr;
-        // upper bits are cleared by the C caller
-        Module.HEAPU32[outSize >> 2] = assembly.length;
-        return true;
+        Module.HEAPU32[outDataStartPtr >>> 2] = 0;
+        Module.HEAPU32[outSize >>> 2] = 0;
+        Module.HEAPU32[(outSize + 4) >>> 2] = 0;
+        return false;
     }
     function browserHostResolveMain(exitCode) {
         loaderExports.browserHostResolveMain(exitCode);
@@ -192,6 +196,11 @@ var libBrowserHost = (function (exports) {
     function browserHostRejectMain(reason) {
         loaderExports.browserHostRejectMain(reason);
     }
+    // TODO-WASM: take ideas from Mono
+    // - second call to exit should be silent
+    // - second call to exit not override the first exit code
+    // - improve reason extraction
+    // - install global handler for unhandled exceptions and promise rejections
     function exit(exit_code, reason) {
         const reasonStr = reason ? (reason.stack ? reason.stack || reason.message : reason.toString()) : "";
         if (exit_code !== 0) {
@@ -508,10 +517,10 @@ var libBrowserHost = (function (exports) {
                         const config = dotnetInternals.config;
                         const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
                         const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
-                        config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, assemblyPaths].join(":");
-                        config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
-                        config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
-                        config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
+                        ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, assemblyPaths].join(":");
+                        ENV[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
+                        ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
+                        ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
                     }
                 },
             },
@@ -521,7 +530,7 @@ var libBrowserHost = (function (exports) {
 
         // this executes the function at compile time in order to capture export names
         const exports = libBrowserHost({});
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP"];
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
         let assignExportsBuilder = "";
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
@@ -539,4 +548,3 @@ var libBrowserHost = (function (exports) {
     libFactory();
     return exports;
 })({});
-//# sourceMappingURL=libBrowserHost.js.map
