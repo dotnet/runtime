@@ -438,6 +438,11 @@ namespace
             if (declGenericCount != methodGenericCount)
                 return false;
         }
+        else if (callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            // Method is generic but declaration is not
+            return false;
+        }
 
         DWORD declArgCount;
         DWORD methodArgCount;
