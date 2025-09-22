@@ -181,28 +181,36 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
     }
 
-    class AmbiguousName
+    class AmbiguousMethodName
     {
         private void M() { }
         private void M<T>() { }
+        private void N() { }
 
         private static void SM() { }
         private static void SM<U>() { }
+        private static void SN() { }
     }
 
-    static class AmbiguousName_Accessors
+    static class AccessorsAmbiguousMethodName
     {
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        public extern static void CallM(AmbiguousName a);
+        public extern static void CallM(AmbiguousMethodName a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        public extern static void CallM<T>(AmbiguousName a);
+        public extern static void CallM<T>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "N")]
+        public extern static void CallN_MissingMethod<T>(AmbiguousMethodName a);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        public extern static void CallSM(AmbiguousName a);
+        public extern static void CallSM(AmbiguousMethodName a);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        public extern static void CallSM<U>(AmbiguousName a);
+        public extern static void CallSM<U>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SN")]
+        public extern static void CallSN_MissingMethod<T>(AmbiguousMethodName a);
     }
 
     [Fact]
@@ -211,18 +219,20 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Console.WriteLine($"Running {nameof(Verify_Generic_AmbiguousMethodName)}");
 
         {
-            AmbiguousName a = new();
-            AmbiguousName_Accessors.CallM(a);
-            AmbiguousName_Accessors.CallM<int>(a);
-            AmbiguousName_Accessors.CallM<string>(a);
-            AmbiguousName_Accessors.CallM<Guid>(a);
+            AmbiguousMethodName a = new();
+            AccessorsAmbiguousMethodName.CallM(a);
+            AccessorsAmbiguousMethodName.CallM<int>(a);
+            AccessorsAmbiguousMethodName.CallM<string>(a);
+            AccessorsAmbiguousMethodName.CallM<Guid>(a);
+            Assert.Throws<MissingMethodException>(() => AccessorsAmbiguousMethodName.CallN_MissingMethod<int>(a));
         }
 
         {
-            AmbiguousName_Accessors.CallSM(null);
-            AmbiguousName_Accessors.CallSM<int>(null);
-            AmbiguousName_Accessors.CallSM<string>(null);
-            AmbiguousName_Accessors.CallSM<Guid>(null);
+            AccessorsAmbiguousMethodName.CallSM(null);
+            AccessorsAmbiguousMethodName.CallSM<int>(null);
+            AccessorsAmbiguousMethodName.CallSM<string>(null);
+            AccessorsAmbiguousMethodName.CallSM<Guid>(null);
+            Assert.Throws<MissingMethodException>(() => AccessorsAmbiguousMethodName.CallSN_MissingMethod<int>(null));
         }
     }
 
