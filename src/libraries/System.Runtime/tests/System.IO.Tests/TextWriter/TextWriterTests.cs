@@ -42,7 +42,7 @@ namespace System.IO.Tests
                 {
                     tw.Write(TestDataProvider.RuneData[count]);
                 }
-                Assert.Equal(new string(TestDataProvider.RuneData), tw.Text);
+                Assert.Equal(string.Concat(TestDataProvider.RuneData), tw.Text);
             }
         }
 
