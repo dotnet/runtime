@@ -36,8 +36,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<SemanticTag> Interface implementation
 
-        int IComparable<Tag>.CompareTo(Tag tag)
+        int IComparable<Tag>.CompareTo(Tag? tag)
         {
+            if (tag is null)
+            {
+                return 1;
+            }
+
             return (int)_cfgTag.ArcIndex - (int)tag._cfgTag.ArcIndex;
         }
 
@@ -54,7 +59,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal CfgSemanticTag _cfgTag;
 
-        internal Backend _be;
+        internal Backend? _be;
 
         #endregion
     }
