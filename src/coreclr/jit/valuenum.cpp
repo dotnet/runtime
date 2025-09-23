@@ -9987,27 +9987,27 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
 #ifdef TARGET_RISCV64
             case NI_System_Math_Max:
-                vnf = VNF_Max;
+                vnf = VNF_MaxInt;
+                break;
+
+            case NI_System_Math_MaxUnsigned:
+                vnf = VNF_MaxInt_UN;
                 break;
 
             case NI_System_Math_MaxNative:
                 vnf = VNF_MaxNumber;
                 break;
 
-            case NI_System_Math_MaxUnsigned:
-                vnf = VNF_Max_UN;
+            case NI_System_Math_Min:
+                vnf = VNF_MinInt;
                 break;
 
-            case NI_System_Math_Min:
-                vnf = VNF_Min;
+            case NI_System_Math_MinUnsigned:
+                vnf = VNF_MinInt_UN;
                 break;
 
             case NI_System_Math_MinNative:
                 vnf = VNF_MinNumber;
-                break;
-
-            case NI_System_Math_MinUnsigned:
-                vnf = VNF_Min_UN;
                 break;
 #endif // TARGET_RISCV64
 
