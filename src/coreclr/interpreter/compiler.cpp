@@ -3440,7 +3440,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
-        if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
+        if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) || (m_compHnd->getClassAttribs(m_classHnd) & CORINFO_FLG_INTRINSIC_TYPE))
         {
             NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
             if ((ni == NI_System_StubHelpers_NextCallReturnAddress) && (m_ip[5] == CEE_POP))
