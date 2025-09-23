@@ -9,6 +9,7 @@
 #include <cor.h>                // for debugMacros.h
 #include "debugmacros.h"        // for ASSERTE
 #include "opinfo.h"
+#include "check.h"
 
 
 OpInfo::OpInfoData OpInfo::table[] = {
@@ -109,11 +110,7 @@ AGAIN:
             args->phi.vars  = (unsigned short*) instrPtr; instrPtr += (2 * args->phi.count);
             break;
         default:
-#ifdef _DEBUG
-            _ASSERTE(!"BadType");
-#else
-            __UNREACHABLE();        // we are really certain the default case does not happen
-#endif
+            UNREACHABLE();        // we are really certain the default case does not happen
             break;
         }
     return(instrPtr);
