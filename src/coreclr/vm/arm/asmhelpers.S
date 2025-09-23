@@ -906,42 +906,33 @@ LEAF_END Load_R0
 
 LEAF_ENTRY Load_R0_R1
     ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1
     ldr r1, [r7], #4
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1
 
 LEAF_ENTRY Load_R0_R1_R2
-    EMIT_BREAKPOINT // TODO
+    ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2
+    ldr r1, [r7], #4
+ALTERNATE_ENTRY Load_R2
+    ldr r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1_R2
 
 LEAF_ENTRY Load_R0_R1_R2_R3
-    EMIT_BREAKPOINT // TODO
+    ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_R3
+    ldr r1, [r7], #4
+ALTERNATE_ENTRY Load_R2_R3
+    ldr r2, [r7], #4
+ALTERNATE_ENTRY Load_R3
+    ldr r3, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1_R2_R3
-
-LEAF_ENTRY Load_R1
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_R1
-
-LEAF_ENTRY Load_R1_R2
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_R1_R2
-
-LEAF_ENTRY Load_R1_R2_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_R1_R2_R3
-
-LEAF_ENTRY Load_R2
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_R2
-
-LEAF_ENTRY Load_R2_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_R2_R3
-
-LEAF_ENTRY Load_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_R3
 
 LEAF_ENTRY Store_R0
     str r0, [r7], #4
@@ -950,40 +941,34 @@ LEAF_ENTRY Store_R0
 LEAF_END Store_R0
 
 LEAF_ENTRY Store_R0_R1
-    EMIT_BREAKPOINT // TODO
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1
+    str r1, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1
 
 LEAF_ENTRY Store_R0_R1_R2
-    EMIT_BREAKPOINT // TODO
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2
+    str r1, [r7], #4
+ALTERNATE_ENTRY Store_R2
+    str r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2
 
 LEAF_ENTRY Store_R0_R1_R2_R3
-    EMIT_BREAKPOINT // TODO
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_R3
+    str r1, [r7], #4
+ALTERNATE_ENTRY Store_R2_R3
+    str r2, [r7], #4
+ALTERNATE_ENTRY Store_R3
+    str r3, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2_R3
-
-LEAF_ENTRY Store_R1
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_R1
-
-LEAF_ENTRY Store_R1_R2
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_R1_R2
-
-LEAF_ENTRY Store_R1_R2_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_R1_R2_R3
-
-LEAF_ENTRY Store_R2
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_R2
-
-LEAF_ENTRY Store_R2_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_R2_R3
-
-LEAF_ENTRY Store_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_R3
 
 LEAF_ENTRY Load_Ref_R0
     EMIT_BREAKPOINT // TODO
