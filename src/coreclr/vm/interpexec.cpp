@@ -344,7 +344,7 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*);
 InterpThreadContext::InterpThreadContext()
 {
     // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackStart = pStackPointer = (int8_t*)aligned_alloc(INTERP_STACK_ALIGNMENT, INTERP_STACK_SIZE);
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
 }
 

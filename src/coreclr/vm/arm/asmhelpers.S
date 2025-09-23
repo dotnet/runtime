@@ -905,7 +905,10 @@ LEAF_ENTRY Load_R0
 LEAF_END Load_R0
 
 LEAF_ENTRY Load_R0_R1
-    EMIT_BREAKPOINT // TODO
+    ldr r0, [r7], #4
+    ldr r1, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1
 
 LEAF_ENTRY Load_R0_R1_R2
@@ -1033,6 +1036,7 @@ LEAF_END Store_Stack_Ref
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     PROLOG_PUSH "{r5-r8,lr}"
     mov r8, sp
+    sub sp, sp, 12
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
@@ -1043,7 +1047,19 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH "{r5-r8,lr}"
+    mov r8, sp
+    sub sp, sp, 12
+    str r2, [sp]
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    blx r5
+    ldr r2, [sp]
+    str r0, [r2]
+    mov sp, r8
+    EPILOG_POP "{r5-r8,pc}"
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
@@ -1094,10 +1110,12 @@ NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
     PROLOG_PUSH {lr}
-    add r0, sp, #__PWTB_TransitionBlock + 4
+    sub sp, sp, 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r9
     mov r2, 0
     bl C_FUNC(ExecuteInterpretedMethod)
+    add sp, sp, 12
     EPILOG_POP {pc}
 
 NESTED_END InterpreterStubRetVoid, _TEXT
