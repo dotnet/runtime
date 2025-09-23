@@ -2598,9 +2598,27 @@ static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE
     return false;
 }
 
-bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type)
 {
-    bool mustExpand = (method == m_methodHnd);
+    if (entry->type != type)
+    {
+        if (entry->type != StackTypeR4 && entry->type != StackTypeR8)
+            NO_WAY("ConvertFloatingPointStackEntryToStackType: entry is not floating point");
+        
+        if (type == StackTypeR8 && entry->type == StackTypeR4)
+        {
+            EmitConv(entry, StackTypeR8, INTOP_CONV_R8_R4);
+        }
+        else if (type == StackTypeR4 && entry->type == StackTypeR8)
+        {
+            EmitConv(entry, StackTypeR4, INTOP_CONV_R4_R8);
+        }
+    }
+}
+
+bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+{
+    bool mustExpand = (method == m_methodHnd) && nonVirtualCall;
     if (!mustExpand && (ni == NI_Illegal))
         return false;
 
@@ -2613,6 +2631,170 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             PushStackType(StackTypeI4, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
+
+        case NI_PRIMITIVE_ConvertToIntegerNative:
+        {
+            CHECK_STACK(1);
+            InterpType targetType = GetInterpType(sig.retType);
+            CORINFO_ARG_LIST_HANDLE args;
+            args = sig.args;
+            CORINFO_CLASS_HANDLE argClsHnd;
+            CorInfoType sourceCorElementType = strip(m_compHnd->getArgType(&sig, args, &argClsHnd));
+            InterpType sourceType;
+            if (sourceCorElementType == CORINFO_TYPE_FLOAT)
+            {
+                sourceType = InterpTypeR4;
+            }
+            else if (sourceCorElementType == CORINFO_TYPE_DOUBLE)
+            {
+                sourceType = InterpTypeR8;
+            }
+            else
+            {
+                NO_WAY("ConvertToIntegerNative: source type is not floating point");
+            }
+
+            if (g_stackTypeFromInterpType[targetType] != StackTypeI4 && 
+                g_stackTypeFromInterpType[targetType] != StackTypeI8)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            InterpOpcode convOp;
+            
+            // Interpreter-TODO: In theory this should use the "native" variants of the conversion opcodes which are likely faster
+            // than the ones with cross-platform consistent behavior; however, that is quite a lot of new opcodes for probably little gain, so 
+            // for now we just use the consistent ones like normal conversions.
+            switch (sig.retType)
+            {
+                case CORINFO_TYPE_INT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8; break;
+                case CORINFO_TYPE_UINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U4_R4 : INTOP_CONV_U4_R8; break;
+                case CORINFO_TYPE_LONG:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I8_R4 : INTOP_CONV_I8_R8; break;
+                case CORINFO_TYPE_ULONG:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U8_R4 : INTOP_CONV_U8_R8; break;
+                case CORINFO_TYPE_SHORT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I2_R4 : INTOP_CONV_I2_R8; break;
+                case CORINFO_TYPE_CHAR:
+                case CORINFO_TYPE_USHORT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U2_R4 : INTOP_CONV_U2_R8; break;
+                case CORINFO_TYPE_BYTE:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I1_R4 : INTOP_CONV_I1_R8; break;
+                case CORINFO_TYPE_UBYTE:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U1_R4 : INTOP_CONV_U1_R8; break;
+#ifdef TARGET_64BIT
+                case CORINFO_TYPE_NATIVEINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I8_R4 : INTOP_CONV_I8_R8; break;
+                case CORINFO_TYPE_NATIVEUINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U8_R4 : INTOP_CONV_U8_R8; break;
+#else
+                case CORINFO_TYPE_NATIVEINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_I4_R4 : INTOP_CONV_I4_R8; break;
+                case CORINFO_TYPE_NATIVEUINT:
+                    convOp = (sourceType == InterpTypeR4) ? INTOP_CONV_U4_R4 : INTOP_CONV_U4_R8; break;
+#endif
+                default:
+                    goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            EmitConv(m_pStackPointer - 1, g_stackTypeFromInterpType[targetType], convOp);
+            return true;
+        }
+
+        case NI_System_Math_MultiplyAddEstimate:
+        {
+            CHECK_STACK(3);
+            InterpType estimateType = GetInterpType(sig.retType);
+            if (estimateType != InterpTypeR4 && estimateType != InterpTypeR8)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-1], g_stackTypeFromInterpType[estimateType]);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-2], g_stackTypeFromInterpType[estimateType]);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-3], g_stackTypeFromInterpType[estimateType]);
+
+            int32_t mulA = m_pStackPointer[-3].var;
+            int32_t mulB = m_pStackPointer[-2].var;
+            int32_t addC = m_pStackPointer[-1].var;
+            m_pStackPointer -= 3;
+
+            AddIns(estimateType == InterpTypeR4 ? INTOP_MUL_R4 : INTOP_MUL_R8);
+            m_pLastNewIns->SetSVars2(mulA, mulB);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            int32_t mulTemp = m_pStackPointer[-1].var;
+            m_pStackPointer--;
+
+            AddIns(estimateType == InterpTypeR4 ? INTOP_ADD_R4 : INTOP_ADD_R8);
+            m_pLastNewIns->SetSVars2(mulTemp, addC);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+        case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_System_Math_Sqrt:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            InterpType estimateType = GetInterpType(sig.retType);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[0], g_stackTypeFromInterpType[estimateType]);
+
+            int32_t argumentVar = m_pStackPointer[0].var;
+            AddIns(estimateType == InterpTypeR4 ? INTOP_SQRT_R4 : INTOP_SQRT_R8);
+            m_pLastNewIns->SetSVar(argumentVar);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            if (ni == NI_System_Math_Sqrt)
+            {
+                return true;
+            }
+            else
+            {
+                // This is the ReciprocalSqrtEstimate intrinsic. We need to compute 1.0 / sqrt(x)
+                goto RECIPROCAL_ESTIMATE;
+            }
+        }
+
+        case NI_System_Math_ReciprocalEstimate:
+        RECIPROCAL_ESTIMATE:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            InterpType estimateType = GetInterpType(sig.retType);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[0], g_stackTypeFromInterpType[estimateType]);
+
+            int32_t argumentVar = m_pStackPointer[0].var;
+
+            if (estimateType == InterpTypeR4)
+            {
+                AddIns(INTOP_LDC_R4);
+                PushInterpType(InterpTypeR4, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                float val = 1.0f;
+                int32_t val1Float = *(int32_t*)&val;
+                m_pLastNewIns->data[0] = val1Float;
+            }
+            else
+            {
+                AddIns(INTOP_LDC_R8);
+                PushInterpType(InterpTypeR8, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                double val = 1.0;
+                int64_t val1Double = *(int64_t*)&val;
+                m_pLastNewIns->data[0] = (int32_t)val1Double;
+                m_pLastNewIns->data[1] = (int32_t)(val1Double >> 32);
+            }
+            int32_t oneVar = m_pStackPointer[-1].var;
+            m_pStackPointer--;
+            AddIns(estimateType == InterpTypeR4 ? INTOP_DIV_R4 : INTOP_DIV_R8);
+            m_pLastNewIns->SetSVars2(oneVar, argumentVar);
+            PushInterpType(estimateType, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
 
         case NI_Throw_PlatformNotSupportedException:
             AddIns(INTOP_THROW_PNSE);
@@ -2653,7 +2835,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             return true;
         }
 
+        case NI_System_Threading_Interlocked_MemoryBarrier:
         case NI_System_Threading_Volatile_ReadBarrier:
+        case NI_System_Threading_Volatile_WriteBarrier:
             AddIns(INTOP_MEMBAR);
             return true;
 
@@ -2677,6 +2861,14 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             int32_t opcode;
             switch (retType)
             {
+                case InterpTypeI1:
+                case InterpTypeU1:
+                    opcode = INTOP_COMPARE_EXCHANGE_U1;
+                    break;
+                case InterpTypeI2:
+                case InterpTypeU2:
+                    opcode = INTOP_COMPARE_EXCHANGE_U2;
+                    break;
                 case InterpTypeI4:
                     opcode = INTOP_COMPARE_EXCHANGE_I4;
                     break;
@@ -2684,7 +2876,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                     opcode = INTOP_COMPARE_EXCHANGE_I8;
                     break;
                 default:
-                    return false;
+                    goto FAIL_TO_EXPAND_INTRINSIC;
             }
 
             AddIns(opcode);
@@ -2697,6 +2889,21 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             PushInterpType(retType, nullptr);
             m_pLastNewIns->SetSVars3(addrVar, valueVar, comparandVar);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            switch (retType)
+            {
+                case InterpTypeI1:
+                    // The exchange returns the original value as an U1 zero extended to U4, but we need to return it as an I4
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
+                    break;
+                case InterpTypeI2:
+                    // The exchange returns the original value as an U2 zero extended to U4, but we need to return it as an I4
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+                    break;
+                default:
+                    // Nothing is needed
+                    break;
+            }
             return true;
         }
 
@@ -2708,6 +2915,14 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
             int32_t opcode;
             switch (retType)
             {
+                case InterpTypeI1:
+                case InterpTypeU1:
+                    opcode = INTOP_EXCHANGE_U1;
+                    break;
+                case InterpTypeI2:
+                case InterpTypeU2:
+                    opcode = INTOP_EXCHANGE_U2;
+                    break;
                 case InterpTypeI4:
                     opcode = INTOP_EXCHANGE_I4;
                     break;
@@ -2715,7 +2930,52 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
                     opcode = INTOP_EXCHANGE_I8;
                     break;
                 default:
-                    return false;
+                    goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            AddIns(opcode);
+            m_pStackPointer -= 2;
+
+            int32_t addrVar = m_pStackPointer[0].var;
+            int32_t valueVar = m_pStackPointer[1].var;
+
+            PushInterpType(retType, nullptr);
+            m_pLastNewIns->SetSVars2(addrVar, valueVar);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+            switch (retType)
+            {
+                case InterpTypeI1:
+                    // The exchange returns the original value as an U1 zero extended to U4, but we need to return it as an I4
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
+                    break;
+                case InterpTypeI2:
+                    // The exchange returns the original value as an U2 zero extended to U4, but we need to return it as an I4
+                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+                    break;
+                default:
+                    // Nothing is needed
+                    break;
+            }
+            return true;
+        }
+
+        case NI_System_Threading_Interlocked_ExchangeAdd:
+        {
+            CHECK_STACK(2);
+            InterpType retType = GetInterpType(sig.retType);
+
+            int32_t opcode;
+            switch (retType)
+            {
+                case InterpTypeI4:
+                    opcode = INTOP_EXCHANGEADD_I4;
+                    break;
+                case InterpTypeI8:
+                    opcode = INTOP_EXCHANGEADD_I8;
+                    break;
+                default:
+                    goto FAIL_TO_EXPAND_INTRINSIC;
             }
 
             AddIns(opcode);
@@ -2755,8 +3015,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
         {
             if (sig.sigInst.methInstCount != 1)
             {
-                assert(!mustExpand);
-                return false;
+                goto FAIL_TO_EXPAND_INTRINSIC;
             }
             CHECK_STACK(1);
 
@@ -2782,8 +3041,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HAN
 
         default:
         {
+            FAIL_TO_EXPAND_INTRINSIC:
 #ifdef DEBUG
-            if (t_interpDump)
+            if (t_interpDump || mustExpand)
             {
                 const char* className = NULL;
                 const char* namespaceName = NULL;
@@ -3198,7 +3458,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (ni == NI_System_StubHelpers_GetStubContext);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
-                if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
+                if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
                 {
                     m_ip += 5;
                     return;

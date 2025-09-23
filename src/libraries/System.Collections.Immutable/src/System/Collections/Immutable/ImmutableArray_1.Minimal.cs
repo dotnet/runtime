@@ -225,7 +225,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, destination, self.Length);
+            Array.Copy(self.array, destination, self.Length);
         }
 
         /// <summary>
@@ -237,7 +237,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, 0, destination, destinationIndex, self.Length);
+            Array.Copy(self.array, 0, destination, destinationIndex, self.Length);
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array!, sourceIndex, destination, destinationIndex, length);
+            Array.Copy(self.array, sourceIndex, destination, destinationIndex, length);
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
-            return new Enumerator(self.array!);
+            return new Enumerator(self.array);
         }
 
         /// <summary>
@@ -386,7 +386,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array!);
+            return EnumeratorObject.Create(self.array);
         }
 
         /// <summary>
@@ -398,12 +398,13 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array!);
+            return EnumeratorObject.Create(self.array);
         }
 
         /// <summary>
         /// Throws a null reference exception if the array field is null.
         /// </summary>
+        [MemberNotNull(nameof(array))]
         internal void ThrowNullRefIfNotInitialized()
         {
             // Force NullReferenceException if array is null by touching its Length.
@@ -425,9 +426,10 @@ namespace System.Collections.Immutable
         ///
         /// This is intended for explicitly implemented interface method and property implementations.
         /// </summary>
+        [MemberNotNull(nameof(array))]
         private void ThrowInvalidOperationIfNotInitialized()
         {
-            if (this.IsDefault)
+            if (this.array == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperationOnDefaultArray);
             }
