@@ -405,7 +405,7 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // For DoAppropriateWait
     }
     CONTRACTL_END;
 
@@ -583,7 +583,7 @@ static void DeleteThread(Thread* pThread)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -628,7 +628,7 @@ Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -773,7 +773,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
     }
     CONTRACTL_END;
 
@@ -824,7 +824,7 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -1305,7 +1305,7 @@ Thread::Thread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -1543,7 +1543,7 @@ void Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -2198,7 +2198,7 @@ int Thread::IncExternalCount()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -2229,7 +2229,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -2394,7 +2394,7 @@ Thread::~Thread()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -2670,7 +2670,7 @@ void Thread::CleanupCOMState()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -2768,7 +2768,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // For DecExternalCount & other calls
     }
     CONTRACTL_END;
 
@@ -4053,35 +4053,28 @@ void Thread::SetExposedObject(OBJECTREF exposed)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    if (exposed != NULL)
-    {
-        _ASSERTE (GetThreadNULLOk() != this);
-        _ASSERTE(IsUnstarted());
-        _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
-        // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
-        // physical thread continues to run, of course.
-        StoreObjectInHandle(m_ExposedObject, exposed);
-        // This makes sure the contexts on the backing thread
-        // and the managed thread start off in sync with each other.
-        // BEWARE: the IncExternalCount call below may cause GC to happen.
+    _ASSERTE(exposed);
 
-        // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
-        // If the creating thread is killed before the target thread is killed in Thread.Start, Thread object
-        // will be kept alive forever.
-        // Instead, IncExternalCount should be called after the target thread has been started in Thread.Start.
-        // IncExternalCount();
-    }
-    else
-    {
-        // Simply set both of the handles to NULL. The GC of the old exposed thread
-        // object will take care of decrementing the external ref count.
-        StoreObjectInHandle(m_ExposedObject, NULL);
-        StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
-    }
+    _ASSERTE(GetThreadNULLOk() != this);
+    _ASSERTE(IsUnstarted());
+    _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
+    // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
+    // physical thread continues to run, of course.
+    StoreObjectInHandle(m_ExposedObject, exposed);
+    // This makes sure the contexts on the backing thread
+    // and the managed thread start off in sync with each other.
+    // BEWARE: the IncExternalCount call below may cause GC to happen.
+
+    // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
+    // If the creating thread is killed before the target thread is killed in Thread.Start, Thread object
+    // will be kept alive forever.
+    // Instead, IncExternalCount should be called after the target thread has been started in Thread.Start.
+    // IncExternalCount();
 }
 
 void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
@@ -4931,7 +4924,7 @@ void ThreadStore::AddThread(Thread *newThread)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
