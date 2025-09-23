@@ -1774,7 +1774,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + m_methodInfo->EHcount + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0);
+    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + m_methodInfo->EHcount;
 
     offset = 0;
 
@@ -1799,7 +1799,7 @@ void InterpCompiler::CreateILVars()
         {
             assert(interpType == InterpTypeO);
             assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
-            m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+            m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
         }
         CreateNextLocalVar(hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0, argClass, interpType, &offset);
         argIndexOffset++;
@@ -1807,7 +1807,7 @@ void InterpCompiler::CreateILVars()
 
     if (hasParamArg)
     {
-        m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+        m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
         CreateNextLocalVar(m_paramArgIndex, NULL, InterpTypeI, &offset);
     }
 
@@ -1866,8 +1866,8 @@ void InterpCompiler::CreateILVars()
         new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, GetInterpTypeStackSize(NULL, InterpTypeO, &dummyAlign));
         INTERP_DUMP("alloc EH clause var %d\n", index);
         index++;
-        m_varsSize++; // When we computed m_varsSize above, we didn't account for the clause vars
     }
+    assert(index == m_varsSize);
 
     m_totalVarsStackSize = offset;
 }
