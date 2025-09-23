@@ -2546,7 +2546,7 @@ PROCCreateCrashDump(
 
         if (bytesWritten != 1)
         {
-            fprintf(stderr, "Problem writing to parent_write_pipe: %s (%d)\n", strerror(errno), errno);
+            fprintf(stderr, "Problem writing to createdump parent_write_pipe: %s (%d)\n", strerror(errno), errno);
             close(parent_read_pipe);
             if (errorMessageBuffer != nullptr)
             {
