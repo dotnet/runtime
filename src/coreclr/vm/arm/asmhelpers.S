@@ -970,37 +970,71 @@ ALTERNATE_ENTRY Store_R3
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2_R3
 
-LEAF_ENTRY Load_Ref_R0
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_Ref_R0
+.macro Load_Ref argReg
 
-LEAF_ENTRY Load_Ref_R1
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_Ref_R1
+LEAF_ENTRY Load_Ref_\argReg
+    mov \argReg, r7
+    ldr r5, [r6], #4
+    add r7, r7, r5
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_Ref_\argReg
 
-LEAF_ENTRY Load_Ref_R2
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_Ref_R2
+.endm
 
-LEAF_ENTRY Load_Ref_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Load_Ref_R3
+Load_Ref R0
+Load_Ref R1
+Load_Ref R2
+Load_Ref R3
 
-LEAF_ENTRY Store_Ref_R0
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_Ref_R0
+.macro Copy_Ref argReg
+    cmp r5, #8
+    blt LOCAL_LABEL(CopyBy4\argReg)
+LOCAL_LABEL(RefCopyLoop8\argReg):
+    ldr r9, [\argReg], #4
+    ldr r10, [\argReg], #4
+    str r9, [r7], #4
+    str r10, [r7], #4
+    subs r5, r5, #8
+    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
+    beq LOCAL_LABEL(RefCopyDone\argReg)
+    add r5, r5, #8
+LOCAL_LABEL(CopyBy4\argReg):
+    cmp r5, #4
+    blt LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyLoop4\argReg):
+    ldr r9, [\argReg], #4
+    str r9, [r7], #4
+    subs r5, r5, #4
+    bgt LOCAL_LABEL(RefCopyLoop4\argReg)
+    beq LOCAL_LABEL(RefCopyDone\argReg)
+    add r5, r5, #4
+LOCAL_LABEL(RefCopyLoop1\argReg):
+    ldrb r9, [\argReg], #1
+    strb r9, [r7], #1
+    subs r5, r5, #1
+    bne LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyDone\argReg):
+    // Align r7 to the stack slot size
+    add r7, r7, 7
+    and r7, r7, 0xfffffff8
+.endm
 
-LEAF_ENTRY Store_Ref_R1
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_Ref_R1
+.macro Store_Ref argReg
 
-LEAF_ENTRY Store_Ref_R2
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_Ref_R2
+LEAF_ENTRY Store_Ref_\argReg
+    ldr r5, [r6], #4 // size of the value type
+    // Copy_Ref \argReg
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Ref_\argReg
 
-LEAF_ENTRY Store_Ref_R3
-    EMIT_BREAKPOINT // TODO
-LEAF_END Store_Ref_R3
+.endm
+
+Store_Ref R0
+Store_Ref R1
+Store_Ref R2
+Store_Ref R3
 
 LEAF_ENTRY Load_Stack
     EMIT_BREAKPOINT // TODO
@@ -1086,7 +1120,6 @@ LOCAL_LABEL(HaveInterpThreadContext):
     add r6, r7, #OFFSETOF__CallStubHeader__Routines
     ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
     ldr r5, [r6] // InterpThreadContext
-    #EMIT_BREAKPOINT // TODO
     blx r5
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
