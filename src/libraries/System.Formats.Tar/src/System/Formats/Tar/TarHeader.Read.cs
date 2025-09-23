@@ -26,6 +26,9 @@ namespace System.Formats.Tar
 
             archiveStream.ReadExactly(buffer);
 
+            // Check for compression magic numbers to provide better error messages if the file is a compressed tar archive (tar.gz, tar.bz2, etc.)
+            CheckForCompressionMagicNumbers(buffer);
+
             TarHeader? header = TryReadAttributes(initialFormat, buffer, archiveStream);
             if (header != null && processDataBlock)
             {
@@ -47,6 +50,9 @@ namespace System.Formats.Tar
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
 
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            // Check for compression magic numbers to provide better error messages if the file is a compressed tar archive (tar.gz, tar.bz2, etc.)
+            CheckForCompressionMagicNumbers(buffer.Span);
 
             TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
             if (header != null && processDataBlock)
