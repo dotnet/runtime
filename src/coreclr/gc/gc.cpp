@@ -36273,35 +36273,34 @@ void gc_heap::make_unused_array (uint8_t* x, size_t size, BOOL clearp, BOOL rese
         }
     }
 #ifndef HOST_64BIT
-        ((CObjectHeader*)x)->SetFree(size);
+    ((CObjectHeader*)x)->SetFree(size);
 #else
 
 #if BIGENDIAN
 #error "This won't work on big endian platforms"
 #endif
 
-        //
-        // If the size is more than 4GB, we need to create multiple objects because of
-        // the Array::m_NumComponents is uint32_t and the high 32 bits of unused array
-        // size is ignored in regular object size computation.
-        //
-        uint8_t * tmp = x;
-        size_t remaining_size = size;
+    //
+    // If the size is more than 4GB, we need to create multiple objects because of
+    // the Array::m_NumComponents is uint32_t and the high 32 bits of unused array
+    // size is ignored in regular object size computation.
+    //
+    uint8_t * tmp = x;
+    size_t remaining_size = size;
 
-        while (remaining_size > UINT32_MAX)
-        {
-            // Make sure that there will be at least Align(min_obj_size) left
-            size_t current_size = UINT32_MAX - get_alignment_constant (FALSE)
-                - Align (min_obj_size, get_alignment_constant (FALSE));
+    while (remaining_size > UINT32_MAX)
+    {
+        // Make sure that there will be at least Align(min_obj_size) left
+        size_t current_size = UINT32_MAX - get_alignment_constant (FALSE)
+            - Align (min_obj_size, get_alignment_constant (FALSE));
 
-            ((CObjectHeader*)tmp)->SetFree(current_size);
+        ((CObjectHeader*)tmp)->SetFree(current_size);
 
-            remaining_size -= current_size;
-            tmp += current_size;
-        }
+        remaining_size -= current_size;
+        tmp += current_size;
+    }
 
-        ((CObjectHeader*)tmp)->SetFree(remaining_size);
-    
+    ((CObjectHeader*)tmp)->SetFree(remaining_size);
 #endif
 
     if (clearp)
@@ -36312,10 +36311,10 @@ void gc_heap::make_unused_array (uint8_t* x, size_t size, BOOL clearp, BOOL rese
 void gc_heap::clear_unused_array (uint8_t* x, size_t size)
 {
 #ifndef HOST_64BIT
-        UNREFERENCED_PARAMETER(size);
-        // Also clear the sync block
-        *(((PTR_PTR)x)-1) = 0;
-		((CObjectHeader*)x)->UnsetFree();
+    UNREFERENCED_PARAMETER(size);
+    // Also clear the sync block
+    *(((PTR_PTR)x)-1) = 0;
+    ((CObjectHeader*)x)->UnsetFree();
 #else
 
 #if BIGENDIAN
@@ -36324,24 +36323,23 @@ void gc_heap::clear_unused_array (uint8_t* x, size_t size)
 
     // The memory could have been cleared in the meantime. We have to mirror the algorithm
     // from make_unused_array since we cannot depend on the object sizes in memory.
-        uint8_t * tmp = x;
-        size_t remaining_size = size;
+    uint8_t * tmp = x;
+    size_t remaining_size = size;
 
-        while (remaining_size > UINT32_MAX)
-        {
-            size_t current_size = UINT32_MAX - get_alignment_constant (FALSE)
-                - Align (min_obj_size, get_alignment_constant (FALSE));
-
-            *(((PTR_PTR)tmp)-1) = 0;
-            ((CObjectHeader*)tmp)->UnsetFree();
-
-            remaining_size -= current_size;
-            tmp += current_size;
-        }
+    while (remaining_size > UINT32_MAX)
+    {
+        size_t current_size = UINT32_MAX - get_alignment_constant (FALSE)
+            - Align (min_obj_size, get_alignment_constant (FALSE));
 
         *(((PTR_PTR)tmp)-1) = 0;
         ((CObjectHeader*)tmp)->UnsetFree();
 
+        remaining_size -= current_size;
+        tmp += current_size;
+    }
+
+    *(((PTR_PTR)tmp)-1) = 0;
+    ((CObjectHeader*)tmp)->UnsetFree();
 #endif
 }
 
