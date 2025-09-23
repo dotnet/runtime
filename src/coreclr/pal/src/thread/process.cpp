@@ -2432,8 +2432,8 @@ PROCCreateCrashDump(
         }
     }
 
-    int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int child_pipes[2], parent_pipes[2];
+    if (pipe(child_pipes) == -1 || pipe(parent_pipes) == -1)
     {
         if (errorMessageBuffer != nullptr)
         {
@@ -2442,8 +2442,10 @@ PROCCreateCrashDump(
         return false;
     }
     // [0] is read end, [1] is write end
-    int parent_pipe = pipe_descs[0];
-    int child_pipe = pipe_descs[1];
+    int child_read_pipe = child_pipes[0];
+    int child_write_pipe = child_pipes[1];
+    int parent_read_pipe = parent_pipes[0];
+    int parent_write_pipe = parent_pipes[1];
 
     // Fork the core dump child process.
     pid_t childpid = fork();
@@ -2455,20 +2457,27 @@ PROCCreateCrashDump(
         {
             sprintf_s(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
-        close(pipe_descs[0]);
-        close(pipe_descs[1]);
+        close(child_read_pipe);
+        close(child_write_pipe);
+        close(parent_read_pipe);
+        close(parent_write_pipe);
         return false;
     }
     else if (childpid == 0)
     {
         // Close the read end of the pipe, the child doesn't need it
         int callbackResult = 0;
-        close(parent_pipe);
+
+        char buffer;
+        read(parent_read_pipe, &buffer, 1); // Wait for prctl(PR_SET_PTRACER, childpid) in parent
+        close(parent_read_pipe);
+        close(parent_write_pipe);
+        close(child_read_pipe);
 
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_pipe, STDERR_FILENO);
+            dup2(child_write_pipe, STDERR_FILENO);
         }
         if (g_createdumpCallback != nullptr)
         {
@@ -2504,7 +2513,11 @@ PROCCreateCrashDump(
             ERROR("PROCCreateCrashDump: prctl() FAILED %s (%d)\n", strerror(errno), errno);
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-        close(child_pipe);
+        // Signal child that prctl(PR_SET_PTRACER, childpid) is done
+        write(parent_write_pipe, "S", 1);
+        close(parent_write_pipe);
+        close(parent_read_pipe);
+        close(child_write_pipe);
 
         // Read createdump's stderr messages (if any)
         if (errorMessageBuffer != nullptr)
@@ -2512,7 +2525,7 @@ PROCCreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while ((count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            while ((count = read(child_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
             {
                 bytesRead += count;
             }
@@ -2522,7 +2535,7 @@ PROCCreateCrashDump(
                 fputs(errorMessageBuffer, stderr);
             }
         }
-        close(parent_pipe);
+        close(child_read_pipe);
 
         // Parent waits until the child process is done
         int wstatus = 0;
