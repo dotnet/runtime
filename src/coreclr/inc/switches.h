@@ -48,7 +48,10 @@
 
 #elif defined(TARGET_64BIT)
 
+#ifdef FEATURE_TIERED_COMPILATION
+// FEATURE_ON_STACK_REPLACEMENT is only needed for tiered compilation.
 #define FEATURE_ON_STACK_REPLACEMENT
+#endif
 
 #if defined(HOST_UNIX)
     // In PAL we have a mechanism that reserves memory on start up that is
