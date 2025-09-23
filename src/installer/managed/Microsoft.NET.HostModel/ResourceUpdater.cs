@@ -325,13 +325,13 @@ namespace Microsoft.NET.HostModel
                 "Update handle is invalid. This instance may not be used for further updates");
         }
 
-        void IDisposable.Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        public void Dispose(bool disposing)
         {
             if (disposing)
             {
