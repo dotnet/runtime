@@ -1339,12 +1339,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsLong(simdBaseType))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseJitType, simdSize);
+                retNode = gtNewSimdDotProdNode(op1->TypeGet(), op1, op2, simdBaseJitType, simdSize);
                 retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseJitType, simdSize);
             }
             break;
