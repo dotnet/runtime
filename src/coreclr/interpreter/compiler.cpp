@@ -1346,7 +1346,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     {
         InterpVar *pVar = &m_pVars[i];
 
-        if (pVar->offset == 0xFFFFFFFF)
+        if (pVar->offset == UNALLOCATED_VAR_OFFSET)
         {
             // This variable is not actually allocated, so skip it
             // This can happen for EH clause variables that are never used
@@ -1862,8 +1862,8 @@ void InterpCompiler::CreateILVars()
     {
         // These aren't actually global vars, but we alloc them here so that they are located in predictable spots on the
         // list of vars so we can refer to them easily
-        int32_t align;
-        new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, GetInterpTypeStackSize(NULL, InterpTypeO, &align));
+        int32_t dummyAlign;
+        new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, GetInterpTypeStackSize(NULL, InterpTypeO, &dummyAlign));
         INTERP_DUMP("alloc EH clause var %d\n", index);
         index++;
         m_varsSize++; // When we computed m_varsSize above, we didn't account for the clause vars

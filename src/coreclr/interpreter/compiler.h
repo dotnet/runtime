@@ -364,6 +364,8 @@ struct InterpBasicBlock
     }
 };
 
+#define UNALLOCATED_VAR_OFFSET -1
+
 struct InterpVar
 {
     CORINFO_CLASS_HANDLE clsHnd;
@@ -391,7 +393,7 @@ struct InterpVar
         this->interpType = interpType;
         this->clsHnd = clsHnd;
         this->size = size;
-        offset = -1;
+        offset = UNALLOCATED_VAR_OFFSET;
         liveStart = NULL;
         bbIndex = -1;
 
