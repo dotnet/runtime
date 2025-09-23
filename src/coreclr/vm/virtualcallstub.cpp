@@ -2318,7 +2318,7 @@ VirtualCallStubManager::Resolver(
             }
         }
 #endif // defined(LOGGING) || defined(_DEBUG)
-
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
@@ -2326,6 +2326,10 @@ VirtualCallStubManager::Resolver(
             fShouldPatch = TRUE;
         }
         else
+#else
+        BOOL fSlotCallsPrestub = FALSE;
+        fShouldPatch = TRUE;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         {
             // Getting the MethodDesc is very expensive,
             // so only call this when we are calling the prestub
