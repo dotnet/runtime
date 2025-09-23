@@ -1436,7 +1436,8 @@ void InterpCompiler::getEHinfo(CORINFO_METHOD_INFO* methodInfo, unsigned int ind
     {
         if (m_isSynchronized)
         {
-            if (index == 0)
+            // Logically we append the synchronized finally clause at the end of the EH clauses, as it holds all of the methodbody within its try region, and nested eh clauses are required to be before their containing clauses.
+            if (index == methodInfo->EHcount)
             {
                 ehClause->Flags = CORINFO_EH_CLAUSE_FINALLY;
                 ehClause->TryOffset = 0;
@@ -1445,10 +1446,6 @@ void InterpCompiler::getEHinfo(CORINFO_METHOD_INFO* methodInfo, unsigned int ind
                 ehClause->HandlerLength = (uint32_t)(m_synchronizedPostFinallyOffset - m_synchronizedFinallyStartOffset);
                 ehClause->ClassToken = 0;
                 return;
-            }
-            else
-            {
-                index--;
             }
         }
     }
@@ -2436,6 +2433,11 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
         }
     }
 
+    if (pTargetBB == NULL)
+    {
+        NO_WAY("Leave target basic block does not exist");
+    }
+
     // The leave doesn't jump out of any try region with finally, so we can just emit a branch
     // to the target.
     if (m_pCBB->clauseType == BBClauseCatch)
@@ -2798,6 +2800,8 @@ void InterpCompiler::EmitPushSyncObject()
                     m_pLastNewIns->SetSVar(getParamArgIndex());
                     PushInterpType(InterpTypeI, NULL);
                     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    classHandleVar = m_pStackPointer[-1].var;
+                    m_pStackPointer--;
                     break;
                 }
 
