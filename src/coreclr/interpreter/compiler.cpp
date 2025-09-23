@@ -46,6 +46,11 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
 /*****************************************************************************/
+bool IsInterpDumpActive()
+{
+    return t_interpDump;
+}
+
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 {
     fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
