@@ -127,5 +127,8 @@ namespace System.Text.Json
         public const int MaximumIndentSize = 127; // If this value is changed, the impact on the options masking used in the JsonWriterOptions struct must be checked carefully.
 
         public const int DateOnlyFormatLength = 10; // YYYY-MM-DD
+
+        public const int MinimumTimeOnlyFormatLength = 3; // h:m
+        public const int MaximumTimeOnlyFormatLength = 16; // hh:mm:ss.fffffff
     }
 }

@@ -26,6 +26,9 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.String
                     when typeof(T) == typeof(JsonValuePrimitive<DateOnly>):
                     return JsonValue.Create(reader.GetDateOnly(), options);
+                case JsonTokenType.String
+                    when typeof(T) == typeof(JsonValuePrimitive<TimeOnly>):
+                    return JsonValue.Create(reader.GetTimeOnly(), options);
 #endif
                 case JsonTokenType.String:
                     byte[] buffer = new byte[reader.ValueLength];

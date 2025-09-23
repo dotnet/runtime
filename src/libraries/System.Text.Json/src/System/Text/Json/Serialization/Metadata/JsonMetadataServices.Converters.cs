@@ -74,6 +74,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<TimeOnly> TimeOnlyConverter => s_timeOnlyConverter ??= new TimeOnlyConverter();
         private static JsonConverter<TimeOnly>? s_timeOnlyConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{TimeOnly}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<TimeOnly>?> JsonValuePrimitiveTimeOnlyConverter { get; } = new JsonValueConverter<JsonValuePrimitive<TimeOnly>>();
 #endif
 
         /// <summary>
