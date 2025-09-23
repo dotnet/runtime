@@ -72,24 +72,24 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     )
 endif ()
 
-target_link_options(browserhost PRIVATE
-    -sINITIAL_MEMORY=33554432
 # TODO-WASM    -sMAXIMUM_MEMORY=2147483648
 # TODO-WASM    -sALLOW_MEMORY_GROWTH=1
 # TODO-WASM    -sALLOW_TABLE_GROWTH=1
+# TODO-WASM    -sWASM_BIGINT=1
+# TODO-WASM    -msimd128
+# TODO-WASM    -emit-llvm
+# TODO-WASM    --source-map-base http://microsoft.com
+target_link_options(browserhost PRIVATE
+    -sINITIAL_MEMORY=33554432
     -sSTACK_SIZE=5MB
     -sMODULARIZE=1
     -sEXPORT_ES6=1
-# TODO-WASM    -sWASM_BIGINT=1
     -sEXIT_RUNTIME=0
     -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
     -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_browserHostInitializeCoreCLR,_browserHostExecuteAssembly,___cpp_exception
     -sEXPORT_NAME=createDotnetRuntime
-# TODO-WASM    -msimd128
     -fwasm-exceptions
     -lnodefs.js
-# TODO-WASM    -emit-llvm
-# TODO-WASM    --source-map-base http://microsoft.com
     -Wno-unused-command-line-argument
     -Wl,-error-limit=0)
 
