@@ -1422,7 +1422,7 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
 
     // NibbleReader reads in units of sizeof(NibbleChunkType)
     // So we need to account for any partial chunk at the end.
-    pDebugInfo += sizeof(NibbleReader::NibbleChunkType) - 1;
+    pDebugInfo = AlignUp(dac_cast<TADDR>(pDebugInfo), sizeof(NibbleReader::NibbleChunkType));
 
     DacEnumMemoryRegion(dac_cast<TADDR>(pStart), pDebugInfo - pStart);
 }
