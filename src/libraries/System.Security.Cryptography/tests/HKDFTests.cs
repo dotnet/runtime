@@ -95,6 +95,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
+        [MemberData(nameof(SupplementalTestCases))]
         public void ExpandTests(HkdfTestCase test)
         {
             byte[] okm = Expand(test.Hash, test.Prk, test.Okm.Length, test.Info);
@@ -408,6 +409,36 @@ namespace System.Security.Cryptography.Tests
                     "673a081d70cce7acfc48").HexToByteArray(),
             },
         };
+
+        public static IEnumerable<object[]> SupplementalTestCases
+        {
+            get
+            {
+                if (MD5Supported)
+                {
+                    yield return new object[]
+                    {
+                        // Generated
+                        //   openssl kdf -keylen 16 -kdfopt digest:MD5 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F \
+                        //   -kdfopt hexsalt:101112131415161718191A1B1C1D1E1F -kdfopt hexinfo:202122232425262728292A2B2C2D2E2F \
+                        //   -binary HKDF | xxd -p
+                        new HkdfTestCase()
+                        {
+                            Name = "Test with MD5, salt, and info",
+                            Hash = HashAlgorithmName.MD5,
+                            Ikm = "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                            Salt = "101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                            Info = "202122232425262728292A2B2C2D2E2F".HexToByteArray(),
+                            Okm = "5a25e9d9d27578f28a79a680fd9ce780".HexToByteArray(),
+
+                            // Add -kdfopt mode:EXTRACT_ONLY to derive the PRK.
+                            Prk = "2d2d573fd48c9ad0be5e8214af0d7d64".HexToByteArray(),
+
+                        }
+                    };
+                }
+            }
+        }
 
         public static IEnumerable<object[]> Sha3TestCases
         {
