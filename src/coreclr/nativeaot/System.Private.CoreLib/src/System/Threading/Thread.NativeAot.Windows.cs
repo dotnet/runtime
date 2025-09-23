@@ -388,6 +388,15 @@ namespace System.Threading
                 }
             }
 
+            // Special case where we pass in Unknown and get back MTA.
+            //  Once we CoUninitialize the thread, the OS will still
+            //  report the thread as implicitly in the MTA if any
+            //  other thread in the process is CoInitialized.
+            if ((state == ApartmentState.Unknown) && (retState == ApartmentState.MTA))
+            {
+                return true;
+            }
+
             if (retState != state)
             {
                 if (throwOnError)
