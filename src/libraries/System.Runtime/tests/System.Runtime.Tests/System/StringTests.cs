@@ -622,41 +622,41 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("Hello", new Rune('o'), true)]
-        [InlineData("Hello", new Rune('O'), false)]
-        [InlineData("o", new Rune('o'), true)]
-        [InlineData("o", new Rune('O'), false)]
-        [InlineData("Hello", new Rune('e'), false)]
-        [InlineData("Hello", new Rune('\0'), false)]
-        [InlineData("", new Rune('\0'), false)]
-        [InlineData("\0", new Rune('\0'), true)]
-        [InlineData("", new Rune('a'), false)]
-        [InlineData("abcdefghijklmnopqrstuvwxyz", new Rune('z'), true)]
-        public static void EndsWith_Rune(string s, Rune value, bool expected)
+        [InlineData("Hello", 'o', true)]
+        [InlineData("Hello", 'O', false)]
+        [InlineData("o", 'o', true)]
+        [InlineData("o", 'O', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
+        public static void EndsWith_Rune(string s, int valueAsInt, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(value));
+            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt)));
         }
 
         [Theory]
-        [InlineData("Hello", new Rune('o'), StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", new Rune('O'), StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", new Rune('o'), StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('O'), StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('o'), StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", new Rune('O'), StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", new Rune('o'), StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('O'), StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('o'), StringComparison.Ordinal, true)]
-        [InlineData("Hello", new Rune('O'), StringComparison.Ordinal, false)]
-        [InlineData("Hello", new Rune('o'), StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", new Rune('O'), StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("", new Rune('\0'), StringComparison.Ordinal, false)]
-        [InlineData("\0", new Rune('\0'), StringComparison.Ordinal, true)]
-        [InlineData("", new Rune('\0'), StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("\0", new Rune('\0'), StringComparison.OrdinalIgnoreCase, true)]
-        public static void EndsWith_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
+        [InlineData("Hello", 'o', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'O', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'o', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void EndsWith_Rune_StringComparison(string s, int valueAsInt, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(value));
+            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt)));
         }
 
         [Theory]
@@ -793,41 +793,41 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("Hello", new Rune('H'), true)]
-        [InlineData("Hello", new Rune('h'), false)]
-        [InlineData("H", new Rune('H'), true)]
-        [InlineData("H", new Rune('h'), false)]
-        [InlineData("Hello", new Rune('e'), false)]
-        [InlineData("Hello", new Rune('\0'), false)]
-        [InlineData("", new Rune('\0'), false)]
-        [InlineData("\0", new Rune('\0'), true)]
-        [InlineData("", new Rune('a'), false)]
-        [InlineData("abcdefghijklmnopqrstuvwxyz", new Rune('a'), true)]
-        public static void StartsWith_Rune(string s, Rune value, bool expected)
+        [InlineData("Hello", 'H', true)]
+        [InlineData("Hello", 'h', false)]
+        [InlineData("H", 'H', true)]
+        [InlineData("H", 'h', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'a', true)]
+        public static void StartsWith_Rune(string s, int valueAsInt, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(value));
+            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt)));
         }
 
         [Theory]
-        [InlineData("Hello", new Rune('H'), StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", new Rune('h'), StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", new Rune('H'), StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('h'), StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('H'), StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", new Rune('h'), StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", new Rune('H'), StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('h'), StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", new Rune('H'), StringComparison.Ordinal, true)]
-        [InlineData("Hello", new Rune('h'), StringComparison.Ordinal, false)]
-        [InlineData("Hello", new Rune('H'), StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", new Rune('h'), StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("", new Rune('\0'), StringComparison.Ordinal, false)]
-        [InlineData("\0", new Rune('\0'), StringComparison.Ordinal, true)]
-        [InlineData("", new Rune('\0'), StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("\0", new Rune('\0'), StringComparison.OrdinalIgnoreCase, true)]
-        public static void StartsWith_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
+        [InlineData("Hello", 'H', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'h', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'H', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'h', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'H', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'h', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'H', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void StartsWith_Rune_StringComparison(string s, int valueAsInt, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.StartsWith(value));
+            Assert.Equal(expected, s.StartsWith(new Rune(valueAsInt)));
         }
 
         public static IEnumerable<object[]> Join_Char_StringArray_TestData()
