@@ -1153,9 +1153,15 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+#ifndef TARGET_64BIT
+extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+#endif // !TARGET_64BIT
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
+#ifndef TARGET_64BIT
+extern "C" void InterpreterStubRetI4();
+#endif // !TARGET_64BIT
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
@@ -1219,6 +1225,10 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
+#ifndef TARGET_64BIT
+        case ReturnTypeI4:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
+#endif // !TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRCX);
@@ -1284,6 +1294,10 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
         case ReturnTypeI8:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
+#ifndef TARGET_64BIT
+        case ReturnTypeI4:
+            RETURN_TYPE_HANDLER(InterpreterStubRetI4);
+#endif // !TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRCX);
@@ -1852,8 +1866,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
             case ELEMENT_TYPE_U2:
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_CLASS:
@@ -1865,6 +1877,12 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
+#ifndef TARGET_64BIT
+                return ReturnTypeI4;
+                break;
+#endif
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:

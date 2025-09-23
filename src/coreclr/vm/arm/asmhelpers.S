@@ -1065,7 +1065,7 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     EPILOG_POP "{r5-r8,pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
     PROLOG_PUSH "{r5-r8,lr}"
     mov r8, sp
     sub sp, sp, 12
@@ -1079,6 +1079,10 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     str r0, [r2]
     mov sp, r8
     EPILOG_POP "{r5-r8,pc}"
+NESTED_END CallJittedMethodRetI4, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
@@ -1138,7 +1142,7 @@ NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
 
 NESTED_END InterpreterStubRetVoid, _TEXT
 
-NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
     PROLOG_PUSH {lr}
     sub sp, sp, 12
     add r0, sp, #__PWTB_TransitionBlock + 16
@@ -1148,6 +1152,10 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     ldr r0, [r0]
     add sp, sp, 12
     EPILOG_POP {pc}
+NESTED_END InterpreterStubRetI4, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
 NESTED_END InterpreterStubRetI8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
