@@ -81,6 +81,14 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(InterpreterIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$RunInterpreter" ]
+then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$RunTieringTest" ]
@@ -371,7 +379,7 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
    ]]>
       </CLRTestBashPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' != 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -398,33 +406,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
-echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-$LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
-
-CLRTestExitCode=$?
-
-if [ ! -z ${RunCrossGen2+x} ]%3B then
-  ReleaseLock
-fi
-
-$(BashLinkerTestCleanupCmds)
-      ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' == 'arm64'">
-    <![CDATA[
-$(BashLinkerTestLaunchCmds)
-
-if [ ! -z "$CLRCustomTestLauncher" ];
-then
-    LAUNCHER="$CLRCustomTestLauncher $PWD/"
-elif [ "$_RunWithWatcher" == 1 ];
-then
-    LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
-else
-    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
-fi
-
-if [ ! -z ${RunCrossGen2+x} ]%3B then
-  TakeLock
+if [ ! -z "$RunInterpreter" ]; then
+# $(InputAssemblyName)
+  export DOTNET_Interpreter='$(AssemblyName)!*'
 fi
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")

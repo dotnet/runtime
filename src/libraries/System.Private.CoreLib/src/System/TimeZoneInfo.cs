@@ -60,6 +60,9 @@ namespace System
         private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
         private static CachedData s_cachedData = new CachedData();
 
+        [FeatureSwitchDefinition("System.TimeZoneInfo.Invariant")]
+        internal static bool Invariant { get; } = AppContextConfigHelper.GetBooleanConfig("System.TimeZoneInfo.Invariant", "DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+
         //
         // All cached data are encapsulated in a helper class to allow consistent view even when the data are refreshed using ClearCachedData()
         //
@@ -974,7 +977,7 @@ namespace System
         // "TimeZoneInfo"           := TimeZoneInfo Data;[AdjustmentRule Data 1];...;[AdjustmentRule Data N]
         //
         // "TimeZoneInfo Data"      := <_id>;<_baseUtcOffset>;<_displayName>;
-        //                          <_standardDisplayName>;<_daylightDispayName>;
+        //                          <_standardDisplayName>;<_daylightDisplayName>;
         //
         // "AdjustmentRule Data" := <DateStart>;<DateEnd>;<DaylightDelta>;
         //                          [TransitionTime Data DST Start]
@@ -1014,7 +1017,7 @@ namespace System
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
-            HasIanaId = _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase) ? true : hasIanaId;
+            HasIanaId = hasIanaId || _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -2006,17 +2009,17 @@ namespace System
                         TimeZoneInfo? zone = null;
                         if (value!._equivalentZones == null)
                         {
-                            zone = new TimeZoneInfo(id, value!._baseUtcOffset, value!._displayName, value!._standardDisplayName,
-                                                    value!._daylightDisplayName, value!._adjustmentRules, dstDisabled && value!._supportsDaylightSavingTime, idIsIana);
-                            value!._equivalentZones = new List<TimeZoneInfo>();
-                            lock (value!._equivalentZones)
+                            zone = new TimeZoneInfo(id, value._baseUtcOffset, value._displayName, value._standardDisplayName,
+                                                    value._daylightDisplayName, value._adjustmentRules, dstDisabled && value._supportsDaylightSavingTime, idIsIana);
+                            value._equivalentZones = new List<TimeZoneInfo>();
+                            lock (value._equivalentZones)
                             {
-                                value!._equivalentZones.Add(zone);
+                                value._equivalentZones.Add(zone);
                             }
                         }
                         else
                         {
-                            foreach (TimeZoneInfo tzi in value!._equivalentZones)
+                            foreach (TimeZoneInfo tzi in value._equivalentZones)
                             {
                                 if (tzi.Id == id)
                                 {
@@ -2026,11 +2029,11 @@ namespace System
                             }
                             if (zone == null)
                             {
-                                zone = new TimeZoneInfo(id, value!._baseUtcOffset, value!._displayName, value!._standardDisplayName,
-                                                        value!._daylightDisplayName, value!._adjustmentRules, dstDisabled && value!._supportsDaylightSavingTime, idIsIana);
-                                lock (value!._equivalentZones)
+                                zone = new TimeZoneInfo(id, value._baseUtcOffset, value._displayName, value._standardDisplayName,
+                                                        value._daylightDisplayName, value._adjustmentRules, dstDisabled && value._supportsDaylightSavingTime, idIsIana);
+                                lock (value._equivalentZones)
                                 {
-                                    value!._equivalentZones.Add(zone);
+                                    value._equivalentZones.Add(zone);
                                 }
                             }
                         }
@@ -2054,6 +2057,12 @@ namespace System
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
 
+            if (Invariant && !cachedData._allSystemTimeZonesRead)
+            {
+                PopulateAllSystemTimeZones(cachedData);
+                cachedData._allSystemTimeZonesRead = true;
+            }
+
             // check the cache
             if (cachedData._systemTimeZones != null)
             {
@@ -2067,6 +2076,12 @@ namespace System
 
                     return result;
                 }
+            }
+
+            if (Invariant)
+            {
+                value = null;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
             if (cachedData._timeZonesUsingAlternativeIds != null)
@@ -2105,6 +2120,8 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, bool dstDisabled, out TimeZoneInfo? value, out Exception? e, CachedData cachedData)
         {
+            Debug.Assert(!Invariant);
+
             TimeZoneInfoResult result;
 
             result = TryGetTimeZoneFromLocalMachine(id, out value, out e);

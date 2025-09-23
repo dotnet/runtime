@@ -2,13 +2,12 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
+    <SkipBuild Condition="'$(DotNetBuildAllRuntimePacks)' != 'true' and ('$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true')">true</SkipBuild>
     <PlatformPackageType>AppHostPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-apphost-pack</ArchiveName>
     <InstallerName>dotnet-apphost-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
-    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != ''">false</IsPackable>
   </PropertyGroup>
 
   <!--
@@ -31,7 +30,7 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
   </ItemGroup>
-  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsLinuxBionic)' != 'true'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">

@@ -10,16 +10,36 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
+        private void CreateEventCore(bool initialState, EventResetMode mode)
         {
+            ValidateMode(mode);
+            SafeWaitHandle = WaitSubsystem.NewEvent(initialState, mode);
+        }
+
+#pragma warning disable IDE0060 // Unused parameter
+        private void CreateEventCore(
+            bool initialState,
+            EventResetMode mode,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            ValidateMode(mode);
+
             if (name != null)
+            {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
+            }
 
             SafeWaitHandle = WaitSubsystem.NewEvent(initialState, mode);
             createdNew = true;
         }
+#pragma warning restore IDE0060
 
-        private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out EventWaitHandle? result)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
-using Microsoft.DotNet.RemoteExecutor;
+using System.Text;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -497,7 +497,7 @@ namespace System.Numerics.Tests
         {
             Assert.Throws<OverflowException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
         }
-        
+
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
@@ -521,22 +521,62 @@ namespace System.Numerics.Tests
             Assert.Throws<FormatException>(() => b.ToString("G000001000000000"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
-        [OuterLoop("Takes a long time, allocates a lot of memory")]
-        [SkipOnMono("Frequently throws OOM on Mono")]
+        [Fact]
         public static void ToString_ValidLargeFormat()
         {
             BigInteger b = new BigInteger(123456789000m);
 
             // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            // We use TryFormat rather than ToString to avoid excessive memory usage.
 
-            // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format
-            b.ToString("E999999999"); // Should not throw
-            b.ToString("E00000999999999"); // Should not throw
+            // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format.
+            // Currently disabled since these would still allocate a 2GB buffer before
+            // returning, leading to OOM in CI.
+            // Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "E999999999")); // Should not throw
+            // Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "E00000999999999")); // Should not throw
+            //
+            // Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "E999999999")); // Should not throw
+            // Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "E00000999999999")); // Should not throw
 
             // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
-            b.ToString("G999999999"); // Should not throw
-            b.ToString("G00000999999999"); // Should not throw
+            Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "G999999999")); // Should not throw
+            Assert.False(b.TryFormat(Span<char>.Empty, out _, format: "G00000999999999")); // Should not throw
+
+            // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
+            Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "G999999999")); // Should not throw
+            Assert.False(b.TryFormat(Span<byte>.Empty, out _, format: "G00000999999999")); // Should not throw
+        }
+
+        [Fact]
+        public static void RunPowerOf1E9ToStringTests()
+        {
+            foreach (var test in new[]
+            {
+                new string('9', 9* (1<<10))+new string('9', 9* (1<<10)),
+                "1"+new string('0', 9* (1<<10))+new string('9', 9* (1<<10)),
+                "1"+new string('0', 9* (1<<10)-1)+"1"+new string('9', 9* (1<<10)),
+                "1"+new string('0', 9* (1<<11)),
+                "1"+new string('0', 9* (1<<11)-1)+"1",
+            })
+            {
+                VerifyToString(test, test);
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunRepeatedCharsToStringTests()
+        {
+            string test;
+
+            for (int length = 1; length < 1300; length++)
+            {
+                test = new string('1', length);
+                VerifyToString(test, test);
+
+                test = new string('9', length);
+                VerifyToString(test, test);
+            }
         }
 
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
@@ -1593,6 +1633,7 @@ namespace System.Numerics.Tests
             }
 
             VerifyTryFormat(test, format, provider, expectError, expectedResult);
+            VerifyTryFormatUtf8(test, format, provider, expectError, expectedResult);
         }
 
         private static void VerifyExpectedStringResult(string expectedResult, string result)
@@ -1635,6 +1676,30 @@ namespace System.Numerics.Tests
                 {
                     Assert.False(bi.TryFormat(new char[expectedResult.Length - 1], out charsWritten, format, provider));
                     Assert.Equal(0, charsWritten);
+                }
+            }
+            catch (FormatException)
+            {
+                Assert.True(expectError);
+            }
+        }
+
+        static void VerifyTryFormatUtf8(string test, string format, IFormatProvider provider, bool expectError, string expectedResult)
+        {
+            try
+            {
+                BigInteger bi = BigInteger.Parse(test, provider);
+
+                byte[] utf8Destination = expectedResult != null ? new byte[Encoding.UTF8.GetByteCount(expectedResult)] : Array.Empty<byte>();
+                Assert.True(bi.TryFormat(utf8Destination, out int bytesWritten, format, provider));
+                Assert.False(expectError);
+
+                VerifyExpectedStringResult(expectedResult, Encoding.UTF8.GetString(utf8Destination[..bytesWritten]));
+
+                if (expectedResult.Length > 0)
+                {
+                    Assert.False(bi.TryFormat(new byte[Encoding.UTF8.GetByteCount(expectedResult) - 1], out bytesWritten, format, provider));
+                    Assert.Equal(0, bytesWritten);
                 }
             }
             catch (FormatException)
@@ -2061,6 +2126,39 @@ namespace System.Numerics.Tests
             nfi.PositiveSign = ">>";
 
             return nfi;
+        }
+    }
+
+
+    [Collection(nameof(DisableParallelization))]
+    public class ToStringTestThreshold
+    {
+        [Fact]
+        public static void RunSimpleToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunSimpleToStringTests();
+            });
+        }
+
+        [Fact]
+        public void RunPowerOf1E9ToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunPowerOf1E9ToStringTests();
+            });
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunRepeatedCharsToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunRepeatedCharsToStringTests();
+            });
         }
     }
 }

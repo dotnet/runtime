@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -23,7 +25,7 @@ namespace ILCompiler
         {
             Debug.Assert(IsIntegerType(defType));
 
-            string name = defType.Name;
+            string name = defType.GetName();
             Debug.Assert((name == "Int128") || (name == "UInt128"));
 
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
@@ -61,6 +63,12 @@ namespace ILCompiler
             return false;
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            Debug.Assert(!_fallbackAlgorithm.ComputeContainsByRefs(type));
+            return false;
+        }
+
         public override bool ComputeIsUnsafeValueType(DefType type)
         {
             Debug.Assert(!_fallbackAlgorithm.ComputeIsUnsafeValueType(type));
@@ -76,8 +84,8 @@ namespace ILCompiler
         public static bool IsIntegerType(DefType type)
         {
             return type.IsIntrinsic
-                && type.Namespace == "System"
-                && ((type.Name == "Int128") || (type.Name == "UInt128"));
+                && type.Namespace.SequenceEqual("System"u8)
+                && (type.Name.SequenceEqual("Int128"u8) || type.Name.SequenceEqual("UInt128"u8));
         }
     }
 }

@@ -906,9 +906,13 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 
 			guint32 field_iter = 1;
 			guint32 field_instance_offset = field_offset;
+			int field_size = 0;
 			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
-			if (m_class_is_inlinearray (p))
+			if (m_class_is_inlinearray (p)) {
+				int align;
 				field_iter = mono_class_get_inlinearray_value (p);
+				field_size = mono_type_size (field->type, &align);
+			}
 
 			if (field_iter > 500)
 				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
@@ -973,7 +977,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					break;
 				}
 
-				field_instance_offset += field_offset;
+				field_instance_offset += field_size;
 				field_iter--;
 			}
 		}
@@ -1307,7 +1311,6 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
  *   The IMT slot is embedded into AOTed code, so this must return the same value
  * for the same method across all executions. This means:
  * - pointers shouldn't be used as hash values.
- * - mono_metadata_str_hash () should be used for hashing strings.
  */
 guint32
 mono_method_get_imt_slot (MonoMethod *method)
@@ -1344,8 +1347,8 @@ mono_method_get_imt_slot (MonoMethod *method)
 
 	/* Initialize hashes */
 	hashes [0] = m_class_get_name_hash (method->klass);
-	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
-	hashes [2] = mono_metadata_str_hash (method->name);
+	hashes [1] = g_str_hash (m_class_get_name_space (method->klass));
+	hashes [2] = g_str_hash (method->name);
 	hashes [3] = mono_metadata_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
 		hashes [4 + i] = mono_metadata_type_hash (sig->params [i]);
@@ -1588,7 +1591,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 						vt_slot ++;
 					continue;
 				}
-				if (mono_method_get_imt_slot (method) != slot_num) {
+				if (m_method_is_virtual (method) && mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
 				}
@@ -2624,7 +2627,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	for (int i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-		if (t->type == MONO_TYPE_GENERICINST && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+		if (t->type == MONO_TYPE_GENERICINST && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 			MonoClass *klass = mono_class_from_mono_type_internal (t);
 			MonoObject *boxed_vt = (MonoObject*)params [i];
 			gpointer nullable_vt = g_alloca (mono_class_value_size (klass, NULL));
@@ -2667,7 +2670,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		// to return it as boxed vt or NULL
 		for (int i = 0; i < sig->param_count; i++) {
 			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				gpointer nullable_vt = params_arg [i];
 				params [i] = mono_nullable_box (nullable_vt, klass, error);
@@ -2950,8 +2953,8 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE:
 		/* note that 't' and 'type->type' can be different */
-		if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass)) {
-			t = mono_class_enum_basetype_internal (type->data.klass)->type;
+		if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (type))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass (type))->type;
 			goto handle_enum;
 		} else {
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -2963,7 +2966,7 @@ handle_enum:
 		}
 		return;
 	case MONO_TYPE_GENERICINST:
-		t = m_class_get_byval_arg (type->data.generic_class->container_class)->type;
+		t = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class)->type;
 		goto handle_enum;
 	default:
 		g_error ("got type %x", type->type);
@@ -4985,9 +4988,9 @@ again:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (m_type_is_byref (t))
-				t = m_class_get_this_arg (t->data.generic_class->container_class);
+				t = m_class_get_this_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			else
-				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+				t = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			goto again;
 		case MONO_TYPE_PTR: {
 			MonoObject *arg;
@@ -5106,7 +5109,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		// to return it as boxed vt or NULL
 		for (int i = 0; i < param_count; i++) {
 			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				MonoObject *boxed_vt = mono_nullable_box (pa [i], klass, error);
 				goto_if_nok (error, return_error);
@@ -5160,9 +5163,9 @@ again:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (m_type_is_byref (t))
-				t = m_class_get_this_arg (t->data.generic_class->container_class);
+				t = m_class_get_this_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			else
-				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+				t = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			goto again;
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
@@ -6805,6 +6808,8 @@ MonoObjectHandle
 mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
 {
 	error_init (error);
+
+	g_assert (klass);
 
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);

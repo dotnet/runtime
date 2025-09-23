@@ -143,42 +143,12 @@ namespace System.IO.Compression
         /// </param>
         public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode, Encoding? entryNameEncoding)
         {
-            // Relies on FileStream's ctor for checking of archiveFileName
-
-            FileMode fileMode;
-            FileAccess access;
-            FileShare fileShare;
-
-            switch (mode)
-            {
-                case ZipArchiveMode.Read:
-                    fileMode = FileMode.Open;
-                    access = FileAccess.Read;
-                    fileShare = FileShare.Read;
-                    break;
-
-                case ZipArchiveMode.Create:
-                    fileMode = FileMode.CreateNew;
-                    access = FileAccess.Write;
-                    fileShare = FileShare.None;
-                    break;
-
-                case ZipArchiveMode.Update:
-                    fileMode = FileMode.OpenOrCreate;
-                    access = FileAccess.ReadWrite;
-                    fileShare = FileShare.None;
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(mode));
-            }
-
-            // Suppress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
+            // the FileStream gets passed to the new ZipArchive, which stores it internally.
             // The stream will then be owned by the archive and be disposed when the archive is disposed.
-            // If the ctor completes without throwing, we know fs has been successfully stores in the archive;
-            // If the ctor throws, we need to close it here.
+            // If the ZipArchive ctor completes without throwing, we know fs has been successfully stores in the archive;
+            // If the ctor throws, we need to close it in a try finally for the ZipArchive.
 
-            FileStream fs = new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: 0x1000, useAsync: false);
+            FileStream fs = GetFileStreamForOpen(mode, archiveFileName, useAsync: false);
 
             try
             {
@@ -435,12 +405,10 @@ namespace System.IO.Compression
 
         {
             // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
+            (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
 
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
-
-            sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
-            destinationArchiveFileName = Path.GetFullPath(destinationArchiveFileName);
 
             using ZipArchive archive = Open(destinationArchiveFileName, ZipArchiveMode.Create, entryNameEncoding);
             CreateZipArchiveFromDirectory(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory);
@@ -449,19 +417,7 @@ namespace System.IO.Compression
         private static void DoCreateFromDirectory(string sourceDirectoryName, Stream destination,
                                                   CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
         {
-            ArgumentNullException.ThrowIfNull(destination);
-            if (!destination.CanWrite)
-            {
-                throw new ArgumentException(SR.UnwritableStream, nameof(destination));
-            }
-            if (compressionLevel.HasValue && !Enum.IsDefined(compressionLevel.Value))
-            {
-                throw new ArgumentOutOfRangeException(nameof(compressionLevel));
-            }
-
-            // Rely on Path.GetFullPath for validation of sourceDirectoryName
-
-            sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
+            sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel);
 
             using ZipArchive archive = new ZipArchive(destination, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding);
             CreateZipArchiveFromDirectory(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory);
@@ -470,17 +426,8 @@ namespace System.IO.Compression
         private static void CreateZipArchiveFromDirectory(string sourceDirectoryName, ZipArchive archive,
                                                           CompressionLevel? compressionLevel, bool includeBaseDirectory)
         {
-            bool directoryIsEmpty = true;
-
-            //add files and directories
-            DirectoryInfo di = new DirectoryInfo(sourceDirectoryName);
-
-            string basePath = di.FullName;
-
-            if (includeBaseDirectory && di.Parent != null)
-                basePath = di.Parent.FullName;
-
-            FileSystemEnumerable<(string, CreateEntryType)> fse = CreateEnumerableForCreate(di.FullName);
+            (bool directoryIsEmpty, string basePath, DirectoryInfo di, FileSystemEnumerable<(string, CreateEntryType)> fse) =
+                InitializeCreateZipArchiveFromDirectory(sourceDirectoryName, includeBaseDirectory);
 
             foreach ((string fullPath, CreateEntryType type) in fse)
             {
@@ -511,10 +458,80 @@ namespace System.IO.Compression
                 }
             }
 
+            FinalizeCreateZipArchiveFromDirectory(archive, di, includeBaseDirectory, directoryIsEmpty);
+        }
+
+        private static FileStream GetFileStreamForOpen(ZipArchiveMode mode, string archiveFileName, bool useAsync)
+        {
+            // Relies on FileStream's ctor for checking of archiveFileName
+
+            (FileMode fileMode, FileAccess access, FileShare fileShare) = mode switch
+            {
+                ZipArchiveMode.Read => (FileMode.Open, FileAccess.Read, FileShare.Read),
+                ZipArchiveMode.Create => (FileMode.CreateNew, FileAccess.Write, FileShare.None),
+                ZipArchiveMode.Update => (FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None),
+                _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+            };
+
+            return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
+        }
+
+        private static (string, string) GetFullPathsForDoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName)
+        {
+            // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
+
+            sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
+            destinationArchiveFileName = Path.GetFullPath(destinationArchiveFileName);
+
+            return (sourceDirectoryName, destinationArchiveFileName);
+        }
+
+        private static string ValidateAndGetFullPathForDoCreateFromDirectory(string sourceDirectoryName, Stream destination, CompressionLevel? compressionLevel)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            if (!destination.CanWrite)
+            {
+                throw new ArgumentException(SR.UnwritableStream, nameof(destination));
+            }
+            if (compressionLevel.HasValue && !Enum.IsDefined(compressionLevel.Value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(compressionLevel));
+            }
+
+            // Rely on Path.GetFullPath for validation of sourceDirectoryName
+
+            return Path.GetFullPath(sourceDirectoryName);
+        }
+
+        private static (bool, string, DirectoryInfo, FileSystemEnumerable<(string, CreateEntryType)>) InitializeCreateZipArchiveFromDirectory(string sourceDirectoryName, bool includeBaseDirectory)
+        {
+            bool directoryIsEmpty = true;
+
+            //add files and directories
+            DirectoryInfo di = new DirectoryInfo(sourceDirectoryName);
+
+            string basePath = di.FullName;
+
+            if (includeBaseDirectory && di.Parent != null)
+            {
+                basePath = di.Parent.FullName;
+            }
+
+            FileSystemEnumerable<(string, CreateEntryType)> fse = CreateEnumerableForCreate(di.FullName);
+
+            return (directoryIsEmpty, basePath, di, fse);
+        }
+
+        private static void FinalizeCreateZipArchiveFromDirectory(ZipArchive archive, DirectoryInfo di, bool includeBaseDirectory, bool directoryIsEmpty)
+        {
             // If no entries create an empty root directory entry:
             if (includeBaseDirectory && directoryIsEmpty)
+            {
                 archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, appendPathSeparator: true));
+            }
         }
+
+        internal const int FileStreamBufferSize = 0x4000; // 16K
 
         private enum CreateEntryType
         {

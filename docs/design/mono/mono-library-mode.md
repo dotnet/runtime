@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
 
 After building the mono library with `dotnet publish -r ios-arm64`, it can be found as `lib<Managed Project Name>.dylib` in the binaries folder (i.e. `library-mode-sample/ManagedProject/bin/Release/net8.0/ios-arm64/Bundle/libManagedProject.dylib`). The mono library when built as a shared library with bundling (on by default) can be loaded and used with the following steps:
 
-1. Open/Create the iOS native project in XCode.
+1. Open/Create the iOS native project in Xcode.
 
 2. Copy the mono library into the project's root directory (not creating a reference).
 

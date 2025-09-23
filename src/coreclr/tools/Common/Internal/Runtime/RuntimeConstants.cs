@@ -33,6 +33,9 @@ namespace Internal.Runtime
     internal enum GC_ALLOC_FLAGS
     {
         GC_ALLOC_NO_FLAGS = 0,
+        GC_ALLOC_FINALIZE = 1,
+        GC_ALLOC_ALIGN8_BIAS = 4,
+        GC_ALLOC_ALIGN8 = 8,
         GC_ALLOC_ZEROING_OPTIONAL = 16,
         GC_ALLOC_PINNED_OBJECT_HEAP = 64,
     }
@@ -59,14 +62,6 @@ namespace Internal.Runtime
         public const ushort None = 0;
         public const ushort ContextFromThisClass = 1;
         public const ushort ContextFromFirstInterface = 2;
-    }
-
-    internal enum RuntimeHelperKind
-    {
-        AllocateObject,
-        IsInst,
-        CastClass,
-        AllocateArray,
     }
 
     /// <summary>

@@ -222,7 +222,9 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
             byte[] key1;
 
+#pragma warning disable SYSLIB0060 // The constructors on Rfc2898DeriveBytes are obsolete.
             using (Rfc2898DeriveBytes instanceKdf = new Rfc2898DeriveBytes(password, salt, iterations, hashAlgorithmName))
+#pragma warning restore SYSLIB0060
             {
                 key1 = instanceKdf.GetBytes(length);
             }
@@ -253,7 +255,9 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
             byte[] key1;
 
+#pragma warning disable SYSLIB0060 // The constructors on Rfc2898DeriveBytes are obsolete.
             using (Rfc2898DeriveBytes instanceKdf = new Rfc2898DeriveBytes(password, salt, iterations, hashAlgorithmName))
+#pragma warning restore SYSLIB0060
             {
                 key1 = instanceKdf.GetBytes(length);
             }
@@ -281,7 +285,7 @@ namespace System.Security.Cryptography
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
         [MemberData(nameof(Pbkdf2_OpenSsl_Vectors))]
         public static void Pbkdf2_OpenSsl(string hashAlgorithm, string password, string salt, int iterations, string expectedHex)
         {

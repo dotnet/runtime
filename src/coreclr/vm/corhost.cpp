@@ -127,7 +127,7 @@ HRESULT CorHost2::Stop()
     {
         NOTHROW;
         ENTRY_POINT;    // We're bringing the EE down, so no point in probing
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
     if (!g_fEEStarted)
@@ -491,7 +491,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -527,7 +527,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -564,9 +564,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     pDomain->SetFriendlyName(wszFriendlyName);
 
     ETW::LoaderLog::DomainLoad((LPWSTR)wszFriendlyName);
-
-    if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
-        pDomain->SetIgnoreUnhandledExceptions();
 
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
@@ -639,7 +636,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) && !defined(FEATURE_STATICALLY_LINKED)
     if (!g_coreclr_embedded)
     {
         // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
@@ -689,7 +686,7 @@ HRESULT CorHost2::CreateDelegate(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -758,7 +755,7 @@ HRESULT CorHost2::CreateDelegate(
         }
         else
         {
-            UMEntryThunk* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+            UMEntryThunkData* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
         }
     }
@@ -773,7 +770,7 @@ HRESULT CorHost2::Authenticate(ULONGLONG authKey)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -787,7 +784,7 @@ HRESULT CorHost2::RegisterMacEHPort()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -800,7 +797,7 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;

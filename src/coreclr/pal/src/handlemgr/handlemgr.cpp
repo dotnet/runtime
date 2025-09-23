@@ -19,7 +19,6 @@ Abstract:
 
 #include "pal/thread.hpp"
 #include "pal/handlemgr.hpp"
-#include "pal/cs.hpp"
 #include "pal/dbgmsg.h"
 
 using namespace CorUnix;
@@ -41,7 +40,7 @@ CSimpleHandleManager::Initialize(
 {
     PAL_ERROR palError = NO_ERROR;
 
-    InternalInitializeCriticalSection(&m_csLock);
+    minipal_mutex_init(&m_mtxLock);
     m_fLockInitialized = TRUE;
 
     m_dwTableGrowthRate = c_BasicGrowthRate;

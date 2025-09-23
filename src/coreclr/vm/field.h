@@ -10,6 +10,7 @@
 #define _FIELD_H_
 
 #include "excep.h"
+#include "cdacdata.h"
 
 // Temporary values stored in FieldDesc m_dwOffset during loading
 // The high 5 bits must be zero (because in field.h we steal them for other uses), so we must choose values > 0
@@ -22,7 +23,9 @@
 // Offset to indicate an EnC added field. They don't have offsets as aren't placed in the object.
 #define FIELD_OFFSET_NEW_ENC          (FIELD_OFFSET_MAX-4)
 #define FIELD_OFFSET_BIG_RVA          (FIELD_OFFSET_MAX-5)
-#define FIELD_OFFSET_LAST_REAL_OFFSET (FIELD_OFFSET_MAX-6)    // real fields have to be smaller than this
+// Offset to indicate a FieldRVA that is added by EnC, but whose enclosing type is not yet loaded.
+#define FIELD_OFFSET_DYNAMIC_RVA      (FIELD_OFFSET_MAX-6)
+#define FIELD_OFFSET_LAST_REAL_OFFSET (FIELD_OFFSET_MAX-7)    // real fields have to be smaller than this
 
 
 //
@@ -34,17 +37,16 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
+    friend struct ::cdac_data<FieldDesc>;
 
   protected:
     PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
 
-#if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump.
         unsigned m_dword1;
         struct {
-#endif
         unsigned m_mb               : 24;
 
         // 8 bits...
@@ -52,24 +54,17 @@ class FieldDesc
         unsigned m_isThreadLocal    : 1;
         unsigned m_isRVA            : 1;
         unsigned m_prot             : 3;
-#if defined(DACCESS_COMPILE)
         };
     };
-#endif
-
-#if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump
         unsigned m_dword2;
         struct {
-#endif
         // Note: this has been as low as 22 bits in the past & seemed to be OK.
         // we can steal some more bits here if we need them.
         unsigned m_dwOffset         : 27;
         unsigned m_type             : 5;
-#if defined(DACCESS_COMPILE)
         };
     };
-#endif
 
 #ifdef _DEBUG
     LPUTF8 m_debugName;
@@ -156,8 +151,18 @@ public:
         return m_prot;
     }
 
-        // Please only use this in a path that you have already guaranteed
-        // the assert is true
+    // This is the raw offset of the field in the object. It doesn't
+    // do any checks to see if the field is a real field or not.
+    // It should be only used during type loading to handle temporary offset
+    // values like FIELD_OFFSET_UNPLACED.
+    DWORD GetOffsetRaw()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_dwOffset;
+    }
+
+    // Please only use this in a path that you have already guaranteed
+    // the assert is true
     DWORD GetOffsetUnsafe()
     {
         LIMITED_METHOD_CONTRACT;
@@ -173,33 +178,32 @@ public:
 
         // Note FieldDescs are no longer on "hot" paths so the optimized code here
         // does not look necessary.
+        if (m_dwOffset == FIELD_OFFSET_BIG_RVA)
+            return CallMDImportForFieldRVA();
 
-        if (m_dwOffset != FIELD_OFFSET_BIG_RVA) {
-            // Assert that the big RVA case handling doesn't get out of sync
-            // with the normal RVA case.
-#ifdef _DEBUG
-            // The OutOfLine_BigRVAOffset() can't be correctly evaluated during the time
-            // that we repurposed m_pMTOfEnclosingClass for holding the field size
-            // I don't see any good way to determine when this is so hurray for
-            // heuristics!
-            //
-            // As of 4/11/2012 I could repro this by turning on the COMPLUS log and
-            // the LOG() at line methodtablebuilder.cpp:7845
-            // MethodTableBuilder::PlaceRegularStaticFields() calls GetOffset()
-            if((DWORD)reinterpret_cast<DWORD_PTR&>(m_pMTOfEnclosingClass) > 16)
-            {
-                _ASSERTE(!this->IsRVA() || (m_dwOffset == OutOfLine_BigRVAOffset()));
-            }
-#endif
-            return m_dwOffset;
+        // Assert that the big RVA case handling doesn't get out of sync
+        // with the normal RVA case.
+
+#ifndef DACCESS_COMPILE
+        // The CallMDImportForFieldRVA() can't be correctly evaluated when we
+        // reuse the m_pMTOfEnclosingClass field for holding the field size.
+        //
+        // There are calls to FieldDesc::GetOffset() during type loading.
+        if ((DWORD)reinterpret_cast<DWORD_PTR>(m_pMTOfEnclosingClass) > 16)
+        {
+            _ASSERTE(!IsRVA()
+                || m_dwOffset == FIELD_OFFSET_DYNAMIC_RVA
+                || m_dwOffset == CallMDImportForFieldRVA());
         }
-
-        return OutOfLine_BigRVAOffset();
+#endif // !DACCESS_COMPILE
+        return m_dwOffset;
     }
 
-    DWORD OutOfLine_BigRVAOffset()
+    DWORD CallMDImportForFieldRVA()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+
+        _ASSERTE(IsRVA());
 
         DWORD   rva;
 
@@ -235,15 +239,26 @@ public:
     }
 
     // Okay, we've stolen too many bits from FieldDescs.  In the RVA case, there's no
-    // reason to believe they will be limited to 22 bits.  So use a sentinel for the
+    // reason to believe they will be limited to FIELD_OFFSET_MAX.  So use a sentinel for the
     // huge cases, and recover them from metadata on-demand.
     void SetOffsetRVA(DWORD dwOffset)
     {
         LIMITED_METHOD_CONTRACT;
 
+        // The FIELD_OFFSET_BIG_RVA is a special case for large RVA fields that
+        // don't fit into FIELD_OFFSET_MAX of the m_dwOffset field.
         m_dwOffset = (dwOffset > FIELD_OFFSET_LAST_REAL_OFFSET)
                       ? FIELD_OFFSET_BIG_RVA
                       : dwOffset;
+    }
+
+    void SetDynamicRVA()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // The FIELD_OFFSET_DYNAMIC_RVA is a special case for EnC added fields when the
+        // type they are on is not yet loaded.
+        m_dwOffset = FIELD_OFFSET_DYNAMIC_RVA;
     }
 
     DWORD   IsStatic() const
@@ -428,7 +443,7 @@ public:
     OBJECTREF GetStaticOBJECTREF()
     {
         WRAPPER_NO_CONTRACT;
-        return *(OBJECTREF *)GetCurrentStaticAddress();
+        return ObjectToOBJECTREF(*(Object**)GetCurrentStaticAddress());
     }
 
     VOID SetStaticOBJECTREF(OBJECTREF objRef);
@@ -720,6 +735,14 @@ public:
 #ifndef DACCESS_COMPILE
     REFLECTFIELDREF AllocateStubFieldInfo();
 #endif
+};
+
+template<>
+struct cdac_data<FieldDesc>
+{
+    static constexpr size_t DWord1 = offsetof(FieldDesc, m_dword1);
+    static constexpr size_t DWord2 = offsetof(FieldDesc, m_dword2);
+    static constexpr size_t MTOfEnclosingClass = offsetof(FieldDesc, m_pMTOfEnclosingClass);
 };
 
 #endif // _FIELD_H_

@@ -24,6 +24,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
     </Compile>
@@ -66,14 +69,14 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
-      <Link>Utilities\TypeNameHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ArrayType.cs">
       <Link>TypeSystem\Common\ArrayType.cs</Link>
@@ -98,6 +101,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldForInstantiatedType.cs">
       <Link>TypeSystem\Common\FieldForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldForInstantiatedType.FieldLayout.cs">
+      <Link>TypeSystem\Common\FieldForInstantiatedType.FieldLayout.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldDesc.cs">
       <Link>TypeSystem\Common\FieldDesc.cs</Link>

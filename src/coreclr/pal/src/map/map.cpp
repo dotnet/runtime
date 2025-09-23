@@ -21,7 +21,6 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/virtual.h"
 #include "pal/environ.h"
 #include "common.h"
@@ -55,7 +54,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL);
 // this critical section.
 //
 
-CRITICAL_SECTION mapping_critsec;
+minipal_mutex mapping_critsec;
 LIST_ENTRY MappedViewList;
 
 #ifndef CORECLR
@@ -133,11 +132,6 @@ CObjectType CorUnix::otFileMapping(
                 CFileMappingImmutableDataCleanupRoutine,
                 sizeof(CFileMappingProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                PAGE_READWRITE | PAGE_READONLY | PAGE_WRITECOPY,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
                 CObjectType::ThreadReleaseNotApplicable,
@@ -925,7 +919,7 @@ CorUnix::InternalMapViewOfFile(
         goto InternalMapViewOfFileExit;
     }
 
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_enter(&mapping_critsec);
 
     if (FILE_MAP_COPY == dwDesiredAccess)
     {
@@ -1121,7 +1115,7 @@ CorUnix::InternalMapViewOfFile(
 
 InternalMapViewOfFileLeaveCriticalSection:
 
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_leave(&mapping_critsec);
 
 InternalMapViewOfFileExit:
 
@@ -1149,7 +1143,7 @@ CorUnix::InternalUnmapViewOfFile(
     PMAPPED_VIEW_LIST pView = NULL;
     IPalObject *pMappingObject = NULL;
 
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_enter(&mapping_critsec);
 
     pView = MAPGetViewForAddress(lpBaseAddress);
     if (NULL == pView)
@@ -1182,7 +1176,7 @@ CorUnix::InternalUnmapViewOfFile(
 
 InternalUnmapViewOfFileExit:
 
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_leave(&mapping_critsec);
 
     //
     // We can't dereference the file mapping object until after
@@ -1214,7 +1208,7 @@ MAPInitialize( void )
 {
     TRACE( "Initialising the critical section.\n" );
 
-    InternalInitializeCriticalSection(&mapping_critsec);
+    minipal_mutex_init(&mapping_critsec);
 
     InitializeListHead(&MappedViewList);
 
@@ -1236,7 +1230,7 @@ Note:
 void MAPCleanup( void )
 {
     TRACE( "Deleting the critical section.\n" );
-    InternalDeleteCriticalSection(&mapping_critsec);
+    minipal_mutex_destroy(&mapping_critsec);
 }
 
 /*++
@@ -1670,9 +1664,8 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
                       PMEMORY_BASIC_INFORMATION lpBuffer)
 {
     BOOL fFound = FALSE;
-    CPalThread * pThread = InternalGetCurrentThread();
 
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_enter(&mapping_critsec);
 
     for(LIST_ENTRY *pLink = MappedViewList.Flink;
         pLink != &MappedViewList;
@@ -1713,7 +1706,7 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
         }
     }
 
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_leave(&mapping_critsec);
 
     return fFound;
 }
@@ -2171,7 +2164,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // and each of the sections, as well as all the space between them that we give PROT_NONE protections.
 
     // We're going to start adding mappings to the mapping list, so take the critical section
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_enter(&mapping_critsec);
 
     reserveSize = RoundToPage(virtualSize, offset);
     if ((ntHeader.OptionalHeader.SectionAlignment) > GetVirtualPageSize())
@@ -2421,7 +2414,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 
 doneReleaseMappingCriticalSection:
 
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_leave(&mapping_critsec);
 
 done:
 
@@ -2473,7 +2466,7 @@ BOOL MAPUnmapPEFile(LPCVOID lpAddress)
 
     BOOL retval = TRUE;
     CPalThread * pThread = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_enter(&mapping_critsec);
     PLIST_ENTRY pLink, pLinkNext, pLinkLocal = NULL;
     unsigned nPESections = 0;
 
@@ -2511,7 +2504,7 @@ BOOL MAPUnmapPEFile(LPCVOID lpAddress)
     }
 #endif // _DEBUG
 
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_leave(&mapping_critsec);
 
     // Now, outside the critical section, do the actual unmapping work
 
@@ -2558,8 +2551,9 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     }
 
     BOOL retval = TRUE;
-    CPalThread * pThread = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pThread, &mapping_critsec);
+
+#ifndef TARGET_ANDROID
+    minipal_mutex_enter(&mapping_critsec);
     PLIST_ENTRY pLink, pLinkNext = NULL;
 
     // Look through the entire MappedViewList for all mappings associated with the
@@ -2587,7 +2581,8 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
         }
     }
 
-    InternalLeaveCriticalSection(pThread, &mapping_critsec);
+    minipal_mutex_leave(&mapping_critsec);
+#endif // TARGET_ANDROID
 
     TRACE_(LOADER)("MAPMarkSectionAsNotNeeded returning %d\n", retval);
     return retval;

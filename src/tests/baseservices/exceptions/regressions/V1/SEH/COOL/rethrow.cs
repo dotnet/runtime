@@ -53,7 +53,7 @@ public class UserException4 : UserException3 {
 public class RethrowException {
 	private int ThreadId;
 
-	public RethrowException(int id){
+	private RethrowException(int id){
 		ThreadId = id;
 	}
 		

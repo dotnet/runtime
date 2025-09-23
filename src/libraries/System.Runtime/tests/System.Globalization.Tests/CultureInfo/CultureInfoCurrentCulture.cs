@@ -45,6 +45,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/111501")]
+        public void CurrentCulture_Default_Is_Specific()
+        {
+            // On OSX-like platforms, the current culture taken from default system culture should be specific.
+            Assert.False(CultureInfo.CurrentCulture.IsNeutralCulture);
+        }
+
+        [Fact]
         public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
@@ -121,9 +130,7 @@ namespace System.Globalization.Tests
         public void CurrentCulture_BasedOnLangEnvVar(string langEnvVar, string expectedCultureName)
         {
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
-
-            CopyEssentialTestEnvironment(psi.Environment);
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
 
             psi.Environment["LANG"] = langEnvVar;
 
@@ -142,12 +149,10 @@ namespace System.Globalization.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
-        public void CurrentCulture_DefaultWithNoLang(string langEnvVar)
+        public void CurrentCulture_DefaultWithNoLang(string? langEnvVar)
         {
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
-
-            CopyEssentialTestEnvironment(psi.Environment);
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
 
             if (langEnvVar != null)
             {
@@ -177,21 +182,6 @@ namespace System.Globalization.Tests
                     Assert.Equal("", CultureInfo.CurrentUICulture.Name);
                 }
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
-        }
-
-        private static void CopyEssentialTestEnvironment(IDictionary<string, string> environment)
-        {
-            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH", "ICU_DATA" };
-            string[] prefixedVariables = { "DOTNET_", "COMPlus_", "SuperPMIShim" };
-
-            foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
-            {
-                if (Array.FindIndex(essentialVariables, x => x.Equals(de.Key)) >= 0 ||
-                    Array.FindIndex(prefixedVariables, x => ((string)de.Key).StartsWith(x, StringComparison.OrdinalIgnoreCase)) >= 0)
-                {
-                    environment[(string)de.Key] = (string)de.Value;
-                }
-            }
         }
     }
 }

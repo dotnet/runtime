@@ -27,81 +27,33 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void EmptyIList()
+        public void Empty()
         {
-            int?[] source = [];
-            int? expected = null;
-
-            Assert.Equal(expected, source.SingleOrDefault());
+            foreach (IEnumerable<int?> source in CreateSources<int?>([]))
+            {
+                Assert.Null(source.SingleOrDefault());
+                Assert.Equal(5, source.SingleOrDefault(5));
+            }
         }
 
         [Fact]
-        public void EmptyIListDefault()
+        public void SingleElement()
         {
-            int?[] source = [];
-            int expected = 5;
-
-            Assert.Equal(expected, source.SingleOrDefault(5));
-        }
-
-        [Fact]
-        public void SingleElementIList()
-        {
-            int[] source = [4];
-            int expected = 4;
-
-            Assert.Equal(expected, source.SingleOrDefault());
-        }
-
-        [Fact]
-        public void SingleElementIListDefault()
-        {
-            int[] source = [4];
-            int expected = 4;
-
-            Assert.Equal(expected, source.SingleOrDefault(5));
+            foreach (IEnumerable<int?> source in CreateSources<int?>([4]))
+            {
+                Assert.Equal(4, source.SingleOrDefault());
+                Assert.Equal(4, source.SingleOrDefault(5));
+            }
         }
 
         [Fact]
         public void ManyElementIList()
         {
-            int[] source = [4, 4, 4, 4, 4];
-
-            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
-        }
-
-        [Fact]
-        public void ManyElementIListDefault()
-        {
-            int[] source = [4, 4, 4, 4, 4];
-
-            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(5));
-        }
-
-        [Fact]
-        public void EmptyNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(0, 0);
-            int expected = default(int);
-
-            Assert.Equal(expected, source.SingleOrDefault());
-        }
-
-        [Fact]
-        public void SingleElementNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(-5, 1);
-            int expected = -5;
-
-            Assert.Equal(expected, source.SingleOrDefault());
-        }
-
-        [Fact]
-        public void ManyElementNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(3, 5);
-
-            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
+            foreach (IEnumerable<int?> source in CreateSources<int?>([4, 4, 4, 4, 4]))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(4));
+            }
         }
 
         [Fact]

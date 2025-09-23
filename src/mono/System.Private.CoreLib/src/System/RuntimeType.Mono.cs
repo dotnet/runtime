@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -175,22 +176,17 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf('.');
-            if (nsDelimiter != -1)
+            int nsDelimiter = TypeNameParserHelpers.IndexOfNamespaceDelimiter(fullname);
+            if (nsDelimiter > 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
+                name = fullname.Substring(nsDelimiter + 1);
                 Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
             {
                 name = fullname;
             }
-
         }
         #endregion
 
@@ -1323,11 +1319,15 @@ namespace System
             return res;
         }
 
+        internal bool IsActualInterface => IsInterface;
+
         // Returns true for actual value types only, ignoring generic parameter constraints.
         internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
 
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
+
+        public override bool IsCollectible => false;
 
         // Returns true for actual enum types only, ignoring generic parameter constraints.
         internal bool IsActualEnum
@@ -1413,23 +1413,23 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(Type[] instantiation)
+        public override Type MakeGenericType(Type[] typeArguments)
         {
-            ArgumentNullException.ThrowIfNull(instantiation);
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
-            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
+            RuntimeType[] instantiationRuntimeType = new RuntimeType[typeArguments.Length];
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             RuntimeType[] genericParameters = GetGenericArgumentsInternal();
 
-            if (genericParameters.Length != instantiation.Length)
-                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
+            if (genericParameters.Length != typeArguments.Length)
+                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(typeArguments));
 
-            for (int i = 0; i < instantiation.Length; i++)
+            for (int i = 0; i < typeArguments.Length; i++)
             {
-                Type instantiationElem = instantiation[i];
+                Type instantiationElem = typeArguments[i];
                 if (instantiationElem == null)
                     throw new ArgumentNullException();
 
@@ -1438,14 +1438,14 @@ namespace System
                 if (rtInstantiationElem == null)
                 {
                     if (instantiationElem.IsSignatureType)
-                        return MakeGenericSignatureType(this, instantiation);
-                    Type[] instantiationCopy = new Type[instantiation.Length];
-                    for (int iCopy = 0; iCopy < instantiation.Length; iCopy++)
-                        instantiationCopy[iCopy] = instantiation[iCopy];
-                    instantiation = instantiationCopy;
+                        return MakeGenericSignatureType(this, typeArguments);
+                    Type[] instantiationCopy = new Type[typeArguments.Length];
+                    for (int iCopy = 0; iCopy < typeArguments.Length; iCopy++)
+                        instantiationCopy[iCopy] = typeArguments[iCopy];
+                    typeArguments = instantiationCopy;
                     if (!RuntimeFeature.IsDynamicCodeSupported)
                         throw new PlatformNotSupportedException();
-                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, instantiation);
+                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
                 }
 
                 instantiationRuntimeType[i] = rtInstantiationElem;
@@ -1683,7 +1683,8 @@ namespace System
 
         [Flags]
         // Types of entries cached in TypeCache
-        private enum TypeCacheEntries {
+        private enum TypeCacheEntries
+        {
             IsGenericTypeDef = 1,
             IsDelegate = 2,
             IsValueType = 4,
@@ -2269,7 +2270,7 @@ namespace System
 
         public override string ToString()
         {
-            return getFullName(false, false);
+            return getFullName(false, false)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -2295,8 +2296,16 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetGenericArgumentsInternal(QCallTypeHandle type, ObjectHandleOnStack res, bool runtimeArray);
 
-        internal string getFullName(bool full_name, bool assembly_qualified)
+        internal string? getFullName(bool full_name, bool assembly_qualified)
         {
+            // If full name or assembly qualified name is requested,
+            // ensure that the type is compatible with full name round-tripping.
+            if ((full_name || assembly_qualified)
+                && !IsFullNameRoundtripCompatible(this))
+            {
+                return null;
+            }
+
             var this_type = this;
             string? res = null;
             getFullName(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res), full_name, assembly_qualified);
@@ -2427,11 +2436,15 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetNamespace(QCallTypeHandle type, ObjectHandleOnStack res);
 
-        public override string Namespace
+        public override string? Namespace
         {
             get
             {
-                var this_type = this;
+                Type type = GetRootElementType();
+                if (type.IsFunctionPointer)
+                    return null;
+
+                var this_type = (RuntimeType)type;
                 string? res = null;
                 GetNamespace(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
                 return res!;
@@ -2442,11 +2455,6 @@ namespace System
         {
             get
             {
-                // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
-                if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
-                    return null;
-
                 string? fullName;
                 TypeCache? cache = Cache;
                 if ((fullName = cache.full_name) == null)
@@ -2574,6 +2582,7 @@ namespace System
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                 default: break;
             }
 

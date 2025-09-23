@@ -4,7 +4,7 @@ if(ENABLE_LLVM OR ENABLE_LLVM_RUNTIME OR HOST_BROWSER)
   enable_language(CXX)
 endif()
 
-include(FindPython3)
+include(FindPython)
 
 include_directories(
   ${PROJECT_BINARY_DIR}/
@@ -471,13 +471,13 @@ if(HOST_BROWSER)
   add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-js PROPERTIES COMPILE_FLAGS "-fexceptions")
-  set_target_properties(mono-wasm-eh-js PROPERTIES LINK_FLAGS "-fexceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
+  set_target_properties(mono-wasm-eh-js PROPERTIES LINK_FLAGS "-fexceptions")
   install(TARGETS mono-wasm-eh-js LIBRARY)
 
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
-  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
@@ -494,60 +494,60 @@ if(HOST_BROWSER OR HOST_WASI OR TARGET_WASM)
   install(TARGETS mono-wasm-nosimd LIBRARY)
 endif()
 
-find_package(Python3 COMPONENTS Interpreter)
+find_package(Python COMPONENTS Interpreter)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-x86.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm64.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-riscv64.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_RISCV64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-riscv64.h riscv64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_RISCV64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-riscv64.h riscv64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-wasm.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.mdesc
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-ppc64.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.mdesc
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.mdesc
   VERBATIM
 )
 

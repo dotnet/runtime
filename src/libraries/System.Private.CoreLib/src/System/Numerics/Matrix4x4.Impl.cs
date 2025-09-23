@@ -18,9 +18,6 @@ namespace System.Numerics
         // syntax. We do this because it saves roughly 8-bytes of IL per method which
         // in turn helps improve inlining chances.
 
-        internal const uint RowCount = 4;
-        internal const uint ColumnCount = 4;
-
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref Impl AsImpl() => ref Unsafe.As<Matrix4x4, Impl>(ref this);
@@ -43,90 +40,6 @@ namespace System.Numerics
             public Vector4 Y;
             public Vector4 Z;
             public Vector4 W;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Init(float m11, float m12, float m13, float m14,
-                             float m21, float m22, float m23, float m24,
-                             float m31, float m32, float m33, float m34,
-                             float m41, float m42, float m43, float m44)
-            {
-                X = Vector4.Create(m11, m12, m13, m14);
-                Y = Vector4.Create(m21, m22, m23, m24);
-                Z = Vector4.Create(m31, m32, m33, m34);
-                W = Vector4.Create(m41, m42, m43, m44);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Init(in Matrix3x2.Impl value)
-            {
-                X = Vector4.Create(value.X, 0, 0);
-                Y = Vector4.Create(value.Y, 0, 0);
-                Z = Vector4.UnitZ;
-                W = Vector4.Create(value.Z, 0, 1);
-            }
-
-            public static Impl Identity
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    Impl result;
-
-                    result.X = Vector4.UnitX;
-                    result.Y = Vector4.UnitY;
-                    result.Z = Vector4.UnitZ;
-                    result.W = Vector4.UnitW;
-
-                    return result;
-                }
-            }
-
-            public float this[int row, int column]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get
-                {
-                    if ((uint)row >= RowCount)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-                    return Unsafe.Add(ref Unsafe.AsRef(in X), row)[column];
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set
-                {
-                    if ((uint)row >= RowCount)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-                    Unsafe.Add(ref X, row)[column] = value;
-                }
-            }
-
-            public readonly bool IsIdentity
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    return (X == Vector4.UnitX)
-                        && (Y == Vector4.UnitY)
-                        && (Z == Vector4.UnitZ)
-                        && (W == Vector4.UnitW);
-                }
-            }
-
-            public Vector3 Translation
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get => W.AsVector3();
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set
-                {
-                    W = Vector4.Create(value, W.W);
-                }
-            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl operator +(in Impl left, in Impl right)
@@ -157,19 +70,6 @@ namespace System.Numerics
                     || (left.Y != right.Y)
                     || (left.Z != right.Z)
                     || (left.W != right.W);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Impl operator *(in Impl left, in Impl right)
-            {
-                Impl result;
-
-                result.X = Vector4.Transform(left.X, in right);
-                result.Y = Vector4.Transform(left.Y, in right);
-                result.Z = Vector4.Transform(left.Z, in right);
-                result.W = Vector4.Transform(left.W, in right);
-
-                return result;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -214,8 +114,12 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateBillboard(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 cameraUpVector, in Vector3 cameraForwardVector)
             {
+                // In a right-handed coordinate system, the object's positive z-axis is in the opposite direction as its forward vector,
+                // and spherical billboards by construction always face the camera.
                 Vector3 axisZ = objectPosition - cameraPosition;
 
+                // When object and camera position are approximately the same, the object should just face the
+                // same direction as the camera is facing.
                 if (axisZ.LengthSquared() < BillboardEpsilon)
                 {
                     axisZ = -cameraForwardVector;
@@ -232,7 +136,38 @@ namespace System.Numerics
 
                 result.X = axisX.AsVector4();
                 result.Y = axisY.AsVector4();
-                result.Z = axisZ.AsVector4();;
+                result.Z = axisZ.AsVector4();
+                result.W = Vector4.Create(objectPosition, 1);
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateBillboardLeftHanded(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 cameraUpVector, in Vector3 cameraForwardVector)
+            {
+                // In a left-handed coordinate system, the object's positive z-axis is in the same direction as its forward vector,
+                // and spherical billboards by construction always face the camera.
+                Vector3 axisZ = cameraPosition - objectPosition;
+
+                // When object and camera position are approximately the same, the object should just face the
+                // same direction as the camera is facing.
+                if (axisZ.LengthSquared() < BillboardEpsilon)
+                {
+                    axisZ = cameraForwardVector;
+                }
+                else
+                {
+                    axisZ = Vector3.Normalize(axisZ);
+                }
+
+                Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
+                Vector3 axisY = Vector3.Cross(axisZ, axisX);
+
+                Impl result;
+
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();
                 result.W = Vector4.Create(objectPosition, 1);
 
                 return result;
@@ -241,9 +176,12 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateConstrainedBillboard(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 rotateAxis, in Vector3 cameraForwardVector, in Vector3 objectForwardVector)
             {
-                // Treat the case when object and camera positions are too close.
+                // First find the Z-axis of the spherical/unconstrained rotation. We call this faceDir and in a right-handed coordinate system
+                // it will be in the opposite direction as from the object to the camera.
                 Vector3 faceDir = objectPosition - cameraPosition;
 
+                // When object and camera position are approximately the same this indicates that the object should also just face the
+                // same direction as the camera is facing.
                 if (faceDir.LengthSquared() < BillboardEpsilon)
                 {
                     faceDir = -cameraForwardVector;
@@ -255,19 +193,91 @@ namespace System.Numerics
 
                 Vector3 axisY = rotateAxis;
 
-                // Treat the case when angle between faceDir and rotateAxis is too close to 0.
                 float dot = Vector3.Dot(axisY, faceDir);
 
+                // Generally the approximation for small angles is cos theta = 1 - theta^2 / 2,
+                // but it seems that here we are using cos theta = 1 - theta. Letting theta be the angle
+                // between the rotate axis and the faceDir,
+                //
+                // dot = cos theta ~ 1 - theta > 1 - .1 * pi/180 = 1 - (.1 degree) => theta < .1 degree
+                //
+                // So this condition checks if the faceDir is approximately the same as the rotate axis
+                // by checking if the angle between them is less than .1 degree.
                 if (float.Abs(dot) > BillboardMinAngle)
                 {
+                    // If the faceDir is approximately the same as the rotate axis, then fallback to using object forward vector
+                    // as the faceDir.
                     faceDir = objectForwardVector;
 
-                    // Make sure passed values are useful for compute.
                     dot = Vector3.Dot(axisY, faceDir);
 
+                    // Similar to before, check if the faceDir is still is approximately the rotate axis.
+                    // If so, then use either -UnitZ or UnitX as the fallback faceDir.
                     if (float.Abs(dot) > BillboardMinAngle)
                     {
+                        // |axisY.Z| = |dot(axisY, -UnitZ)|, so this is checking if the rotate axis is approximately the same as -UnitZ.
+                        // If is, then use UnitX as the fallback.
                         faceDir = (float.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.UnitX : Vector3.Create(0, 0, -1);
+                    }
+                }
+
+                Vector3 axisX = Vector3.Normalize(Vector3.Cross(axisY, faceDir));
+                Vector3 axisZ = Vector3.Normalize(Vector3.Cross(axisX, axisY));
+
+                Impl result;
+
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();
+                result.W = Vector4.Create(objectPosition, 1);
+
+                return result;
+            }
+
+            public static Impl CreateConstrainedBillboardLeftHanded(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 rotateAxis, in Vector3 cameraForwardVector, in Vector3 objectForwardVector)
+            {
+                // First find the Z-axis of the spherical/unconstrained rotation. We call this faceDir and in a left-handed coordinate system
+                // it will be in the same direction as from the object to the camera.
+                Vector3 faceDir = cameraPosition - objectPosition;
+
+                // When object and camera position are approximately the same this indicates that the object should also just face the
+                // same direction as the camera is facing.
+                if (faceDir.LengthSquared() < BillboardEpsilon)
+                {
+                    faceDir = cameraForwardVector;
+                }
+                else
+                {
+                    faceDir = Vector3.Normalize(faceDir);
+                }
+
+                Vector3 axisY = rotateAxis;
+
+                float dot = Vector3.Dot(axisY, faceDir);
+
+                // Generally the approximation for small angles is cos theta = 1 - theta^2 / 2,
+                // but it seems that here we are using cos theta = 1 - theta. Letting theta be the angle
+                // between the rotate axis and the faceDir,
+                //
+                // dot = cos theta ~ 1 - theta > 1 - .1 * pi/180 = 1 - (.1 degree) => theta < .1 degree
+                //
+                // So this condition checks if the faceDir is approximately the same as the rotate axis
+                // by checking if the angle between them is less than .1 degree.
+                if (float.Abs(dot) > BillboardMinAngle)
+                {
+                    // If the faceDir is approximately the same as the rotate axis, then fallback to using object forward vector
+                    // as the faceDir.
+                    faceDir = -objectForwardVector;
+
+                    dot = Vector3.Dot(axisY, faceDir);
+
+                    // Similar to before, check if the faceDir is still is approximately the rotate axis.
+                    // If so, then use either -UnitZ or -UnitX as the fallback faceDir.
+                    if (float.Abs(dot) > BillboardMinAngle)
+                    {
+                        // |axisY.Z| = |dot(axisY, -UnitZ)|, so this is checking if the rotate axis is approximately the same as -UnitZ.
+                        // If is, then use -UnitX as the fallback.
+                        faceDir = (float.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.Create(-1, 0, 0) : Vector3.Create(0, 0, -1);
                     }
                 }
 
@@ -939,7 +949,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe bool Decompose(in Impl matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
             {
-                Impl matTemp = Identity;
+                Impl matTemp = Matrix4x4.Identity.AsImpl();
 
                 Vector3* canonicalBasis = stackalloc Vector3[3] {
                     Vector3.UnitX,
@@ -1276,7 +1286,7 @@ namespace System.Numerics
                     // Check determinate is not zero
                     if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = Vector4.Create(float.NaN);
+                        Vector4 vNaN = Vector4.NaN;
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1414,7 +1424,7 @@ namespace System.Numerics
 
                     if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = Vector4.Create(float.NaN);
+                        Vector4 vNaN = Vector4.NaN;
 
                         result.X = vNaN;
                         result.Y = vNaN;

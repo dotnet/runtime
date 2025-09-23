@@ -6,7 +6,7 @@
 
 #include "CommonMacros.h"
 #include "ICodeManager.h"
-#include "PalRedhawk.h" // NATIVE_CONTEXT
+#include "Pal.h" // NATIVE_CONTEXT
 #include "regdisplay.h"
 
 #include "forward_declarations.h"
@@ -55,6 +55,7 @@ public:
     bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
 #endif
     void             SetControlPC(PTR_VOID controlPC);
+    PTR_VOID         GetControlPC() { return m_ControlPC; }
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
 
@@ -192,6 +193,19 @@ private:
         PTR_uintptr_t pR29;
         PTR_uintptr_t pR30;
         PTR_uintptr_t pR31;
+        PTR_uintptr_t pFP;
+#elif defined(TARGET_RISCV64)
+        PTR_uintptr_t pS1;
+        PTR_uintptr_t pS2;
+        PTR_uintptr_t pS3;
+        PTR_uintptr_t pS4;
+        PTR_uintptr_t pS5;
+        PTR_uintptr_t pS6;
+        PTR_uintptr_t pS7;
+        PTR_uintptr_t pS8;
+        PTR_uintptr_t pS9;
+        PTR_uintptr_t pS10;
+        PTR_uintptr_t pS11;
         PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_uintptr_t pRbp;

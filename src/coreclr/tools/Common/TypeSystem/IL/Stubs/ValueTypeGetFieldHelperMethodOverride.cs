@@ -1,9 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
+using ILCompiler;
+
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -12,12 +17,12 @@ namespace Internal.IL.Stubs
     /// into all value types that cannot have their Equals(object) and GetHashCode() methods operate on individual
     /// bytes. The purpose of the override is to provide access to the value types' fields and their types.
     /// </summary>
-    public sealed partial class ValueTypeGetFieldHelperMethodOverride : ILStubMethod
+    public sealed partial class ValueTypeGetFieldHelperMethodOverride : SpecializableILStubMethod
     {
-        private DefType _owningType;
+        private MetadataType _owningType;
         private MethodSignature _signature;
 
-        internal ValueTypeGetFieldHelperMethodOverride(DefType owningType)
+        internal ValueTypeGetFieldHelperMethodOverride(MetadataType owningType)
         {
             _owningType = owningType;
         }
@@ -46,7 +51,7 @@ namespace Internal.IL.Stubs
                 {
                     TypeSystemContext context = _owningType.Context;
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
-                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable").MakePointerType();
+                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8).MakePointerType();
 
                     _signature = new MethodSignature(0, 0, int32Type, [ int32Type, eeTypePtrType.MakeByRefType() ]);
                 }
@@ -57,28 +62,44 @@ namespace Internal.IL.Stubs
 
         public override MethodIL EmitIL()
         {
-            TypeDesc owningType = _owningType.InstantiateAsOpen();
+            return EmitILCommon(null);
+        }
 
+        public override MethodIL EmitIL(MethodDesc specializedMethod)
+        {
+            Debug.Assert(specializedMethod.GetTypicalMethodDefinition() == this);
+            return new InstantiatedMethodIL(specializedMethod, EmitILCommon(specializedMethod));
+        }
+
+        private MethodIL EmitILCommon(MethodDesc contextMethod)
+        {
             ILEmitter emitter = new ILEmitter();
 
-            if (_owningType is MetadataType mdType)
+            // Types marked as InlineArray aren't supported by
+            // the built-in Equals() or GetHashCode().
+            if (_owningType.IsInlineArray)
             {
-                // Types marked as InlineArray aren't supported by
-                // the built-in Equals() or GetHashCode().
-                if (mdType.IsInlineArray)
-                {
-                    var stream = emitter.NewCodeStream();
-                    MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
-                    stream.EmitCallThrowHelper(emitter, thrower);
-                    return emitter.Link(this);
-                }
+                var stream = emitter.NewCodeStream();
+                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedInlineArrayEqualsGetHashCode"u8);
+                stream.EmitCallThrowHelper(emitter, thrower);
+                return emitter.Link(this);
             }
 
-            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
-            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
+            if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null), out int lastFieldEndOffset))
+            {
+                var stream = emitter.NewCodeStream();
+                stream.EmitLdc(-lastFieldEndOffset);
+                stream.Emit(ILOpcode.ret);
+                return emitter.Link(this);
+            }
+
+            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8);
+            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of"u8, null);
+
+            var owningType = (MetadataType)_owningType.InstantiateAsOpen();
 
             ILToken rawDataToken = owningType.IsValueType ? default :
-                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"));
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetKnownField("Data"u8));
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
@@ -95,20 +116,27 @@ namespace Internal.IL.Stubs
                 getFieldStream.EmitLabel(label);
                 getFieldStream.EmitLdArg(2);
 
-                // We need something we can instantiate EETypePtrOf over. Also, the classlib
+                // We need something we can instantiate MethodTable.Of over. Also, the classlib
                 // code doesn't handle pointers.
                 TypeDesc boxableFieldType = field.FieldType;
                 if (boxableFieldType.IsPointer || boxableFieldType.IsFunctionPointer)
                     boxableFieldType = Context.GetWellKnownType(WellKnownType.IntPtr);
 
+                // We're trying to do some optimizations below that can benefit from knowing the concrete
+                // type after substitutions.
+                TypeDesc fieldTypeForOptimizationChecks = boxableFieldType.IsSignatureVariable
+                    ? boxableFieldType.InstantiateSignature(contextMethod.OwningType.Instantiation, default)
+                    : boxableFieldType;
+
                 // The fact that the type is a reference type is sufficient for the callers.
-                // Don't unnecessarily create an MethodTable for the field type.
-                if (!boxableFieldType.IsSignatureVariable && !boxableFieldType.IsValueType)
+                // Don't unnecessarily create a MethodTable for the field type.
+                if (!fieldTypeForOptimizationChecks.IsValueType)
                     boxableFieldType = Context.GetWellKnownType(WellKnownType.Object);
 
                 // If this is an enum, it's okay to Equals/GetHashCode the underlying type.
-                // Don't unnecessarily create an MethodTable for the enum.
-                boxableFieldType = boxableFieldType.UnderlyingType;
+                // Don't unnecessarily create a MethodTable for the enum.
+                if (fieldTypeForOptimizationChecks.IsEnum)
+                    boxableFieldType = fieldTypeForOptimizationChecks.UnderlyingType;
 
                 MethodDesc mtOfFieldMethod = methodTableOfMethod.MakeInstantiatedMethod(boxableFieldType);
                 getFieldStream.Emit(ILOpcode.call, emitter.NewToken(mtOfFieldMethod));
@@ -187,9 +215,9 @@ namespace Internal.IL.Stubs
             }
         }
 
-        internal const string MetadataName = "__GetFieldHelper";
+        internal static ReadOnlySpan<byte> MetadataName => "__GetFieldHelper"u8;
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -201,7 +229,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return MetadataName;
+                return "__GetFieldHelper";
             }
         }
     }

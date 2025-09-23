@@ -203,7 +203,7 @@ namespace System.Net.Sockets
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
-            bool useStack = count <= StackThreshold;
+            bool useStack = (uint)count <= StackThreshold;
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
@@ -325,7 +325,7 @@ namespace System.Net.Sockets
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
-            bool useStack = count <= StackThreshold;
+            bool useStack = (uint)count <= StackThreshold;
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
@@ -889,7 +889,7 @@ namespace System.Net.Sockets
                     span = default;
                     return false;
                 }
-                if (count >= StackThreshold) // note on >= : the first element is reserved for internal length
+                if ((uint)count >= StackThreshold) // note on >= : the first element is reserved for internal length
                 {
                     span = lease = ArrayPool<IntPtr>.Shared.Rent(count + 1);
                     return false;

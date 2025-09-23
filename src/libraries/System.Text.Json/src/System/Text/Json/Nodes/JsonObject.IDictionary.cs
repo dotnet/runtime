@@ -25,13 +25,50 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public void Add(string propertyName, JsonNode? value)
         {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+            Dictionary.Add(propertyName, value);
+            value?.AssignParent(this);
+        }
+
+        /// <summary>
+        ///   Adds an element with the provided name and value to the <see cref="JsonObject"/>, if a property named <paramref name="propertyName"/> doesn't already exist.
+        /// </summary>
+        /// <param name="propertyName">The property name of the element to add.</param>
+        /// <param name="value">The value of the element to add.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is null.</exception>
+        /// <returns>
+        ///   <see langword="true"/> if the property didn't exist and the element was added; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryAdd(string propertyName, JsonNode? value) => TryAdd(propertyName, value, out _);
+
+        /// <summary>
+        ///   Adds an element with the provided name and value to the <see cref="JsonObject"/>, if a property named <paramref name="propertyName"/> doesn't already exist.
+        /// </summary>
+        /// <param name="propertyName">The property name of the element to add.</param>
+        /// <param name="value">The value of the element to add.</param>
+        /// <param name="index">The index of the added or existing <paramref name="propertyName"/>. This is always a valid index into the <see cref="JsonObject"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is null.</exception>
+        /// <returns>
+        ///   <see langword="true"/> if the property didn't exist and the element was added; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryAdd(string propertyName, JsonNode? value, out int index)
+        {
             if (propertyName is null)
             {
                 ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
-
-            Dictionary.Add(propertyName, value);
-            value?.AssignParent(this);
+#if NET9_0
+            bool success = Dictionary.TryAdd(propertyName, value);
+            index = success ? Dictionary.Count - 1 : Dictionary.IndexOf(propertyName);
+#else
+            bool success = Dictionary.TryAdd(propertyName, value, out index);
+#endif
+            if (success)
+            {
+                value?.AssignParent(this);
+            }
+            return success;
         }
 
         /// <summary>
@@ -81,10 +118,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public bool ContainsKey(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             return Dictionary.ContainsKey(propertyName);
         }
@@ -106,10 +140,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public bool Remove(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             bool success = Dictionary.Remove(propertyName, out JsonNode? removedNode);
             if (success)
@@ -195,10 +226,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             return Dictionary.TryGetValue(propertyName, out jsonNode);
         }
@@ -229,10 +257,7 @@ namespace System.Text.Json.Nodes
                     foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
                     {
                         JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
-                        if (node != null)
-                        {
-                            node.Parent = this;
-                        }
+                        node?.Parent = this;
 
                         dictionary.Add(jElementProperty.Name, node);
                     }

@@ -81,7 +81,7 @@ namespace System.IO.Pipelines
         public abstract Span<byte> GetSpan(int sizeHint = 0);
 
         /// <summary>Returns a <see cref="System.IO.Stream" /> representation of the <see cref="System.IO.Pipelines.PipeWriter" />.</summary>
-        /// <param name="leaveOpen">An optional flag that indicates whether disposing the returned <see cref="System.IO.Stream" /> leaves <see cref="System.IO.Pipelines.PipeReader" /> open (<see langword="true" />) or completes <see cref="System.IO.Pipelines.PipeReader" /> (<see langword="false" />).</param>
+        /// <param name="leaveOpen">An optional flag that indicates whether disposing the returned <see cref="System.IO.Stream" /> leaves <see cref="System.IO.Pipelines.PipeWriter" /> open (<see langword="true" />) or completes <see cref="System.IO.Pipelines.PipeWriter" /> (<see langword="false" />).</param>
         /// <returns>A stream that represents the <see cref="System.IO.Pipelines.PipeWriter" />.</returns>
         public virtual Stream AsStream(bool leaveOpen = false)
         {

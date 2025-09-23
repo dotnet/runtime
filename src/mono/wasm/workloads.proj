@@ -11,10 +11,9 @@
     <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
     <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
     <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-    <_PropsForAOTCrossBuild Include="TargetCrossRid=browser-wasm" />
     <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
 
-    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\MonoCrossAOT\Microsoft.NETCore.App.MonoCrossAOT.browser-wasm.sfxproj"
                       AdditionalProperties="@(_PropsForAOTCrossBuild,';')" />
   </ItemGroup>
 </Project>

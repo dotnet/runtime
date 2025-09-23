@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -191,5 +191,11 @@
   </data>
   <data name="InvalidServiceKeyType" xml:space="preserve">
     <value>The type of the key used for lookup doesn't match the type in the constructor parameter with the ServiceKey attribute.</value>
+  </data>
+  <data name="KeyedServiceAnyKeyUsedToResolveService" xml:space="preserve">
+    <value>KeyedService.AnyKey cannot be used to resolve a single service.</value>
+  </data>
+  <data name="NoKeyedServiceRegistered" xml:space="preserve">
+    <value>No keyed service for type '{0}' using key type '{1}' has been registered.</value>
   </data>
 </root>

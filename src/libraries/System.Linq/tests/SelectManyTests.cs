@@ -372,31 +372,23 @@ namespace System.Linq.Tests
             Assert.False(en is not null && en.MoveNext());
         }
 
-        [Theory]
-        [MemberData(nameof(ParameterizedTestsData))]
-        public void ParameterizedTests(IEnumerable<int> source, Func<int, IEnumerable<int>> selector)
+        [Fact]
+        public void ParameterizedTests()
         {
-            Assert.All(CreateSources(source), source =>
+            for (int i = 1; i <= 20; i++)
             {
-                var expected = source.Select(i => selector(i)).Aggregate((l, r) => l.Concat(r));
-                var actual = source.SelectMany(selector);
-
-                Assert.Equal(expected, actual);
-                Assert.Equal(expected.Count(), actual.Count()); // SelectMany may employ an optimized Count implementation.
-                Assert.Equal(expected.ToArray(), actual.ToArray());
-                Assert.Equal(expected.ToList(), actual.ToList());
-            });
-        }
-
-        public static IEnumerable<object[]> ParameterizedTestsData()
-        {
-            foreach (Func<IEnumerable<int>, IEnumerable<int>> transform in IdentityTransforms<int>())
-            {
-                for (int i = 1; i <= 20; i++)
+                Assert.All(CreateSources(Enumerable.Range(1, i)), source =>
                 {
-                    Func<int, IEnumerable<int>> selector = n => transform(Enumerable.Range(i, n));
-                    yield return [Enumerable.Range(1, i), selector];
-                }
+                    Func<int, IEnumerable<int>> selector = n => Enumerable.Range(i, n);
+
+                    var expected = source.Select(i => selector(i)).Aggregate((l, r) => l.Concat(r)).ToArray();
+                    var actual = source.SelectMany(selector);
+
+                    Assert.Equal(expected, actual);
+                    Assert.Equal(expected.Length, actual.Count()); // SelectMany may employ an optimized Count implementation.
+                    Assert.Equal(expected, actual.ToArray());
+                    Assert.Equal(expected, actual.ToList());
+                });
             }
         }
 
@@ -470,7 +462,7 @@ namespace System.Linq.Tests
             return lengths.SelectMany(l => lengths, (l1, l2) => new object[] { l1, l2 });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         [InlineData(new[] { int.MaxValue, 1 })]
         [InlineData(new[] { 2, int.MaxValue - 1 })]
         [InlineData(new[] { 123, 456, int.MaxValue - 100000, 123456 })]

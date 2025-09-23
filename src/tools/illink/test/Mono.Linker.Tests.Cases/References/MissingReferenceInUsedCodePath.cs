@@ -7,15 +7,15 @@ using Mono.Linker.Tests.Cases.References.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.References;
 
-[ExpectNonZeroExitCode (1)]
+[ExpectNonZeroExitCode(1)]
 [NoLinkedOutput]
-[SetupCompileBefore ("missing.dll", new[] { "Dependencies/MissingAssembly.cs" })]
-[DeleteBefore ("missing.dll")]
-[SetupLinkerArgument ("--skip-unresolved", "false")]
+[SetupCompileBefore("missing.dll", new[] { "Dependencies/MissingAssembly.cs" })]
+[DeleteBefore("missing.dll")]
+[SetupLinkerArgument("--skip-unresolved", "false")]
 public class MissingReferenceInUsedCodePath
 {
-	public static void Main ()
-	{
-		typeof (MissingAssembly).ToString ();
-	}
+    public static void Main()
+    {
+        typeof(MissingAssembly).ToString();
+    }
 }

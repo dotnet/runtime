@@ -17,11 +17,10 @@
       <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
       <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
       <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RIDForWorkload)" />
       <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
 
       <NuGetsToBuildForWorkloadTesting Include="$(_AOTCrossNuGetPath)"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\MonoCrossAOT\Microsoft.NETCore.App.MonoCrossAOT.$(RIDForWorkload).sfxproj"
                       Properties="@(_PropsForAOTCrossBuild,';')"
                       Descriptor="AOT Cross compiler"/>
     </ItemGroup>

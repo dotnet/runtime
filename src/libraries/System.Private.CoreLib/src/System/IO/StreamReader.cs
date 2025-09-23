@@ -25,7 +25,6 @@ namespace System.IO
         // saves construction time.  This does break adaptive buffering,
         // but this is slightly faster.
         private const int DefaultBufferSize = 1024;  // Byte buffer size
-        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         private readonly Stream _stream;
@@ -111,19 +110,19 @@ namespace System.IO
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding)
+        public StreamReader(Stream stream, Encoding? encoding)
             : this(stream, encoding, true, DefaultBufferSize, false)
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+        public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
             : this(stream, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize, false)
         {
         }
 
         // Creates a new StreamReader for the given stream.  The
         // character encoding is set by encoding and the buffer size,
-        // in number of 16-bit characters, is set by bufferSize.
+        // in bytes, is set by bufferSize.
         //
         // Note that detectEncodingFromByteOrderMarks is a very
         // loose attempt at detecting the encoding by looking at the first
@@ -131,7 +130,7 @@ namespace System.IO
         // unicode, and big endian unicode text, but that's it.  If neither
         // of those three match, it will use the Encoding you provided.
         //
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+        public StreamReader(Stream stream, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
             : this(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false)
         {
         }
@@ -187,18 +186,18 @@ namespace System.IO
         {
         }
 
-        public StreamReader(string path, Encoding encoding)
+        public StreamReader(string path, Encoding? encoding)
             : this(path, encoding, true, DefaultBufferSize)
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+        public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
             : this(path, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
-            : this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+        public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+            : this(ValidateArgsAndOpenPath(path, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
         {
         }
 
@@ -207,15 +206,14 @@ namespace System.IO
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        public StreamReader(string path, Encoding? encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
         {
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
             ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Read) == 0)
             {
@@ -225,13 +223,16 @@ namespace System.IO
             return new FileStream(path, options);
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
+        private static FileStream ValidateArgsAndOpenPath(string path, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
+
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()

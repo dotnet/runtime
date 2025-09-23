@@ -54,10 +54,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonTypeInfo GetTypeInfo(Type type)
         {
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -82,10 +79,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -127,7 +121,7 @@ namespace System.Text.Json
                 typeInfo = GetTypeInfoNoCaching(type);
             }
 
-            if (typeInfo is null && ensureNotNull == true)
+            if (typeInfo is null && ensureNotNull is true)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
             }
@@ -439,7 +433,7 @@ namespace System.Text.Json
                         }
                         else
                         {
-                            Debug.Assert(weakRef.TryGetTarget(out _) is false);
+                            Debug.Assert(!weakRef.TryGetTarget(out _));
                             weakRef.SetTarget(ctx);
                         }
                     }
@@ -518,6 +512,7 @@ namespace System.Text.Json
                     left._indentCharacter == right._indentCharacter &&
                     left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
+                    left._allowDuplicateProperties == right._allowDuplicateProperties &&
                     CompareLists(left._converters, right._converters);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
@@ -578,6 +573,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._indentCharacter);
                 AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
+                AddHashCode(ref hc, options._allowDuplicateProperties);
                 AddListHashCode(ref hc, options._converters);
 
                 return hc.ToHashCode();

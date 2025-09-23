@@ -26,6 +26,10 @@ namespace System.Text.Json.Nodes.Tests
             node = JsonValue.Create("Hello");
             json = node.ToString();
             Assert.Equal("Hello", json);
+
+            node = JsonSerializer.Deserialize<JsonNode>("\"Hello\"");
+            json = node.ToString();
+            Assert.Equal("Hello", json);
         }
     }
 }

@@ -69,9 +69,7 @@ namespace System.Linq
             }
 
             return
-#if !OPTIMIZE_FOR_SIZE
                 source is Iterator<TSource> iterator ? iterator.TryGetLast(out found) :
-#endif
                 TryGetLastNonIterator(source, out found);
         }
 

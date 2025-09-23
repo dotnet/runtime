@@ -16,7 +16,7 @@
 void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    static_assert_no_msg(SlotType_Count <= sizeof(INT32));
+    static_assert(SlotType_Count <= sizeof(INT32));
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(slot != (TADDR)NULL);
     _ASSERTE(!(slot & SlotType_Mask));
@@ -28,17 +28,17 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
     switch (slotType)
     {
         case SlotType_Normal:
-            *(PCODE *)slot = entryPoint;
+            VolatileStore((PCODE *)slot, entryPoint);
             break;
 
         case SlotType_Vtable:
-            *((MethodTable::VTableIndir2_t *)slot) = entryPoint;
+            VolatileStore(((MethodTable::VTableIndir2_t *)slot), entryPoint);
             break;
 
         case SlotType_Executable:
         {
             ExecutableWriterHolder<void> slotWriterHolder((void*)slot, sizeof(PCODE*));
-            *(PCODE *)slotWriterHolder.GetRW() = entryPoint;
+            VolatileStore((PCODE *)slotWriterHolder.GetRW(), entryPoint);
             goto Flush;
         }
 
@@ -48,7 +48,7 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             _ASSERTE(sizeof(void *) <= 4);
 
             ExecutableWriterHolder<void> slotWriterHolder((void*)slot, sizeof(PCODE*));
-            *(PCODE *)slotWriterHolder.GetRW() = entryPoint - ((PCODE)slot + sizeof(PCODE));
+            VolatileStore((PCODE *)slotWriterHolder.GetRW(), entryPoint - ((PCODE)slot + sizeof(PCODE)));
             // fall through
         }
 
@@ -76,14 +76,28 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
+    bool fReadyToPatchExecutableCode = false;
 
-    auto lambda = [&entryPoint](LoaderAllocator *pLoaderAllocatorOfSlot, MethodDesc *pMethodDesc, UINT_PTR slotData)
+    auto lambda = [&entryPoint, &fReadyToPatchExecutableCode](LoaderAllocator *pLoaderAllocatorOfSlot, MethodDesc *pMethodDesc, UINT_PTR slotData)
     {
 
         TADDR slot;
         EntryPointSlots::SlotType slotType;
 
         EntryPointSlots::ConvertUINT_PTRToSlotAndTypePair(slotData, &slot, &slotType);
+        if (!fReadyToPatchExecutableCode && ((slotType == EntryPointSlots::SlotType_Executable) || slotType == EntryPointSlots::SlotType_ExecutableRel32))
+        {
+            // We need to patch the executable code, so we need to make absolutely sure that all writes to the entry point contents are written before
+            // we patch the executable code. We only need to do this once, and it isn't equivalent to VolatileStore, as our definition of VolatileStore
+            // doesn't include a means to drain the store queue before the patch. The important detail is that executing the instruction stream is not
+            // logically equivalent to performing a memory load, and does not participate in all of the same load/store ordering guarantees.
+            // Intel does not provide a precise definition of this, but it does describe the situation as "cross modifying code", and describes an unfortunately
+            // impractical scheme involving running cpuid on all cores that might execute the code in question. Since both the old/new code are semantically
+            // equivalent, we're going to use an sfence to ensure that at least all the writes to establish the new code are completely visible to all cores
+            // before we actually patch the executable code.
+            SFENCE_MEMORY_BARRIER();
+            fReadyToPatchExecutableCode = true;
+        }
         EntryPointSlots::Backpatch_Locked(slot, slotType, entryPoint);
 
         return true; // Keep walking

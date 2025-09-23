@@ -84,6 +84,10 @@ DEFINE_DACVAR(PTR_EEJitManager, ExecutionManager__m_pEEJitManager, ExecutionMana
 #ifdef FEATURE_READYTORUN
 DEFINE_DACVAR(PTR_ReadyToRunJitManager, ExecutionManager__m_pReadyToRunJitManager, ExecutionManager::m_pReadyToRunJitManager)
 #endif
+#ifdef FEATURE_INTERPRETER
+DEFINE_DACVAR(PTR_InterpreterJitManager, ExecutionManager__m_pInterpreterJitManager, ExecutionManager::m_pInterpreterJitManager)
+DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMan, ExecutionManager::m_pInterpreterCodeMan)
+#endif
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
@@ -91,11 +95,12 @@ DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
-DEFINE_DACVAR(PTR_ThunkHeapStubManager, ThunkHeapStubManager__g_pManager, ThunkHeapStubManager::g_pManager)
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
+#ifdef FEATURE_TIERED_COMPILATION
 DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
+#endif // FEATURE_TIERED_COMPILATION
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
@@ -112,12 +117,12 @@ DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_p
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
+DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
-DEFINE_DACVAR(BOOL, dac__g_isNewExceptionHandlingEnabled, ::g_isNewExceptionHandlingEnabled)
 #endif
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
@@ -178,7 +183,7 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 
 DEFINE_DACVAR(bool, dac__g_fProcessDetach, ::g_fProcessDetach)
-DEFINE_DACVAR(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
+DEFINE_DACVAR_VOLATILE(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
 
 DEFINE_DACVAR(ULONG, dac__g_CORDebuggerControlFlags, ::g_CORDebuggerControlFlags)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDebugger, ::g_pDebugger)
@@ -191,10 +196,6 @@ DEFINE_DACVAR(BOOL, Debugger__s_fCanChangeNgenFlags, Debugger::s_fCanChangeNgenF
 
 DEFINE_DACVAR(PTR_DebuggerPatchTable, DebuggerController__g_patches, DebuggerController::g_patches)
 DEFINE_DACVAR(BOOL, DebuggerController__g_patchTableValid, DebuggerController::g_patchTableValid)
-
-DEFINE_DACVAR(SIZE_T, dac__gLowestFCall, ::gLowestFCall)
-DEFINE_DACVAR(SIZE_T, dac__gHighestFCall, ::gHighestFCall)
-DEFINE_DACVAR(SIZE_T, dac__gFCallMethods, ::gFCallMethods)
 
 DEFINE_DACVAR(PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
@@ -233,6 +234,8 @@ DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 
 DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
+
+DEFINE_DACVAR(CDacPlatformMetadata, dac__g_cdacPlatformMetadata, ::g_cdacPlatformMetadata)
 
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_NO_DUMP

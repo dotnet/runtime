@@ -421,25 +421,21 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 {
     assert(defNode->OperIsStore() || defNode->OperIs(GT_CALL));
 
-    GenTreeLclVarCommon* lclNode;
-    bool                 isFullDef = false;
-    ssize_t              offset    = 0;
-    unsigned             storeSize = 0;
-    bool                 isLocal   = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef, &offset, &storeSize);
-
-    if (isLocal)
-    {
+    bool anyDefs  = false;
+    auto visitDef = [&](const LocalDef& def) {
+        anyDefs = true;
         // This should have been marked as definition.
-        assert(((lclNode->gtFlags & GTF_VAR_DEF) != 0) && (((lclNode->gtFlags & GTF_VAR_USEASG) != 0) == !isFullDef));
+        assert(((def.Def->gtFlags & GTF_VAR_DEF) != 0) &&
+               (((def.Def->gtFlags & GTF_VAR_USEASG) != 0) == !def.IsEntire));
 
-        unsigned   lclNum = lclNode->GetLclNum();
+        unsigned   lclNum = def.Def->GetLclNum();
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
 
         if (m_pCompiler->lvaInSsa(lclNum))
         {
-            lclNode->SetSsaNum(RenamePushDef(defNode, block, lclNum, isFullDef));
+            def.Def->SetSsaNum(RenamePushDef(defNode, block, lclNum, def.IsEntire));
             assert(!varDsc->IsAddressExposed()); // Cannot define SSA memory.
-            return;
+            return GenTree::VisitResult::Continue;
         }
 
         if (varDsc->lvPromoted)
@@ -455,11 +451,11 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
                     unsigned ssaNum = SsaConfig::RESERVED_SSA_NUM;
 
                     // Fast-path the common case of an "entire" store.
-                    if (isFullDef)
+                    if (def.IsEntire)
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
                     }
-                    else if (m_pCompiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset,
+                    else if (m_pCompiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
                                                               &fieldStoreSize))
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum,
@@ -469,71 +465,34 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 
                     if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                     {
-                        lclNode->SetSsaNum(m_pCompiler, index, ssaNum);
+                        def.Def->SetSsaNum(m_pCompiler, index, ssaNum);
                     }
                 }
             }
         }
-    }
-    else if (defNode->OperIs(GT_CALL))
-    {
-        // If the current def is a call we either know the call is pure or else has arbitrary memory definitions,
-        // the memory effect of the call is captured by the live out state from the block and doesn't need special
-        // handling here. If we ever change liveness to more carefully model call effects (from interprecedural
-        // information) we might need to revisit this.
-        return;
-    }
 
-    // Figure out if "defNode" may make a new GC heap state (if we care for this block).
-    if (((block->bbMemoryHavoc & memoryKindSet(GcHeap)) == 0) && m_pCompiler->ehBlockHasExnFlowDsc(block))
-    {
-        bool isAddrExposedLocal = isLocal && m_pCompiler->lvaVarAddrExposed(lclNode->GetLclNum());
-        bool hasByrefHavoc      = ((block->bbMemoryHavoc & memoryKindSet(ByrefExposed)) != 0);
-        if (!isLocal || (isAddrExposedLocal && !hasByrefHavoc))
+        if (varDsc->IsAddressExposed())
         {
-            // It *may* define byref memory in a non-havoc way.  Make a new SSA # -- associate with this node.
-            unsigned ssaNum = m_pCompiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
-            if (!hasByrefHavoc)
-            {
-                m_renameStack.PushMemory(ByrefExposed, block, ssaNum);
-                m_pCompiler->GetMemorySsaMap(ByrefExposed)->Set(defNode, ssaNum);
-#ifdef DEBUG
-                if (m_pCompiler->verboseSsa)
-                {
-                    printf("Node ");
-                    Compiler::printTreeID(defNode);
-                    printf(" (in try block) may define memory; ssa # = %d.\n", ssaNum);
-                }
-#endif // DEBUG
-
-                // Now add this SSA # to all phis of the reachable catch blocks.
-                AddMemoryDefToEHSuccessorPhis(ByrefExposed, block, ssaNum);
-            }
-
-            if (!isLocal)
-            {
-                // Add a new def for GcHeap as well
-                if (m_pCompiler->byrefStatesMatchGcHeapStates)
-                {
-                    // GcHeap and ByrefExposed share the same stacks, SsaMap, and phis
-                    assert(!hasByrefHavoc);
-                    assert(*m_pCompiler->GetMemorySsaMap(GcHeap)->LookupPointer(defNode) == ssaNum);
-                    assert(block->bbMemorySsaPhiFunc[GcHeap] == block->bbMemorySsaPhiFunc[ByrefExposed]);
-                }
-                else
-                {
-                    if (!hasByrefHavoc)
-                    {
-                        // Allocate a distinct defnum for the GC Heap
-                        ssaNum = m_pCompiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
-                    }
-
-                    m_renameStack.PushMemory(GcHeap, block, ssaNum);
-                    m_pCompiler->GetMemorySsaMap(GcHeap)->Set(defNode, ssaNum);
-                    AddMemoryDefToEHSuccessorPhis(GcHeap, block, ssaNum);
-                }
-            }
+            RenamePushMemoryDef(def.Def, block);
         }
+
+        return GenTree::VisitResult::Continue;
+    };
+
+    defNode->VisitLocalDefs(m_pCompiler, visitDef);
+
+    if (!anyDefs)
+    {
+        if (defNode->OperIs(GT_CALL))
+        {
+            // If the current def is a call we either know the call is pure or else has arbitrary memory definitions,
+            // the memory effect of the call is captured by the live out state from the block and doesn't need special
+            // handling here. If we ever change liveness to more carefully model call effects (from interprecedural
+            // information) we might need to revisit this.
+            return;
+        }
+
+        RenamePushMemoryDef(defNode, block);
     }
 }
 
@@ -581,6 +540,66 @@ unsigned SsaBuilder::RenamePushDef(GenTree* defNode, BasicBlock* block, unsigned
     }
 
     return ssaNum;
+}
+
+void SsaBuilder::RenamePushMemoryDef(GenTree* defNode, BasicBlock* block)
+{
+    // Figure out if "defNode" may make a new GC heap state (if we care for this block).
+    if (((block->bbMemoryHavoc & memoryKindSet(GcHeap)) != 0) || !m_pCompiler->ehBlockHasExnFlowDsc(block))
+    {
+        return;
+    }
+
+    bool hasByrefHavoc = ((block->bbMemoryHavoc & memoryKindSet(ByrefExposed)) != 0);
+
+    if (defNode->OperIsAnyLocal() && hasByrefHavoc)
+    {
+        // No need to record these.
+        return;
+    }
+
+    // It *may* define byref memory in a non-havoc way.  Make a new SSA # -- associate with this node.
+    unsigned ssaNum = m_pCompiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
+    if (!hasByrefHavoc)
+    {
+        m_renameStack.PushMemory(ByrefExposed, block, ssaNum);
+        m_pCompiler->GetMemorySsaMap(ByrefExposed)->Set(defNode, ssaNum);
+#ifdef DEBUG
+        if (m_pCompiler->verboseSsa)
+        {
+            printf("Node ");
+            Compiler::printTreeID(defNode);
+            printf(" (in try block) may define memory; ssa # = %d.\n", ssaNum);
+        }
+#endif // DEBUG
+
+        // Now add this SSA # to all phis of the reachable catch blocks.
+        AddMemoryDefToEHSuccessorPhis(ByrefExposed, block, ssaNum);
+    }
+
+    if (!defNode->OperIsAnyLocal())
+    {
+        // Add a new def for GcHeap as well
+        if (m_pCompiler->byrefStatesMatchGcHeapStates)
+        {
+            // GcHeap and ByrefExposed share the same stacks, SsaMap, and phis
+            assert(!hasByrefHavoc);
+            assert(*m_pCompiler->GetMemorySsaMap(GcHeap)->LookupPointer(defNode) == ssaNum);
+            assert(block->bbMemorySsaPhiFunc[GcHeap] == block->bbMemorySsaPhiFunc[ByrefExposed]);
+        }
+        else
+        {
+            if (!hasByrefHavoc)
+            {
+                // Allocate a distinct defnum for the GC Heap
+                ssaNum = m_pCompiler->lvMemoryPerSsaData.AllocSsaNum(m_allocator);
+            }
+
+            m_renameStack.PushMemory(GcHeap, block, ssaNum);
+            m_pCompiler->GetMemorySsaMap(GcHeap)->Set(defNode, ssaNum);
+            AddMemoryDefToEHSuccessorPhis(GcHeap, block, ssaNum);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -657,7 +676,14 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
                 break;
             }
         }
-        assert(phiFound);
+
+#ifdef DEBUG
+        // If 'succ' is the handler of an unreachable try it is possible for
+        // 'block' to dominate it, in which case we will not find any phi.
+        // Tolerate this case.
+        EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(succ);
+        assert(phiFound || ((ehDsc != nullptr) && !m_pCompiler->m_dfsTree->Contains(ehDsc->ebdTryBeg)));
+#endif
 
         return BasicBlockVisit::Continue;
     });
@@ -1289,7 +1315,7 @@ void Compiler::JitTestCheckSSA()
         assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)
         {
-            if (node->OperGet() != GT_LCL_VAR)
+            if (!node->OperIs(GT_LCL_VAR))
             {
                 printf("SSAName constraint put on non-lcl-var expression ");
                 printTreeID(node);
@@ -1548,7 +1574,7 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
         }
 
         if ((candidate.Block == use.Block) && (use.Stmt != nullptr) &&
-            (LatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
+            (m_comp->gtLatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
         {
             // Def is after use
             continue;
@@ -1558,7 +1584,8 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
         {
             latestTree = nullptr;
         }
-        else if ((latestDefStmt == nullptr) || (LatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
+        else if ((latestDefStmt == nullptr) ||
+                 (m_comp->gtLatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
         {
             latestDefStmt = candidate.Stmt;
             latestTree    = candidate.Tree;
@@ -1610,44 +1637,6 @@ bool IncrementalSsaBuilder::FindReachingDefInSameStatement(const UseDefLocation&
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------
-// LatestStatement: Given two statements in the same block, find the latest one
-// of them.
-//
-// Parameters:
-//   stmt1 - The first statement
-//   stmt2 - The second statement
-//
-// Returns:
-//   Latest of the two statements.
-//
-Statement* IncrementalSsaBuilder::LatestStatement(Statement* stmt1, Statement* stmt2)
-{
-    if (stmt1 == stmt2)
-    {
-        return stmt1;
-    }
-
-    Statement* cursor1 = stmt1->GetNextStmt();
-    Statement* cursor2 = stmt2->GetNextStmt();
-
-    while (true)
-    {
-        if ((cursor1 == stmt2) || (cursor2 == nullptr))
-        {
-            return stmt2;
-        }
-
-        if ((cursor2 == stmt1) || (cursor1 == nullptr))
-        {
-            return stmt1;
-        }
-
-        cursor1 = cursor1->GetNextStmt();
-        cursor2 = cursor2->GetNextStmt();
-    }
 }
 
 //------------------------------------------------------------------------

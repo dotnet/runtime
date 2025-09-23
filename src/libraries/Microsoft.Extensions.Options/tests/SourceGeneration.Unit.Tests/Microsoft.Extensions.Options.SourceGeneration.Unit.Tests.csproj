@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- <CompilerGeneratedFilesOutputPath>$(OutputPath)/$(TargetFramework)/Generated</CompilerGeneratedFilesOutputPath> -->

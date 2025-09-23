@@ -28,6 +28,11 @@ struct DispatchCellInfo
     uint8_t HasCache = 0;
     uint32_t MetadataToken = 0;
     uint32_t VTableOffset = 0;
+
+    uint32_t GetVTableOffset() const
+    {
+        return VTableOffset;
+    }
 };
 
 struct InterfaceDispatchCacheHeader
@@ -271,9 +276,7 @@ enum PInvokeTransitionFrameFlags
                                         // a return address pointing into the hijacked method and that method's
                                         // lr register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x00004000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x00008000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x00004000,   // indicates that this is a frame for a hijacked call
 };
 #elif defined(TARGET_ARM64)
 enum PInvokeTransitionFrameFlags : uint64_t
@@ -328,16 +331,12 @@ enum PInvokeTransitionFrameFlags : uint64_t
                                                 // a return address pointing into the hijacked method and that method's
                                                 // lr register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x0000000100000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000200000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
 };
 
 #elif defined(TARGET_LOONGARCH64)
 enum PInvokeTransitionFrameFlags : uint64_t
 {
-    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\loongarch64\AsmMacros.h
-
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
 
@@ -385,9 +384,54 @@ enum PInvokeTransitionFrameFlags : uint64_t
                                                 // a return address pointing into the hijacked method and that method's
                                                 // ra register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x0000000080000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+    PTFF_THREAD_HIJACK  = 0x0000000080000000,   // indicates that this is a frame for a hijacked call
+};
 
-    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
+#elif defined(TARGET_RISCV64)
+enum PInvokeTransitionFrameFlags : uint64_t
+{
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp)
+
+    // standard preserved registers
+    PTFF_SAVE_S1        = 0x0000000000000001,
+    PTFF_SAVE_S2        = 0x0000000000000002,
+    PTFF_SAVE_S3        = 0x0000000000000004,
+    PTFF_SAVE_S4        = 0x0000000000000008,
+    PTFF_SAVE_S5        = 0x0000000000000010,
+    PTFF_SAVE_S6        = 0x0000000000000020,
+    PTFF_SAVE_S7        = 0x0000000000000040,
+    PTFF_SAVE_S8        = 0x0000000000000080,
+    PTFF_SAVE_S9        = 0x0000000000000100,
+    PTFF_SAVE_S10       = 0x0000000000000200,
+    PTFF_SAVE_S11       = 0x0000000000000400,
+
+    PTFF_SAVE_SP        = 0x0000000000000800,
+
+    // Scratch registers
+    PTFF_SAVE_R0        = 0x0000000000001000,
+    PTFF_SAVE_GP        = 0x0000000000002000,
+    PTFF_SAVE_A0        = 0x0000000000004000,
+    PTFF_SAVE_A1        = 0x0000000000008000,
+    PTFF_SAVE_A2        = 0x0000000000010000,
+    PTFF_SAVE_A3        = 0x0000000000020000,
+    PTFF_SAVE_A4        = 0x0000000000040000,
+    PTFF_SAVE_A5        = 0x0000000000080000,
+    PTFF_SAVE_A6        = 0x0000000000100000,
+    PTFF_SAVE_A7        = 0x0000000000200000,
+    PTFF_SAVE_T0        = 0x0000000000400000,
+    PTFF_SAVE_T1        = 0x0000000000800000,
+    PTFF_SAVE_T2        = 0x0000000001000000,
+    PTFF_SAVE_T3        = 0x0000000002000000,
+    PTFF_SAVE_T4        = 0x0000000004000000,
+    PTFF_SAVE_T5        = 0x0000000008000000,
+    PTFF_SAVE_T6        = 0x0000000010000000,
+
+    PTFF_SAVE_FP        = 0x0000000020000000,
+
+    PTFF_SAVE_RA        = 0x0000000040000000,
+
+    PTFF_THREAD_HIJACK  = 0x0000000080000000,   // indicates that this is a frame for a hijacked call
 };
 
 #else // TARGET_ARM
@@ -430,16 +474,14 @@ enum PInvokeTransitionFrameFlags
     PTFF_RAX_IS_BYREF   = 0x00020000,
 #endif
 
-    PTFF_THREAD_ABORT   = 0x00100000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x00200000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x00100000,   // indicates that this is a frame for a hijacked call
 };
 #endif // TARGET_ARM
 
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 class Thread;
-#if defined(USE_PORTABLE_HELPERS)
+#if defined(FEATURE_PORTABLE_HELPERS)
 //the members of this structure are currently unused except m_pThread and exist only to allow compilation
 //of StackFrameIterator their values are not currently being filled in and will require significant rework
 //in order to satisfy the runtime requirements of StackFrameIterator
@@ -450,10 +492,10 @@ struct PInvokeTransitionFrame
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
 };
-#else // USE_PORTABLE_HELPERS
+#else // FEATURE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // The FP and LR registers are pushed in different order when setting up frames
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Void     m_RIP;
@@ -465,14 +507,14 @@ struct PInvokeTransitionFrame
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
 #ifdef TARGET_ARM64
     uint64_t          m_Flags;  // PInvokeTransitionFrameFlags
-#elif TARGET_LOONGARCH64
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
     uint64_t          m_Flags;  // PInvokeTransitionFrameFlags
 #else
     uint32_t          m_Flags;  // PInvokeTransitionFrameFlags
 #endif
     UIntTarget      m_PreservedRegs[];
 };
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 #pragma warning(pop)
 
 #ifdef TARGET_AMD64
@@ -491,7 +533,7 @@ struct PInvokeTransitionFrame
 #define OFFSETOF__Thread__m_pTransitionFrame 0x48
 #elif defined(TARGET_ARM64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x48
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x48
 #elif defined(TARGET_X86)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x30

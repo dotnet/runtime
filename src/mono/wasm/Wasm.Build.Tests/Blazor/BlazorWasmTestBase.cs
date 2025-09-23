@@ -67,8 +67,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected void UpdateHomePage() =>
         UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
-    public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
+    public void InitBlazorWasmProjectDir(string id, string? targetFramework = null)
     {
+        targetFramework ??= DefaultTargetFrameworkForBlazor;
         InitPaths(id);
         if (Directory.Exists(_projectDir))
             Directory.Delete(_projectDir, recursive: true);
@@ -220,6 +221,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         return serverEnvironment;
     }
 
-    public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
-        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
+    public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null)
+        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework ?? DefaultTargetFrameworkForBlazor, projectDir: projectDir);
 }

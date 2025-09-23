@@ -194,7 +194,7 @@ namespace ILVerify
 
         private static void PrintMethod(EcmaMethod method)
         {
-            Write(method.Name);
+            Write(method.GetName());
             Write("(");
             try
             {
@@ -362,7 +362,7 @@ namespace ILVerify
                 fullName.Append(GetFullClassName(metadataReader, declaringType));
                 fullName.Append('+');
             }
-            
+
             var namespaceName = metadataReader.GetString(typeDef.Namespace);
             if (!string.IsNullOrEmpty(namespaceName))
             {
@@ -372,7 +372,7 @@ namespace ILVerify
 
             var typeName = metadataReader.GetString(typeDef.Name);
             fullName.Append(typeName);
-            
+
             return fullName.ToString();
         }
 
@@ -475,14 +475,18 @@ namespace ILVerify
             return null;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new ILVerifyRootCommand().UseVersion())
+            new ILVerifyRootCommand().UseVersion()
+            .Parse(args, new()
             {
                 ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+            })
+            .Invoke(new()
+            {
+                EnableDefaultExceptionHandler = false
+            });
     }
 }

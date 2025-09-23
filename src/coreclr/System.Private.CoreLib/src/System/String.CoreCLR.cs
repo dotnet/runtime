@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -9,8 +10,28 @@ namespace System
 {
     public partial class String
     {
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_StrCns")]
+        private static unsafe partial string* StrCnsInternal(uint rid, IntPtr scopeHandle);
+
+        // implementation of CORINFO_HELP_STRCNS
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe string StrCns(uint rid, IntPtr scopeHandle)
+        {
+            string* ptr = StrCnsInternal(rid, scopeHandle);
+            Debug.Assert(ptr != null);
+            return *ptr;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string FastAllocateString(int length);
+        internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
+
+        [DebuggerHidden]
+        internal static unsafe string FastAllocateString(nint length)
+        {
+            return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
         private static partial void Intern(StringHandleOnStack src);
@@ -19,7 +40,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(str);
             Intern(new StringHandleOnStack(ref str!));
-            return str!;
+            return str;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
@@ -38,7 +59,7 @@ namespace System
         {
             if (len != 0)
             {
-                SpanHelpers.Memmove(ref *(byte*)dest, ref Unsafe.As<char, byte>(ref src.GetRawStringData()), (nuint)len);
+                SpanHelpers.Memmove(ref *(byte*)dest, ref src.GetRawStringDataAsUInt8(), (nuint)len);
             }
         }
 

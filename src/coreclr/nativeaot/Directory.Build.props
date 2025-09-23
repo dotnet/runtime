@@ -71,7 +71,10 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
+    <FeatureJavaMarshal>true</FeatureJavaMarshal>
+    <DefineConstants>FEATURE_JAVAMARSHAL;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
@@ -88,6 +91,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
     <DefineConstants>TARGET_64BIT;TARGET_LOONGARCH64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
+    <DefineConstants>TARGET_64BIT;TARGET_RISCV64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -27,18 +27,6 @@ namespace System.Runtime.CompilerServices
             throw new PlatformNotSupportedException();
         }
 
-        private static unsafe ref byte GetSpanDataFrom(
-            RuntimeFieldHandle fldHandle,
-            RuntimeTypeHandle targetTypeHandle,
-            out int count)
-        {
-            // We only support this intrinsic when it occurs within a well-defined IL sequence.
-            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
-            // For any other purpose, the API is currently unsupported.
-            // https://github.com/dotnet/corert/issues/364
-            throw new PlatformNotSupportedException();
-        }
-
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
@@ -322,14 +310,7 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
-            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots > 0);
-            if (mt->NumVtableSlots == 0)
-            {
-                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(type);
-            }
-            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(mt);
 
             if (mt->IsNullable)
             {
@@ -364,13 +345,7 @@ namespace System.Runtime.CompilerServices
             if (mt->ElementType == EETypeElementType.Void || mt->IsGenericTypeDefinition || mt->IsByRef || mt->IsPointer || mt->IsFunctionPointer)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
-            if (mt->NumVtableSlots == 0)
-            {
-                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromHandle(type));
-            }
-            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(mt);
 
             if (!mt->IsValueType)
             {

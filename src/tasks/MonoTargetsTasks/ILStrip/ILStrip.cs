@@ -15,7 +15,6 @@ using CilStrip.Mono.Cecil.Metadata;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Buffers;
 using System.Collections.Concurrent;
 
 public class ILStrip : Microsoft.Build.Utilities.Task
@@ -76,8 +75,17 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
         IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
-        if (be9 is not null)
-            allowedParallelism = be9.RequestCores(allowedParallelism);
+        try
+        {
+            if (be9 is not null)
+                allowedParallelism = be9.RequestCores(allowedParallelism);
+        }
+        catch (NotImplementedException)
+        {
+            // RequestCores is not implemented in TaskHostFactory
+            be9 = null;
+        }
+
         try
         {
             ParallelLoopResult result = Parallel.ForEach(Assemblies,
@@ -296,32 +304,27 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> methodBodyUses)
     {
         using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
+
+        fs.Position = 0;
+        fs.CopyTo(os);
+
+        foreach (var kvp in methodBodyUses)
         {
-            fs.Position = 0;
-            MemoryStream memStream = new MemoryStream((int)fs.Length);
-            fs.CopyTo(memStream);
-
-            foreach (var kvp in methodBodyUses)
+            int rva = kvp.Key;
+            int count = kvp.Value;
+            if (count == 0)
             {
-                int rva = kvp.Key;
-                int count = kvp.Value;
-                if (count == 0)
-                {
-                    int methodSize = ComputeMethodSize(peReader, rva);
-                    int actualLoc = ComputeMethodHash(peReader, rva);
-                    int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
-                    if (headerSize == 1) //Set code size to zero for TinyFormat
-                        SetCodeSizeToZeroForTiny(ref memStream, actualLoc);
-                    ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
-                }
-                else if (count < 0)
-                {
-                    Log.LogError($"Method usage count is less than zero for rva: {rva}.");
-                }
+                int methodSize = ComputeMethodSize(peReader, rva);
+                int actualLoc = ComputeMethodHash(peReader, rva);
+                int headerSize = ComputeMethodHeaderSize(fs, actualLoc);
+                if (headerSize == 1) //Set code size to zero for TinyFormat
+                    SetCodeSizeToZeroForTiny(os, actualLoc);
+                ZeroOutMethodBody(os, methodSize, actualLoc, headerSize);
             }
-
-            memStream.Position = 0;
-            memStream.CopyTo(os);
+            else if (count < 0)
+            {
+                Log.LogError($"Method usage count is less than zero for rva: {rva}.");
+            }
         }
     }
 
@@ -334,30 +337,27 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return (peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset);
     }
 
-    private static int ComputeMethodHeaderSize(MemoryStream memStream, int actualLoc)
+    private static int ComputeMethodHeaderSize(Stream stream, int actualLoc)
     {
-        memStream.Position = actualLoc;
-        int firstbyte = memStream.ReadByte();
+        stream.Position = actualLoc;
+        int firstbyte = stream.ReadByte();
         int headerFlag = firstbyte & 0b11;
         return (headerFlag == 2 ? 1 : 4);
     }
 
-    private static void SetCodeSizeToZeroForTiny(ref MemoryStream memStream, int actualLoc)
+    private static void SetCodeSizeToZeroForTiny(Stream stream, int actualLoc)
     {
-        memStream.Position = actualLoc;
-        byte[] header = {0b10};
-        memStream.Write(header, 0, 1);
+        stream.Position = actualLoc;
+        stream.WriteByte(0b10);
     }
 
-    private static void ZeroOutMethodBody(ref MemoryStream memStream, int methodSize, int actualLoc, int headerSize)
+    private static void ZeroOutMethodBody(Stream stream, int methodSize, int actualLoc, int headerSize)
     {
-        memStream.Position = actualLoc + headerSize;
-
-        byte[] zeroBuffer;
-        zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize);
-        Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
-        memStream.Write(zeroBuffer, 0, methodSize - headerSize);
-        ArrayPool<byte>.Shared.Return(zeroBuffer);
+        stream.Position = actualLoc + headerSize;
+        for (int i = 0; i < methodSize - headerSize; i++)
+        {
+            stream.WriteByte(0);
+        }
     }
 
     private static TaskItem GetTrimmedAssemblyItem(ITaskItem assemblyItem, string trimmedAssemblyFilePath, string originAssemblyFilePath)

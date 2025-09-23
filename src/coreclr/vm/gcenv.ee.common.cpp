@@ -6,6 +6,7 @@
 #include <exinfo.h>
 
 #if defined(FEATURE_EH_FUNCLETS)
+#if defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
 {
@@ -58,7 +59,6 @@ bool FindFirstInterruptiblePointStateCB(
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
-#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -70,12 +70,22 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
-#else
-    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
-    return -1;
-#endif // USE_GC_INFO_DECODER
+}
+#else // USE_GC_INFO_DECODER
+
+// Find the first interruptible point in the range [offs .. endOffs) (the beginning of the range is inclusive,
+// the end is exclusive). Return -1 if no such point exists.
+unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
+{
+    EECodeInfo *codeInfo = pCF->GetCodeInfo();
+    hdrInfo info = { 0 };
+    PTR_CBYTE table = codeInfo->DecodeGCHdrInfo(&info, offs);
+    // NOTE: We make an assumption that we are not searching for the main function so we can ignore the
+    // prolog/epilog info.
+    return ::FindFirstInterruptiblePoint(&info, table, offs, endOffs);
 }
 
+#endif
 #endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------------
@@ -100,13 +110,13 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 // there's no context provided by the caller).
 // See code:getMethodSigInternal
 //
-inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
+bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetVTablePtr() == StubDispatchFrame::GetMethodFrameVPtr())
+    if (!pCF->IsFrameless() && pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
     {
-        return !((StubDispatchFrame*)pCF->GetFrame())->SuppressParamTypeArg();
+        return !(dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg();
     }
 
     if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
@@ -190,13 +200,24 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     //
     assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
-    // for interior pointers, we optimize the case in which
-    //  it points into the current threads stack area
-    //
-    if (flags & GC_CALL_INTERIOR)
+    if ((flags & GC_CALL_PINNED) && !pCtx->sc->promotion)
+    {
+        // Do nothing. This is the relocate phase, for something that was pinned. It does not need
+        // to be relocated, and on interpreter builds, where we use conservative reporting in some situations,
+        // we MUST NOT attempt to do promotion here, as the GC is not expecting conservative reporting to report
+        // conservative roots during the relocate phase.
+    }
+    else if (flags & GC_CALL_INTERIOR)
+    {
+        // for interior pointers, we optimize the case in which
+        //  it points into the current threads stack area
+        //
         PromoteCarefully(pCtx->f, ppObj, pCtx->sc, flags);
+    }
     else
+    {
         (pCtx->f)(ppObj, pCtx->sc, flags);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -213,16 +234,14 @@ void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
     if (pLoaderAllocator != NULL && pLoaderAllocator->IsCollectible())
     {
         Object *refCollectionObject = OBJECTREFToObject(pLoaderAllocator->GetExposedObject());
+        if (refCollectionObject != NULL)
+        {
+            INDEBUG(Object *oldObj = refCollectionObject;)
+            fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
 
-#ifdef _DEBUG
-        Object *oldObj = refCollectionObject;
-#endif
-
-        _ASSERTE(refCollectionObject != NULL);
-        fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
-
-        // We are reporting the location of a local variable, assert it doesn't change.
-        _ASSERTE(oldObj == refCollectionObject);
+            // We are reporting the location of a local variable, assert it doesn't change.
+            _ASSERTE(oldObj == refCollectionObject);
+        }
     }
 }
 
@@ -310,7 +329,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
     #ifdef TARGET_X86
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
-                pMD, GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
+                pMD, GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
     #else
             STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM ControlPC = %p\n",
                 pMD, GetControlPC(pCF->GetRegisterSet()));
@@ -324,37 +343,27 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     #endif // _DEBUG
 
             DWORD relOffsetOverride = NO_OVERRIDE_OFFSET;
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(FEATURE_EH_FUNCLETS)
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
-                GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-                GcInfoDecoder _gcInfoDecoder(
-                                    gcInfoToken,
-                                    DECODE_CODE_LENGTH
-                                    );
+                // We're in a special case of unwinding from a funclet, and resuming execution in
+                // another catch funclet associated with same parent function. We need to report roots.
+                // Reporting at the original throw site gives incorrect liveness information. We choose to
+                // report the liveness information at the first interruptible instruction of the catch funclet
+                // that we are going to execute. We also only report stack slots, since no registers can be
+                // live at the first instruction of a handler, except the catch object, which the VM protects
+                // specially. If the catch funclet has not interruptible point, we fall back and just report
+                // what we used to: at the original throw instruction. This might lead to bad GC behavior
+                // if the liveness is not correct.
+                const EE_ILEXCEPTION_CLAUSE& ehClauseForCatch = pCF->GetEHClauseForCatch();
+                relOffsetOverride = FindFirstInterruptiblePoint(pCF, ehClauseForCatch.HandlerStartPC,
+                                                                ehClauseForCatch.HandlerEndPC);
+                _ASSERTE(relOffsetOverride != NO_OVERRIDE_OFFSET);
 
-                if(_gcInfoDecoder.WantsReportOnlyLeaf())
-                {
-                    // We're in a special case of unwinding from a funclet, and resuming execution in
-                    // another catch funclet associated with same parent function. We need to report roots.
-                    // Reporting at the original throw site gives incorrect liveness information. We choose to
-                    // report the liveness information at the first interruptible instruction of the catch funclet
-                    // that we are going to execute. We also only report stack slots, since no registers can be
-                    // live at the first instruction of a handler, except the catch object, which the VM protects
-                    // specially. If the catch funclet has not interruptible point, we fall back and just report
-                    // what we used to: at the original throw instruction. This might lead to bad GC behavior
-                    // if the liveness is not correct.
-                    const EE_ILEXCEPTION_CLAUSE& ehClauseForCatch = pCF->GetEHClauseForCatch();
-                    relOffsetOverride = FindFirstInterruptiblePoint(pCF, ehClauseForCatch.HandlerStartPC,
-                                                                    ehClauseForCatch.HandlerEndPC);
-                    _ASSERTE(relOffsetOverride != NO_OVERRIDE_OFFSET);
-
-                    STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
-                        relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
-                }
-
+                STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Setting override offset = %u for method %pM ControlPC = %p\n",
+                    relOffsetOverride, pMD, GetControlPC(pCF->GetRegisterSet()));
             }
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+#endif // FEATURE_EH_FUNCLETS
 
             pCM->EnumGcRefs(pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),
@@ -369,8 +378,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             Frame * pFrame = pCF->GetFrame();
 
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
-                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
-                pFrame, pFrame->GetFunction(), *((void**) pFrame));
+                "Scanning ExplicitFrame %p AssocMethod = %pM FrameIdentifier = %s\n",
+                pFrame, pFrame->GetFunction(), Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
     }
@@ -448,7 +457,9 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                     {
                         MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(pCF->GetParamTypeArg());
-                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless());
+                        // Async methods may be in a state when the context is not yet restored from continuation.
+                        // We will allow that. The context is reachable via continuation in such case.
+                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMDReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMDReal->GetLoaderAllocator());
@@ -457,7 +468,9 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
                     {
                         MethodTable *pMTReal = dac_cast<PTR_MethodTable>(pCF->GetParamTypeArg());
-                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless());
+                        // Async methods may be in a state when the context is not yet restored from continuation.
+                        // We will allow that. The context is reachable via continuation in such case.
+                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMTReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMTReal->GetLoaderAllocator());

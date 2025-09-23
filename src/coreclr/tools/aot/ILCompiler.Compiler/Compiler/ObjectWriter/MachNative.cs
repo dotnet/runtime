@@ -120,5 +120,18 @@ namespace ILCompiler.ObjectWriter
         public const uint PLATFORM_TVOSSIMULATOR = 8;
         public const uint PLATFORM_WATCHOSSIMULATOR = 9;
         public const uint PLATFORM_DRIVERKIT = 10;
+
+        public const uint UNWIND_ARM64_MODE_FRAMELESS = 0x02000000;
+        public const uint UNWIND_ARM64_MODE_DWARF = 0x03000000;
+        public const uint UNWIND_ARM64_MODE_FRAME = 0x04000000;
+        public const uint UNWIND_ARM64_FRAME_X19_X20_PAIR = 0x00000001;
+        public const uint UNWIND_ARM64_FRAME_X21_X22_PAIR = 0x00000002;
+        public const uint UNWIND_ARM64_FRAME_X23_X24_PAIR = 0x00000004;
+        public const uint UNWIND_ARM64_FRAME_X25_X26_PAIR = 0x00000008;
+        public const uint UNWIND_ARM64_FRAME_X27_X28_PAIR = 0x00000010;
+        public const uint UNWIND_ARM64_FRAME_D8_D9_PAIR = 0x00000100;
+        public const uint UNWIND_ARM64_FRAME_D10_D11_PAIR = 0x00000200;
+        public const uint UNWIND_ARM64_FRAME_D12_D13_PAIR = 0x00000400;
+        public const uint UNWIND_ARM64_FRAME_D14_D15_PAIR = 0x00000800;
     }
 }

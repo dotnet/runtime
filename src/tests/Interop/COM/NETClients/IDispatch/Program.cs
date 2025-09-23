@@ -108,7 +108,7 @@ namespace NetClient
 
         static int GetErrorCodeFromHResult(int hresult)
         {
-            // https://msdn.microsoft.com/en-us/library/cc231198.aspx
+            // https://msdn.microsoft.com/library/cc231198.aspx
             return hresult & 0xffff;
         }
 
@@ -116,7 +116,7 @@ namespace NetClient
         {
             var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
 
-            int errorCode = 127;
+            int errorCode = 1127;
             string resultString = errorCode.ToString("x");
             try
             {
@@ -127,6 +127,19 @@ namespace NetClient
             catch (COMException e)
             {
                 Assert.Equal(GetErrorCodeFromHResult(e.HResult), errorCode);
+                Assert.Equal(e.Message, resultString);
+            }
+
+            try
+            {
+                Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.DispLegacy)} {errorCode}...");
+                dispatchTesting.TriggerException(IDispatchTesting_Exception.DispLegacy, errorCode);
+                Assert.Fail("DISP exception not thrown properly");
+            }
+            catch (COMException e)
+            {
+                Assert.Equal(e.ErrorCode, errorCode); // The legacy DISP exception returns the error code unmodified.
+                Assert.Equal(e.HResult, errorCode);
                 Assert.Equal(e.Message, resultString);
             }
 

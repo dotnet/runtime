@@ -1,0 +1,915 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
+
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+
+// This file contains managed declarations for the SOS-DAC interfaces.
+// See src/coreclr/inc/sospriv.idl
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+internal enum CLRDataOtherNotifyFlag
+{
+    CLRDATA_NOTIFY_ON_MODULE_LOAD = 0x1,
+    CLRDATA_NOTIFY_ON_MODULE_UNLOAD = 0x2,
+    CLRDATA_NOTIFY_ON_EXCEPTION = 0x4,
+    CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER = 0x8
+}
+
+internal struct DacpThreadStoreData
+{
+    public int threadCount;
+    public int unstartedThreadCount;
+    public int backgroundThreadCount;
+    public int pendingThreadCount;
+    public int deadThreadCount;
+    public ClrDataAddress firstThread;
+    public ClrDataAddress finalizerThread;
+    public ClrDataAddress gcThread;
+    public int fHostConfig; // Uses hosting flags defined above
+};
+
+internal enum DacpAppDomainDataStage : uint
+{
+    STAGE_CREATING,
+    STAGE_READYFORMANAGEDCODE,
+    STAGE_ACTIVE,
+    STAGE_OPEN,
+    STAGE_UNLOAD_REQUESTED,
+    STAGE_EXITING,
+    STAGE_EXITED,
+    STAGE_FINALIZING,
+    STAGE_FINALIZED,
+    STAGE_HANDLETABLE_NOACCESS,
+    STAGE_CLEARED,
+    STAGE_COLLECTED,
+    STAGE_CLOSED
+};
+
+internal struct DacpAppDomainData
+{
+    // The pointer to the AppDomain or SystemDomain.
+    // It's useful to keep this around in the structure
+    public ClrDataAddress AppDomainPtr;
+    public ClrDataAddress AppSecDesc;
+    public ClrDataAddress pLowFrequencyHeap;
+    public ClrDataAddress pHighFrequencyHeap;
+    public ClrDataAddress pStubHeap;
+    public ClrDataAddress DomainLocalBlock;
+    public ClrDataAddress pDomainLocalModules;
+    // The creation sequence number of this app domain (starting from 1)
+    public uint dwId;
+    public int AssemblyCount;
+    public int FailedAssemblyCount;
+    public DacpAppDomainDataStage appDomainStage;
+};
+
+internal struct DacpAppDomainStoreData
+{
+    public ClrDataAddress sharedDomain;
+    public ClrDataAddress systemDomain;
+    public int DomainCount;
+};
+
+internal struct DacpAssemblyData
+{
+    public ClrDataAddress AssemblyPtr;
+    public ClrDataAddress ClassLoader;
+    public ClrDataAddress ParentDomain;
+    public ClrDataAddress DomainPtr;
+    public ClrDataAddress AssemblySecDesc;
+    public int isDynamic;
+    public uint ModuleCount;
+    public uint LoadContext;
+    public int isDomainNeutral; // Always false, preserved for backward compatibility
+    public uint dwLocationFlags;
+}
+
+internal struct DacpThreadData
+{
+    public int corThreadId;
+    public int osThreadId;
+    public int state;
+    public uint preemptiveGCDisabled;
+    public ClrDataAddress allocContextPtr;
+    public ClrDataAddress allocContextLimit;
+    public ClrDataAddress context;
+    public ClrDataAddress domain;
+    public ClrDataAddress pFrame;
+    public int lockCount;
+    public ClrDataAddress firstNestedException;  // Pass this pointer to DacpNestedExceptionInfo
+    public ClrDataAddress teb;
+    public ClrDataAddress fiberData;
+    public ClrDataAddress lastThrownObjectHandle;
+    public ClrDataAddress nextThread;
+}
+
+internal struct DacpModuleData
+{
+    public ClrDataAddress Address;
+    public ClrDataAddress PEAssembly; // Actually the module address in .NET 9+
+    public ClrDataAddress ilBase;
+    public ClrDataAddress metadataStart;
+    public ulong metadataSize;
+    public ClrDataAddress Assembly; // Assembly pointer
+    public uint isReflection;
+    public uint isPEFile;
+
+    public ulong dwBaseClassIndex; // Always 0 - .NET no longer has this
+    public ulong dwModuleID; // Always 0 - .NET no longer has this
+
+    public uint dwTransientFlags;
+
+    public ClrDataAddress TypeDefToMethodTableMap;
+    public ClrDataAddress TypeRefToMethodTableMap;
+    public ClrDataAddress MethodDefToDescMap;
+    public ClrDataAddress FieldDefToDescMap;
+    public ClrDataAddress MemberRefToDescMap;
+    public ClrDataAddress FileReferencesMap;
+    public ClrDataAddress ManifestModuleReferencesMap;
+
+    public ClrDataAddress LoaderAllocator;
+    public ClrDataAddress ThunkHeap;
+
+    public ulong dwModuleIndex; // Always 0 - .NET no longer has this
+}
+
+internal enum ModuleMapType
+{
+    TYPEDEFTOMETHODTABLE = 0x0,
+    TYPEREFTOMETHODTABLE = 0x1
+}
+
+internal struct DacpMethodTableData
+{
+    public int bIsFree; // everything else is NULL if this is true.
+    public ClrDataAddress module;
+    public ClrDataAddress klass;
+    public ClrDataAddress parentMethodTable;
+    public ushort wNumInterfaces;
+    public ushort wNumMethods;
+    public ushort wNumVtableSlots;
+    public ushort wNumVirtuals;
+    public uint baseSize;
+    public uint componentSize;
+    public uint /*mdTypeDef*/ cl; // Metadata token
+    public uint dwAttrClass; // cached metadata
+    public int bIsShared;  // Always false, preserved for backward compatibility
+    public int bIsDynamic;
+    public int bContainsGCPointers;
+}
+
+internal enum DacpObjectType
+{
+    OBJ_STRING = 0,
+    OBJ_FREE,
+    OBJ_OBJECT,
+    OBJ_ARRAY,
+    OBJ_OTHER
+};
+
+internal struct DacpObjectData
+{
+    public ClrDataAddress MethodTable;
+    public DacpObjectType ObjectType;
+    public ulong Size;
+    public ClrDataAddress ElementTypeHandle;
+    public uint ElementType;
+    public uint dwRank;
+    public ulong dwNumComponents;
+    public ulong dwComponentSize;
+    public ClrDataAddress ArrayDataPtr;
+    public ClrDataAddress ArrayBoundsPtr;
+    public ClrDataAddress ArrayLowerBoundsPtr;
+    public ulong RCW;
+    public ulong CCW;
+}
+
+internal struct DacpUsefulGlobalsData
+{
+    public ClrDataAddress ArrayMethodTable;
+    public ClrDataAddress StringMethodTable;
+    public ClrDataAddress ObjectMethodTable;
+    public ClrDataAddress ExceptionMethodTable;
+    public ClrDataAddress FreeMethodTable;
+}
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+internal struct DacpMethodTableFieldData
+{
+    public ushort wNumInstanceFields;
+    public ushort wNumStaticFields;
+    public ushort wNumThreadStaticFields;
+    public ClrDataAddress FirstField;
+    public ushort wContextStaticOffset;
+    public ushort wContextStaticsSize;
+};
+
+internal enum MethodTableInitializationFlags
+{
+    MethodTableInitialized = 1,
+    MethodTableInitializationFailed = 2
+};
+
+internal struct DacpReJitData
+{
+    // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+        kReverted = 3,
+    };
+
+    public ClrDataAddress rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ClrDataAddress NativeCodeAddr;
+};
+
+internal struct DacpMethodDescData
+{
+    public int bHasNativeCode;
+    public int bIsDynamic;
+    public ushort wSlotNumber;
+    public ClrDataAddress NativeCodeAddr;
+    // Useful for breaking when a method is jitted.
+    public ClrDataAddress AddressOfNativeCodeSlot;
+
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodTablePtr;
+    public ClrDataAddress ModulePtr;
+
+    public uint /*mdToken*/ MDToken;
+    public ClrDataAddress GCInfo;
+    public ClrDataAddress GCStressCodeCopy;
+
+    // This is only valid if bIsDynamic is true
+    public ClrDataAddress managedDynamicMethodObject;
+
+    public ClrDataAddress requestedIP;
+
+    // Gives info for the single currently active version of a method
+    public DacpReJitData rejitDataCurrent;
+
+    // Gives info corresponding to requestedIP (for !ip2md)
+    public DacpReJitData rejitDataRequested;
+
+    // Total number of rejit versions that have been jitted
+    public uint /*ULONG*/ cJittedRejitVersions;
+
+}
+
+internal struct DacpMethodDescTransparencyData
+{
+    public int bHasCriticalTransparentInfo;
+    public int bIsCritical;
+    public int bIsTreatAsSafe;
+}
+
+internal struct DacpMethodTableTransparencyData
+{
+    public int bHasCriticalTransparentInfo;
+    public int bIsCritical;
+    public int bIsTreatAsSafe;
+}
+
+internal static class GCConstants
+{
+    public const int DAC_NUMBERGENERATIONS = 4;
+
+    public const int DAC_NUM_GC_DATA_POINTS = 9;
+    public const int DAC_MAX_COMPACT_REASONS_COUNT = 11;
+    public const int DAC_MAX_EXPAND_MECHANISMS_COUNT = 6;
+    public const int DAC_MAX_GC_MECHANISM_BITS_COUNT = 2;
+    public const int DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT = 6;
+}
+
+internal struct DacpGcHeapData
+{
+    public int bServerMode;
+    public int bGcStructuresValid;
+    public uint HeapCount;
+    public uint g_max_generation;
+}
+
+internal struct DacpGenerationData
+{
+    public ClrDataAddress start_segment;
+    public ClrDataAddress allocation_start;
+
+    // These are examined only for generation 0, otherwise NULL
+    public ClrDataAddress allocContextPtr;
+    public ClrDataAddress allocContextLimit;
+}
+
+internal struct DacpGcHeapDetails
+{
+    public ClrDataAddress heapAddr; // Only filled in server mode, otherwise NULL
+    public ClrDataAddress alloc_allocated;
+
+    public ClrDataAddress mark_array;
+    public ClrDataAddress current_c_gc_state;
+    public ClrDataAddress next_sweep_obj;
+    public ClrDataAddress saved_sweep_ephemeral_seg;
+    public ClrDataAddress saved_sweep_ephemeral_start;
+    public ClrDataAddress background_saved_lowest_address;
+    public ClrDataAddress background_saved_highest_address;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS)]
+    public struct GenerationDataArray
+    {
+        private DacpGenerationData _;
+    }
+    public GenerationDataArray generation_table;
+
+    public ClrDataAddress ephemeral_heap_segment;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUMBERGENERATIONS + 3)]
+    public struct FinalizationDataArray
+    {
+        private ClrDataAddress _;
+    }
+    public FinalizationDataArray finalization_fill_pointers;
+
+    public ClrDataAddress lowest_address;
+    public ClrDataAddress highest_address;
+    public ClrDataAddress card_table;
+}
+
+internal struct DacpHeapSegmentData
+{
+    public ClrDataAddress segmentAddr;
+    public ClrDataAddress allocated;
+    public ClrDataAddress committed;
+    public ClrDataAddress reserved;
+    public ClrDataAddress used;
+    public ClrDataAddress mem;
+    public ClrDataAddress next; /* pass this to request if non-null to get the next segments */
+    public ClrDataAddress gc_heap; /* only filled in server mode, otherwise NULL */
+    public ClrDataAddress highAllocMark; /* if this is the ephemeral segment highMark includes the ephemeral generation */
+
+    public nuint flags;
+    public ClrDataAddress background_allocated;
+}
+
+internal struct DacpOomData
+{
+    public int reason;
+    public ulong alloc_size;
+    public ulong available_pagefile_mb;
+    public ulong gc_index;
+    public int fgm;
+    public ulong size;
+    public int loh_p; // BOOL
+}
+
+internal struct DacpGcHeapAnalyzeData
+{
+    public ClrDataAddress heapAddr;
+    public ClrDataAddress internal_root_array;
+    public ulong internal_root_array_index;
+    public int heap_analyze_success; // BOOL
+}
+
+[GeneratedComInterface]
+[Guid("286CA186-E763-4F61-9760-487D43AE4341")]
+internal unsafe partial interface ISOSEnum
+{
+    [PreserveSig]
+    int Skip(uint count);
+
+    [PreserveSig]
+    int Reset();
+
+    [PreserveSig]
+    int GetCount(uint* pCount);
+}
+
+internal struct DacpFieldDescData
+{
+    public CorElementType Type;
+    public CorElementType sigType;     // ELEMENT_TYPE_XXX from signature. We need this to display pretty name for String in minidump's case
+    public ClrDataAddress MTOfType; // NULL if Type is not loaded
+    public ClrDataAddress ModuleOfType;
+    public uint TokenOfType;
+    public uint mb;
+    public ClrDataAddress MTOfEnclosingClass;
+    public uint dwOffset;
+    public int bIsThreadLocal;
+    public int bIsContextLocal;
+    public int bIsStatic;
+    public ClrDataAddress NextField;
+};
+
+[GeneratedComInterface]
+[Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
+internal unsafe partial interface ISOSDacInterface
+{
+    // All functions are explicitly PreserveSig so that we can just return E_NOTIMPL instead of throwing
+    // as the cDAC slowly replaces parts of the DAC.
+
+    // ThreadStore
+    [PreserveSig]
+    int GetThreadStoreData(DacpThreadStoreData* data);
+
+    // AppDomains
+    [PreserveSig]
+    int GetAppDomainStoreData(/*struct DacpAppDomainStoreData*/ void* data);
+    [PreserveSig]
+    int GetAppDomainList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
+    [PreserveSig]
+    int GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data);
+    [PreserveSig]
+    int GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded);
+    [PreserveSig]
+    int GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain);
+
+    // Assemblies
+    [PreserveSig]
+    int GetAssemblyList(ClrDataAddress appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? values, int* pNeeded);
+    [PreserveSig]
+    int GetAssemblyData(ClrDataAddress domain, ClrDataAddress assembly, DacpAssemblyData* data);
+    [PreserveSig]
+    int GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
+
+    // Modules
+    [PreserveSig]
+    int GetModule(ClrDataAddress addr, out IXCLRDataModule? mod);
+    [PreserveSig]
+    int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
+    [PreserveSig]
+    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
+    [PreserveSig]
+    int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
+    [PreserveSig]
+    int GetILForModule(ClrDataAddress moduleAddr, int rva, ClrDataAddress* il);
+
+    // Threads
+    [PreserveSig]
+    int GetThreadData(ClrDataAddress thread, DacpThreadData* data);
+    [PreserveSig]
+    int GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread);
+    [PreserveSig]
+    int GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp);
+
+    // MethodDescs
+    [PreserveSig]
+    int GetMethodDescData(ClrDataAddress methodDesc, ClrDataAddress ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
+    [PreserveSig]
+    int GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD);
+    [PreserveSig]
+    int GetMethodDescName(ClrDataAddress methodDesc, uint count, char* name, uint* pNeeded);
+    [PreserveSig]
+    int GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD);
+    [PreserveSig]
+    int GetMethodDescFromToken(ClrDataAddress moduleAddr, /*mdToken*/ uint token, ClrDataAddress* methodDesc);
+    [PreserveSig]
+    int GetMethodDescTransparencyData(ClrDataAddress methodDesc, DacpMethodDescTransparencyData* data);
+
+    // JIT Data
+    [PreserveSig]
+    int GetCodeHeaderData(ClrDataAddress ip, /*struct DacpCodeHeaderData*/ void* data);
+    [PreserveSig]
+    int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
+    [PreserveSig]
+    int GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded);
+    [PreserveSig]
+    int GetJumpThunkTarget(/*T_CONTEXT*/void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD);
+
+    // ThreadPool
+    [PreserveSig]
+    int GetThreadpoolData(/*struct DacpThreadpoolData*/ void* data);
+    [PreserveSig]
+    int GetWorkRequestData(ClrDataAddress addrWorkRequest, /*struct DacpWorkRequestData*/ void* data);
+    [PreserveSig]
+    int GetHillClimbingLogEntry(ClrDataAddress addr, /*struct DacpHillClimbingLogEntry*/ void* data);
+
+    // Objects
+    [PreserveSig]
+    int GetObjectData(ClrDataAddress objAddr, DacpObjectData* data);
+    [PreserveSig]
+    int GetObjectStringData(ClrDataAddress obj, uint count, char* stringData, uint* pNeeded);
+    [PreserveSig]
+    int GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded);
+
+    // MethodTable
+    [PreserveSig]
+    int GetMethodTableName(ClrDataAddress mt, uint count, char* mtName, uint* pNeeded);
+    [PreserveSig]
+    int GetMethodTableData(ClrDataAddress mt, DacpMethodTableData* data);
+    [PreserveSig]
+    int GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value);
+    [PreserveSig]
+    int GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data);
+    [PreserveSig]
+    int GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data);
+
+    // EEClass
+    [PreserveSig]
+    int GetMethodTableForEEClass(ClrDataAddress eeClass, ClrDataAddress* value);
+
+    // FieldDesc
+    [PreserveSig]
+    int GetFieldDescData(ClrDataAddress fieldDesc, DacpFieldDescData* data);
+
+    // Frames
+    [PreserveSig]
+    int GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded);
+
+    // PEFiles
+    [PreserveSig]
+    int GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase);
+    [PreserveSig]
+    int GetPEFileName(ClrDataAddress addr, uint count, char* fileName, uint* pNeeded);
+
+    // GC
+    [PreserveSig]
+    int GetGCHeapData(DacpGcHeapData* data);
+    [PreserveSig]
+    int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
+    [PreserveSig]
+    int GetGCHeapDetails(ClrDataAddress heap, DacpGcHeapDetails* details);
+    [PreserveSig]
+    int GetGCHeapStaticData(DacpGcHeapDetails* details);
+    [PreserveSig]
+    int GetHeapSegmentData(ClrDataAddress seg, DacpHeapSegmentData* data);
+    [PreserveSig]
+    int GetOOMData(ClrDataAddress oomAddr, DacpOomData* data);
+    [PreserveSig]
+    int GetOOMStaticData(DacpOomData* data);
+    [PreserveSig]
+    int GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data);
+    [PreserveSig]
+    int GetHeapAnalyzeStaticData(DacpGcHeapAnalyzeData* data);
+
+    // DomainLocal
+    [PreserveSig]
+    int GetDomainLocalModuleData(ClrDataAddress addr, /*struct DacpDomainLocalModuleData */ void* data);
+    [PreserveSig]
+    int GetDomainLocalModuleDataFromAppDomain(ClrDataAddress appDomainAddr, int moduleID, /*struct DacpDomainLocalModuleData */ void* data);
+    [PreserveSig]
+    int GetDomainLocalModuleDataFromModule(ClrDataAddress moduleAddr, /*struct DacpDomainLocalModuleData */ void* data);
+
+    // ThreadLocal
+    [PreserveSig]
+    int GetThreadLocalModuleData(ClrDataAddress thread, uint index, /*struct DacpThreadLocalModuleData */ void* data);
+
+    // SyncBlock
+    [PreserveSig]
+    int GetSyncBlockData(uint number, /*struct DacpSyncBlockData */ void* data);
+    [PreserveSig]
+    int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
+
+    // Handles
+    [PreserveSig]
+    int GetHandleEnum(/*ISOSHandleEnum*/ void** ppHandleEnum);
+    [PreserveSig]
+    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, /*ISOSHandleEnum*/ void** ppHandleEnum);
+    [PreserveSig]
+    int GetHandleEnumForGC(uint gen, /*ISOSHandleEnum*/ void** ppHandleEnum);
+
+    // EH
+    [PreserveSig]
+    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ void* pCallback, void* token);
+    [PreserveSig]
+    int GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
+
+    // StressLog
+    [PreserveSig]
+    int GetStressLogAddress(ClrDataAddress* stressLog);
+
+    // Heaps
+    [PreserveSig]
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ void* pCallback);
+    [PreserveSig]
+    int GetCodeHeapList(ClrDataAddress jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
+    [PreserveSig]
+    int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
+
+    // Other
+    [PreserveSig]
+    int GetUsefulGlobals(DacpUsefulGlobalsData* data);
+    [PreserveSig]
+    int GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock);
+    [PreserveSig]
+    int GetTLSIndex(uint* pIndex);
+    [PreserveSig]
+    int GetDacModuleHandle(/*HMODULE*/ void* phModule);
+
+    // COM
+    [PreserveSig]
+    int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
+    [PreserveSig]
+    int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    [PreserveSig]
+    int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
+    [PreserveSig]
+    int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    [PreserveSig]
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ void* pCallback, void* token);
+
+    // GC Reference Functions
+
+    /*      GetStackReferences
+     * Enumerates all references on a given callstack.
+     */
+    [PreserveSig]
+    int GetStackReferences(int osThreadID, /*ISOSStackRefEnum*/ void** ppEnum);
+    [PreserveSig]
+    int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded);
+
+    [PreserveSig]
+    int GetThreadAllocData(ClrDataAddress thread, /*struct DacpAllocData */ void* data);
+    [PreserveSig]
+    int GetHeapAllocData(uint count, /*struct DacpGenerationAllocData */ void* data, uint* pNeeded);
+
+    // For BindingDisplay plugin
+    [PreserveSig]
+    int GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
+    [PreserveSig]
+    int GetPrivateBinPaths(ClrDataAddress appDomain, int count, char* paths, uint* pNeeded);
+    [PreserveSig]
+    int GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded);
+    [PreserveSig]
+    int GetAppDomainConfigFile(ClrDataAddress appDomain, int count, char* configFile, uint* pNeeded);
+    [PreserveSig]
+    int GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded);
+    [PreserveSig]
+    int GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult);
+    [PreserveSig]
+    int GetFailedAssemblyLocation(ClrDataAddress assesmbly, uint count, char* location, uint* pNeeded);
+    [PreserveSig]
+    int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
+};
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+internal struct DacpExceptionObjectData
+{
+    public ClrDataAddress Message;
+    public ClrDataAddress InnerException;
+    public ClrDataAddress StackTrace;
+    public ClrDataAddress WatsonBuckets;
+    public ClrDataAddress StackTraceString;
+    public ClrDataAddress RemoteStackTraceString;
+    public int HResult;
+    public int XCode;
+}
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+[GeneratedComInterface]
+[Guid("A16026EC-96F4-40BA-87FB-5575986FB7AF")]
+internal unsafe partial interface ISOSDacInterface2
+{
+    [PreserveSig]
+    int GetObjectExceptionData(ClrDataAddress objectAddress, DacpExceptionObjectData* data);
+    [PreserveSig]
+    int IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy);
+}
+
+internal struct DacpGCInterestingInfoData
+{
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_NUM_GC_DATA_POINTS)]
+    public struct InterestingDataPointsArray
+    {
+        private nuint _;
+    }
+    public InterestingDataPointsArray interestingDataPoints;
+
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_COMPACT_REASONS_COUNT)]
+    public struct CompactReasonsArray
+    {
+        private nuint _;
+    }
+    public CompactReasonsArray compactReasons;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_EXPAND_MECHANISMS_COUNT)]
+    public struct ExpandMechanismsArray
+    {
+        private nuint _;
+    }
+    public ExpandMechanismsArray expandMechanisms;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_GC_MECHANISM_BITS_COUNT)]
+    public struct BitMechanismsArray
+    {
+        private nuint _;
+    }
+    public BitMechanismsArray bitMechanisms;
+
+    [System.Runtime.CompilerServices.InlineArray(GCConstants.DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT)]
+    public struct GlobalMechanismsArray
+    {
+        private nuint _;
+    }
+    public GlobalMechanismsArray globalMechanisms;
+}
+
+[GeneratedComInterface]
+[Guid("B08C5CDC-FD8A-49C5-AB38-5FEEF35235B4")]
+internal unsafe partial interface ISOSDacInterface3
+{
+    [PreserveSig]
+    int GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, DacpGCInterestingInfoData* data);
+    [PreserveSig]
+    int GetGCInterestingInfoStaticData(DacpGCInterestingInfoData* data);
+    [PreserveSig]
+    int GetGCGlobalMechanisms(nuint* globalMechanisms);
+};
+
+[GeneratedComInterface]
+[Guid("74B9D34C-A612-4B07-93DD-5462178FCE11")]
+internal unsafe partial interface ISOSDacInterface4
+{
+    [PreserveSig]
+    int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] arguments, int count, int* pNeeded);
+};
+
+[GeneratedComInterface]
+[Guid("127d6abe-6c86-4e48-8e7b-220781c58101")]
+internal unsafe partial interface ISOSDacInterface5
+{
+    [PreserveSig]
+    int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
+};
+
+internal struct DacpMethodTableCollectibleData
+{
+    public ClrDataAddress LoaderAllocatorObjectHandle;
+    public int bCollectible;
+}
+
+[GeneratedComInterface]
+[Guid("11206399-4B66-4EDB-98EA-85654E59AD45")]
+internal unsafe partial interface ISOSDacInterface6
+{
+    [PreserveSig]
+    int GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data);
+};
+
+internal struct DacpReJitData2
+{
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+        kReverted = 3,
+    };
+
+    public uint rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ClrDataAddress il;
+    public ClrDataAddress ilCodeVersionNodePtr;
+}
+
+[GeneratedComInterface]
+[Guid("c1020dde-fe98-4536-a53b-f35a74c327eb")]
+internal unsafe partial interface ISOSDacInterface7
+{
+    [PreserveSig]
+    int GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId);
+    [PreserveSig]
+    int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData);
+    [PreserveSig]
+    int GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData);
+    [PreserveSig]
+    int GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs);
+};
+
+[GeneratedComInterface]
+[Guid("c12f35a9-e55c-4520-a894-b3dc5165dfce")]
+internal unsafe partial interface ISOSDacInterface8
+{
+    [PreserveSig]
+    int GetNumberGenerations(uint* pGenerations);
+
+    // WKS
+    [PreserveSig]
+    int GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    [PreserveSig]
+    int GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
+
+    // SVR
+    [PreserveSig]
+    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    [PreserveSig]
+    int GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
+
+    [PreserveSig]
+    int GetAssemblyLoadContext(ClrDataAddress methodTable, ClrDataAddress* assemblyLoadContext);
+}
+
+[GeneratedComInterface]
+[Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]
+internal partial interface ISOSDacInterface9
+{
+    int GetBreakingChangeVersion();
+}
+
+[GeneratedComInterface]
+[Guid("90B8FCC3-7251-4B0A-AE3D-5C13A67EC9AA")]
+internal unsafe partial interface ISOSDacInterface10
+{
+    [PreserveSig]
+    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
+    [PreserveSig]
+    int IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW);
+    [PreserveSig]
+    int GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount);
+    [PreserveSig]
+    int IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW);
+    [PreserveSig]
+    int GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity);
+}
+
+[GeneratedComInterface]
+[Guid("96BA1DB9-14CD-4492-8065-1CAAECF6E5CF")]
+internal unsafe partial interface ISOSDacInterface11
+{
+    [PreserveSig]
+    int IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory);
+    [PreserveSig]
+    int GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes);
+}
+
+[GeneratedComInterface]
+[Guid("1b93bacc-8ca4-432d-943a-3e6e7ec0b0a3")]
+internal unsafe partial interface ISOSDacInterface12
+{
+    [PreserveSig]
+    int GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit);
+}
+
+[GeneratedComInterface]
+[Guid("3176a8ed-597b-4f54-a71f-83695c6a8c5e")]
+internal unsafe partial interface ISOSDacInterface13
+{
+    [PreserveSig]
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
+    [PreserveSig]
+    int GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator);
+    [PreserveSig]
+    int GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded);
+    [PreserveSig]
+    int GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
+    [PreserveSig]
+    int GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    [PreserveSig]
+    int GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    [PreserveSig]
+    int GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    [PreserveSig]
+    int LockedFlush();
+}
+
+[GeneratedComInterface]
+[Guid("9aa22aca-6dc6-4a0c-b4e0-70d2416b9837")]
+internal unsafe partial interface ISOSDacInterface14
+{
+    [PreserveSig]
+    int GetStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
+    [PreserveSig]
+    int GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
+    [PreserveSig]
+    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus);
+}
+
+internal struct SOSMethodData
+{
+    public ClrDataAddress MethodDesc;
+    public ClrDataAddress Entrypoint;
+    public ClrDataAddress DefiningMethodTable;
+    public ClrDataAddress DefiningModule;
+    public uint Token;
+    public uint Slot;
+}
+
+[GeneratedComInterface]
+[Guid("3c0fe725-c324-4a4f-8100-d399588a662e")]
+internal unsafe partial interface ISOSMethodEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMethodData[] values, uint* pNeeded);
+}
+
+[GeneratedComInterface]
+[Guid("7ed81261-52a9-4a23-a358-c3313dea30a8")]
+internal unsafe partial interface ISOSDacInterface15
+{
+    [PreserveSig]
+    int GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator);
+}
+
+[GeneratedComInterface]
+[Guid("4ba12ff8-daac-4e43-ac56-98cf8d5c595d")]
+internal unsafe partial interface ISOSDacInterface16
+{
+    [PreserveSig]
+    int GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
+}

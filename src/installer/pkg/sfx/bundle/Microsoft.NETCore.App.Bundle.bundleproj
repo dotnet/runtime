@@ -5,8 +5,7 @@
       Name, used to generate the bundle upgrade code. Must stay the same to allow bundles in a given
       product band to upgrade in place.
     -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
-    <IsShipping Condition="'$(PgoInstrument)' == 'true'">false</IsShipping>
+    <SkipBuild Condition="'$(DotNetBuildAllRuntimePacks)' != 'true' and ('$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true')">true</SkipBuild>
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
     <ArchiveName>dotnet-runtime</ArchiveName>
@@ -16,15 +15,25 @@
     <MacOSBundleTemplate>$(MSBuildProjectDirectory)/shared-framework-distribution-template-$(TargetArchitecture).xml</MacOSBundleTemplate>
     <MacOSBundleIdentifierName>com.microsoft.dotnet.Microsoft.NETCore.App.$(ProductVersion).osx.$(TargetArchitecture)</MacOSBundleIdentifierName>
     <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcesPath>
+    <UseWix5>true</UseWix5>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
+    <!-- Microsoft.Wix is a dotnet tool package, so exclude its assets. -->
+    <PackageReference Include="Microsoft.Wix" Version="$(MicrosoftWixVersion)" ExcludeAssets="all" />
+    <!-- Installers needs the $(PkgMicrosoftWixToolsetUIwixext) property to locate the extension. -->
+    <PackageReference Include="Microsoft.WixToolset.UI.wixext" Version="$(MicrosoftWixToolsetUIWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.WixToolset.Dependency.wixext" Version="$(MicrosoftWixToolsetDependencyWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.WixToolset.Util.wixext" Version="$(MicrosoftWixToolsetUtilWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.WixToolset.Bal.wixext" Version="$(MicrosoftWixToolsetBalWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.WixToolset.Heat" Version="$(MicrosoftWixToolsetHeatVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
   <ItemGroup>
-    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsLinuxBionic)' != 'true'" />
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono' or '$(TargetsLinuxBionic)' == 'true'" />
     <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" Condition="'$(TestReadyToRun)' != 'true'" />
     <BundleComponentReference Include="../installers/dotnet-host.proj" Condition="'$(TestReadyToRun)' != 'true'" />
   </ItemGroup>

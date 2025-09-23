@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -423,12 +424,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals.
             // IDN mapping is handled by MsQuic.
-            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
+            string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
-            IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
-            try
+            unsafe
             {
-                unsafe
+                byte* targetHostPtr = Utf8StringMarshaller.ConvertToUnmanaged(sni);
+                try
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
                         _handle,
@@ -438,10 +439,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
                         (ushort)port),
                         "ConnectionStart failed");
                 }
-            }
-            finally
-            {
-                Marshal.FreeCoTaskMem(targetHostPtr);
+                finally
+                {
+                    Utf8StringMarshaller.Free(targetHostPtr);
+                }
             }
         }
 
@@ -458,7 +459,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _streamCapacityCallback = options.StreamCapacityCallback;
 
             // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
-            if (TargetHostNameHelper.IsValidAddress(targetHost))
+            if (IPAddress.IsValid(targetHost))
             {
                 targetHost = string.Empty;
             }
@@ -473,13 +474,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 options.ServerAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options, targetHost);
 
-            unsafe
-            {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionSetConfiguration(
-                    _handle,
-                    _configuration),
-                    "ConnectionSetConfiguration failed");
-            }
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionSetConfiguration(
+                _handle,
+                _configuration),
+                "ConnectionSetConfiguration failed");
         }
 
         return valueTask;
@@ -613,13 +611,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} Closing connection, Error code = {errorCode}");
             }
 
-            unsafe
-            {
-                MsQuicApi.Api.ConnectionShutdown(
-                    _handle,
-                    QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
-                    (ulong)errorCode);
-            }
+            MsQuicApi.Api.ConnectionShutdown(
+                _handle,
+                QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
+                (ulong)errorCode);
         }
 
         return valueTask;
@@ -654,28 +649,40 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _connectedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
+    private int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
-        _connectionCloseTcs.TrySetException(exception);
+        if (_connectionCloseTcs.TrySetException(exception))
+        {
+            // Observe the exception as the task is used only for internal workings and might not be observed.
+            _ = _connectionCloseTcs.Task.Exception;
+        }
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
+    private int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode));
-        _connectionCloseTcs.TrySetException(exception);
+        if (_connectionCloseTcs.TrySetException(exception))
+        {
+            // Observe the exception as the task is used only for internal workings and might not be observed.
+            _ = _connectionCloseTcs.Task.Exception;
+        }
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventShutdownComplete()
+    private int HandleEventShutdownComplete()
     {
         // make sure we log at least some secrets in case of shutdown before handshake completes.
         _tlsSecret?.WriteSecret();
 
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
-        _connectionCloseTcs.TrySetException(exception);
+        if (_connectionCloseTcs.TrySetException(exception))
+        {
+            // Observe the exception as the task is used only for internal workings and might not be observed.
+            _ = _connectionCloseTcs.Task.Exception;
+        }
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
         _shutdownTokenSource.Cancel();
@@ -716,7 +723,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_ID_FC_UPDATES;
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventStreamsAvailable(ref STREAMS_AVAILABLE_DATA data)
+    private int HandleEventStreamsAvailable(ref STREAMS_AVAILABLE_DATA data)
     {
         int bidirectionalIncrement = 0;
         int unidirectionalIncrement = 0;
@@ -754,7 +761,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         return QUIC_STATUS_PENDING;
     }
 
-    private unsafe int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
+    private int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
         => connectionEvent.Type switch
         {
             QUIC_CONNECTION_EVENT_TYPE.CONNECTED => HandleEventConnected(ref connectionEvent.CONNECTED),
@@ -770,7 +777,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         };
 
 #pragma warning disable CS3016
-    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
     private static unsafe int NativeCallback(QUIC_HANDLE* connection, void* context, QUIC_CONNECTION_EVENT* connectionEvent)
     {
@@ -825,23 +832,17 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // Check if the connection has been shut down and if not, shut it down.
         if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this))
         {
-            unsafe
-            {
-                MsQuicApi.Api.ConnectionShutdown(
-                    _handle,
-                    QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
-                    (ulong)_defaultCloseErrorCode);
-            }
+            MsQuicApi.Api.ConnectionShutdown(
+                _handle,
+                QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
+                (ulong)_defaultCloseErrorCode);
         }
         else if (!valueTask.IsCompletedSuccessfully)
         {
-            unsafe
-            {
-                MsQuicApi.Api.ConnectionShutdown(
-                    _handle,
-                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
-                    (ulong)_defaultCloseErrorCode);
-            }
+            MsQuicApi.Api.ConnectionShutdown(
+                _handle,
+                QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
+                (ulong)_defaultCloseErrorCode);
         }
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
@@ -850,7 +851,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         Debug.Assert(_connectionCloseTcs.Task.IsCompleted);
         _handle.Dispose();
         _shutdownTokenSource.Dispose();
-        _connectionCloseTcs.Task.ObserveException();
         _configuration?.Dispose();
 
         // Dispose remote certificate only if it hasn't been accessed via getter, in which case the accessing code becomes the owner of the certificate lifetime.

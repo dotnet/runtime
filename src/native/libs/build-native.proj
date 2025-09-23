@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="'$(TargetOS)' != 'windows' or '$(TargetsMobile)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
@@ -13,31 +13,37 @@
 
     <_RuntimeVariant />
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
-    <_UsePThreads />
-    <_UsePThreads Condition="'$(WasmEnableThreads)' == 'true'"> usepthreads</_UsePThreads>
-
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-    <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
+    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
 
-    <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_UsePThreads)</_BuildNativeArgs>
+    <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(_IcuDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_ICU_DIR=$(_IcuDir)"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(_TzdDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_TZD_DIR=$(_TzdDir)"</_CMakeArgs>
+
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs)</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
-    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
-    <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);WASI_SDK_PATH=$(WASI_SDK_PATH)</_BuildNativeEnvironmentVariables>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
+
+  <Target Name="BuildNativeCommon"
+          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile">
+    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+      <_BuildNativeEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_BuildNativeEnvironmentVariables>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="BuildNativeUnix"
-          DependsOnTargets="GenerateNativeVersionFile"
+          DependsOnTargets="BuildNativeCommon"
           BeforeTargets="Build"
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
@@ -50,39 +56,49 @@
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
-      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
 
       <!--
         BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
         used to force a specific compiler toolset.
       -->
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(Compiler)</_BuildNativeUnixArgs>
+      <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
 
-    <ItemGroup>
-      <_IcuArtifacts Condition="'$(_IcuDir)' != ''"
-                     Include="$(_IcuDir)/lib/libicuuc.a;
-                              $(_IcuDir)/lib/libicui18n.a;
-                              $(_IcuDir)/lib/libicudata.a;
-                              $(_IcuDir)/lib/*.dat" />
-    </ItemGroup>
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to error in release branches -->
+    <Message Text="$(_BuildNativeBuildCommand)" Importance="High"/>
+    <Exec Command="$(_BuildNativeBuildCommand)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
+  </Target>
 
-    <Copy SourceFiles="@(_IcuArtifacts)" DestinationFolder="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_BuildNativeOutConfig)'))" SkipUnchangedFiles="true" />
-    <Message Text="$(MSBuildThisFileDirectory)build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
+  <!-- 
+    This is a workaround when cross-compiling on Windows for non-windows (Mobile for now) targets.
+
+    https://github.com/dotnet/arcade/issues/15496
+  -->
+  <Target Name="_BeforeCrossTargetNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsMobile)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
+  <Target Name="_AfterCrossTargetNativeVersionFile" AfterTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsMobile)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    </PropertyGroup>
   </Target>
 
   <Target Name="BuildNativeWindows"
-          DependsOnTargets="GenerateNativeVersionFile"
+          DependsOnTargets="BuildNativeCommon"
           BeforeTargets="Build"
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
+        <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
-    <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
+    <Message Text="$(_BuildNativeBuildCommand)" Importance="High"/>
+    <Exec Command="$(_BuildNativeBuildCommand)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <UsingTask TaskName="AndroidLibBuilderTask"

@@ -349,71 +349,6 @@ CPFH_VerifyThreadIsInValidState(Thread* pThread, DWORD exceptionCode, EXCEPTION_
 }
 
 
-#ifdef FEATURE_HIJACK
-void
-CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCODE f_IP = GetIP(pContext);
-    if (Thread::IsAddrOfRedirectFunc((PVOID)f_IP)) {
-
-        // This is a very rare case where we tried to redirect a thread that was
-        // just about to dispatch an exception, and our update of EIP took, but
-        // the thread continued dispatching the exception.
-        //
-        // If this should happen (very rare) then we fix it up here.
-        //
-        _ASSERTE(pThread->GetSavedRedirectContext());
-        SetIP(pContext, GetIP(pThread->GetSavedRedirectContext()));
-        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 1 setting IP = %x\n", pContext->Eip);
-    }
-
-    if (f_IP == GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION)) {
-
-        // This is a very rare case where we tried to redirect a thread that was
-        // just about to dispatch an exception, and our update of EIP took, but
-        // the thread continued dispatching the exception.
-        //
-        // If this should happen (very rare) then we fix it up here.
-        //
-        SetIP(pContext, GetIP(pThread->m_OSContext));
-        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 2 setting IP = %x\n", pContext->Eip);
-    }
-
-// We have another even rarer race condition:
-// - A) On thread A, Debugger puts an int 3 in the code stream at address X
-// - A) We hit it and the begin an exception. The eip will be X + 1 (int3 is special)
-// - B) Meanwhile, thread B redirects A's eip to Y. (Although A is really somewhere
-// in the kernel, it looks like it's still in user code, so it can fall under the
-// HandledJitCase and can be redirected)
-// - A) The OS, trying to be nice, expects we have a breakpoint exception at X+1,
-// but does -1 on the address since it knows int3 will leave the eip +1.
-// So the context structure it will pass to the Handler is ideally (X+1)-1 = X
-//
-// ** Here's the race: Since thread B redirected A, the eip is actually Y (not X+1),
-// but the kernel still touches it up to Y-1. So there's a window between when we hit a
-// bp and when the handler gets called that this can happen.
-// This causes an unhandled BP (since the debugger doesn't recognize the bp at Y-1)
-//
-// So what to do: If we land at Y-1 (ie, if f_IP+1 is the addr of a Redirected Func),
-// then restore the EIP back to X. This will skip the redirection.
-// Fortunately, this only occurs in cases where it's ok
-// to skip. The debugger will recognize the patch and handle it.
-
-    if (Thread::IsAddrOfRedirectFunc((PVOID)(f_IP + 1))) {
-        _ASSERTE(pThread->GetSavedRedirectContext());
-        SetIP(pContext, GetIP(pThread->GetSavedRedirectContext()) - 1);
-        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 3 setting IP = %x\n", pContext->Eip);
-    }
-
-    if (f_IP + 1 == GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION)) {
-        SetIP(pContext, GetIP(pThread->m_OSContext) - 1);
-        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 4 setting IP = %x\n", pContext->Eip);
-    }
-}
-#endif // FEATURE_HIJACK
-
 uint32_t            g_exceptionCount;
 
 //******************************************************************************
@@ -651,7 +586,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
 #if defined(USE_FEF)
     BOOL bPopFaultingExceptionFrame = FALSE;
-    FrameWithCookie<FaultingExceptionFrame> faultingExceptionFrame;
+    FaultingExceptionFrame faultingExceptionFrame;
 #endif // USE_FEF
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
 
@@ -690,7 +625,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     if (fIsManagedCode &&
         fPGCDisabledOnEntry &&
         (pThread->m_pFrame == FRAME_TOP ||
-         pThread->m_pFrame->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr() ||
+         pThread->m_pFrame->GetFrameIdentifier() != FrameIdentifier::FaultingExceptionFrame ||
          (size_t)pThread->m_pFrame > (size_t)pEstablisherFrame))
     {
         // setup interrupted frame so that GC during calls to init won't collect the frames
@@ -828,11 +763,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                 pNestedExInfo = new (nothrow) ExInfo();     // Very rare failure here; need robust allocator.
                 if (pNestedExInfo == NULL)
                 {   // if we can't allocate memory, we can't correctly continue.
-                    #if defined(_DEBUG)
-                    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NestedEhOom))
-                        _ASSERTE(!"OOM in callback from unmanaged filter.");
-                    #endif // _DEBUG
-
                     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
                 }
 
@@ -1826,13 +1756,6 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     return esp;
 }
 
-PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0);
-}
-
 PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread *pThread) {
     WRAPPER_NO_CONTRACT;
     EXCEPTION_REGISTRATION_RECORD *pEHR = *(pThread->GetExceptionListPtr());
@@ -1861,28 +1784,6 @@ PEXCEPTION_REGISTRATION_RECORD GetPrevSEHRecord(EXCEPTION_REGISTRATION_RECORD *n
     }
 
     return pBest;
-}
-
-VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
-{
-    WRAPPER_NO_CONTRACT;
-
-    __writefsdword(0, (DWORD)pSEH);
-}
-
-VOID PopSEHRecords(LPVOID pTargetSP)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
-    // The last record in the chain is EXCEPTION_CHAIN_END which is defined as maxiumum
-    // pointer value so it cannot satisfy the loop condition.
-    while (currentContext < pTargetSP)
-    {
-        currentContext = currentContext->Next;
-    }
-    SetCurrentSEHRecord(currentContext);
 }
 
 //
@@ -2101,7 +2002,7 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
         iFilt = EXCEPTION_CONTINUE_SEARCH;
 
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return iFilt;
 }
@@ -2131,8 +2032,8 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     Thread *pThread = GetThread();
@@ -2167,7 +2068,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor
             // associated with ForbidGC checking.  This is benign, so just ignore it.
-            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr());
+            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame);
             if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pPrevExceptionRecord <= GetRegdisplaySP(pCf->GetRegisterSet()));
         }
     }
@@ -2539,8 +2440,8 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     if (pFrame && pData->pTopFrame == pFrame)
@@ -2668,7 +2569,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             // Make the filter as done. See comment in CallJitEHFilter
             // on why we have to do it here.
             Frame* pFilterFrame = pThread->GetFrame();
-            _ASSERTE(pFilterFrame->GetVTablePtr() == ExceptionFilterFrame::GetMethodFrameVPtr());
+            _ASSERTE(pFilterFrame->GetFrameIdentifier() == FrameIdentifier::ExceptionFilterFrame);
             ((ExceptionFilterFrame*)pFilterFrame)->SetFilterDone();
 
             // Inform the profiler that we're leaving, and what pass we're on
@@ -2818,8 +2719,7 @@ LDoDebuggerIntercept:
     context.Esp = pCf->GetCodeManager()->GetAmbientSP(regs,
                                                       pCf->GetCodeInfo(),
                                                       nativeOffset,
-                                                      pData->dHandler,
-                                                      pCf->GetCodeManState()
+                                                      pData->dHandler
                                                      );
     //
     // In case we see unknown FS:[0] handlers we delay the interception point until we reach the handler that protects the interception point.
@@ -2878,7 +2778,6 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                       EHClausePtr->HandlerStartPC,
                                       nestingLevel,
                                       throwable,
-                                      pCf->GetCodeManState(),
                                       &pShadowSP,
                                       &pHandlerEnd);
 
@@ -2910,8 +2809,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // Find the ESP of the caller of the method with the exception handler.
         bool unwindSuccess = pCf->GetCodeManager()->UnwindStackFrame(pCf->GetRegisterSet(),
                                                                      pCf->GetCodeInfo(),
-                                                                     pCf->GetCodeManagerFlags(),
-                                                                     pCf->GetCodeManState());
+                                                                     pCf->GetCodeManagerFlags());
         _ASSERTE(unwindSuccess);
 
         if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
@@ -3091,7 +2989,7 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
 
     size_t * pEndFilter = NULL; // Write
     pCf->GetCodeManager()->FixContext(ICodeManager::FILTER_CONTEXT, &context, pCf->GetCodeInfo(),
-                                      EHClausePtr->FilterOffset, nestingLevel, thrownObj, pCf->GetCodeManState(),
+                                      EHClausePtr->FilterOffset, nestingLevel, thrownObj,
                                       &pShadowSP, &pEndFilter);
 
     // End of the filter is the same as start of handler
@@ -3115,7 +3013,7 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
     // GC holes. The stack would be in inconsistent state when we trigger gc just before
     // returning from UnwindFrames.
 
-    FrameWithCookie<ExceptionFilterFrame> exceptionFilterFrame(pShadowSP);
+    ExceptionFilterFrame exceptionFilterFrame(pShadowSP);
 
     ETW::ExceptionLog::ExceptionFilterBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
 
@@ -3140,7 +3038,7 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
     size_t * pFinallyEnd = NULL;
     pCf->GetCodeManager()->FixContext(
         ICodeManager::FINALLY_CONTEXT, &context, pCf->GetCodeInfo(),
-        EHClausePtr->HandlerStartPC, nestingLevel, ObjectToOBJECTREF((Object *) NULL), pCf->GetCodeManState(),
+        EHClausePtr->HandlerStartPC, nestingLevel, ObjectToOBJECTREF((Object *) NULL),
         &pShadowSP, &pFinallyEnd);
 
     if (pFinallyEnd)
@@ -3444,4 +3342,100 @@ AdjustContextForVirtualStub(
     return TRUE;
 }
 
+#ifdef TARGET_WINDOWS
+
+PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
+{
+    WRAPPER_NO_CONTRACT;
+
+    return (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0);
+}
+
+VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
+{
+    WRAPPER_NO_CONTRACT;
+
+    __writefsdword(0, (DWORD)pSEH);
+}
+
+VOID PopSEHRecords(LPVOID pTargetSP)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
+    // The last record in the chain is EXCEPTION_CHAIN_END which is defined as maxiumum
+    // pointer value so it cannot satisfy the loop condition.
+    while (currentContext < pTargetSP)
+    {
+        currentContext = currentContext->Next;
+    }
+    SetCurrentSEHRecord(currentContext);
+}
+
+#ifdef FEATURE_HIJACK
+void
+CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PCODE f_IP = GetIP(pContext);
+    if (Thread::IsAddrOfRedirectFunc((PVOID)f_IP)) {
+
+        // This is a very rare case where we tried to redirect a thread that was
+        // just about to dispatch an exception, and our update of EIP took, but
+        // the thread continued dispatching the exception.
+        //
+        // If this should happen (very rare) then we fix it up here.
+        //
+        _ASSERTE(pThread->GetSavedRedirectContext());
+        SetIP(pContext, GetIP(pThread->GetSavedRedirectContext()));
+        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 1 setting IP = %x\n", pContext->Eip);
+    }
+
+    if (f_IP == GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION)) {
+
+        // This is a very rare case where we tried to redirect a thread that was
+        // just about to dispatch an exception, and our update of EIP took, but
+        // the thread continued dispatching the exception.
+        //
+        // If this should happen (very rare) then we fix it up here.
+        //
+        SetIP(pContext, GetIP(pThread->m_OSContext));
+        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 2 setting IP = %x\n", pContext->Eip);
+    }
+
+// We have another even rarer race condition:
+// - A) On thread A, Debugger puts an int 3 in the code stream at address X
+// - A) We hit it and the begin an exception. The eip will be X + 1 (int3 is special)
+// - B) Meanwhile, thread B redirects A's eip to Y. (Although A is really somewhere
+// in the kernel, it looks like it's still in user code, so it can fall under the
+// HandledJitCase and can be redirected)
+// - A) The OS, trying to be nice, expects we have a breakpoint exception at X+1,
+// but does -1 on the address since it knows int3 will leave the eip +1.
+// So the context structure it will pass to the Handler is ideally (X+1)-1 = X
+//
+// ** Here's the race: Since thread B redirected A, the eip is actually Y (not X+1),
+// but the kernel still touches it up to Y-1. So there's a window between when we hit a
+// bp and when the handler gets called that this can happen.
+// This causes an unhandled BP (since the debugger doesn't recognize the bp at Y-1)
+//
+// So what to do: If we land at Y-1 (ie, if f_IP+1 is the addr of a Redirected Func),
+// then restore the EIP back to X. This will skip the redirection.
+// Fortunately, this only occurs in cases where it's ok
+// to skip. The debugger will recognize the patch and handle it.
+
+    if (Thread::IsAddrOfRedirectFunc((PVOID)(f_IP + 1))) {
+        _ASSERTE(pThread->GetSavedRedirectContext());
+        SetIP(pContext, GetIP(pThread->GetSavedRedirectContext()) - 1);
+        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 3 setting IP = %x\n", pContext->Eip);
+    }
+
+    if (f_IP + 1 == GetEEFuncEntryPoint(THROW_CONTROL_FOR_THREAD_FUNCTION)) {
+        SetIP(pContext, GetIP(pThread->m_OSContext) - 1);
+        STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 4 setting IP = %x\n", pContext->Eip);
+    }
+}
+#endif // FEATURE_HIJACK
+#endif // TARGET_WINDOWS
 #endif // !DACCESS_COMPILE

@@ -77,7 +77,7 @@ namespace System.Text.RegularExpressions
             CaptureNameToNumberMapping = captureNameToNumberMapping;
             CaptureNames = captureNames;
             Options = options;
-            FindOptimizations = new RegexFindOptimizations(root, options);
+            FindOptimizations = RegexFindOptimizations.Create(root, options);
         }
     }
 }

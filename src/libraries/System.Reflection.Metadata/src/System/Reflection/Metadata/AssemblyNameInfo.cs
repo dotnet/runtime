@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata
 #else
             PublicKeyOrToken = parts._publicKeyOrToken is null ? default : parts._publicKeyOrToken.Length == 0
                 ? ImmutableArray<byte>.Empty
-    #if NET8_0_OR_GREATER
+    #if NET
                 : Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(parts._publicKeyOrToken);
     #else
                 : ImmutableArray.Create(parts._publicKeyOrToken);
@@ -112,23 +112,37 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+                    ValueStringBuilder vsb = new(stackalloc char[256]);
+                    AppendFullName(ref vsb);
+                    _fullName = vsb.ToString();
+                }
 
-                    byte[]? publicKeyOrToken =
+                return _fullName;
+            }
+        }
+
+        internal void AppendFullName(ref ValueStringBuilder vsb)
+        {
+            if (_fullName is not null)
+            {
+                vsb.Append(_fullName);
+            }
+            else
+            {
+                bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+
+                byte[]? publicKeyOrToken =
 #if SYSTEM_PRIVATE_CORELIB
                     PublicKeyOrToken;
-#elif NET8_0_OR_GREATER
+#elif NET
                     !PublicKeyOrToken.IsDefault ? Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(PublicKeyOrToken) : null;
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName,
-                        pkt: isPublicKey ? null : publicKeyOrToken,
-                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
-                        pk: isPublicKey ? publicKeyOrToken : null);
-                }
-
-                return _fullName;
+                AssemblyNameFormatter.AppendDisplayName(ref vsb, Name, Version, CultureName,
+                    pkt: isPublicKey ? null : publicKeyOrToken,
+                    ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
+                    pk: isPublicKey ? publicKeyOrToken : null);
             }
         }
 
@@ -189,7 +203,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException">Provided assembly name was invalid.</exception>
         public static AssemblyNameInfo Parse(ReadOnlySpan<char> assemblyName)
             => TryParse(assemblyName, out AssemblyNameInfo? result)
-                ? result!
+                ? result
                 : throw new ArgumentException(SR.InvalidAssemblyName, nameof(assemblyName));
 
         /// <summary>

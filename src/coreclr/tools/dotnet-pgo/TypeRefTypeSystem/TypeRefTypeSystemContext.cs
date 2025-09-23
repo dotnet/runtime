@@ -144,7 +144,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                     }
 
                     EcmaSignatureParser ecmaSigParse = new EcmaSignatureParser(this, ResolveTypeRefForPeInfo, peInfo.reader.GetBlobReader(memberRef.Signature), NotFoundBehavior.ReturnNull);
-                    string name = peInfo.reader.GetString(memberRef.Name);
+                    ReadOnlySpan<byte> name = peInfo.reader.GetStringBytes(memberRef.Name);
 
                     if (memberRef.GetKind() == MemberReferenceKind.Method)
                     {

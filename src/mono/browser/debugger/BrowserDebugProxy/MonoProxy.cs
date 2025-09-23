@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string CachePathSymbolServer { get; private set; }
         private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
-        internal ConcurrentExecutionContextDictionary Contexts = new ();
+        internal ConcurrentExecutionContextDictionary Contexts = new();
 
         public static HttpClient HttpClient => new HttpClient();
 
@@ -670,7 +670,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task SetJustMyCode(MessageId id, bool isEnabled, ExecutionContext context, CancellationToken token)
         {
-            if (JustMyCode != isEnabled && isEnabled == false)
+            if (JustMyCode != isEnabled && !isEnabled)
             {
                 JustMyCode = isEnabled;
                 if (await IsRuntimeAlreadyReadyAlready(id, token))
@@ -1305,7 +1305,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected async Task<bool> TryStepOnManagedCodeAndStepOutIfNotPossible(SessionId sessionId, ExecutionContext context, StepKind kind, CancellationToken token)
         {
             var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
-            if (step == false) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
+            if (!step) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
             {
                 context.ClearState();
                 await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
@@ -1468,7 +1468,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try {
                 var retStackTrace = new JArray();
-                foreach(var call in context.CallStack)
+                foreach (var call in context.CallStack)
                 {
                     if (call.Id < scopeId)
                         continue;

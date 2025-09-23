@@ -13,6 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // BindImplicitConversion
         // ----------------------------------------------------------------------------
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private sealed class ImplicitConversion
         {
             public ImplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, CType typeDest, bool needsExprDest, CONVERTTYPE flags)
@@ -261,6 +262,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 then S? => T is not standard. Similarly if S => T is not implicit then S => T? is not standard.
             ***************************************************************************************************/
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool BindNubConversion(NullableType nubDst)
             {
                 // This code assumes that STANDARD and ISEXPLICIT are never both set.
@@ -665,6 +667,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool bindImplicitConversionBetweenSimpleTypes(AggregateType aggTypeSrc)
             {
                 AggregateSymbol aggSrc = aggTypeSrc.OwningAggregate;

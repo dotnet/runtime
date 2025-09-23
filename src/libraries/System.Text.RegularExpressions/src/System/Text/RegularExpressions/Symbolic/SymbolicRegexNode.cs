@@ -56,7 +56,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="left">left child</param>
         /// <param name="right">right child</param>
         /// <param name="lower">lower bound of a loop</param>
-        /// <param name="upper">upper boubd of a loop</param>
+        /// <param name="upper">upper bound of a loop</param>
         /// <param name="set">singleton set</param>
         /// <param name="info">misc flags including laziness</param>
         private SymbolicRegexNode(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet set, SymbolicRegexInfo info)
@@ -589,7 +589,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Tries to detect whether or not the language of another node is fully contained within the language of this
         /// node. It does this by applying a set of rules, such as "RS subsumes T if R is nullable and S subsumes T",
-        /// which peels off one nullable element from a concatenation and recurses into another susumption check.
+        /// which peels off one nullable element from a concatenation and recurses into another subsumption check.
         /// Note that differences in Effect nodes are not considered for subsumption, which is an important feature since
         /// this allows simplifications relying on subsumption to apply in the presence of effects.
         /// </summary>
@@ -975,7 +975,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Due to this function should not be called on every character.
         /// </remarks>
         /// <param name="builder">the builder that owns this node</param>
-        /// <param name="lengthSoFar">accumulater used in the recursion for lengths of paths</param>
+        /// <param name="lengthSoFar">accumulator used in the recursion for lengths of paths</param>
         /// <returns>the node with fixed length markers added</returns>
         public SymbolicRegexNode<TSet> AddFixedLengthMarkers(SymbolicRegexBuilder<TSet> builder, int lengthSoFar = 0)
         {
@@ -1270,7 +1270,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         // set in which case it is fully contained in the set if the intersection is non-empty.
                         if (!builder._solver.IsEmpty(builder._solver.And(elem, _set)))
                         {
-                            // the sigleton is consumed so the derivative is epsilon
+                            // the singleton is consumed so the derivative is epsilon
                             derivative = builder.Epsilon;
                         }
                         else

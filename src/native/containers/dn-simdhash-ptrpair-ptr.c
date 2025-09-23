@@ -26,8 +26,8 @@ dn_ptrpair_t_equals (dn_ptrpair_t lhs, dn_ptrpair_t rhs)
 #define DN_SIMDHASH_T dn_simdhash_ptrpair_ptr
 #define DN_SIMDHASH_KEY_T dn_ptrpair_t
 #define DN_SIMDHASH_VALUE_T void *
-#define DN_SIMDHASH_KEY_HASHER(hash, key) dn_ptrpair_t_hash(key)
-#define DN_SIMDHASH_KEY_EQUALS(hash, lhs, rhs) dn_ptrpair_t_equals(lhs, rhs)
+#define DN_SIMDHASH_KEY_HASHER(data, key) dn_ptrpair_t_hash(key)
+#define DN_SIMDHASH_KEY_EQUALS(data, lhs, rhs) dn_ptrpair_t_equals(lhs, rhs)
 #if SIZEOF_VOID_P == 8
 // 192 bytes holds 12 16-byte blocks, so 11 keys and one suffix table
 #define DN_SIMDHASH_BUCKET_CAPACITY 11

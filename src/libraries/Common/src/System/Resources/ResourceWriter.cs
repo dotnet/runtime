@@ -48,10 +48,7 @@ namespace System.Resources
         ResourceWriter(string fileName)
 #endif
         {
-            if (fileName is null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
+            ArgumentNullException.ThrowIfNull(fileName);
 
             _output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
             _resourceList = new SortedDictionary<string, object?>(FastResourceComparer.Default);
@@ -65,10 +62,7 @@ namespace System.Resources
         ResourceWriter(Stream stream)
 #endif
         {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (!stream.CanWrite)
             {
@@ -85,10 +79,7 @@ namespace System.Resources
         //
         public void AddResource(string name, string? value)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (_resourceList == null)
             {
@@ -105,10 +96,7 @@ namespace System.Resources
         //
         public void AddResource(string name, object? value)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (_resourceList == null)
             {
@@ -134,10 +122,7 @@ namespace System.Resources
         //
         public void AddResource(string name, Stream? value, bool closeAfterWrite = false)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (_resourceList == null)
             {
@@ -174,10 +159,7 @@ namespace System.Resources
         //
         public void AddResource(string name, byte[]? value)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (_resourceList == null)
             {

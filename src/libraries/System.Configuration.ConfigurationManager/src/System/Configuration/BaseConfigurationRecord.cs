@@ -19,7 +19,7 @@ namespace System.Configuration
     [DebuggerDisplay("ConfigPath = {ConfigPath}")]
     internal abstract class BaseConfigurationRecord : IInternalConfigRecord
     {
-#if NET8_0_OR_GREATER
+#if NET
         private static readonly SearchValues<char> s_invalidSubPathChars = SearchValues.Create(InvalidSubPathCharactersString);
 #else
         private static ReadOnlySpan<char> s_invalidSubPathChars => InvalidSubPathCharactersString.AsSpan();
@@ -2466,7 +2466,7 @@ namespace System.Configuration
                     if (!factoryRecord.HasErrors)
                     {
                         // We have a valid factoryRecord for a section
-                        if (inLocation && (factoryRecord.AllowLocation == false))
+                        if (inLocation && !factoryRecord.AllowLocation)
                         {
                             xmlUtil.SchemaErrors.AddError(
                                 new ConfigurationErrorsException(

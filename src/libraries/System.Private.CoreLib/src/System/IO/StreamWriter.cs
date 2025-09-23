@@ -24,7 +24,6 @@ namespace System.IO
         // which means we take advantage of adaptive buffering code.
         // The performance using UnicodeEncoding is acceptable.
         private const int DefaultBufferSize = 1024;   // char[]
-        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         // Bit bucket - Null has no backing store. Non closable.
@@ -156,7 +155,7 @@ namespace System.IO
         }
 
         public StreamWriter(string path, Encoding? encoding, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, options), encoding, DefaultFileStreamBufferSize)
+            : this(ValidateArgsAndOpenPath(path, options), encoding, DefaultBufferSize)
         {
         }
 
@@ -184,9 +183,13 @@ namespace System.IO
         private static FileStream ValidateArgsAndOpenPath(string path, bool append, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
+
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()
@@ -305,7 +308,7 @@ namespace System.IO
             else
             {
                 int maxBytesForCharPos = _encoding.GetMaxByteCount(_charPos);
-                byteBuffer = maxBytesForCharPos <= 1024 ? // arbitrary threshold
+                byteBuffer = (uint)maxBytesForCharPos <= 1024 ? // arbitrary threshold
                     stackalloc byte[1024] :
                     (_byteBuffer = new byte[_encoding.GetMaxByteCount(_charBuffer.Length)]);
             }
@@ -500,8 +503,8 @@ namespace System.IO
 
         private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
-            int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
-            var vsb = estimatedLength <= 256 ?
+            int estimatedLength = checked((format?.Length ?? 0) + args.Length * 8);
+            var vsb = (uint)estimatedLength <= 256 ?
                 new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(estimatedLength);
 

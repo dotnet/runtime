@@ -50,17 +50,6 @@ class RCWCache;
 class RCWRefCache;
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4200) // Disable zero-sized array warning
-#endif
-
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-
 // The pinned heap handle bucket class is used to contain handles allocated
 // from an array contained in the pinned heap.
 class PinnedHeapHandleBucket
@@ -260,7 +249,6 @@ public:
     DEBUG_NOINLINE static void HolderEnter(PEFileListLock *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         pThis->Enter();
     }
@@ -268,7 +256,6 @@ public:
     DEBUG_NOINLINE static void HolderLeave(PEFileListLock *pThis)
     {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
 
         pThis->Leave();
     }
@@ -436,7 +423,6 @@ public:
 
 enum
 {
-    ATTACH_ASSEMBLY_LOAD = 0x1,
     ATTACH_MODULE_LOAD = 0x2,
     ATTACH_CLASS_LOAD = 0x4,
 
@@ -795,6 +781,12 @@ public: // Handles
         return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
     }
 
+    OBJECTHANDLE CreateCrossReferenceHandle(OBJECTREF object, void* userContext)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateCrossReferenceHandle(m_handleStore, object, userContext);
+    }
+
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
     {
@@ -975,6 +967,8 @@ protected:
         {
             return m_array.Iterate();
         }
+
+        friend struct cdac_data<AppDomain>;
     };  // class DomainAssemblyList
 
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
@@ -1140,16 +1134,7 @@ public:
     BOOL ContainsAssembly(Assembly * assem);
 
     //****************************************************************************************
-    //
-    // Reference count. When an appdomain is first created the reference is bump
-    // to one when it is added to the list of domains (see SystemDomain). An explicit
-    // Removal from the list is necessary before it will be deleted.
-    ULONG AddRef(void);
-    ULONG Release(void) DAC_EMPTY_RET(0);
-
-    //****************************************************************************************
     LPCWSTR GetFriendlyName();
-    LPCWSTR GetFriendlyNameForDebugger();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(
@@ -1164,9 +1149,8 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static BOOL OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating = TRUE);
-
-#endif
+    static void OnUnhandledException(OBJECTREF *pThrowable);
+#endif // !DACCESS_COMPILE
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
     BOOL IsDebuggerAttached (void);
@@ -1243,41 +1227,7 @@ public:
     // Only call this routine when you can guarantee there are no loads in progress.
     void ClearBinderContext();
 
-    void SetIgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= IGNORE_UNHANDLED_EXCEPTIONS;
-    }
-
-    BOOL IgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
-    }
-
     static void ExceptionUnwind(Frame *pFrame);
-
-    BOOL IsActive()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_Stage >= STAGE_ACTIVE;
-    }
-
-    BOOL IsValid()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef DACCESS_COMPILE
-        // We want to see all appdomains in SOS, even the about to be destructed ones.
-        // There is no risk of races under DAC, so we will pretend to be unconditionally valid.
-        return TRUE;
-#else
-        return m_Stage > STAGE_CREATING;
-#endif
-    }
 
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
@@ -1351,7 +1301,6 @@ public:
     PTR_LoaderHeap GetHighFrequencyHeap();
 
 private:
-    size_t EstimateSize();
     EEClassFactoryInfoHashTable* SetupClassFactHash();
 #ifdef FEATURE_COMINTEROP
     DispIDCache* SetupRefDispIDCache();
@@ -1377,42 +1326,6 @@ private:
     friend class Assembly;
 
 private:
-    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);
-
-    enum Stage {
-        STAGE_CREATING,
-        STAGE_READYFORMANAGEDCODE,
-        STAGE_ACTIVE,
-        STAGE_OPEN,
-        // Don't delete the following *_DONOTUSE members and in case a new member needs to be added,
-        // add it at the end. The reason is that debugger stuff has its own copy of this enum and
-        // it can use the members that are marked as *_DONOTUSE here when debugging older version
-        // of the runtime.
-        STAGE_UNLOAD_REQUESTED_DONOTUSE,
-        STAGE_EXITING_DONOTUSE,
-        STAGE_EXITED_DONOTUSE,
-        STAGE_FINALIZING_DONOTUSE,
-        STAGE_FINALIZED_DONOTUSE,
-        STAGE_HANDLETABLE_NOACCESS_DONOTUSE,
-        STAGE_CLEARED_DONOTUSE,
-        STAGE_COLLECTED_DONOTUSE,
-        STAGE_CLOSED_DONOTUSE
-    };
-    void SetStage(Stage stage)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
-        Stage lastStage=m_Stage;
-        while (lastStage !=stage)
-            lastStage = (Stage)InterlockedCompareExchange((LONG*)&m_Stage,stage,lastStage);
-    };
-
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
     LoaderAllocator * m_pDelayedLoaderAllocatorUnloadList;
 
@@ -1432,9 +1345,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return GetLoaderAllocator()->GetGCRefPoint();
     }
-
-    void AddMemoryPressure();
-    void RemoveMemoryPressure();
 
     PTR_Assembly GetRootAssembly()
     {
@@ -1462,13 +1372,6 @@ private:
     PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
-    // General purpose flags.
-    DWORD           m_dwFlags;
-
-    // When an application domain is created the ref count is artificially incremented
-    // by one. For it to hit zero an explicit close must have happened.
-    LONG        m_cRef;                    // Ref count.
-
     // Map of loaded composite native images indexed by base load addresses
     CrstExplicitInit m_nativeImageLoadCrst;
     MapSHash<LPCUTF8, PTR_NativeImage, NativeImageIndexTraits> m_nativeImageMap;
@@ -1481,8 +1384,6 @@ private:
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
 #endif // FEATURE_COMWRAPPERS
-
-    Volatile<Stage> m_Stage;
 
     ArrayList        m_failedAssemblies;
 
@@ -1583,14 +1484,7 @@ public:
 
 public:
 
-    enum {
-        CONTEXT_INITIALIZED =               0x0001,
-        // unused =                         0x0400,
-        IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
-    };
-
     AssemblySpecBindingCache  m_AssemblyCache;
-    size_t                    m_MemoryPressure;
 
     ArrayList m_NativeDllSearchDirectories;
     bool m_ForceTrivialWaitOperations;
@@ -1654,8 +1548,6 @@ public:
 
 #endif
 
-#if defined(FEATURE_TIERED_COMPILATION)
-
 public:
     TieredCompilationManager * GetTieredCompilationManager()
     {
@@ -1666,11 +1558,16 @@ public:
 private:
     TieredCompilationManager m_tieredCompilationManager;
 
-#endif
+    friend struct cdac_data<AppDomain>;
 };  // class AppDomain
 
-// Just a ref holder
-typedef ReleaseHolder<AppDomain> AppDomainRefHolder;
+template<>
+struct cdac_data<AppDomain>
+{
+    static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
+    static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
+    static constexpr size_t FriendlyName = offsetof(AppDomain, m_friendlyName);
+};
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
 
@@ -1892,36 +1789,6 @@ public:
         return m_BaseLibrary;
     }
 
-#ifndef DACCESS_COMPILE
-    BOOL IsBaseLibrary(SString &path)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // See if it is the installation path to CoreLib
-        if (path.EqualsCaseInsensitive(m_BaseLibrary))
-            return TRUE;
-
-        // Or, it might be the location of CoreLib
-        if (System()->SystemAssembly() != NULL
-            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetPEAssembly()->GetPath()))
-            return TRUE;
-
-        return FALSE;
-    }
-
-    BOOL IsBaseLibrarySatellite(SString &path)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // See if it is the installation path to corelib.resources
-        SString s(SString::Ascii,g_psBaseLibrarySatelliteAssemblyName);
-        if (path.EqualsCaseInsensitive(s))
-            return TRUE;
-
-        return FALSE;
-    }
-#endif // DACCESS_COMPILE
-
     // Return the system directory
     LPCWSTR SystemDirectory()
     {
@@ -1961,9 +1828,6 @@ private:
     InlineSString<100>  m_BaseLibrary;
 
     InlineSString<100>  m_SystemDirectory;
-
-    // <TODO>@TODO: CTS, we can keep the com modules in a single assembly or in different assemblies.
-    // We are currently using different assemblies but this is potentitially to slow...</TODO>
 
     // Global domain that every one uses
     SPTR_DECL(SystemDomain, m_pSystemDomain);
@@ -2005,7 +1869,17 @@ public:
                                    bool enumThis);
 #endif
 
+    friend struct ::cdac_data<SystemDomain>;
 };  // class SystemDomain
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_data<SystemDomain>
+{
+    static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
+    static constexpr size_t GlobalLoaderAllocator = offsetof(SystemDomain, m_GlobalAllocator);
+};
+#endif // DACCESS_COMPILE
 
 #include "comreflectioncache.inl"
 

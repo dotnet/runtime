@@ -3,29 +3,13 @@
 
 #include "stdafx.h"                     // Precompiled header key.
 #include "loaderheap.h"
+#include "loaderheap_shared.h"
 #include "ex.h"
 #include "pedecoder.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
 
 #ifndef DACCESS_COMPILE
-
-INDEBUG(DWORD UnlockedLoaderHeap::s_dwNumInstancesOfLoaderHeaps = 0;)
-
-#ifdef RANDOMIZE_ALLOC
-#include <time.h>
-static class Random
-{
-public:
-    Random() { seed = (unsigned int)time(NULL); }
-    unsigned int Next()
-    {
-        return ((seed = seed * 214013L + 2531011L) >> 16) & 0x7fff;
-    }
-private:
-    unsigned int seed;
-} s_random;
-#endif
 
 namespace
 {
@@ -39,871 +23,15 @@ namespace
 #endif // SELF_NO_HOST
 }
 
-//
-// RangeLists are constructed so they can be searched from multiple
-// threads without locking.  They do require locking in order to
-// be safely modified, though.
-//
-
-RangeList::RangeList()
-{
-    WRAPPER_NO_CONTRACT;
-
-    InitBlock(&m_starterBlock);
-
-    m_firstEmptyBlock = &m_starterBlock;
-    m_firstEmptyRange = 0;
-}
-
-RangeList::~RangeList()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    RangeListBlock *b = m_starterBlock.next;
-
-    while (b != NULL)
-    {
-        RangeListBlock *bNext = b->next;
-        delete b;
-        b = bNext;
-    }
-}
-
-void RangeList::InitBlock(RangeListBlock *b)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    Range *r = b->ranges;
-    Range *rEnd = r + RANGE_COUNT;
-    while (r < rEnd)
-        r++->id = (TADDR)NULL;
-
-    b->next = NULL;
-}
-
-BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        INJECT_FAULT(return FALSE;);
-    }
-    CONTRACTL_END
-
-    _ASSERTE(id != NULL);
-
-    RangeListBlock *b = m_firstEmptyBlock;
-    Range *r = b->ranges + m_firstEmptyRange;
-    Range *rEnd = b->ranges + RANGE_COUNT;
-
-    while (TRUE)
-    {
-        while (r < rEnd)
-        {
-            if (r->id == (TADDR)NULL)
-            {
-                r->start = (TADDR)start;
-                r->end = (TADDR)end;
-                r->id = (TADDR)id;
-
-                r++;
-
-                m_firstEmptyBlock = b;
-                m_firstEmptyRange = r - b->ranges;
-
-                return TRUE;
-            }
-            r++;
-        }
-
-        //
-        // If there are no more blocks, allocate a
-        // new one.
-        //
-
-        if (b->next == NULL)
-        {
-            RangeListBlock *newBlock = new (nothrow) RangeListBlock;
-
-            if (newBlock == NULL)
-            {
-                m_firstEmptyBlock = b;
-                m_firstEmptyRange = r - b->ranges;
-                return FALSE;
-            }
-
-            InitBlock(newBlock);
-
-            newBlock->next = NULL;
-            b->next = newBlock;
-        }
-
-        //
-        // Next block
-        //
-
-        b = b->next;
-        r = b->ranges;
-        rEnd = r + RANGE_COUNT;
-    }
-}
-
-void RangeList::RemoveRangesWorker(void *id)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    RangeListBlock *b = &m_starterBlock;
-    Range *r = b->ranges;
-    Range *rEnd = r + RANGE_COUNT;
-
-    //
-    // Find the first free element, & mark it.
-    //
-
-    while (TRUE)
-    {
-        //
-        // Clear entries in this block.
-        //
-
-        while (r < rEnd)
-        {
-            if (r->id == (TADDR)id)
-            {
-                r->id = (TADDR)NULL;
-            }
-
-            r++;
-        }
-
-        //
-        // If there are no more blocks, we're done.
-        //
-
-        if (b->next == NULL)
-        {
-            m_firstEmptyRange = 0;
-            m_firstEmptyBlock = &m_starterBlock;
-
-            return;
-        }
-
-        //
-        // Next block.
-        //
-
-        b = b->next;
-        r = b->ranges;
-        rEnd = r + RANGE_COUNT;
-    }
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        FORBID_FAULT;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    SUPPORTS_DAC;
-
-    RangeListBlock* b = &m_starterBlock;
-    Range* r = b->ranges;
-    Range* rEnd = r + RANGE_COUNT;
-
-    //
-    // Look for a matching element
-    //
-
-    while (TRUE)
-    {
-        while (r < rEnd)
-        {
-            if (r->id != (TADDR)NULL &&
-                address >= r->start
-                && address < r->end)
-            {
-                if (pID != NULL)
-                {
-                    *pID = r->id;
-                }
-                return TRUE;
-            }
-            r++;
-        }
-
-        //
-        // If there are no more blocks, we're done.
-        //
-
-        if (b->next == NULL)
-            return FALSE;
-
-        //
-        // Next block.
-        //
-
-        b = b->next;
-        r = b->ranges;
-        rEnd = r + RANGE_COUNT;
-    }
-}
-
-#ifdef DACCESS_COMPILE
-
-void
-RangeList::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    WRAPPER_NO_CONTRACT;
-
-    // This class is almost always contained in something
-    // else so there's no enumeration of 'this'.
-
-    RangeListBlock* block = &m_starterBlock;
-    block->EnumMemoryRegions(flags);
-
-    while (block->next.IsValid())
-    {
-        block->next.EnumMem();
-        block = block->next;
-
-        block->EnumMemoryRegions(flags);
-    }
-}
-
-void
-RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    Range*          range;
-    TADDR           BADFOOD;
-    TSIZE_T         size;
-    int             i;
-
-    // The code below iterates each range stored in the RangeListBlock and
-    // dumps the memory region represented by each range.
-    // It is too much memory for a mini-dump, so we just bail out for mini-dumps.
-    if (flags == CLRDATA_ENUM_MEM_MINI || flags == CLRDATA_ENUM_MEM_TRIAGE)
-    {
-        return;
-    }
-
-    BIT64_ONLY( BADFOOD = 0xbaadf00dbaadf00d; );
-    NOT_BIT64(  BADFOOD = 0xbaadf00d;         );
-
-    for (i=0; i<RANGE_COUNT; i++)
-    {
-        range = &(this->ranges[i]);
-        if (range->id == (TADDR)NULL || range->start == (TADDR)NULL || range->end == (TADDR)NULL ||
-            // just looking at the lower 4bytes is good enough on WIN64
-            range->start == BADFOOD || range->end == BADFOOD)
-        {
-            break;
-        }
-
-        size = range->end - range->start;
-        _ASSERTE( size < UINT32_MAX );    // ranges should be less than 4gig!
-
-        // We can't be sure this entire range is mapped.  For example, the code:StubLinkStubManager
-        // keeps track of all ranges in the code:LoaderAllocator::m_pStubHeap LoaderHeap, and
-        // code:LoaderHeap::UnlockedReservePages adds a range for the entire reserved region, instead
-        // of updating the RangeList when pages are committed.  But in that case, the committed region of
-        // memory will be enumerated by the LoaderHeap anyway, so it's OK if this fails
-        EMEM_OUT(("MEM: RangeListBlock %p - %p\n", range->start, range->end));
-        DacEnumMemoryRegion(range->start, size, false);
-    }
-}
-
-#endif // #ifdef DACCESS_COMPILE
-
-
-//=====================================================================================
-// In DEBUG builds only, we tag live blocks with the requested size and the type of
-// allocation (AllocMem, AllocAlignedMem, AllocateOntoReservedMem). This is strictly
-// to validate that those who call Backout* are passing in the right values.
-//
-// For simplicity, we'll use one LoaderHeapValidationTag structure for all types even
-// though not all fields are applicable to all types.
-//=====================================================================================
-#ifdef _DEBUG
-enum AllocationType
-{
-    kAllocMem = 1,
-    kFreedMem = 4,
-};
-
-struct LoaderHeapValidationTag
-{
-    size_t         m_dwRequestedSize;      // What the caller requested (not what was actually allocated)
-    AllocationType m_allocationType;       // Which api allocated this block.
-    const char *   m_szFile;               // Who allocated me
-    int            m_lineNum;              // Who allocated me
-
-};
-#endif //_DEBUG
-
-
-
-
-
-//=====================================================================================
-// These classes do detailed loaderheap sniffing to help in debugging heap crashes
-//=====================================================================================
-#ifdef _DEBUG
-
-// This structure logs the results of an Alloc or Free call. They are stored in reverse time order
-// with UnlockedLoaderHeap::m_pEventList pointing to the most recent event.
-struct LoaderHeapEvent
-{
-    LoaderHeapEvent *m_pNext;
-    AllocationType   m_allocationType;      //Which api was called
-    const char      *m_szFile;              //Caller Id
-    int              m_lineNum;             //Caller Id
-    const char      *m_szAllocFile;         //(BackoutEvents): Who allocated the block?
-    int              m_allocLineNum;        //(BackoutEvents): Who allocated the block?
-    void            *m_pMem;                //Starting address of block
-    size_t           m_dwRequestedSize;     //Requested size of block
-    size_t           m_dwSize;              //Actual size of block (including validation tags, padding, everything)
-
-
-    void Describe(SString *pSString)
-    {
-        CONTRACTL
-        {
-            INSTANCE_CHECK;
-            DISABLED(NOTHROW);
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END
-
-        pSString->AppendASCII("\n");
-
-        {
-            StackSString buf;
-            if (m_allocationType == kFreedMem)
-            {
-                buf.Printf("    Freed at:         %s (line %d)\n", m_szFile, m_lineNum);
-                buf.Printf("       (block originally allocated at %s (line %d)\n", m_szAllocFile, m_allocLineNum);
-            }
-            else
-            {
-                buf.Printf("    Allocated at:     %s (line %d)\n", m_szFile, m_lineNum);
-            }
-            pSString->Append(buf);
-        }
-
-        if (!QuietValidate())
-        {
-            pSString->AppendASCII("    *** THIS BLOCK HAS BEEN CORRUPTED ***\n");
-        }
-
-
-
-        {
-            StackSString buf;
-            buf.Printf("    Type:          ");
-            switch (m_allocationType)
-            {
-                case kAllocMem:
-                    buf.AppendASCII("AllocMem()\n");
-                    break;
-                case kFreedMem:
-                    buf.AppendASCII("Free\n");
-                    break;
-                default:
-                    break;
-            }
-            pSString->Append(buf);
-        }
-
-
-        {
-            StackSString buf;
-            buf.Printf("    Start of block:       0x%p\n", m_pMem);
-            pSString->Append(buf);
-        }
-
-        {
-            StackSString buf;
-            buf.Printf("    End of block:         0x%p\n", ((BYTE*)m_pMem) + m_dwSize - 1);
-            pSString->Append(buf);
-        }
-
-        {
-            StackSString buf;
-            buf.Printf("    Requested size:       %lu (0x%lx)\n", (ULONG)m_dwRequestedSize, (ULONG)m_dwRequestedSize);
-            pSString->Append(buf);
-        }
-
-        {
-            StackSString buf;
-            buf.Printf("    Actual size:          %lu (0x%lx)\n", (ULONG)m_dwSize, (ULONG)m_dwSize);
-            pSString->Append(buf);
-        }
-
-        pSString->AppendASCII("\n");
-    }
-
-
-
-    BOOL QuietValidate();
-
-};
-
-
-class LoaderHeapSniffer
-{
-    public:
-        static DWORD InitDebugFlags()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            DWORD dwDebugFlags = 0;
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LoaderHeapCallTracing))
-            {
-                dwDebugFlags |= UnlockedLoaderHeap::kCallTracing;
-            }
-            return dwDebugFlags;
-        }
-
-
-        static VOID RecordEvent(UnlockedLoaderHeap *pHeap,
-                                AllocationType allocationType,
-                                _In_ const char *szFile,
-                                int            lineNum,
-                                _In_ const char *szAllocFile,
-                                int            allocLineNum,
-                                void          *pMem,
-                                size_t         dwRequestedSize,
-                                size_t         dwSize
-                                );
-
-        static VOID ClearEvents(UnlockedLoaderHeap *pHeap)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_FORBID_FAULT;
-
-            LoaderHeapEvent *pEvent = pHeap->m_pEventList;
-            while (pEvent)
-            {
-                LoaderHeapEvent *pNext = pEvent->m_pNext;
-                delete pEvent;
-                pEvent = pNext;
-            }
-            pHeap->m_pEventList = NULL;
-        }
-
-
-        static VOID CompactEvents(UnlockedLoaderHeap *pHeap)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_FORBID_FAULT;
-
-            LoaderHeapEvent **ppEvent = &(pHeap->m_pEventList);
-            while (*ppEvent)
-            {
-                LoaderHeapEvent *pEvent = *ppEvent;
-                if (pEvent->m_allocationType != kFreedMem)
-                {
-                    ppEvent = &(pEvent->m_pNext);
-                }
-                else
-                {
-                    LoaderHeapEvent **ppWalk = &(pEvent->m_pNext);
-                    BOOL fMatchFound = FALSE;
-                    while (*ppWalk && !fMatchFound)
-                    {
-                        LoaderHeapEvent *pWalk = *ppWalk;
-                        if (pWalk->m_allocationType  != kFreedMem &&
-                            pWalk->m_pMem            == pEvent->m_pMem &&
-                            pWalk->m_dwRequestedSize == pEvent->m_dwRequestedSize)
-                        {
-                            // Delete matched pairs
-
-                            // Order is important here - updating *ppWalk may change pEvent->m_pNext, and we want
-                            // to get the updated value when we unlink pEvent.
-                            *ppWalk = pWalk->m_pNext;
-                            *ppEvent = pEvent->m_pNext;
-
-                            delete pEvent;
-                            delete pWalk;
-                            fMatchFound = TRUE;
-                        }
-                        else
-                        {
-                            ppWalk = &(pWalk->m_pNext);
-                        }
-                    }
-
-                    if (!fMatchFound)
-                    {
-                        ppEvent = &(pEvent->m_pNext);
-                    }
-                }
-            }
-        }
-        static VOID PrintEvents(UnlockedLoaderHeap *pHeap)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_FORBID_FAULT;
-
-            printf("\n------------- LoaderHeapEvents (in reverse time order!) --------------------");
-
-            LoaderHeapEvent *pEvent = pHeap->m_pEventList;
-            while (pEvent)
-            {
-                printf("\n");
-                switch (pEvent->m_allocationType)
-                {
-                    case kAllocMem:         printf("AllocMem        "); break;
-                    case kFreedMem:         printf("BackoutMem      "); break;
-
-                }
-                printf(" ptr = 0x%-8p", pEvent->m_pMem);
-                printf(" rqsize = 0x%-8x", (DWORD)pEvent->m_dwRequestedSize);
-                printf(" actsize = 0x%-8x", (DWORD)pEvent->m_dwSize);
-                printf(" (at %s@%d)", pEvent->m_szFile, pEvent->m_lineNum);
-                if (pEvent->m_allocationType == kFreedMem)
-                {
-                    printf(" (original allocation at %s@%d)", pEvent->m_szAllocFile, pEvent->m_allocLineNum);
-                }
-
-                pEvent = pEvent->m_pNext;
-
-            }
-            printf("\n------------- End of LoaderHeapEvents --------------------------------------");
-            printf("\n");
-
-        }
-
-
-        static VOID PitchSniffer(SString *pSString)
-        {
-            WRAPPER_NO_CONTRACT;
-            pSString->AppendASCII("\n"
-                             "\nBecause call-tracing wasn't turned on, we couldn't provide details about who last owned the affected memory block. To get more precise diagnostics,"
-                             "\nset the following registry DWORD value:"
-                             "\n"
-                             "\n    HKLM\\Software\\Microsoft\\.NETFramework\\LoaderHeapCallTracing = 1"
-                             "\n"
-                             "\nand rerun the scenario that crashed."
-                             "\n"
-                             "\n");
-        }
-
-        static LoaderHeapEvent *FindEvent(UnlockedLoaderHeap *pHeap, void *pAddr)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            LoaderHeapEvent *pEvent = pHeap->m_pEventList;
-            while (pEvent)
-            {
-                if (pAddr >= pEvent->m_pMem && pAddr <= ( ((BYTE*)pEvent->m_pMem) + pEvent->m_dwSize - 1))
-                {
-                    return pEvent;
-                }
-                pEvent = pEvent->m_pNext;
-            }
-            return NULL;
-
-        }
-
-
-        static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
-
-        static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap)
-        {
-            WRAPPER_NO_CONTRACT;
-            ValidateFreeList(pHeap);
-
-            //If none of the above popped up an assert, pop up a generic one.
-            _ASSERTE(!("Unexpected AV inside LoaderHeap. The usual reason is that someone overwrote the end of a block or wrote into a freed block.\n"));
-
-        }
-
-};
-
-
-#endif
-
-
 #ifdef _DEBUG
 #define LOADER_HEAP_BEGIN_TRAP_FAULT BOOL __faulted = FALSE; EX_TRY {
-#define LOADER_HEAP_END_TRAP_FAULT   } EX_CATCH {__faulted = TRUE; } EX_END_CATCH(SwallowAllExceptions) if (__faulted) LoaderHeapSniffer::WeGotAFaultNowWhat(pHeap);
+#define LOADER_HEAP_END_TRAP_FAULT   } EX_CATCH {__faulted = TRUE; } EX_END_CATCH if (__faulted) UnlockedLoaderHeap::WeGotAFaultNowWhat(pHeap);
 #else
 #define LOADER_HEAP_BEGIN_TRAP_FAULT
 #define LOADER_HEAP_END_TRAP_FAULT
 #endif
 
-
-//=====================================================================================
-// This freelist implementation is a first cut and probably needs to be tuned.
-// It should be tuned with the following assumptions:
-//
-//    - Freeing LoaderHeap memory is done primarily for OOM backout. LoaderHeaps
-//      weren't designed to be general purpose heaps and shouldn't be used that way.
-//
-//    - And hence, when memory is freed, expect it to be freed in large clumps and in a
-//      LIFO order. Since the LoaderHeap normally hands out memory with sequentially
-//      increasing addresses, blocks will typically be freed with sequentially decreasing
-//      addresses.
-//
-// The first cut of the freelist is a single-linked list of free blocks using first-fit.
-// Assuming the above alloc-free pattern holds, the list will end up mostly sorted
-// in increasing address order. When a block is freed, we'll attempt to coalesce it
-// with the first block in the list. We could also choose to be more aggressive about
-// sorting and coalescing but this should probably catch most cases in practice.
-//=====================================================================================
-
-// When a block is freed, we place this structure on the first bytes of the freed block (Allocations
-// are bumped in size if necessary to make sure there's room.)
-struct LoaderHeapFreeBlock
-{
-    public:
-        LoaderHeapFreeBlock   *m_pNext;         // Pointer to next block on free list
-        size_t                 m_dwSize;        // Total size of this block
-        void                  *m_pBlockAddress; // Virtual address of the block
-
-#ifndef DACCESS_COMPILE
-        static void InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_GC_NOTRIGGER;
-
-            // The new "nothrow" below failure is handled in a non-fault way, so
-            // make sure that callers with FORBID_FAULT can call this method without
-            // firing the contract violation assert.
-            PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
-
-            LOADER_HEAP_BEGIN_TRAP_FAULT
-
-            // It's illegal to insert a free block that's smaller than the minimum sized allocation -
-            // it may stay stranded on the freelist forever.
-#ifdef _DEBUG
-            if (!(dwTotalSize >= pHeap->AllocMem_TotalSize(1)))
-            {
-                LoaderHeapSniffer::ValidateFreeList(pHeap);
-                _ASSERTE(dwTotalSize >= pHeap->AllocMem_TotalSize(1));
-            }
-
-            if (!(0 == (dwTotalSize & ALLOC_ALIGN_CONSTANT)))
-            {
-                LoaderHeapSniffer::ValidateFreeList(pHeap);
-                _ASSERTE(0 == (dwTotalSize & ALLOC_ALIGN_CONSTANT));
-            }
-#endif
-
-#ifdef DEBUG
-            if (!pHeap->IsInterleaved())
-            {
-                void* pMemRW = pMem;
-                ExecutableWriterHolderNoLog<void> memWriterHolder;
-                if (pHeap->IsExecutable())
-                {
-                    memWriterHolder.AssignExecutableWriterHolder(pMem, dwTotalSize);
-                    pMemRW = memWriterHolder.GetRW();
-                }
-
-                memset(pMemRW, 0xcc, dwTotalSize);
-            }
-            else
-            {
-                memset((BYTE*)pMem + GetStubCodePageSize(), 0xcc, dwTotalSize);
-            }
-#endif // DEBUG
-
-            LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
-            // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
-            if (pNewBlock != NULL)
-            {
-                pNewBlock->m_pNext  = *ppHead;
-                pNewBlock->m_dwSize = dwTotalSize;
-                pNewBlock->m_pBlockAddress = pMem;
-                *ppHead = pNewBlock;
-                MergeBlock(pNewBlock, pHeap);
-            }
-
-            LOADER_HEAP_END_TRAP_FAULT
-        }
-
-        static void *AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_GC_NOTRIGGER;
-
-            INCONTRACT(_ASSERTE_IMPL(!ARE_FAULTS_FORBIDDEN()));
-
-            void *pResult = NULL;
-            LOADER_HEAP_BEGIN_TRAP_FAULT
-
-            LoaderHeapFreeBlock **ppWalk = ppHead;
-            while (*ppWalk)
-            {
-                LoaderHeapFreeBlock *pCur = *ppWalk;
-                size_t dwCurSize = pCur->m_dwSize;
-                if (dwCurSize == dwSize)
-                {
-                    pResult = pCur->m_pBlockAddress;
-                    // Exact match. Hooray!
-                    *ppWalk = pCur->m_pNext;
-                    delete pCur;
-                    break;
-                }
-                else if (dwCurSize > dwSize && (dwCurSize - dwSize) >= pHeap->AllocMem_TotalSize(1))
-                {
-                    // Partial match. Ok...
-                    pResult = pCur->m_pBlockAddress;
-                    *ppWalk = pCur->m_pNext;
-                    InsertFreeBlock(ppWalk, ((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap );
-                    delete pCur;
-                    break;
-                }
-
-                // Either block is too small or splitting the block would leave a remainder that's smaller than
-                // the minimum block size. Onto next one.
-
-                ppWalk = &( pCur->m_pNext );
-            }
-
-            if (pResult)
-            {
-                void *pResultRW = pResult;
-                ExecutableWriterHolderNoLog<void> resultWriterHolder;
-                if (pHeap->IsExecutable())
-                {
-                    resultWriterHolder.AssignExecutableWriterHolder(pResult, dwSize);
-                    pResultRW = resultWriterHolder.GetRW();
-                }
-                // Callers of loaderheap assume allocated memory is zero-inited so we must preserve this invariant!
-                memset(pResultRW, 0, dwSize);
-            }
-            LOADER_HEAP_END_TRAP_FAULT
-            return pResult;
-        }
-
-    private:
-        // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
-        static BOOL MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap)
-        {
-            STATIC_CONTRACT_NOTHROW;
-
-            BOOL result = FALSE;
-
-            LOADER_HEAP_BEGIN_TRAP_FAULT
-
-            LoaderHeapFreeBlock *pNextBlock = pFreeBlock->m_pNext;
-            size_t               dwSize     = pFreeBlock->m_dwSize;
-
-            if (pNextBlock == NULL || ((BYTE*)pNextBlock->m_pBlockAddress) != (((BYTE*)pFreeBlock->m_pBlockAddress) + dwSize))
-            {
-                result = FALSE;
-            }
-            else
-            {
-                size_t dwCombinedSize = dwSize + pNextBlock->m_dwSize;
-                LoaderHeapFreeBlock *pNextNextBlock = pNextBlock->m_pNext;
-                void *pMemRW = pFreeBlock->m_pBlockAddress;
-                ExecutableWriterHolderNoLog<void> memWriterHolder;
-                if (pHeap->IsExecutable())
-                {
-                    memWriterHolder.AssignExecutableWriterHolder(pFreeBlock->m_pBlockAddress, dwCombinedSize);
-                    pMemRW = memWriterHolder.GetRW();
-                }
-                INDEBUG(memset(pMemRW, 0xcc, dwCombinedSize);)
-                pFreeBlock->m_pNext  = pNextNextBlock;
-                pFreeBlock->m_dwSize = dwCombinedSize;
-                delete pNextBlock;
-
-                result = TRUE;
-            }
-
-            LOADER_HEAP_END_TRAP_FAULT
-            return result;
-
-        }
-#endif // DACCESS_COMPILE
-};
-
-
-
-
-//=====================================================================================
-// These helpers encapsulate the actual layout of a block allocated by AllocMem
-// and UnlockedAllocMem():
-//
-// ==> Starting address is always pointer-aligned.
-//
-//   - x  bytes of user bytes        (where "x" is the actual dwSize passed into AllocMem)
-//
-//   - y  bytes of "EE" (DEBUG-ONLY) (where "y" == LOADER_HEAP_DEBUG_BOUNDARY (normally 0))
-//   - z  bytes of pad  (DEBUG-ONLY) (where "z" is just enough to pointer-align the following byte)
-//   - a  bytes of tag  (DEBUG-ONLY) (where "a" is sizeof(LoaderHeapValidationTag)
-//
-//   - b  bytes of pad               (where "b" is just enough to pointer-align the following byte)
-//
-// ==> Following address is always pointer-aligned
-//=====================================================================================
-
-// Convert the requested size into the total # of bytes we'll actually allocate (including padding)
-size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t dwSize = dwRequestedSize;
-
-    // Interleaved heap cannot ad any extra to the requested size
-    if (!IsInterleaved())
-    {
-#ifdef _DEBUG
-        dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
-        dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
-#endif
-
-        if (!m_fExplicitControl)
-        {
-#ifdef _DEBUG
-            dwSize += sizeof(LoaderHeapValidationTag);
-#endif
-        }
-        dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
-    }
-
-    return dwSize;
-}
-
-
-#ifdef _DEBUG
-LoaderHeapValidationTag *AllocMem_GetTag(LPVOID pBlock, size_t dwRequestedSize)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t dwSize = dwRequestedSize;
-    dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
-    dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
-    return (LoaderHeapValidationTag *)( ((BYTE*)pBlock) + dwSize );
-}
-#endif
-
-
-
-
+#endif // #ifndef DACCESS_COMPILE
 
 //=====================================================================================
 // UnlockedLoaderHeap methods
@@ -916,9 +44,8 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
                                        const BYTE* dwReservedRegionAddress,
                                        SIZE_T dwReservedRegionSize,
                                        RangeList *pRangeList,
-                                       HeapKind kind,
-                                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
-                                       DWORD dwGranularity)
+                                       LoaderHeapImplementationKind kind) :
+    UnlockedLoaderHeapBase(kind)
 {
     CONTRACTL
     {
@@ -928,34 +55,12 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
     CONTRACTL_END;
 
-    m_pFirstBlock                = NULL;
-
     m_dwReserveBlockSize         = dwReserveBlockSize;
     m_dwCommitBlockSize          = dwCommitBlockSize;
 
-    m_pPtrToEndOfCommittedRegion = NULL;
     m_pEndReservedRegion         = NULL;
-    m_pAllocPtr                  = NULL;
 
     m_pRangeList                 = pRangeList;
-
-    // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
-    m_dwTotalAlloc               = 0;
-
-    _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
-    m_dwGranularity = dwGranularity;
-
-#ifdef _DEBUG
-    m_dwDebugWastedBytes         = 0;
-    s_dwNumInstancesOfLoaderHeaps++;
-    m_pEventList                 = NULL;
-    m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
-#endif
-
-    m_kind = kind;
-
-    _ASSERTE((kind != HeapKind::Interleaved) || (codePageGenerator != NULL));
-    m_codePageGenerator = codePageGenerator;
 
     m_pFirstFreeBlock            = NULL;
 
@@ -965,7 +70,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 UnlockedLoaderHeap::~UnlockedLoaderHeap()
 {
     CONTRACTL
@@ -1002,15 +106,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
     {
         ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
     }
-
-    INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
-}
-
-void UnlockedLoaderHeap::UnlockedSetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_reservedBlock.pVirtualAddress == NULL);
-    m_reservedBlock.Init((void *)dwReservedRegionAddress, dwReservedRegionSize, fReleaseMemory);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1037,16 +132,6 @@ void UnlockedLoaderHeap::DebugGuardHeap()
 }
 #endif
 
-size_t UnlockedLoaderHeap::GetBytesAvailCommittedRegion()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_pAllocPtr < m_pPtrToEndOfCommittedRegion)
-        return (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
-    else
-        return 0;
-}
-
 size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1059,16 +144,6 @@ size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 
 #ifndef DACCESS_COMPILE
 
-void ReleaseReservedMemory(BYTE* value)
-{
-    if (value)
-    {
-        ExecutableAllocator::Instance()->Release(value);
-    }
-}
-
-using ReservedMemoryHolder = SpecializedWrapper<BYTE, ReleaseReservedMemory>;
-
 BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
 {
     // Commit first set of pages, since it will contain the LoaderHeapBlock
@@ -1078,24 +153,12 @@ BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
         return FALSE;
     }
 
-    if (IsInterleaved())
-    {
-        _ASSERTE(dwSizeToCommitPart == GetStubCodePageSize());
-
-        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
-        if (pTemp == NULL)
-        {
-            return FALSE;
-        }
-
-        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, dwSizeToCommitPart, ExecutableAllocator::DoNotAddToCache);
-        m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
-        FlushInstructionCache(GetCurrentProcess(), pData, dwSizeToCommitPart);
-    }
-
     return TRUE;
 }
 
+#ifdef FEATURE_PERFMAP
+bool PerfMapLowGranularityStubs();
+#endif // FEATURE_PERFMAP
 BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 {
     CONTRACTL
@@ -1129,16 +192,16 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // The caller is asking us to allocate the memory
     else
     {
-        if (m_fExplicitControl)
-        {
-            return FALSE;
-        }
-
         // Figure out how much to reserve
         dwSizeToReserve = max<size_t>(dwSizeToCommit, m_dwReserveBlockSize);
 
-        // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
-        dwSizeToReserve = ALIGN_UP(dwSizeToReserve, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+#ifdef FEATURE_PERFMAP // Perfmap requires that the memory assigned to stub generated regions be allocated only via fully commited memory
+        if (!IsInterleaved() || !PerfMapLowGranularityStubs())
+#endif // FEATURE_PERFMAP
+        {
+            // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
+            dwSizeToReserve = ALIGN_UP(dwSizeToReserve, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+        }
 
         _ASSERTE(dwSizeToCommit <= dwSizeToReserve);
 
@@ -1169,11 +232,6 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
-    if (IsInterleaved())
-    {
-        // For interleaved heaps, we perform two commits, each being half of the requested size
-        dwSizeToCommitPart /= 2;
-    }
 
     if (!CommitPages(pData, dwSizeToCommitPart))
     {
@@ -1211,11 +269,6 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // Add to the linked list
     m_pFirstBlock = pNewBlock;
 
-    if (IsInterleaved())
-    {
-        dwSizeToCommit /= 2;
-    }
-
     m_pPtrToEndOfCommittedRegion = (BYTE *) (pData) + (dwSizeToCommit);         \
     m_pAllocPtr                  = (BYTE *) (pData);                            \
     m_pEndReservedRegion         = (BYTE *) (pData) + (dwSizeToReserve);
@@ -1241,78 +294,26 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     // If we have memory we can use, what are you doing here!
     _ASSERTE(dwMinSize > (SIZE_T)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr));
 
-    if (IsInterleaved())
-    {
-        // This mode interleaves data and code pages 1:1. So the code size is required to be smaller than
-        // or equal to the page size to ensure that the code range is consecutive.
-        _ASSERTE(dwMinSize <= GetStubCodePageSize());
-        // For interleaved heap, we always get two memory pages - one for code and one for data
-        dwMinSize = 2 * GetStubCodePageSize();
-    }
-
     // Does this fit in the reserved region?
     if (dwMinSize <= (size_t)(m_pEndReservedRegion - m_pAllocPtr))
     {
         SIZE_T dwSizeToCommit;
-
-        if (IsInterleaved())
-        {
-            // For interleaved heaps, the allocation cannot cross page boundary since there are data and executable
-            // pages interleaved in a 1:1 fashion.
-            dwSizeToCommit = dwMinSize;
-        }
-        else
-        {
-            dwSizeToCommit = (m_pAllocPtr + dwMinSize) - m_pPtrToEndOfCommittedRegion;
-        }
+        dwSizeToCommit = (m_pAllocPtr + dwMinSize) - m_pPtrToEndOfCommittedRegion;
 
         size_t unusedRemainder = (size_t)((BYTE*)m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
 
         PTR_BYTE pCommitBaseAddress = m_pPtrToEndOfCommittedRegion;
-        if (IsInterleaved())
-        {
-            // The end of committed region for interleaved heaps points to the end of the executable
-            // page and the data pages goes right after that. So we skip the data page here.
-            pCommitBaseAddress += GetStubCodePageSize();
-        }
-        else
-        {
-            if (dwSizeToCommit < m_dwCommitBlockSize)
-                dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
+        if (dwSizeToCommit < m_dwCommitBlockSize)
+            dwSizeToCommit = min((SIZE_T)(m_pEndReservedRegion - m_pPtrToEndOfCommittedRegion), (SIZE_T)m_dwCommitBlockSize);
 
-            // Round to page size
-            dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
-        }
+        // Round to page size
+        dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
         size_t dwSizeToCommitPart = dwSizeToCommit;
-        if (IsInterleaved())
-        {
-            // For interleaved heaps, we perform two commits, each being half of the requested size
-            dwSizeToCommitPart /= 2;
-        }
 
         if (!CommitPages(pCommitBaseAddress, dwSizeToCommitPart))
         {
             return FALSE;
-        }
-
-        if (IsInterleaved())
-        {
-            // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
-            // block list.
-            // Otherwise the remaining bytes that are available will be wasted.
-            if (unusedRemainder >= GetStubCodePageSize())
-            {
-                LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
-            }
-            else
-            {
-                INDEBUG(m_dwDebugWastedBytes += unusedRemainder;)
-            }
-
-            // For interleaved heaps, further allocations will start from the newly committed page as they cannot
-            // cross page boundary.
-            m_pAllocPtr = (BYTE*)pCommitBaseAddress;
         }
 
         m_pPtrToEndOfCommittedRegion += dwSizeToCommit;
@@ -1415,8 +416,7 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
 #ifdef RANDOMIZE_ALLOC
-    if (!m_fExplicitControl && !IsInterleaved())
-        dwSize += s_random.Next() % 256;
+    dwSize += s_randomForLoaderHeap.Next() % 256;
 #endif
 
     dwSize = AllocMem_TotalSize(dwSize);
@@ -1457,14 +457,11 @@ again:
                     "LoaderHeap must return zero-initialized memory");
             }
 
-            if (!m_fExplicitControl && !IsInterleaved())
-            {
-                LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes, dwRequestedSize);
-                pTag->m_allocationType  = kAllocMem;
-                pTag->m_dwRequestedSize = dwRequestedSize;
-                pTag->m_szFile          = szFile;
-                pTag->m_lineNum         = lineNum;
-            }
+            LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes, dwRequestedSize);
+            pTag->m_allocationType  = kAllocMem;
+            pTag->m_dwRequestedSize = dwRequestedSize;
+            pTag->m_szFile          = szFile;
+            pTag->m_lineNum         = lineNum;
 
             if (m_dwDebugFlags & kCallTracing)
             {
@@ -1519,7 +516,6 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     }
 
 #ifdef _DEBUG
-    if (!IsInterleaved())
     {
         DEBUG_ONLY_REGION();
 
@@ -1605,11 +601,11 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     size_t dwSize = AllocMem_TotalSize(dwRequestedSize);
 
 #ifdef _DEBUG
-    if ((m_dwDebugFlags & kCallTracing) && !IsInterleaved())
+    if (m_dwDebugFlags & kCallTracing)
     {
         DEBUG_ONLY_REGION();
 
-        LoaderHeapValidationTag *pTag = m_fExplicitControl ? NULL : AllocMem_GetTag(pMem, dwRequestedSize);
+        LoaderHeapValidationTag *pTag = AllocMem_GetTag(pMem, dwRequestedSize);
 
 
         LoaderHeapSniffer::RecordEvent(this,
@@ -1627,25 +623,17 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 
     if (m_pAllocPtr == ( ((BYTE*)pMem) + dwSize ))
     {
-        if (IsInterleaved())
+        void *pMemRW = pMem;
+        ExecutableWriterHolderNoLog<void> memWriterHolder;
+        if (IsExecutable())
         {
-            // Clear the RW page
-            memset((BYTE*)pMem + GetStubCodePageSize(), 0x00, dwSize); // Fill freed region with 0
+            memWriterHolder.AssignExecutableWriterHolder(pMem, dwSize);
+            pMemRW = memWriterHolder.GetRW();
         }
-        else
-        {
-            void *pMemRW = pMem;
-            ExecutableWriterHolderNoLog<void> memWriterHolder;
-            if (IsExecutable())
-            {
-                memWriterHolder.AssignExecutableWriterHolder(pMem, dwSize);
-                pMemRW = memWriterHolder.GetRW();
-            }
 
-            // Cool. This was the last block allocated. We can just undo the allocation instead
-            // of going to the freelist.
-            memset(pMemRW, 0x00, dwSize); // Fill freed region with 0
-        }
+        // Cool. This was the last block allocated. We can just undo the allocation instead
+        // of going to the freelist.
+        memset(pMemRW, 0x00, dwSize); // Fill freed region with 0
         m_pAllocPtr = (BYTE*)pMem;
     }
     else
@@ -1690,7 +678,6 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 
         PRECONDITION( alignment != 0 );
         PRECONDITION(0 == (alignment & (alignment - 1))); // require power of 2
-        PRECONDITION((dwRequestedSize % m_dwGranularity) == 0);
         POSTCONDITION( (RETVAL) ?
                        (0 == ( ((UINT_PTR)(RETVAL)) & (alignment - 1))) : // If non-null, pointer must be aligned
                        (pdwExtra == NULL || 0 == *pdwExtra)    //   or else *pdwExtra must be set to 0
@@ -1701,10 +688,10 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     STATIC_CONTRACT_FAULT;
 
     // Set default value
-            if (pdwExtra)
-            {
-                *pdwExtra = 0;
-            }
+    if (pdwExtra)
+    {
+        *pdwExtra = 0;
+    }
 
     SHOULD_INJECT_FAULT(RETURN NULL);
 
@@ -1735,11 +722,6 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     pResult = m_pAllocPtr;
 
     size_t extra = alignment - ((size_t)pResult & ((size_t)alignment - 1));
-    if ((IsInterleaved()))
-    {
-        _ASSERTE(alignment == 1);
-        extra = 0;
-    }
 
 // On DEBUG, we force a non-zero extra so people don't forget to adjust for it on backout
 #ifndef _DEBUG
@@ -1775,7 +757,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     memset(pAllocatedBytes + dwRequestedSize, 0xee, LOADER_HEAP_DEBUG_BOUNDARY);
 #endif
 
-    if (dwRequestedSize != 0 && !IsInterleaved())
+    if (dwRequestedSize != 0)
     {
         _ASSERTE_MSG(pAllocatedBytes[0] == 0 && memcmp(pAllocatedBytes, pAllocatedBytes + 1, dwRequestedSize - 1) == 0,
             "LoaderHeap must return zero-initialized memory");
@@ -1797,14 +779,11 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 
     EtwAllocRequest(this, pResult, dwSize);
 
-    if (!m_fExplicitControl && !IsInterleaved())
-    {
-        LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes - extra, dwRequestedSize + extra);
-        pTag->m_allocationType  = kAllocMem;
-        pTag->m_dwRequestedSize = dwRequestedSize + extra;
-        pTag->m_szFile          = szFile;
-        pTag->m_lineNum         = lineNum;
-    }
+    LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes - extra, dwRequestedSize + extra);
+    pTag->m_allocationType  = kAllocMem;
+    pTag->m_dwRequestedSize = dwRequestedSize + extra;
+    pTag->m_szFile          = szFile;
+    pTag->m_lineNum         = lineNum;
 #endif //_DEBUG
 
     if (pdwExtra)
@@ -1846,107 +825,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
 
 
 }
-
-
-
-void *UnlockedLoaderHeap::UnlockedAllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs)
-{
-    CONTRACT(void*)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        INJECT_FAULT(CONTRACT_RETURN NULL;);
-        PRECONDITION(0 == (dwCodeAlignment & (dwCodeAlignment - 1))); // require power of 2
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    _ASSERTE(m_fExplicitControl);
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    // We don't know how much "extra" we need to satisfy the alignment until we know
-    // which address will be handed out which in turn we don't know because we don't
-    // know whether the allocation will fit within the current reserved range.
-    //
-    // Thus, we'll request as much heap growth as is needed for the worst case (we request an extra dwCodeAlignment - 1 bytes)
-
-    S_SIZE_T cbAllocSize = S_SIZE_T(dwHeaderSize) + S_SIZE_T(dwCodeSize) + S_SIZE_T(dwCodeAlignment - 1) + S_SIZE_T(dwReserveForJumpStubs);
-    if( cbAllocSize.IsOverflow() )
-    {
-        RETURN NULL;
-    }
-
-    if (cbAllocSize.Value() > GetBytesAvailCommittedRegion())
-    {
-        if (GetMoreCommittedPages(cbAllocSize.Value()) == FALSE)
-        {
-            RETURN NULL;
-        }
-    }
-
-    BYTE *pResult = (BYTE *)ALIGN_UP(m_pAllocPtr + dwHeaderSize, dwCodeAlignment);
-    EtwAllocRequest(this, pResult, (pResult + dwCodeSize) - m_pAllocPtr);
-    m_pAllocPtr = pResult + dwCodeSize;
-
-    RETURN pResult;
-}
-
-
 #endif // #ifndef DACCESS_COMPILE
-
-BOOL UnlockedLoaderHeap::IsExecutable()
-{
-    return (m_kind == HeapKind::Executable) || IsInterleaved();
-}
-
-BOOL UnlockedLoaderHeap::IsInterleaved()
-{
-    return m_kind == HeapKind::Interleaved;
-}
-
-#ifdef DACCESS_COMPILE
-
-void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
-    while (block.IsValid())
-    {
-        // All we know is the virtual size of this block.  We don't have any way to tell how
-        // much of this space was actually comitted, so don't expect that this will always
-        // succeed.
-        // @dbgtodo : Ideally we'd reduce the risk of corruption causing problems here.
-        //   We could extend LoaderHeapBlock to track a commit size,
-        //   but it seems wasteful (eg. makes each AppDomain objects 32 bytes larger on x64).
-        TADDR addr = dac_cast<TADDR>(block->pVirtualAddress);
-        TSIZE_T size = block->dwVirtualSize;
-        EMEM_OUT(("MEM: UnlockedLoaderHeap %p - %p\n", addr, addr + size));
-        DacEnumMemoryRegion(addr, size, false);
-
-        block = block->pNext;
-    }
-}
-
-#endif // #ifdef DACCESS_COMPILE
-
-
-void UnlockedLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PTR_LoaderHeapBlock block = m_pFirstBlock;
-    while (block)
-    {
-        if ((*pCallback)(pvArgs, block->pVirtualAddress, block->dwVirtualSize))
-        {
-            break;
-        }
-
-        block = block->pNext;
-    }
-}
 
 
 #ifdef _DEBUG
@@ -1956,10 +835,11 @@ void UnlockedLoaderHeap::DumpFreeList()
     LIMITED_METHOD_CONTRACT;
     if (m_pFirstFreeBlock == NULL)
     {
-        printf("FREEDUMP: FreeList is empty\n");
+        minipal_log_print_info("FREEDUMP: FreeList is empty\n");
     }
     else
     {
+        InlineSString<128> buf;
         LoaderHeapFreeBlock *pBlock = m_pFirstFreeBlock;
         while (pBlock != NULL)
         {
@@ -1981,97 +861,213 @@ void UnlockedLoaderHeap::DumpFreeList()
                 }
             }
 
-            printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
-            if (ccbad) printf(" *** ERROR: NOT CC'd ***");
-            if (sizeunaligned) printf(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            printf("\n");
+            buf.Printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
+            if (ccbad) buf.AppendUTF8(" *** ERROR: NOT CC'd ***");
+            if (sizeunaligned) buf.AppendUTF8(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
+            buf.AppendUTF8("\n");
+
+            minipal_log_print_info(buf.GetUTF8());
+            buf.Clear();
 
             pBlock = pBlock->m_pNext;
         }
     }
 }
 
-
-void UnlockedLoaderHeap::UnlockedClearEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::ClearEvents(this);
-}
-
-void UnlockedLoaderHeap::UnlockedCompactEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::CompactEvents(this);
-}
-
-void UnlockedLoaderHeap::UnlockedPrintEvents()
-{
-    WRAPPER_NO_CONTRACT;
-    LoaderHeapSniffer::PrintEvents(this);
-}
-
-
 #endif //_DEBUG
 
-//************************************************************************************
-// LOADERHEAP SNIFFER METHODS
-//************************************************************************************
-#ifdef _DEBUG
-
-/*static*/ VOID LoaderHeapSniffer::RecordEvent(UnlockedLoaderHeap *pHeap,
-                                               AllocationType allocationType,
-                                               _In_ const char *szFile,
-                                               int            lineNum,
-                                               _In_ const char *szAllocFile,
-                                               int            allocLineNum,
-                                               void          *pMem,
-                                               size_t         dwRequestedSize,
-                                               size_t         dwSize
-                                              )
+#ifndef DACCESS_COMPILE
+/*static*/ void LoaderHeapFreeBlock::InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;  //If we OOM in here, we just throw the event away.
-    }
-    CONTRACTL_END
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
 
-    LoaderHeapEvent *pNewEvent;
-    {
-        {
-            FAULT_NOT_FATAL();
-            pNewEvent = new (nothrow) LoaderHeapEvent;
-        }
-        if (!pNewEvent)
-        {
-            if (!(pHeap->m_dwDebugFlags & pHeap->kEncounteredOOM))
-            {
-                pHeap->m_dwDebugFlags |= pHeap->kEncounteredOOM;
-                _ASSERTE(!"LOADERHEAPSNIFFER: Failed allocation of LoaderHeapEvent. Call tracing information will be incomplete.");
-            }
-        }
-        else
-        {
-            pNewEvent->m_allocationType     = allocationType;
-            pNewEvent->m_szFile             = szFile;
-            pNewEvent->m_lineNum            = lineNum;
-            pNewEvent->m_szAllocFile        = szAllocFile;
-            pNewEvent->m_allocLineNum       = allocLineNum;
-            pNewEvent->m_pMem               = pMem;
-            pNewEvent->m_dwRequestedSize    = dwRequestedSize;
-            pNewEvent->m_dwSize             = dwSize;
+    // The new "nothrow" below failure is handled in a non-fault way, so
+    // make sure that callers with FORBID_FAULT can call this method without
+    // firing the contract violation assert.
+    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
 
-            pNewEvent->m_pNext              = pHeap->m_pEventList;
-            pHeap->m_pEventList             = pNewEvent;
-        }
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    // It's illegal to insert a free block that's smaller than the minimum sized allocation -
+    // it may stay stranded on the freelist forever.
+#ifdef _DEBUG
+    if (!(dwTotalSize >= pHeap->AllocMem_TotalSize(1)))
+    {
+        UnlockedLoaderHeap::ValidateFreeList(pHeap);
+        _ASSERTE(dwTotalSize >= pHeap->AllocMem_TotalSize(1));
     }
+
+    if (!(0 == (dwTotalSize & ALLOC_ALIGN_CONSTANT)))
+    {
+        UnlockedLoaderHeap::ValidateFreeList(pHeap);
+        _ASSERTE(0 == (dwTotalSize & ALLOC_ALIGN_CONSTANT));
+    }
+#endif
+
+#ifdef DEBUG
+    {
+        void* pMemRW = pMem;
+        ExecutableWriterHolderNoLog<void> memWriterHolder;
+        if (pHeap->IsExecutable())
+        {
+            memWriterHolder.AssignExecutableWriterHolder(pMem, dwTotalSize);
+            pMemRW = memWriterHolder.GetRW();
+        }
+
+        memset(pMemRW, 0xcc, dwTotalSize);
+    }
+#endif // DEBUG
+
+    LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
+    // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
+    if (pNewBlock != NULL)
+    {
+        pNewBlock->m_pNext  = *ppHead;
+        pNewBlock->m_dwSize = dwTotalSize;
+        pNewBlock->m_pBlockAddress = pMem;
+        *ppHead = pNewBlock;
+        MergeBlock(pNewBlock, pHeap);
+    }
+
+    LOADER_HEAP_END_TRAP_FAULT
 }
 
+/*static*/ void *LoaderHeapFreeBlock::AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
 
+    INCONTRACT(_ASSERTE_IMPL(!ARE_FAULTS_FORBIDDEN()));
 
+    void *pResult = NULL;
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    LoaderHeapFreeBlock **ppWalk = ppHead;
+    while (*ppWalk)
+    {
+        LoaderHeapFreeBlock *pCur = *ppWalk;
+        size_t dwCurSize = pCur->m_dwSize;
+        if (dwCurSize == dwSize)
+        {
+            pResult = pCur->m_pBlockAddress;
+            // Exact match. Hooray!
+            *ppWalk = pCur->m_pNext;
+            delete pCur;
+            break;
+        }
+        else if (dwCurSize > dwSize && (dwCurSize - dwSize) >= pHeap->AllocMem_TotalSize(1))
+        {
+            // Partial match. Ok...
+            pResult = pCur->m_pBlockAddress;
+            *ppWalk = pCur->m_pNext;
+            InsertFreeBlock(ppWalk, ((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap );
+            delete pCur;
+            break;
+        }
+
+        // Either block is too small or splitting the block would leave a remainder that's smaller than
+        // the minimum block size. Onto next one.
+
+        ppWalk = &( pCur->m_pNext );
+    }
+
+    if (pResult)
+    {
+        void *pResultRW = pResult;
+        ExecutableWriterHolderNoLog<void> resultWriterHolder;
+        if (pHeap->IsExecutable())
+        {
+            resultWriterHolder.AssignExecutableWriterHolder(pResult, dwSize);
+            pResultRW = resultWriterHolder.GetRW();
+        }
+        // Callers of loaderheap assume allocated memory is zero-inited so we must preserve this invariant!
+        memset(pResultRW, 0, dwSize);
+    }
+    LOADER_HEAP_END_TRAP_FAULT
+    return pResult;
+}
+
+// Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
+/*static*/ BOOL LoaderHeapFreeBlock::MergeBlock(LoaderHeapFreeBlock *pFreeBlock, UnlockedLoaderHeap *pHeap)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    BOOL result = FALSE;
+
+    LOADER_HEAP_BEGIN_TRAP_FAULT
+
+    LoaderHeapFreeBlock *pNextBlock = pFreeBlock->m_pNext;
+    size_t               dwSize     = pFreeBlock->m_dwSize;
+
+    if (pNextBlock == NULL || ((BYTE*)pNextBlock->m_pBlockAddress) != (((BYTE*)pFreeBlock->m_pBlockAddress) + dwSize))
+    {
+        result = FALSE;
+    }
+    else
+    {
+        size_t dwCombinedSize = dwSize + pNextBlock->m_dwSize;
+        LoaderHeapFreeBlock *pNextNextBlock = pNextBlock->m_pNext;
+        void *pMemRW = pFreeBlock->m_pBlockAddress;
+        ExecutableWriterHolderNoLog<void> memWriterHolder;
+        if (pHeap->IsExecutable())
+        {
+            memWriterHolder.AssignExecutableWriterHolder(pFreeBlock->m_pBlockAddress, dwCombinedSize);
+            pMemRW = memWriterHolder.GetRW();
+        }
+        INDEBUG(memset(pMemRW, 0xcc, dwCombinedSize);)
+        pFreeBlock->m_pNext  = pNextNextBlock;
+        pFreeBlock->m_dwSize = dwCombinedSize;
+        delete pNextBlock;
+
+        result = TRUE;
+    }
+
+    LOADER_HEAP_END_TRAP_FAULT
+    return result;
+}
+#endif // !DACCESS_COMPILE
+
+//=====================================================================================
+// These helpers encapsulate the actual layout of a block allocated by AllocMem
+// and UnlockedAllocMem():
+//
+// ==> Starting address is always pointer-aligned.
+//
+//   - x  bytes of user bytes        (where "x" is the actual dwSize passed into AllocMem)
+//
+//   - y  bytes of "EE" (DEBUG-ONLY) (where "y" == LOADER_HEAP_DEBUG_BOUNDARY (normally 0))
+//   - z  bytes of pad  (DEBUG-ONLY) (where "z" is just enough to pointer-align the following byte)
+//   - a  bytes of tag  (DEBUG-ONLY) (where "a" is sizeof(LoaderHeapValidationTag)
+//
+//   - b  bytes of pad               (where "b" is just enough to pointer-align the following byte)
+//
+// ==> Following address is always pointer-aligned
+//=====================================================================================
+
+// Convert the requested size into the total # of bytes we'll actually allocate (including padding)
+size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    size_t dwSize = dwRequestedSize;
+
+#ifdef _DEBUG
+    dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
+    dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
+#endif
+
+#ifdef _DEBUG
+    dwSize += sizeof(LoaderHeapValidationTag);
+#endif
+    dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
+
+    return dwSize;
+}
+
+#ifdef _DEBUG
 /*static*/
-void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
+void UnlockedLoaderHeap::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 {
     CANNOT_HAVE_CONTRACT;
 
@@ -2171,7 +1167,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
         }
         else
         {
-            LoaderHeapEvent *pBadAddrEvent = FindEvent(pHeap, pBadAddr);
+            LoaderHeapEvent *pBadAddrEvent = LoaderHeapSniffer::FindEvent(pHeap, pBadAddr);
 
             message.AppendASCII("*** CALL TRACING ENABLED ***\n\n");
 
@@ -2185,7 +1181,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
                 message.AppendASCII("\nNo known owner of last corrupted address.\n");
             }
 
-            LoaderHeapEvent *pPrevEvent = FindEvent(pHeap, ((BYTE*)pProbeThis) - 1);
+            LoaderHeapEvent *pPrevEvent = LoaderHeapSniffer::FindEvent(pHeap, ((BYTE*)pProbeThis) - 1);
 
             int count = 3;
             while (count-- &&
@@ -2193,7 +1189,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
                    ( ((UINT_PTR)pProbeThis) - ((UINT_PTR)(pPrevEvent->m_pMem)) + pPrevEvent->m_dwSize ) < 1024)
             {
                 message.AppendASCII("\nThis block is located close to the corruption point. ");
-                if (!pHeap->IsInterleaved() && pPrevEvent->QuietValidate())
+                if (pPrevEvent->QuietValidate())
                 {
                     message.AppendASCII("If it was overrun, it might have caused this.");
                 }
@@ -2202,200 +1198,20 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
                     message.AppendASCII("*** CORRUPTION DETECTED IN THIS BLOCK ***");
                 }
                 pPrevEvent->Describe(&message);
-                pPrevEvent = FindEvent(pHeap, ((BYTE*)(pPrevEvent->m_pMem)) - 1);
+                pPrevEvent = LoaderHeapSniffer::FindEvent(pHeap, ((BYTE*)(pPrevEvent->m_pMem)) - 1);
             }
-
-
         }
 
         DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetUTF8());
-
     }
-
-
-
 }
-
-
-BOOL LoaderHeapEvent::QuietValidate()
+/*static*/ void UnlockedLoaderHeap::WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap)
 {
     WRAPPER_NO_CONTRACT;
+    ValidateFreeList(pHeap);
 
-    if (m_allocationType == kAllocMem)
-    {
-        LoaderHeapValidationTag *pTag = AllocMem_GetTag(m_pMem, m_dwRequestedSize);
-        return (pTag->m_allocationType == m_allocationType && pTag->m_dwRequestedSize == m_dwRequestedSize);
-    }
-    else
-    {
-        // We can't easily validate freed blocks.
-        return TRUE;
-    }
+    //If none of the above popped up an assert, pop up a generic one.
+    _ASSERTE(!("Unexpected AV inside LoaderHeap. The usual reason is that someone overwrote the end of a block or wrote into a freed block.\n"));
+
 }
-
-
-#endif //_DEBUG
-
-#ifndef DACCESS_COMPILE
-
-AllocMemTracker::AllocMemTracker()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        FORBID_FAULT;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END
-
-    m_FirstBlock.m_pNext    = NULL;
-    m_FirstBlock.m_nextFree = 0;
-    m_pFirstBlock = &m_FirstBlock;
-
-    m_fReleased   = FALSE;
-}
-
-AllocMemTracker::~AllocMemTracker()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    if (!m_fReleased)
-    {
-        AllocMemTrackerBlock *pBlock = m_pFirstBlock;
-        while (pBlock)
-        {
-            // Do the loop in reverse - loaderheaps work best if
-            // we allocate and backout in LIFO order.
-            for (int i = pBlock->m_nextFree - 1; i >= 0; i--)
-            {
-                AllocMemTrackerNode *pNode = &(pBlock->m_Node[i]);
-                pNode->m_pHeap->RealBackoutMem(pNode->m_pMem
-                                               ,pNode->m_dwRequestedSize
-#ifdef _DEBUG
-                                               ,__FILE__
-                                               ,__LINE__
-                                               ,pNode->m_szAllocFile
-                                               ,pNode->m_allocLineNum
-#endif
-                                              );
-
-            }
-
-            pBlock = pBlock->m_pNext;
-        }
-    }
-
-// We have seen evidence of memory corruption in this data structure.
-// https://github.com/dotnet/runtime/issues/54469
-// m_pFirstBlock is intended to be a linked list terminating with
-// &m_FirstBlock but we are finding a nullptr in the list before
-// that point. In order to investigate further we need to observe
-// the corrupted memory block(s) before they are deleted below
-#ifdef _DEBUG
-    AllocMemTrackerBlock* pDebugBlock = m_pFirstBlock;
-    for (int i = 0; pDebugBlock != &m_FirstBlock; i++)
-    {
-        CONSISTENCY_CHECK_MSGF(i < 10000, ("Linked list is much longer than expected, memory corruption likely\n"));
-        CONSISTENCY_CHECK_MSGF(pDebugBlock != nullptr, ("Linked list pointer == NULL, memory corruption likely\n"));
-        pDebugBlock = pDebugBlock->m_pNext;
-    }
-#endif
-
-    AllocMemTrackerBlock *pBlock = m_pFirstBlock;
-    while (pBlock != &m_FirstBlock)
-    {
-        AllocMemTrackerBlock *pNext = pBlock->m_pNext;
-        delete pBlock;
-        pBlock = pNext;
-    }
-
-    INDEBUG(memset(this, 0xcc, sizeof(*this));)
-}
-
-void *AllocMemTracker::Track(TaggedMemAllocPtr tmap)
-{
-    CONTRACTL
-    {
-        THROWS;
-        INJECT_FAULT(ThrowOutOfMemory(););
-    }
-    CONTRACTL_END
-
-    void *pv = Track_NoThrow(tmap);
-    if (!pv)
-    {
-        ThrowOutOfMemory();
-    }
-    return pv;
-}
-
-void *AllocMemTracker::Track_NoThrow(TaggedMemAllocPtr tmap)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return NULL;);
-    }
-    CONTRACTL_END
-
-    // Calling Track() after calling SuppressRelease() is almost certainly a bug. You're supposed to call SuppressRelease() only after you're
-    // sure no subsequent failure will force you to backout the memory.
-    _ASSERTE( (!m_fReleased) && "You've already called SuppressRelease on this AllocMemTracker which implies you've passed your point of no failure. Why are you still doing allocations?");
-
-
-    if (tmap.m_pMem != NULL)
-    {
-        AllocMemHolder<void*> holder(tmap);  // If anything goes wrong in here, this holder will backout the allocation for the caller.
-        if (m_fReleased)
-        {
-            holder.SuppressRelease();
-        }
-        AllocMemTrackerBlock *pBlock = m_pFirstBlock;
-        if (pBlock->m_nextFree == kAllocMemTrackerBlockSize)
-        {
-            AllocMemTrackerBlock *pNewBlock = new (nothrow) AllocMemTrackerBlock;
-            if (!pNewBlock)
-            {
-                return NULL;
-            }
-
-            pNewBlock->m_pNext = m_pFirstBlock;
-            pNewBlock->m_nextFree = 0;
-
-            m_pFirstBlock = pNewBlock;
-
-            pBlock = pNewBlock;
-        }
-
-        // From here on, we can't fail
-        pBlock->m_Node[pBlock->m_nextFree].m_pHeap           = tmap.m_pHeap;
-        pBlock->m_Node[pBlock->m_nextFree].m_pMem            = tmap.m_pMem;
-        pBlock->m_Node[pBlock->m_nextFree].m_dwRequestedSize = tmap.m_dwRequestedSize;
-#ifdef _DEBUG
-        pBlock->m_Node[pBlock->m_nextFree].m_szAllocFile     = tmap.m_szFile;
-        pBlock->m_Node[pBlock->m_nextFree].m_allocLineNum    = tmap.m_lineNum;
-#endif
-
-        pBlock->m_nextFree++;
-
-        holder.SuppressRelease();
-
-
-    }
-    return (void *)tmap;
-}
-
-
-void AllocMemTracker::SuppressRelease()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_fReleased = TRUE;
-}
-
-#endif //#ifndef DACCESS_COMPILE
+#endif // _DEBUG

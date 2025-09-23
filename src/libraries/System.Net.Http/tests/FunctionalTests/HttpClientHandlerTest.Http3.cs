@@ -21,7 +21,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
@@ -392,7 +392,7 @@ namespace System.Net.Http.Functional.Tests
                 await using (Http3LoopbackConnection connection1 = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
                 {
                     await using Http3LoopbackStream stream = await connection1.AcceptRequestStreamAsync();
-                    stream.Abort(0x10B); // H3_REQUEST_REJECTED
+                    stream.Abort(Http3LoopbackConnection.H3_REQUEST_REJECTED);
                     await stream.DisposeAsync();
                     // shutdown the connection gracefully via GOAWAY frame for good measure
                     await connection1.ShutdownAsync(true);
@@ -423,6 +423,41 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
+        [Fact]
+        public async Task SendAsync_RequestAbortedNoError_ClientSucceeds()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            string httpContent = "hello world";
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using (Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync())
+                {
+                    await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    stream.Abort(Http3LoopbackConnection.H3_NO_ERROR, QuicAbortDirection.Read);
+                    await stream.SendResponseAsync(content: httpContent);
+                    await stream.DisposeAsync();
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = new ByteAtATimeContent(64*1024)
+                };
+                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var content = await response.Content.ReadAsStringAsync();
+                Assert.Equal(httpContent, content);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
 
         [Fact]
         public async Task ServerClosesConnection_ResponseContentStream_ThrowsHttpProtocolException()
@@ -779,7 +814,6 @@ namespace System.Net.Http.Functional.Tests
             };
             using HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(20));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
         }
 
@@ -798,7 +832,6 @@ namespace System.Net.Http.Functional.Tests
             };
             using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead).WaitAsync(TimeSpan.FromSeconds(20));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
 
             var content = await response.Content.ReadAsStringAsync();
@@ -1835,6 +1868,41 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
+        [Fact]
+        [OuterLoop("Waits for connection timeout")]
+        public async Task ServerKillsQuicConnection_ClientPropagatesException()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+                await semaphore.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await client.SendAsync(request, HttpCompletionOption.ResponseContentRead));
+                Assert.IsType<QuicException>(ex.InnerException);
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
         private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
@@ -1861,8 +1929,7 @@ namespace System.Net.Http.Functional.Tests
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/83775")]
-                //{ "https://www.litespeedtech.com/" }, // LiteSpeed
+                { "https://www.litespeedtech.com/" }, // LiteSpeed
                 { "https://quic.tech:8443/" }, // Cloudflare
                 { "https://quic.aiortc.org:443/" }, // aioquic
                 { "https://h2o.examp1e.net/" } // h2o/quicly

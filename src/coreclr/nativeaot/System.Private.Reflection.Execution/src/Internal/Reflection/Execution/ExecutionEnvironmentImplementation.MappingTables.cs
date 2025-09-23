@@ -218,39 +218,17 @@ namespace Internal.Reflection.Execution
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
         }
 
-        public sealed override MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public sealed override void ValidateGenericMethodConstraints(MethodInfo method)
+        {
+            ConstraintValidator.EnsureSatisfiesClassConstraints(method);
+        }
+
+        public sealed override MethodBaseInvoker TryGetMethodInvokerNoConstraintCheck(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
-            // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
-            // inputs to reach the type loader (we don't have support to e.g. represent pointer types within the type loader)
-            if (genericMethodTypeArgumentHandles != null && genericMethodTypeArgumentHandles.Length > 0)
-                ConstraintValidator.EnsureSatisfiesClassConstraints((MethodInfo)methodInfo);
-
-            MethodSignatureComparer methodSignatureComparer = new MethodSignatureComparer(methodHandle);
-
-            MethodInvokeInfo methodInvokeInfo;
-#if GENERICS_FORCE_USG
-            // Stress mode to force the usage of universal canonical method targets for reflection invokes.
-            // It is recommended to use "/SharedGenericsMode GenerateAllUniversalGenerics" NUTC command line argument when
-            // compiling the application in order to effectively use the GENERICS_FORCE_USG mode.
-
-            // If we are just trying to invoke a non-generic method on a non-generic type, we won't force the universal lookup
-            if (!RuntimeAugments.IsGenericType(declaringTypeHandle) && (genericMethodTypeArgumentHandles == null || genericMethodTypeArgumentHandles.Length == 0))
-                methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, ref methodSignatureComparer, CanonicalFormKind.Specific);
-            else
-                methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
-#else
-            methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                methodInfo, ref methodSignatureComparer, CanonicalFormKind.Specific);
-
-            // If we failed to get a MethodInvokeInfo for an exact method, or a canonically equivalent method, check if there is a universal canonically
-            // equivalent entry that could be used (it will be much slower, and require a calling convention converter)
-            methodInvokeInfo ??= TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
-#endif
+            MethodInvokeInfo methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
+                methodInfo);
 
             if (methodInvokeInfo == null)
                 return null;
@@ -280,12 +258,10 @@ namespace Internal.Reflection.Execution
             return result;
         }
 
-        private static IntPtr TryGetVirtualResolveData(NativeFormatModuleInfo module,
-            RuntimeTypeHandle methodHandleDeclaringType, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericArgs,
-            ref MethodSignatureComparer methodSignatureComparer)
+        private static IntPtr TryGetVirtualResolveData(RuntimeTypeHandle methodHandleDeclaringType, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericArgs)
         {
             TypeLoaderEnvironment.VirtualResolveDataResult lookupResult;
-            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(module, methodHandleDeclaringType, genericArgs, ref methodSignatureComparer, out lookupResult);
+            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(methodHandleDeclaringType, methodHandle, genericArgs, out lookupResult);
             if (!success)
                 return IntPtr.Zero;
             else
@@ -311,16 +287,12 @@ namespace Internal.Reflection.Execution
         /// <param name="methodHandle">Handle of method to look up</param>
         /// <param name="genericMethodTypeArgumentHandles">Runtime handles of generic method arguments</param>
         /// <param name="methodInfo">MethodInfo of method to look up</param>
-        /// <param name="methodSignatureComparer">Helper structure used for comparing signatures</param>
-        /// <param name="canonFormKind">Requested canon form</param>
         /// <returns>Constructed method invoke info, null on failure</returns>
         private static unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
             RuntimeTypeHandle declaringTypeHandle,
             QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
-            MethodBase methodInfo,
-            ref MethodSignatureComparer methodSignatureComparer,
-            CanonicalFormKind canonFormKind)
+            MethodBase methodInfo)
         {
             MethodInvokeMetadata methodInvokeMetadata;
 
@@ -328,8 +300,6 @@ namespace Internal.Reflection.Execution
                 declaringTypeHandle,
                 methodHandle,
                 genericMethodTypeArgumentHandles,
-                ref methodSignatureComparer,
-                canonFormKind,
                 out methodInvokeMetadata))
             {
                 // Method invoke info not found
@@ -351,9 +321,7 @@ namespace Internal.Reflection.Execution
             IntPtr resolver = IntPtr.Zero;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.HasVirtualInvoke) != 0)
             {
-                resolver = TryGetVirtualResolveData(ModuleList.Instance.GetModuleInfoForMetadataReader(methodHandle.NativeFormatReader),
-                    declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    ref methodSignatureComparer);
+                resolver = TryGetVirtualResolveData(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
                 // Unable to find virtual resolution information, cannot return valid MethodInvokeInfo
                 if (resolver == IntPtr.Zero)
@@ -713,36 +681,13 @@ namespace Internal.Reflection.Execution
                 declaringTypeHandle = GetExactDeclaringType(entryType, declaringTypeHandle);
             }
 
-            if ((entryFlags & InvokeTableFlags.HasMetadataHandle) != 0)
-            {
-                RuntimeTypeHandle declaringTypeHandleDefinition = GetTypeDefinition(declaringTypeHandle);
-                QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
+            RuntimeTypeHandle declaringTypeHandleDefinition = GetTypeDefinition(declaringTypeHandle);
+            QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
 
-                MethodHandle nativeFormatMethodHandle =
-                    (((int)HandleType.Method << 24) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
+            MethodHandle nativeFormatMethodHandle =
+                (((int)HandleType.Method << 25) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
 
-                methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
-            }
-            else
-            {
-#if FEATURE_SHARED_LIBRARY
-                uint nameAndSigOffset = entryMethodHandleOrNameAndSigRaw;
-                MethodNameAndSignature nameAndSig;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule.Handle, nameAndSigOffset, out nameAndSig))
-                {
-                    Debug.Assert(false);
-                    return false;
-                }
-
-                if (!TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(declaringTypeHandle, nameAndSig, out methodHandle))
-                {
-                    Debug.Assert(false);
-                    return false;
-                }
-#else
-                throw NotImplemented.ByDesign;
-#endif
-            }
+            methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
 
             return true;
         }
@@ -772,8 +717,7 @@ namespace Internal.Reflection.Execution
         {
             FieldAccessMetadata fieldAccessMetadata;
 
-            if (!TypeLoaderEnvironment.TryGetFieldAccessMetadata(
-                metadataReader,
+            if (!TypeLoaderEnvironment.TryGetFieldAccessMetadataFromFieldAccessMap(
                 declaringTypeHandle,
                 fieldHandle,
                 out fieldAccessMetadata))
@@ -820,8 +764,6 @@ namespace Internal.Reflection.Execution
                         }
                         else
                         {
-                            Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
-
                             if (fieldBase != FieldTableFlags.NonGCStatic)
                             {
                                 fieldOffset = fieldAccessMetadata.Offset;
@@ -854,12 +796,7 @@ namespace Internal.Reflection.Execution
         //
         public sealed override unsafe bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            MethodNameAndSignature nameAndSignature;
-            methodHandle = default(QMethodDefinition);
-            if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out nameAndSignature, out genericMethodTypeArgumentHandles))
-                return false;
-
-            return TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(declaringTypeHandle, nameAndSignature, out methodHandle);
+            return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles);
         }
 
         //
@@ -875,32 +812,7 @@ namespace Internal.Reflection.Execution
         //
         public sealed override unsafe bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
-            fieldHandle = default(FieldHandle);
-
-            string fieldName;
-            if (!TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName))
-                return false;
-
-            RuntimeTypeHandle metadataLookupTypeHandle = GetTypeDefinition(declaringTypeHandle);
-
-            QTypeDefinition qTypeDefinition = GetMetadataForNamedType(metadataLookupTypeHandle);
-
-            // TODO! Handle ecma style types
-            MetadataReader reader = qTypeDefinition.NativeFormatReader;
-            TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
-
-            TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
-            foreach (FieldHandle fh in typeDefinition.Fields)
-            {
-                Field field = fh.GetField(reader);
-                if (field.Name.StringEquals(fieldName, reader))
-                {
-                    fieldHandle = fh;
-                    return true;
-                }
-            }
-
-            return false;
+            return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldHandle);
         }
 
         //

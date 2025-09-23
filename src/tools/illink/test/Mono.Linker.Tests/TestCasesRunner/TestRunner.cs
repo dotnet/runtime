@@ -10,66 +10,72 @@ using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	partial class TestRunner
-	{
-		partial void IgnoreTest (string reason)
-		{
-			Assert.Ignore (reason);
-		}
+    partial class TestRunner
+    {
+        partial void IgnoreTest(string reason)
+        {
+            Assert.Ignore(reason);
+        }
 
-		private partial IEnumerable<string>? GetAdditionalDefines() => null;
+        private partial IEnumerable<string>? GetAdditionalDefines() => null;
 
-		private static T GetResultOfTaskThatMakesAssertions<T> (Task<T> task)
-		{
-			try {
-				return task.Result;
-			} catch (AggregateException e) {
-				if (e.InnerException != null) {
-					if (e.InnerException is AssertionException
-					|| e.InnerException is SuccessException
-					|| e.InnerException is IgnoreException
-					|| e.InnerException is InconclusiveException)
-						throw e.InnerException;
-				}
+        private static T GetResultOfTaskThatMakesAssertions<T>(Task<T> task)
+        {
+            try
+            {
+                return task.Result;
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null)
+                {
+                    if (e.InnerException is AssertionException
+                    || e.InnerException is SuccessException
+                    || e.InnerException is IgnoreException
+                    || e.InnerException is InconclusiveException)
+                        throw e.InnerException;
+                }
 
-				throw;
-			}
-		}
+                throw;
+            }
+        }
 
-		protected partial TrimmingCustomizations? CustomizeTrimming (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
-		{
-			TrimmingCustomizations customizations = new TrimmingCustomizations ();
+        protected partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
+        {
+            TrimmingCustomizations customizations = new TrimmingCustomizations();
 
-			metadataProvider.CustomizeTrimming (linker, customizations);
+            metadataProvider.CustomizeTrimming(linker, customizations);
 
-			return customizations;
-		}
+            return customizations;
+        }
 
-		protected partial void AddDumpDependenciesOptions (TestCaseLinkerOptions caseDefinedOptions, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider)
-		{
-			if (!caseDefinedOptions.DumpDependencies) {
-				// The testcase didn't specify [DumpDependencies]
-				// Dump dependencies only for the test assembly.
-				builder.AddAdditionalArgument ("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
+        protected partial void AddDumpDependenciesOptions(TestCaseLinkerOptions caseDefinedOptions, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider)
+        {
+            if (!caseDefinedOptions.DumpDependencies)
+            {
+                // The testcase didn't specify [DumpDependencies]
+                // Dump dependencies only for the test assembly.
+                builder.AddAdditionalArgument("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
 
-				if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTraces) && generateExpectedDependencyTraces) {
-					// If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory,
-					// (only for tests which did not especify [DumpDependencies] explicitly).
-					var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
-					expectedTracePath.Parent.EnsureDirectoryExists ();
-					builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
-				}
-			}
-		}
+                if (AppContext.TryGetSwitch("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTraces) && generateExpectedDependencyTraces)
+                {
+                    // If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory,
+                    // (only for tests which did not especify [DumpDependencies] explicitly).
+                    var expectedTracePath = metadataProvider.GetExpectedDependencyTrace();
+                    expectedTracePath.Parent.EnsureDirectoryExists();
+                    builder.AddAdditionalArgument("--dependencies-file", [expectedTracePath]);
+                }
+            }
+        }
 
-		static partial void AddOutputDirectory (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder)
-		{
-			builder.AddOutputDirectory (sandbox.OutputDirectory);
-		}
+        static partial void AddOutputDirectory(TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder)
+        {
+            builder.AddOutputDirectory(sandbox.OutputDirectory);
+        }
 
-		static partial void AddInputReference (NPath inputReference, TrimmingArgumentBuilder builder)
-		{
-			builder.AddReference (inputReference);
-		}
-	}
+        static partial void AddInputReference(NPath inputReference, TrimmingArgumentBuilder builder)
+        {
+            builder.AddReference(inputReference);
+        }
+    }
 }

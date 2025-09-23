@@ -8,6 +8,9 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <AnalysisLevel>Latest</AnalysisLevel>
     <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <!-- Type conflicts with imported type. Silence this for source build to allow building with the latest
+         source-included type name parser, instead of the one that comes with Roslyn. -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <!-- The analyzer needs to process deeply nested expressions in corelib.
          This can blow up the stack if using unoptimized code (due to large
@@ -15,10 +18,26 @@
          optimize the analyzer even in Debug builds. Note: we still use the
          Debug configuration to get Debug asserts. -->
     <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System/Index.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\HexConverter.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameFormatter.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameParser.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\AssemblyNameInfo.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs" />
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.Reflection.Metadata.SR</ClassName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

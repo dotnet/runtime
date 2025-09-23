@@ -2,8 +2,7 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="RSAPublicKeyAsn"
-  namespace="System.Security.Cryptography.Asn1"
-  rebind="false">
+  namespace="System.Security.Cryptography.Asn1">
 
   <!--
     https://tools.ietf.org/html/rfc3447#appendix-C
@@ -13,6 +12,6 @@
         publicExponent    INTEGER   - e
     }
   -->
-  <asn:Integer name="Modulus" />
-  <asn:Integer name="PublicExponent" />
+  <asn:Integer name="Modulus" backingType="ReadOnlyMemory" />
+  <asn:Integer name="PublicExponent" backingType="ReadOnlyMemory" />
 </asn:Sequence>

@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType Condition="!('$(TargetOS)' == 'android' and '$(TestNativeAot)' == 'true')">Exe</OutputType>
 
-    <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
+    <BundleDir Condition="'$(BundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
@@ -22,13 +22,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
-    <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
-    <IlcFrameworkNativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkNativePath>
+    <IlcCppLinkerCustomWarningRegularExpression>module compiled with /GL found</IlcCppLinkerCustomWarningRegularExpression>
     <NoWarn>$(NoWarn);IL1005;IL2122;IL3000;IL3001;IL3002;IL3003;IL3050;IL3051;IL3052;IL3053</NoWarn>
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
@@ -38,7 +32,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true'">
+  <PropertyGroup Condition="('$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true') and '$(IsFunctionalTest)' != 'true'">
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
@@ -50,16 +44,13 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
-
-    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
-    <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
-
     <TrimmerRootAssembly Include="TestUtilities" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
-             Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs" />
+             Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs"
+             Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -94,7 +85,7 @@
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
       <ArtifactsNetCoreAppBundlePath>$(ArtifactsObjDir)Microsoft.NETCore.App.Bundle/</ArtifactsNetCoreAppBundlePath>
-      <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)$(Configuration)/$(NetCoreAppCurrent)/$(OutputRID)/output/</ArtifactsNetCoreAppBundlePath>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)$(Configuration)/$(NetCoreAppCurrent)/$(TargetRid)/output/</ArtifactsNetCoreAppBundlePath>
       <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)shared/$(MicrosoftNetCoreAppFrameworkName)/$(PackageVersion)/</ArtifactsNetCoreAppBundlePath>
     </PropertyGroup>
 

@@ -707,6 +707,11 @@ namespace ILCompiler
 
         public sealed override bool GeneratesPInvoke(MethodDesc method)
         {
+            // Marshalling behavior isn't modeled as protected by R2R rules, so prevent inlining of marshalling
+            // defined outside of the version bubble.
+            if (!VersionsWithMethodBody(method))
+                return false;
+
             return !Marshaller.IsMarshallingRequired(method);
         }
 

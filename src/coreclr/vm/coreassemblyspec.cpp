@@ -17,7 +17,7 @@
 #include "peimagelayout.inl"
 #include "domainassembly.h"
 #include "holder.h"
-#include "bundle.h"
+#include <assemblyprobeextension.h>
 #include "strongnameinternal.h"
 
 #include "../binder/inc/assemblyidentity.hpp"
@@ -76,9 +76,9 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 }
 
 
-STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
-                            PEImage           **ppPEImage,
-                            BundleFileLocation  bundleFileLocation)
+STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
+                            PEImage               **ppPEImage,
+                            ProbeExtensionResult    probeExtensionResult)
 {
     HRESULT hr = S_OK;
 
@@ -86,13 +86,16 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, probeExtensionResult);
 
         // Make sure that the IL image can be opened.
-        hr=pImage->TryOpenFile();
-        if (FAILED(hr))
+        if (pImage->IsFile())
         {
-            goto Exit;
+            hr = pImage->TryOpenFile();
+            if (FAILED(hr))
+            {
+                goto Exit;
+            }
         }
 
         if (pImage)

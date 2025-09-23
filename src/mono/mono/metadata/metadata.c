@@ -38,6 +38,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-logger-internals.h>
+#include "../native/containers/dn-simdhash-utils.h"
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -1854,7 +1855,7 @@ mono_type_hash (gconstpointer data)
 {
 	const MonoType *type = (const MonoType *) data;
 	if (type->type == MONO_TYPE_GENERICINST)
-		return mono_generic_class_hash (type->data.generic_class);
+		return mono_generic_class_hash (m_type_data_get_generic_class_unchecked (type));
 	else
 		return type->type | ((m_type_is_byref (type) ? 1 : 0) << 8) | (type->attrs << 9);
 }
@@ -1874,18 +1875,21 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 guint
 mono_metadata_generic_inst_hash (gconstpointer data)
 {
+	// Custom MurmurHash3 for generic instances to produce a high quality hash
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
-	guint hash = 0;
 	g_assert (ginst);
 	g_assert (ginst->type_argv);
 
+	uint32_t h1 = ginst->type_argc;
+
 	for (guint i = 0; i < ginst->type_argc; ++i) {
-		hash *= 13;
 		g_assert (ginst->type_argv [i]);
-		hash += mono_metadata_type_hash (ginst->type_argv [i]);
+		MURMUR3_HASH_BLOCK ((uint32_t) mono_metadata_type_hash (ginst->type_argv [i]));
 	}
 
-	return hash ^ (ginst->is_open << 8);
+	h1 ^= ginst->is_open;
+
+	return (guint)murmur3_fmix32 (h1);
 }
 
 static gboolean
@@ -1971,6 +1975,15 @@ mono_metadata_init (void)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_metadata_update_init ();
+
+	char *compressed_bmap = g_getenv ("MONO_COMPRESSED_INTERFACE_BITMAP");
+	if (compressed_bmap) {
+		if (compressed_bmap [0] == '1')
+			mono_opt_compressed_interface_bitmap = TRUE;
+		else if (compressed_bmap [0] == '0')
+			mono_opt_compressed_interface_bitmap = FALSE;
+		g_free (compressed_bmap);
+	}
 }
 
 /*
@@ -2091,7 +2104,7 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
 	 */
 	g_assert (!type->has_cmods);
 	if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
-		MonoType *ret = m_type_is_byref (type) ? m_class_get_this_arg (type->data.klass) : m_class_get_byval_arg (type->data.klass);
+		MonoType *ret = m_type_is_byref (type) ? m_class_get_this_arg (m_type_data_get_klass_unchecked (type)) : m_class_get_byval_arg (m_type_data_get_klass_unchecked (type));
 
 		/* Consider the case:
 
@@ -2103,15 +2116,17 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
 
 		   We ensure that the MonoClass is in a state that we can canonicalize to:
 
-		   klass->_byval_arg.data.klass == klass
-		   klass->this_arg.data.klass == klass
+		   klass->_byval_arg.data__.klass == klass
+		   klass->this_arg.data__.klass == klass
 
 		   If we can't canonicalize 'type', it doesn't matter, since later users of 'type' will do it.
 
 		   LOCKING: even though we don't explicitly hold a lock, in the problematic case 'ret' is a field
 		   of a MonoClass which currently holds the loader lock.  'type' is local.
+
+		   FIXME: is 'ret' guaranteed to have a ->data.klass? Or could it be a different kind of type? -kg
 		*/
-		if (ret->data.klass == type->data.klass) {
+		if (m_type_data_get_klass (ret) == m_type_data_get_klass_unchecked (type)) {
 			*canonical_type = ret;
 			return TRUE;
 		}
@@ -2997,24 +3012,24 @@ retry:
 
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
-		return gclass_in_image (type->data.generic_class, image);
+		return gclass_in_image (m_type_data_get_generic_class_unchecked (type), image);
 	case MONO_TYPE_PTR:
-		type = type->data.type;
+		type = m_type_data_get_type_unchecked (type);
 		goto retry;
 	case MONO_TYPE_SZARRAY:
-		type = m_class_get_byval_arg (type->data.klass);
+		type = m_class_get_byval_arg (m_type_data_get_klass_unchecked (type));
 		goto retry;
 	case MONO_TYPE_ARRAY:
-		type = m_class_get_byval_arg (type->data.array->eklass);
+		type = m_class_get_byval_arg (m_type_data_get_array_unchecked (type)->eklass);
 		goto retry;
 	case MONO_TYPE_FNPTR:
-		return signature_in_image (type->data.method, image);
+		return signature_in_image (m_type_data_get_method_unchecked (type), image);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (image == mono_get_image_for_generic_param (type->data.generic_param))
+		if (image == mono_get_image_for_generic_param (m_type_data_get_generic_param_unchecked (type)))
 			return TRUE;
-		else if (type->data.generic_param->gshared_constraint) {
-			type = type->data.generic_param->gshared_constraint;
+		else if (m_type_data_get_generic_param_unchecked (type)->gshared_constraint) {
+			type = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 			goto retry;
 		}
 		return FALSE;
@@ -3168,26 +3183,26 @@ retry:
 
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
-		collect_gclass_images (type->data.generic_class, data);
+		collect_gclass_images (m_type_data_get_generic_class_unchecked (type), data);
 		break;
 	case MONO_TYPE_PTR:
-		type = type->data.type;
+		type = m_type_data_get_type_unchecked (type);
 		goto retry;
 	case MONO_TYPE_SZARRAY:
-		type = m_class_get_byval_arg (type->data.klass);
+		type = m_class_get_byval_arg (m_type_data_get_klass_unchecked (type));
 		goto retry;
 	case MONO_TYPE_ARRAY:
-		type = m_class_get_byval_arg (type->data.array->eklass);
+		type = m_class_get_byval_arg (m_type_data_get_array_unchecked (type)->eklass);
 		goto retry;
 	case MONO_TYPE_FNPTR:
-		collect_signature_images (type->data.method, data);
+		collect_signature_images (m_type_data_get_method_unchecked (type), data);
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 	{
-		MonoImage *image = mono_get_image_for_generic_param (type->data.generic_param);
+		MonoImage *image = mono_get_image_for_generic_param (m_type_data_get_generic_param_unchecked (type));
 		add_image (image, data);
-		type = type->data.generic_param->gshared_constraint;
+		type = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 		if (type)
 			goto retry;
 		break;
@@ -3353,7 +3368,7 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 		mm->gsignature_cache = dn_simdhash_ght_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature, 256, NULL);
 
 	// FIXME: The lookup is done on the newly allocated sig so it always fails
-	dn_simdhash_ght_try_get_value (mm->gsignature_cache, &helper, (gpointer *)&res);
+	res = dn_simdhash_ght_get_value_or_default (mm->gsignature_cache, &helper);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		// FIXME: sig is an inflated signature not owned by the mem manager
@@ -3422,7 +3437,7 @@ type_is_gtd (MonoType *type)
 	switch (type->type) {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return mono_class_is_gtd (type->data.klass);
+		return mono_class_is_gtd (m_type_data_get_klass_unchecked (type));
 	default:
 		return FALSE;
 	}
@@ -3458,7 +3473,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	for (i = 0; i < type_argc; ++i) {
 		MonoType *t = ginst->type_argv [i];
 		if (type_is_gtd (t)) {
-			ginst->type_argv [i] = mono_class_gtd_get_canonical_inst (t->data.klass);
+			ginst->type_argv [i] = mono_class_gtd_get_canonical_inst (m_type_data_get_klass_unchecked (t));
 		}
 	}
 
@@ -3494,10 +3509,9 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	mono_loader_lock ();
 
 	if (!mm->ginst_cache)
-		mm->ginst_cache = dn_simdhash_ght_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst, 0, NULL);
+		mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
 
-	MonoGenericInst *ginst = NULL;
-	dn_simdhash_ght_try_get_value (mm->ginst_cache, candidate, (void **)&ginst);
+	MonoGenericInst *ginst = g_hash_table_lookup (mm->ginst_cache, candidate);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
@@ -3511,7 +3525,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		for (int i = 0; i < type_argc; ++i)
 			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
-		dn_simdhash_ght_insert (mm->ginst_cache, ginst, ginst);
+		g_hash_table_insert (mm->ginst_cache, ginst, ginst);
 	}
 
 	mono_loader_unlock ();
@@ -3732,7 +3746,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	if (rptr)
 		*rptr = ptr;
 
-	type->data.generic_class = mono_metadata_lookup_generic_class (gklass, inst, FALSE);
+	m_type_data_set_generic_class (type, mono_metadata_lookup_generic_class (gklass, inst, FALSE));
 	return TRUE;
 }
 
@@ -3959,12 +3973,12 @@ mono_metadata_get_shared_type (MonoType *type)
 	switch (type->type){
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_get_mem_manager (type->data.klass)->collectible)
+		if (m_class_get_mem_manager (m_type_data_get_klass_unchecked (type))->collectible)
 			/* These can be unloaded, so references to them shouldn't be shared */
 			return NULL;
-		if (type == m_class_get_byval_arg (type->data.klass))
+		if (type == m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)))
 			return type;
-		if (type == m_class_get_this_arg (type->data.klass))
+		if (type == m_class_get_this_arg (m_type_data_get_klass_unchecked (type)))
 			return type;
 		break;
 	default:
@@ -4098,7 +4112,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		MonoClass *klass;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		klass = mono_class_get_checked (m, token, error);
-		type->data.klass = klass;
+		m_type_data_set_klass_unchecked (type, klass);
 		if (!klass)
 			return FALSE;
 
@@ -4112,29 +4126,29 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (!etype)
 			return FALSE;
 
-		type->data.klass = mono_class_from_mono_type_internal (etype);
+		m_type_data_set_klass_unchecked (type, mono_class_from_mono_type_internal (etype));
 
 		if (transient)
 			mono_metadata_free_type (etype);
 
-		g_assert (type->data.klass); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
+		g_assert (m_type_data_get_klass_unchecked (type)); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
 	case MONO_TYPE_PTR: {
-		type->data.type = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error);
-		if (!type->data.type)
+		m_type_data_set_type_unchecked (type, mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error));
+		if (!m_type_data_get_type_unchecked (type))
 			return FALSE;
 		break;
 	}
 	case MONO_TYPE_FNPTR: {
-		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error);
-		if (!type->data.method)
+		m_type_data_set_method_unchecked (type, mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error));
+		if (!m_type_data_get_method_unchecked (type))
 			return FALSE;
 		break;
 	}
 	case MONO_TYPE_ARRAY: {
-		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, error);
-		if (!type->data.array)
+		m_type_data_set_array_unchecked (type, mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, error));
+		if (!m_type_data_get_array_unchecked (type))
 			return FALSE;
 		break;
 	}
@@ -4143,8 +4157,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (container && !verify_var_type_and_container (m, type->type, container, error))
 			return FALSE;
 
-		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, error);
-		if (!type->data.generic_param)
+		m_type_data_set_generic_param_unchecked (type, mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, error));
+		if (!m_type_data_get_generic_param_unchecked (type))
 			return FALSE;
 
 		break;
@@ -4181,22 +4195,24 @@ mono_metadata_free_type (MonoType *type)
 	switch (type->type){
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
-		if (!type->data.klass)
+		/* We should normally not be using this accessor because klass could be null, but we're guarding against the potential null here. */
+		/* fixme: is it legal and desirable to free System.Object or System.String? Under which circumstances do we need to do it? -kg */
+		if (!m_type_data_get_klass_unchecked (type))
 			break;
-		/* fall through */
+		/* fall through since we checked for null so the following logic is safe. */
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		if (type == m_class_get_byval_arg (type->data.klass) || type == m_class_get_this_arg (type->data.klass))
+		if (type == m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)) || type == m_class_get_this_arg (m_type_data_get_klass_unchecked (type)))
 			return;
 		break;
 	case MONO_TYPE_PTR:
-		mono_metadata_free_type (type->data.type);
+		mono_metadata_free_type (m_type_data_get_type_unchecked (type));
 		break;
 	case MONO_TYPE_FNPTR:
-		mono_metadata_free_method_signature (type->data.method);
+		mono_metadata_free_method_signature (m_type_data_get_method_unchecked (type));
 		break;
 	case MONO_TYPE_ARRAY:
-		mono_metadata_free_array (type->data.array);
+		mono_metadata_free_array (m_type_data_get_array_unchecked (type));
 		break;
 	default:
 		break;
@@ -5315,8 +5331,6 @@ mono_type_set_alignment (MonoTypeEnum type, int align)
 int
 mono_type_size (MonoType *t, int *align)
 {
-	MonoTypeEnum simple_type;
-
 	if (!t) {
 		*align = 1;
 		return 0;
@@ -5326,9 +5340,7 @@ mono_type_size (MonoType *t, int *align)
 		return MONO_ABI_SIZEOF (gpointer);
 	}
 
-	simple_type = t->type;
- again:
-	switch (simple_type) {
+ 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		*align = 1;
 		return 0;
@@ -5363,10 +5375,10 @@ mono_type_size (MonoType *t, int *align)
 		*align = MONO_ABI_ALIGNOF (gpointer);
 		return MONO_ABI_SIZEOF (gpointer);
 	case MONO_TYPE_VALUETYPE: {
-		if (m_class_is_enumtype (t->data.klass))
-			return mono_type_size (mono_class_enum_basetype_internal (t->data.klass), align);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t)))
+			return mono_type_size (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t)), align);
 		else
-			return mono_class_value_size (t->data.klass, (guint32*)align);
+			return mono_class_value_size (m_type_data_get_klass_unchecked (t), (guint32*)align);
 	}
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
@@ -5380,7 +5392,7 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, (guint32*)align);
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = t->data.generic_class;
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (t);
 		MonoClass *container_class = gclass->container_class;
 
 		// g_assert (!gclass->inst->is_open);
@@ -5397,13 +5409,12 @@ mono_type_size (MonoType *t, int *align)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (!t->data.generic_param->gshared_constraint || t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
+		if (!m_type_data_get_generic_param_unchecked (t)->gshared_constraint || m_type_data_get_generic_param_unchecked (t)->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
 			*align = MONO_ABI_ALIGNOF (gpointer);
 			return MONO_ABI_SIZEOF (gpointer);
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
-			return mono_type_size (t->data.generic_param->gshared_constraint, align);
-			goto again;
+			return mono_type_size (m_type_data_get_generic_param_unchecked (t)->gshared_constraint, align);
 		}
 	default:
 		g_error ("mono_type_size: type 0x%02x unknown", t->type);
@@ -5465,12 +5476,12 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (allow_open);
-		if (!t->data.generic_param->gshared_constraint || t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
+		if (!m_type_data_get_generic_param_unchecked (t)->gshared_constraint || m_type_data_get_generic_param_unchecked (t)->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
 			*align = stack_slot_align;
 			return stack_slot_size;
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
-			return mono_type_stack_size_internal (t->data.generic_param->gshared_constraint, align, allow_open);
+			return mono_type_stack_size_internal (m_type_data_get_generic_param_unchecked (t)->gshared_constraint, align, allow_open);
 		}
 	case MONO_TYPE_TYPEDBYREF:
 		*align = stack_slot_align;
@@ -5488,10 +5499,10 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 
-		if (m_class_is_enumtype (t->data.klass))
-			return mono_type_stack_size_internal (mono_class_enum_basetype_internal (t->data.klass), align, allow_open);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t)))
+			return mono_type_stack_size_internal (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t)), align, allow_open);
 		else {
-			size = mono_class_value_size (t->data.klass, (guint32*)align);
+			size = mono_class_value_size (m_type_data_get_klass_unchecked (t), (guint32*)align);
 
 			*align = *align + stack_slot_align - 1;
 			*align &= ~(stack_slot_align - 1);
@@ -5503,7 +5514,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		}
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = t->data.generic_class;
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (t);
 		MonoClass *container_class = gclass->container_class;
 
 		if (!allow_open)
@@ -5538,7 +5549,7 @@ gboolean
 mono_type_generic_inst_is_valuetype (MonoType *type)
 {
 	g_assert (type->type == MONO_TYPE_GENERICINST);
-	return m_class_is_valuetype (type->data.generic_class->container_class);
+	return m_class_is_valuetype (m_type_data_get_generic_class_unchecked (type)->container_class);
 }
 
 /**
@@ -5596,29 +5607,6 @@ mono_metadata_generic_context_equal (const MonoGenericContext *g1, const MonoGen
 	return g1->class_inst == g2->class_inst && g1->method_inst == g2->method_inst;
 }
 
-/*
- * mono_metadata_str_hash:
- *
- *   This should be used instead of g_str_hash for computing hash codes visible
- * outside this module, since g_str_hash () is not guaranteed to be stable
- * (its not the same in eglib for example).
- */
-guint
-mono_metadata_str_hash (gconstpointer v1)
-{
-	/* Same as g_str_hash () in glib */
-	/* note: signed/unsigned char matters - we feed UTF-8 to this function, so the high bit will give diferent results if we don't match. */
-	unsigned char *p = (unsigned char *) v1;
-	guint hash = *p;
-
-	while (*p++) {
-		if (*p)
-			hash = (hash << 5) - hash + *p;
-	}
-
-	return hash;
-}
-
 /**
  * mono_metadata_type_hash:
  * \param t1 a type
@@ -5635,7 +5623,7 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *klass = t1->data.klass;
+		MonoClass *klass = m_type_data_get_klass_unchecked (t1);
 		/*
 		 * Dynamic classes must not be hashed on their type since it can change
 		 * during runtime. For example, if we hash a reference type that is
@@ -5649,14 +5637,14 @@ mono_metadata_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ m_class_get_name_hash (klass);
 	}
 	case MONO_TYPE_PTR:
-		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_type_data_get_type_unchecked (t1));
 	case MONO_TYPE_ARRAY:
-		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_class_get_byval_arg (t1->data.array->eklass));
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_class_get_byval_arg (m_type_data_get_array_unchecked (t1)->eklass));
 	case MONO_TYPE_GENERICINST:
-		return ((hash << 5) - hash) ^ mono_generic_class_hash (t1->data.generic_class);
+		return ((hash << 5) - hash) ^ mono_generic_class_hash (m_type_data_get_generic_class_unchecked (t1));
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return ((hash << 5) - hash) ^ mono_metadata_generic_param_hash (t1->data.generic_param);
+		return ((hash << 5) - hash) ^ mono_metadata_generic_param_hash (m_type_data_get_generic_param_unchecked (t1));
 	default:
 		return hash;
 	}
@@ -5734,22 +5722,22 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 	MonoType *c2_type = m_class_get_byval_arg (c2);
 	if ((c1_type->type == MONO_TYPE_VAR) && (c2_type->type == MONO_TYPE_VAR))
 		return mono_metadata_generic_param_equal_internal (
-			c1_type->data.generic_param, c2_type->data.generic_param, signature_only);
+			m_type_data_get_generic_param_unchecked (c1_type), m_type_data_get_generic_param_unchecked (c2_type), signature_only);
 	if ((c1_type->type == MONO_TYPE_MVAR) && (c2_type->type == MONO_TYPE_MVAR))
 		return mono_metadata_generic_param_equal_internal (
-			c1_type->data.generic_param, c2_type->data.generic_param, signature_only);
+			m_type_data_get_generic_param_unchecked (c1_type), m_type_data_get_generic_param_unchecked (c2_type), signature_only);
 	if (signature_only &&
 	    (c1_type->type == MONO_TYPE_SZARRAY) && (c2_type->type == MONO_TYPE_SZARRAY))
-		return mono_metadata_class_equal (c1_type->data.klass, c2_type->data.klass, signature_only);
+		return mono_metadata_class_equal (m_type_data_get_klass_unchecked (c1_type), m_type_data_get_klass_unchecked (c2_type), signature_only);
 	if (signature_only &&
 	    (c1_type->type == MONO_TYPE_ARRAY) && (c2_type->type == MONO_TYPE_ARRAY))
 		return do_mono_metadata_type_equal (c1_type, c2_type, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_PTR) && (c2_type->type == MONO_TYPE_PTR))
-		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
+		return do_mono_metadata_type_equal (m_type_data_get_type_unchecked (c1_type), m_type_data_get_type_unchecked (c2_type), signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_FNPTR) && (c2_type->type == MONO_TYPE_FNPTR))
-		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
+		return mono_metadata_fnptr_equal (m_type_data_get_method_unchecked (c1_type), m_type_data_get_method_unchecked (c2_type), signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	return FALSE;
 }
 
@@ -5891,31 +5879,31 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
-		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
+		result = mono_metadata_class_equal (m_type_data_get_klass_unchecked (t1), m_type_data_get_klass_unchecked (t2), (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_PTR:
-		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, equiv_flags);
+		result = do_mono_metadata_type_equal (m_type_data_get_type_unchecked (t1), m_type_data_get_type_unchecked (t2), equiv_flags);
 		break;
 	case MONO_TYPE_ARRAY:
-		if (t1->data.array->rank != t2->data.array->rank)
+		if (m_type_data_get_array_unchecked (t1)->rank != m_type_data_get_array_unchecked (t2)->rank)
 			result = FALSE;
 		else
-			result = mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
+			result = mono_metadata_class_equal (m_type_data_get_array_unchecked (t1)->eklass, m_type_data_get_array_unchecked (t2)->eklass, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_GENERICINST:
 		result = _mono_metadata_generic_class_equal (
-			t1->data.generic_class, t2->data.generic_class, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
+			m_type_data_get_generic_class_unchecked (t1), m_type_data_get_generic_class_unchecked (t2), (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_VAR:
 		result = mono_metadata_generic_param_equal_internal (
-			t1->data.generic_param, t2->data.generic_param, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
+			m_type_data_get_generic_param_unchecked (t1), m_type_data_get_generic_param_unchecked (t2), (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_MVAR:
 		result = mono_metadata_generic_param_equal_internal (
-			t1->data.generic_param, t2->data.generic_param, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
+			m_type_data_get_generic_param_unchecked (t1), m_type_data_get_generic_param_unchecked (t2), (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_FNPTR:
-		result = mono_metadata_fnptr_equal (t1->data.method, t2->data.method, equiv_flags);
+		result = mono_metadata_fnptr_equal (m_type_data_get_method_unchecked (t1), m_type_data_get_method_unchecked (t2), equiv_flags);
 		break;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
@@ -6268,12 +6256,12 @@ static void
 deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o)
 {
 	if (o->type == MONO_TYPE_PTR) {
-		r->data.type = mono_metadata_type_dup (image, o->data.type);
+		m_type_data_set_type (r, mono_metadata_type_dup (image, m_type_data_get_type_unchecked (o)));
 	} else if (o->type == MONO_TYPE_ARRAY) {
-		r->data.array = mono_dup_array_type (image, o->data.array);
+		m_type_data_set_array (r, mono_dup_array_type (image, m_type_data_get_array_unchecked (o)));
 	} else if (o->type == MONO_TYPE_FNPTR) {
 		/*FIXME the dup'ed signature is leaked mono_metadata_free_type*/
-		r->data.method = mono_metadata_signature_deep_dup (image, o->data.method);
+		m_type_data_set_method (r, mono_metadata_signature_deep_dup (image, m_type_data_get_method_unchecked (o)));
 	}
 }
 
@@ -7008,24 +6996,27 @@ handle_enum:
 		}
 	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
 	case MONO_TYPE_VALUETYPE: /*FIXME*/
+	{
 		if (mspec && mspec->native == MONO_NATIVE_CUSTOM)
 			return MONO_NATIVE_CUSTOM;
 
-		if (m_class_is_enumtype (type->data.klass)) {
-			t = mono_class_enum_basetype_internal (type->data.klass)->type;
+		MonoClass *type_klass = m_type_data_get_klass (type);
+		if (m_class_is_enumtype (type_klass)) {
+			t = mono_class_enum_basetype_internal (type_klass)->type;
 			goto handle_enum;
 		}
-		if (type->data.klass == mono_class_try_get_handleref_class ()){
+		if (type_klass == mono_class_try_get_handleref_class ()){
 			*conv = MONO_MARSHAL_CONV_HANDLEREF;
 			return MONO_NATIVE_INT;
 		}
 		return MONO_NATIVE_STRUCT;
+	}
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 		if (mspec) {
 			switch (mspec->native) {
 			case MONO_NATIVE_BYVALARRAY:
-				if ((m_class_get_element_class (type->data.klass) == mono_defaults.char_class) && !unicode)
+				if ((m_class_get_element_class (mono_class_from_mono_type_internal (type)) == mono_defaults.char_class) && !unicode)
 					*conv = MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY;
 				else
 					*conv = MONO_MARSHAL_CONV_ARRAY_BYVALARRAY;
@@ -7077,34 +7068,41 @@ handle_enum:
 				*conv = MONO_MARSHAL_CONV_OBJECT_IUNKNOWN;
 				return MONO_NATIVE_IUNKNOWN;
 			case MONO_NATIVE_FUNC:
-				if (t == MONO_TYPE_CLASS && (type->data.klass == mono_defaults.multicastdelegate_class ||
-											 type->data.klass == mono_defaults.delegate_class ||
-							     				m_class_get_parent (type->data.klass) == mono_defaults.multicastdelegate_class)) {
+			{
+				MonoClass *type_klass = (t == MONO_TYPE_CLASS) ? m_type_data_get_klass (type) : NULL;
+				if (t == MONO_TYPE_CLASS && (type_klass == mono_defaults.multicastdelegate_class ||
+								 type_klass == mono_defaults.delegate_class ||
+								m_class_get_parent (type_klass) == mono_defaults.multicastdelegate_class)) {
 					*conv = MONO_MARSHAL_CONV_DEL_FTN;
 					return MONO_NATIVE_FUNC;
 				}
 				/* Fall through */
+			}
 			default:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}
 		}
-		if (t == MONO_TYPE_CLASS && (type->data.klass == mono_defaults.multicastdelegate_class ||
-					     type->data.klass == mono_defaults.delegate_class ||
-					     m_class_get_parent (type->data.klass) == mono_defaults.multicastdelegate_class)) {
-			*conv = MONO_MARSHAL_CONV_DEL_FTN;
-			return MONO_NATIVE_FUNC;
+
+		{
+			MonoClass *type_klass = (t == MONO_TYPE_CLASS) ? m_type_data_get_klass (type) : NULL;
+			if (t == MONO_TYPE_CLASS && (type_klass == mono_defaults.multicastdelegate_class ||
+						type_klass == mono_defaults.delegate_class ||
+						m_class_get_parent (type_klass) == mono_defaults.multicastdelegate_class)) {
+				*conv = MONO_MARSHAL_CONV_DEL_FTN;
+				return MONO_NATIVE_FUNC;
+			}
+			if (mono_class_try_get_safehandle_class () && type_klass != NULL &&
+				mono_class_is_subclass_of_internal (type_klass,  mono_class_try_get_safehandle_class (), FALSE)){
+				*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
+				return MONO_NATIVE_INT;
+			}
+			*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
+			return MONO_NATIVE_STRUCT;
 		}
-		if (mono_class_try_get_safehandle_class () && type->data.klass != NULL &&
-			mono_class_is_subclass_of_internal (type->data.klass,  mono_class_try_get_safehandle_class (), FALSE)){
-			*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
-			return MONO_NATIVE_INT;
-		}
-		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
-		return MONO_NATIVE_STRUCT;
 	}
 	case MONO_TYPE_FNPTR: return MONO_NATIVE_FUNC;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
 		t = type->type;
 		goto handle_enum;
 	case MONO_TYPE_TYPEDBYREF:
@@ -7525,7 +7523,7 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 		MonoType *t = &helper [i];
 
 		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-		t->data.generic_param = mono_generic_container_get_param (container, i);
+		m_type_data_set_generic_param_unchecked (t, mono_generic_container_get_param (container, i));
 
 		type_argv [i] = t;
 	}
@@ -7619,7 +7617,7 @@ MonoType*
 mono_type_get_ptr_type (MonoType *type)
 {
 	g_assert (type->type == MONO_TYPE_PTR);
-	return type->data.type;
+	return m_type_data_get_type_unchecked (type);
 }
 
 /**
@@ -7642,10 +7640,10 @@ mono_bool
 mono_type_is_struct (MonoType *type)
 {
 	return (!m_type_is_byref (type) && ((type->type == MONO_TYPE_VALUETYPE &&
-		!m_class_is_enumtype (type->data.klass)) || (type->type == MONO_TYPE_TYPEDBYREF) ||
+		!m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) || (type->type == MONO_TYPE_TYPEDBYREF) ||
 		((type->type == MONO_TYPE_GENERICINST) &&
-		mono_metadata_generic_class_is_valuetype (type->data.generic_class) &&
-		!m_class_is_enumtype (type->data.generic_class->container_class))));
+		mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class_unchecked (type)) &&
+		!m_class_is_enumtype (m_type_data_get_generic_class_unchecked (type)->container_class))));
 }
 
 /**
@@ -7691,7 +7689,7 @@ mono_type_is_reference (MonoType *type)
 		(type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
 		(type->type == MONO_TYPE_OBJECT) || (type->type == MONO_TYPE_ARRAY)) ||
 		((type->type == MONO_TYPE_GENERICINST) &&
-		!mono_metadata_generic_class_is_valuetype (type->data.generic_class))));
+		!mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class_unchecked (type)))));
 }
 
 mono_bool

@@ -9,4 +9,11 @@
     <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
     <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <_LibPrefix Condition="'$(CrossHostArch)' == 'true'">$(LibPrefix)</_LibPrefix>
+    <_LibPrefix Condition="'$(CrossHostArch)' != 'true'">$(HostLibPrefix)</_LibPrefix>
+    <_LibSuffix Condition="'$(CrossHostArch)' == 'true'">$(LibSuffix)</_LibSuffix>
+    <_LibSuffix Condition="'$(CrossHostArch)' != 'true'">$(HostLibSuffix)</_LibSuffix>
+  </PropertyGroup>
 </Project>

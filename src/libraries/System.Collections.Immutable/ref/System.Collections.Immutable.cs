@@ -8,6 +8,8 @@ namespace System.Collections.Frozen
 {
     public static partial class FrozenDictionary
     {
+        public static System.Collections.Frozen.FrozenDictionary<TKey, TValue> Create<TKey, TValue>(params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<TKey, TValue>> source) where TKey : notnull { throw null; }
+        public static System.Collections.Frozen.FrozenDictionary<TKey, TValue> Create<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? comparer, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<TKey, TValue>> source) where TKey : notnull { throw null; }
         public static System.Collections.Frozen.FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) where TKey : notnull { throw null; }
         public static System.Collections.Frozen.FrozenDictionary<TKey, TSource> ToFrozenDictionary<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) where TKey : notnull { throw null; }
         public static System.Collections.Frozen.FrozenDictionary<TKey, TElement> ToFrozenDictionary<TSource, TKey, TElement>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TElement> elementSelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) where TKey : notnull { throw null; }
@@ -434,7 +436,9 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer, System.Collections.Generic.IEqualityComparer<TValue>? valueComparer) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) where TKey : notnull { throw null; }
+        public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> CreateRangeWithOverwrite<TKey, TValue>(params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) where TKey : notnull { throw null; }
+        public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> CreateRangeWithOverwrite<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer, System.Collections.Generic.IEqualityComparer<TValue>? valueComparer, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> Create<TKey, TValue>() where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer) where TKey : notnull { throw null; }
@@ -451,6 +455,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> elementSelector, System.Collections.Generic.IEqualityComparer<TKey>? keyComparer) where TKey : notnull { throw null; }
         public static System.Collections.Immutable.ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> elementSelector, System.Collections.Generic.IEqualityComparer<TKey>? keyComparer, System.Collections.Generic.IEqualityComparer<TValue>? valueComparer) where TKey : notnull { throw null; }
     }
+    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableDictionary), "CreateRangeWithOverwrite")]
     public sealed partial class ImmutableDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableDictionary<TKey, TValue> where TKey : notnull
     {
         internal ImmutableDictionary() { }
@@ -1302,5 +1307,6 @@ namespace System.Runtime.InteropServices
     {
         public static System.Collections.Immutable.ImmutableArray<T> AsImmutableArray<T>(T[]? array) { throw null; }
         public static T[]? AsArray<T>(System.Collections.Immutable.ImmutableArray<T> array) { throw null; }
+        public static System.Memory<T> AsMemory<T>(System.Collections.Immutable.ImmutableArray<T>.Builder? builder) { throw null; }
     }
 }

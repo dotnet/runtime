@@ -4,12 +4,11 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import { type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
+import { type Asset, type AssemblyAsset, type BootModule, type AssetBehaviors, type AssetEntry, type LoadingResource, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { mono_exit } from "./exit";
-import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { mono_log_info } from "./logging";
@@ -32,6 +31,7 @@ const jsRuntimeModulesAssetTypes: {
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
+    "js-module-diagnostics": true,
 };
 
 const jsModulesAssetTypes: {
@@ -94,23 +94,18 @@ export function shouldLoadIcuAsset (asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
 
-function convert_single_asset (assetsCollection: AssetEntryInternal[], resource: ResourceList | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const keys = Object.keys(resource || {});
-    mono_assert(keys.length == 1, `Expect to have one ${behavior} asset in resources`);
+function convert_single_asset (assetsCollection: AssetEntryInternal[], resource: Asset[] | undefined, behavior: SingleAssetBehaviors): AssetEntryInternal {
+    resource ??= [];
+    mono_assert(resource.length == 1, `Expect to have one ${behavior} asset in resources`);
 
-    const name = keys[0];
+    const assetEntry = resource[0] as AssetEntryInternal;
+    assetEntry.behavior = behavior;
 
-    const asset = {
-        name,
-        hash: resource![name],
-        behavior,
-    };
-
-    set_single_asset(asset);
+    set_single_asset(assetEntry);
 
     // so that we can use it on the worker too
-    assetsCollection.push(asset);
-    return asset;
+    assetsCollection.push(assetEntry);
+    return assetEntry;
 }
 
 function set_single_asset (asset: AssetEntryInternal) {
@@ -119,16 +114,10 @@ function set_single_asset (asset: AssetEntryInternal) {
     }
 }
 
-function get_single_asset (behavior: SingleAssetBehaviors): AssetEntryInternal {
+export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal|undefined {
     mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
     const asset = singleAssets.get(behavior);
-    mono_assert(asset, `Single asset for ${behavior} not found`);
-    return asset;
-}
-
-export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const asset = get_single_asset(behavior);
-    if (!asset.resolvedUrl) {
+    if (asset && !asset.resolvedUrl) {
         asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
         if (jsRuntimeModulesAssetTypes[asset.behavior]) {
@@ -144,6 +133,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
             throw new Error(`Unknown single asset behavior ${behavior}`);
         }
     }
+    return asset;
+}
+
+export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
+    const asset = try_resolve_single_asset_path(behavior);
+    mono_assert(asset, `Single asset for ${behavior} not found`);
     return asset;
 }
 
@@ -203,6 +198,7 @@ export async function mono_download_assets (): Promise<void> {
                     // wait till after onRuntimeInitialized
 
                     await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                    await runtimeHelpers.afterInstantiateWasm.promise;
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {
@@ -303,125 +299,93 @@ export function prepareAssets () {
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
+        if (resources.jsModuleDiagnostics) {
+            convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
+        }
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
-        const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
-            if (resources.fingerprinting && (asset.behavior == "assembly" || asset.behavior == "pdb" || asset.behavior == "resource")) {
-                asset.virtualPath = getNonFingerprintedAssetName(asset.name);
-            }
+        const addAsset = (asset: Asset, behavior: AssetBehaviors, isCore: boolean) => {
+            const assetEntry = asset as AssetEntryInternal;
+            assetEntry.behavior = behavior;
             if (isCore) {
-                asset.isCore = true;
-                coreAssetsToLoad.push(asset);
+                assetEntry.isCore = true;
+                coreAssetsToLoad.push(assetEntry);
             } else {
-                assetsToLoad.push(asset);
+                assetsToLoad.push(assetEntry);
             }
         };
 
         if (resources.coreAssembly) {
-            for (const name in resources.coreAssembly) {
-                addAsset({
-                    name,
-                    hash: resources.coreAssembly[name],
-                    behavior: "assembly"
-                }, true);
+            for (let i = 0; i < resources.coreAssembly.length; i++) {
+                const asset = resources.coreAssembly[i];
+                addAsset(asset, "assembly", true);
             }
         }
 
         if (resources.assembly) {
-            for (const name in resources.assembly) {
-                addAsset({
-                    name,
-                    hash: resources.assembly[name],
-                    behavior: "assembly"
-                }, !resources.coreAssembly); // if there are no core assemblies, then all assemblies are core
+            for (let i = 0; i < resources.assembly.length; i++) {
+                const asset = resources.assembly[i];
+                addAsset(asset, "assembly", !resources.coreAssembly);
             }
         }
 
 
         if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
             if (resources.corePdb) {
-                for (const name in resources.corePdb) {
-                    addAsset({
-                        name,
-                        hash: resources.corePdb[name],
-                        behavior: "pdb"
-                    }, true);
+                for (let i = 0; i < resources.corePdb.length; i++) {
+                    const asset = resources.corePdb[i];
+                    addAsset(asset, "pdb", true);
                 }
             }
 
             if (resources.pdb) {
-                for (const name in resources.pdb) {
-                    addAsset({
-                        name,
-                        hash: resources.pdb[name],
-                        behavior: "pdb"
-                    }, !resources.corePdb); // if there are no core pdbs, then all pdbs are core
+                for (let i = 0; i < resources.pdb.length; i++) {
+                    const asset = resources.pdb[i];
+                    addAsset(asset, "pdb", !resources.corePdb);
                 }
             }
         }
 
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
-                for (const name in resources.satelliteResources[culture]) {
-                    addAsset({
-                        name,
-                        hash: resources.satelliteResources[culture][name],
-                        behavior: "resource",
-                        culture
-                    }, !resources.coreAssembly);
+                for (let i = 0; i < resources.satelliteResources[culture].length; i++) {
+                    const asset = resources.satelliteResources[culture][i] as AssemblyAsset & AssetEntryInternal;
+                    asset.culture = culture;
+                    addAsset(asset, "resource", !resources.coreAssembly);
                 }
             }
         }
 
         if (resources.coreVfs) {
-            for (const virtualPath in resources.coreVfs) {
-                for (const name in resources.coreVfs[virtualPath]) {
-                    addAsset({
-                        name,
-                        hash: resources.coreVfs[virtualPath][name],
-                        behavior: "vfs",
-                        virtualPath
-                    }, true);
-                }
+            for (let i = 0; i < resources.coreVfs.length; i++) {
+                const asset = resources.coreVfs[i];
+                addAsset(asset, "vfs", true);
             }
         }
 
         if (resources.vfs) {
-            for (const virtualPath in resources.vfs) {
-                for (const name in resources.vfs[virtualPath]) {
-                    addAsset({
-                        name,
-                        hash: resources.vfs[virtualPath][name],
-                        behavior: "vfs",
-                        virtualPath
-                    }, !resources.coreVfs);
-                }
+            for (let i = 0; i < resources.vfs.length; i++) {
+                const asset = resources.vfs[i];
+                addAsset(asset, "vfs", !resources.coreVfs);
             }
         }
 
         const icuDataResourceName = getIcuResourceName(config);
         if (icuDataResourceName && resources.icu) {
-            for (const name in resources.icu) {
-                if (name === icuDataResourceName) {
-                    assetsToLoad.push({
-                        name,
-                        hash: resources.icu[name],
-                        behavior: "icu",
-                        loadRemote: true
-                    });
+            for (let i = 0; i < resources.icu.length; i++) {
+                const asset = resources.icu[i];
+                if (asset.name === icuDataResourceName) {
+                    addAsset(asset, "icu", false);
                 }
             }
         }
 
         if (resources.wasmSymbols) {
-            for (const name in resources.wasmSymbols) {
-                coreAssetsToLoad.push({
-                    name,
-                    hash: resources.wasmSymbols[name],
-                    behavior: "symbols"
-                });
+            for (let i = 0; i < resources.wasmSymbols.length; i++) {
+                const asset = resources.wasmSymbols[i];
+                addAsset(asset, "symbols", false);
             }
         }
     }
@@ -445,15 +409,6 @@ export function prepareAssets () {
     }
 
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
-}
-
-export function getNonFingerprintedAssetName (assetName: string) {
-    const fingerprinting = loaderHelpers.config.resources?.fingerprinting;
-    if (fingerprinting && fingerprinting[assetName]) {
-        return fingerprinting[assetName];
-    }
-
-    return assetName;
 }
 
 export function prepareAssetsWorker () {
@@ -671,7 +626,7 @@ const totalResources = new Set<string>();
 function download_resource (asset: AssetEntryInternal): LoadingResource {
     try {
         mono_assert(asset.resolvedUrl, "Request's resolvedUrl must be set");
-        const fetchResponse = download_resource_with_cache(asset);
+        const fetchResponse = fetchResource(asset);
         const response = { name: asset.name, url: asset.resolvedUrl, response: fetchResponse };
 
         totalResources.add(asset.name!);
@@ -704,16 +659,6 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
     }
 }
 
-async function download_resource_with_cache (asset: AssetEntryInternal): Promise<Response> {
-    let response = await findCachedResponse(asset);
-    if (!response) {
-        response = await fetchResource(asset);
-        addCachedReponse(asset, response);
-    }
-
-    return response;
-}
-
 function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     // Allow developers to override how the resource is loaded
     let url = asset.resolvedUrl!;
@@ -721,7 +666,7 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
         const customLoadResult = invokeLoadBootResource(asset);
         if (customLoadResult instanceof Promise) {
             // They are supplying an entire custom response, so just use that
-            return customLoadResult;
+            return customLoadResult as Promise<Response>;
         } else if (typeof customLoadResult === "string") {
             url = customLoadResult;
         }
@@ -762,7 +707,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "js-module-threads": "dotnetjs"
 };
 
-function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | null | undefined {
+function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
     if (loaderHelpers.loadBootResource) {
         const requestHash = asset.hash ?? "";
         const url = asset.resolvedUrl!;
@@ -828,6 +773,7 @@ export async function streamingCompileWasm () {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
     }
 }
+
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");

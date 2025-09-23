@@ -56,6 +56,7 @@ namespace ILCompiler
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
         private readonly List<FieldDesc> _fieldsWithRuntimeMapping = new List<FieldDesc>();
         private readonly List<ReflectableCustomAttribute> _customAttributesWithMetadata = new List<ReflectableCustomAttribute>();
+        private readonly List<ReflectableParameter> _parametersWithMetadata = new List<ReflectableParameter>();
 
         internal IReadOnlyDictionary<string, bool> FeatureSwitches { get; }
 
@@ -147,6 +148,12 @@ namespace ILCompiler
                 _customAttributesWithMetadata.Add(customAttributeMetadataNode.CustomAttribute);
             }
 
+            var parameterMetadataNode = obj as MethodParameterMetadataNode;
+            if (parameterMetadataNode != null)
+            {
+                _parametersWithMetadata.Add(parameterMetadataNode.Parameter);
+            }
+
             var reflectedFieldNode = obj as ReflectedFieldNode;
             if (reflectedFieldNode != null)
             {
@@ -221,17 +228,34 @@ namespace ILCompiler
             out byte[] metadataBlob,
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
+            out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
+            out Dictionary<FieldDesc, int> fieldMetadataMappings,
             out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
-                factory, out metadataBlob, out typeMappings, out methodMappings, out fieldMappings, out stackTraceMapping);
+                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping);
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             dependencies ??= new DependencyList();
             dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
+        }
+
+        public override void GetNativeLayoutMetadataDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            if (CanGenerateMetadata(method))
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.LimitedMethodMetadata(method.GetTypicalMethodDefinition()), "Method referenced from native layout");
+            }
+            else
+            {
+                // We can end up here with reflection disabled or multifile compilation.
+                // If we ever productize either, we'll need to do something different.
+                // Scenarios that currently need this won't work in these modes.
+            }
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
@@ -279,7 +303,7 @@ namespace ILCompiler
                 // in places where they assume IL-level trimming (where the method cannot be removed).
                 // We ask for a full reflectable method with its method body instead of just the
                 // metadata.
-                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
                 if (!IsReflectionBlocked(invokeMethod))
                 {
                     dependencies ??= new DependencyList();
@@ -288,29 +312,6 @@ namespace ILCompiler
             }
 
             MetadataType mdType = type as MetadataType;
-
-            // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have
-            // method bodies for all properties. It's common to have anonymous types used with reflection
-            // and it's hard to specify them in RD.XML.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic) != 0)
-            {
-                if (mdType != null &&
-                    mdType.HasInstantiation &&
-                    !mdType.IsGenericDefinition &&
-                    mdType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute") &&
-                    mdType.Name.Contains("AnonymousType"))
-                {
-                    foreach (MethodDesc method in type.GetMethods())
-                    {
-                        if (!method.Signature.IsStatic && method.IsSpecialName)
-                        {
-                            dependencies ??= new DependencyList();
-                            dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
-                        }
-                    }
-                }
-            }
-
             ModuleDesc module = mdType?.Module;
             if (module != null && !_rootEntireAssembliesExaminedModules.Contains(module))
             {
@@ -404,13 +405,13 @@ namespace ILCompiler
             return false;
         }
 
-        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool allocated)
         {
             // Check to see if we have any dataflow annotations on the type.
             // The check below also covers flow annotations inherited through base classes and implemented interfaces.
-            bool hasFlowAnnotations = type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
+            bool allocatedWithFlowAnnotations = allocated && type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
 
-            if (hasFlowAnnotations)
+            if (allocatedWithFlowAnnotations)
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
@@ -419,7 +420,7 @@ namespace ILCompiler
                     "Type exists and GetType called on it"));
             }
 
-            if (hasFlowAnnotations
+            if (allocatedWithFlowAnnotations
                 && !type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */)
             {
                 // We have some flow annotations on this type.
@@ -717,25 +718,6 @@ namespace ILCompiler
             return _modulesWithMetadata;
         }
 
-        private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
-        {
-            // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
-            {
-                if (!IsReflectionBlocked(constructedType))
-                    yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
-            }
-        }
-
         public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, FieldDesc writtenField)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
@@ -769,6 +751,15 @@ namespace ILCompiler
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
                 DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+            }
+        }
+
+        public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        {
+            bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
+            if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, accessedType))
+            {
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting type");
             }
         }
 
@@ -856,8 +847,11 @@ namespace ILCompiler
                 reflectableTypes[typeWithMetadata] = MetadataCategory.Description;
             }
 
-            foreach (var constructedType in GetTypesWithRuntimeMapping())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
+                if (IsReflectionBlocked(constructedType))
+                    continue;
+
                 reflectableTypes[constructedType] |= MetadataCategory.RuntimeMapping;
 
                 // Also set the description bit if the definition is getting metadata.
@@ -918,7 +912,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _options);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _options);
         }
 
         private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
@@ -1018,7 +1012,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MethodDesc methodDef)
             {
-                return _factory.MethodMetadata(methodDef).Marked;
+                return _factory.MethodMetadata(methodDef).Marked || _factory.LimitedMethodMetadata(methodDef).Marked;
             }
 
             public bool GeneratesMetadata(MetadataType typeDef)
@@ -1029,6 +1023,11 @@ namespace ILCompiler
             public bool GeneratesMetadata(EcmaModule module, CustomAttributeHandle caHandle)
             {
                 return _factory.CustomAttributeMetadata(new ReflectableCustomAttribute(module, caHandle)).Marked;
+            }
+
+            public bool GeneratesMetadata(EcmaModule module, ParameterHandle paramHandle)
+            {
+                return _factory.MethodParameterMetadata(new ReflectableParameter(module, paramHandle)).Marked;
             }
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
@@ -1216,27 +1215,18 @@ namespace ILCompiler
         CompleteTypesOnly = 1,
 
         /// <summary>
-        /// Specifies that heuristic that makes anonymous types work should be applied.
-        /// </summary>
-        /// <remarks>
-        /// Generates method bodies for properties on anonymous types even if they're not
-        /// statically used.
-        /// </remarks>
-        AnonymousTypeHeuristic = 2,
-
-        /// <summary>
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
-        ReflectionILScanning = 4,
+        ReflectionILScanning = 2,
 
         /// <summary>
         /// Consider all native artifacts (native method bodies, etc) visible from reflection.
         /// </summary>
-        CreateReflectableArtifacts = 8,
+        CreateReflectableArtifacts = 4,
 
         /// <summary>
         /// Fully root used assemblies that are not marked IsTrimmable in metadata.
         /// </summary>
-        RootDefaultAssemblies = 16,
+        RootDefaultAssemblies = 8,
     }
 }
