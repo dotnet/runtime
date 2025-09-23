@@ -55,6 +55,11 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<DateTimeOffset> DateTimeOffsetConverter => s_dateTimeOffsetConverter ??= new DateTimeOffsetConverter();
         private static JsonConverter<DateTimeOffset>? s_dateTimeOffsetConverter;
 
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{DateTimeOffset}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<DateTimeOffset>?> JsonValuePrimitiveDateTimeOffsetConverter { get; } = new JsonValueConverter<JsonValuePrimitive<DateTimeOffset>>();
+
 #if NET
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="DateOnly"/> values.
