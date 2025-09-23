@@ -153,6 +153,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
+        [MemberData(nameof(SupplementalTestCases))]
         public void DeriveKeyTests(HkdfTestCase test)
         {
             byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
