@@ -45,7 +45,6 @@ namespace Profiler.Tests
                 return 1234;
             }
 
-
             TriggerRevert();
 
             OutputBuilder.Clear();
