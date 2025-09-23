@@ -267,6 +267,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<TimeSpan>? s_timeSpanConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{TimeSpan}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<TimeSpan>?> JsonValuePrimitiveTimeSpanConverter { get; } = new JsonValueConverter<JsonValuePrimitive<TimeSpan>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ushort"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

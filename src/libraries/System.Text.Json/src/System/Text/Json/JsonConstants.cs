@@ -130,5 +130,8 @@ namespace System.Text.Json
 
         public const int MinimumTimeOnlyFormatLength = 3; // h:m
         public const int MaximumTimeOnlyFormatLength = 16; // hh:mm:ss.fffffff
+
+        public const int MinimumTimeSpanFormatLength = 1; // d
+        public const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
     }
 }

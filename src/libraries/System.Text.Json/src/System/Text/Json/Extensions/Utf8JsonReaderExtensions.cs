@@ -15,6 +15,8 @@ namespace System.Text.Json.Extensions
         private const int MaximumEscapedTimeOnlyFormatLength = JsonConstants.MaximumTimeOnlyFormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
 #endif
 
+        private const int MaximumEscapedTimeSpanFormatLength = JsonConstants.MaxExpansionFactorWhileEscaping * JsonConstants.MaximumTimeSpanFormatLength;
+
 #if NET
         internal static DateOnly GetDateOnly(this ref Utf8JsonReader reader)
         {
@@ -183,5 +185,49 @@ namespace System.Text.Json.Extensions
                 (!Half.IsNegativeInfinity(result) || buffer.SequenceEqual(JsonConstants.NegativeInfinityValue));
         }
 #endif
+
+        internal static TimeSpan GetTimeSpan(this ref Utf8JsonReader reader)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
+
+            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, JsonConstants.MinimumTimeSpanFormatLength, MaximumEscapedTimeSpanFormatLength))
+            {
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+            }
+
+            scoped ReadOnlySpan<byte> source;
+            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            {
+                source = reader.ValueSpan;
+            }
+            else
+            {
+                Span<byte> stackSpan = stackalloc byte[MaximumEscapedTimeSpanFormatLength];
+                int bytesWritten = reader.CopyString(stackSpan);
+                source = stackSpan.Slice(0, bytesWritten);
+            }
+
+            byte firstChar = source[0];
+            if (!JsonHelpers.IsDigit(firstChar) && firstChar != '-')
+            {
+                // Note: Utf8Parser.TryParse allows for leading whitespace so we
+                // need to exclude that case here.
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+            }
+
+            bool result = Utf8Parser.TryParse(source, out TimeSpan tmpValue, out int bytesConsumed, 'c');
+
+            // Note: Utf8Parser.TryParse will return true for invalid input so
+            // long as it starts with an integer. Example: "2021-06-18" or
+            // "1$$$$$$$$$$". We need to check bytesConsumed to know if the
+            // entire source was actually valid.
+
+            if (!result || source.Length != bytesConsumed)
+            {
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+            }
+
+            return tmpValue;
+        }
     }
 }

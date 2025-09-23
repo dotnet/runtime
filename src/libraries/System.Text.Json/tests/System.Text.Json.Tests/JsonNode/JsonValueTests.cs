@@ -52,10 +52,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new Guid("CA79F1AC-AA0B-4704-8F7F-5A95DF0E4FD2"))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(new TimeSpan(1, 2, 3, 4, 5))
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(new TimeSpan(1, 2, 3, 4, 5))
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(new Uri("http://contoso.com"))
