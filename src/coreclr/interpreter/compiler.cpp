@@ -1345,6 +1345,13 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     for (int i = 0; i < m_varsSize; i++)
     {
         InterpVar *pVar = &m_pVars[i];
+
+        if (pVar->offset == 0xFFFFFFFF)
+        {
+            // This variable is not actually allocated, so skip it
+            // This can happen for EH clause variables that are never used
+            continue;
+        }
         GcSlotFlags flags = pVar->global
             ? (GcSlotFlags)GC_SLOT_UNTRACKED
             : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
@@ -1853,8 +1860,13 @@ void InterpCompiler::CreateILVars()
 
     for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
     {
-        CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        // These aren't actually global vars, but we alloc them here so that they are located in predictable spots on the
+        // list of vars so we can refer to them easily
+        int32_t align;
+        new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, GetInterpTypeStackSize(NULL, InterpTypeO, &align));
+        INTERP_DUMP("alloc EH clause var %d\n", index);
         index++;
+        m_varsSize++; // When we computed m_varsSize above, we didn't account for the clause vars
     }
 
     m_totalVarsStackSize = offset;
