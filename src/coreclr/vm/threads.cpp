@@ -4789,10 +4789,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         }
     }
 
-    // Since we've just called CoInitialize, COM has effectively been started up.
-    // To ensure the CLR is aware of this, we need to call EnsureComStarted.
-    EnsureComStarted(FALSE);
-
     return GetApartment();
 }
 

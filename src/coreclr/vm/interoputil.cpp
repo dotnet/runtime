@@ -1372,7 +1372,7 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     return hr;
 }
 
-VOID EnsureComStarted(BOOL fCoInitCurrentThread)
+VOID EnsureComStarted()
 {
     CONTRACTL
     {
@@ -1388,7 +1388,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     _ASSERTE(g_fComStarted);
 }
 
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
+HRESULT EnsureComStartedNoThrow()
 {
     CONTRACTL
     {
