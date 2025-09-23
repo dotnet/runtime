@@ -122,6 +122,14 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         internal static JsonValue Create(TimeOnly value, JsonNodeOptions? options = null) => new JsonValuePrimitive<TimeOnly>(value, JsonMetadataServices.TimeOnlyConverter, options);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(UInt128 value, JsonNodeOptions? options = null) => new JsonValuePrimitive<UInt128>(value, JsonMetadataServices.UInt128Converter, options);
 #endif
 
         /// <summary>

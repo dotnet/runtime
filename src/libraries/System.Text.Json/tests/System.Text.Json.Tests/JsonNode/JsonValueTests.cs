@@ -35,10 +35,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new TimeOnly(17, 18, 19))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(UInt128.MaxValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(UInt128.MaxValue)
+                };
 #endif
                 yield return new object[]
                 {

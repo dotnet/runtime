@@ -143,6 +143,11 @@ namespace System.Text.Json.Serialization.Metadata
         [CLSCompliant(false)]
         public static JsonConverter<UInt128> UInt128Converter => s_uint128Converter ??= new UInt128Converter();
         private static JsonConverter<UInt128>? s_uint128Converter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt128}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<UInt128>?> JsonValuePrimitiveUInt128Converter { get; } = new JsonValueConverter<JsonValuePrimitive<UInt128>>();
 #endif
 
         /// <summary>
