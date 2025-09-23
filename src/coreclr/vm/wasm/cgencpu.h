@@ -22,7 +22,7 @@
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    const unsigned stackSlotSize = 4;
+    const unsigned stackSlotSize = sizeof(void*);
     return ALIGN_UP(parmSize, stackSlotSize);
 }
 
