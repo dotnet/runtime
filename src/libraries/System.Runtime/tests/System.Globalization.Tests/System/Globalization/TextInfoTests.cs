@@ -361,7 +361,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(ToLower_Rune_TestData))]
         public void ToLower_Rune(string name, Rune value, Rune expected)
         {
-            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToLower(str));
+            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToLower(value));
         }
 
         // ToUpper_TestData_netcore has the data which is specific to netcore framework
@@ -511,7 +511,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(ToUpper_Rune_TestData))]
         public void ToUpper_Rune(string name, Rune value, Rune expected)
         {
-            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToUpper(str));
+            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToUpper(value));
         }
 
         [Theory]
