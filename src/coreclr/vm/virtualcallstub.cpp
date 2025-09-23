@@ -2326,10 +2326,6 @@ VirtualCallStubManager::Resolver(
             fShouldPatch = TRUE;
         }
         else
-#else
-        BOOL fSlotCallsPrestub = FALSE;
-        fShouldPatch = TRUE;
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         {
             // Getting the MethodDesc is very expensive,
             // so only call this when we are calling the prestub
@@ -2365,6 +2361,10 @@ VirtualCallStubManager::Resolver(
                 }
             }
         }
+#else
+        BOOL fSlotCallsPrestub = FALSE;
+        fShouldPatch = TRUE;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMT->IsComObjectType()
