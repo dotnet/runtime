@@ -121,4 +121,7 @@ inline double getR8LittleEndian(const uint8_t* ptr)
     return *(double*)&val;
 }
 
+const uint32_t INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT = 0xFFFFFFFE;
+const uint32_t INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED = 0xFFFFFFFF;
+
 #endif
