@@ -176,8 +176,9 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// <remarks>
     /// Methods are pattern-matched by compiler to allow using foreach pattern.
     /// </remarks>
-    public ref struct Utf16Enumerator: IEnumerator<RunePosition>
+    public ref struct Utf16Enumerator : IEnumerator<RunePosition>
     {
+        private ReadOnlySpan<char> _original;
         private ReadOnlySpan<char> _remaining;
 
         /// <summary>
@@ -193,7 +194,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
 
         internal Utf16Enumerator(ReadOnlySpan<char> buffer)
         {
-            _remaining = buffer;
+            _original = _remaining = buffer;
             Current = default;
         }
 
@@ -235,8 +236,16 @@ public readonly struct RunePosition : IEquatable<RunePosition>
             return true;
         }
 
+        public void Reset()
+        {
+            _remaining = _original;
+            Current = default;
+        }
+
         object IEnumerator.Current => Current;
-        void IEnumerator.Reset() => throw new NotSupportedException();
+
+        void IEnumerator.Reset() => Reset();
+
         void IDisposable.Dispose() { }
     }
 
@@ -248,6 +257,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// </remarks>
     public ref struct Utf8Enumerator : IEnumerator<RunePosition>
     {
+        private ReadOnlySpan<byte> _original;
         private ReadOnlySpan<byte> _remaining;
 
         /// <summary>
@@ -267,7 +277,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
         /// <param name="buffer">The buffer containing the Unicode data.</param>
         internal Utf8Enumerator(ReadOnlySpan<byte> buffer)
         {
-            _remaining = buffer;
+            _original = _remaining = buffer;
             Current = default;
         }
 
@@ -294,8 +304,16 @@ public readonly struct RunePosition : IEquatable<RunePosition>
             return true;
         }
 
+        public void Reset()
+        {
+            _remaining = _original;
+            Current = default;
+        }
+
         object IEnumerator.Current => Current;
-        void IEnumerator.Reset() => throw new NotSupportedException();
+
+        void IEnumerator.Reset() => Reset();
+
         void IDisposable.Dispose() { }
     }
 }

@@ -921,5 +921,60 @@ namespace System.Text.Tests
                 Assert.Equal(new int[] { 'y', '\uFFFD' }, enumeratedValues.ToArray());
             }
         }
+
+        [Fact]
+        public static void EnumerateRunePositions_ResetEnumeration()
+        {
+            string text = "AB\U0002B754CD";
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(text);
+
+            {
+                RunePosition.Utf16Enumerator enumerator = RunePosition.EnumerateUtf16(text).GetEnumerator();
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('A', enumerator.Current.Rune.Value);
+
+                enumerator.Reset();
+
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('A', enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('B', enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(0x2B754, enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('C', enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('D', enumerator.Current.Rune.Value);
+
+                Assert.False(enumerator.MoveNext());
+                enumerator.Reset();
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('A', enumerator.Current.Rune.Value);
+            }
+
+            {
+                RunePosition.Utf8Enumerator enumerator = RunePosition.EnumerateUtf8(utf8Bytes).GetEnumerator();
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('A', enumerator.Current.Rune.Value);
+
+                enumerator.Reset();
+
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('A', enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('B', enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(0x2B754, enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('C', enumerator.Current.Rune.Value);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('D', enumerator.Current.Rune.Value);
+
+                Assert.False(enumerator.MoveNext());
+                enumerator.Reset();
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal('A', enumerator.Current.Rune.Value);
+            }
+        }
     }
 }

@@ -15745,6 +15745,7 @@ namespace System.Text
             public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf16Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            public void Reset() { throw null; }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             void System.Collections.IEnumerator.Reset() { }
             void System.IDisposable.Dispose() { }
@@ -15755,6 +15756,7 @@ namespace System.Text
             public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf8Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            public void Reset() { throw null; }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             void System.Collections.IEnumerator.Reset() { }
             void System.IDisposable.Dispose() { }
