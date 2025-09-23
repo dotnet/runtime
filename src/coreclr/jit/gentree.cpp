@@ -5817,11 +5817,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
 #if defined(TARGET_RISCV64)
                     case NI_System_Math_Max:
-                    case NI_System_Math_MaxNumber:
                     case NI_System_Math_MaxUnsigned:
+                    case NI_System_Math_MaxNative:
                     case NI_System_Math_Min:
-                    case NI_System_Math_MinNumber:
                     case NI_System_Math_MinUnsigned:
+                    case NI_System_Math_MinNative:
                     {
                         level++;
                         break;

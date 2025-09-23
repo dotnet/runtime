@@ -360,8 +360,8 @@ int LinearScan::BuildNode(GenTree* tree)
             switch (tree->AsIntrinsic()->gtIntrinsicName)
             {
                 // Both operands and its result must be of the same floating-point type.
-                case NI_System_Math_MinNumber:
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MinNative:
+                case NI_System_Math_MaxNative:
                     assert(op2 != nullptr);
                     assert(op2->TypeIs(tree->TypeGet()));
                     FALLTHROUGH;

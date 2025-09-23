@@ -9861,7 +9861,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 }
 
 #ifdef TARGET_RISCV64
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
@@ -9869,7 +9869,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
@@ -9903,7 +9903,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 }
 
 #ifdef TARGET_RISCV64
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
@@ -9911,7 +9911,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
@@ -9990,7 +9990,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_Max;
                 break;
 
-            case NI_System_Math_MaxNumber:
+            case NI_System_Math_MaxNative:
                 vnf = VNF_MaxNumber;
                 break;
 
@@ -10002,7 +10002,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_Min;
                 break;
 
-            case NI_System_Math_MinNumber:
+            case NI_System_Math_MinNative:
                 vnf = VNF_MinNumber;
                 break;
 

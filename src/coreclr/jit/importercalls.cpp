@@ -4978,42 +4978,71 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
                     GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
+                    GenTree *op1Clone = nullptr, *op2Clone = nullptr;
                     if (isNative)
                     {
                         assert(!isMagnitude && !isNumber);
-                        isNumber = true;
                     }
-
-                    GenTree *op1Clone = nullptr, *op2Clone = nullptr;
-
-                    if (!isNumber)
+                    else
                     {
-                        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
+                        if (!isNumber)
+                        {
+                            op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
+                                               nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
+                        }
                         op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
+                                           nullptr DEBUGARG("Clone op1 for Math.Min/Max"));
                     }
 
                     static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
 
-                    ni = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
+                    // Native RISC-V fmin/fmax instructions implement IEEE 754-2019 Minimum/MaximumNumber functions
+                    // which don't specify what kind of NaN is returned if both arguments are NaN. RISC-V returns quiet
+                    // canonical NaN in this case.
+                    ni = isMax ? NI_System_Math_MaxNative : NI_System_Math_MinNative;
                     GenTree* minMax =
                         new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, ni, nullptr R2RARG(nullEntry));
 
-                    if (!isNumber)
+                    if (!isNative)
                     {
-                        GenTreeOp* isOp1Number   = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
-                        GenTreeOp* isOp2Number   = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
-                        GenTreeOp* isOkForMinMax = gtNewOperNode(GT_EQ, TYP_INT, isOp1Number, isOp2Number);
+                        // Make sure we return the NaN argument verbatim (if both are NaN, the first one), which is an
+                        // additional requirement for .NET Min/Max APIs on top of IEEE 754.
 
-                        GenTreeOp* nanPropagator =
-                            gtNewOperNode(GT_ADD, callType, gtCloneExpr(op1Clone), gtCloneExpr(op2Clone));
+                        GenTreeQmark* topQmark = nullptr;
+                        if (isNumber)
+                        {
+                            // Build expression:  isNumber(minMax) ? minMax : op1
+                            unsigned tmpResult =
+                                lvaGrabTemp(true DEBUGARG("Temp for min/max result in Math.Min/MaxNumber"));
+                            impStoreToTemp(tmpResult, minMax, CHECK_SPILL_NONE);
+                            minMax = gtNewLclvNode(tmpResult, callType);
 
-                        GenTreeQmark* qmark =
-                            gtNewQmarkNode(callType, isOkForMinMax, gtNewColonNode(callType, minMax, nanPropagator));
+                            GenTreeOp* isNumber = gtNewOperNode(GT_EQ, TYP_INT, minMax, gtCloneExpr(minMax));
+
+                            topQmark = gtNewQmarkNode(callType, isNumber,
+                                                      gtNewColonNode(callType, gtCloneExpr(minMax), op1Clone));
+                        }
+                        else
+                        {
+                            // Build expression:  isNumber(op1) ? (isNumber(op2) ? minMax : op2) : op1
+                            GenTreeOp* isOp2Number = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
+                            GenTree*   op2Qmark    = gtNewQmarkNode(callType, isOp2Number,
+                                                                    gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
+
+                            // QMARK has to be a root node
+                            unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for op2Qmark in Math.Min/Max non-Number"));
+                            impStoreToTemp(tmp, op2Qmark, CHECK_SPILL_NONE);
+                            op2Qmark = gtNewLclvNode(tmp, callType);
+
+                            GenTreeOp* isOp1Number = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
+
+                            topQmark = gtNewQmarkNode(callType, isOp1Number,
+                                                      gtNewColonNode(callType, op2Qmark, gtCloneExpr(op1Clone)));
+                        }
+
                         // QMARK has to be a root node
-                        unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for Qmark in Math.Min/Max non-Number"));
-                        impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                        unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for top Qmark in Math.Min/Max"));
+                        impStoreToTemp(tmp, topQmark, CHECK_SPILL_NONE);
                         minMax = gtNewLclvNode(tmp, callType);
                     }
 
@@ -8370,8 +8399,10 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Sqrt:
         case NI_System_Math_Max:
         case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxNative:
         case NI_System_Math_Min:
         case NI_System_Math_MinNumber:
+        case NI_System_Math_MinNative:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
