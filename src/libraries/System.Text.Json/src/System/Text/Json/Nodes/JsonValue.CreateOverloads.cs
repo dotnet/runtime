@@ -141,6 +141,14 @@ namespace System.Text.Json.Nodes
         internal static JsonValue Create(TimeSpan value, JsonNodeOptions? options = null) => new JsonValuePrimitive<TimeSpan>(value, JsonMetadataServices.TimeSpanConverter, options);
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(Uri? value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Uri?>(value, JsonMetadataServices.UriConverter, options);
+
+        /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
         /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>

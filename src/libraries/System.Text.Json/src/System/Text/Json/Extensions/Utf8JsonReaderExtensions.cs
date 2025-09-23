@@ -229,5 +229,17 @@ namespace System.Text.Json.Extensions
 
             return tmpValue;
         }
+
+        internal static Uri GetUri(this ref Utf8JsonReader reader)
+        {
+            string? uriString = reader.GetString();
+
+            if (!Uri.TryCreate(uriString, UriKind.RelativeOrAbsolute, out Uri? value))
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            return value;
+        }
     }
 }

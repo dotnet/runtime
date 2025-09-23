@@ -56,10 +56,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new TimeSpan(1, 2, 3, 4, 5))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(new Uri("http://contoso.com"))
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(new Uri("http://contoso.com"))
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(new Version(1, 2, 3, 4))
