@@ -825,9 +825,9 @@ namespace System.Tests
         [InlineData("\0", new Rune('\0'), StringComparison.Ordinal, true)]
         [InlineData("", new Rune('\0'), StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("\0", new Rune('\0'), StringComparison.OrdinalIgnoreCase, true)]
-        public static void EndsWith_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
+        public static void StartsWith_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(value));
+            Assert.Equal(expected, s.StartsWith(value));
         }
 
         public static IEnumerable<object[]> Join_Char_StringArray_TestData()
