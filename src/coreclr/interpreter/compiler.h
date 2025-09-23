@@ -731,6 +731,7 @@ private:
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
+    void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
@@ -742,7 +743,7 @@ private:
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
-    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);

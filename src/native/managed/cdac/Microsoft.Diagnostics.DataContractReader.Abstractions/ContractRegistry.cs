@@ -67,11 +67,22 @@ public abstract class ContractRegistry
     /// Gets an instance of the RuntimeInfo contract for the target.
     /// </summary>
     public abstract IRuntimeInfo RuntimeInfo { get; }
+    /// <summary>
+    /// Gets an instance of the ComWrappers contract for the target.
+    /// </summary>
+    public abstract IComWrappers ComWrappers { get; }
     /// Gets an instance of the DebugInfo contract for the target.
     /// </summary>
     public abstract IDebugInfo DebugInfo { get; }
     /// <summary>
+    /// Gets an instance of the SHash contract for the target.
+    /// </summary>
+    public abstract ISHash SHash { get; }
     /// Gets an instance of the GC contract for the target.
     /// </summary>
     public abstract IGC GC { get; }
+    /// <summary>
+    /// Gets an instance of the SignatureDecoder contract for the target.
+    /// </summary>
+    public abstract ISignatureDecoder SignatureDecoder { get; }
 }

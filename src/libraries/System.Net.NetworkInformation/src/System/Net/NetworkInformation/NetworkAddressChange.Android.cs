@@ -185,7 +185,7 @@ namespace System.Net.NetworkInformation
 
             for (int i = 0; i < newAddresses.Length; i++)
             {
-                if (Array.IndexOf(oldAddresses, newAddresses[i]) == -1)
+                if (Array.IndexOf(oldAddresses, newAddresses[i]) < 0)
                 {
                     return true;
                 }
