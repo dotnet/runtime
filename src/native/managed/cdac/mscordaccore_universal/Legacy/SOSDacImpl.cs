@@ -3318,6 +3318,9 @@ internal sealed unsafe partial class SOSDacImpl
             *pcMethodDescs = 0;
             Contracts.ILoader loaderContract = _target.Contracts.Loader;
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
+
             TargetPointer modulePtr = mod.ToTargetPointer(_target);
             Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
             // iterate through typedef to method table map
@@ -3330,10 +3333,7 @@ internal sealed unsafe partial class SOSDacImpl
                 {
                     MethodDescHandle mdh = rtsContract.GetMethodDescHandle(md);
                     uint token = rtsContract.GetMethodToken(mdh);
-
-                    Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
                     Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(md);
-                    Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
                     // first condition: is method in process of being rejitted?
                     // second condition: has rejit been applied or null default IL been otherwise used for profiler modification (see src/coreclr/vm/codeversion.cpp comment)?
                     // third condition: has profiler modified IL through ICorProfilerInfo::SetILFunctionBody?
