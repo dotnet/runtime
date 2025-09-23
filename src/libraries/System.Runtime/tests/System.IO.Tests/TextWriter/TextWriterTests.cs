@@ -578,7 +578,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task WriteAsyncRuneTest()
+        public async Task WriteLineAsyncRuneTest()
         {
             using (CharArrayTextWriter tw = NewTextWriter)
             {
