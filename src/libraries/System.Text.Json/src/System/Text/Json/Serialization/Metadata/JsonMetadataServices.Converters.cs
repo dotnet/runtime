@@ -108,6 +108,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Guid>? s_guidConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Guid}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Guid>?> JsonValuePrimitiveGuidConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Guid>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="short"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

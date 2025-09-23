@@ -25,6 +25,9 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.String
                     when typeof(T) == typeof(JsonValuePrimitive<DateTimeOffset>):
                     return JsonValue.Create(reader.GetDateTimeOffset(), options);
+                case JsonTokenType.String
+                    when typeof(T) == typeof(JsonValuePrimitive<Guid>):
+                    return JsonValue.Create(reader.GetGuid(), options);
 #if NET
                 case JsonTokenType.String
                     when typeof(T) == typeof(JsonValuePrimitive<DateOnly>):

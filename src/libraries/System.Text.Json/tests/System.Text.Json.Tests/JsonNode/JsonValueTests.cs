@@ -48,10 +48,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new DateTimeOffset(2025, 4, 16, 17, 18, 19, new TimeSpan(10, 0, 0)))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(new Guid("CA79F1AC-AA0B-4704-8F7F-5A95DF0E4FD2"))
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(new Guid("CA79F1AC-AA0B-4704-8F7F-5A95DF0E4FD2"))
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(new TimeSpan(1, 2, 3, 4, 5))
