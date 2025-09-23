@@ -229,7 +229,7 @@ void* DispatchCallSimple(
     callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
     LPVOID pOrigSrc = callDescrData.pSrc;
     callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
-    for(int i=0; i<numStackSlotsToCopy; i++)
+    for (int i = 0; i < numStackSlotsToCopy; i++)
     {
         ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
     }
