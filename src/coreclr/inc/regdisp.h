@@ -401,7 +401,7 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
     CheckRegDisplaySP(pRD);
 #endif // DEBUG_REGDISPLAY
 }
-#endif // TARGET_64BIT || TARGET_ARM || (TARGET_X86 && FEATURE_EH_FUNCLETS)
+#endif // FEATURE_EH_FUNCLETS
 
 typedef REGDISPLAY *PREGDISPLAY;
 
