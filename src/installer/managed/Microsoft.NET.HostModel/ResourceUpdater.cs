@@ -333,10 +333,11 @@ namespace Microsoft.NET.HostModel
 
         public void Dispose(bool disposing)
         {
-            if (disposing && !leaveOpen)
+            if (disposing)
             {
                 _reader.Dispose();
-                stream.Dispose();
+                if (!leaveOpen)
+                    stream.Dispose();
             }
         }
     }
