@@ -79,7 +79,6 @@
     <Compile Include="Span\EndsWith.T.cs" />
     <Compile Include="Span\EnumerateLines.cs" />
     <Compile Include="Span\EnumerateRunes.cs" />
-    <Compile Include="Span\EnumerateRunePositions.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\GcReporting.cs" />
     <Compile Include="Span\GetEnumerator.cs" />

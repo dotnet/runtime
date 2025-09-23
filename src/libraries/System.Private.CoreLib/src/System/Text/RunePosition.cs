@@ -75,11 +75,21 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// <param name="startIndex">The index of the current symbol in Unicode data.</param>
     /// <param name="length">The length of the current symbol in Unicode data.</param>
     /// <param name="wasReplaced">Indicates if the current Unicode symbol was replaced.</param>
-    internal RunePosition(Rune rune, int startIndex, int length, bool wasReplaced)
+    public RunePosition(Rune rune, int startIndex, int length, bool wasReplaced)
     {
-        Rune = rune;
+        if (startIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        if ((uint)length > Rune.MaxUtf8BytesPerRune)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
         StartIndex = startIndex;
         Length = length;
+        Rune = rune;
         WasReplaced = wasReplaced;
     }
 
