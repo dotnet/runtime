@@ -101,11 +101,7 @@ namespace System.Runtime.Serialization.Json
         // The encoding conversion and buffering breaks seeking.
         public override long Position
         {
-            get
-            {
-#pragma warning suppress 56503 // The contract for non seekable stream is to throw exception
-                throw new NotSupportedException();
-            }
+            get { throw new NotSupportedException(); }
             set { throw new NotSupportedException(); }
         }
 

@@ -911,7 +911,8 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
-    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <Message Text="Running wasm-opt with --strip-target-features --post-emscripten -O2 --low-memory-unused --zero-filled-memory --pass-arg=directize-initial-contents-immutable --mvp-features --enable-multivalue --enable-mutable-globals --enable-reference-types --enable-sign-ext --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ')" Importance="High" />
+    <Exec Command="wasm-opt$(_ExeExt) --strip-target-features --post-emscripten -O2 --low-memory-unused --zero-filled-memory --pass-arg=directize-initial-contents-immutable --mvp-features --enable-multivalue --enable-mutable-globals --enable-reference-types --enable-sign-ext --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>

@@ -180,7 +180,7 @@ namespace System.Reflection
 
         public override Module Module => GetRuntimeModule();
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
-        public override bool IsCollectible => m_declaringType.IsCollectible;
+        public override bool IsCollectible => ReflectedTypeInternal.IsCollectible;
 
         public override bool Equals(object? obj) =>
             ReferenceEquals(this, obj) ||

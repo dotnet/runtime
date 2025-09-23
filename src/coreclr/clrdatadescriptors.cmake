@@ -2,7 +2,7 @@
 
 function(generate_data_descriptors)
   set(options EXPORT_VISIBLE)
-  set(oneValueArgs LIBRARY_NAME CONTRACT_FILE CONTRACT_NAME INTERFACE_TARGET)
+  set(oneValueArgs LIBRARY_NAME CONTRACT_NAME INTERFACE_TARGET)
   set(multiValueArgs "")
   cmake_parse_arguments(DATA_DESCRIPTORS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
@@ -53,15 +53,14 @@ function(generate_data_descriptors)
     set(CONTRACT_BASELINE_DIR "${CLR_REPO_ROOT_DIR}/docs/design/datacontracts/data")
     set(CONTRACT_DESCRIPTOR_INPUT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contract-descriptor.c.in")
     set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
-    set(CONTRACT_FILE "${DATA_DESCRIPTORS_CONTRACT_FILE}")
 
     # generate the contract descriptor by running cdac-build-tool
     # n.b. this just uses `dotnet` from the PATH.  InitializeDotNetCli adds the appropriate directory
     add_custom_command(
       OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
       VERBATIM
-      COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -i "${CONTRACT_DESCRIPTOR_INPUT}" -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -b "${CONTRACT_BASELINE_DIR}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}>
-      DEPENDS ${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES} $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}> "${CONTRACT_FILE}" "${CONTRACT_DESCRIPTOR_INPUT}"
+      COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -i "${CONTRACT_DESCRIPTOR_INPUT}" -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -b "${CONTRACT_BASELINE_DIR}" $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}>
+      DEPENDS ${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES} $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}> "${CONTRACT_DESCRIPTOR_INPUT}"
       USES_TERMINAL
     )
 

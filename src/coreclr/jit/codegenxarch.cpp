@@ -106,14 +106,21 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // we are generating GS cookie check after a GT_RETURN block.
         // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
         // as return register for two-register-returned structs.
+#ifdef TARGET_X86
+        // Note: ARG_0 can be REG_ASYNC_CONTINUATION_RET
+        // we will check for that later if we end up saving/restoring this.
+        regGSCheck                      = REG_ARG_0;
+        regNumber regGSCheckAlternative = REG_ARG_1;
+#else
+        // these cannot be a part of any kind of return
+        regGSCheck                      = REG_R8;
+        regNumber regGSCheckAlternative = REG_R9;
+#endif
+
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
-            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == REG_ARG_0))
+            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == regGSCheck))
         {
-            regGSCheck = REG_ARG_1;
-        }
-        else
-        {
-            regGSCheck = REG_ARG_0;
+            regGSCheck = regGSCheckAlternative;
         }
     }
     else
@@ -157,6 +164,14 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
         // AOT case - GS cookie value needs to be accessed through an indirection.
+
+        // if we use the continuation reg, the pop/push requires no-GC
+        // this can happen only when AOT supports async on x86
+        if (compiler->compIsAsync() && (regGSCheck == REG_ASYNC_CONTINUATION_RET))
+        {
+            regMaskGSCheck = RBM_ASYNC_CONTINUATION_RET;
+            GetEmitter()->emitDisableGC();
+        }
 
         pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
 

@@ -13,7 +13,7 @@ indent_size = 4
 trim_trailing_whitespace = true
 
 # Specify UTF-8 without byte-order mark
-[*.{csproj,locproj,nativeproj,proj,resx,vbproj}]
+[*.{csproj,locproj,nativeproj,proj,resx,slnx,vbproj}]
 charset = utf-8
 
 # Generated code
@@ -177,7 +177,7 @@ indent_size = 2
 indent_size = 2
 
 # Xml files
-[*.{resx,ruleset,stylecop,xml}]
+[*.{resx,ruleset,slnx,stylecop,xml}]
 indent_size = 2
 
 # Xml resource files

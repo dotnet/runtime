@@ -715,7 +715,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         public static void CopyTo<T>(this Vector512<T> vector, Span<T> destination)
         {
-            if ((uint)destination.Length < (uint)Vector512<T>.Count)
+            if (destination.Length < Vector512<T>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -4045,7 +4045,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         public static bool TryCopyTo<T>(this Vector512<T> vector, Span<T> destination)
         {
-            if ((uint)destination.Length < (uint)Vector512<T>.Count)
+            if (destination.Length < Vector512<T>.Count)
             {
                 return false;
             }

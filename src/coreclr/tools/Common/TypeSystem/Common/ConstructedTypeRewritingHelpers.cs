@@ -22,7 +22,7 @@ namespace Internal.TypeSystem
         {
             int directDiscoveryIndex = Array.IndexOf(typesToFind, type);
 
-            if (directDiscoveryIndex != -1)
+            if (directDiscoveryIndex >= 0)
                 return true;
 
             if (type.HasInstantiation)
@@ -72,7 +72,7 @@ namespace Internal.TypeSystem
         {
             int directReplacementIndex = Array.IndexOf(typesToReplace, type);
 
-            if (directReplacementIndex != -1)
+            if (directReplacementIndex >= 0)
                 return replacementTypes[directReplacementIndex];
 
             if (type.HasInstantiation)

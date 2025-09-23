@@ -106,9 +106,9 @@ namespace System.Threading.Tasks.Tests.FromAsync
                 _task.Wait(); //block for the task to run to completion.
 
                 if (_sourceType == TaskType.Task)
-                    SequenceEquals(_expectedInputs, work.Inputs);
+                    SequenceEqual(_expectedInputs, work.Inputs);
                 else
-                    SequenceEquals(_expectedInputs, ((Task<ReadOnlyCollection<object>>)_task).Result);
+                    SequenceEqual(_expectedInputs, ((Task<ReadOnlyCollection<object>>)_task).Result);
 
                 //verify Overload / State
 
@@ -134,7 +134,7 @@ namespace System.Threading.Tasks.Tests.FromAsync
 
         #region Private Helpers
 
-        private static void SequenceEquals(List<object> expectedItems, ReadOnlyCollection<object> actualItems)
+        private static void SequenceEqual(List<object> expectedItems, ReadOnlyCollection<object> actualItems)
         {
             Assert.Equal(expectedItems.Count, actualItems.Count);
             for (int i = 0; i < expectedItems.Count; i++)

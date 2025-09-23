@@ -15107,6 +15107,9 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->is_full_aot = TRUE;
 	}
 
+	if (mono_opt_compressed_interface_bitmap)
+		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_COMPRESSED_INTERFACE_BITMAP);
+
 	if (mini_safepoints_enabled ())
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_SAFEPOINTS);
 

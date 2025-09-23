@@ -179,7 +179,7 @@ namespace System.ComponentModel
                 int invariantIndex = Array.IndexOf(installedCultures, CultureInfo.InvariantCulture);
 
                 CultureInfo[] array;
-                if (invariantIndex != -1)
+                if (invariantIndex >= 0)
                 {
                     Debug.Assert(invariantIndex >= 0 && invariantIndex < installedCultures.Length);
                     installedCultures[invariantIndex] = null;
