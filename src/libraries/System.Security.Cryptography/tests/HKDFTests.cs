@@ -19,6 +19,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
+        [MemberData(nameof(SupplementalTestCases))]
         public void ExtractTests(HkdfTestCase test)
         {
             byte[] prk = Extract(test.Hash, test.Prk.Length, test.Ikm, test.Salt);
