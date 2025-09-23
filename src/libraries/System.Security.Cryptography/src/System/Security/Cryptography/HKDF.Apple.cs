@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException();
             }
 
-            // Unknown alogorithms are handled outside of this as a CryptographicException. SHA-3 is known, its just
+            // Unknown algorithms are handled outside of this as a CryptographicException. SHA-3 is known, it's just
             // not supported.
         }
     }
