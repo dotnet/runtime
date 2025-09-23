@@ -131,13 +131,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (finalizerThread->RequiresCoInitialize())
-    {
-        finalizerThread->SetApartment(Thread::AS_InMTA);
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
     if (finalizerThread->RequireSyncBlockCleanup())
     {
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();

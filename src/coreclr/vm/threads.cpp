@@ -4629,9 +4629,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // This method can be called on current thread only
     _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
 
-    // Reset any bits that request for CoInitialize
-    ResetRequiresCoInitialize();
-
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
     if (state == AS_Unknown)
