@@ -315,6 +315,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Version?>? s_versionConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Version}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Version>?> JsonValuePrimitiveVersionConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Version>>();
+
+        /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
         /// </summary>
         /// <typeparam name="T">The generic definition for the type.</typeparam>

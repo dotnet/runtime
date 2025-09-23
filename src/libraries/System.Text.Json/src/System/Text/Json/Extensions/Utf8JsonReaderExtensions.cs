@@ -13,6 +13,7 @@ namespace System.Text.Json.Extensions
 #if NET
         private const int DateOnlyMaxEscapedFormatLength = JsonConstants.DateOnlyFormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
         private const int MaximumEscapedTimeOnlyFormatLength = JsonConstants.MaximumTimeOnlyFormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
+        private const int MaximumEscapedVersionLength = JsonConstants.MaximumVersionLength * JsonConstants.MaxExpansionFactorWhileEscaping;
 #endif
 
         private const int MaximumEscapedTimeSpanFormatLength = JsonConstants.MaxExpansionFactorWhileEscaping * JsonConstants.MaximumTimeSpanFormatLength;
@@ -240,6 +241,52 @@ namespace System.Text.Json.Extensions
             }
 
             return value;
+        }
+
+        internal static Version GetVersion(this ref Utf8JsonReader reader)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
+
+#if NET
+            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, JsonConstants.MinimumVersionLength, MaximumEscapedVersionLength))
+            {
+                ThrowHelper.ThrowFormatException(DataType.Version);
+            }
+
+            Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];
+            int bytesWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
+
+            if (!char.IsDigit(source[0]) || !char.IsDigit(source[^1]))
+            {
+                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                // we need to make sure that our input doesn't have them,
+                // and if it has - we need to throw, to match behaviour of other converters
+                // since Version.TryParse allows them and silently parses input to Version
+                ThrowHelper.ThrowFormatException(DataType.Version);
+            }
+
+            if (Version.TryParse(source, out Version? result))
+            {
+                return result;
+            }
+#else
+            string? versionString = reader.GetString();
+            if (!string.IsNullOrEmpty(versionString) && (!char.IsDigit(versionString[0]) || !char.IsDigit(versionString[versionString.Length - 1])))
+            {
+                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                // we need to make sure that our input doesn't have them,
+                // and if it has - we need to throw, to match behaviour of other converters
+                // since Version.TryParse allows them and silently parses input to Version
+                ThrowHelper.ThrowFormatException(DataType.Version);
+            }
+            if (Version.TryParse(versionString, out Version? result))
+            {
+                return result;
+            }
+#endif
+            ThrowHelper.ThrowJsonException();
+            return null;
         }
     }
 }

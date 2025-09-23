@@ -60,10 +60,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new Uri("http://contoso.com"))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(new Version(1, 2, 3, 4))
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(new Version(1, 2, 3, 4))
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(true)
