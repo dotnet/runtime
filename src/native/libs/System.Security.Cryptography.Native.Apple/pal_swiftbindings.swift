@@ -222,15 +222,15 @@ public func AppleCryptoNative_HKDFExpand(
                 case .unknown:
                     throw HKDFError.unknownHashAlgorithm
                 case .md5:
-                    HKDF<Insecure.MD5>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                    return HKDF<Insecure.MD5>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
                 case .sha1:
-                    HKDF<Insecure.SHA1>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                    return HKDF<Insecure.SHA1>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
                 case .sha256:
-                    HKDF<SHA256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                    return HKDF<SHA256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
                 case .sha384:
-                    HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                    return HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
                 case .sha512:
-                    HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
+                    return HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destination.count)
             }
         }()
 
@@ -259,15 +259,15 @@ public func AppleCryptoNative_HKDFExtract(
                 case .unknown:
                     throw HKDFError.unknownHashAlgorithm
                 case .md5:
-                    HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
+                    return HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
                 case .sha1:
-                    HKDF<Insecure.SHA1>.extract(inputKeyMaterial: key, salt: salt)
+                    return HKDF<Insecure.SHA1>.extract(inputKeyMaterial: key, salt: salt)
                 case .sha256:
-                    HKDF<SHA256>.extract(inputKeyMaterial: key, salt: salt)
+                    return HKDF<SHA256>.extract(inputKeyMaterial: key, salt: salt)
                 case .sha384:
-                    HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
+                    return HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
                 case .sha512:
-                    HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+                    return HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
             }
         }()
 
@@ -297,15 +297,15 @@ public func AppleCryptoNative_HKDFDeriveKey(
                 case .unknown:
                     throw HKDFError.unknownHashAlgorithm
                 case .md5:
-                    HKDF<Insecure.MD5>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
+                    return HKDF<Insecure.MD5>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha1:
-                    HKDF<Insecure.SHA1>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
+                    return HKDF<Insecure.SHA1>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha256:
-                    HKDF<SHA256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
+                    return HKDF<SHA256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha384:
-                    HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
+                    return HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
                 case .sha512:
-                    HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
+                    return HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destination.count)
             }
         }()
 
