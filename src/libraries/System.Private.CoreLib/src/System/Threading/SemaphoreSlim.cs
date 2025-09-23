@@ -52,11 +52,6 @@ namespace System.Threading
         // Boolean value indicates whether the instance has been disposed.
         private readonly StrongBox<bool> m_lockObjAndDisposed;
 
-        // Indicates whether some thread is executing within the lock region.
-        // In WaitUntilCountOrTimeoutAsync, the lock might be acquired even if the thread is holding it.
-        // Therefore, increment and decrement this counter as the locks are acquired and released.
-        private volatile int m_inLockRegion;
-
         // Act as the semaphore wait handle, it's lazily initialized if needed, the first WaitHandle call initialize it
         // and wait an release sets and resets it respectively as long as it is not null
         private volatile ManualResetEvent? m_waitHandle;
@@ -70,15 +65,7 @@ namespace System.Threading
         // No maximum constant
         private const int NO_MAXIMUM = int.MaxValue;
 
-        // Used to track if we are attempting the fast path (without taking the lock).
-        // Therefore, if another thread takes the lock, shouldn't start its operations until
-        // all threads finish their attempt to use the fast path.
-        private volatile int m_threadsTryingFastPathCount;
-
-        private int m_fastPathWaitAcquires;
         private int m_slowPathWaitAcquires;
-
-        private int m_fastPathReleaseAcquires;
         private int m_slowPathReleaseAcquires;
 
         // Task in a linked list of asynchronous waiters
@@ -95,7 +82,7 @@ namespace System.Threading
         /// Gets the current count of the <see cref="SemaphoreSlim"/>.
         /// </summary>
         /// <value>The current count of the <see cref="SemaphoreSlim"/>.</value>
-        public int CurrentCount => m_currentCount;
+        public int CurrentCount => Math.Max(m_currentCount, 0);
 
         /// <summary>
         /// Returns a <see cref="WaitHandle"/> that can be used to wait on the semaphore.
@@ -122,15 +109,9 @@ namespace System.Threading
                     // lock the count to avoid multiple threads initializing the handle if it is null
                     lock (m_lockObjAndDisposed)
                     {
-                        Interlocked.Increment(ref m_inLockRegion);
-                        if (m_threadsTryingFastPathCount > 0)
-                        {
-                            SpinUntilFastPathFinishes();
-                        }
                         // The initial state for the wait handle is true if the count is greater than zero
                         // false otherwise
                         m_waitHandle ??= new ManualResetEvent(m_currentCount != 0);
-                        Interlocked.Decrement(ref m_inLockRegion);
                     }
                 }
 
@@ -304,9 +285,7 @@ namespace System.Threading
 
             if (millisecondsTimeout == -2)
             {
-                Internal.Console.WriteLine("Fast path acquires " + m_fastPathWaitAcquires);
                 Internal.Console.WriteLine("Slow path acquires " + m_slowPathWaitAcquires);
-                Internal.Console.WriteLine("Fast path releases " + m_fastPathReleaseAcquires);
                 Internal.Console.WriteLine("Slow path releases " + m_slowPathReleaseAcquires);
                 return false;
             }
@@ -342,9 +321,7 @@ namespace System.Threading
 
             if (millisecondsTimeout == -2)
             {
-                Internal.Console.WriteLine("Fast path acquires " + m_fastPathWaitAcquires);
                 Internal.Console.WriteLine("Slow path acquires " + m_slowPathWaitAcquires);
-                Internal.Console.WriteLine("Fast path releases " + m_fastPathReleaseAcquires);
                 Internal.Console.WriteLine("Slow path releases " + m_slowPathReleaseAcquires);
                 return false;
             }
@@ -359,48 +336,26 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Tries a fast path to wait on the semaphore without taking the lock.
+        /// Attempts to enter the <see cref="SemaphoreSlim"/> immediately, and returns a value that indicates whether the
+        /// attempt was successful.
         /// </summary>
-        /// <returns>true if the fast path succeeded; otherwise, false.</returns>
+        /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>; otherwise, false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryWaitFastPath()
+        private bool TryAcquireSemaphore()
         {
-            bool result = false;
-            if (m_inLockRegion == 0 && m_waitHandle is null)
+            if (m_currentCount <= 0)
             {
-                Interlocked.Increment(ref m_threadsTryingFastPathCount);
-                // It's possible that the lock is taken by now, don't attempt the fast path in that case.
-                // However if it's not taken by now, it's safe to attempt the fast path.
-                // If the lock is taken after checking this condition, because m_threadsTryingFastPathCount is already greater than 0,
-                // the thread holding the lock wouldn't start its operations.
-                // If the wait handle is not null, we have to follow the slow path taking the lock to avoid race conditions.
-                // We need to re-evaluate the conditions before proceeding as another thread might have taken the lock, done its work and released it
-                // before this thread updated m_threadsTryingFastPathCount.
-                if (m_inLockRegion == 0 && m_waitHandle is null)
-                {
-                    int currentCount = m_currentCount;
-                    if (currentCount > 0 &&
-                        Interlocked.CompareExchange(ref m_currentCount, currentCount - 1, currentCount) == currentCount)
-                    {
-                        Interlocked.Increment(ref m_fastPathWaitAcquires);
-                        result = true;
-                    }
-                }
-                Interlocked.Decrement(ref m_threadsTryingFastPathCount);
+                return false;
             }
-            return result;
-        }
 
-        /// <summary>
-        /// Blocks the current thread until all the threads trying the fast path finish.
-        /// </summary>
-        private void SpinUntilFastPathFinishes()
-        {
-            SpinWait spinner = default;
-            while (m_threadsTryingFastPathCount > 0)
+            int newCount = Interlocked.Decrement(ref m_currentCount);
+            if (newCount < 0)
             {
-                spinner.SpinOnce();
+                Interlocked.Increment(ref m_currentCount);
+                return false;
             }
+
+            return true;
         }
 
         /// <summary>
@@ -429,9 +384,15 @@ namespace System.Threading
                 return false;
             }
 
-            if (TryWaitFastPath())
+            // Wait Fast Path: If the count is greater than zero, try to acquire the semaphore.
+            // Perf: Check if it's possible to decrease the current count with an Interlocked operation instead of taking the Monitor lock.
+            // Only attempt this if there is no wait handle, otherwise it's not possible to guarantee that the wait handle is in the correct state with this optimization.
+            if (m_waitHandle is null)
             {
-                return true;
+                if (TryAcquireSemaphore())
+                {
+                    return true;
+                }
             }
 
             Interlocked.Increment(ref m_slowPathWaitAcquires);
@@ -473,12 +434,7 @@ namespace System.Threading
                     }
                 }
                 Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
-                Interlocked.Increment(ref m_inLockRegion);
 
-                if (m_threadsTryingFastPathCount > 0)
-                {
-                    SpinUntilFastPathFinishes();
-                }
                 m_waitCount++;
 
                 // If there are any async waiters, for fairness we'll get in line behind
@@ -492,43 +448,15 @@ namespace System.Threading
                 // There are no async waiters, so we can proceed with normal synchronous waiting.
                 else
                 {
-                    // If the count > 0 we are good to move on.
-                    // If not, then wait if we were given allowed some wait duration
-
-                    OperationCanceledException? oce = null;
-
-                    if (m_currentCount == 0)
+                    // If we cannot wait, then try to acquire the semaphore.
+                    // If the new count becomes negative, that means that the count was zero 
+                    // so we should revert this invalid operation and return false.
+                    if (millisecondsTimeout == 0)
                     {
-                        if (millisecondsTimeout == 0)
-                        {
-                            return false;
-                        }
-
-                        // Prepare for the main wait...
-                        // wait until the count become greater than zero or the timeout is expired
-                        try
-                        {
-                            waitSuccessful = WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
-                        }
-                        catch (OperationCanceledException e) { oce = e; }
+                        return TryAcquireSemaphore();
                     }
-
-                    // Now try to acquire.  We prioritize acquisition over cancellation/timeout so that we don't
-                    // lose any counts when there are asynchronous waiters in the mix.  Asynchronous waiters
-                    // defer to synchronous waiters in priority, which means that if it's possible an asynchronous
-                    // waiter didn't get released because a synchronous waiter was present, we need to ensure
-                    // that synchronous waiter succeeds so that they have a chance to release.
-                    Debug.Assert(!waitSuccessful || m_currentCount > 0,
-                        "If the wait was successful, there should be count available.");
-                    if (m_currentCount > 0)
-                    {
-                        waitSuccessful = true;
-                        m_currentCount--;
-                    }
-                    else if (oce is not null)
-                    {
-                        throw oce;
-                    }
+                    
+                    waitSuccessful = WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
 
                     // Exposing wait handle which is lazily initialized if needed
                     if (m_waitHandle is not null && m_currentCount == 0)
@@ -544,7 +472,6 @@ namespace System.Threading
                 {
                     m_waitCount--;
                     Monitor.Exit(m_lockObjAndDisposed);
-                    Interlocked.Decrement(ref m_inLockRegion);
                 }
 
                 // Unregister the cancellation callback.
@@ -576,9 +503,14 @@ namespace System.Threading
 #endif
             int monitorWaitMilliseconds = Timeout.Infinite;
 
-            // Wait on the monitor as long as the count is zero
-            while (m_currentCount == 0)
+            // Wait on the monitor as long we cannot acquire the semaphore
+            while (true)
             {
+                if (TryAcquireSemaphore())
+                {
+                    return true;
+                }
+
                 // If cancelled, we throw. Trying to wait could lead to deadlock.
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -625,8 +557,6 @@ namespace System.Threading
                     return false;
                 }
             }
-
-            return true;
         }
 
         /// <summary>
@@ -794,29 +724,26 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<bool>(cancellationToken);
 
-            if (TryWaitFastPath())
+            // Perf: Check if it's possible to decrease the current count with an Interlocked operation instead of taking the Monitor lock.
+            // Only attempt this if there is no wait handle, otherwise it's not possible to guarantee that the wait handle is in the correct state with this optimization.
+            if (m_waitHandle is null)
             {
-                return Task.FromResult(true);
+                if (TryAcquireSemaphore())
+                {
+                    return Task.FromResult(true);
+                }
             }
 
             lock (m_lockObjAndDisposed)
             {
-                Interlocked.Increment(ref m_inLockRegion);
-                if (m_threadsTryingFastPathCount > 0)
-                {
-                    SpinUntilFastPathFinishes();
-                }
                 // If there are counts available, allow this waiter to succeed.
-                if (m_currentCount > 0)
+                if (TryAcquireSemaphore())
                 {
-                    --m_currentCount;
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
-                    Interlocked.Decrement(ref m_inLockRegion);
                     return Task.FromResult(true);
                 }
                 else if (millisecondsTimeout == 0)
                 {
-                    Interlocked.Decrement(ref m_inLockRegion);
                     // No counts, if timeout is zero fail fast
                     return Task.FromResult(false);
                 }
@@ -830,7 +757,6 @@ namespace System.Threading
                     Task<bool> result = (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled) ?
                         asyncWaiter :
                         WaitUntilCountOrTimeoutAsync(asyncWaiter, millisecondsTimeout, cancellationToken);
-                    Interlocked.Decrement(ref m_inLockRegion);
                     return result;
                 }
             }
@@ -922,21 +848,14 @@ namespace System.Threading
             // we no longer hold the lock.  As such, acquire it.
             lock (m_lockObjAndDisposed)
             {
-                Interlocked.Increment(ref m_inLockRegion);
-                if (m_threadsTryingFastPathCount > 0)
-                {
-                    SpinUntilFastPathFinishes();
-                }
                 // Remove the task from the list.  If we're successful in doing so,
                 // we know that no one else has tried to complete this waiter yet,
                 // so we can safely cancel or timeout.
                 if (RemoveAsyncWaiter(asyncWaiter))
                 {
                     cancellationToken.ThrowIfCancellationRequested(); // cancellation occurred
-                    Interlocked.Decrement(ref m_inLockRegion);
                     return false; // timeout occurred
                 }
-                Interlocked.Decrement(ref m_inLockRegion);
             }
 
             // The waiter had already been removed, which means it's already completed or is about to
@@ -953,40 +872,6 @@ namespace System.Threading
         public int Release()
         {
             return Release(1);
-        }
-
-        /// <summary>
-        /// Tries to release the semaphore without taking the lock.
-        /// </summary>
-        /// <returns>The previous count of the <see cref="SemaphoreSlim"/> if successful; otherwise, -1.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int TryReleaseFastPath(int releaseCount)
-        {
-            int result = -1;
-            if (m_inLockRegion == 0 && m_waitHandle is null && m_waitCount == 0 && m_asyncHead is null)
-            {
-                Interlocked.Increment(ref m_threadsTryingFastPathCount);
-                // It's possible that the lock is taken by now, don't attempt the fast path in that case.
-                // However if it's not taken by now, it's safe to attempt the fast path.
-                // If the lock is taken after checking this condition, because m_threadsTryingFastPathCount is already greater than 0,
-                // the thread holding the lock wouldn't start its operations.
-                // The wait handle and async head need to be null and wait count to be zero to take the fast path.
-                // Otherwise we have to follow the slow path taking the lock to avoid race conditions.
-                // We need to re-evaluate the conditions before proceeding as another thread might have taken the lock, done its work and released it
-                // before this thread updated m_threadsTryingFastPathCount.
-                if (m_inLockRegion == 0 && m_waitHandle is null && m_waitCount == 0 && m_asyncHead is null)
-                {
-                    int currentCount = m_currentCount;
-                    if (m_maxCount - currentCount >= releaseCount &&
-                        Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
-                    {
-                        result = currentCount;
-                        Interlocked.Increment(ref m_fastPathReleaseAcquires);
-                    }
-                }
-                Interlocked.Decrement(ref m_threadsTryingFastPathCount);
-            }
-            return result;
         }
 
         /// <summary>
@@ -1010,23 +895,44 @@ namespace System.Threading
                     nameof(releaseCount), releaseCount, SR.SemaphoreSlim_Release_CountWrong);
             }
 
-            int fastPathResult = TryReleaseFastPath(releaseCount);
-            if (fastPathResult >= 0)
+            if (m_currentCount > 0)
             {
-                return fastPathResult;
+                int previousCount = Interlocked.Add(ref m_currentCount, releaseCount) - releaseCount;
+                if (previousCount + releaseCount > m_maxCount)
+                {
+                    // Revert the increment
+                    Interlocked.Add(ref m_currentCount, -releaseCount);
+                    throw new SemaphoreFullException();
+                }
+                else if (previousCount <= 0)
+                {
+                    // Revert the increment
+                    Interlocked.Add(ref m_currentCount, -releaseCount);
+                }
+                else
+                {
+                    return previousCount;
+                }
             }
 
             Interlocked.Increment(ref m_slowPathReleaseAcquires);
 
             int returnCount;
 
+            // If m_currentCount was not greater than 0, it may be negative if some threads attempted to acquire 
+            // the semaphore during the wait fast path but failed.
+            // In this case, the threads themselves will make the count back to zero after a little while, spin until then.
+            SpinWait spinner = default;
+            while (m_currentCount < 0)
+            {
+                spinner.SpinOnce();
+            }
+
+            // Once it became zero, we can take the lock knowing that no threads executing a wait operation will
+            // be able to modify the count until we release the lock.
+
             lock (m_lockObjAndDisposed)
             {
-                Interlocked.Increment(ref m_inLockRegion);
-                if (m_threadsTryingFastPathCount > 0)
-                {
-                    SpinUntilFastPathFinishes();
-                }
                 // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
                 int currentCount = m_currentCount;
                 returnCount = currentCount;
@@ -1091,7 +997,6 @@ namespace System.Threading
                 {
                     m_waitHandle.Set();
                 }
-                Interlocked.Decrement(ref m_inLockRegion);
             }
 
             // And return the count
