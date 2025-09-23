@@ -771,10 +771,8 @@ namespace System.Formats.Tar
             return true;
         }
 
-        /// <summary>
         /// Checks if the buffer starts with common compression magic numbers and throws appropriate exceptions.
         /// This provides better error messages when users try to read compressed tar files without decompressing them first.
-        /// </summary>
         private static void CheckForCompressionMagicNumbers(ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length < 2)
