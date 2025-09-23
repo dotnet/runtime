@@ -13,6 +13,8 @@ using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -753,8 +755,136 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetFieldDescData(fieldDesc, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, DacpFieldDescData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (fieldDesc == 0 || data == null)
+                throw new ArgumentException();
+
+            IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+            ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
+
+            TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
+            CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
+            data->Type = fieldDescType;
+            data->sigType = fieldDescType;
+
+            uint token = rtsContract.GetFieldDescMemberDef(fieldDescTargetPtr);
+            FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+
+            TargetPointer enclosingMT = rtsContract.GetMTOfEnclosingClass(fieldDescTargetPtr);
+            TypeHandle ctx = rtsContract.GetTypeHandle(enclosingMT);
+            TargetPointer modulePtr = rtsContract.GetModule(ctx);
+            Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
+            FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+            try
+            {
+                // try to completely decode the signature
+                TypeHandle foundTypeHandle = signatureDecoder.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
+
+                // get the MT of the type
+                // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
+                // that we can return to SOS for pretty-printing.
+                // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
+                // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
+                if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
+                    data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
+                // array MTs
+                else if (rtsContract.IsArray(foundTypeHandle, out _))
+                    data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
+                else
+                {
+                    try
+                    {
+                        // value typedescs
+                        TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
+                        data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
+                    }
+                    catch (ArgumentException)
+                    {
+                        // non-array MTs
+                        data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
+                    }
+                }
+            }
+            catch (VirtualReadException)
+            {
+                // if we can't find the MT (e.g in a minidump)
+                data->MTOfType = 0;
+            }
+
+            // partial decoding of signature
+            BlobReader blobReader = mdReader.GetBlobReader(fieldDef.Signature);
+            SignatureHeader header = blobReader.ReadSignatureHeader();
+            // read the header byte and check for correctness
+            if (header.Kind != SignatureKind.Field)
+                throw new BadImageFormatException();
+            // read the top-level type
+            CorElementType typeCode;
+            EntityHandle entityHandle;
+            // in a loop, read custom modifiers until we get to the underlying type
+            do
+            {
+                typeCode = (CorElementType)blobReader.ReadByte();
+                entityHandle = blobReader.ReadTypeHandle(); // consume the type
+            } while (typeCode is CorElementType.CModReqd or CorElementType.CModOpt); // eat custom modifiers
+
+            if (typeCode is CorElementType.Class or CorElementType.ValueType)
+            {
+                // if the typecode is class or value, we have been able to read the token that follows in the sig
+                data->TokenOfType = (uint)MetadataTokens.GetToken(entityHandle);
+            }
+            else
+            {
+                // otherwise we have not found the token here, but we can encode the underlying type in sigType
+                data->TokenOfType = (uint)CorTokenType.mdtTypeDef;
+                if (data->MTOfType == 0)
+                    data->sigType = typeCode;
+            }
+
+            data->ModuleOfType = modulePtr.ToClrDataAddress(_target);
+            data->mb = token;
+            data->MTOfEnclosingClass = ctx.Address.ToClrDataAddress(_target);
+            data->dwOffset = rtsContract.GetFieldDescOffset(fieldDescTargetPtr, fieldDef);
+            data->bIsThreadLocal = rtsContract.IsFieldDescThreadStatic(fieldDescTargetPtr) ? 1 : 0;
+            data->bIsContextLocal = 0;
+            data->bIsStatic = rtsContract.IsFieldDescStatic(fieldDescTargetPtr) ? 1 : 0;
+            data->NextField = fieldDescTargetPtr + _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpFieldDescData dataLocal = default;
+            int hrLocal = _legacyImpl.GetFieldDescData(fieldDesc, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->Type == dataLocal.Type, $"cDAC: {data->Type}, DAC: {dataLocal.Type}");
+                Debug.Assert(data->sigType == dataLocal.sigType, $"cDAC: {data->sigType}, DAC: {dataLocal.sigType}");
+                Debug.Assert(data->TokenOfType == dataLocal.TokenOfType, $"cDAC: {data->TokenOfType:x}, DAC: {dataLocal.TokenOfType:x}");
+                Debug.Assert(data->MTOfType == dataLocal.MTOfType, $"cDAC: {data->MTOfType:x}, DAC: {dataLocal.MTOfType:x}");
+                Debug.Assert(data->ModuleOfType == dataLocal.ModuleOfType, $"cDAC: {data->ModuleOfType:x}, DAC: {dataLocal.ModuleOfType:x}");
+                Debug.Assert(data->mb == dataLocal.mb, $"cDAC: {data->mb:x}, DAC: {dataLocal.mb:x}");
+                Debug.Assert(data->MTOfEnclosingClass == dataLocal.MTOfEnclosingClass, $"cDAC: {data->MTOfEnclosingClass:x}, DAC: {dataLocal.MTOfEnclosingClass:x}");
+                Debug.Assert(data->dwOffset == dataLocal.dwOffset, $"cDAC: {data->dwOffset:x}, DAC: {dataLocal.dwOffset:x}");
+                Debug.Assert(data->bIsThreadLocal == dataLocal.bIsThreadLocal, $"cDAC: {data->bIsThreadLocal}, DAC: {dataLocal.bIsThreadLocal}");
+                Debug.Assert(data->bIsContextLocal == dataLocal.bIsContextLocal, $"cDAC: {data->bIsContextLocal}, DAC: {dataLocal.bIsContextLocal}");
+                Debug.Assert(data->bIsStatic == dataLocal.bIsStatic, $"cDAC: {data->bIsStatic}, DAC: {dataLocal.bIsStatic}");
+                Debug.Assert(data->NextField == dataLocal.NextField, $"cDAC: {data->NextField:x}, DAC: {dataLocal.NextField:x}");
+            }
+        }
+#endif
+        return hr;
+    }
+
     int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
     {
         if (vtable == 0)
