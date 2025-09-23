@@ -6637,6 +6637,24 @@ DO_LDFTN:
                         if (helpFunc == CORINFO_HELP_UNBOX)
                         {
                             EmitPushUnboxAny(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
+                            switch (GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass)))
+                            {
+                                case InterpTypeI1:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
+                                    break;
+                                case InterpTypeU1:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I4);
+                                    break;
+                                case InterpTypeI2:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+                                    break;
+                                case InterpTypeU2:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I4);
+                                    break;
+                                default:
+                                    // No conversion needed
+                                    break;
+                            }
                         }
                         else
                         {
