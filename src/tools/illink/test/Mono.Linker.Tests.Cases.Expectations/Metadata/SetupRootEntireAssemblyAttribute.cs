@@ -6,7 +6,7 @@ using System;
 namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 {
     /// <summary>
-    /// Request that the specified assembly's entire contents be kepyt.
+    /// Request that the specified assembly's entire contents be kept.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class SetupRootEntireAssemblyAttribute : BaseMetadataAttribute
