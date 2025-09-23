@@ -387,10 +387,7 @@ namespace System.Threading
             // Use timer._short to decide to which list to add.
             ref TimerQueueTimer? listHead = ref timer._short ? ref _shortTimers : ref _longTimers;
             timer._next = listHead;
-            if (timer._next != null)
-            {
-                timer._next._prev = timer;
-            }
+            timer._next?._prev = timer;
             timer._prev = null;
             listHead = timer;
         }
@@ -398,10 +395,7 @@ namespace System.Threading
         private void UnlinkTimer(TimerQueueTimer timer)
         {
             TimerQueueTimer? t = timer._next;
-            if (t != null)
-            {
-                t._prev = timer._prev;
-            }
+            t?._prev = timer._prev;
 
             if (_shortTimers == timer)
             {
@@ -415,10 +409,7 @@ namespace System.Threading
             }
 
             t = timer._prev;
-            if (t != null)
-            {
-                t._next = timer._next;
-            }
+            t?._next = timer._next;
 
             // At this point the timer is no longer in a list, but its next and prev
             // references may still point to other nodes.  UnlinkTimer should thus be

@@ -1223,7 +1223,7 @@ private:
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
-    virtual void DebuggerDetachClean();
+    virtual bool DebuggerDetachClean();
 
   public:
     static const BYTE *GetILPrestubDestination(const BYTE *prestub);
@@ -1525,7 +1525,7 @@ class DebuggerPatchSkip : public DebuggerController
 
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
-    void DebuggerDetachClean();
+    bool DebuggerDetachClean();
 
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump

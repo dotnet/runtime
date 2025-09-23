@@ -1,10 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
 
 namespace System
 {
@@ -78,91 +84,92 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ReadOnlySpan<TChar> PositiveSignTChar<TChar>(this NumberFormatInfo info)
+        internal static bool IsWhiteSpace<TChar>(this ReadOnlySpan<TChar> span)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.PositiveSign);
+            int elemsConsumed;
+
+            for (int i = 0; i < span.Length; i += elemsConsumed)
+            {
+                if (DecodeFromUtfChar(span, out Rune rune, out elemsConsumed) != OperationStatus.Done)
+                {
+                    return false;
+                }
+
+                if (!Rune.IsWhiteSpace(rune))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
+
+        internal static OperationStatus DecodeFromUtfChar<TChar>(ReadOnlySpan<TChar> span, out Rune result, out int elemsConsumed)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            return (typeof(TChar) == typeof(Utf8Char))
+                 ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
+                 : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> FromString<TChar>(string value)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(Utf8Char))
+            {
+                return Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(Encoding.UTF8.GetBytes(value));
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+                return Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(value);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> PositiveSignTChar<TChar>(this NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.PositiveSign);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> NegativeSignTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.NegativeSign);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.NegativeSign);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> CurrencySymbolTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.CurrencySymbol);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.CurrencySymbol);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> PercentSymbolTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.PercentSymbol);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.PercentSymbol);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> PerMilleSymbolTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.PerMilleSymbol);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.PerMilleSymbol);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> CurrencyDecimalSeparatorTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.CurrencyDecimalSeparator);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.CurrencyDecimalSeparator);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> CurrencyGroupSeparatorTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.CurrencyGroupSeparator);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.CurrencyGroupSeparator);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> NumberDecimalSeparatorTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.NumberDecimalSeparator);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.NumberDecimalSeparator);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> NumberGroupSeparatorTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.NumberGroupSeparator);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.NumberGroupSeparator);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> PercentDecimalSeparatorTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.PercentDecimalSeparator);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.PercentDecimalSeparator);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> PercentGroupSeparatorTChar<TChar>(this NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
-            return MemoryMarshal.Cast<char, TChar>(info.PercentGroupSeparator);
-        }
+            where TChar : unmanaged, IUtfChar<TChar> => FromString<TChar>(info.PercentGroupSeparator);
     }
 }
