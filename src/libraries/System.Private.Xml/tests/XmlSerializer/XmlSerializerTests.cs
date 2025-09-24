@@ -1043,6 +1043,266 @@ public static partial class XmlSerializerTests
         }
     }
 
+    [Theory]
+    [InlineData("0001-01-01")]
+    [InlineData("2002-06-17")]
+    [InlineData("2345-12-1")]
+    public static void Xml_DateOnlyAsRoot(string dateString)
+    {
+        var doObj = DateOnly.Parse(dateString);
+        var result = SerializeAndDeserialize<DateOnly>(doObj, WithXmlHeader($"""
+            <dateOnly>{FormatDateString(doObj)}</dateOnly>
+            """));
+        Assert.StrictEqual(doObj, result);
+    }
+
+    [Theory]
+    [InlineData("1-1-1")]
+    [InlineData("0079-08-24+02:00")]    // Vesuvius
+    [InlineData("1912-04-15Z")]         // Titanic - 11/14 11:40 ships time
+    [InlineData("1917-12-6")]           // Halifax
+    [InlineData("1937-5-06")]           // Hindenburg
+    [InlineData("98-01-01")]            // Rose Bowl
+    public static void Xml_DateOnlyParseErrors(string badDateString)
+    {
+        var badXml = WithXmlHeader($"""
+            <dateOnly>{badDateString}</dateOnly>
+            """);
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<DateOnly>(badXml));
+    }
+
+    [Theory]
+    [InlineData("20:17:40")]  // The Eagle has landed
+    [InlineData("10:35 AM")]  // First in flight
+    [InlineData("10:45 PM")]  // Tear down this wall
+    public static void Xml_TimeOnlyAsRoot(string timeString)
+    {
+        var toObj = TimeOnly.Parse(timeString);
+        var result = SerializeAndDeserialize<TimeOnly>(toObj, WithXmlHeader($"""
+            <timeOnly>{FormatTimeString(toObj)}</timeOnly>
+            """));
+        Assert.StrictEqual(toObj, result);
+    }
+
+    [Theory]
+    [InlineData("07:25:13.45-04:00", true, "07:25:13.45")]  // Oh the humanity
+    [InlineData("02:38:23.40Z", true, "02:38:23.4")]        // My heart will go on
+    [InlineData("7:48:07", false)]        // Will live in infamy
+    [InlineData("08:32 AM", false)]       // Helen errupts
+    public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
+    {
+        // Try straight up
+        var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
+        TimeOnly result = default;
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<TimeOnly>(xml));
+
+        // Try with compat-influencing 'timeWithoutOffset' data type
+        var xmlWrapper = WithXmlHeader($"<TimeOnlyAsXsdTimeWrapper><TestValue>{timeString}</TestValue></TimeOnlyAsXsdTimeWrapper>");
+        var wrapperResult = default(TimeOnlyAsXsdTimeWrapper);
+        var ex = Record.Exception(() =>
+        {
+            wrapperResult = DeserializeFromXmlString<TimeOnlyAsXsdTimeWrapper>(xmlWrapper);
+        });
+        if (succeedsWithCompat)
+        {
+            Assert.Null(ex);
+            Assert.Equal(expected, FormatTimeString(wrapperResult.TestValue));
+        }
+        else
+        {
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
+        }
+
+        // Finally, try with the AppCompat switch
+        using (var timeWithOffsetLoss = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", true))
+        {
+            result = default;
+            ex = Record.Exception(() =>
+            {
+                result = DeserializeFromXmlString<TimeOnly>(xml);
+            });
+            if (succeedsWithCompat)
+            {
+                Assert.Null(ex);
+                Assert.Equal(expected, FormatTimeString(result));
+            }
+            else
+            {
+                Assert.NotNull(ex);
+                Assert.IsType<InvalidOperationException>(ex);
+            }
+        }
+    }
+
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    public static void Xml_TypeWithDateOnlyAndTimeOnly()
+    {
+        var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
+        DateOnly defaultDateOnly = DateOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultDateString);
+        TimeOnly defaultTimeOnly = TimeOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultTimeString);
+
+        DateTime now = DateTime.Now;
+        DateTime localNow = now.ToLocalTime();
+        DateTime utcNow = now.ToUniversalTime();
+        var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
+
+        var doObj = new TypeWithDateAndTimeOnlyProperties()
+        {
+            Today = DateOnly.FromDateTime(now),
+            CustomDate = DateOnly.FromDateTime(utcNow),
+            // DefaultDate = defaultDateOnly,
+            // NullableDate = null,
+            NullableDateWithValue = DateOnly.FromDateTime(localNow),
+            // NullableDefaultDate = null,
+
+            Now = TimeOnly.FromDateTime(now),
+            CustomTime = TimeOnly.FromDateTime(utcNow),
+            // DefaultTime = defaultTimeOnly,
+            // NullableTime = null,
+            NullableTimeWithValue = TimeOnly.FromDateTime(localNow),
+            // NullableDefaultTime = null,
+        };
+
+        // Verify serialization
+        var doResult = SerializeAndDeserialize(doObj, WithXmlHeader($"""
+            <DateAndTime xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Today>{FormatDateString(doObj.Today)}</Today>
+              <MyDate>{FormatDateString(doObj.CustomDate)}</MyDate>
+              <NullableDate xsi:nil="true" />
+              <NullableDateWithValue>{FormatDateString(doObj.NullableDateWithValue!.Value)}</NullableDateWithValue>
+              <NullableDefaultDate xsi:nil="true" />
+              <Now>{FormatTimeString(doObj.Now)}</Now>
+              <MyTime>{FormatTimeString(doObj.CustomTime)}</MyTime>
+              <NullableTime xsi:nil="true" />
+              <NullableTimeWithValue>{FormatTimeString(doObj.NullableTimeWithValue!.Value)}</NullableTimeWithValue>
+              <NullableDefaultTime xsi:nil="true" />
+            </DateAndTime>
+            """), () => doSerializer);
+
+        // Verify round trip
+        Assert.StrictEqual(doObj.Today, doResult.Today);
+        Assert.StrictEqual(doObj.CustomDate, doResult.CustomDate);
+        Assert.StrictEqual(defaultDateOnly, doResult.DefaultDate);
+        Assert.Null(doResult.NullableDate);
+        Assert.StrictEqual(doObj.NullableDateWithValue, doResult.NullableDateWithValue);
+        Assert.Null(doResult.NullableDefaultDate);
+        Assert.StrictEqual(doObj.Now, doResult.Now);
+        Assert.StrictEqual(doObj.CustomTime, doResult.CustomTime);
+        Assert.StrictEqual(defaultTimeOnly, doResult.DefaultTime);
+        Assert.Null(doResult.NullableTime);
+        Assert.StrictEqual(doObj.NullableTimeWithValue, doResult.NullableTimeWithValue);
+        Assert.Null(doResult.NullableDefaultTime);
+    }
+
+    [Fact]
+    public static void Xml_XsdDate_With_DateOnly_And_DateTime()
+    {
+        var doSerializer = new XmlSerializer(typeof(DateOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var dtdSerializer = new XmlSerializer(typeof(DateTimeDateWrapper), new XmlRootAttribute("DateAndTimeTest"));
+
+        // xsd:date technically allows offset information. But XmlSerializer does not include offsets when
+        // serializing a DateTime as xsd:date. So there is no relevant compat switch for round-tripping between
+        // DateTime as xsd:date and DateOnly. It should just work.
+
+        DateTime localNow = DateTime.Now;
+        Assert.Equal(DateTimeKind.Local, localNow.Kind);
+        DateTime now = DateTime.SpecifyKind(localNow, DateTimeKind.Unspecified);
+        Assert.Equal(DateTimeKind.Unspecified, now.Kind);
+        Assert.Equal(localNow.Hour, now.Hour);
+        DateTime utcNow = DateTime.SpecifyKind(localNow, DateTimeKind.Utc);
+        Assert.Equal(DateTimeKind.Utc, utcNow.Kind);
+        Assert.Equal(localNow.Hour, utcNow.Hour);
+
+        // Verify DateOnly -> DateTime
+        var doObj = new DateOnlyWrapper() { TestValue = DateOnly.FromDateTime(now) };
+        var xml = Serialize(doObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(doObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => doSerializer);
+        var dtdObj = (DateTimeDateWrapper)Deserialize(dtdSerializer, xml);
+        Assert.StrictEqual(now.Date, dtdObj.TestValue);
+        Assert.Equal(DateTimeKind.Unspecified, dtdObj.TestValue.Kind);
+
+        // Verify DateTime (Unspecified) -> DateOnly
+        dtdObj = new DateTimeDateWrapper() { TestValue = now };
+        xml = Serialize(dtdObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(dtdObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dtdSerializer);
+        doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
+        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* now */), doObj.TestValue);
+
+        // Verify DateTime (Local) -> DateOnly
+        dtdObj = new DateTimeDateWrapper() { TestValue = localNow };
+        xml = Serialize(dtdObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(dtdObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dtdSerializer);
+        doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
+        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* localNow */), doObj.TestValue);
+
+        // Verify DateTime (Utc) -> DateOnly
+        dtdObj = new DateTimeDateWrapper() { TestValue = utcNow };
+        xml = Serialize(dtdObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(dtdObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dtdSerializer);
+        doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
+        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* utcNow */), doObj.TestValue);
+    }
+
+    [Theory]
+    // We want fractional times that don't fill all 7 digits, so don't rely on 'Now' like we did for the Date test
+    [InlineData("12:34:56.789", DateTimeKind.Unspecified)]      // Obviously fake
+    [InlineData("02:38:23.40"/*Z*/, DateTimeKind.Utc)]          // My heart will go on
+    [InlineData("08:32:00"/*-07:00*/, DateTimeKind.Local)]      // Helen errupts
+    public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
+    {
+        var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var toaxtSerializer = new XmlSerializer(typeof(TimeOnlyAsXsdTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var dttSerializer = new XmlSerializer(typeof(DateTimeTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
+
+        // DateTime fields can be used with 'DataType="time"' attributes to produce xsd:time conforming output.
+        // These xsd:time fields can logically fit into TimeOnly structs - if optional timezone/offset info is
+        // discarded. By default, XmlSerializer doesn't emit any offset details for xsd:date, but it does for xsd:time.
+        // There is an appCompat switch to allow discarding offset details when reading an xsd:time into TimeOnly.
+        // 'Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss'. The 'TimeOnly' field can also be decorated
+        // with a 'DataType="timeWithoutOffset"' attribute to indicate that offset information should be ignored.
+        // Use the latter approach here.
+
+        var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
+        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind); 
+        Assert.Equal(kind, testTime.Kind);
+
+        // Verify TimeOnly -> DateTime
+        var toObj = new TimeOnlyWrapper() { TestValue = TimeOnly.FromDateTime(testTime) };
+        var xml = Serialize(toObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatTimeString(toObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => toSerializer);
+        var dttObj = (DateTimeTimeWrapper)Deserialize(dttSerializer, xml);
+        Assert.StrictEqual(testTime.TimeOfDay, dttObj.TestValue.TimeOfDay);
+        Assert.Equal(DateTimeKind.Unspecified, dttObj.TestValue.Kind);
+        Assert.Equal(DateTime.MinValue.Date, dttObj.TestValue.Date);
+
+        // Verify DateTime -> TimeOnly
+        // Use an Unspecified kind explicitly; DateTime.Now is Local.
+        dttObj = new DateTimeTimeWrapper() { TestValue = testTime };
+        xml = Serialize(dttObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatTimeString(dttObj.TestValue, ignoreUtc)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dttSerializer);
+        var toaxtObj = (TimeOnlyAsXsdTimeWrapper)Deserialize(toaxtSerializer, xml);
+        Assert.StrictEqual(TimeOnly.FromDateTime(dttObj.TestValue /* now */), toaxtObj.TestValue);
+    }
+
     [Fact]
     public static void Xml_TypeWithByteProperty()
     {
@@ -2280,7 +2540,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
                 overrides.Add(typeof(Parameter<string>), parametersXmlAttribute);
 
                 var serializer = new XmlSerializer(typeof(RootClass), overrides);
-                var result=(RootClass)serializer.Deserialize(xmlReader);
+                var result = (RootClass)serializer.Deserialize(xmlReader);
 
                 Assert.Equal("SomeName", result.Parameters[0].Name);
                 Assert.Equal(string.Empty, ((Parameter<string>)result.Parameters[0]).Value);
@@ -2771,6 +3031,12 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
         return ms;
     }
+
+    private static string FormatDateString(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string FormatDateString(DateTime date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string FormatTimeString(TimeOnly time) => time.ToString($"HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
+    private static string FormatTimeString(DateTime time, bool ignoreUtc)
+        => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
 }
 
 internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
