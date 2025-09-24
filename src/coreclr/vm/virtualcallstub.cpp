@@ -2362,7 +2362,6 @@ VirtualCallStubManager::Resolver(
             }
         }
 #else
-        BOOL fSlotCallsPrestub = FALSE;
         fShouldPatch = TRUE;
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
