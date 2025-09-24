@@ -47,7 +47,7 @@
   </PropertyGroup>
 
   <!-- Feature switches defaults, identical to SDK -->
-  <!-- <PropertyGroup>
+  <PropertyGroup>
 		<CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
 		<EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
 		<EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
@@ -56,27 +56,27 @@
 		<HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == '' and '$(Optimize)' == 'true'">false</HttpActivityPropagationSupport>
 		<MetricsSupport Condition="'$(MetricsSupport)' == '' And '$(Optimize)' == 'true' And '$(EnableDiagnostics)' != 'true'">false</MetricsSupport>
 		<Http3Support Condition="'$(Http3Support)' == ''">false</Http3Support>
-		<InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization> -->
+		<InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
 		<!-- Enable HybridGlobalization by default-->
-		<!-- <HybridGlobalization Condition="'$(InvariantGlobalization)' != 'true'">true</HybridGlobalization>
+		<HybridGlobalization Condition="'$(InvariantGlobalization)' != 'true'">true</HybridGlobalization>
 		<StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
 		<UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
 		<UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == '' And '$(_BundlerDebug)' != 'true'">true</UseSystemResourceKeys>
 		<UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == '' And '$(_BundlerDebug)' == 'true'">false</UseSystemResourceKeys>
 		<UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == '' And '$(MtouchHttpClientHandler)' == 'HttpClientHandler'">false</UseNativeHttpHandler>
-		<UseNativeHttpHandler Condition="'$(_PlatformName)' != 'macOS' And '$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler> -->
+		<UseNativeHttpHandler Condition="'$(_PlatformName)' != 'macOS' And '$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler>
 		<!-- AutoreleasePoolSupport needs to be set earlier, so that illink doesn't override it - https://github.com/dotnet/runtime/pull/86753 - so it's set in Xamarin.Shared.Sdk.props -->
-		<!-- <EnableCppCLIHostActivation Condition="'$(EnableCppCLIHostActivation)' == ''">false</EnableCppCLIHostActivation>
+		<EnableCppCLIHostActivation Condition="'$(EnableCppCLIHostActivation)' == ''">false</EnableCppCLIHostActivation>
 		<_EnableConsumingManagedCodeFromNativeHosting Condition="'$(_EnableConsumingManagedCodeFromNativeHosting)' == ''">false</_EnableConsumingManagedCodeFromNativeHosting>
 		<NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">false</NullabilityInfoContextSupport>
-		<BuiltInComInteropSupport Condition="'$(BuiltInComInteropSupport)' == ''">false</BuiltInComInteropSupport> -->
+		<BuiltInComInteropSupport Condition="'$(BuiltInComInteropSupport)' == ''">false</BuiltInComInteropSupport>
 		<!-- Verify DI trimmability at development-time, but turn the validation off for production/trimmed builds. -->
-		<!-- <VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == '' And '$(_BundlerDebug)' != 'true'">false</VerifyDependencyInjectionOpenGenericServiceTrimmability>
-		<VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability> -->
+		<VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == '' And '$(_BundlerDebug)' != 'true'">false</VerifyDependencyInjectionOpenGenericServiceTrimmability>
+		<VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability>
 		<!-- This should be set by dotnet/sdk instead, once https://github.com/dotnet/sdk/issues/25392 gets resolved.  -->
-		<!-- <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' And ( '$(MtouchInterpreter)' == '' And '$(UseInterpreter)' != 'true' ) And ('$(_PlatformName)' == 'iOS' Or '$(_PlatformName)' == 'tvOS' Or '$(_PlatformName)' == 'MacCatalyst')">false</DynamicCodeSupport>
+		<DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' And ( '$(MtouchInterpreter)' == '' And '$(UseInterpreter)' != 'true' ) And ('$(_PlatformName)' == 'iOS' Or '$(_PlatformName)' == 'tvOS' Or '$(_PlatformName)' == 'MacCatalyst')">false</DynamicCodeSupport>
 		<_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>
-  </PropertyGroup> -->
+  </PropertyGroup>
 
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
