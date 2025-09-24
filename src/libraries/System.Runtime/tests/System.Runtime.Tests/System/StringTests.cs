@@ -2236,36 +2236,36 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("hello", new Rune('h'), "ello")]
-        [InlineData("   ", new Rune(' '), "")]
-        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", new Rune(0x1F600), "\U0001F601")]
-        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", new Rune(0x1F601), "\U0001F600\U0001F600\U0001F601\U0001F600")]
-        [InlineData("", new Rune(' '), "")]
-        public static void Trim_Rune(string source, Rune trimRune, string expected)
+        [InlineData("hello", 'h', "ello")]
+        [InlineData("   ", ' ', "")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F600, "\U0001F601")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F601, "\U0001F600\U0001F600\U0001F601\U0001F600")]
+        [InlineData("", ' ', "")]
+        public static void Trim_Rune(string source, int trimRuneAsInt, string expected)
         {
-            Assert.Equal(expected, source.Trim(trimRune));
+            Assert.Equal(expected, source.Trim(new Rune(trimRuneAsInt)));
         }
 
         [Theory]
-        [InlineData("hello", new Rune('h'), "ello")]
-        [InlineData("   ", new Rune(' '), "")]
-        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", new Rune(0x1F600), "\U0001F601\U0001F600")]
-        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", new Rune(0x1F601), "\U0001F600\U0001F600\U0001F601\U0001F600")]
-        [InlineData("", new Rune(' '), "")]
-        public static void TrimStart_Rune(string source, Rune trimRune, string expected)
+        [InlineData("hello", 'h', "ello")]
+        [InlineData("   ", ' ', "")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F600, "\U0001F601\U0001F600")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F601, "\U0001F600\U0001F600\U0001F601\U0001F600")]
+        [InlineData("", ' ', "")]
+        public static void TrimStart_Rune(string source, int trimRuneAsInt, string expected)
         {
-            Assert.Equal(expected, source.TrimStart(trimRune));
+            Assert.Equal(expected, source.TrimStart(new Rune(trimRuneAsInt)));
         }
 
         [Theory]
-        [InlineData("hello", new Rune('h'), "hello")]
-        [InlineData("   ", new Rune(' '), "")]
-        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", new Rune(0x1F600), "\U0001F600\U0001F600\U0001F601")]
-        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", new Rune(0x1F601), "\U0001F600\U0001F600\U0001F601\U0001F600")]
-        [InlineData("", new Rune(' '), "")]
-        public static void TrimEnd_Rune(string source, Rune trimRune, string expected)
+        [InlineData("hello", 'h', "hello")]
+        [InlineData("   ", ' ', "")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F600, "\U0001F600\U0001F600\U0001F601")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F601, "\U0001F600\U0001F600\U0001F601\U0001F600")]
+        [InlineData("", ' ', "")]
+        public static void TrimEnd_Rune(string source, int trimRuneAsInt, string expected)
         {
-            Assert.Equal(expected, source.TrimEnd(trimRune));
+            Assert.Equal(expected, source.TrimEnd(new Rune(trimRuneAsInt)));
         }
 
         [OuterLoop]
