@@ -881,12 +881,9 @@ namespace System.Threading
             // If it's zero or less, we need to take the lock to ensure that we properly wake up waiters
             // and potentially update m_waitHandle.
             int currentCount = m_currentCount;
-            if (currentCount > 0 && Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
+            if (currentCount > 0 && currentCount + releaseCount <= m_maxCount &&
+                Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
             {
-                if (m_maxCount - currentCount < releaseCount)
-                {
-                    throw new SemaphoreFullException();
-                }
                 return currentCount;
             }
 
@@ -909,7 +906,7 @@ namespace System.Threading
             lock (m_lockObjAndDisposed)
             {
                 // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
-                int currentCount = m_currentCount;
+                currentCount = m_currentCount;
                 returnCount = currentCount;
 
                 // If the release count would result exceeding the maximum count, throw SemaphoreFullException.
