@@ -40,7 +40,7 @@ namespace System.Threading
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
         // threading and decrements it back after that. It is used as flag for the release call to know if there are
         // waiting threads in the monitor or not.
-        private volatile int m_waitCount;
+        private int m_waitCount;
 
         /// <summary>
         /// This is used to help prevent waking more waiters than necessary. It's not perfect and sometimes more waiters than
@@ -57,7 +57,7 @@ namespace System.Threading
         private volatile ManualResetEvent? m_waitHandle;
 
         // Head of list representing asynchronous waits on the semaphore.
-        private volatile TaskNode? m_asyncHead;
+        private TaskNode? m_asyncHead;
 
         // Tail of list representing asynchronous waits on the semaphore.
         private TaskNode? m_asyncTail;
@@ -384,8 +384,8 @@ namespace System.Threading
                 return false;
             }
 
-            // Wait Fast Path: If the count is greater than zero, try to acquire the semaphore.
-            // Perf: Check if it's possible to decrease the current count with an Interlocked operation instead of taking the Monitor lock.
+            // Fast Path: If the count is greater than zero, try to acquire the semaphore.
+            // Check if it's possible to decrease the current count with an Interlocked operation instead of taking the Monitor lock.
             // Only attempt this if there is no wait handle, otherwise it's not possible to guarantee that the wait handle is in the correct state with this optimization.
             if (m_waitHandle is null)
             {
@@ -449,13 +449,13 @@ namespace System.Threading
                 else
                 {
                     // If we cannot wait, then try to acquire the semaphore.
-                    // If the new count becomes negative, that means that the count was zero 
+                    // If the new count becomes negative, that means that the count was zero
                     // so we should revert this invalid operation and return false.
                     if (millisecondsTimeout == 0)
                     {
                         return TryAcquireSemaphore();
                     }
-                    
+
                     waitSuccessful = WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
 
                     // Exposing wait handle which is lazily initialized if needed
@@ -895,13 +895,14 @@ namespace System.Threading
                     nameof(releaseCount), releaseCount, SR.SemaphoreSlim_Release_CountWrong);
             }
 
+            // Fast path: If the count is greater than zero, try to release the semaphore without taking the lock.
+            // If it's zero or less, we need to take the lock to ensure that we properly wake up waiters
+            // and potentially update m_waitHandle.
             if (m_currentCount > 0)
             {
                 int previousCount = Interlocked.Add(ref m_currentCount, releaseCount) - releaseCount;
-                if (previousCount + releaseCount > m_maxCount)
+                if (previousCount > m_maxCount - releaseCount)
                 {
-                    // Revert the increment
-                    Interlocked.Add(ref m_currentCount, -releaseCount);
                     throw new SemaphoreFullException();
                 }
                 else if (previousCount <= 0)
@@ -919,7 +920,7 @@ namespace System.Threading
 
             int returnCount;
 
-            // If m_currentCount was not greater than 0, it may be negative if some threads attempted to acquire 
+            // If m_currentCount was not greater than 0, it may be negative if some threads attempted to acquire
             // the semaphore during the wait fast path but failed.
             // In this case, the threads themselves will make the count back to zero after a little while, spin until then.
             SpinWait spinner = default;
@@ -928,8 +929,9 @@ namespace System.Threading
                 spinner.SpinOnce();
             }
 
-            // Once it became zero, we can take the lock knowing that no threads executing a wait operation will
-            // be able to modify the count until we release the lock.
+            // The current count must be 0 and we can take the lock knowing that no threads executing a wait operation
+            // will be able to modify the count until we release the lock.
+            Debug.Assert(m_currentCount == 0, "m_currentCount should never be negative here");
 
             lock (m_lockObjAndDisposed)
             {
