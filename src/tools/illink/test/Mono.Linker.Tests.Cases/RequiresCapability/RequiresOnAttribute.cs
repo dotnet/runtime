@@ -116,11 +116,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         static int _fieldWithAttributeWhichRequires;
 
         [ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+        [UnexpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning ("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [UnexpectedWarning ("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning ("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [UnexpectedWarning ("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
+        [UnexpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning ("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [UnexpectedWarning ("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning ("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+        [UnexpectedWarning ("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [AttributeWhichRequires]
         [AttributeWhichRequiresOnProperty (PropertyWhichRequires = true)]
         static bool PropertyWithAttributeWhichRequires { get; set; }
