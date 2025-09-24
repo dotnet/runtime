@@ -17,7 +17,7 @@ namespace System.Text.Json.Nodes
             {
                 case JsonTokenType.False:
                 case JsonTokenType.True:
-                    return new JsonValueOfJsonBool(reader.GetBoolean(), options);
+                    return JsonValue.Create(reader.GetBoolean(), options);
                 case JsonTokenType.String
                     when typeof(T) == typeof(JsonValuePrimitive<DateTime>):
                     return JsonValue.Create(reader.GetDateTime(), options);

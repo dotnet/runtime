@@ -2,20 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json.Nodes
 {
-    internal sealed class JsonValueOfJsonBool : JsonValue<bool>
+    internal sealed class JsonValueOfJsonBool : JsonValuePrimitive<bool>
     {
         private JsonValueKind ValueKind => Value ? JsonValueKind.True : JsonValueKind.False;
 
-        internal JsonValueOfJsonBool(bool value, JsonNodeOptions? options)
-            : base(value, options)
+        internal JsonValueOfJsonBool(bool value, JsonConverter<bool> converter, JsonNodeOptions? options)
+            : base(value, converter, options)
         {
         }
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null) => writer.WriteBooleanValue(Value);
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonBool(Value, Options);
+        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonBool(Value, _converter, Options);
         private protected override JsonValueKind GetValueKindCore() => ValueKind;
 
         public override T GetValue<T>()

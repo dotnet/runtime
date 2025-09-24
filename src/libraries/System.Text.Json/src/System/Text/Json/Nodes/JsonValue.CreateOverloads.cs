@@ -14,7 +14,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        public static JsonValue Create(bool value, JsonNodeOptions? options = null) => new JsonValuePrimitive<bool>(value, JsonMetadataServices.BooleanConverter, options);
+        public static JsonValue Create(bool value, JsonNodeOptions? options = null) => new JsonValueOfJsonBool(value, JsonMetadataServices.BooleanConverter, options);
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
@@ -22,7 +22,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        public static JsonValue? Create(bool? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValuePrimitive<bool>(value.Value, JsonMetadataServices.BooleanConverter, options) : null;
+        public static JsonValue? Create(bool? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueOfJsonBool(value.Value, JsonMetadataServices.BooleanConverter, options) : null;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.

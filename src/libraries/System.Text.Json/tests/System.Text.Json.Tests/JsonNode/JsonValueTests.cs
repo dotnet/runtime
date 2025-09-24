@@ -64,10 +64,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(new Version(1, 2, 3, 4))
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(true)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(true)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(byte.MinValue)
