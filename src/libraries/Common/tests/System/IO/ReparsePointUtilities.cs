@@ -44,7 +44,7 @@ public static partial class MountHelper
         string path = Path.GetTempFileName();
         string linkPath = path + ".link";
 
-        // Verify file symlink creation
+        // Verify file hard link creation
         success = CreateHardLink(linkPath: linkPath, targetPath: path);
         try { File.Delete(path); } catch { }
         try { File.Delete(linkPath); } catch { }
