@@ -2474,7 +2474,7 @@ PROCCreateCrashDump(
         {
             sprintf_s(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
-        for (size_t i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             close(pipe_descs[i]);
         }
