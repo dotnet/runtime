@@ -208,6 +208,34 @@ enum HKDFError: Error {
     case unknownHashAlgorithm
 }
 
+struct Logger {
+    private static let stdoutLock = NSLock()
+
+    static func log(_ parts: Any..., separator: String = " ", terminator: String = "\n") {
+        let message = parts.map { String(describing: $0) }.joined(separator: separator) + terminator
+
+        stdoutLock.lock()
+        defer { stdoutLock.unlock() }
+
+        if let data = message.data(using: .utf8) {
+            FileHandle.standardOutput.write(data)
+        }
+    }
+
+    static func hexEncode<C: Collection>(_ bytes: C) -> String where C.Element == UInt8 {
+        var s = ""
+        s.reserveCapacity(64)
+        s.append("<\(bytes.count)> ")
+        for b in bytes {
+            s.append(String(UnicodeScalar(_hex[Int(b >> 4)])))
+            s.append(String(UnicodeScalar(_hex[Int(b & 0x0F)])))
+        }
+        return s
+    }
+
+    private static let _hex: [UInt8] = Array("0123456789abcdef".utf8)
+}
+
 @_silgen_name("AppleCryptoNative_HKDFExpand")
 @available(iOS 14, tvOS 14, *)
 public func AppleCryptoNative_HKDFExpand(
@@ -215,6 +243,8 @@ public func AppleCryptoNative_HKDFExpand(
     prk: UnsafeBufferPointer<UInt8>,
     info: UnsafeBufferPointer<UInt8>,
     destination: UnsafeMutableBufferPointer<UInt8>) throws {
+
+    Logger.log("alg:", hashAlgorithm, "prk:", Logger.hexEncode(prk), "info:", Logger.hexEncode(info))
 
     if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
         let key = try {
@@ -250,7 +280,7 @@ public func AppleCryptoNative_HKDFExtract(
     ikm: UnsafeBufferPointer<UInt8>,
     salt: UnsafeBufferPointer<UInt8>,
     destination: UnsafeMutableBufferPointer<UInt8>) throws {
-
+    Logger.log("alg:", hashAlgorithm, "ikm:", Logger.hexEncode(ikm), "salt:", Logger.hexEncode(salt))
     let key = SymmetricKey(data: ikm)
 
     if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
@@ -288,7 +318,7 @@ public func AppleCryptoNative_HKDFDeriveKey(
     salt: UnsafeBufferPointer<UInt8>,
     info: UnsafeBufferPointer<UInt8>,
     destination: UnsafeMutableBufferPointer<UInt8>) throws {
-
+    Logger.log("alg:", hashAlgorithm, "ikm:", Logger.hexEncode(ikm), "salt:", Logger.hexEncode(info), "salt:", Logger.hexEncode(info))
     let key = SymmetricKey(data: ikm)
 
     if let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) {
