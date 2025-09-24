@@ -27,6 +27,7 @@ namespace ComWrappersTests.GlobalInstance
         }
 
         [Fact]
+        [Xunit.SkipOnCoreClrAttribute("Depends on windows-only COM->CLR transitions flowing hidden parameter", RuntimeTestModes.InterpreterActive)]
         public static int TestEntryPoint()
         {
             try
