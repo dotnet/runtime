@@ -64,6 +64,7 @@ public class Program
             return new UnloadableAssemblyContext();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void RunWithAssemblyLoadContext(Action<AssemblyLoadContext> action)
         {
             action(_assemblyLoadContext!);
