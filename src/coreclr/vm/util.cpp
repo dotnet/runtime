@@ -1026,21 +1026,20 @@ namespace GcNotifications
             if (ev.condemnedGeneration == 0)
                 g_gcNotificationFlags = 0;
             else
-                g_gcNotificationFlags = (WORD)(g_gcNotificationFlags | ev.condemnedGeneration | (1 << 15));
+                g_gcNotificationFlags = (WORD)(g_gcNotificationFlags | ev.condemnedGeneration);
         }
     }
-    WORD GetNotification(GcEvtArgs ev)
+    BOOL GetNotification(GcEvtArgs ev)
     {
         LIMITED_METHOD_CONTRACT;
-        WORD flagsCondemned = g_gcNotificationFlags & 0x7fff;
-        if ((g_gcNotificationFlags & (1 << 15)) && (ev.typ == GC_MARK_END)
-        && (ev.condemnedGeneration == 0 || (flagsCondemned & ev.condemnedGeneration) != 0))
+        // check to see if we have a notification for this generation
+        if (ev.typ == GC_MARK_END && (ev.condemnedGeneration == 0 || (g_gcNotificationFlags & ev.condemnedGeneration) != 0))
         {
-            return g_gcNotificationFlags;
+            return TRUE;
         }
         else
         {
-            return 0;
+            return FALSE;
         }
     }
 };

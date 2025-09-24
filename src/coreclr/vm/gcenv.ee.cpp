@@ -1724,9 +1724,8 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
         analysisTimer.Start();
     }
 
-    // Is the list active?
     GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-    return GcNotifications::GetNotification(gea) != 0;
+    return GcNotifications::GetNotification(gea);
 }
 
 void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
@@ -1740,7 +1739,6 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         elapsed = analysisTimer.Elapsed100nsTicks();
     }
 
-    // Is the list active?
     GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
     if (GcNotifications::GetNotification(gea))
     {

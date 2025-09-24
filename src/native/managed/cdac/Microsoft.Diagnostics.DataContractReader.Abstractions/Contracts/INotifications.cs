@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface INotifications : IContract
 {
     static string IContract.Name { get; } = nameof(Notifications);
-    void SetGcNotification(uint type, int condemnedGeneration) => throw new NotImplementedException();
+    void SetGcNotification(int condemnedGeneration) => throw new NotImplementedException();
 }
 
 public readonly struct Notifications : INotifications

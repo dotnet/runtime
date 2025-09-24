@@ -5325,24 +5325,8 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
 
     EX_TRY
     {
-        if (gcEvtArgs->typ >= GC_EVENT_TYPE_MAX)
-        {
-            status = E_INVALIDARG;
-        }
-        else
-        {
-            WORD res = GcNotifications::GetNotification(*gcEvtArgs);
-            if (res)
-            {
-                gcEvtArgs->typ = GC_MARK_END;
-                gcEvtArgs->condemnedGeneration = res & 0x7fff;
-                status = S_OK;
-            }
-            else
-            {
-                status = E_FAIL;
-            }
-        }
+        // XXX Microsoft.
+        status = E_NOTIMPL;
     }
     EX_CATCH
     {

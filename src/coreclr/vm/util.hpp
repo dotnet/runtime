@@ -634,7 +634,7 @@ private:
 namespace GcNotifications
 {
     VOID SetNotification(GcEvtArgs ev);
-    WORD GetNotification(GcEvtArgs ev);
+    BOOL GetNotification(GcEvtArgs ev);
 };
 
 
