@@ -1560,28 +1560,28 @@ namespace System.Tests
 
         public static IEnumerable<object[]> LastIndexOf_Rune_StringComparison_TestData()
         {
-            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC4f'), 6, StringComparison.Ordinal, -1};
-            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC00'), 6, StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), 1, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC4f'), StringComparison.Ordinal, -1};
+            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC00'), StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), StringComparison.OrdinalIgnoreCase, 0};
 
-            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), 6, StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\u0200\u0202Hello\u0200\u0202", new Rune('\u0201'), 1, StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), 6, StringComparison.Ordinal, -1};
+            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello\u0200\u0202", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), StringComparison.Ordinal, -1};
 
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), 6, StringComparison.Ordinal, 1};
-            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), 3, StringComparison.Ordinal, 1};
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), 6, StringComparison.OrdinalIgnoreCase, 1};
-            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), 4, StringComparison.OrdinalIgnoreCase, 1};
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801'), 6, StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\uD801\uD801Hello", new Rune('\uD801'), 0, StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801', '\uDC00'), 6, StringComparison.Ordinal, 0};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), StringComparison.Ordinal, 1};
+            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), StringComparison.Ordinal, 1};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), StringComparison.OrdinalIgnoreCase, 1};
+            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), StringComparison.OrdinalIgnoreCase, 1};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801'), StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uD801Hello", new Rune('\uD801'), StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801', '\uDC00'), StringComparison.Ordinal, 0};
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(LastIndexOf_Rune_StringComparison_TestData))]
-        public static void LastIndexOf_Rune_StringComparison(string source, Rune target, int startIndex, StringComparison stringComparison, int expected)
+        public static void LastIndexOf_Rune_StringComparison(string source, Rune target, StringComparison stringComparison, int expected)
         {
-            Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
+            Assert.Equal(expected, source.LastIndexOf(target, stringComparison));
         }
 
         public static IEnumerable<object[]> LastIndexOf_String_StringComparison_TestData()
