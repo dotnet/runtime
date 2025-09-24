@@ -29,7 +29,7 @@ public class Program
         {
             File.Copy(originalAssemblyPath, newAssemblyPath);
 
-            UnloadableAssemblyContext assemblyContext = new();
+            UnloadableAssemblyContext assemblyContext = UnloadableAssemblyContext.Create();
             assemblyContext.RunWithAssemblyLoadContext(
                 context =>
                 {
@@ -52,10 +52,16 @@ public class Program
 
         private AssemblyLoadContext? _assemblyLoadContext;
 
-        public UnloadableAssemblyContext()
+        private UnloadableAssemblyContext()
         {
             _assemblyLoadContext = new AssemblyLoadContext("AssemblyOnDiskTest", isCollectible: true);
             _weakAssemblyLoadContextReference = new WeakReference(_assemblyLoadContext, trackResurrection: true);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static UnloadableAssemblyContext Create()
+        {
+            return new UnloadableAssemblyContext();
         }
 
         public void RunWithAssemblyLoadContext(Action<AssemblyLoadContext> action)
