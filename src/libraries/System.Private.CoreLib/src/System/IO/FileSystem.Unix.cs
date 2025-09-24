@@ -667,6 +667,11 @@ namespace System.IO
         }
 #pragma warning restore IDE0060
 
+        internal static void CreateHardLink(string path, string pathToTarget)
+        {
+            Interop.CheckIo(Interop.Sys.Link(pathToTarget, path), path);
+        }
+
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
