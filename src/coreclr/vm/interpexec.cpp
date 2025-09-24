@@ -287,6 +287,7 @@ typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
 typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
+typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -2246,6 +2247,33 @@ MAIN_LOOP:
                     _ASSERTE(helperFtn != NULL);
                     helperFtn(helperArg1, helperArg2, helperArg3);
                     ip += 5;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_V_SA:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    helperFtn(helperArg1, helperArg2);
+                    ip += 4;
                     break;
                 }
 
