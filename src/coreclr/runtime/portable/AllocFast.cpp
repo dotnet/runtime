@@ -102,7 +102,6 @@ EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
     if (stringLength > MAX_STRING_LENGTH)
     {
         RhExceptionHandling_FailedAllocation(pMT, false);
-        return NULL;
     }
 
     return _RhpNewArrayFastCore(pMT, stringLength);
