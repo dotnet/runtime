@@ -5,44 +5,41 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Nodes
 {
-    internal sealed class JsonValueOfJsonBool : JsonValue
+    internal sealed class JsonValueOfJsonBool : JsonValue<bool>
     {
-        private readonly bool _value;
-
-        private JsonValueKind ValueKind => _value ? JsonValueKind.True : JsonValueKind.False;
+        private JsonValueKind ValueKind => Value ? JsonValueKind.True : JsonValueKind.False;
 
         internal JsonValueOfJsonBool(bool value, JsonNodeOptions? options)
-            : base(options)
+            : base(value, options)
         {
-            _value = value;
         }
 
-        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null) => writer.WriteBooleanValue(_value);
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonBool(_value, Options);
+        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null) => writer.WriteBooleanValue(Value);
+        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonBool(Value, Options);
         private protected override JsonValueKind GetValueKindCore() => ValueKind;
 
         public override T GetValue<T>()
         {
             if (!TryGetValue(out T? value))
             {
-                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(_value ? JsonValueKind.True : JsonValueKind.False, typeof(T));
+                ThrowHelper.ThrowInvalidOperationException_NodeUnableToConvertElement(Value ? JsonValueKind.True : JsonValueKind.False, typeof(T));
             }
 
             return value;
         }
 
-        public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
+        public override bool TryGetValue<T>([NotNullWhen(true)] out T value)
             where T : default
         {
             if (typeof(T) == typeof(JsonElement))
             {
-                value = (T)(object)JsonElement.Parse(_value ? JsonConstants.TrueValue : JsonConstants.FalseValue);
+                value = (T)(object)JsonElement.Parse(Value ? JsonConstants.TrueValue : JsonConstants.FalseValue);
                 return true;
             }
 
             if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
             {
-                value = (T)(object)_value;
+                value = (T)(object)Value;
                 return true;
             }
 
