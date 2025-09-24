@@ -2474,7 +2474,8 @@ PROCCreateCrashDump(
 
         // Wait for prctl(PR_SET_PTRACER, childpid) in parent
         char buffer;
-        int bytesRead = read(child_read_pipe, &buffer, 1);
+        int bytesRead;
+        while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
         close(child_read_pipe);
         
         if (bytesRead != 1)
@@ -2526,7 +2527,8 @@ PROCCreateCrashDump(
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Signal child that prctl(PR_SET_PTRACER, childpid) is done
-        int bytesWritten = write(parent_write_pipe, "S", 1);
+        int bytesWritten;
+        while((bytesWritten = write(parent_write_pipe, "S", 1)) < 0 && errno == EINTR);
         close(parent_write_pipe);
 
         if (bytesWritten != 1)
