@@ -618,7 +618,7 @@ namespace System.Tests
         [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
         public static void EndsWith_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(value));
+            Assert.Equal(expected, s.EndsWith(value, comparisonType));
         }
 
         [Theory]
@@ -656,7 +656,7 @@ namespace System.Tests
         [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
         public static void EndsWith_Rune_StringComparison(string s, int valueAsInt, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt)));
+            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt), comparisonType));
         }
 
         [Theory]
@@ -789,7 +789,7 @@ namespace System.Tests
         [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
         public static void StartsWith_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.EndsWith(value));
+            Assert.Equal(expected, s.EndsWith(value, comparisonType));
         }
 
         [Theory]
@@ -827,7 +827,7 @@ namespace System.Tests
         [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
         public static void StartsWith_Rune_StringComparison(string s, int valueAsInt, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.StartsWith(new Rune(valueAsInt)));
+            Assert.Equal(expected, s.StartsWith(new Rune(valueAsInt), comparisonType));
         }
 
         public static IEnumerable<object[]> Join_Char_StringArray_TestData()
