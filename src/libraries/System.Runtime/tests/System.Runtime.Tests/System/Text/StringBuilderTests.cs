@@ -1825,7 +1825,7 @@ namespace System.Text.Tests
         [InlineData("aaaabbbbccccdddd", 'a', '!', 16, 0, "aaaabbbbccccdddd")]
         [InlineData("aaaabbbbccccdddd", 'e', '!', 0, 16, "aaaabbbbccccdddd")]
         [InlineData("a\U0001F600b\U0001F600c\U0001F600", 0x0001F600, '!', 0, 9, "a!b!c!")]
-        public static void Replace_Rune(string value, int oldRuneAsInt, int newRuneAsInt, string expected)
+        public static void Replace_Rune(string value, int oldRuneAsInt, int newRuneAsInt, int startIndex, int count, string expected)
         {
             var oldRune = new Rune(oldRuneAsInt);
             var newRune = new Rune(newRuneAsInt);
