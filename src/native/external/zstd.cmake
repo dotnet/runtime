@@ -13,8 +13,6 @@ set(ZSTD_BUILD_CONTRIB OFF)
 set(ZSTD_BUILD_STATIC ON)
 set(ZSTD_BUILD_SHARED OFF)
 
-cmake_policy(SET CMP0194 OLD)
-
 set(__CURRENT_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 FetchContent_MakeAvailable(zstd)
@@ -25,5 +23,6 @@ if (MSVC)
     set_property(TARGET libzstd_static APPEND PROPERTY COMPILE_DEFINITIONS "ZSTD_DLL_EXPORT=1")
 endif()
 
-# disable warnings about lossy conversions
+# disable warnings that occur in the zstd library
 target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>)
+target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-implicit-fallthrough>)
