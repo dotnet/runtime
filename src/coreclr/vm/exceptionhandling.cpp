@@ -3311,7 +3311,6 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     pThread->DecPreventAbort();
 
     exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
-    exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
 
     MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
@@ -4181,8 +4180,16 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
     ExtendedEHClauseEnumerator ehEnum;
     IJitManager::MethodRegionInfo methodRegionInfo;
 
+    // We need to forbid any GC to happen between successive funclet invocations.
+    BEGINFORBIDGC();
+
+    pExInfo->m_ScannedStackRange.ExtendUpperBound(pExInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
+
     if (!EHEnumInitFromStackFrameIterator(&pExInfo->m_frameIter, &methodRegionInfo, &ehEnum))
+    {
+        ENDFORBIDGC();
         return;
+    }
 
     PCODE pbControlPC = pExInfo->m_frameIter.GetAdjustedControlPC();
 
@@ -4190,12 +4197,9 @@ static void InvokeSecondPass(ExInfo *pExInfo, uint idxStart, uint idxLimit)
 
     uint lastTryStart = 0, lastTryEnd = 0;
 
-    // We need to forbid any GC to happen between successive funclet invocations.
-    BEGINFORBIDGC();
-
     // Search the clauses for one that contains the current offset.
     RhEHClause ehClause;
-    for (uint curIdx = 0; EHEnumNextWorker(&ehEnum, &ehClause, /* onlyFinallys */ true) && curIdx < idxLimit; curIdx++)
+    for (uint curIdx = 0; EHEnumNextWorker(&ehEnum, &ehClause, /* doNotCalculateCatchType */ true) && curIdx < idxLimit; curIdx++)
     {
         //
         // Skip to the starting try region.  This is used by collided unwinds and rethrows to pickup where
