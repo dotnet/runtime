@@ -5462,11 +5462,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log10:
 #if defined(TARGET_RISCV64)
                         case NI_System_Math_Max:
-                        case NI_System_Math_MaxNumber:
                         case NI_System_Math_MaxUnsigned:
+                        case NI_System_Math_MaxNative:
                         case NI_System_Math_Min:
-                        case NI_System_Math_MinNumber:
                         case NI_System_Math_MinUnsigned:
+                        case NI_System_Math_MinNative:
 #endif // TARGET_RISCV64
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
@@ -12817,8 +12817,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_Max:
                     printf(" max");
                     break;
-                case NI_System_Math_MaxNumber:
-                    printf(" maxNumber");
+                case NI_System_Math_MaxNative:
+                    printf(" maxNative");
                     break;
                 case NI_System_Math_MaxUnsigned:
                     printf(" maxUnsigned");
@@ -12826,8 +12826,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_Min:
                     printf(" min");
                     break;
-                case NI_System_Math_MinNumber:
-                    printf(" minNumber");
+                case NI_System_Math_MinNative:
+                    printf(" minNative");
                     break;
                 case NI_System_Math_MinUnsigned:
                     printf(" minUnsigned");
