@@ -68,7 +68,7 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, 
 #ifndef TARGET_WASM
 #include "callstubgenerator.h"
 
-static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD)
+static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
 {
     CONTRACTL
     {
@@ -84,6 +84,11 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD)
 
     AllocMemTracker amTracker;
     CallStubHeader *header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
+
+    if (target != NULL)
+    {
+        header->SetTarget(target);
+    }
 
     if (pMD->SetCallStub(header))
     {
@@ -114,11 +119,13 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     CallStubHeader *pHeader = pMD->GetCallStub();
     if (pHeader == NULL)
     {
-        pHeader = UpdateCallStubForMethod(pMD);
+        pHeader = UpdateCallStubForMethod(pMD, target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
     }
 
-    // Interpreter-FIXME: Potential race condition if a single CallStubHeader is reused for multiple targets.
-    pHeader->SetTarget(target); // The method to call
+    if (target != NULL)
+    {
+        _ASSERTE(pHeader->GetTarget() == target);
+    }
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -143,7 +150,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCallStub();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke);
+        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, NULL);
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
@@ -2440,6 +2447,7 @@ CALL_INTERP_METHOD:
                     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
                     if (targetIp == NULL)
                     {
+                        if (!targetMethod->IsInterpreterCodePoisoned())
                         {
                             // This is an optimization to ensure that the stack walk will not have to search
                             // for the topmost frame in the current InterpExecMethod. It is not required
@@ -2453,12 +2461,17 @@ CALL_INTERP_METHOD:
                             CallPreStub(targetMethod);
 
                             targetIp = targetMethod->GetInterpreterCode();
+                            if (targetIp == NULL)
+                            {
+                                // The prestub wasn't able to setup an interpreter code, so it will never be able to.
+                                targetMethod->PoisonInterpreterCode();
+                            }
                         }
                         if (targetIp == NULL)
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
-                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, targetMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, NULL);
                             break;
                         }
                     }

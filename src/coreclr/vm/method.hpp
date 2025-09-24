@@ -1805,17 +1805,35 @@ protected:
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
 #ifdef FEATURE_INTERPRETER
+#define INTERPRETER_CODE_POISON 1
     PTR_InterpByteCodeStart m_interpreterCode;
 public:
     const PTR_InterpByteCodeStart GetInterpreterCode() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_interpreterCode;
+        PTR_InterpByteCodeStart interpreterCode = VolatileLoadWithoutBarrier(&m_interpreterCode);
+        if (dac_cast<TADDR>(interpreterCode) == INTERPRETER_CODE_POISON)
+            return NULL;
+        return interpreterCode;
     }
     void SetInterpreterCode(PTR_InterpByteCodeStart interpreterCode)
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(dac_cast<TADDR>(m_interpreterCode) != INTERPRETER_CODE_POISON);
         VolatileStore(&m_interpreterCode, interpreterCode);
+    }
+
+    // Call this if the m_interpreterCode will never be set to a valid value
+    void PoisonInterpreterCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, dac_cast<PTR_InterpByteCodeStart>((TADDR)INTERPRETER_CODE_POISON));
+    }
+
+    bool IsInterpreterCodePoisoned() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<TADDR>(VolatileLoadWithoutBarrier(&m_interpreterCode)) == INTERPRETER_CODE_POISON;
     }
 #endif // FEATURE_INTERPRETER
 
