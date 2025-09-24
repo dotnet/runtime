@@ -3,10 +3,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Console</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.ArraySignature</Target>
   </Suppression>
   <Suppression>
@@ -56,6 +52,14 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.ConstantBooleanValueHandle</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.ConstantEnumValue</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.ConstantEnumValueHandle</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -112,14 +116,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.ConstantEnumArrayHandle</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.ConstantEnumValue</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Metadata.NativeFormat.ConstantEnumValueHandle</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -659,10 +655,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.NativeFormat.TypeHashingAlgorithms</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Reflection.Core.AssemblyBinder</Target>
   </Suppression>
   <Suppression>
@@ -735,10 +727,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.TypeSystem.LockFreeReaderHashtableOfPointers`2</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Diagnostics.DebugAnnotations</Target>
   </Suppression>
   <Suppression>
@@ -747,11 +735,11 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.FieldHandleInfo</Target>
+    <Target>T:System.MDArray</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.MDArray</Target>
+    <Target>T:System.FieldHandleInfo</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -818,16 +806,8 @@
     <Target>T:System.Runtime.CompilerServices.StaticClassConstructionContext</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Resources.ResourceManager.BaseNameField</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Resources.ResourceSet.Reader</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.DiagnosticMethodInfo.#ctor(System.String,System.String,System.String)</Target>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.TypeSystem.LockFreeReaderHashtableOfPointers`2</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -835,29 +815,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.String.Trim(System.ReadOnlySpan{System.Char})</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.String.TrimEnd(System.ReadOnlySpan{System.Char})</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.String.TrimStart(System.ReadOnlySpan{System.Char})</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Threading.Lock.#ctor(System.Boolean)</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.IO.File.CreateHardLink(System.String,System.String)</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+    <Target>M:System.Diagnostics.DiagnosticMethodInfo.#ctor(System.String,System.String,System.String)</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0008</DiagnosticId>
-    <Target>T:System.Collections.BitArray</Target>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.NativeFormat.TypeHashingAlgorithms</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.IO.File.CreateHardLink(System.String,System.String)</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
   </Suppression>
