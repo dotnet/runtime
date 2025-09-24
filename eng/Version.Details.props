@@ -62,9 +62,9 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetRemoteExecutorPackageVersion>11.0.0-beta.25468.102</MicrosoftDotNetRemoteExecutorPackageVersion>
     <MicrosoftDotNetSharedFrameworkSdkPackageVersion>11.0.0-beta.25468.102</MicrosoftDotNetSharedFrameworkSdkPackageVersion>
     <MicrosoftDotNetXliffTasksPackageVersion>11.0.0-beta.25468.102</MicrosoftDotNetXliffTasksPackageVersion>
-    <MicrosoftDotNetXUnitAssertPackageVersion>2.9.3-beta.25468.102</MicrosoftDotNetXUnitAssertPackageVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.25468.102</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.25468.102</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetXUnitAssertPackageVersion>2.9.3-beta.25472.101</MicrosoftDotNetXUnitAssertPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.25472.101</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.25472.101</MicrosoftDotNetXUnitExtensionsPackageVersion>
     <MicrosoftNetCompilersToolsetPackageVersion>5.0.0-2.25468.102</MicrosoftNetCompilersToolsetPackageVersion>
     <MicrosoftNETSdkILPackageVersion>10.0.0-rc.1.25468.102</MicrosoftNETSdkILPackageVersion>
     <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion>10.0.100-rc.2.25468.102</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion>
