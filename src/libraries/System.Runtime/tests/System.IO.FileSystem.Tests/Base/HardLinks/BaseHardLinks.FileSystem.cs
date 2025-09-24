@@ -37,7 +37,7 @@ namespace System.IO.Tests
         {
             string linkPath = GetRandomFilePath();
             string nonExistentTarget = GetRandomFilePath();
-            Assert.Throws<IOException>(() => CreateHardLink(linkPath, nonExistentTarget));
+            Assert.Throws<FileNotFoundException>(() => CreateHardLink(linkPath, nonExistentTarget));
         }
 
         [Fact]
