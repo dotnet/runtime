@@ -1578,7 +1578,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(IndexOf_Rune_StringComparison_TestData))]
-        public static void IndexOf_Ordinal_Misc(string source, Rune target, StringComparison stringComparison, int expected)
+        public static void IndexOf_Rune_StringComparison(string source, Rune target, StringComparison stringComparison, int expected)
         {
             Assert.Equal(expected, source.IndexOf(target, stringComparison));
         }
@@ -1625,7 +1625,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(LastIndexOf_Rune_StringComparison_TestData))]
-        public static void LastIndexOf_Ordinal_Misc(string source, Rune target, int startIndex, StringComparison stringComparison, int expected)
+        public static void LastIndexOf_Rune_StringComparison(string source, Rune target, int startIndex, StringComparison stringComparison, int expected)
         {
             Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
         }
