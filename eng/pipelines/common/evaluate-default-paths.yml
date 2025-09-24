@@ -43,6 +43,10 @@ parameters:
         src/tasks/Microsoft.NET.WebAssembly.Webcil/*
         src/tests/Common/wasm-test-runner/*
         src/coreclr/vm/wasm/*
+        src/native/corehost/browserhost/*
+        src/native/libs/Common/JavaScript/*
+        src/native/libs/System.Native.Browser/*
+        src/native/libs/System.Runtime.InteropServices.JavaScript.Native/*
     ]
     _wasm_pipelines: [
         eng/pipelines/**/*wasm*
@@ -57,6 +61,10 @@ parameters:
         src/native/libs/System.Globalization.Native/*
         src/native/libs/System.IO.Compression.Native/*
         src/native/libs/System.Native/*
+        src/native/corehost/browserhost/*
+        src/native/libs/Common/JavaScript/*
+        src/native/libs/System.Native.Browser/*
+        src/native/libs/System.Runtime.InteropServices.JavaScript.Native/*
     ]
     _wasm_chrome: [
         eng/testing/bump-chrome-version.proj

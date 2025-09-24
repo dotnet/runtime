@@ -52,15 +52,24 @@ else(CLR_CMAKE_HOST_WIN32)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
+            target_link_libraries(corerun PRIVATE 
+                System.Native.Browser-Static)
+            set(JS_SYSTEM_NATIVE_BROWSER
+                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+            set(JS_CORE_RUN_PRE
+                "${CMAKE_CURRENT_SOURCE_DIR}/libCorerun.pre.js")
+            set_target_properties(corerun PROPERTIES
+                LINK_DEPENDS "${JS_CORE_RUN_PRE};${JS_SYSTEM_NATIVE_BROWSER};"
+                LINK_FLAGS "--pre-js ${JS_CORE_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER}"
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -fwasm-exceptions
-                -sEXPORTED_RUNTIME_METHODS=FS
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
+                -sENVIRONMENT=node,shell
                 -sSTACK_SIZE=5MB
                 -lnoderawfs.js
                 -lnodefs.js
-                --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/corerun.js
                 -Wl,-error-limit=0)
         endif()
     endif()
