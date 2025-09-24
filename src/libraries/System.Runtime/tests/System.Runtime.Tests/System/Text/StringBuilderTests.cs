@@ -558,8 +558,7 @@ namespace System.Text.Tests
         [InlineData("Hello", '\0', "Hello\0")]
         [InlineData("Hello", 'a', "Helloa")]
         [InlineData("", 'b', "b")]
-        [InlineData("Hello", 'c', "Hellocc")]
-        [InlineData("Hello", '\0', "Hello")]
+        [InlineData("Hello", 'c', "Helloc")]
         [InlineData("Hello", 0x1F600, "Hello\U0001F600")]
         public static void Append_Rune(string original, int valueAsInt, string expected)
         {

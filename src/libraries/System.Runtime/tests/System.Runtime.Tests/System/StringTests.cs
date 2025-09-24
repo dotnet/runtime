@@ -207,7 +207,7 @@ namespace System.Tests
         {
             yield return new object[] { "Hello", new Rune('H'), true };
             yield return new object[] { "Hello", new Rune('Z'), false };
-            yield return new object[] { "Hello", new Rune('e'), false };
+            yield return new object[] { "Hello", new Rune('e'), true };
             yield return new object[] { "Hello", new Rune('E'), false };
             yield return new object[] { "", new Rune('H'), false };
 
@@ -1523,11 +1523,6 @@ namespace System.Tests
 
             yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 5};
             yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), StringComparison.Ordinal, -1};
-
-            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uDC00'), StringComparison.Ordinal, 6};
-            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uDC00'), StringComparison.OrdinalIgnoreCase, 6};
-            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uD801'), StringComparison.OrdinalIgnoreCase, 5};
-            yield return new object[] { "Hello\uD801\uDC00", new Rune('\uD801', '\uDC00'), StringComparison.Ordinal, 5};
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
@@ -1567,14 +1562,6 @@ namespace System.Tests
             yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello\u0200\u0202", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), StringComparison.Ordinal, -1};
-
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), StringComparison.Ordinal, 1};
-            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), StringComparison.Ordinal, 1};
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uDC00'), StringComparison.OrdinalIgnoreCase, 1};
-            yield return new object[] { "\uD801\uDC00Hello\uDC00", new Rune('\uDC00'), StringComparison.OrdinalIgnoreCase, 1};
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801'), StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\uD801\uD801Hello", new Rune('\uD801'), StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\uD801\uDC00Hello", new Rune('\uD801', '\uDC00'), StringComparison.Ordinal, 0};
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
