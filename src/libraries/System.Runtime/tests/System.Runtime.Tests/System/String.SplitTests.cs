@@ -560,6 +560,45 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("", ',', M, StringSplitOptions.None, [])]
+        [InlineData("a,b,c", ',', M, StringSplitOptions.None, ["a", "b", "c"])]
+        [InlineData("a,b,c", ',', 1, StringSplitOptions.None, ["a", "bc"])]
+        [InlineData("a,b,c", ',', M, StringSplitOptions.RemoveEmptyEntries, ["a", "b", "c"])]
+        [InlineData("a,b,c", ',', 1, StringSplitOptions.RemoveEmptyEntries, ["a", "bc"])]
+        [InlineData("a,b,c", ',', M, StringSplitOptions.TrimEntries, ["a", "b", "c"])]
+        [InlineData("a,b,c", ',', 1, StringSplitOptions.TrimEntries, ["a", "bc"])]
+        [InlineData("a,,b, , c", ',', M, StringSplitOptions.None, ["a", "", "b", " ", " c"])]
+        [InlineData("a,,b, , c", ',', M, StringSplitOptions.RemoveEmptyEntries, ["a", "b", " ", " c"])]
+        [InlineData("a,,b, , c", ',', M, StringSplitOptions.TrimEntries, ["a", "", "b", "", "c"])]
+        [InlineData("a,,b, , c", ',', M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, ["a", "b", "c"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.None, ["A", "B ", "C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.None, ["A", "B \U0001F600C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.RemoveEmptyEntries, ["A", "B ", "C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.RemoveEmptyEntries, ["A", "B \U0001F600C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.TrimEntries, ["A", "B", "C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.TrimEntries, ["A", "B \U0001F600C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, ["A", "B", "C"])]
+        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, ["A", "B \U0001F600C"])]
+        public static void SplitRuneSeparator(string value, int separatorAsInt, int count, StringSplitOptions options, string[] expected)
+        {
+            var separator = new Rune(separatorAsInt);
+
+            Assert.Equal(expected, value.Split(separator, count, options));
+            if (count == int.MaxValue)
+            {
+                Assert.Equal(expected, value.Split(separator, options));
+            }
+            if (options == StringSplitOptions.None)
+            {
+                Assert.Equal(expected, value.Split(separator, count));
+            }
+            if (count == int.MaxValue && options == StringSplitOptions.None)
+            {
+                Assert.Equal(expected, value.Split(separator));
+            }
+        }
+
+        [Theory]
         [InlineData("", null, 0, StringSplitOptions.None, new string[0])]
         [InlineData("", "", 0, StringSplitOptions.None, new string[0])]
         [InlineData("", "separator", 0, StringSplitOptions.None, new string[0])]
