@@ -1825,8 +1825,8 @@ namespace ILCompiler
             if (type.IsByRefLike
                 && type is MetadataType maybeSpan
                 && maybeSpan.Module == type.Context.SystemModule
-                && ((isReadOnlySpan && maybeSpan.Name == "ReadOnlySpan`1") || (!isReadOnlySpan && maybeSpan.Name == "Span`1"))
-                && maybeSpan.Namespace == "System"
+                && ((isReadOnlySpan && maybeSpan.Name.SequenceEqual("ReadOnlySpan`1"u8)) || (!isReadOnlySpan && maybeSpan.Name.SequenceEqual("Span`1"u8)))
+                && maybeSpan.Namespace.SequenceEqual("System"u8)
                 && maybeSpan.Instantiation[0] is MetadataType readOnlySpanElementType)
             {
                 elementType = readOnlySpanElementType;
@@ -1869,11 +1869,11 @@ namespace ILCompiler
         {
             retVal = default;
 
-            switch (method.Name)
+            switch (method.GetName())
             {
                 case "InitializeArray":
                     if (method.OwningType is MetadataType mdType
-                        && mdType.Name == "RuntimeHelpers" && mdType.Namespace == "System.Runtime.CompilerServices"
+                        && mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
                         && mdType.Module == mdType.Context.SystemModule
                         && parameters[0] is ArrayInstance array
                         && parameters[1] is RuntimeFieldHandleValue fieldHandle
@@ -1886,7 +1886,7 @@ namespace ILCompiler
                     return false;
                 case "CreateSpan":
                     if (method.OwningType is MetadataType createSpanType
-                        && createSpanType.Name == "RuntimeHelpers" && createSpanType.Namespace == "System.Runtime.CompilerServices"
+                        && createSpanType.Name.SequenceEqual("RuntimeHelpers"u8) && createSpanType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
                         && createSpanType.Module == createSpanType.Context.SystemModule
                         && parameters[0] is RuntimeFieldHandleValue createSpanFieldHandle
                         && createSpanFieldHandle.Field.IsStatic && createSpanFieldHandle.Field.HasRva
@@ -1926,7 +1926,7 @@ namespace ILCompiler
                 }
                 case "IsReferenceOrContainsReferences" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType isReferenceOrContainsReferencesType
-                        && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers" && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"
+                        && isReferenceOrContainsReferencesType.Name.SequenceEqual("RuntimeHelpers"u8) && isReferenceOrContainsReferencesType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8)
                         && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
                 {
                     bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
@@ -1935,7 +1935,7 @@ namespace ILCompiler
                 }
                 case "GetArrayDataReference" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType getArrayDataReferenceType
-                        && getArrayDataReferenceType.Name == "MemoryMarshal" && getArrayDataReferenceType.Namespace == "System.Runtime.InteropServices"
+                        && getArrayDataReferenceType.Name.SequenceEqual("MemoryMarshal"u8) && getArrayDataReferenceType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8)
                         && getArrayDataReferenceType.Module == method.Context.SystemModule
                         && parameters[0] is ArrayInstance arrayData
                         && ((ArrayType)arrayData.Type).ElementType == method.Instantiation[0]:
@@ -1947,7 +1947,7 @@ namespace ILCompiler
 
             static bool IsSystemType(TypeDesc type)
                 => type is MetadataType typeType
-                        && typeType.Name == "Type" && typeType.Namespace == "System"
+                        && typeType.Name.SequenceEqual("Type"u8) && typeType.Namespace.SequenceEqual("System"u8)
                         && typeType.Module == typeType.Context.SystemModule;
 
             return false;
@@ -2422,8 +2422,9 @@ namespace ILCompiler
 
             private static bool IsComInterfaceEntryType(TypeDesc type)
                 => type is MetadataType mdType
-                    && mdType.Name == "ComInterfaceEntry"
-                    && mdType.ContainingType is MetadataType { Name: "ComWrappers", Namespace: "System.Runtime.InteropServices" } comWrappersType
+                    && mdType.Name.SequenceEqual("ComInterfaceEntry"u8)
+                    && mdType.ContainingType is MetadataType comWrappersType
+                    && comWrappersType.Name.SequenceEqual("ComWrappers"u8) && comWrappersType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8)
                     && comWrappersType.Module == comWrappersType.Context.SystemModule;
 
             public static bool IsCompatible(TypeDesc type, out TypeDesc entryType)
@@ -2464,10 +2465,10 @@ namespace ILCompiler
             {
                 for (int i = 0; i < _targetFields.Length; i++)
                 {
-                    Debug.Assert(_entryType.GetField("IID").Offset.AsInt == 0);
+                    Debug.Assert(_entryType.GetField("IID"u8).Offset.AsInt == 0);
                     builder.EmitBytes(_guidBytes[i]);
 
-                    Debug.Assert(_entryType.GetField("Vtable").Offset.AsInt == _guidBytes[i].Length);
+                    Debug.Assert(_entryType.GetField("Vtable"u8).Offset.AsInt == _guidBytes[i].Length);
                     if (_targetFields[i] is not FieldDesc targetField)
                     {
                         builder.EmitZeroPointer();
@@ -2523,14 +2524,14 @@ namespace ILCompiler
                     if (field.OwningType != _parent._entryType)
                         return false;
 
-                    if (field.Name == "IID"
+                    if (field.Name.SequenceEqual("IID"u8)
                         && value is ValueTypeValue guidValue
                         && guidValue.Size == _parent._guidBytes[_index].Length)
                     {
                         Array.Copy(guidValue.InstanceBytes, _parent._guidBytes[_index], _parent._guidBytes[_index].Length);
                         return true;
                     }
-                    else if (field.Name == "Vtable"
+                    else if (field.Name.SequenceEqual("Vtable"u8)
                         && value is ByRefValueBase byrefValue
                         && byrefValue.BackingField != null)
                     {
@@ -2861,7 +2862,7 @@ namespace ILCompiler
             public TypeDesc TypeRepresented { get; }
 
             public RuntimeTypeValue(TypeDesc type)
-                : base(type.Context.SystemModule.GetKnownType("System", "RuntimeType"))
+                : base(type.Context.SystemModule.GetKnownType("System"u8, "RuntimeType"u8))
             {
                 TypeRepresented = type;
             }
@@ -2969,7 +2970,7 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         return false;
 
-                    if (field.Name == "_length")
+                    if (field.Name.SequenceEqual("_length"u8))
                     {
                         _value._length = value.AsInt32() * _value._elementType.InstanceFieldSize.AsInt;
                         return true;
@@ -2977,7 +2978,7 @@ namespace ILCompiler
 
                     if (value is ByRefValue byref)
                     {
-                        Debug.Assert(field.Name == "_reference");
+                        Debug.Assert(field.Name.SequenceEqual("_reference"u8));
                         _value._bytes = byref.PointedToBytes;
                         _value._index = byref.PointedToOffset;
                         return true;
@@ -2996,10 +2997,10 @@ namespace ILCompiler
                     if (elementType != _value._elementType)
                         ThrowHelper.ThrowInvalidProgramException();
 
-                    if (field.Name == "_length")
+                    if (field.Name.SequenceEqual("_length"u8))
                         return ValueTypeValue.FromInt32(_value._length / elementType.InstanceFieldSize.AsInt);
 
-                    Debug.Assert(field.Name == "_reference");
+                    Debug.Assert(field.Name.SequenceEqual("_reference"u8));
                     return new ByRefValue(_value._bytes, _value._index);
                 }
 
@@ -3259,7 +3260,7 @@ namespace ILCompiler
 
                 if (_methodPointed.Signature.IsStatic)
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
+                    Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeOpenStaticThunk"u8));
 
                     // _firstParameter
                     builder.EmitPointerReloc(thisNode);
@@ -3276,7 +3277,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
+                    Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeClosedInstance"u8));
 
                     // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);
@@ -3430,7 +3431,7 @@ namespace ILCompiler
             {
                 get
                 {
-                    FieldDesc firstCharField = Type.GetField("_firstChar");
+                    FieldDesc firstCharField = Type.GetField("_firstChar"u8);
                     int startOffset = firstCharField.Offset.AsInt;
                     int length = _value.Length - startOffset - sizeof(char) /* terminating null */;
                     return new string(MemoryMarshal.Cast<byte, char>(
@@ -3452,13 +3453,13 @@ namespace ILCompiler
                     + (value.Length * sizeof(char)) /* bytes */
                     + sizeof(char) /* null terminator */];
 
-                FieldDesc lengthField = stringType.GetField("_stringLength");
+                FieldDesc lengthField = stringType.GetField("_stringLength"u8);
                 Debug.Assert(lengthField.FieldType.IsWellKnownType(WellKnownType.Int32)
                     && lengthField.Offset.AsInt == pointerSize);
                 bool success = new FieldAccessor(bytes).TrySetField(lengthField, ValueTypeValue.FromInt32(value.Length));
                 Debug.Assert(success);
 
-                FieldDesc firstCharField = stringType.GetField("_firstChar");
+                FieldDesc firstCharField = stringType.GetField("_firstChar"u8);
                 Debug.Assert(firstCharField.FieldType.IsWellKnownType(WellKnownType.Char)
                     && firstCharField.Offset.AsInt == pointerSize + sizeof(int) /* length */);
 
@@ -3773,7 +3774,6 @@ namespace ILCompiler
         }
     }
 
-#pragma warning disable SA1400 // Element 'Extensions' should declare an access modifier
     file static class Extensions
     {
         public static StackValueKind WithNormalizedNativeInt(this StackValueKind kind, TypeSystemContext context)

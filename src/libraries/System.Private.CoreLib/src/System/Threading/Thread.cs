@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.ExceptionServices;
@@ -751,7 +752,6 @@ namespace System.Threading
         [ThreadStatic]
         public static bool WarnOnBlockingWaitOnJSInteropThread;
 
-#pragma warning disable CS3001
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
 
@@ -771,8 +771,6 @@ namespace System.Threading
             }
         }
 
-#pragma warning restore CS3001
-
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
@@ -791,5 +789,11 @@ namespace System.Threading
             }
         }
 #endif
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+#if NATIVEAOT
+        [RuntimeImport(RuntimeImports.RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
+#endif
+        internal static extern bool CurrentThreadIsFinalizerThread();
     }
 }

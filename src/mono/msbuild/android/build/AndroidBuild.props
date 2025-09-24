@@ -23,6 +23,7 @@
     <CppCompilerAndLinker>$(ANDROID_NDK_ROOT)\toolchains\llvm\prebuilt\$(NdkToolchainPrebuiltOS)\bin\clang</CppCompilerAndLinker>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
+
     <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'true'">
         $(_ReadRuntimeComponentsManifestTargetName);
         _InitializeCommonProperties;
@@ -42,9 +43,9 @@
         _AfterAndroidBuild
     </AndroidBuildDependsOn>
     <AndroidBuildDependsOn Condition="'$(UseNativeAOTRuntime)' == 'true'">
-    $(AndroidBuildDependsOn);
-    CopyNativeBinary;
-    _CopyAotSymbols
+      CopyNativeBinary;
+      _CopyAotSymbols;
+      $(AndroidBuildDependsOn)
     </AndroidBuildDependsOn>
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->

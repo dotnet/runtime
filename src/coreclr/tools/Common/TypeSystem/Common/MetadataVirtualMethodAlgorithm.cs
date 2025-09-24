@@ -377,14 +377,14 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
-            string name = targetMethod.Name;
+            ReadOnlySpan<byte> name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
             MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (candidate.Name == name)
+                if (candidate.Name.SequenceEqual(name))
                 {
                     if (candidate.Signature.EquivalentTo(sig))
                     {
@@ -878,7 +878,7 @@ namespace Internal.TypeSystem
                         impl = interfaceMethodDefinition;
                     }
                 }
-                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) != -1)
+                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) >= 0)
                 {
                     // This interface might provide a default implementation
                     MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
@@ -890,13 +890,13 @@ namespace Internal.TypeSystem
                             {
                                 // This interface provides a default implementation.
                                 // Is it also most specific?
-                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) != -1)
+                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) >= 0)
                                 {
                                     mostSpecificInterface = runtimeInterface;
                                     impl = implRecord.Body;
                                     diamondCase = false;
                                 }
-                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) == -1)
+                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) < 0)
                                 {
                                     diamondCase = true;
                                 }

@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- OutDir is not set early enough to set this property in .props file. -->
-    <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <BundleDir Condition="'$(BundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' != 'true'">$(AppBundleRoot)tests\$(AssemblyName)</PublishDir>
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>

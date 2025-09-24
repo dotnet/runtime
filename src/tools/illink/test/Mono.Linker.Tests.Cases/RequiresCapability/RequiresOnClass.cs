@@ -1347,12 +1347,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            class RequiresNewAndConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : new()
+            {
+            }
+
             [RequiresUnreferencedCode("--ClassWithRequires--")]
             public class ClassWithRequires
             {
                 public static RequiresAll<T> field;
 
-                [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/108523")]
                 public RequiresAll<T> instanceField;
 
                 [RequiresOnCtor]
@@ -1408,9 +1411,19 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
             class ClassWithWarningOnGenericArgumentConstructor : RequiresNew<ClassWithRequires>
             {
-                // Analyzer misses warning for implicit call to the base constructor, because the new constraint is not checked in dataflow.
-                [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/108507")]
+                [ExpectedWarning("IL2026", "--ClassWithRequires--")]
                 public ClassWithWarningOnGenericArgumentConstructor()
+                {
+                }
+            }
+
+            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
+            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119290")]
+            class ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation : RequiresNewAndConstructors<ClassWithRequires>
+            {
+                [ExpectedWarning("IL2026", "--ClassWithRequires--")]
+                [ExpectedWarning("IL2026", "--ClassWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119290")]
+                public ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation()
                 {
                 }
             }
@@ -1435,7 +1448,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "--ClassWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
             [ExpectedWarning("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")]
             public static void Test(ClassWithRequires inst = null)
             {
                 var f = ClassWithRequires.field;
@@ -1451,8 +1463,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 var g = new GenericClassWithWarningWithRequires<int>();
                 var h = new ClassWithWarningWithRequires();
                 var j = new ClassWithWarningOnGenericArgumentConstructor();
-                var k = new ClassWithWarningOnGenericArgumentConstructorWithRequires();
-                var l = new GenericAnnotatedWithWarningWithRequires<int>();
+                var k = new ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation();
+                var l = new ClassWithWarningOnGenericArgumentConstructorWithRequires();
+                var m = new GenericAnnotatedWithWarningWithRequires<int>();
             }
         }
 

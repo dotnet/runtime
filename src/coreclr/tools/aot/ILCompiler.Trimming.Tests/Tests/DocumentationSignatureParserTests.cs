@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests
         public void TestSignatureParsing(TypeSystemEntity member, MemberAssertionsCollector.CustomAttribute customAttribute)
         {
             var attributeString = (string)customAttribute.Value.FixedArguments[0].Value!;
-            switch (customAttribute.AttributeType.Name)
+            switch (customAttribute.AttributeType.GetName())
             {
                 case nameof(ExpectExactlyResolvedDocumentationSignatureAttribute):
                     CheckUniqueParsedString(member, attributeString);

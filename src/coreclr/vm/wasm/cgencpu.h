@@ -14,12 +14,6 @@
 #define CODE_SIZE_ALIGN                         4
 #define LOG2SLOT                                LOG2_PTRSIZE
 
-// looks like this is mandatory for now
-#define HAS_PINVOKE_IMPORT_PRECODE              1
-#define HAS_FIXUP_PRECODE                       1
-// ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
-#define HAS_THISPTR_RETBUF_PRECODE              1
-
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
 //**********************************************************************
@@ -29,12 +23,6 @@
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     _ASSERTE("The function is not implemented on wasm");
-    return 0;
-}
-
-inline TADDR GetSP(const T_CONTEXT * context)
-{
-    _ASSERTE("The function is not implemented on wasm, it lacks registers");
     return 0;
 }
 
@@ -80,7 +68,7 @@ struct ArgumentRegisters {
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16  // not sure here, 16 bytes is v128
 
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 0
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 1
 
 class StubLinkerCPU : public StubLinker
 {
@@ -98,27 +86,34 @@ public:
 // Exception handling
 //**********************************************************************
 
-inline PCODE GetIP(const T_CONTEXT * context) {
-    _ASSERT("GetIP is not implemented on wasm, it lacks registers");
-    return 0;
+inline PCODE GetIP(const T_CONTEXT * context)
+{
+    return context->InterpreterIP;
 }
 
-inline void SetIP(T_CONTEXT *context, PCODE eip) {
-    _ASSERT("SetIP is not implemented on wasm, it lacks registers");
+inline void SetIP(T_CONTEXT *context, PCODE ip)
+{
+    context->InterpreterIP = ip;
 }
 
-inline void SetSP(T_CONTEXT *context, TADDR esp) {
-    _ASSERT("SetSP is not implemented on wasm, it lacks registers");
+inline TADDR GetSP(const T_CONTEXT * context)
+{
+    return (TADDR)context->InterpreterSP;
 }
 
-inline void SetFP(T_CONTEXT *context, TADDR ebp) {
-    _ASSERT("SetFP is not implemented on wasm, it lacks registers");
+inline void SetSP(T_CONTEXT *context, TADDR sp)
+{
+    context->InterpreterSP = (TADDR)sp;
+}
+
+inline void SetFP(T_CONTEXT *context, TADDR fp)
+{
+    context->InterpreterFP = (TADDR)fp;
 }
 
 inline TADDR GetFP(const T_CONTEXT * context)
 {
-    _ASSERT("GetFP is not implemented on wasm, it lacks registers");
-    return 0;
+    return context->InterpreterFP;
 }
 
 #define ENUM_CALLEE_SAVED_REGISTERS()
@@ -168,13 +163,12 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
 
 inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
 {
-    PORTABILITY_ASSERT("SetFirstArgReg is not implemented on wasm");
+    context->InterpreterWalkFramePointer = (TADDR)value;
 }
 
 inline TADDR GetFirstArgReg(T_CONTEXT *context)
 {
-    PORTABILITY_ASSERT("GetFirstArgReg is not implemented on wasm");
-    return 0;
+    return (TADDR)context->InterpreterWalkFramePointer;
 }
 
 inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)

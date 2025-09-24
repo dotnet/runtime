@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -367,8 +368,43 @@ namespace System.Security.Cryptography
             return And(_mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.DomainSeparator), _componentAlgorithm.VerifyData(M_prime, tradSig));
         }
 
-        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
-            throw new PlatformNotSupportedException();
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            AsnWriter? writer = null;
+
+            try
+            {
+                using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxPrivateKeySizeInBytes))
+                {
+                    int privateKeySize = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
+
+                    // Add some overhead for the ASN.1 structure.
+                    int initialCapacity = 32 + privateKeySize;
+
+                    writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity);
+
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteInteger(0); // Version
+
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteObjectIdentifier(Algorithm.Oid);
+                        }
+
+                        writer.WriteOctetString(lease.Span.Slice(0, privateKeySize));
+                    }
+
+                    Debug.Assert(writer.GetEncodedLength() <= initialCapacity);
+                }
+
+                return writer.TryEncode(destination, out bytesWritten);
+            }
+            finally
+            {
+                writer?.Reset();
+            }
+        }
 
         protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination)
         {

@@ -5,7 +5,9 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -31,19 +33,15 @@ namespace Internal.TypeSystem.Ecma
         private FieldDefinitionHandle _handle;
 
         // Cached values
+        private unsafe volatile byte* _namePointer;
+        private int _nameLength;
         private ThreadSafeFlags _fieldFlags;
         private TypeDesc _fieldType;
-        private string _name;
 
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
-
-#if DEBUG
-            // Initialize name eagerly in debug builds for convenience
-            InitializeName();
-#endif
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle
@@ -261,20 +259,24 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private string InitializeName()
+        public unsafe ReadOnlySpan<byte> InitializeName()
         {
-            var metadataReader = MetadataReader;
-            var name = metadataReader.GetString(metadataReader.GetFieldDefinition(_handle).Name);
-            return (_name = name);
+            StringHandle handle = MetadataReader.GetFieldDefinition(_handle).Name;
+            _nameLength = MetadataReader.GetStringBytes(handle).Length;
+            _namePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override string Name
+        public override unsafe ReadOnlySpan<byte> Name
         {
             get
             {
-                if (_name == null)
-                    return InitializeName();
-                return _name;
+                byte* namePointer = _namePointer;
+                if (namePointer != null)
+                {
+                    return new ReadOnlySpan<byte>(namePointer, _nameLength);
+                }
+                return InitializeName();
             }
         }
 
