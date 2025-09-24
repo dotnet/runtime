@@ -98,6 +98,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
 #else
         m_methName = getMethodName(comp, methInfo->ftn, &clsName);
 #endif
+	//TODO : Below check is not needed ?? , since clsName Cannot be null since GetStubClassName returns "ILStubClass"
         if (clsName)
         {
             char* myClsName = new char[strlen(clsName) + 1];

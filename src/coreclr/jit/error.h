@@ -222,7 +222,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg)do { } while (0)
-#define NYI_S390X(msg) NYIRAW("NYI_RISCV64: " msg)
+#define NYI_S390X(msg) NYIRAW("NYI_S390X: " msg)
 #else
 
 #error "Unknown platform, not x86, ARM, LOONGARCH64, AMD64, S390X or RISCV64?"

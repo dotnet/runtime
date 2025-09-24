@@ -1162,7 +1162,8 @@ protected:
         inline bool idIsEmptyAlign() const
         {
             //return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
-            return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
+	    _ASSERTE("NYI"); 
+            //return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
         }
 
         unsigned idCodeSize() const
@@ -1284,7 +1285,21 @@ protected:
             assert(reg == _idReg1);
         }
 
-#if defined (TARGET_ARM64) || defined (TARGET_S390X)
+#if defined (TARGET_S390X)
+        GCtype idGCrefReg2() const
+        {
+            assert(!idIsSmallDsc());
+	    _ASSERTE(!"NYI");
+            //return (GCtype)idAddr()->_idGCref2;
+        }
+        void idGCrefReg2(GCtype gctype)
+        {
+            assert(!idIsSmallDsc());
+	    _ASSERTE(!"NYI");
+            //idAddr()->_idGCref2 = gctype;
+        }
+#endif // TARGET_S390X
+#if defined (TARGET_ARM64)
         GCtype idGCrefReg2() const
         {
             assert(!idIsSmallDsc());
@@ -1631,41 +1646,51 @@ protected:
         bool idReg3Scaled() const
         {
             assert(!idIsSmallDsc());
-            return (idAddr()->_idRegBit == 1);
+	    _ASSERTE(!"NYI");
+            //return (idAddr()->_idRegBit == 1);
         }
         void idReg3Scaled(bool val)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idRegBit = val ? 1 : 0;
+	    _ASSERTE(!"NYI");
+            //idAddr()->_idRegBit = val ? 1 : 0;
         }
         insOpts idInsOpt() const
         {
-            return (insOpts)_idInsOpt;
+	    _ASSERTE(!"NYI");
+            //return (insOpts)_idInsOpt;
         }
         void idInsOpt(insOpts opt)
         {   
             _idInsOpt = opt;
             assert(opt == _idInsOpt);
+	    _ASSERTE(!"NYI");
         }   
             
         regNumber idReg3() const        {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg3;
+	    _ASSERTE(!"NYI");
+            //return idAddr()->_idReg3;
         }   
         void idReg3(regNumber reg)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3 = reg;            assert(reg == idAddr()->_idReg3);
+            idAddr()->_idReg3 = reg;            
+	    assert(reg == idAddr()->_idReg3);
+	    _ASSERTE(!"NYI");
         }   
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
-            return idAddr()->_idReg4;
-        }           void idReg4(regNumber reg) 
+	    _ASSERTE(!"NYI");
+            //return idAddr()->_idReg4;
+        }           
+	void idReg4(regNumber reg) 
         {
             assert(!idIsSmallDsc());
             idAddr()->_idReg4 = reg;
             assert(reg == idAddr()->_idReg4);
+	    _ASSERTE(!"NYI");
         }
 
 #endif // TARGET_S390X
@@ -1865,19 +1890,23 @@ protected:
 #if defined(TARGET_S390X)
         bool idIsLclVar() const
         {
-            return _idLclVar != 0;
+	    _ASSERTE(!"NYI");
+            //return _idLclVar != 0;
         }
         bool idIsLclVarPair() const
         {
-            return _idLclVarPair != 0;        
+	    _ASSERTE(!"NYI");
+            //return _idLclVarPair != 0;        
         }
         void idSetIsLclVarPair()
         {
             _idLclVarPair = 1;
+	    _ASSERTE(!"NYI");
         }
         void idSetIsLclVar()
         {
             _idLclVar = 1;
+	    _ASSERTE(!"NYI");
         }
 #endif
 #if defined(TARGET_ARM)

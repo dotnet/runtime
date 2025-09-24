@@ -1758,25 +1758,6 @@ void emitIns_Call(EmitCallType          callType,
                   ssize_t          disp,
                   bool             isJump,
                   bool             noSafePoint = false);
-/*
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,                   // used for pretty printing
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  int              argSize,
-                  emitAttr         retSize,
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  const DebugInfo& di          = DebugInfo(),
-                  regNumber        ireg        = REG_NA,
-                  regNumber        xreg        = REG_NA,
-                  unsigned         xmul        = 0,
-                  ssize_t          disp        = 0,
-                  bool             isJump      = false,
-                  bool             noSafePoint = false);
-		  */
-
 
 BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);

@@ -7581,8 +7581,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_S390X)
-                    assert(!jmp->idAddr()->iiaHasInstrCount());
-                    emitOutputLJ(NULL, adr, jmp);
+                    //assert(!jmp->idAddr()->iiaHasInstrCount());
+                    //emitOutputLJ(NULL, adr, jmp);
+		    _ASSERTE(!"NYI"); 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
@@ -7602,8 +7603,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_S390X)
-                    assert(!jmp->idAddr()->iiaHasInstrCount());
-                    emitOutputLJ(NULL, adr, jmp);
+		    _ASSERTE(!"NYI"); 
+                    //assert(!jmp->idAddr()->iiaHasInstrCount());
+                    //emitOutputLJ(NULL, adr, jmp);
 #else
 #error Unsupported or unset target architecture
 #endif
