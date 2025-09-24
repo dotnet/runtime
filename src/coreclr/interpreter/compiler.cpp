@@ -46,6 +46,11 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
 /*****************************************************************************/
+bool IsInterpDumpActive()
+{
+    return t_interpDump;
+}
+
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 {
     fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
@@ -1345,6 +1350,13 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     for (int i = 0; i < m_varsSize; i++)
     {
         InterpVar *pVar = &m_pVars[i];
+
+        if (pVar->offset == UNALLOCATED_VAR_OFFSET)
+        {
+            // This variable is not actually allocated, so skip it
+            // This can happen for EH clause variables that are never used
+            continue;
+        }
         GcSlotFlags flags = pVar->global
             ? (GcSlotFlags)GC_SLOT_UNTRACKED
             : (GcSlotFlags)(GC_SLOT_INTERIOR | GC_SLOT_PINNED);
@@ -1767,7 +1779,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + m_methodInfo->EHcount + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0);
+    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + m_methodInfo->EHcount;
 
     offset = 0;
 
@@ -1792,7 +1804,7 @@ void InterpCompiler::CreateILVars()
         {
             assert(interpType == InterpTypeO);
             assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
-            m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+            m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
         }
         CreateNextLocalVar(hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0, argClass, interpType, &offset);
         argIndexOffset++;
@@ -1800,7 +1812,7 @@ void InterpCompiler::CreateILVars()
 
     if (hasParamArg)
     {
-        m_paramArgIndex = m_varsSize - 1; // The param arg is stored after the IL locals in the m_pVars array
+        m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
         CreateNextLocalVar(m_paramArgIndex, NULL, InterpTypeI, &offset);
     }
 
@@ -1853,9 +1865,14 @@ void InterpCompiler::CreateILVars()
 
     for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
     {
-        CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        // These aren't actually global vars, but we alloc them here so that they are located in predictable spots on the
+        // list of vars so we can refer to them easily
+        int32_t dummyAlign;
+        new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, GetInterpTypeStackSize(NULL, InterpTypeO, &dummyAlign));
+        INTERP_DUMP("alloc EH clause var %d\n", index);
         index++;
     }
+    assert(index == m_varsSize);
 
     m_totalVarsStackSize = offset;
 }
@@ -6637,6 +6654,24 @@ DO_LDFTN:
                         if (helpFunc == CORINFO_HELP_UNBOX)
                         {
                             EmitPushUnboxAny(embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass))], resolvedToken.hClass);
+                            switch (GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass)))
+                            {
+                                case InterpTypeI1:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
+                                    break;
+                                case InterpTypeU1:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I4);
+                                    break;
+                                case InterpTypeI2:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+                                    break;
+                                case InterpTypeU2:
+                                    EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I4);
+                                    break;
+                                default:
+                                    // No conversion needed
+                                    break;
+                            }
                         }
                         else
                         {

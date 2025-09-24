@@ -1190,7 +1190,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // For GetXxxException
     }
     CONTRACTL_END;
 
@@ -3590,7 +3590,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

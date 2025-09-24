@@ -15,6 +15,7 @@
     <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
+        <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">

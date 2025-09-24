@@ -7,11 +7,14 @@ using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
+using System.Collections.Immutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
+    private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
     private readonly ulong _methodDescAlignment;
@@ -22,6 +25,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     // If we need to invalidate our view of memory, we should clear this dictionary.
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
+    private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
 
     internal struct MethodTable
     {
@@ -52,6 +56,45 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         // this MethodTable is a canonical MethodTable if its EEClassOrCanonMT is an EEClass
         internal bool IsCanonMT => MethodTableFlags_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == MethodTableFlags_1.EEClassOrCanonMTBits.EEClass;
+    }
+
+    private readonly struct TypeKey : IEquatable<TypeKey>
+    {
+        public TypeKey(TypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<TypeHandle> typeArgs)
+        {
+            TypeHandle = typeHandle;
+            ElementType = elementType;
+            Rank = rank;
+            TypeArgs = typeArgs;
+        }
+        public TypeHandle TypeHandle { get; }
+        public CorElementType ElementType { get; }
+        public int Rank { get; }
+        public ImmutableArray<TypeHandle> TypeArgs { get; }
+
+        public bool Equals(TypeKey other)
+        {
+            if (ElementType != other.ElementType || Rank != other.Rank || TypeArgs.Length != other.TypeArgs.Length)
+                return false;
+            for (int i = 0; i < TypeArgs.Length; i++)
+            {
+                if (!TypeArgs[i].Equals(other.TypeArgs[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        public override bool Equals(object? obj) => obj is TypeKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank);
+            foreach (TypeHandle th in TypeArgs)
+            {
+                hash = HashCode.Combine(hash, th.GetHashCode());
+            }
+            return hash;
+        }
     }
 
     // Low order bits of TypeHandle address.
@@ -102,6 +145,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         Initialized = 0x0001,
         IsInitError = 0x0100,
+        IsNotFullyLoaded = 0x0040,
+    }
+
+    internal enum TypeDescFlags : uint
+    {
+        IsNotFullyLoaded = 0x00001000,
+    }
+
+    internal enum FieldDescFlags1 : uint
+    {
+        TokenMask = 0xffffff,
+        IsStatic = 0x1000000,
+        IsThreadStatic = 0x2000000,
+    }
+
+    internal enum FieldDescFlags2 : uint
+    {
+        TypeMask = 0xf8000000,
+        OffsetMask = 0x07ffffff,
     }
 
     internal struct MethodDesc
@@ -656,6 +718,89 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         throw new ArgumentException(nameof(typeHandle));
     }
 
+    private bool GenericInstantiationMatch(TypeHandle genericType, TypeHandle potentialMatch, ImmutableArray<TypeHandle> typeArguments)
+    {
+        ReadOnlySpan<TypeHandle> instantiation = GetInstantiation(potentialMatch);
+        if (instantiation.Length != typeArguments.Length)
+            return false;
+
+        if (GetTypeDefToken(genericType) != GetTypeDefToken(potentialMatch))
+            return false;
+
+        if (GetModule(genericType) != GetModule(potentialMatch))
+            return false;
+
+        for (int i = 0; i < instantiation.Length; i++)
+        {
+            if (!(instantiation[i].Address == typeArguments[i].Address))
+                return false;
+        }
+        return true;
+    }
+
+    private bool ArrayPtrMatch(TypeHandle elementType, CorElementType corElementType, int rank, TypeHandle potentialMatch)
+    {
+        IsArray(potentialMatch, out uint typeHandleRank);
+        return GetSignatureCorElementType(potentialMatch) == corElementType &&
+                GetTypeParam(potentialMatch).Address == elementType.Address &&
+                (corElementType == CorElementType.SzArray || corElementType == CorElementType.Byref ||
+                corElementType == CorElementType.Ptr || (rank == typeHandleRank));
+
+    }
+
+    private bool IsLoaded(TypeHandle typeHandle)
+    {
+        if (typeHandle.Address == TargetPointer.Null)
+            return false;
+        if (typeHandle.IsTypeDesc())
+        {
+            Data.TypeDesc typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
+            return (typeDesc.TypeAndFlags & (uint)TypeDescFlags.IsNotFullyLoaded) == 0; // IsUnloaded
+        }
+
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        Data.MethodTableAuxiliaryData auxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    {
+        if (typeHandle.Address == TargetPointer.Null)
+            return new TypeHandle(TargetPointer.Null);
+        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments), out TypeHandle existing))
+            return existing;
+        ILoader loaderContract = _target.Contracts.Loader;
+        TargetPointer loaderModule = GetLoaderModule(typeHandle);
+        ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
+        TypeHandle potentialMatch;
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        {
+            potentialMatch = GetTypeHandle(ptr);
+            if (corElementType == CorElementType.GenericInst)
+            {
+                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
+                {
+                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                    return potentialMatch;
+                }
+            }
+            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
+            {
+                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                return potentialMatch;
+            }
+        }
+        return new TypeHandle(TargetPointer.Null);
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)
+    {
+        TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
+        CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
+        TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
+        return GetTypeHandle(typeHandlePtr);
+    }
+
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
     {
         module = TargetPointer.Null;
@@ -695,6 +840,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         retAndArgTypes = _target.ProcessedData.GetOrAdd<FunctionPointerRetAndArgs>(typeHandle.TypeDescAddress()).TypeHandles;
         callConv = (byte)fnPtrTypeDesc.CallConv;
         return true;
+    }
+
+    public bool IsPointer(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsTypeDesc())
+            return false;
+
+        var typeDesc = _target.ProcessedData.GetOrAdd<TypeDesc>(typeHandle.TypeDescAddress());
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        return elemType == CorElementType.Ptr;
     }
 
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
@@ -1002,7 +1157,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).HasMethodInstantiation;
     }
-
 
     private bool IsGenericMethodDefinition(MethodDesc md)
     {
@@ -1316,5 +1470,45 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
         return slot < GetNumVtableSlots(typeHandle);
+    }
+    TargetPointer IRuntimeTypeSystem.GetMTOfEnclosingClass(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        return fieldDesc.MTOfEnclosingClass;
+    }
+
+    uint IRuntimeTypeSystem.GetFieldDescMemberDef(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        return EcmaMetadataUtils.CreateFieldDef(fieldDesc.DWord1 & (uint)FieldDescFlags1.TokenMask);
+    }
+
+    bool IRuntimeTypeSystem.IsFieldDescThreadStatic(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
+    }
+
+    bool IRuntimeTypeSystem.IsFieldDescStatic(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
+    }
+
+    CorElementType IRuntimeTypeSystem.GetFieldDescType(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        // 27 is the number of bits that the type is shifted left. if you change the enum, please change this too.
+        return (CorElementType)((fieldDesc.DWord2 & (uint)FieldDescFlags2.TypeMask) >> TYPE_MASK_OFFSET);
+    }
+
+    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        if (fieldDesc.DWord2 == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
+        {
+            return (uint)fieldDef.GetRelativeVirtualAddress();
+        }
+        return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
     }
 }
