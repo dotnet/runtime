@@ -44,15 +44,11 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
-    __UNREACHABLE(); \
-
-#define UNREACHABLE() \
-    ASSERT_UNCONDITIONALLY("UNREACHABLE"); \
-    __UNREACHABLE(); \
+    UNREACHABLE(); \
 
 #define UNREACHABLE_MSG(message) \
     ASSERT_UNCONDITIONALLY(message); \
-    __UNREACHABLE();  \
+    UNREACHABLE();  \
 
 #ifdef HOST_WINDOWS
 #define RhFailFast() ::RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)

@@ -23,10 +23,6 @@
 #define __stdcall
 #endif // _MSC_VER
 
-#ifndef UNREACHABLE
-#define UNREACHABLE __UNREACHABLE
-#endif
-
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ((size_t)-1)
 #endif

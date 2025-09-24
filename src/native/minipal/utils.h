@@ -4,6 +4,8 @@
 #ifndef HAVE_MINIPAL_UTILS_H
 #define HAVE_MINIPAL_UTILS_H
 
+#include <assert.h>
+
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 // Number of characters in a string literal. Excludes terminating NULL.
@@ -39,10 +41,19 @@
 #endif
 
 #ifdef _MSC_VER
-#define __UNREACHABLE() __assume(0)
+#define UNREACHABLE_MSG(message) \
+    do { \
+        assert((void)message, 0); \
+        __assume(0); \
+    } while (0)
 #else
-#define __UNREACHABLE() __builtin_unreachable()
+#define UNREACHABLE_MSG(message) \
+    do { \
+        assert((void)message, 0); \
+        __builtin_unreachable(); \
+    } while (0)
 #endif
+#define UNREACHABLE() UNREACHABLE_MSG("Unreachable reached")
 
 #if defined(_MSC_VER)
 #define NOINLINE __declspec(noinline)

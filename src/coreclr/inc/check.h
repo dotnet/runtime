@@ -542,9 +542,6 @@ CHECK CheckValue(TYPENAME &val)
 // to make sure it is always true.
 //--------------------------------------------------------------------------------
 
-#define UNREACHABLE() \
-    UNREACHABLE_MSG("")
-
 #define UNREACHABLE_RET() \
   do {                    \
     UNREACHABLE();        \
@@ -556,23 +553,6 @@ CHECK CheckValue(TYPENAME &val)
     UNREACHABLE_MSG(_message);        \
     return 0;                         \
   } while (0)
-
-#ifdef _DEBUG_IMPL
-
-// Note that the "do { } while (0)" syntax trick here doesn't work, as the compiler
-// gives an error that the while(0) is unreachable code
-#define UNREACHABLE_MSG(_message)                                               \
-{                                                                               \
-    CHECK _check;                                                               \
-    _check.Setup(_message, "<unreachable>", __FILE__, __LINE__);                \
-    _check.Trigger("Reached the \"unreachable\"");                              \
-} __UNREACHABLE()
-
-#else
-
-#define UNREACHABLE_MSG(_message) __UNREACHABLE()
-
-#endif
 
 //--------------------------------------------------------------------------------
 // STRESS_CHECK represents a check which is included in a free build
