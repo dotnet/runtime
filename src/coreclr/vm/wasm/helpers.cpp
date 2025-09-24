@@ -379,12 +379,6 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength)
-{
-    PORTABILITY_ASSERT("mono_wasm_browser_entropy is not implemented");
-    return -1;
-}
-
 void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
@@ -399,7 +393,7 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
 
-    // WASMTODO: Reconcile calling conventions.
+    // WASM-TODO: Reconcile calling conventions.
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
@@ -571,7 +565,7 @@ namespace
             case ELEMENT_TYPE_VALUETYPE:
             {
                 // In WASM, values types that are larger than pointer size or have multiple fields are passed indirectly.
-                // WASMTODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
+                // WASM-TODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
                 TypeHandle vt = isReturn
                     ? sig.GetRetTypeHandleThrowing()
                     : sig.GetLastTypeHandleThrowing();

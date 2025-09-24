@@ -184,9 +184,26 @@ enum InterpType {
 };
 
 #ifdef DEBUG
+extern thread_local bool t_interpDump;
+
+class InterpDumpScope
+{
+    bool m_prev;
+    public:
+    InterpDumpScope(bool enable)
+    {
+        m_prev = t_interpDump;
+        t_interpDump = enable;
+    }
+    ~InterpDumpScope()
+    {
+        t_interpDump = m_prev;
+    }
+};
+
 #define INTERP_DUMP(...)            \
     {                               \
-        if (m_verbose)              \
+        if (t_interpDump)           \
             printf(__VA_ARGS__);    \
     }
 #else
@@ -448,6 +465,9 @@ class InterpCompiler
     friend class InterpGcSlotAllocator;
 
 private:
+#ifdef DEBUG
+    InterpDumpScope m_dumpScope;
+#endif
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
@@ -489,12 +509,6 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
 #ifdef DEBUG
     TArray<char, MallocAllocator> m_methodName;
-#ifdef TARGET_WASM
-    // enable verbose output on wasm temporarily
-    bool m_verbose = true;
-#else
-    bool m_verbose = false;
-#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
@@ -717,6 +731,7 @@ private:
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
+    void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
@@ -728,7 +743,7 @@ private:
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
-    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);
