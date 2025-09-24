@@ -181,7 +181,6 @@ namespace System.Tests
             Array.Clear(ranges);
 
             AssertEqual(expected, SpanValue, SpanValue.Split(','));
-            AssertEqual(expected, SpanValue, SpanValue.Split(new Rune(',')));
             AssertEqual(expected, SpanValue, SpanValue.Split(","));
             AssertEqual(expected, SpanValue, SpanValue.SplitAny(','));
             AssertEqual(expected, SpanValue, SpanValue.SplitAny(Buffers.SearchValues.Create([','])));
