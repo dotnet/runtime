@@ -931,7 +931,7 @@ namespace System.Tests
         [MemberData(nameof(Replace_Rune_Rune_TestData))]
         public void Replace_Rune_ReturnsExpected(string original, Rune oldValue, Rune newValue, string expected)
         {
-            Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
+            Assert.Equal(expected, original.Replace(oldValue, newValue));
         }
 
         public static IEnumerable<object[]> Replace_StringComparison_TestData()
