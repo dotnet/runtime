@@ -29,6 +29,12 @@ should be added to `net10.0`. [More Information on TargetFrameworks](https://lea
 
 ## Making the changes in repo
 
+**Implement your API modification**
+  - Implement your API modification in the appropriate library project.
+
+**Update the reference source**
+  - [Update the reference source](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md) for the library.
+
 **Update tests**
   - Add new `TargetFramework` to the ```TargetFrameworks```.
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
