@@ -65,11 +65,10 @@ public class Program
 
         public void Unload()
         {
-            const int maxRetries = 32;
-
             TriggerUnload();
 
-            for (var i = 0; _weakAssemblyLoadContextReference.IsAlive && i < maxRetries; i++)
+            const int maxRetries = 32;
+            for (int i = 0; _weakAssemblyLoadContextReference.IsAlive && i <= maxRetries; i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
