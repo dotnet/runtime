@@ -362,14 +362,6 @@ internal unsafe partial interface IXCLRDataStackWalk
     int SetContext2(uint flags, uint contextSize, [In, MarshalUsing(CountElementName = nameof(contextSize))] byte[] context);
 }
 
-internal enum CorILMethodFlags
-{
-    CorILMethod_FormatShift = 3,
-    CorILMethod_FormatMask = (1 << CorILMethod_FormatShift) - 1,
-    CorILMethod_TinyFormat = 0x0002,
-    CorILMethod_FatFormat = 0x0003,
-}
-
 [GeneratedComInterface]
 [Guid("271498C2-4085-4766-BC3A-7F8ED188A173")]
 internal unsafe partial interface IXCLRDataFrame

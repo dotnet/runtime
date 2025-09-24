@@ -122,24 +122,20 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
             }
 
             // get token and module from method desc
-            ILoader loader = _target.Contracts.Loader;
             TargetPointer mtAddr = rts.GetMethodTable(mdh);
             TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
             TargetPointer modulePtr = rts.GetModule(typeHandle);
+            ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
             uint token = rts.GetMethodToken(mdh);
-            TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
 
-            // see ECMA-335 II.25.4
-            ushort sizeAndFlags = _target.Read<ushort>(ilHeader); // get flags and size of il header
-            CorILMethodFlags flags = (CorILMethodFlags)(sizeAndFlags & (int)CorILMethodFlags.CorILMethod_FormatMask);
-            if (ilHeader == TargetPointer.Null || flags != CorILMethodFlags.CorILMethod_FatFormat)
+            TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
+            int localToken = HeaderReaderHelpers.GetLocalVarSigToken(_target, ilHeader);
+            if (localToken < 0)
             {
                 *numLocals = 0;
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
             }
-            // getting the local var sig tok
-            int localToken = _target.Read<int>(ilHeader + 8);
 
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
