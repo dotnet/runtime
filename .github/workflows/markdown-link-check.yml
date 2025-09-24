@@ -1,0 +1,28 @@
+name: Markdown Link Check
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".github/workflows/markdown-link-check.yml"
+      - ".github/workflows/mlc-problem-matcher.json"
+      - ".mlc_config"
+  schedule:
+    # Run weekly on Mondays at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Markdown Link Check
+      uses: becheran/mlc@v1
+      with:
+        args: --config .mlc_config .

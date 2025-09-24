@@ -20,3 +20,28 @@ jobs:
 ```
 
 Refer to GitHub's [Workflows in forked repositories](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#workflows-in-forked-repositories) and [pull_request_target](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request_target) documentation for more information.
+
+## Markdown Link Checking
+
+The repository uses the [becheran/mlc](https://github.com/becheran/mlc) action to check for broken links in markdown files. This helps catch broken documentation links early in the development process.
+
+### Configuration
+
+- **Workflow**: `.github/workflows/markdown-link-check.yml`
+- **Configuration**: `.mlc_config` (TOML format)
+- **Problem Matcher**: `.github/workflows/mlc-problem-matcher.json`
+
+### When it runs
+
+- On pull requests that modify markdown files or the link checker configuration
+- Weekly on Mondays at 9:00 AM UTC
+- Can be triggered manually via workflow_dispatch
+
+### Ignored links
+
+The link checker is configured to ignore certain types of links that are commonly problematic:
+- Local development servers (localhost, 127.0.0.1)
+- Example domains (example.com)
+- GitHub PR/issue links that might not exist or be private
+- Internal Microsoft links that may not be publicly accessible
+- Email addresses (mailto: links)

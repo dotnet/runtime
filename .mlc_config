@@ -1,0 +1,45 @@
+# MLC (Markdown Link Checker) Configuration
+# This file configures the markdown link checker for the dotnet/runtime repository
+
+# Ignore common development and build artifacts
+ignore-path = [
+    "./artifacts/**", 
+    "./.dotnet/**", 
+    "./.git/**", 
+    "./obj/**", 
+    "./bin/**",
+    "./packages/**"
+]
+
+# Ignore localhost and local development links
+ignore-links = [
+    # Local development servers
+    "https://.*\\.local.*",
+    "https://localhost.*",
+    "http://localhost.*",
+    "https://127\\.0\\.0\\.1.*",
+    "http://127\\.0\\.0\\.1.*",
+    
+    # GitHub PR and issue links that might not exist yet or be private
+    "https://github\\.com/dotnet/[^/]+/pull/\\d+.*",
+    "https://github\\.com/dotnet/[^/]+/issues/\\d+.*",
+    
+    # Example and placeholder links
+    "https://example\\.com.*",
+    "http://example\\.com.*",
+    "https://.*\\.example\\.com.*",
+    
+    # Links that are commonly used in templates or documentation but may not be accessible
+    "https://.*\\.visualstudio\\.com.*",
+    
+    # Some Microsoft internal links that might not be publicly accessible
+    "https://devdiv\\..*",
+    "https://.*\\.devdiv\\..*",
+    
+    # Mail links
+    "mailto:.*"
+]
+
+# HTTP settings
+timeout = 15
+max-redirects = 10
