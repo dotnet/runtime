@@ -684,6 +684,12 @@ void InterpCompiler::PushStackType(StackType stackType, CORINFO_CLASS_HANDLE cls
         int size = m_compHnd->getClassSize(clsHnd);
         PushTypeExplicit(stackType, clsHnd, size);
     }
+#ifndef TARGET_64BIT
+    else if (stackType == StackTypeI8)
+    {
+        PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE * 2);
+    }
+#endif // !TARGET_64BIT
     else
     {
         // We don't really care about the exact size for non-valuetypes
@@ -1771,7 +1777,11 @@ void InterpCompiler::EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp
     InterpInst *newInst = AddIns(convOp);
 
     newInst->SetSVar(sp->var);
+#ifndef TARGET_64BIT
+    int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, type == StackTypeI8 ? INTERP_STACK_SLOT_SIZE * 2 : INTERP_STACK_SLOT_SIZE);
+#else // TARGET_64BIT
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
+#endif // !TARGET_64BIT
     new (sp) StackInfo(type, NULL, var);
     newInst->SetDVar(var);
 
@@ -1836,6 +1846,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
     }
+#ifndef TARGET_64BIT
+    else if (interpType == InterpTypeI8)
+    {
+        size = INTERP_STACK_SLOT_SIZE * 2; // not really
+        align = INTERP_STACK_SLOT_SIZE * 2;
+    }
+#endif // !TARGET_64BIT
     else
     {
         size = INTERP_STACK_SLOT_SIZE; // not really

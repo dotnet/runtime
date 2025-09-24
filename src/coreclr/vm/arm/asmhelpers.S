@@ -1139,7 +1139,6 @@ NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
     bl C_FUNC(ExecuteInterpretedMethod)
     add sp, sp, 12
     EPILOG_POP {pc}
-
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
@@ -1155,7 +1154,17 @@ NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
 NESTED_END InterpreterStubRetI4, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH {lr}
+    sub sp, sp, 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r9
+    mov r2, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r2, [r0]
+    ldr r1, [r0, 4]
+    mov r0, r2
+    add sp, sp, 12
+    EPILOG_POP {pc}
 NESTED_END InterpreterStubRetI8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
