@@ -65,9 +65,6 @@ namespace System.Threading
         // No maximum constant
         private const int NO_MAXIMUM = int.MaxValue;
 
-        private int m_slowPathWaitAcquires;
-        private int m_slowPathReleaseAcquires;
-
         // Task in a linked list of asynchronous waiters
         private sealed class TaskNode : Task<bool>
         {
@@ -283,13 +280,6 @@ namespace System.Threading
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
 
-            if (millisecondsTimeout == -2)
-            {
-                Internal.Console.WriteLine("Slow path acquires " + m_slowPathWaitAcquires);
-                Internal.Console.WriteLine("Slow path releases " + m_slowPathReleaseAcquires);
-                return false;
-            }
-
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
@@ -318,13 +308,6 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
-
-            if (millisecondsTimeout == -2)
-            {
-                Internal.Console.WriteLine("Slow path acquires " + m_slowPathWaitAcquires);
-                Internal.Console.WriteLine("Slow path releases " + m_slowPathReleaseAcquires);
-                return false;
-            }
 
             if (millisecondsTimeout < -1)
             {
@@ -395,7 +378,6 @@ namespace System.Threading
                 }
             }
 
-            Interlocked.Increment(ref m_slowPathWaitAcquires);
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
@@ -915,8 +897,6 @@ namespace System.Threading
                     return previousCount;
                 }
             }
-
-            Interlocked.Increment(ref m_slowPathReleaseAcquires);
 
             int returnCount;
 
