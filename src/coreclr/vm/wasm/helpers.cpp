@@ -119,7 +119,47 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    PORTABILITY_ASSERT("InlinedCallFrame::UpdateRegDisplay_Impl is not implemented on wasm");
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+#ifdef PROFILING_SUPPORTED
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+#endif
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (!InlinedCallFrame::FrameHasActiveCall(this))
+    {
+        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
+        return;
+    }
+
+    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef FEATURE_INTERPRETER
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
+        SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
+    }
+#endif // FEATURE_INTERPRETER
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -438,6 +478,12 @@ namespace
         (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3));
     }
 
+    void CallFunc_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3), ARG(4));
+    }
+
     void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -522,7 +568,7 @@ namespace
         (void*)&CallFunc_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_I32_RetVoid,
-        NULL,
+        (void*)&CallFunc_I32_I32_I32_I32_I32_RetVoid,
         (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid,
     };
 

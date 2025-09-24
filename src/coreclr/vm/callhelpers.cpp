@@ -225,7 +225,14 @@ void* DispatchCallSimple(
     callDescrData.pTarget = pTargetAddress;
 
 #ifdef TARGET_WASM
-    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE);
+    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
+    LPVOID pOrigSrc = callDescrData.pSrc;
+    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
+    for (int i = 0; i < numStackSlotsToCopy; i++)
+    {
+        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
+    }
 #endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
