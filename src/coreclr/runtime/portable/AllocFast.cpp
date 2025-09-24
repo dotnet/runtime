@@ -13,7 +13,6 @@ EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR nu
     if (obj == NULL)
     {
         RhExceptionHandling_FailedAllocation(pMT, false /* isOverflow */);
-        return nullptr;
     }
 
     return obj;
