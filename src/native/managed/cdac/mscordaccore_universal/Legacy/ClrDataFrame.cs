@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -42,7 +44,56 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         => _legacyImpl is not null ? _legacyImpl.GetAppDomain(appDomain) : HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetNumArguments(uint* numArgs)
-        => _legacyImpl is not null ? _legacyImpl.GetNumArguments(numArgs) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IStackWalk stackWalk = _target.Contracts.StackWalk;
+            TargetPointer methodDesc = stackWalk.GetMethodDescPtr(_dataFrame);
+            if (methodDesc == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(/*E_NOINTERFACE*/ HResults.COR_E_INVALIDCAST)!;
+
+            // get module and token
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+            ILoader loader = _target.Contracts.Loader;
+            TargetPointer mtAddr = rts.GetMethodTable(mdh);
+            TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            uint token = rts.GetMethodToken(mdh);
+
+            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)token);
+            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
+            MethodDefinition methodDefinition = mdReader.GetMethodDefinition(methodDefHandle);
+            BlobHandle methodBlob = methodDefinition.Signature;
+            BlobReader blobReader = mdReader.GetBlobReader(methodBlob);
+
+            // see ECMA-335 II.23.2.1
+            SignatureHeader header = blobReader.ReadSignatureHeader();
+            if (header.Kind != SignatureKind.Method)
+                throw new BadImageFormatException();
+            *numArgs = (uint)blobReader.ReadCompressedInteger() + (header.IsInstance ? 1u : 0u);
+            if (*numArgs == 0)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint numArgsLocal;
+            int hrLocal = _legacyImpl.GetNumArguments(&numArgsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+                Debug.Assert(*numArgs == numArgsLocal, $"cDAC: {*numArgs}, DAC: {numArgsLocal}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataFrame.GetArgumentByIndex(
         uint index,
@@ -53,7 +104,71 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         => _legacyImpl is not null ? _legacyImpl.GetArgumentByIndex(index, arg, bufLen, nameLen, name) : HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetNumLocalVariables(uint* numLocals)
-        => _legacyImpl is not null ? _legacyImpl.GetNumLocalVariables(numLocals) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IStackWalk stackWalk = _target.Contracts.StackWalk;
+            TargetPointer methodDesc = stackWalk.GetMethodDescPtr(_dataFrame);
+            if (methodDesc == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(/*E_NOINTERFACE*/ HResults.COR_E_INVALIDCAST)!;
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+            if (!rts.IsIL(mdh))
+            {
+                *numLocals = 0;
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            }
+
+            // get token and module from method desc
+            ILoader loader = _target.Contracts.Loader;
+            TargetPointer mtAddr = rts.GetMethodTable(mdh);
+            TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            uint token = rts.GetMethodToken(mdh);
+            TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
+
+            // see ECMA-335 II.25.4
+            ushort sizeAndFlags = _target.Read<ushort>(ilHeader); // get flags and size of il header
+            CorILMethodFlags flags = (CorILMethodFlags)(sizeAndFlags & (int)CorILMethodFlags.CorILMethod_FormatMask);
+            if (ilHeader == TargetPointer.Null || flags != CorILMethodFlags.CorILMethod_FatFormat)
+            {
+                *numLocals = 0;
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            }
+            // getting the local var sig tok
+            int localToken = _target.Read<int>(ilHeader + 8);
+
+            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
+            StandaloneSignatureHandle localSignatureHandle = MetadataTokens.StandaloneSignatureHandle(localToken);
+            BlobHandle localSignatureBlob = mdReader.GetStandaloneSignature(localSignatureHandle).Signature;
+            BlobReader blobReader = mdReader.GetBlobReader(localSignatureBlob);
+
+            // see ECMA-335 II.23.2.6
+            SignatureHeader header = blobReader.ReadSignatureHeader();
+            if (header.Kind != SignatureKind.LocalVariables)
+                throw new BadImageFormatException();
+            *numLocals = (uint)blobReader.ReadCompressedInteger();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint numLocalsLocal;
+            int hrLocal = _legacyImpl.GetNumLocalVariables(&numLocalsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+                Debug.Assert(*numLocals == numLocalsLocal, $"cDAC: {*numLocals}, DAC: {numLocalsLocal}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataFrame.GetLocalVariableByIndex(
         uint index,

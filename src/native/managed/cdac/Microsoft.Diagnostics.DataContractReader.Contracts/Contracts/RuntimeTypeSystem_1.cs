@@ -1071,6 +1071,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsDynamicMethodDesc(methodDesc).IsILStub;
     }
 
+    public bool IsIL(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsIL;
+    }
+
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
