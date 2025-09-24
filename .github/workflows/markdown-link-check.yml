@@ -6,19 +6,15 @@ permissions:
 on:
   pull_request:
     paths:
-      - "**/*.md"
-      - ".github/workflows/markdown-link-check.yml"
-      - ".github/workflows/mlc-problem-matcher.json"
-      - ".mlc_config"
-  schedule:
-    # Run weekly on Mondays at 9:00 AM UTC
-    - cron: '0 9 * * 1'
+      - "**.md"
+  push:
+    branches: [ main ]
+    paths:
+      - "**.md"
   workflow_dispatch:
 
 jobs:
   markdown-link-check:
-    # Do not run this job in forks outside the dotnet org
-    if: github.repository_owner == 'dotnet'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -27,5 +23,3 @@ jobs:
 
     - name: Markdown Link Check
       uses: becheran/mlc@v1
-      with:
-        args: --config .mlc_config .
