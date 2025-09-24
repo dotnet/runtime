@@ -1378,7 +1378,6 @@ namespace System.Text.Tests
         [InlineData("Hello", 0, '\0', "\0Hello")]
         [InlineData("Hello", 3, 'a', "Helalo")]
         [InlineData("Hello", 5, 'b', "Hellob")]
-        [InlineData("Hello", 5, 'b', "Hellob")]
         [InlineData("hi\U0001F600hello", 7, 0x1F600, "hi\U0001F600hel\U0001F600lo")]
         public static void Insert_Rune(string original, int index, int valueAsInt, string expected)
         {
