@@ -1845,7 +1845,7 @@ void InterpCompiler::CreateILVars()
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + getEHcount(m_methodInfo) + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
-    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + m_methodInfo->EHcount;
+    m_varsSize = m_numILVars + hasParamArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + getEHcount(m_methodInfo);
 
     offset = 0;
 
