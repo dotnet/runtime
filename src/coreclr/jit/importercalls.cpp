@@ -5008,7 +5008,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         // Make sure we return the NaN argument verbatim (if both are NaN, the first one), which is an
                         // additional requirement for .NET Min/Max APIs on top of IEEE 754.
 
-                        GenTreeQmark* topQmark = nullptr;
                         if (isNumber)
                         {
                             // Build expression:  isNumber(minMax) ? minMax : op1
@@ -5019,31 +5018,26 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                             GenTreeOp* isNumber = gtNewOperNode(GT_EQ, TYP_INT, minMax, gtCloneExpr(minMax));
 
-                            topQmark = gtNewQmarkNode(callType, isNumber,
-                                                      gtNewColonNode(callType, gtCloneExpr(minMax), op1Clone));
+                            minMax = gtNewQmarkNode(callType, isNumber,
+                                                    gtNewColonNode(callType, gtCloneExpr(minMax), op1Clone));
                         }
                         else
                         {
                             // Build expression:  isNumber(op1) ? (isNumber(op2) ? minMax : op2) : op1
-                            GenTreeOp* isOp2Number = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
-                            GenTree*   op2Qmark    = gtNewQmarkNode(callType, isOp2Number,
-                                                                    gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
-
-                            // QMARK has to be a root node
-                            unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for op2Qmark in Math.Min/Max non-Number"));
-                            impStoreToTemp(tmp, op2Qmark, CHECK_SPILL_NONE);
-                            op2Qmark = gtNewLclvNode(tmp, callType);
-
                             GenTreeOp* isOp1Number = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
+                            GenTreeOp* isOp2Number = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
 
-                            topQmark = gtNewQmarkNode(callType, isOp1Number,
-                                                      gtNewColonNode(callType, op2Qmark, gtCloneExpr(op1Clone)));
+                            GenTree* op2Qmark = gtNewQmarkNode(callType, isOp2Number,
+                                                               gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
+
+                            minMax = gtNewQmarkNode(callType, isOp1Number,
+                                                    gtNewColonNode(callType, op2Qmark, gtCloneExpr(op1Clone)));
                         }
 
                         // QMARK has to be a root node
-                        unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for top Qmark in Math.Min/Max"));
-                        impStoreToTemp(tmp, topQmark, CHECK_SPILL_NONE);
-                        minMax = gtNewLclvNode(tmp, callType);
+                        unsigned tmpTop = lvaGrabTemp(true DEBUGARG("Temp for qmark in Math.Min/Max"));
+                        impStoreToTemp(tmpTop, minMax, CHECK_SPILL_NONE);
+                        minMax = gtNewLclvNode(tmpTop, callType);
                     }
 
                     retNode = minMax;
