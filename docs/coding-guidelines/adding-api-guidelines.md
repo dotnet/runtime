@@ -33,7 +33,7 @@ should be added to `net10.0`. [More Information on TargetFrameworks](https://lea
   - Implement your API modification in the appropriate library project.
 
 **Update the reference source**
-  - [Update the reference source](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md) for the library.
+  - [Update the reference source](updating-ref-source.md) for the library.
 
 **Update tests**
   - Add new `TargetFramework` to the ```TargetFrameworks```.
