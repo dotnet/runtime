@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Eventing.Reader
 {
@@ -12,11 +13,13 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public sealed class EventLogLink
     {
-        private string _channelName;
+        private string? _channelName;
         private bool _isImported;
-        private string _displayName;
-        private bool _dataReady;
-        private readonly ProviderMetadata _pmReference;
+        private string? _displayName;
+
+        [MemberNotNullWhen(false, nameof(_pmReference))]
+        private bool DataReady { get; set; }
+        private readonly ProviderMetadata? _pmReference;
         private readonly object _syncObject;
 
         internal EventLogLink(uint channelId, ProviderMetadata pmReference)
@@ -26,25 +29,25 @@ namespace System.Diagnostics.Eventing.Reader
             _syncObject = new object();
         }
 
-        internal EventLogLink(string channelName, bool isImported, string displayName, uint channelId)
+        internal EventLogLink(string? channelName, bool isImported, string? displayName, uint channelId)
         {
             _channelName = channelName;
             _isImported = isImported;
             _displayName = displayName;
             ChannelId = channelId;
 
-            _dataReady = true;
+            DataReady = true;
             _syncObject = new object();
         }
 
         private void PrepareData()
         {
-            if (_dataReady)
+            if (DataReady)
                 return;
 
             lock (_syncObject)
             {
-                if (_dataReady)
+                if (DataReady)
                     return;
 
                 IEnumerable<EventLogLink> result = _pmReference.LogLinks;
@@ -52,7 +55,7 @@ namespace System.Diagnostics.Eventing.Reader
                 _channelName = null;
                 _isImported = false;
                 _displayName = null;
-                _dataReady = true;
+                DataReady = true;
 
                 foreach (EventLogLink ch in result)
                 {
@@ -62,7 +65,7 @@ namespace System.Diagnostics.Eventing.Reader
                         _isImported = ch.IsImported;
                         _displayName = ch.DisplayName;
 
-                        _dataReady = true;
+                        DataReady = true;
 
                         break;
                     }
@@ -70,7 +73,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string LogName
+        public string? LogName
         {
             get
             {
@@ -88,7 +91,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string DisplayName
+        public string? DisplayName
         {
             get
             {
