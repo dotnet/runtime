@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
 
             return new Span<byte>(
                 ref Unsafe.As<T, byte>(ref GetReference(span)),
@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
 
             return new ReadOnlySpan<byte>(
                 ref Unsafe.As<T, byte>(ref GetReference(span)),
@@ -116,9 +116,9 @@ namespace System.Runtime.InteropServices
             where TTo : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TFrom));
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TTo));
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
@@ -171,9 +171,9 @@ namespace System.Runtime.InteropServices
             where TTo : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TFrom));
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(TTo));
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
@@ -470,9 +470,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > source.Length)
+            if (source.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -489,9 +489,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)source.Length)
+            if (source.Length < sizeof(T))
             {
                 value = default;
                 return false;
@@ -509,9 +509,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if ((uint)sizeof(T) > (uint)destination.Length)
+            if (destination.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -528,9 +528,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)destination.Length)
+            if (destination.Length < sizeof(T))
             {
                 return false;
             }
@@ -551,9 +551,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)span.Length)
+            if (span.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -573,9 +573,9 @@ namespace System.Runtime.InteropServices
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)span.Length)
+            if (span.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }

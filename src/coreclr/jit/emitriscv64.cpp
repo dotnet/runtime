@@ -141,10 +141,9 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 
 emitter::MajorOpcode emitter::GetMajorOpcode(code_t code)
 {
-    if ((code & 0b11) == 0b11)
+    if (Is32BitInstruction((WORD)code))
     {
         code_t opcode = (code >> 2) & 0b11111;
-        assert((opcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
         return (MajorOpcode)opcode;
     }
     else
@@ -2431,7 +2430,7 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
     static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
-    unsigned codeSize = ((code & 0b11) == 0b11) ? 4 : 2;
+    unsigned codeSize = Is32BitInstruction((WORD)code) ? 4 : 2;
     assert((codeSize == 4) || ((code >> 16) == 0));
     memcpy(dst + writeableOffset, &code, codeSize);
     return codeSize;
@@ -3714,7 +3713,10 @@ void emitter::emitDispInsName(
     emitDispInsOffs(insOffset, doffs);
 
     if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
-        printf("  %08X    ", code);
+    {
+        int nNibbles = Is32BitInstruction((WORD)code) ? 8 : 4;
+        printf("  %-8.*X    ", nNibbles, code);
+    }
 
     printf("      ");
 
@@ -4829,14 +4831,21 @@ void emitter::emitDispInsName(
             unsigned funct4 = (code >> 12) & 0xf;
             unsigned rdRs1  = (code >> 7) & 0x1f;
             unsigned rs2    = (code >> 2) & 0x1f;
-            // TODO-RISCV64-RVC: Introduce a switch in jitconfigvalues.h to show c.* prefix.
             if (funct4 == 0b1001 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                if (emitComp->opts.disCodeBytes)
+                {
+                    printf("c.add          %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
+                }
+                else
+                {
+                    printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                }
             }
             else if (funct4 == 0b1000 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                printf("mv             %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
+                const char* name = emitComp->opts.disCodeBytes ? "c.mv" : "mv  ";
+                printf("%s           %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
             }
             else
             {
@@ -4850,34 +4859,44 @@ void emitter::emitDispInsName(
             unsigned funct2 = (code >> 5) & 0x3;
             unsigned rdRs1  = getRegNumberFromRvcReg(((code >> 7) & 0x7));
             unsigned rs2    = getRegNumberFromRvcReg(((code >> 2) & 0x7));
-            // TODO-RISCV64-RVC: Introduce a switch in jitconfigvalues.h to show c.* prefix.
+
+            const char* name = nullptr;
             if (funct6 == 0b100011 && funct2 == 0b00)
             {
-                printf("sub            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "sub ";
             }
             else if (funct6 == 0b100011 && funct2 == 0b01)
             {
-                printf("xor            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "xor ";
             }
             else if (funct6 == 0b100011 && funct2 == 0b10)
             {
-                printf("or             %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "or  ";
             }
             else if (funct6 == 0b100011 && funct2 == 0b11)
             {
-                printf("and            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "and ";
             }
             else if (funct6 == 0b100111 && funct2 == 0b00)
             {
-                printf("subw           %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "subw";
             }
             else if (funct6 == 0b100111 && funct2 == 0b01)
             {
-                printf("addw           %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "addw";
             }
             else
             {
                 emitDispIllegalInstruction(code);
+            }
+
+            if (emitComp->opts.disCodeBytes)
+            {
+                printf("c.%s         %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
+            }
+            else
+            {
+                printf("%s           %s, %s, %s\n", name, RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
             }
             return;
         }
@@ -4912,13 +4931,15 @@ void emitter::emitDispIns(
     unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
-        instrSize = sizeof(code_t);
-        code_t instruction;
-        memcpy(&instruction, instr, instrSize);
-        if ((instruction & 0b11) != 0b11)
+        WORD word;
+        memcpy(&word, instr, sizeof(word));
+        code_t instruction = word;
+        instrSize          = sizeof(word);
+        if (Is32BitInstruction(word))
         {
-            instruction &= 0xffff;
-            instrSize = 2;
+            memcpy(&word, instr + sizeof(word), sizeof(word));
+            instruction |= word << 16;
+            instrSize = 4;
         }
 #ifdef DEBUG
         if (emitComp->verbose && i != 0)

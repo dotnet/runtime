@@ -26,6 +26,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">

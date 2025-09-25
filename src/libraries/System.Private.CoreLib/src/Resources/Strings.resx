@@ -1,17 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -1375,8 +1375,8 @@
   <data name="Argument_InvalidTypeName" xml:space="preserve">
     <value>The name of the type is invalid.</value>
   </data>
-  <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
-    <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
+  <data name="Argument_TypeContainsReferences" xml:space="preserve">
+    <value>The type '{0}' is not supported because it contains references.</value>
   </data>
   <data name="Argument_InvalidUnity" xml:space="preserve">
     <value>Type '{0}' is not deserializable.</value>
@@ -1455,9 +1455,6 @@
   </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
     <value>The specified Type must not be a generic type.</value>
-  </data>
-  <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
-    <value>The specified Type must be a struct containing no references.</value>
   </data>
   <data name="Argument_NegativeFieldOffsetNotPermitted" xml:space="preserve">
     <value>Negative field offset is not allowed.</value>
@@ -2074,6 +2071,30 @@
   </data>
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
+  <data name="ConcurrentDictionary_ConcurrencyLevelMustBePositiveOrNegativeOne" xml:space="preserve">
+    <value>The concurrencyLevel argument must be positive, or -1 to indicate a default level.</value>
+  </data>
+  <data name="ConcurrentDictionary_ArrayIncorrectType" xml:space="preserve">
+    <value>The array is multidimensional, or the type parameter for the set cannot be cast automatically to the type of the destination array.</value>
+  </data>
+  <data name="ConcurrentDictionary_SourceContainsDuplicateKeys" xml:space="preserve">
+    <value>The source argument contains duplicate keys.</value>
+  </data>
+  <data name="ConcurrentDictionary_ArrayNotLargeEnough" xml:space="preserve">
+    <value>The index is equal to or greater than the length of the array, or the number of elements in the dictionary is greater than the available space from index to the end of the destination array.</value>
+  </data>
+  <data name="ConcurrentDictionary_KeyAlreadyExisted" xml:space="preserve">
+    <value>The key already existed in the dictionary.</value>
+  </data>
+  <data name="ConcurrentDictionary_ItemKeyIsNull" xml:space="preserve">
+    <value>TKey is a reference type and item.Key is null.</value>
+  </data>
+  <data name="ConcurrentDictionary_TypeOfKeyIncorrect" xml:space="preserve">
+    <value>The key was of an incorrect type for this dictionary.</value>
+  </data>
+  <data name="ConcurrentDictionary_TypeOfValueIncorrect" xml:space="preserve">
+    <value>The value was of an incorrect type for this dictionary.</value>
   </data>
   <data name="CustomMarshaler_MultipleGetInstanceMethods" xml:space="preserve">
     <value>Custom marshaler '{0}' implements multiple static GetInstance methods that take a single string parameter.</value>
@@ -3861,7 +3882,7 @@
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
   </data>
   <data name="InvalidSysctl" xml:space="preserve">
-    <value>sysctl {0} failed with {1} error.</value>
+    <value>sysctl ({0}) failed with {1} error.</value>
   </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
@@ -4387,5 +4408,34 @@
   </data>
   <data name="PlatformNotSupported_DynamicEntrypoint" xml:space="preserve">
     <value>Dynamic entrypoint allocation is not supported in the current environment.</value>
+  </data>  <data name="Arg_InvalidOperationException_CannotReleaseUnownedMutex" xml:space="preserve">
+    <value>Cannot release a lock that is not owned by the current thread.</value>
+  </data>
+  <data name="Arg_FailedToInitializePThreadMutex" xml:space="preserve">
+    <value>Failed to initialize pthread mutex</value>
+  </data>
+  <data name="IO_SharedMemory_InvalidHeader" xml:space="preserve">
+    <value>Cross-process shared memory file '{0}' has a header that is not supported by this version of the .NET runtime.</value>
+  </data>
+  <data name="IO_SharedMemory_FileNotOwnedByUid" xml:space="preserve">
+    <value>The file '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_FilePermissionsIncorrect" xml:space="preserve">
+    <value>The file '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_PathExistsButNotDirectory" xml:space="preserve">
+    <value>The path '{0}' exists but is not a directory.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner or permissions for system scope: {1}, {2}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryNotOwnedByUid" xml:space="preserve">
+    <value>The directory '{0}' is not owned by the current user with UID {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryPermissionsIncorrectUserScope" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected permissions for user scope: {1}.</value>
+  </data>
+  <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
+    <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
   </data>
 </root>

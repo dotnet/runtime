@@ -1547,6 +1547,8 @@ class gc_heap
 
     friend class mark_queue_t;
 
+    friend struct ::cdac_data<gc_heap>;
+
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
 #define call_fn(this_arg,fn) (this_arg->*fn)
@@ -5678,6 +5680,7 @@ class CFinalize
 {
 
     friend class CFinalizeStaticAsserts;
+    friend struct ::cdac_data<CFinalize>;
 
 private:
 

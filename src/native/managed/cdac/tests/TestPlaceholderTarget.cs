@@ -162,6 +162,20 @@ internal class TestPlaceholderTarget : Target
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
 
+    public override T ReadLittleEndian<T>(ulong address)
+    {
+        T value = default;
+        unsafe
+        {
+            Span<byte> buffer = stackalloc byte[sizeof(T)];
+            if (_dataReader(address, buffer) < 0)
+                throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+
+            T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
     public override bool TryRead<T>(ulong address, out T value)
     {
         value = default;

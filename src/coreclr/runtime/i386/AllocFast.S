@@ -51,7 +51,7 @@ LEAF_ENTRY RhpNewObject, _TEXT
         push        ecx
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc
 
         add         esp, 16
@@ -249,7 +249,7 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         push        0                                               // Flags
         push        ecx                                             // MethodTable
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc
 
         add         esp, 16
