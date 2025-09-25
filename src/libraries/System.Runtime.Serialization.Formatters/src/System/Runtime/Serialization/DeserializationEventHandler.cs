@@ -5,5 +5,5 @@ namespace System.Runtime.Serialization
 {
     internal delegate void DeserializationEventHandler(object? sender);
 
-    public delegate void SerializationEventHandler(StreamingContext context);
+    internal delegate void SerializationEventHandler(StreamingContext context);
 }
