@@ -146,6 +146,25 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Creates a hard link located in <see cref="FullName"/> that refers to the same file content as <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// This instance was not created passing an absolute path.
+        /// -or-
+        /// <paramref name="pathToTarget"/> contains invalid path characters.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <see cref="FullName"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public void CreateAsHardLink(string pathToTarget)
+        {
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+            FileSystem.CreateHardLink(OriginalPath, pathToTarget);
+        }
+
+        /// <summary>
         /// Creates a symbolic link located in <see cref="FullName"/> that points to the specified <paramref name="pathToTarget"/>.
         /// </summary>
         /// <param name="pathToTarget">The path of the symbolic link target.</param>
@@ -163,25 +182,6 @@ namespace System.IO
             FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
             FileSystem.CreateSymbolicLink(OriginalPath, pathToTarget, this is DirectoryInfo);
             Invalidate();
-        }
-
-        /// <summary>
-        /// Creates a hard link at <see cref="FullName"/> that refers to the same file content as <paramref name="pathToTarget"/>.
-        /// </summary>
-        /// <param name="pathToTarget">The path of the hard link target.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="pathToTarget"/> is empty.
-        /// -or-
-        /// This instance was not created passing an absolute path.
-        /// -or-
-        /// <paramref name="pathToTarget"/> contains invalid path characters.</exception>
-        /// <exception cref="IOException">A file or directory already exists in the location of <see cref="FullName"/>.
-        /// -or-
-        /// An I/O error occurred.</exception>
-        public void CreateAsHardLink(string pathToTarget)
-        {
-            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
-            FileSystem.CreateHardLink(OriginalPath, pathToTarget);
         }
 
         /// <summary>
