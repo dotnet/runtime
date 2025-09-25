@@ -1748,6 +1748,18 @@ namespace System
         public string ToShortTimeString()
         {
             return DateTimeFormat.Format(this, "t", null);
+
+        }
+
+        public string ToISOFormatString()
+        {
+            return DateTimeFormat.Format(this, "u", null);
+
+        }
+        public string ToISOShortDateString()
+        {
+            return DateTimeFormat.Format(this, "u", null).Substring(0, 10);
+
         }
 
         public override string ToString()
