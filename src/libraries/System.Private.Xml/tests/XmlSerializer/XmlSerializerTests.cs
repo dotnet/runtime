@@ -2625,6 +2625,112 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal("Member", retarray.xelements[1].Name);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
+    [Fact]
+    public static void ObsoleteAttribute_DoesNotAffectSerialization()
+    {
+        // Test that properties marked with [Obsolete(IsError=false)] are still serialized (not ignored like [XmlIgnore])
+        var testObject = new TypeWithObsoleteProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+            ObsoleteProperty = "obsolete",
+#pragma warning restore CS0618 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
+
+        var result = SerializeAndDeserialize(testObject, $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <NormalProperty>normal</NormalProperty>
+              <ObsoleteProperty>obsolete</ObsoleteProperty>
+            </TypeWithObsoleteProperty>
+            """);
+
+        // Verify that the obsolete property was correctly roundtripped
+        Assert.Equal("normal", result.NormalProperty);
+#pragma warning disable CS0618 // Type or member is obsolete
+        Assert.Equal("obsolete", result.ObsoleteProperty);
+#pragma warning restore CS0618 // Type or member is obsolete
+        // IgnoredProperty should remain null as it has [XmlIgnore]
+        Assert.Null(result.IgnoredProperty);
+    }
+
+    [Fact]
+    public static void ObsoleteAttribute_IsError_ThrowsException()
+    {
+        // Test that properties marked with [Obsolete(IsError=true)] throw an exception during serializer creation
+        var testObject = new TypeWithObsoleteErrorProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618, CS0619 // Type or member is obsolete
+            ObsoleteProperty = "obsolete",
+            // This line would cause a compile-time error due to IsError=true. So we set this in the class definition instead.
+            // ObsoletePropertyWithError = "error",
+#pragma warning restore CS0618, CS0619 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
+
+        // We need to create a type with just the error property to test the exception
+        // Using reflection to create an XmlSerializer for a type with ObsoletePropertyWithError
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            var serializer = new XmlSerializer(typeof(TypeWithObsoleteErrorProperty));
+            var xml = Serialize(testObject, null, () => serializer, true);
+        });
+    }
+
+    [Fact]
+    public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
+    {
+        // Enable compat switch
+        using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.IgnoreObsoleteMembers", true))
+        {
+            Assert.True(compatSwitch.CurrentValue);
+
+            // Even if we just flipped the appContext switch, previous tests might have already created a serializer
+            // for this type. To avoid using a cached serializer, use a different namespace.
+            var cacheBustingNamespace = "http://tempuri.org/DoNotUseCachedSerializer";
+            var expectedXml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"  xmlns="{cacheBustingNamespace}">
+                  <NormalProperty>normal</NormalProperty>
+                </TypeWithObsoleteProperty>
+                """;
+
+            // Test that when the switch is enabled, obsolete members are ignored (old behavior)
+            var testObject = new TypeWithObsoleteProperty
+            {
+                NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+                ObsoleteProperty = "obsolete",
+#pragma warning restore CS0618 // Type or member is obsolete
+                IgnoredProperty = "ignored"
+            };
+
+            // With the switch enabled, obsolete properties should be ignored
+            var serializerFactory = () => new XmlSerializer(typeof(TypeWithObsoleteProperty), cacheBustingNamespace);
+            var result = SerializeAndDeserialize(testObject, expectedXml, serializerFactory);
+
+            // Try with the type that has Obsolete(IsError=true) property. It should still get ignored without throwing.
+            var testObjectWithError = new TypeWithObsoleteErrorProperty
+            {
+                NormalProperty = "normal",
+#pragma warning disable CS0618, CS0619 // Type or member is obsolete
+                ObsoleteProperty = "obsolete",
+                // This line would cause a compile-time error due to IsError=true. So we set this in the class definition instead.
+                // ObsoletePropertyWithError = "error",
+#pragma warning restore CS0618, CS0619 // Type or member is obsolete
+                IgnoredProperty = "ignored"
+            };
+
+            serializerFactory = () => new XmlSerializer(typeof(TypeWithObsoleteErrorProperty), cacheBustingNamespace);
+            var resultWithError = SerializeAndDeserialize(testObjectWithError,
+                expectedXml.Replace("TypeWithObsoleteProperty", "TypeWithObsoleteErrorProperty"), serializerFactory);
+        }
+    }
+#endif
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
@@ -2931,6 +3037,59 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     private static string FormatTimeString(TimeOnly time) => time.ToString($"HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
     private static string FormatTimeString(DateTime time, bool ignoreUtc)
         => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
+}
+
+internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
+{
+    private readonly string _name;
+    private readonly string _cachedName;
+    private readonly bool _hadValue;
+    private readonly bool _originalValue;
+
+    public bool OriginalValue => _originalValue;
+    public bool CurrentValue => AppContext.TryGetSwitch(_name, out bool value) && value;
+
+    public XmlSerializerAppContextSwitchScope(string name, bool value, string cachedName = null)
+    {
+        _name = name;
+        _cachedName = cachedName ?? GuessCachedName(name);
+        _hadValue = AppContext.TryGetSwitch(name, out _originalValue);
+        AppContext.SetSwitch(name, value);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    public void Dispose()
+    {
+        if (_hadValue)
+            AppContext.SetSwitch(_name, _originalValue);
+        else
+            // There's no "unset", so pick a default or false
+            AppContext.SetSwitch(_name, false);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    private static void ClearCachedSwitch(string name)
+    {
+        Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+        Assert.NotNull(t);
+
+        FieldInfo fi = t.GetField(name, BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(fi);
+        fi.SetValue(null, 0);
+    }
+    
+    private static string GuessCachedName(string name)
+    {
+        // Switch names are typically of the form "Switch.System.Xml.SomeFeature"
+        // The cached field is typically "s_someFeature"
+        int idx = name.LastIndexOf('.');
+        if (idx > 0 && idx < name.Length - 1)
+        {
+            string feature = name.Substring(idx + 1);
+            return "s_" + char.ToLowerInvariant(feature[0]) + feature.Substring(1);
+        }
+        throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
+    }
 }
 
 internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
