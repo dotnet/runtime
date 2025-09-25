@@ -31,14 +31,14 @@ This document serves as a comprehensive index to all WebAssembly-related documen
 
 ### Core Runtime Building
 - **[Building CoreCLR for WebAssembly](building/coreclr/wasm.md)** - Build the CoreCLR runtime for WebAssembly targets
-- **[Building Mono for Browser](../src/mono/browser/README.md)** - Comprehensive browser build guide with samples and troubleshooting
+- **[Building Mono for Browser](../../src/mono/browser/README.md)** - Comprehensive browser build guide with samples and troubleshooting
 
 ### Libraries Building
 - **[Building Libraries for WebAssembly](building/libraries/webassembly-instructions.md)** - Build .NET libraries for WebAssembly targets
-- **[WebAssembly Build System](../src/mono/browser/build/README.md)** - WasmApp.targets and build system internals
+- **[WebAssembly Build System](../../src/mono/browser/build/README.md)** - WasmApp.targets and build system internals
 
 ### WASI Support
-- **[WASI Support](../src/mono/wasi/README.md)** - Experimental WASI support, building, and configuration
+- **[WASI Support](../../src/mono/wasi/README.md)** - Experimental WASI support, building, and configuration
 
 ## Testing and Debugging
 
@@ -78,8 +78,8 @@ See detailed instructions in:
 ## Features and Configuration
 
 ### Runtime Features
-- **[WebAssembly Features](../src/mono/wasm/features.md)** - Configure browser features, SIMD, threads, AOT, and more
-- **[Threading Support](../src/mono/wasm/threads.md)** - Multi-threading support and limitations
+- **[WebAssembly Features](../../src/mono/wasm/features.md)** - Configure browser features, SIMD, threads, AOT, and more
+- **[Threading Support](../../src/mono/wasm/threads.md)** - Multi-threading support and limitations
 
 ### Build Configuration
 Key MSBuild properties for WebAssembly applications:
@@ -90,7 +90,7 @@ Key MSBuild properties for WebAssembly applications:
 - `EnableDiagnostics` - Enable diagnostic features
 
 ### Globalization and ICU
-- **[ICU for WebAssembly](../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
+- **[ICU for WebAssembly](../../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
 
 ## Deployment and Hosting
 

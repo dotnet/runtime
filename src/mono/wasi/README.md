@@ -2,6 +2,8 @@
 
 This directory contains a build configuration for WASI support, plus a basic sample. This is not intended for production use, nor is it currently supported. This is a step towards possible future support.
 
+For comprehensive WebAssembly documentation, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
 ## Try it out
 
 Here is a quick overview of how to consume published artifacts. Assuming .NET SDK is already installed, you should run:
@@ -112,26 +114,21 @@ Finally, you can build and run the sample:
 
 ### 4. Debug it
 
-Also, you can build and debug the sample:
+For detailed WASI debugging instructions, see the [WebAssembly Debugging Reference](../../../docs/workflow/debugging/wasm-debugging-reference.md#for-wasi-applications).
 
-```
+Quick setup:
+```bash
 cd sample/console
 make debug
 ```
 
-Using Visual Studio code, add a breakpoint on Program.cs line 17.
-Download the Mono Debug extension and configure a launch.json like this:
-```
+Use VS Code with the Mono Debug extension and this launch.json configuration:
+```json
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Attach",
-            "type": "mono",
-            "request": "attach",
-            "address": "localhost",
-            "port": 64000
-        }
-    ]
+    "name": "Attach",
+    "type": "mono",
+    "request": "attach",
+    "address": "localhost", 
+    "port": 64000
 }
 ```
