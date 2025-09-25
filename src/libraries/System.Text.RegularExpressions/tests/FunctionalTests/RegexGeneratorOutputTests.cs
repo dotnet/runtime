@@ -1172,5 +1172,26 @@ namespace System.Text.RegularExpressions.Tests
             // The actual pattern string (base.pattern assignment) should properly escape the null character for C#
             Assert.Contains("base.pattern = \"a\\0b\";", actual);
         }
+
+        [Fact]
+        public async Task Pattern_With_Newline_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("\n")]
+                    public static partial Regex NewlinePattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape newline as Unicode escape sequence to avoid breaking XML comments
+            Assert.Contains("/// <code>\\u000A</code><br/>", actual);
+            
+            // The actual pattern string should properly escape the newline for C#
+            Assert.Contains("base.pattern = \"\\n\";", actual);
+        }
     }
 }

@@ -38,9 +38,10 @@ namespace System.Text.RegularExpressions.Generator
             {
                 // XML 1.0 valid characters:
                 // #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
-                if (c == '\t' || c == '\n' || c == '\r' ||
-                    (c >= 0x20 && c <= 0xD7FF) ||
-                    (c >= 0xE000 && c <= 0xFFFD))
+                // However, we need to escape:
+                // - Whitespace characters like \t, \n, \r (to avoid breaking XML comment structure)
+                // - C1 control characters (0x80-0x9F) even though they're valid XML (they may cause display issues)
+                if (c >= 0x20 && c <= 0x7F)  // ASCII printable characters
                 {
                     // Handle XML entities
                     switch (c)
@@ -59,9 +60,17 @@ namespace System.Text.RegularExpressions.Generator
                             break;
                     }
                 }
+                else if (c >= 0xA0 && c <= 0xD7FF)  // Latin-1 Supplement and higher Unicode ranges (excluding C1 controls)
+                {
+                    sb.Append(c);
+                }
+                else if (c >= 0xE000 && c <= 0xFFFD)  // Private Use Area and other valid ranges
+                {
+                    sb.Append(c);
+                }
                 else
                 {
-                    // Replace invalid XML characters with Unicode escape sequences
+                    // Replace invalid XML characters, whitespace control characters, and C1 control characters with Unicode escape sequences
                     sb.Append($"\\u{(int)c:X4}");
                 }
             }
