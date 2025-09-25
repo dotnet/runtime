@@ -557,6 +557,9 @@ namespace System.Runtime
             internal volatile UIntPtr _handlingFrameSP;
 
 #if TARGET_ARM64
+            // On ARM64, two frames can have the same SP, when a leaf function
+            // doesn't use any stack. So to distinguish between the caller frame
+            // and the leaf one, we also need to know the PC of the handling frame.
             [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_handlingFramePC)]
             internal volatile byte* _handlingFramePC;
 #endif

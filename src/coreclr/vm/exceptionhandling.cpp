@@ -3402,7 +3402,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterato
 }
 
 // The doNotCalculateCatchType option makes the function skip calculation of the catch type. It is used in
-// the 2nd path of EH to avoid possible GC stemming from a call to ResolveEHClause.
+// the 2nd pass of EH to avoid possible GC stemming from a call to ResolveEHClause.
 CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, bool doNotCalculateCatchType = false)
 {
     CLR_BOOL result = FALSE;
