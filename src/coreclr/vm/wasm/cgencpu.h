@@ -22,8 +22,8 @@
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    _ASSERTE("The function is not implemented on wasm");
-    return 0;
+    const unsigned stackSlotSize = sizeof(void*);
+    return ALIGN_UP(parmSize, stackSlotSize);
 }
 
 struct HijackArgs
