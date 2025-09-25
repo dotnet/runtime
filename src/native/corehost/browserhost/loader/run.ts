@@ -15,7 +15,7 @@ export function BrowserHost_InitializeCoreCLR():void {
     // int BrowserHost_InitializeCoreCLR(void)
     const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number") as number;
     if (res != 0) {
-        const reason = new Error("Failed to netInitializeModule CoreCLR");
+        const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);
         exit(res, reason);
     }
