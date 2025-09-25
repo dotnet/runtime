@@ -1817,6 +1817,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         VolatileStore(&m_interpreterCode, interpreterCode);
     }
+    void ClearInterpreterCodePointer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, dac_cast<PTR_InterpByteCodeStart>((TADDR)NULL));
+    }
 #endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
@@ -2707,6 +2712,11 @@ protected:
     PTR_DynamicResolver m_pResolver;
 
 public:
+
+#ifdef FEATURE_INTERPRETER
+    DPTR(struct InterpreterPrecode) m_interpreterPrecode;
+#endif
+
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
