@@ -264,12 +264,8 @@ public func AppleCryptoNative_HKDFExpand(
             }
         }()
 
-        // Copy the key in to a Data.
-        // This works around https://github.com/apple/swift-foundation/issues/638 which is fixed
-        // but not for iOS and macOS versions with older Swift runtimes.
-        key.withUnsafeBytes { keyBytes in
-            let keyBytesData = Data(keyBytes)
-            _ = keyBytesData.copyBytes(to: destination)
+        _ = key.withUnsafeBytes { keyBytes in
+            keyBytes.copyBytes(to: destination)
         }
     }
     else {
@@ -305,12 +301,8 @@ public func AppleCryptoNative_HKDFExtract(
             }
         }()
 
-        // Copy the prk in to a Data.
-        // This works around https://github.com/apple/swift-foundation/issues/638 which is fixed
-        // but not for iOS and macOS versions with older Swift runtimes.
-        prk.withUnsafeBytes { prkBytes in
-            let prkBytesData = Data(prkBytes)
-            _ = prkBytesData.copyBytes(to: destination)
+        _ = prk.withUnsafeBytes { keyBytes in
+            keyBytes.copyBytes(to: destination)
         }
     }
     else {
@@ -347,9 +339,8 @@ public func AppleCryptoNative_HKDFDeriveKey(
             }
         }()
 
-        derivedKey.withUnsafeBytes { keyBytes in
-            let keyBytesData = Data(keyBytes)
-            _ = keyBytesData.copyBytes(to: destination)
+        _ = derivedKey.withUnsafeBytes { keyBytes in
+            keyBytes.copyBytes(to: destination)
         }
     }
     else {
