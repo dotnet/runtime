@@ -28,22 +28,21 @@ internal static partial class Interop
 
             PAL_HashAlgorithm algorithm = PalAlgorithmFromAlgorithmName(hashAlgorithm);
 
-            fixed (byte* pPrk = prk)
-            fixed (byte* pInfo = &GetSwiftRef(info))
-            fixed (byte* pDestination = destination)
-            {
-                AppleCryptoNative_HKDFExpand(
-                    algorithm,
-                    new UnsafeBufferPointer<byte>(pPrk, prk.Length),
-                    new UnsafeBufferPointer<byte>(pInfo, info.Length),
-                    new UnsafeMutableBufferPointer<byte>(pDestination, destination.Length),
-                    out SwiftError error);
+            int ret = AppleCryptoNative_HKDFExpand(
+                algorithm,
+                prk,
+                prk.Length,
+                info,
+                info.Length,
+                destination,
+                destination.Length);
 
-                if (error.Value != null)
-                {
-                    throw new CryptographicException();
-                }
+            if (ret < 0)
+            {
+                throw new CryptographicException();
             }
+
+            Debug.Assert(ret == destination.Length);
         }
 
         internal static unsafe void HKDFExtract(
@@ -56,22 +55,21 @@ internal static partial class Interop
 
             PAL_HashAlgorithm algorithm = PalAlgorithmFromAlgorithmName(hashAlgorithm);
 
-            fixed (byte* pIkm = &GetSwiftRef(ikm))
-            fixed (byte* pSalt = &GetSwiftRef(salt))
-            fixed (byte* pDestination = destination)
-            {
-                AppleCryptoNative_HKDFExtract(
-                    algorithm,
-                    new UnsafeBufferPointer<byte>(pIkm, ikm.Length),
-                    new UnsafeBufferPointer<byte>(pSalt, salt.Length),
-                    new UnsafeMutableBufferPointer<byte>(pDestination, destination.Length),
-                    out SwiftError error);
+            int ret = AppleCryptoNative_HKDFExtract(
+                algorithm,
+                ikm,
+                ikm.Length,
+                salt,
+                salt.Length,
+                destination,
+                destination.Length);
 
-                if (error.Value != null)
-                {
-                    throw new CryptographicException();
-                }
+            if (ret < 0)
+            {
+                throw new CryptographicException();
             }
+
+            Debug.Assert(ret == destination.Length);
         }
 
         internal static unsafe void HKDFDeriveKey(
@@ -85,52 +83,58 @@ internal static partial class Interop
 
             PAL_HashAlgorithm algorithm = PalAlgorithmFromAlgorithmName(hashAlgorithm);
 
-            fixed (byte* pIkm = &GetSwiftRef(ikm))
-            fixed (byte* pSalt = &GetSwiftRef(salt))
-            fixed (byte* pInfo = &GetSwiftRef(info))
-            fixed (byte* pDestination = destination)
-            {
-                AppleCryptoNative_HKDFDeriveKey(
-                    algorithm,
-                    new UnsafeBufferPointer<byte>(pIkm, ikm.Length),
-                    new UnsafeBufferPointer<byte>(pSalt, salt.Length),
-                    new UnsafeBufferPointer<byte>(pInfo, info.Length),
-                    new UnsafeMutableBufferPointer<byte>(pDestination, destination.Length),
-                    out SwiftError error);
+            int ret = AppleCryptoNative_HKDFDeriveKey(
+                algorithm,
+                ikm,
+                ikm.Length,
+                salt,
+                salt.Length,
+                info,
+                info.Length,
+                destination,
+                destination.Length);
 
-                if (error.Value != null)
-                {
-                    throw new CryptographicException();
-                }
+            if (ret < 0)
+            {
+                throw new CryptographicException();
             }
+
+            Debug.Assert(ret == destination.Length);
         }
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial void AppleCryptoNative_HKDFExpand(
+        private static partial int AppleCryptoNative_HKDFExpand(
             PAL_HashAlgorithm hashAlgorithm,
-            UnsafeBufferPointer<byte> prk,
-            UnsafeBufferPointer<byte> info,
-            UnsafeMutableBufferPointer<byte> destination,
-            out SwiftError error);
+            ReadOnlySpan<byte> prkPtr,
+            int prkLength,
+            ReadOnlySpan<byte> infoPtr,
+            int infoLength,
+            Span<byte> destinationPtr,
+            int destinationLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial void AppleCryptoNative_HKDFExtract(
+        private static partial int AppleCryptoNative_HKDFExtract(
             PAL_HashAlgorithm hashAlgorithm,
-            UnsafeBufferPointer<byte> ikm,
-            UnsafeBufferPointer<byte> salt,
-            UnsafeMutableBufferPointer<byte> destination,
-            out SwiftError error);
+            ReadOnlySpan<byte> ikmPtr,
+            int ikmLength,
+            ReadOnlySpan<byte> saltPtr,
+            int saltLength,
+            Span<byte> destinationPtr,
+            int destinationLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial void AppleCryptoNative_HKDFDeriveKey(
+        private static partial int AppleCryptoNative_HKDFDeriveKey(
             PAL_HashAlgorithm hashAlgorithm,
-            UnsafeBufferPointer<byte> ikm,
-            UnsafeBufferPointer<byte> salt,
-            UnsafeBufferPointer<byte> info,
-            UnsafeMutableBufferPointer<byte> destination,
-            out SwiftError error);
+            ReadOnlySpan<byte> ikmPtr,
+            int ikmLength,
+            ReadOnlySpan<byte> saltPtr,
+            int saltLength,
+            ReadOnlySpan<byte> infoPtr,
+            int infoLength,
+            Span<byte> destinationPtr,
+            int destinationLength);
     }
 }
