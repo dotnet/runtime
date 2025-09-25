@@ -5027,11 +5027,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             GenTreeOp* isOp1Number = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
                             GenTreeOp* isOp2Number = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
 
-                            GenTree* op2Qmark = gtNewQmarkNode(callType, isOp2Number,
-                                                               gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
-
+                            minMax = gtNewQmarkNode(callType, isOp2Number,
+                                                    gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
                             minMax = gtNewQmarkNode(callType, isOp1Number,
-                                                    gtNewColonNode(callType, op2Qmark, gtCloneExpr(op1Clone)));
+                                                    gtNewColonNode(callType, minMax, gtCloneExpr(op1Clone)));
                         }
 
                         // QMARK has to be a root node
