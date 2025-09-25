@@ -5,6 +5,7 @@ parameters:
     windows_x86: false
     windows_arm64: false
     android_arm64: false
+    ios_arm64: false
 
 jobs:
   - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
@@ -51,6 +52,24 @@ jobs:
         jobParameters:
           buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -c $(_BuildConfig)
           nameSuffix: AndroidCoreCLR
+          isOfficialBuild: false
+          postBuildSteps:
+            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
+              parameters:
+                runtimeType: coreclr
+
+  - ${{ if eq(parameters.ios_arm64, true) }}:
+    # build coreclr iOS scenarios
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms:
+        - ios_arm64
+        jobParameters:
+          buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig)
+          nameSuffix: iOSCoreCLR
           isOfficialBuild: false
           postBuildSteps:
             - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
