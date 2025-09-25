@@ -1686,14 +1686,19 @@ namespace System
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
         public string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            if (Length == 0)
+            ReadOnlySpan<char> runeSeparator = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            if (runeSeparator.Length == 1)
             {
-                return [];
+                return Split(runeSeparator[0], count, options);
             }
 
-            ReadOnlySpan<char> separatorChars = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-            return SplitInternal(separatorChars, count, options);
+            CheckStringSplitOptions(options);
+
+            // Ensure matching the string separator overload.
+            return count <= 1 || Length == 0 ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(runeSeparator, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1707,7 +1712,7 @@ namespace System
         //
         public string[] Split(params char[]? separator)
         {
-            return SplitInternalMulti(separator, int.MaxValue, StringSplitOptions.None);
+            return SplitInternal(separator, int.MaxValue, StringSplitOptions.None);
         }
 
         /// <summary>
@@ -1717,7 +1722,7 @@ namespace System
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by one or more characters in <paramref name="separator"/>.</returns>
         public string[] Split(params ReadOnlySpan<char> separator)
         {
-            return SplitInternalMulti(separator, int.MaxValue, StringSplitOptions.None);
+            return SplitInternal(separator, int.MaxValue, StringSplitOptions.None);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1733,20 +1738,20 @@ namespace System
         //
         public string[] Split(char[]? separator, int count)
         {
-            return SplitInternalMulti(separator, count, StringSplitOptions.None);
+            return SplitInternal(separator, count, StringSplitOptions.None);
         }
 
         public string[] Split(char[]? separator, StringSplitOptions options)
         {
-            return SplitInternalMulti(separator, int.MaxValue, options);
+            return SplitInternal(separator, int.MaxValue, options);
         }
 
         public string[] Split(char[]? separator, int count, StringSplitOptions options)
         {
-            return SplitInternalMulti(separator, count, options);
+            return SplitInternal(separator, count, options);
         }
 
-        private string[] SplitInternalMulti(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
+        private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -1888,7 +1893,10 @@ namespace System
             return Array.Empty<string>();
         }
 
-        private string[] SplitInternal(ReadOnlySpan<char> separator, int count, StringSplitOptions options)
+        private string[] SplitInternal(string separator, int count, StringSplitOptions options)
+            => Split(separator.AsSpan(), count, options);
+
+        private string[] Split(ReadOnlySpan<char> separator, int count, StringSplitOptions options)
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
