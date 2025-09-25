@@ -1,0 +1,3 @@
+./corehost/browserhost/loader/dotnet.d.ts
+./**/*.js
+./**/*.mjs
