@@ -4092,7 +4092,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 {
                     // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
                     // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
-                    // with the the call arguments. The managed calling convention does not have this restriction.
+                    // with the call arguments. The managed calling convention does not have this restriction.
                     m_pVars[dVar].noCallArgs = true;
                 }
             }
