@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -257,6 +257,7 @@
     <Compile Include="Compiler\ProfileDataManager.cs" />
     <Compile Include="Compiler\VersionResilientHashCode.ReadyToRun.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />

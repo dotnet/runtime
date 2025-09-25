@@ -9666,7 +9666,7 @@ get_native_offset (TransformData *td, int il_offset, gboolean precise)
 	return GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
 }
 
-static void
+static GSList*
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
 {
 	TransformData transform_data;
@@ -9863,7 +9863,6 @@ retry:
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 	rtm->n_data_items = td->n_data_items;
 
-	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
 	rtm->patchpoint_data = td->patchpoint_data;
 
 	if (td->ref_slots) {
@@ -9937,7 +9936,6 @@ exit:
 	g_ptr_array_free (td->seq_points, TRUE);
 	if (td->line_numbers)
 		g_array_free (td->line_numbers, TRUE);
-	g_slist_free (td->imethod_items);
 	for (GSList *l = td->headers_to_free; l; l = l->next)
 		mono_metadata_free_mh ((MonoMethodHeader *)l->data);
 	mono_mempool_destroy (td->mempool);
@@ -9947,6 +9945,8 @@ exit:
 		retry_with_inlining = td->retry_with_inlining;
 		goto retry;
 	}
+
+	return td->imethod_items;
 }
 
 gboolean
@@ -10096,7 +10096,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));
 	imethod = &tmp_imethod;
 
-	MONO_TIME_TRACK (mono_interp_stats.transform_time, generate (method, header, imethod, generic_context, error));
+	GSList *imethod_data_items;
+	MONO_TIME_TRACK (mono_interp_stats.transform_time, imethod_data_items = generate (method, header, imethod, generic_context, error));
 
 	mono_metadata_free_mh (header);
 
@@ -10117,6 +10118,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_interp_stats.methods_transformed++;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
 
+		mono_interp_register_imethod_data_items (imethod->data_items, imethod_data_items);
+
 		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
 		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
 		gpointer seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, imethod->method);
@@ -10124,6 +10127,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			dn_simdhash_ght_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}
 	jit_mm_unlock (jit_mm);
+
+	g_slist_free (imethod_data_items);
 
 	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, imethod->method)) {
 		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));

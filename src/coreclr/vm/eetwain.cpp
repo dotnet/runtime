@@ -2204,10 +2204,13 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
 {
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
+#ifdef TARGET_WASM
+    throw ResumeAfterCatchException(resumeSP, resumeIP);
+#else
+    Thread *pThread = GetThread();
+    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
 
     ClrCaptureContext(pContext);
 
@@ -2237,6 +2240,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
 #endif    
     ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
+#endif // TARGET_WASM
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -2603,7 +2607,8 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
-    TADDR baseStackSlot = GetFP(pContext->pCurrentContext);
+    PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+    TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
     return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
 }
 
@@ -2622,7 +2627,8 @@ PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
-        TADDR baseStackSlot = GetFP(pContext->pCurrentContext);
+        PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+        TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
         TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
         return PTR_VOID(taExactGenericsToken);

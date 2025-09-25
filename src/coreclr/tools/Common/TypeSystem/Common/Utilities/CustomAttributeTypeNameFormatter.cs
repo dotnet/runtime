@@ -129,13 +129,13 @@ namespace Internal.TypeSystem
 
         protected override IAssemblyDesc AppendNameForNamespaceType(StringBuilder sb, DefType type, bool assemblyQualify)
         {
-            string ns = type.Namespace;
+            string ns = type.GetNamespace();
             if (ns.Length > 0)
             {
                 AppendEscapedIdentifier(sb, ns);
                 sb.Append('.');
             }
-            AppendEscapedIdentifier(sb, type.Name);
+            AppendEscapedIdentifier(sb, type.GetName());
 
             if (type is MetadataType mdType)
             {
@@ -156,7 +156,7 @@ namespace Internal.TypeSystem
 
             sb.Append('+');
 
-            AppendEscapedIdentifier(sb, nestedType.Name);
+            AppendEscapedIdentifier(sb, nestedType.GetName());
 
             if (assemblyQualify)
                 AppendAssemblyName(sb, homeAssembly);

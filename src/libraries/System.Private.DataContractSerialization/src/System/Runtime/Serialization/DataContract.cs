@@ -747,6 +747,10 @@ namespace System.Runtime.Serialization.DataContracts
                             dataContract = new TimeSpanDataContract();
                         else if (type == typeof(Guid))
                             dataContract = new GuidDataContract();
+                        else if (type == typeof(DateOnly))
+                            dataContract = new DateOnlyDataContract();
+                        else if (type == typeof(TimeOnly))
+                            dataContract = new TimeOnlyDataContract();
                         else if (type == typeof(Enum) || type == typeof(ValueType))
                         {
                             dataContract = new SpecialTypeDataContract(type, DictionaryGlobals.ObjectLocalName, DictionaryGlobals.SchemaNamespace);
@@ -864,6 +868,10 @@ namespace System.Runtime.Serialization.DataContracts
                         dataContract = new GuidDataContract();
                     else if (DictionaryGlobals.CharLocalName.Value == name)
                         dataContract = new CharDataContract();
+                    else if (DictionaryGlobals.DateOnlyLocalName.Value == name)
+                        dataContract = new DateOnlyDataContract();
+                    else if (DictionaryGlobals.TimeOnlyLocalName.Value == name)
+                        dataContract = new TimeOnlyDataContract();
                     else if ("ArrayOfanyType" == name)
                         dataContract = new CollectionDataContract(typeof(Array));
                 }
