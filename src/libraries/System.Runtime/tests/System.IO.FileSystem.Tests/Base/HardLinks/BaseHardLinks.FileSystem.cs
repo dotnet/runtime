@@ -47,7 +47,6 @@ namespace System.IO.Tests
             string linkPath = GetRandomFilePath();
 
             CreateFile(targetPath);
-            File.WriteAllText(targetPath, "data");
 
             FileSystemInfo linkInfo = CreateHardLink(linkPath, targetPath);
             AssertLinkExists(linkInfo);
