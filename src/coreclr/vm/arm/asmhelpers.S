@@ -1083,7 +1083,20 @@ NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetI4, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH "{r5-r8,lr}"
+    mov r8, sp
+    sub sp, sp, 12
+    str r2, [sp]
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    blx r5
+    ldr r2, [sp]
+    str r0, [r2]
+    str r1, [r2, 4]
+    mov sp, r8
+    EPILOG_POP "{r5-r8,pc}"
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
@@ -1172,32 +1185,12 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetI8, _TEXT
 
-// This is for arm softfp. It is the same to InterpreterStubRetI4.
 NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
-    PROLOG_PUSH {lr}
-    sub sp, sp, 12
-    add r0, sp, #__PWTB_TransitionBlock + 16
-    mov r1, r9
-    mov r2, 0
-    bl C_FUNC(ExecuteInterpretedMethod)
-    ldr r0, [r0]
-    add sp, sp, 12
-    EPILOG_POP {pc}
+    EMIT_BREAKPOINT // TODO
 NESTED_END InterpreterStubRetDouble, _TEXT
 
-// This is for arm softfp. It is the same to InterpreterStubRetI8.
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
-    PROLOG_PUSH {lr}
-    sub sp, sp, 12
-    add r0, sp, #__PWTB_TransitionBlock + 16
-    mov r1, r9
-    mov r2, 0
-    bl C_FUNC(ExecuteInterpretedMethod)
-    ldr r2, [r0]
-    ldr r1, [r0, 4]
-    mov r0, r2
-    add sp, sp, 12
-    EPILOG_POP {pc}
+    EMIT_BREAKPOINT // TODO
 NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler

@@ -1224,14 +1224,18 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeVoid:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVoid);
         case ReturnTypeDouble:
+#ifndef ARM_SOFTFP
             INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
+#endif // !ARM_SOFTFP
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
 #ifndef TARGET_64BIT
+        case ReturnTypeFloat:
+#ifndef ARM_SOFTFP
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
+#endif // !ARM_SOFTFP
         case ReturnTypeI4:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
-        case ReturnTypeFloat:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
 #endif // !TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
@@ -1295,14 +1299,18 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnTypeVoid:
             RETURN_TYPE_HANDLER(InterpreterStubRetVoid);
         case ReturnTypeDouble:
+#ifndef ARM_SOFTFP
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
+#endif // !ARM_SOFTFP
         case ReturnTypeI8:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
 #ifndef TARGET_64BIT
+        case ReturnTypeFloat:
+#ifndef ARM_SOFTFP
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
+#endif // !ARM_SOFTFP
         case ReturnTypeI4:
             RETURN_TYPE_HANDLER(InterpreterStubRetI4);
-        case ReturnTypeFloat:
-            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
 #endif // !TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
