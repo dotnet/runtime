@@ -85,7 +85,7 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
     AllocMemTracker amTracker;
     CallStubHeader *header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
 
-    if (target != NULL)
+    if (target != (PCODE)NULL)
     {
         header->SetTarget(target);
     }
@@ -119,7 +119,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     CallStubHeader *pHeader = pMD->GetCallStub();
     if (pHeader == NULL)
     {
-        pHeader = UpdateCallStubForMethod(pMD, target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+        pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
     }
 
     if (target != NULL)
@@ -150,7 +150,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCallStub();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, NULL);
+        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)NULL);
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
@@ -2473,7 +2473,7 @@ CALL_INTERP_METHOD:
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
-                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, NULL);
+                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL);
                             break;
                         }
                     }
