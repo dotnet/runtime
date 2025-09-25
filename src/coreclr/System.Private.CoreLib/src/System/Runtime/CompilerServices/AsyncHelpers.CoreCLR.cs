@@ -234,9 +234,9 @@ namespace System.Runtime.CompilerServices
                 ThunkTaskCore.MoveNext<ThunkTask<T>, Ops>(this);
             }
 
-            public void HandleSuspended()
+            public void HandleSuspended(Continuation suspendContinuation)
             {
-                ThunkTaskCore.HandleSuspended<ThunkTask<T>, Ops>(this);
+                ThunkTaskCore.HandleSuspended<ThunkTask<T>, Ops>(this, suspendContinuation);
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
@@ -306,9 +306,9 @@ namespace System.Runtime.CompilerServices
                 ThunkTaskCore.MoveNext<ThunkTask, Ops>(this);
             }
 
-            public void HandleSuspended()
+            public void HandleSuspended(Continuation suspendContinuation)
             {
-                ThunkTaskCore.HandleSuspended<ThunkTask, Ops>(this);
+                ThunkTaskCore.HandleSuspended<ThunkTask, Ops>(this, suspendContinuation);
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
@@ -356,7 +356,7 @@ namespace System.Runtime.CompilerServices
                         if (newContinuation != null)
                         {
                             newContinuation.Next = continuation.Next;
-                            HandleSuspended<T, TOps>(task);
+                            HandleSuspended<T, TOps>(task, newContinuation);
                             contexts.Pop();
                             return;
                         }
@@ -422,7 +422,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void HandleSuspended<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
+            public static void HandleSuspended<T, TOps>(T task, Continuation suspendContinuation) where T : Task where TOps : IThunkTaskOps<T>
             {
                 Continuation headContinuation = UnlinkHeadContinuation(out INotifyCompletion? notifier);
 
@@ -435,6 +435,25 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 TOps.SetContinuationState(task, headContinuation);
+
+                // If the continuation wants to continue on thread pool, then
+                // either we do not have an interesting context or the await configured it away.
+                // Either way, clear the context to match the continuation so that OnCompleted
+                // does not need to honor the context as well.
+                Task? currentTask = null;
+                if ((suspendContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL) != 0)
+                {
+                    TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                    if (sched != null && sched != TaskScheduler.Default)
+                    {
+                        currentTask = Task.t_currentTask;
+                        Task.t_currentTask = null;
+                    }
+
+                    // No need to remember the sync context.
+                    // We are about to pop to the original context anyways, so just clear it.
+                    Thread.CurrentThread._synchronizationContext = null;
+                }
 
                 try
                 {
@@ -451,6 +470,11 @@ namespace System.Runtime.CompilerServices
                 catch (Exception ex)
                 {
                     Task.ThrowAsync(ex, targetContext: null);
+                }
+                finally
+                {
+                    if (currentTask != null)
+                        Task.t_currentTask = currentTask;
                 }
             }
 
@@ -555,7 +579,7 @@ namespace System.Runtime.CompilerServices
             continuation.Next = finalContinuation;
 
             ThunkTask<T?> result = new();
-            result.HandleSuspended();
+            result.HandleSuspended(continuation);
             return result;
         }
 
@@ -568,7 +592,7 @@ namespace System.Runtime.CompilerServices
             continuation.Next = finalContinuation;
 
             ThunkTask result = new();
-            result.HandleSuspended();
+            result.HandleSuspended(continuation);
             return result;
         }
 
