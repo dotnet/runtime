@@ -89,6 +89,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void TypeInfoIsSameAsGeneric()
+        {
+            var t1Info = (JsonTypeInfo<Person>)PersonJsonContext.Default.GetTypeInfo(typeof(Person));
+            var t2Info = PersonJsonContext.Default.GetTypeInfo<Person>();
+            Assert.Same(t1Info, t2Info);
+        }
+
+        [Fact]
         public static void VariousGenericsAreSupported()
         {
             AssertGenericContext(GenericContext<int>.Default);
@@ -215,9 +223,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             var options = new JsonSerializerOptions { IncludeFields = true };
 
             GreetingCardWithFields card = new() {@event = "Birthday", message = @"Happy Birthday!"};
-        
+
             byte[] utf8Json = JsonSerializer.SerializeToUtf8Bytes(card, GreetingCardWithFieldsJsonContext.Default.GreetingCardWithFields);
-        
+
             card = JsonSerializer.Deserialize<GreetingCardWithFields>(utf8Json, GreetingCardWithFieldsJsonContext.Default.GreetingCardWithFields);
             Assert.Equal("Happy Birthday!", card.message);
             Assert.Equal("Birthday", card.@event);
