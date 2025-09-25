@@ -11,7 +11,6 @@ using System.Numerics;
 using System.Reflection.PortableExecutable;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ILCompiler.ObjectWriter
 {

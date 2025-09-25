@@ -92,6 +92,8 @@ namespace ILCompiler.ObjectWriter
             _targetOS = factory.Target.OperatingSystem;
         }
 
+        private protected override bool UsesSubsectionsViaSymbols => true;
+
         private protected override void EmitSectionsAndLayout()
         {
             // Layout sections. At this point we don't really care if the file offsets are correct

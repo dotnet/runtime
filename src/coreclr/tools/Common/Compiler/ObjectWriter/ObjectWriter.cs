@@ -24,7 +24,6 @@ namespace ILCompiler.ObjectWriter
         private protected readonly NodeFactory _nodeFactory;
         private protected readonly ObjectWritingOptions _options;
         private readonly bool _isSingleFileCompilation;
-        private readonly bool _usesSubsectionsViaSymbols;
 
         private readonly Dictionary<ISymbolNode, string> _mangledNameMap = new();
 
@@ -43,7 +42,6 @@ namespace ILCompiler.ObjectWriter
             _nodeFactory = factory;
             _options = options;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
-            _usesSubsectionsViaSymbols = factory.Target.IsApplePlatform;
 
             // Padding byte for code sections (NOP for x86/x64)
             _insPaddingByte = factory.Target.Architecture switch
@@ -53,6 +51,7 @@ namespace ILCompiler.ObjectWriter
                 _ => 0
             };
         }
+        private protected virtual bool UsesSubsectionsViaSymbols => false;
 
         private protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream);
 
@@ -102,7 +101,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected bool ShouldShareSymbol(ObjectNode node)
         {
-            if (_usesSubsectionsViaSymbols)
+            if (UsesSubsectionsViaSymbols)
                 return false;
 
             return ShouldShareSymbol(node, node.GetSection(_nodeFactory));
@@ -110,7 +109,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
         {
-            if (_usesSubsectionsViaSymbols)
+            if (UsesSubsectionsViaSymbols)
                 return false;
 
             // Foldable sections are always COMDATs
@@ -137,7 +136,7 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
-            if (!_usesSubsectionsViaSymbols &&
+            if (!UsesSubsectionsViaSymbols &&
                 relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
                 or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
                 _definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
