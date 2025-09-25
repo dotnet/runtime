@@ -108,7 +108,7 @@
     <MicrosoftNETCoreAppRuntimewinx64Version>8.0.10</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>8.0.10-servicing.24459.2</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>8.0.10-servicing.24466.9</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETCoreILAsmVersion>8.0.0-preview.7.23325.2</MicrosoftNETCoreILAsmVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.25311.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.25311.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
