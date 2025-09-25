@@ -331,7 +331,7 @@ namespace Microsoft.NET.HostModel
             GC.SuppressFinalize(this);
         }
 
-        public void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
