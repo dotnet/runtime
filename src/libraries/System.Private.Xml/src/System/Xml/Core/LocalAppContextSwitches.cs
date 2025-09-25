@@ -39,6 +39,16 @@ namespace System.Xml
             }
         }
 
+        private static int s_allowXsdTimeToTimeOnlyWithOffsetLoss;
+        public static bool AllowXsdTimeToTimeOnlyWithOffsetLoss
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", ref s_allowXsdTimeToTimeOnlyWithOffsetLoss);
+            }
+        }
+
         private static int s_limitXPathComplexity;
         public static bool LimitXPathComplexity
         {

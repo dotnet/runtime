@@ -343,6 +343,13 @@ CDAC_TYPE_INDETERMINATE(TypeDesc)
 CDAC_TYPE_FIELD(TypeDesc, /*uint32*/, TypeAndFlags, cdac_data<TypeDesc>::TypeAndFlags)
 CDAC_TYPE_END(TypeDesc)
 
+CDAC_TYPE_BEGIN(FieldDesc)
+CDAC_TYPE_SIZE(sizeof(FieldDesc))
+CDAC_TYPE_FIELD(FieldDesc, /*uint32*/, DWord1, cdac_data<FieldDesc>::DWord1)
+CDAC_TYPE_FIELD(FieldDesc, /*uint32*/, DWord2, cdac_data<FieldDesc>::DWord2)
+CDAC_TYPE_FIELD(FieldDesc, /*pointer*/, MTOfEnclosingClass, cdac_data<FieldDesc>::MTOfEnclosingClass)
+CDAC_TYPE_END(FieldDesc)
+
 CDAC_TYPE_BEGIN(ParamTypeDesc)
 CDAC_TYPE_INDETERMINATE(ParamTypeDesc)
 CDAC_TYPE_FIELD(ParamTypeDesc, /*pointer*/, TypeArg, cdac_data<ParamTypeDesc>::TypeArg)
@@ -922,6 +929,11 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<
 CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
 CDAC_TYPE_END(InstMethodHashTable)
 
+CDAC_TYPE_BEGIN(CoreLibBinder)
+CDAC_TYPE_INDETERMINATE(CoreLibBinder)
+CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, Classes, cdac_data<CoreLibBinder>::Classes)
+CDAC_TYPE_END(CoreLibBinder)
+
 // this is an SHash type
 CDAC_TYPE_BEGIN(DynamicILBlobTable)
 CDAC_TYPE_SIZE(cdac_data<DynamicILBlobTable>::EntrySize)
@@ -1009,6 +1021,7 @@ CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMAS
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL(FieldOffsetBigRVA, uint32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
@@ -1027,6 +1040,7 @@ CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask
 CDAC_GLOBAL_POINTER(MOWQueryInterface, &ManagedObjectWrapper_QueryInterface)
 CDAC_GLOBAL_POINTER(TrackerTargetQueryInterface, &TrackerTarget_QueryInterface)
 #endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS
@@ -1068,6 +1082,7 @@ CDAC_GLOBAL_CONTRACT(ReJIT, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
+CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
 CDAC_GLOBAL_CONTRACT(StackWalk, 1)
 CDAC_GLOBAL_CONTRACT(StressLog, 2)
 CDAC_GLOBAL_CONTRACT(Thread, 1)

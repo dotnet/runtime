@@ -50,6 +50,7 @@ public enum DataType
     MethodTable,
     DynamicStaticsInfo,
     EEClass,
+    CoreLibBinder,
     ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
@@ -57,6 +58,7 @@ public enum DataType
     ParamTypeDesc,
     TypeVarTypeDesc,
     FnPtrTypeDesc,
+    FieldDesc,
     DynamicMetadata,
     StressLog,
     StressLogModuleDesc,
@@ -142,4 +144,6 @@ public enum DataType
     GCHeap,
     Generation,
     CFinalize,
+    HeapSegment,
+    OomHistory,
 }

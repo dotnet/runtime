@@ -474,6 +474,7 @@ jobs:
             - fullpgo_methodprofiling_always_optimized
             - syntheticpgo
             - syntheticpgo_blend
+            - instrument_if_optimizing
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
