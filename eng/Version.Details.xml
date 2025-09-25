@@ -312,6 +312,10 @@
     <Dependency Name="System.Text.Json" Version="8.0.5">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>423fd78cffccba8fbfb2116c383b0711850d29b5</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime" Version="8.0.10-servicing.24459.2">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>423fd78cffccba8fbfb2116c383b0711850d29b5</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="8.0.10">
