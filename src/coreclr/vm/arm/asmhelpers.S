@@ -1038,19 +1038,53 @@ Store_Ref R2
 Store_Ref R3
 
 LEAF_ENTRY Load_Stack
-    EMIT_BREAKPOINT // TODO
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // number of stack slots
+    add r8, sp, r8
+LOCAL_LABEL(CopyLoop):
+    ldr r5, [r7], #4
+    str r5, [r8], #4
+    subs r9, r9, #4
+    bne LOCAL_LABEL(CopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Load_Stack
 
 LEAF_ENTRY Store_Stack
-    EMIT_BREAKPOINT // TODO
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // number of stack slots
+    add r8, sp, r8
+    add r8, r8, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ldr r5, [r8], #4
+    str r5, [r7], #4
+    subs r9, r9, #4
+    bne LOCAL_LABEL(StoreCopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Store_Stack
 
 LEAF_ENTRY Load_Stack_Ref
-    EMIT_BREAKPOINT // TODO
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // size of the value type
+    add r8, sp,r8
+    str r7, [r8]
+    add r7, r7, r9
+    // Align r7 to the stack slot size
+    add r7, r7, 3
+    and r7, r7, 0xfffffffc
+    ldr r5, [r6], #8
+    EPILOG_BRANCH_REG r5
 LEAF_END Load_Stack_Ref
 
 LEAF_ENTRY Store_Stack_Ref
-    EMIT_BREAKPOINT // TODO
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // size of the value type
+    add r8, sp, r8
+    ldr r8, [r8, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
+    Copy_Ref r8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
 LEAF_END Store_Stack_Ref
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
@@ -1108,7 +1142,17 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH "{r5-r9,lr}"
+    mov r9, sp
+    sub sp, sp, 8
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    mov r8, r2
+    ldr r5, [r6], #4
+    blx r5
+    mov sp, r9
+    EPILOG_POP "{r5-r9,lr}"
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
