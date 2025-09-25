@@ -23,10 +23,10 @@ namespace System.Xml.XslCompiledTransformApiTests
         public CSameInstanceXsltArgTestCase2(ITestOutputHelper output) : base(output)
         {
             _output = output;
-            Init(null);
+            Init();
         }
 
-        public new void Init(object objParam)
+        public void Init()
         {
             // Get parameter info
             _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
@@ -49,8 +49,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             xsltArg1.AddParam("myArg3", szEmpty, "Test3");
             xsltArg1.AddParam("myArg4", szEmpty, "Test4");
             xsltArg1.AddParam("myArg5", szEmpty, "Test5");
-
-            return;
         }
     }
 
