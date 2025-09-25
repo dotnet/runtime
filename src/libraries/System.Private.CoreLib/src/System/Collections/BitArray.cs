@@ -956,42 +956,6 @@ namespace System.Collections
             return count;
         }
 
-        /// <summary>Computes the number of trailing zero bits in the <see cref="BitArray"/>.</summary>
-        /// <returns>The number of trailing zero bits in the <see cref="BitArray"/>.</returns>
-        public int TrailingZeroCount()
-        {
-            int count = 0;
-            foreach (byte b in _array)
-            {
-                if (b != 0)
-                {
-                    return byte.TrailingZeroCount(b) + count;
-                }
-
-                count += BitsPerByte;
-            }
-
-            return _bitLength;
-        }
-
-        /// <summary>Computes the number of leading zero bits in the <see cref="BitArray"/>.</summary>
-        /// <returns>The number of leading zero bits in the <see cref="BitArray"/>.</returns>
-        public int LeadingZeroCount()
-        {
-            int count = _bitLength - _array.Length * BitsPerByte; // offset for extra bits beyond _bitLength
-            for (int i = _array.Length - 1; i >= 0; i--)
-            {
-                if (_array[i] != 0)
-                {
-                    return byte.LeadingZeroCount(_array[i]) + count;
-                }
-
-                count += BitsPerByte;
-            }
-
-            return _bitLength;
-        }
-
         /// <summary>Gets the number of elements contained in the <see cref="BitArray"/>.</summary>
         public int Count => _bitLength;
 

@@ -387,39 +387,5 @@ namespace System.Collections.Tests
         {
             Assert.Equal(expected, array.PopCount());
         }
-
-        public static IEnumerable<object[]> TrailingZeroCount_TestData()
-        {
-            yield return new object[] { new BitArray(0), 0 };
-            yield return new object[] { new BitArray(33), 33 };
-            yield return new object[] { new BitArray(48, true), 0 };
-            yield return new object[] { new BitArray(GetBoolArray(32, [15])), 15 };
-            yield return new object[] { new BitArray(GetBoolArray(48, [40])), 40 };
-        }
-
-        [Theory]
-        [MemberData(nameof(TrailingZeroCount_TestData))]
-        public static void TrailingZeroCount(BitArray array, int expected)
-        {
-            Assert.Equal(expected, array.TrailingZeroCount());
-        }
-
-        public static IEnumerable<object[]> LeadingZeroCount_TestData()
-        {
-            yield return new object[] { new BitArray(0), 0 };
-            yield return new object[] { new BitArray(33), 33 };
-            yield return new object[] { new BitArray(48, true), 0 };
-            yield return new object[] { new BitArray(GetBoolArray(24, [18])), 5 };
-            yield return new object[] { new BitArray(GetBoolArray(32, [18])), 13 };
-            yield return new object[] { new BitArray(GetBoolArray(48, [18])), 29 };
-            yield return new object[] { new BitArray(GetBoolArray(48, [40])), 7 };
-        }
-
-        [Theory]
-        [MemberData(nameof(LeadingZeroCount_TestData))]
-        public static void LeadingZeroCount(BitArray array, int expected)
-        {
-            Assert.Equal(expected, array.LeadingZeroCount());
-        }
     }
 }
