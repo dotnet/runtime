@@ -1132,5 +1132,24 @@ namespace System.Text.RegularExpressions.Tests
                 """
             };
         }
+
+        [Fact]
+        public async Task Pattern_Should_Not_Be_Double_Escaped_In_Documentation()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"\.")]
+                    public static partial Regex DotPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should show \. (single backslash) not \\. (double backslash) in the documentation
+            Assert.Contains("/// <code>\\.</code><br/>", actual);
+            Assert.DoesNotContain("/// <code>\\\\.</code><br/>", actual);
+        }
     }
 }
