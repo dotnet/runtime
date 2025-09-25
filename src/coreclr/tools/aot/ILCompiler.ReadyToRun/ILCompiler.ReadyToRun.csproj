@@ -143,6 +143,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiNative.cs" Link="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWriter.cs" Link="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWritingOptions.cs" Link="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\OutputInfoBuilder.cs" Link="Compiler\ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\MachNative.cs" Link="Compiler\ObjectWriter\MachNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\MachObjectWriter.cs" Link="Compiler\ObjectWriter\MachObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfNative.cs" Link="Compiler\ObjectWriter\ElfNative.cs" />
@@ -154,6 +155,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionData.cs" Link="Compiler\ObjectWriter\SectionData.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />

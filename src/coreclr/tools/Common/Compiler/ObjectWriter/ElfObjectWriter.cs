@@ -658,6 +658,9 @@ namespace ILCompiler.ObjectWriter
                 section.SectionHeader.Offset = currentOffset;
                 section.SectionHeader.Size = (ulong)section.Stream.Length;
 
+                // Record the section layout
+                _outputSectionLayout.Add(new OutputSection(section.Name, currentOffset, currentOffset, (ulong)section.Stream.Length));
+
                 if (section.SectionHeader.Type != SHT_NOBITS)
                 {
                     currentOffset += (ulong)section.Stream.Length;

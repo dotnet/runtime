@@ -7,9 +7,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
+using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
@@ -23,6 +26,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected readonly NodeFactory _nodeFactory;
         private protected readonly ObjectWritingOptions _options;
+        private protected readonly OutputInfoBuilder _outputInfoBuilder;
         private readonly bool _isSingleFileCompilation;
 
         private readonly Dictionary<ISymbolNode, string> _mangledNameMap = new();
@@ -33,14 +37,17 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
         private readonly List<SectionData> _sectionIndexToData = new();
         protected readonly List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
+        private protected readonly List<OutputSection> _outputSectionLayout = [];
 
         // Symbol table
         private readonly Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
 
-        private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+
+        private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
         {
             _nodeFactory = factory;
             _options = options;
+            _outputInfoBuilder = outputInfoBuilder;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
 
             // Padding byte for code sections (NOP for x86/x64)
@@ -373,10 +380,17 @@ namespace ILCompiler.ObjectWriter
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
+                    string mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     sectionWriter.EmitSymbolDefinition(
-                        n == node ? currentSymbolName : GetMangledName(n),
+                        mangledName,
                         n.Offset + thumbBit,
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
+
+                    if (_outputInfoBuilder is not null)
+                    {
+                        _outputInfoBuilder.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, n.Offset, mangledName));
+                    }
+
                     if (_nodeFactory.GetSymbolAlternateName(n, out bool isHidden) is string alternateName)
                     {
                         string alternateCName = ExternCName(alternateName);
@@ -390,6 +404,11 @@ namespace ILCompiler.ObjectWriter
                         {
                             // https://github.com/dotnet/runtime/issues/105330: consider exports CFG targets
                             EmitReferencedMethod(alternateCName);
+                        }
+
+                        if (_outputInfoBuilder is not null)
+                        {
+                            _outputInfoBuilder.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, n.Offset, alternateCName));
                         }
                     }
                 }
@@ -427,6 +446,23 @@ namespace ILCompiler.ObjectWriter
                 if (_options.HasFlag(ObjectWritingOptions.GenerateUnwindInfo))
                 {
                     EmitUnwindInfoForNode(node, currentSymbolName, sectionWriter);
+                }
+
+                if (_outputInfoBuilder is not null)
+                {
+                    var outputNode = new OutputNode(sectionWriter.SectionIndex, checked((int)sectionWriter.Position), nodeContents.Data.Length, currentSymbolName);
+                    _outputInfoBuilder.AddNode(outputNode, nodeContents.DefinedSymbols[0]);
+                    if (nodeContents.Relocs is not null)
+                    {
+                        foreach (Relocation reloc in nodeContents.Relocs)
+                        {
+                            RelocType fileReloc = Relocation.GetFileRelocationType(reloc.RelocType);
+                            if (fileReloc != RelocType.IMAGE_REL_BASED_ABSOLUTE)
+                            {
+                                _outputInfoBuilder.AddRelocation(outputNode, fileReloc);
+                            }
+                        }
+                    }
                 }
 
                 // Write the data. Note that this has to be done last as not to advance
@@ -512,6 +548,14 @@ namespace ILCompiler.ObjectWriter
             }
 
             EmitObjectFile(outputFileStream);
+
+            if (_outputInfoBuilder is not null)
+            {
+                foreach (var outputSection in _outputSectionLayout)
+                {
+                    _outputInfoBuilder.AddSection(outputSection);
+                }
+            }
         }
 
         partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, string relocSymbolName);

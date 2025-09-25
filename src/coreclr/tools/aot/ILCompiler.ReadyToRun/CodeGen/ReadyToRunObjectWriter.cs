@@ -194,38 +194,57 @@ namespace ILCompiler.DependencyAnalysis
         {
             var stopwatch = Stopwatch.StartNew();
 
-            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment);
+            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment, _outputInfoBuilder);
             using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
             objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
+
+            if (_outputInfoBuilder != null)
+            {
+                foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
+                    _outputInfoBuilder.AddMethod(methodNode, methodNode);
+            }
 
             if (_mapFileBuilder != null)
             {
                 _mapFileBuilder.SetFileSize(stream.Length);
             }
 
-            if (_nodeFactory.DebugDirectoryNode.PdbEntry is {} nativeDebugDirectoryEntryNode)
+            ulong debugOffset = 0;
+            foreach (OutputSection section in _outputInfoBuilder.Sections)
             {
-                Debug.Assert(_generatePdbFile);
-                // Compute hash of the output image and store that in the native DebugDirectory entry
-                using (var hashAlgorithm = SHA256.Create())
+                if (section.Name == ".debug")
                 {
-                    stream.Seek(0, SeekOrigin.Begin);
-                    byte[] hash = hashAlgorithm.ComputeHash(stream);
-                    byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
-
-                    stream.Seek(objectWriter.DebugSectionOffsetInStream, SeekOrigin.Begin);
-                    stream.Write(rsdsEntry);
+                    debugOffset = section.FilePosition;
+                    break;
                 }
             }
 
-            if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
+            if (debugOffset != 0)
             {
-                Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
-                byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
-                byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
+                if (_nodeFactory.DebugDirectoryNode.PdbEntry is { } nativeDebugDirectoryEntryNode)
+                {
+                    Debug.Assert(_generatePdbFile);
+                    // Compute hash of the output image and store that in the native DebugDirectory entry
+                    using (var hashAlgorithm = SHA256.Create())
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+                        byte[] hash = hashAlgorithm.ComputeHash(stream);
+                        byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
 
-                stream.Seek(objectWriter.DebugSectionOffsetInStream, SeekOrigin.Begin);
-                stream.Write(perfMapEntry);
+                        stream.Seek((long)debugOffset, SeekOrigin.Begin);
+                        stream.Write(rsdsEntry);
+                    }
+                }
+
+                if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
+                {
+                    Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
+                    byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
+                    byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
+
+                    stream.Seek((long)debugOffset, SeekOrigin.Begin);
+                    stream.Write(perfMapEntry);
+                }
             }
 
             if (_outputInfoBuilder != null)
@@ -238,8 +257,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_outputInfoBuilder != null)
             {
-                r2rPeBuilder.AddSections(_outputInfoBuilder);
-
                 if (_generateMapFile)
                 {
                     string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");

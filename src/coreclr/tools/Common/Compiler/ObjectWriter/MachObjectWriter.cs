@@ -99,7 +99,7 @@ namespace ILCompiler.ObjectWriter
             // Layout sections. At this point we don't really care if the file offsets are correct
             // but we need to compute the virtual addresses to populate the symbol table.
             uint fileOffset = 0;
-            LayoutSections(ref fileOffset, out _, out _);
+            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _);
 
             // Generate section base symbols. The section symbols are used for PC relative relocations
             // to subtract the base of the section, and in DWARF to emit section relative relocations.
@@ -120,7 +120,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void LayoutSections(ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
+        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
         {
             ulong virtualAddress = 0;
             byte sectionIndex = 1;
@@ -153,6 +153,8 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex++;
 
                 segmentSize = Math.Max(segmentSize, virtualAddress);
+
+                _outputSectionLayout.Add(new OutputSection($"{section.SectionName}{section.SegmentName}", section.VirtualAddress, section.FileOffset, (ulong)section.Stream.Length));
             }
 
             // ...and the relocation tables
@@ -183,7 +185,7 @@ namespace ILCompiler.ObjectWriter
             // so re-run the layout and this time calculate with the correct file offsets.
             uint fileOffset = (uint)MachHeader64.HeaderSize + loadCommandsSize;
             uint segmentFileOffset = fileOffset;
-            LayoutSections(ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
+            LayoutSections(recordFinalLayout: true, ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
 
             MachHeader64 machHeader = new MachHeader64
             {

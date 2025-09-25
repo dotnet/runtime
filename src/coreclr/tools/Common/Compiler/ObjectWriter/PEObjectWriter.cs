@@ -56,19 +56,13 @@ namespace ILCompiler.ObjectWriter
         private uint _peSectionAlignment;
         private uint _peFileAlignment;
 
-        private uint _pdataRva;
-        private uint _pdataSize;
-
-        private uint _debugRva;
-        private uint _debugSize;
-
-        private uint _exportRva;
-        private uint _exportSize;
+        private int _pdataSectionIndex;
+        private int _debugSectionIndex;
+        private int _exportSectionIndex;
+        private int _baseRelocSectionIndex;
 
         // Base relocation (.reloc) bookkeeping
         private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
-        private uint _baseRelocRva;
-        private uint _baseRelocSize;
 
         // Emitted Symbol Table info
         private sealed record PESymbol(string Name, uint Offset);
@@ -78,13 +72,8 @@ namespace ILCompiler.ObjectWriter
 
         private HashSet<string> _exportedSymbolNames = new();
 
-        /// <summary>
-        /// The offset of the .debug section in the emitted object file.
-        /// </summary>
-        public uint DebugSectionOffsetInStream { get; private set; }
-
-        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int sectionAlignment)
-            : base(factory, options)
+        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int sectionAlignment, OutputInfoBuilder outputInfoBuilder)
+            : base(factory, options, outputInfoBuilder)
         {
             _sectionAlignment = sectionAlignment;
         }
@@ -419,16 +408,15 @@ namespace ILCompiler.ObjectWriter
                 else if (!h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                     sizeOfInitializedData += h.SizeOfRawData;
 
+                _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, h.SizeOfRawData));
+
                 if (h.Name == ".pdata")
                 {
-                    _pdataRva = h.VirtualAddress;
-                    _pdataSize = h.VirtualSize != 0 ? h.VirtualSize : h.SizeOfRawData;
+                    _pdataSectionIndex = i;
                 }
                 else if (h.Name == ".debug")
                 {
-                    _debugRva = h.VirtualAddress;
-                    _debugSize = h.VirtualSize != 0 ? h.VirtualSize : h.SizeOfRawData;
-                    DebugSectionOffsetInStream = offsetToStart;
+                    _debugSectionIndex = i;
                 }
             }
 
@@ -460,8 +448,7 @@ namespace ILCompiler.ObjectWriter
                 sizeOfInitializedData += edataHeader.SizeOfRawData;
 
                 // Set export directory fields for header
-                _exportRva = edataRva + (uint)exportDir.ExportDirectoryOffset;
-                _exportSize = (uint)exportDir.ExportDirectorySize;
+                _exportSectionIndex = _sections.Count - 1;
             }
 
             uint sizeOfImage = (uint)AlignmentHelper.AlignUp((int)virtualAddress, (int)sectionAlignment);
@@ -626,8 +613,8 @@ namespace ILCompiler.ObjectWriter
             _sections.Add(relocSection);
             _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
 
-            _baseRelocRva = relocHeader.VirtualAddress;
-            _baseRelocSize = (uint)ms.Length;
+            _outputSectionLayout.Add(new OutputSection(relocHeader.Name, relocHeader.VirtualAddress, relocHeader.PointerToRawData, relocHeader.SizeOfRawData));
+            _baseRelocSectionIndex = _sections.Count - 1;
         }
 
         private protected override void EmitObjectFile(Stream outputFileStream)
@@ -736,20 +723,22 @@ namespace ILCompiler.ObjectWriter
             // Entries are zeroed by default; callers may populate particular directories
             // before writing if needed.
             var dataDirs = new OptionalHeaderDataDirectories();
-            // Populate exception table with .pdata if present.
-            if (_pdataSize != 0)
+            // Populate data directories if present.
+            if (_pdataSectionIndex != 0)
             {
-                dataDirs.Set((int)ImageDirectoryEntry.Exception, _pdataRva, _pdataSize);
+                dataDirs.Set((int)ImageDirectoryEntry.Exception, (uint)_outputSectionLayout[_pdataSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_pdataSectionIndex].Length);
             }
-            // Populate export table if present
-            if (_exportSize != 0)
+            if (_exportSectionIndex != 0)
             {
-                dataDirs.Set((int)ImageDirectoryEntry.Export, _exportRva, _exportSize);
+                dataDirs.Set((int)ImageDirectoryEntry.Export, (uint)_outputSectionLayout[_exportSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_exportSectionIndex].Length);
             }
-            // Populate base relocation directory if present
-            if (_baseRelocSize != 0)
+            if (_baseRelocSectionIndex != 0)
             {
-                dataDirs.Set((int)ImageDirectoryEntry.BaseRelocation, _baseRelocRva, _baseRelocSize);
+                dataDirs.Set((int)ImageDirectoryEntry.BaseRelocation, (uint)_outputSectionLayout[_baseRelocSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_baseRelocSectionIndex].Length);
+            }
+            if (_debugSectionIndex != 0)
+            {
+                dataDirs.Set((int)ImageDirectoryEntry.Debug, (uint)_outputSectionLayout[_debugSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_debugSectionIndex].Length);
             }
             peOptional.Write(outputFileStream, dataDirs);
 

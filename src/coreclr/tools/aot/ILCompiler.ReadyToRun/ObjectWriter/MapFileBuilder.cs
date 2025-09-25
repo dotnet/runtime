@@ -267,7 +267,7 @@ namespace ILCompiler.PEWriter
                     // No more nodes or next symbol is below next node - emit symbol
                     OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
                     OutputSection section = _outputInfoBuilder.Sections[symbol.SectionIndex];
-                    writer.Write($"0x{symbol.Offset + section.VirtualAddress:X8},");
+                    writer.Write($"0x{(uint)symbol.Offset + section.VirtualAddress:X8},");
                     writer.Write(",");
                     writer.Write(",");
                     writer.Write($"{section.Name},");
@@ -280,7 +280,7 @@ namespace ILCompiler.PEWriter
                     OutputNode node = _outputInfoBuilder.Nodes[nodeIndex++];
                     OutputSection section = _outputInfoBuilder.Sections[node.SectionIndex];
 
-                    writer.Write($"0x{node.Offset + section.VirtualAddress:X8},");
+                    writer.Write($"0x{(uint)node.Offset + section.VirtualAddress:X8},");
                     writer.Write($"{node.Length},");
                     writer.Write($"{node.Relocations},");
                     writer.Write($"{section.Name},");

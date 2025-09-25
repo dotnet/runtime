@@ -103,7 +103,7 @@ namespace ILCompiler.ObjectWriter
 
     public sealed class OutputSection
     {
-        public OutputSection(string name, int virtualAddress, int filePosition, int length)
+        public OutputSection(string name, ulong virtualAddress, ulong filePosition, ulong length)
         {
             Name = name;
             VirtualAddress = virtualAddress;
@@ -112,9 +112,9 @@ namespace ILCompiler.ObjectWriter
         }
 
         public string Name { get; }
-        public int VirtualAddress { get; }
-        public int FilePosition { get; }
-        public int Length { get; }
+        public ulong VirtualAddress { get; }
+        public ulong FilePosition { get; }
+        public ulong Length { get; }
     }
 
     /// <summary>

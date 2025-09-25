@@ -63,8 +63,8 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
-        public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
+        public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+            : base(factory, options, outputInfoBuilder)
         {
             _machine = factory.Target.Architecture switch
             {
@@ -391,6 +391,9 @@ namespace ILCompiler.ObjectWriter
                 // Section relocations
                 section.Header.PointerToRelocations = section.Relocations.Count > 0 ? dataOffset : 0;
                 dataOffset += (uint)(section.Relocations.Count * CoffRelocation.Size);
+
+                // Record the section layout
+                _outputSectionLayout.Add(new OutputSection(section.Header.Name, section.Header.PointerToRawData, section.Header.VirtualAddress, section.Header.SizeOfRawData));
 
                 sectionIndex++;
             }
