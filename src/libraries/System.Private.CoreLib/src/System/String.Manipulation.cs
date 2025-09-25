@@ -1698,7 +1698,7 @@ namespace System
             CheckStringSplitOptions(options);
 
             // Ensure matching the string separator overload.
-            return count <= 1 || Length == 0 ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(runeSeparator, count, options);
+            return (count <= 1 || Length == 0) ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(runeSeparator, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
