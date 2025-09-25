@@ -278,8 +278,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
                 PerfMapDebugDirectoryEntryNode perfMapDebugDirectoryEntryNode = null;
-                ISymbolDefinitionNode firstImportThunk = null;
-                ISymbolDefinitionNode lastImportThunk = null;
                 ObjectNode lastWrittenObjectNode = null;
 
                 // Save cold method nodes here, and emit them to execution section last.
@@ -322,18 +320,6 @@ namespace ILCompiler.DependencyAnalysis
                         perfMapDebugDirectoryEntryNode = pmdeNode;
                     }
 
-                    if (node is ImportThunk importThunkNode)
-                    {
-                        Debug.Assert(firstImportThunk == null || lastWrittenObjectNode is ImportThunk,
-                            "All the import thunks must be in single contiguous run");
-
-                        if (firstImportThunk == null)
-                        {
-                            firstImportThunk = importThunkNode;
-                        }
-                        lastImportThunk = importThunkNode;
-                    }
-
                     string name = GetDependencyNodeName(depNode);
 
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
@@ -364,9 +350,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
                 r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
-                if (firstImportThunk != null)
+
+                ISymbolNode firstImportThunk = _nodeFactory.DelayLoadMethodCallThunks.StartNode(_nodeFactory);
+                if (firstImportThunk is not null)
                 {
-                    r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, lastImportThunk);
+                    r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, _nodeFactory.DelayLoadMethodCallThunks.EndNode(_nodeFactory));
                 }
 
 

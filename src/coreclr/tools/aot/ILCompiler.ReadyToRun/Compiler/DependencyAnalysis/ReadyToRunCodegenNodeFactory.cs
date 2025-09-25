@@ -701,6 +701,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
             graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
+            graph.NewMarkedNode += DelayLoadMethodCallThunks.OnNodeMarked;
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);

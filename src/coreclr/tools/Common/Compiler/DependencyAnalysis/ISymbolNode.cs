@@ -74,6 +74,23 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Represents a symbol that should encompass the full range between the start and end symbols specified.
+    /// </summary>
+    public interface ISymbolRangeNode : ISymbolNode
+    {
+        /// <summary>
+        /// Return a node that determines the start of the range.
+        /// This node will be used for linkage.
+        /// </summary>
+        ISymbolNode StartNode(NodeFactory factory);
+
+        /// <summary>
+        /// Return a node that is used to determine the symbol size.
+        /// </summary>
+        ISymbolNode EndNode(NodeFactory factory);
+    }
+
+    /// <summary>
     /// Represents a symbol that should not be shared with another symbol during writing of the object file.
     /// </summary>
     public interface IUniqueSymbolNode : ISymbolNode

@@ -10,8 +10,8 @@ using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using static ILCompiler.DependencyAnalysis.RelocType;
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -323,11 +323,17 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
-            List<BlockToRelocate> blocksToRelocate = new();
+            List<ISymbolRangeNode> symbolRangeNodes = [];
+            List<BlockToRelocate> blocksToRelocate = [];
             foreach (DependencyNode depNode in nodes)
             {
-                ObjectNode node = depNode as ObjectNode;
-                if (node is null)
+                if (depNode is ISymbolRangeNode symbolRange)
+                {
+                    symbolRangeNodes.Add(symbolRange);
+                    continue;
+                }
+
+                if (depNode is not ObjectNode node)
                     continue;
 
                 if (logger.IsVerbose)
@@ -427,6 +433,39 @@ namespace ILCompiler.ObjectWriter
                 // Write the data. Note that this has to be done last as not to advance
                 // the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
+            }
+
+            foreach (ISymbolRangeNode range in symbolRangeNodes)
+            {
+                ISymbolNode startNode = range.StartNode(_nodeFactory);
+                ISymbolNode endNode = range.EndNode(_nodeFactory);
+
+#if !READYTORUN
+                startNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, startNode);
+                endNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, endNode);
+#endif
+                string startNodeName = GetMangledName(startNode);
+                string endNodeName = GetMangledName(endNode);
+
+                string rangeNodeName = GetMangledName(range);
+
+                if (!_definedSymbols.TryGetValue(startNodeName, out var startSymbol)
+                    || !_definedSymbols.TryGetValue(endNodeName, out var endSymbol))
+                {
+                    throw new InvalidOperationException("The symbols defined by a symbol range must be emitted into the same object.");
+                }
+
+                if (startSymbol.SectionIndex != endSymbol.SectionIndex)
+                {
+                    throw new InvalidOperationException("The symbols that define a symbol range must be in the same section.");
+                }
+
+                SectionWriter sectionWriter = new SectionWriter(
+                    this,
+                    startSymbol.SectionIndex,
+                    _sectionIndexToData[startSymbol.SectionIndex]);
+
+                sectionWriter.EmitSymbolDefinition(rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
             }
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
