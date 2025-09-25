@@ -27,7 +27,6 @@
                         const config = netInternals.netLoaderConfig;
                         const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
                         const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
-                        // WASM-TODO: pass TPA via argument, not env
                         ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
                         ENV[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
                         ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;

@@ -10,8 +10,6 @@ import {
 
 import { } from "../../Common/JavaScript/cross-linked";
 
-// this dummy function helps rollup to keep functions below from trimming
-// we are installing them into emscripten closure
 export function crossLink() {
     return [
         Assert, Logger, Module,

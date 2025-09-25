@@ -92,17 +92,17 @@ export type LoaderConfigInternal = LoaderConfig & {
 
 
 /// A Promise<T> with a controller attached
-export interface ControllablePromise<TResult = any> extends Promise<TResult> {
+export interface ControllablePromise<T = any> extends Promise<T> {
     __brand: "ControllablePromise"
 }
 
 /// Just a pair of a promise and its controller
-export interface PromiseCompletionSource<TResult> {
-    readonly promise: ControllablePromise<TResult>;
+export interface PromiseController<T> {
+    readonly promise: ControllablePromise<T>;
     isDone: boolean;
-    resolve: (value: TResult | PromiseLike<TResult>) => void;
+    resolve: (value: T | PromiseLike<T>) => void;
     reject: (reason?: any) => void;
-    propagateFrom: (other: Promise<TResult>) => void;
+    propagateFrom: (other: Promise<T>) => void;
 }
 
 

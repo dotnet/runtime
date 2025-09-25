@@ -6,7 +6,7 @@ import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset,
 import { Assert, netJSEngine, getInternals, netBrowserHostExports, netUpdateAllInternals } from "./cross-module";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
-import { createPromiseCompletionSource } from "./promise-completion-source";
+import { createPromiseController } from "./promise-controller";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
@@ -14,7 +14,7 @@ const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex)
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
-const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
+const nativeModulePromiseController = createPromiseController<EmscriptenModuleInternal>(() => {
     netUpdateAllInternals();
 });
 

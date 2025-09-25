@@ -44,32 +44,15 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
 
     mergeResources(target.resources!, source.resources!);
     source.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
-    source.applicationArguments = source.applicationArguments !== undefined ? [...target.applicationArguments! || [], ...source.applicationArguments] : target.applicationArguments;
-    source.applicationCulture = source.applicationCulture !== undefined ? source.applicationCulture : target.applicationCulture;
-    source.applicationEnvironment = source.applicationEnvironment !== undefined ? source.applicationEnvironment : target.applicationEnvironment;
-    source.appsettings = source.appsettings !== undefined ? [...target.appsettings! || [], ...source.appsettings] : target.appsettings;
+    source.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
+    source.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
+    source.loadAllSatelliteResources = source.loadAllSatelliteResources !== undefined ? source.loadAllSatelliteResources : target.loadAllSatelliteResources;
+    source.mainAssemblyName = source.mainAssemblyName !== undefined ? source.mainAssemblyName : target.mainAssemblyName;
+    source.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
     source.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
     source.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
-    source.disableIntegrityCheck = source.disableIntegrityCheck !== undefined ? source.disableIntegrityCheck : target.disableIntegrityCheck;
-    source.disableNoCacheFetch = source.disableNoCacheFetch !== undefined ? source.disableNoCacheFetch : target.disableNoCacheFetch;
-    source.enableDownloadRetry = source.enableDownloadRetry !== undefined ? source.enableDownloadRetry : target.enableDownloadRetry;
     source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
-    source.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
-    source.extensions = { ...target.extensions, ...source.extensions };
-    source.globalizationMode = source.globalizationMode !== undefined ? source.globalizationMode : target.globalizationMode;
-    source.ignorePdbLoadErrors = source.ignorePdbLoadErrors !== undefined ? source.ignorePdbLoadErrors : target.ignorePdbLoadErrors;
-    source.interpreterPgo = source.interpreterPgo !== undefined ? source.interpreterPgo : target.interpreterPgo;
-    source.interpreterPgoSaveDelay = source.interpreterPgoSaveDelay !== undefined ? source.interpreterPgoSaveDelay : target.interpreterPgoSaveDelay;
-    source.loadAllSatelliteResources = source.loadAllSatelliteResources !== undefined ? source.loadAllSatelliteResources : target.loadAllSatelliteResources;
-    source.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
-    source.mainAssemblyName = source.mainAssemblyName !== undefined ? source.mainAssemblyName : target.mainAssemblyName;
-    source.maxParallelDownloads = source.maxParallelDownloads !== undefined ? source.maxParallelDownloads : target.maxParallelDownloads;
-    source.pthreadPoolInitialSize = source.pthreadPoolInitialSize !== undefined ? source.pthreadPoolInitialSize : target.pthreadPoolInitialSize;
-    source.pthreadPoolUnusedSize = source.pthreadPoolUnusedSize !== undefined ? source.pthreadPoolUnusedSize : target.pthreadPoolUnusedSize;
-    source.remoteSources = source.remoteSources !== undefined ? [...target.remoteSources! || [], ...source.remoteSources] : target.remoteSources;
-    source.runtimeConfig = source.runtimeConfig !== undefined ? { ...target.runtimeConfig, ...source.runtimeConfig } : target.runtimeConfig;
     source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
-    source.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
     Object.assign(target, source);
     if (target.resources!.coreAssembly!.length) {
         isConfigDownloaded = true;
@@ -81,22 +64,22 @@ function mergeResources(target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    source.assembly = [...target.assembly!, ...source.assembly!];
     source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly!];
-    source.corePdb = [...target.corePdb!, ...source.corePdb!];
-    source.extensions = { ...target.extensions!, ...source.extensions! };
-    source.icu = [...target.icu!, ...source.icu!];
-    source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics!];
-    source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative!];
-    source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime!];
-    source.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker!];
+    source.assembly = [...target.assembly!, ...source.assembly!];
     source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly!];
+    source.corePdb = [...target.corePdb!, ...source.corePdb!];
+    source.pdb = [...target.pdb!, ...source.pdb!];
+    source.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker!];
+    source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative!];
+    source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics!];
+    source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime!];
+    source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols!];
+    source.wasmNative = [...target.wasmNative!, ...source.wasmNative!];
+    source.icu = [...target.icu!, ...source.icu!];
+    source.vfs = [...target.vfs!, ...source.vfs!];
     source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded!];
     source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady!];
-    source.pdb = [...target.pdb!, ...source.pdb!];
-    source.vfs = [...target.vfs!, ...source.vfs!];
-    source.wasmNative = [...target.wasmNative!, ...source.wasmNative!];
-    source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols!];
+    source.extensions = { ...target.extensions!, ...source.extensions! };
     for (const key in source.satelliteResources) {
         source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }

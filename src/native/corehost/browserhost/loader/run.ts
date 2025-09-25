@@ -3,10 +3,10 @@
 
 import { Module } from "./cross-module";
 import { exit } from "./exit";
-import { createPromiseCompletionSource } from "./promise-completion-source";
+import { createPromiseController } from "./promise-controller";
 
 let CoreCLRInitialized = false;
-const runMainPromiseController = createPromiseCompletionSource<number>();
+const runMainPromiseController = createPromiseController<number>();
 
 export function BrowserHost_InitializeCoreCLR():void {
     if (CoreCLRInitialized) {

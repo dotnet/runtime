@@ -17,8 +17,7 @@ export const reserved = [
     "Logger", "Assert", "netJSEngine", "Module", "netInternals", "netPublicApi", "netInternalUpdates",
     "netSetInternals", "netUpdateAllInternals", "netUpdateModuleInternals", "netInitializeModule",
     "netLoaderExports", "netRuntimeExports", "netBrowserHostExports", "netInteropJSExports", "netNativeBrowserExports",
-    "netTabulateLE", "netTabulateRE", "netTabulateHE", "netTabulateJSNE", "netTabulateNBE"
-];
+    "netTabulateLE", "netTabulateRE", "netTabulateHE", "netTabulateJSNE", "netTabulateNBE"];
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
