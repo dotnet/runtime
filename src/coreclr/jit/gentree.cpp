@@ -3696,6 +3696,11 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
     }
+    else if (tree->IsIntegralConst(0) || tree->IsIntegralConst(1))
+    {
+        GenTreeIntConCommon* con = tree->AsIntConCommon();
+        con->SetIntegralValue(con->IntegralValue() == 0 ? 1 : 0);
+    }
     else
     {
         tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
