@@ -880,11 +880,14 @@ namespace System.Threading
             // Fast path: If the count is greater than zero, try to release the semaphore without taking the lock.
             // If it's zero or less, we need to take the lock to ensure that we properly wake up waiters
             // and potentially update m_waitHandle.
-            int currentCount = m_currentCount;
-            if (currentCount > 0 && currentCount + releaseCount <= m_maxCount &&
-                Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
+            while (m_currentCount > 0)
             {
-                return currentCount;
+                int currentCount = m_currentCount;
+                if (currentCount > 0 && currentCount + releaseCount <= m_maxCount &&
+                    Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
+                {
+                    return currentCount;
+                }
             }
 
             int returnCount;
@@ -900,8 +903,7 @@ namespace System.Threading
 
             // The current count must be 0 and we can take the lock knowing that no threads executing a wait operation
             // will be able to modify the count until we release the lock.
-            Debug.Assert(m_currentCount == 0, "m_currentCount should never be negative here");
-
+            Debug.Assert(m_currentCount == 0, "m_currentCount should be exactly zero before taking the lock");
 
             lock (m_lockObjAndDisposed)
             {
