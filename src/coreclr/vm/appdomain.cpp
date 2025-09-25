@@ -1078,6 +1078,11 @@ void SystemDomain::LoadBaseSystemClasses()
         CoreLibBinder::GetClass(CLASS__IREADONLYCOLLECTIONGENERIC);
         CoreLibBinder::GetClass(CLASS__IREADONLYLISTGENERIC);
 
+        // cache the method table here for cDAC IsComWrappersRCW
+    #ifdef FEATURE_COMWRAPPERS
+        CoreLibBinder::GetClass(CLASS__NATIVE_OBJECT_WRAPPER);
+    #endif
+
         // Load String
         g_pStringClass = CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
 

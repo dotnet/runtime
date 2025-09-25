@@ -36,8 +36,6 @@ namespace Profiler.Tests
             TriggerDirectInlining();
             CallMethodWithoutInlining();
             TriggerInliningChain();
-            Console.Write("helloo");
-            Console.ReadKey();
 
             string matchString = "Hello from profiler rejit method 'InlineeTarget'!";
             int numRejittedTargets = OutputBuilder.ToString().Split(matchString).Length;

@@ -4346,12 +4346,6 @@ BOOL ClrDataAccess::DACGetComWrappersCCWVTableQIAddress(CLRDATA_ADDRESS ccwPtr, 
         return FALSE;
     }
 
-
-#ifdef TARGET_ARM
-    // clear the THUMB bit on qiAddress before comparing with known vtable entry
-    *qiAddress &= ~THUMB_CODE;
-#endif
-
     return TRUE;
 }
 

@@ -33,6 +33,7 @@ public static class Constants
         public const string TlsIndexBase = nameof(TlsIndexBase);
         public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
+        public const string NativeObjectWrapperClass = nameof(NativeObjectWrapperClass);
         public const string MOWQueryInterface = nameof(MOWQueryInterface);
         public const string TrackerTargetQueryInterface = nameof(TrackerTargetQueryInterface);
 

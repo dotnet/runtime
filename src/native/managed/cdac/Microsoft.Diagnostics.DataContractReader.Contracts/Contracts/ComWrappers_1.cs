@@ -83,8 +83,9 @@ internal readonly struct ComWrappers_1 : IComWrappers
 
     public bool IsComWrappersRCW(TargetPointer rcw)
     {
-        Contracts.IObject objContract = _target.Contracts.Object;
-        TargetPointer mt = objContract.GetMethodTableAddress(rcw);
-        return mt != TargetPointer.Null;
+        TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
+        ushort typeCode = _target.ReadGlobal<ushort>(Constants.Globals.NativeObjectWrapperClass);
+        TargetPointer typeHandlePtr = _target.Contracts.RuntimeTypeSystem.GetBinderType(typeCode).Address;
+        return mt == typeHandlePtr;
     }
 }

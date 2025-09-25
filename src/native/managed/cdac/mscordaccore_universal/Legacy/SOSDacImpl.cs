@@ -41,6 +41,7 @@ internal sealed unsafe partial class SOSDacImpl
     // They should be set when actually requested via other DAC APIs, so we lazily read the global pointers.
     private readonly Lazy<TargetPointer> _stringMethodTable;
     private readonly Lazy<TargetPointer> _objectMethodTable;
+    private readonly ulong _rcwMask = 1UL;
 
     private readonly ISOSDacInterface? _legacyImpl;
     private readonly ISOSDacInterface2? _legacyImpl2;
@@ -792,7 +793,7 @@ internal sealed unsafe partial class SOSDacImpl
                 // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
                 if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
-                    data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
+                    data->MTOfType = rtsContract.GetBinderType((ushort)CorElementType.U).Address.ToClrDataAddress(_target);
                 // array MTs
                 else if (rtsContract.IsArray(foundTypeHandle, out _))
                     data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
@@ -4005,17 +4006,16 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            ulong rcwMask = 1UL;
             Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
             if (rcw == 0)
                 throw new ArgumentException();
             else if (isComWrappersRCW != null)
             {
-                if ((rcw & rcwMask) == 0)
+                if ((rcw & _rcwMask) == 0)
                     *isComWrappersRCW = Interop.BOOL.FALSE;
                 else
                 {
-                    TargetPointer rcwPtr = rcw.ToTargetPointer(_target) & ~rcwMask;
+                    TargetPointer rcwPtr = rcw.ToTargetPointer(_target) & ~_rcwMask;
                     *isComWrappersRCW = comWrappersContract.IsComWrappersRCW(rcwPtr) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
                     hr = (*isComWrappersRCW != Interop.BOOL.FALSE) ? HResults.S_OK : HResults.S_FALSE;
                 }
@@ -4044,15 +4044,14 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            ulong rcwMask = 1UL;
             Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
             if (rcw == 0 || identity == null)
                 throw new ArgumentException();
-            else if ((rcw & rcwMask) == 0)
+            else if ((rcw & _rcwMask) == 0)
                 *identity = 0;
             else if (identity != null)
             {
-                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity((rcw.ToTargetPointer(_target) & ~rcwMask));
+                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity(rcw.ToTargetPointer(_target) & ~_rcwMask);
                 *identity = identityPtr.ToClrDataAddress(_target);
             }
         }

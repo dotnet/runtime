@@ -23,7 +23,7 @@ namespace InteropLib
         constexpr size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
 #endif
 
-        constexpr uintptr_t DispatchThisPtrMask = ~(static_cast<uintptr_t>((DispatchAlignmentThisPtr) - 1u));
+        constexpr intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
 
         static_assert(sizeof(void*) < DispatchAlignmentThisPtr, "DispatchAlignmentThisPtr must be larger than sizeof(void*).");
 
