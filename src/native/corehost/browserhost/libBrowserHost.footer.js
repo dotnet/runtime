@@ -24,7 +24,7 @@
                         const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
                         const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
 
-                        const config = netInternals.netLoaderConfig;
+                        const config = netInternals[2/*InternalExchangeIndex.LoaderConfig*/];
                         const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
                         const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
                         ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
@@ -43,7 +43,7 @@
         // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
         // it would execute the code at link time and call .toString() on functions to move it to the final output
         // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
-        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reservedRx` there
+        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
         const exports = {}
         libBrowserHost(exports);
         let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];

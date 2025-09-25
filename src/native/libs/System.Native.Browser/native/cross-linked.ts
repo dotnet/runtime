@@ -4,7 +4,7 @@
 import {
     Assert, Logger, Module,
     netInternals, netLoaderExports, netPublicApi, netNativeBrowserExports, netRuntimeExports, netJSEngine, netBrowserHostExports, netInteropJSExports,
-    netTabulateNBE, netTabulateHE, netTabulateJSNE, netTabulateLE, netTabulateRE,
+    netTabulateNBE, netTabulateBHE, netTabulateIJSE, netTabulateLE, netTabulateRE,
     getInternals, netSetInternals, netUpdateAllInternals, netUpdateModuleInternals,
 } from "../cross-module";
 
@@ -15,6 +15,6 @@ export function crossLink() {
         Assert, Logger, Module,
         netInternals, netLoaderExports, netPublicApi, netNativeBrowserExports, netRuntimeExports, netJSEngine, netBrowserHostExports, netInteropJSExports,
         getInternals, netSetInternals, netUpdateAllInternals, netUpdateModuleInternals,
-        netTabulateHE, netTabulateJSNE, netTabulateLE, netTabulateNBE, netTabulateRE
+        netTabulateBHE, netTabulateIJSE, netTabulateLE, netTabulateNBE, netTabulateRE
     ];
 }

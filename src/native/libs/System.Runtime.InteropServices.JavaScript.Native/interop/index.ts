@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { InternalExchange, RuntimeAPI, RuntimeExports } from "./types";
+import { InternalExchangeIndex } from "../types";
 import { netSetInternals, netUpdateAllInternals, netUpdateModuleInternals, netTabulateRE } from "./cross-module";
 
 export function netInitializeModule(internals: InternalExchange): void {
@@ -12,9 +13,9 @@ export function netInitializeModule(internals: InternalExchange): void {
     const runtimeExportsLocal: RuntimeExports = {
     };
     netSetInternals(internals);
-    Object.assign(internals.netPublicApi, runtimeApiLocal);
-    internals.netRuntimeExportsTable = [...netTabulateRE(runtimeExportsLocal)];
-    internals.netInternalUpdates.push(netUpdateModuleInternals);
+    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
+    internals[InternalExchangeIndex.RuntimeExportsTable] = netTabulateRE(runtimeExportsLocal);
+    internals[InternalExchangeIndex.InternalUpdatesCallbacks].push(netUpdateModuleInternals);
     netUpdateAllInternals();
 }
 

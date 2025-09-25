@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { InternalExchange, HostNativeExports, RuntimeAPI } from "./types";
+import type { InternalExchange, BrowserHostExports, RuntimeAPI } from "./types";
+import { InternalExchangeIndex } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
 import { exit, runMain, runMainAndExit, setEnvironmentVariable, registerDllBytes } from "./host";
@@ -23,13 +24,15 @@ export function netInitializeModule(internals: InternalExchange): void {
         localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     };
 
-    const hostNativeExportsLocal: HostNativeExports = {
+    const hostNativeExportsLocal: BrowserHostExports = {
         registerDllBytes,
         isSharedArrayBuffer
     };
     netSetInternals(internals);
-    Object.assign(internals.netPublicApi, runtimeApiLocal);
-    internals.netBrowserHostExportsTable = [...netTabulateHE(hostNativeExportsLocal)];
+    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
+    internals[InternalExchangeIndex.BrowserHostExportsTable] = netTabulateBHE(hostNativeExportsLocal);
+    const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
+    if (!updates.includes(netUpdateModuleInternals)) updates.push(netUpdateModuleInternals);
     netUpdateAllInternals();
 }
 

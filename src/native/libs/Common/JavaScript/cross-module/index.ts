@@ -7,7 +7,8 @@
  * Please keep it small and register it into emscripten as dependency.
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, JSEngineType, HostNativeExports, InteropJavaScriptNativeExports, LoaderExportsTable, RuntimeExportsTable, HostNativeExportsTable, InteropJavaScriptNativeExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, JSEngineType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
+import { InternalExchangeIndex } from "../types";
 
 export let Module: DotnetModuleInternal;
 export let netPublicApi: RuntimeAPI;
@@ -16,8 +17,8 @@ export let Assert: AssertType = {} as any;
 export let netJSEngine: JSEngineType = {}as any;
 export let netLoaderExports: LoaderExports = {} as any;
 export let netRuntimeExports: RuntimeExports = {} as any;
-export let netBrowserHostExports: HostNativeExports = {} as any;
-export let netInteropJSExports: InteropJavaScriptNativeExports = {} as any;
+export let netBrowserHostExports: BrowserHostExports = {} as any;
+export let netInteropJSExports: InteropJavaScriptExports = {} as any;
 export let netNativeBrowserExports: NativeBrowserExports = {} as any;
 export let netInternals: InternalExchange;
 
@@ -25,44 +26,44 @@ export function getInternals(): InternalExchange {
     return netInternals;
 }
 
-export function netSetInternals(internal: Partial<InternalExchange>) {
-    netInternals = internal as InternalExchange;
-    netPublicApi = netInternals.netPublicApi;
-    Module = netInternals.netPublicApi.Module as any;
-    if (netInternals.netInternalUpdates === undefined) {
-        netInternals.netInternalUpdates = [];
+export function netSetInternals(internal: InternalExchange) {
+    netInternals = internal;
+    netPublicApi = netInternals[InternalExchangeIndex.RuntimeAPI];
+    Module = netPublicApi.Module as any;
+    if (netInternals[InternalExchangeIndex.InternalUpdatesCallbacks] === undefined) {
+        netInternals[InternalExchangeIndex.InternalUpdatesCallbacks] = [];
     }
 }
 
 export function netUpdateAllInternals() {
-    for (const updateImpl of netInternals.netInternalUpdates) {
+    for (const updateImpl of netInternals[InternalExchangeIndex.InternalUpdatesCallbacks]) {
         updateImpl();
     }
 }
 
 export function netUpdateModuleInternals() {
-    if (Object.keys(netLoaderExports).length === 0 && netInternals.netLoaderExportsTable) {
+    if (Object.keys(netLoaderExports).length === 0 && netInternals[InternalExchangeIndex.LoaderExportsTable]) {
         netLoaderExports = {} as LoaderExports;
         Logger = {} as LoggerType;
         Assert = {} as AssertType;
         netJSEngine = {} as JSEngineType;
-        expandLE(netInternals.netLoaderExportsTable, Logger, Assert, netJSEngine, netLoaderExports);
+        expandLE(netInternals[InternalExchangeIndex.LoaderExportsTable], Logger, Assert, netJSEngine, netLoaderExports);
     }
-    if (Object.keys(netRuntimeExports).length === 0 && netInternals.netRuntimeExportsTable) {
+    if (Object.keys(netRuntimeExports).length === 0 && netInternals[InternalExchangeIndex.RuntimeExportsTable]) {
         netRuntimeExports = {} as RuntimeExports;
-        expandRE(netInternals.netRuntimeExportsTable, netRuntimeExports);
+        expandRE(netInternals[InternalExchangeIndex.RuntimeExportsTable], netRuntimeExports);
     }
-    if (Object.keys(netBrowserHostExports).length === 0 && netInternals.netBrowserHostExportsTable) {
-        netBrowserHostExports = {} as HostNativeExports;
-        expandHE(netInternals.netBrowserHostExportsTable, netBrowserHostExports);
+    if (Object.keys(netBrowserHostExports).length === 0 && netInternals[InternalExchangeIndex.BrowserHostExportsTable]) {
+        netBrowserHostExports = {} as BrowserHostExports;
+        expandBHE(netInternals[InternalExchangeIndex.BrowserHostExportsTable], netBrowserHostExports);
     }
-    if (Object.keys(netInteropJSExports).length === 0 && netInternals.netInteropJSExportsTable) {
-        netInteropJSExports = {} as InteropJavaScriptNativeExports;
-        expandJSNE(netInternals.netInteropJSExportsTable, netInteropJSExports);
+    if (Object.keys(netInteropJSExports).length === 0 && netInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
+        netInteropJSExports = {} as InteropJavaScriptExports;
+        expandIJSE(netInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], netInteropJSExports);
     }
-    if (Object.keys(netNativeBrowserExports).length === 0 && netInternals.netNativeBrowserExportsTable) {
+    if (Object.keys(netNativeBrowserExports).length === 0 && netInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
         netNativeBrowserExports = {} as NativeBrowserExports;
-        expandNBE(netInternals.netNativeBrowserExportsTable, netNativeBrowserExports);
+        expandNBE(netInternals[InternalExchangeIndex.NativeBrowserExportsTable], netNativeBrowserExports);
     }
 
     function expandRE(table:RuntimeExportsTable, runtime:RuntimeExports):void {
@@ -102,16 +103,16 @@ export function netUpdateModuleInternals() {
         Object.assign(jsEngine, jsEngineLocal);
     }
 
-    function expandHE(table:HostNativeExportsTable, native:HostNativeExports):void {
-        const nativeLocal :HostNativeExports = {
+    function expandBHE(table:BrowserHostExportsTable, native:BrowserHostExports):void {
+        const nativeLocal :BrowserHostExports = {
             registerDllBytes: table[0],
             isSharedArrayBuffer: table[1],
         };
         Object.assign(native, nativeLocal);
     }
 
-    function expandJSNE(table:InteropJavaScriptNativeExportsTable, interop:InteropJavaScriptNativeExports):void {
-        const interopLocal :InteropJavaScriptNativeExports = {
+    function expandIJSE(table:InteropJavaScriptExportsTable, interop:InteropJavaScriptExports):void {
+        const interopLocal :InteropJavaScriptExports = {
         };
         Object.assign(interop, interopLocal);
     }
@@ -151,7 +152,7 @@ export function netTabulateRE(map:RuntimeExports):RuntimeExportsTable {
     ];
 }
 
-export function netTabulateHE(map:HostNativeExports):HostNativeExportsTable {
+export function netTabulateBHE(map:BrowserHostExports):BrowserHostExportsTable {
     return [
         map.registerDllBytes,
         map.isSharedArrayBuffer,
@@ -159,7 +160,7 @@ export function netTabulateHE(map:HostNativeExports):HostNativeExportsTable {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function netTabulateJSNE(map:InteropJavaScriptNativeExports):InteropJavaScriptNativeExportsTable {
+export function netTabulateIJSE(map:InteropJavaScriptExports):InteropJavaScriptExportsTable {
     return [
     ];
 }

@@ -7,5 +7,5 @@ export function netInitializeModule(internals) {
     if (netNativeModuleLoaded) throw new Error("Native module already loaded");
     netInternals = internals;
     netNativeModuleLoaded = true;
-    return createDotnetRuntime(netInternals.netPublicApi.Module);
+    return createDotnetRuntime(netInternals[0/*InternalExchangeIndex.RuntimeAPI*/].Module);
 }

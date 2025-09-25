@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { LoggerType, AssertType, RuntimeAPI, LoaderExports } from "./types";
+import type { LoggerType, AssertType, RuntimeAPI, LoaderExports, NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable } from "./types";
+import { InternalExchangeIndex } from "../types";
 
 import ProductVersion from "consts:productVersion";
 import BuildConfiguration from "consts:configuration";
@@ -37,12 +38,17 @@ export function netInitializeModule(): RuntimeAPI {
         },
     };
 
-    const netInternalUpdates: (() => void)[] = [];
-    netSetInternals({
-        netLoaderConfig: netLoaderConfig,
-        netPublicApi: netPublicApi as RuntimeAPI,
-        netInternalUpdates,
-    });
+    const internals:InternalExchange = [
+        netPublicApi as RuntimeAPI, //0
+        [netUpdateModuleInternals], //1
+        netLoaderConfig, //2
+        null as any as RuntimeExportsTable, //3
+        null as any as LoaderExportsTable, //4
+        null as any as BrowserHostExportsTable, //5
+        null as any as InteropJavaScriptExportsTable, //6
+        null as any as NativeBrowserExportsTable, //7
+    ];
+    netSetInternals(internals);
     const runtimeApiFunctions: Partial<RuntimeAPI> = {
         getConfig: getLoaderConfig,
         exit,
@@ -78,9 +84,7 @@ export function netInitializeModule(): RuntimeAPI {
     Object.assign(Assert, assert);
     Object.assign(netJSEngine, jsEngine);
     Object.assign(netLoaderExports, loaderFunctions);
-    netInternals.netLoaderExportsTable = [...netTabulateLE(Logger, Assert, netLoaderExports)];
-    netInternalUpdates.push(netUpdateModuleInternals);
+    netInternals[InternalExchangeIndex.LoaderExportsTable] = netTabulateLE(Logger, Assert, netLoaderExports);
     netUpdateAllInternals();
-
     return netPublicApi as RuntimeAPI;
 }

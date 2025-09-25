@@ -13,7 +13,7 @@
         // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
         // it would execute the code at link time and call .toString() on functions to move it to the final output
         // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
-        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reservedRx` there
+        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
         const exports = {};
         libNativeBrowser(exports);
 

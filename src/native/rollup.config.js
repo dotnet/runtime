@@ -44,7 +44,6 @@ const dotnetJS = configure({
             module: true,
         }, mangle: {
             module: true,
-            reserved
         }
     }
 });
@@ -80,7 +79,6 @@ const dotnetRuntimeJS = configure({
         }, mangle: {
             module: true,
             keep_classnames,
-            reserved
         }
     }
 });

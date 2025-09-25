@@ -56,20 +56,20 @@ export type LoaderExportsTable = [
     typeof getRunMainPromise,
 ]
 
-export type HostNativeExports = {
+export type BrowserHostExports = {
     isSharedArrayBuffer : typeof isSharedArrayBuffer,
     registerDllBytes: typeof registerDllBytes
 }
 
-export type HostNativeExportsTable = [
+export type BrowserHostExportsTable = [
     typeof registerDllBytes,
     typeof isSharedArrayBuffer,
 ]
 
-export type InteropJavaScriptNativeExports = {
+export type InteropJavaScriptExports = {
 }
 
-export type InteropJavaScriptNativeExportsTable = [
+export type InteropJavaScriptExportsTable = [
 ]
 
 export type NativeBrowserExports = {

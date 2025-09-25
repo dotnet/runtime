@@ -3,7 +3,7 @@
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptNativeExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
+import { InteropJavaScriptExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -106,15 +106,25 @@ export interface PromiseController<T> {
 }
 
 
-export type InternalExchange = {
-    netPublicApi: RuntimeAPI,
-    netRuntimeExportsTable: RuntimeExportsTable,
-    netLoaderExportsTable: LoaderExportsTable,
-    netBrowserHostExportsTable: HostNativeExportsTable,
-    netInteropJSExportsTable: InteropJavaScriptExportsTable,
-    netNativeBrowserExportsTable: NativeBrowserExportsTable,
-    netLoaderConfig: LoaderConfigInternal,
-    netInternalUpdates: (() => void)[],
+export type InternalExchange = [
+    RuntimeAPI, //0
+    (() => void)[], //1
+    LoaderConfigInternal, //2
+    RuntimeExportsTable, //3
+    LoaderExportsTable, //4
+    BrowserHostExportsTable, //5
+    InteropJavaScriptExportsTable, //6
+    NativeBrowserExportsTable, //7
+]
+export const enum InternalExchangeIndex {
+    RuntimeAPI = 0,
+    InternalUpdatesCallbacks = 1,
+    LoaderConfig = 2,
+    RuntimeExportsTable = 3,
+    LoaderExportsTable = 4,
+    BrowserHostExportsTable = 5,
+    InteropJavaScriptExportsTable = 6,
+    NativeBrowserExportsTable = 7,
 }
 
 export type JsModuleExports = {
