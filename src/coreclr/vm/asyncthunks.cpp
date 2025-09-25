@@ -58,13 +58,43 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     return true;
 }
 
+// provided an async method, emits a Task-returning wrapper.
 void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL)
 {
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
 
+    // Emits roughly the following code:
+    // 
+    // ExecutionAndSyncBlockStore store = default;
+    // store.Push();
+    // try
+    // {
+    //   Continuation cont;
+    //   Exception ex;
+    //   try
+    //   {
+    //     T result = Inner(args);
+    //     // call an intrisic to see if the call above produced a continuation
+    //     cont = StubHelpers.AsyncCallContinuation();
+    //     if (cont == null)
+    //       return Task.FromResult(result);
+    //   }
+    //   catch (Exception ex1)
+    //   {
+    //     ex = ex1;
+    //   }
+    // 
+    //   return FinalizeTaskReturningThunk(cont, ex);
+    // }
+    // finally
+    // {
+    //   store.Pop();
+    // }
+
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
 
     unsigned continuationLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
+    unsigned exceptionLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
 
     TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
 
@@ -84,7 +114,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     DWORD executionAndSyncBlockStoreLocal = pCode->NewLocal(executionAndSyncBlockStoreLocalDesc);
 
     ILCodeLabel* returnTaskLabel = pCode->NewCodeLabel();
-    ILCodeLabel* suspendedLabel = pCode->NewCodeLabel();
+    ILCodeLabel* finalizeTaskLabel = pCode->NewCodeLabel();
     ILCodeLabel* finishedLabel = pCode->NewCodeLabel();
 
     pCode->EmitLDLOCA(executionAndSyncBlockStoreLocal);
@@ -171,7 +201,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             pCode->EmitLDLOC(continuationLocal);
             pCode->EmitBRFALSE(finishedLabel);
 
-            pCode->EmitLEAVE(suspendedLabel);
+            pCode->EmitLEAVE(finalizeTaskLabel);
 
             pCode->EmitLabel(finishedLabel);
             if (logicalResultLocal != UINT_MAX)
@@ -202,37 +232,12 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
         // Catch
         {
             pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
-
-            int fromExceptionToken;
-            if (logicalResultLocal != UINT_MAX)
-            {
-                MethodDesc* fromExceptionMD;
-                if (isValueTask)
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_EXCEPTION_1);
-                else
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION_1);
-
-                fromExceptionMD = FindOrCreateAssociatedMethodDesc(fromExceptionMD, fromExceptionMD->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-
-                fromExceptionToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, fromExceptionMD);
-            }
-            else
-            {
-                MethodDesc* fromExceptionMD;
-                if (isValueTask)
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_EXCEPTION);
-                else
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION);
-
-                fromExceptionToken = pCode->GetToken(fromExceptionMD);
-            }
-            pCode->EmitCALL(fromExceptionToken, 1, 1);
-            pCode->EmitSTLOC(returnTaskLocal);
-            pCode->EmitLEAVE(returnTaskLabel);
+            pCode->EmitSTLOC(exceptionLocal);
+            pCode->EmitLEAVE(finalizeTaskLabel);
             pCode->EndCatchBlock();
         }
 
-        pCode->EmitLabel(suspendedLabel);
+        pCode->EmitLabel(finalizeTaskLabel);
 
         int finalizeTaskReturningThunkToken;
         if (logicalResultLocal != UINT_MAX)
@@ -255,8 +260,10 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
             finalizeTaskReturningThunkToken = pCode->GetToken(md);
         }
+
         pCode->EmitLDLOC(continuationLocal);
-        pCode->EmitCALL(finalizeTaskReturningThunkToken, 1, 1);
+        pCode->EmitLDLOC(exceptionLocal);
+        pCode->EmitCALL(finalizeTaskReturningThunkToken, 2, 1);
         pCode->EmitSTLOC(returnTaskLocal);
         pCode->EmitLEAVE(returnTaskLabel);
 
@@ -447,15 +454,17 @@ int MethodDesc::GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream
     return pCode->GetToken(md, typeSigToken);
 }
 
+// provided a Task-returning method, emits an async wrapper.
 void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
 {
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
     _ASSERTE(!pAsyncOtherVariant->IsVoid());
 
-    // TODO: (async) we may now be able to just do "AsyncHelpers.Await(other(arg))",
-    //       but would need to make sure it is not "optimized" back to calling this same thunk.
-
-    // Implement IL that is effectively the following
+    // The thunk is roughly the same as "AsyncHelpers.Await(other(arg))", but without any
+    // synchronization preferences. In a case of resumption the thunk will run on whatever the
+    // thread/context was used by the awaiter to call us on completion.
+    // 
+    // Implement IL that is effectively the following:
     /*
     {
         TaskAwaiter<RetType> awaiter = other(arg).GetAwaiter();
