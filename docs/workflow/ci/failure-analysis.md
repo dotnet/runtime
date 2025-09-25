@@ -129,6 +129,8 @@ While most failures can be matched via known issues, a few failures modes cannot
 
 - `/ba-g doc changes only` - build analysis won't turn green for PRs that contain documentation .md file changes only.
 - `/ba-g deadletter` - Helix infrastructure failed with "This is a helix work item crash with status: DeadLetter." error message. Validate that the coverage provided by the dead-lettered leg is not relevant to the PR first. Rerun the leg instead if the coverage is relevant.
+- `/ba-g insufficient info in logs` - There is no good unique pattern in the logs to open a known issue.
+- `/ba-g recently fixed known issue` - The fix for the known issue had already been merged, but the CI run was triggered beforehand.
 
 For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md
 
