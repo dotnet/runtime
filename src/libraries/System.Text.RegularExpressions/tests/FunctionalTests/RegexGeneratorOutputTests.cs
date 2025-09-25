@@ -1151,5 +1151,26 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Contains("/// <code>\\.</code><br/>", actual);
             Assert.DoesNotContain("/// <code>\\\\.</code><br/>", actual);
         }
+
+        [Fact]
+        public async Task Pattern_With_Control_Characters_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("a\0b")]
+                    public static partial Regex NullCharPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape null characters as Unicode escape sequences for XML safety in the documentation
+            Assert.Contains("/// <code>a\\u0000b</code><br/>", actual);
+            
+            // The actual pattern string (base.pattern assignment) should properly escape the null character for C#
+            Assert.Contains("base.pattern = \"a\\0b\";", actual);
+        }
     }
 }

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -29,6 +30,47 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
         private static string EscapeXmlComment(string text) =>
             text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+        /// <summary>Escapes characters that are invalid in XML comments, including control characters, while preserving backslashes.</summary>
+        private static string EscapeForXmlComment(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            var sb = new StringBuilder(text.Length);
+            foreach (char c in text)
+            {
+                // XML 1.0 valid characters:
+                // #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+                if (c == '\t' || c == '\n' || c == '\r' ||
+                    (c >= 0x20 && c <= 0xD7FF) ||
+                    (c >= 0xE000 && c <= 0xFFFD))
+                {
+                    // Handle XML entities
+                    switch (c)
+                    {
+                        case '&':
+                            sb.Append("&amp;");
+                            break;
+                        case '<':
+                            sb.Append("&lt;");
+                            break;
+                        case '>':
+                            sb.Append("&gt;");
+                            break;
+                        default:
+                            sb.Append(c);
+                            break;
+                    }
+                }
+                else
+                {
+                    // Replace invalid XML characters with Unicode escape sequences
+                    sb.Append($"\\u{(int)c:X4}");
+                }
+            }
+            return sb.ToString();
+        }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
@@ -59,7 +101,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeXmlComment(regexMethod.Pattern)}</code><br/>");
+            writer.WriteLine($"/// <code>{EscapeForXmlComment(regexMethod.Pattern)}</code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");
