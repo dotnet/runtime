@@ -504,6 +504,13 @@ namespace ILLink.Shared.TrimAnalysis
 
                     PropertyPseudoDesc property = new PropertyPseudoDesc(ecmaType, propertyHandle);
 
+                    if (CompilerGeneratedNames.IsExtensionType(ecmaType.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
+
                     if (!IsTypeInterestingForDataflow(property.Signature.ReturnType))
                     {
                         _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings, property.GetDisplayName());

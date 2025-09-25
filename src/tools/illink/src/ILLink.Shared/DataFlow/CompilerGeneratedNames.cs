@@ -85,5 +85,10 @@ namespace ILLink.Shared.DataFlow
             // Ignore the method ordinal/generation and local function ordinal/generation.
             return methodName.Length > i + 1 && methodName[i + 1] == 'g';
         }
+
+        internal static bool IsExtensionType(string typeName)
+        {
+            return typeName.StartsWith("<G>");
+        }
     }
 }
