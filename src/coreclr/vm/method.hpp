@@ -2714,6 +2714,7 @@ protected:
 public:
 
 #ifdef FEATURE_INTERPRETER
+    // Cached InterpreterPrecode instance for dynamic methods to avoid repeated allocations.
     DPTR(struct InterpreterPrecode) m_interpreterPrecode;
 #endif
 
