@@ -105,8 +105,11 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
+CDAC_TYPE_FIELD(ExceptionFlags, /*uint32*/, ExceptionFlags, offsetof(ExInfo, m_ExceptionFlags.m_flags))
+CDAC_TYPE_FIELD(StackLowBound, /*pointer*/, StackLowBound, cdac_data<ExInfo>::StackLowBound)
+CDAC_TYPE_FIELD(StackHighBound, /*pointer*/, StackHighBound, cdac_data<ExInfo>::StackHighBound)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(ExceptionWatsonBucketTrackerBuckets, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
 #endif // TARGET_UNIX

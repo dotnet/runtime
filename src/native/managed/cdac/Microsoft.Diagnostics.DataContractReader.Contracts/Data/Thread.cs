@@ -32,7 +32,7 @@ internal sealed class Thread : IData<Thread>
         LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
 
         // Address of the exception tracker
-        ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
+        ExceptionTracker = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset);
         UEWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(UEWatsonBucketTrackerBuckets)].Offset);
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
     }

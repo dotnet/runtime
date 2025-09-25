@@ -218,6 +218,8 @@ struct ExInfo
 
     class StackRange
     {
+        friend struct ::cdac_data<ExInfo>;
+
     public:
         StackRange();
         void Reset();
@@ -517,6 +519,10 @@ struct cdac_data<ExInfo>
 {
     static constexpr size_t ExceptionWatsonBucketTrackerBuckets = offsetof(ExInfo, m_WatsonBucketTracker)
         + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
+    static constexpr size_t StackLowBound = offsetof(ExInfo, m_ScannedStackRange)
+        + offsetof(ExInfo::StackRange, m_sfLowBound);
+    static constexpr size_t StackHighBound = offsetof(ExInfo, m_ScannedStackRange)
+        + offsetof(ExInfo::StackRange, m_sfHighBound);
 };
 #endif // TARGET_UNIX
 

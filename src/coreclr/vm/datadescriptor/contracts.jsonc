@@ -15,6 +15,7 @@
   "EcmaMetadata": 1,
   "Exception": 1,
   "ExecutionManager": 2,
+  "GCInfo": 1,
   "Loader": 1,
   "Object": 1,
   "PlatformMetadata": 1,

@@ -38,16 +38,18 @@ internal readonly struct StackWalk_1 : IStackWalk
     private record StackDataFrameHandle(
         IPlatformAgnosticContext Context,
         StackWalkState State,
-        TargetPointer FrameAddress) : IStackDataFrameHandle
+        TargetPointer FrameAddress,
+        ThreadData ThreadData) : IStackDataFrameHandle
     { }
 
-    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter)
+    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
     {
         public IPlatformAgnosticContext Context { get; set; } = context;
         public StackWalkState State { get; set; } = state;
         public FrameIterator FrameIter { get; set; } = frameIter;
+        public ThreadData ThreadData { get; set; } = threadData;
 
-        public StackDataFrameHandle ToDataFrame() => new(Context.Clone(), State, FrameIter.CurrentFrameAddress);
+        public StackDataFrameHandle ToDataFrame() => new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData);
     }
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
@@ -63,7 +65,7 @@ internal readonly struct StackWalk_1 : IStackWalk
             yield break;
         }
 
-        StackWalkData stackWalkData = new(context, state, frameIterator);
+        StackWalkData stackWalkData = new(context, state, frameIterator, threadData);
 
         yield return stackWalkData.ToDataFrame();
 
@@ -71,6 +73,60 @@ internal readonly struct StackWalk_1 : IStackWalk
         {
             yield return stackWalkData.ToDataFrame();
         }
+    }
+
+    void IStackWalk.WalkStackReferences(ThreadData threadData)
+    {
+        // TODO(cdacStackRef): This isn't quite right. We need to check if the FilterContext or ProfilerFilterContext
+        // is set and prefer that if either is not null.
+        IEnumerable<IStackDataFrameHandle> stackFrames = ((IStackWalk)this).CreateStackWalk(threadData);
+
+        foreach (IStackDataFrameHandle stackFrameHandle in stackFrames)
+        {
+            Console.WriteLine(stackFrameHandle);
+        }
+    }
+
+    private bool HasFrameBeenUnwoundByAnyActiveException(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+
+        bool hasFrameBeenUnwound = false;
+
+        TargetPointer exInfo = handle.ThreadData.ExceptionInfo;
+        while (exInfo != TargetPointer.Null)
+        {
+            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exInfo);
+            exInfo = exceptionInfo.PreviousNestedInfo;
+        }
+
+        IExceptionManager exceptionManager = _target.Contracts.ExceptionManager;
+        foreach (TargetPointer exception in exceptionManager.GetActiveExceptions())
+        {
+            if (exceptionManager.HasFrameBeenUnwoundByException(handle.FrameAddress, exception))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsInStackRegionUnwoundBySpecifiedException(ThreadData threadData, TargetPointer stackPointer)
+    {
+        // See ExInfo::IsInStackRegionUnwoundBySpecifiedException for explanation
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.threadAddress);
+        TargetPointer exInfo = thread.ExceptionTracker;
+        while (exInfo != TargetPointer.Null)
+        {
+            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exInfo);
+            if (exceptionInfo.StackLowBound < stackPointer && stackPointer <= exceptionInfo.StackHighBound)
+            {
+                return true;
+            }
+            exInfo = exceptionInfo.PreviousNestedInfo;
+        }
+        return false;
     }
 
     private bool Next(StackWalkData handle)
