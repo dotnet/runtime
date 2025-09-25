@@ -1568,7 +1568,7 @@ public class Program
 public partial class Program
 {
     [GeneratedRegex(""abc"")]
-    private static Regex s_regex { get; set; }
+    private static partial Regex s_regex { get; }
 
     public static void Main()
     {
@@ -1576,7 +1576,12 @@ public partial class Program
     }
 }";
 
-            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                CodeActionEquivalenceKey = "ConvertFieldToPartialProperty",
+            }.RunAsync();
         }
 
         [Fact]
@@ -1607,7 +1612,12 @@ public partial class Program
     }}
 }}";
 
-            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                CodeActionEquivalenceKey = "ConvertFieldToPartialProperty",
+            }.RunAsync();
         }
 
         [Fact]

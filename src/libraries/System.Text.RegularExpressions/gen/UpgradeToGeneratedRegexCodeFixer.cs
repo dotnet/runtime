@@ -457,20 +457,45 @@ namespace System.Text.RegularExpressions.Generator
                 _ => Array.Empty<SyntaxNode>(),
             });
 
-            // Create the partial property declaration
-            PropertyDeclarationSyntax partialProperty = (PropertyDeclarationSyntax)generator.PropertyDeclaration(
-                name: fieldName,
-                type: generator.TypeExpression(regexSymbol),
-                modifiers: ExtractModifiersFromField(fieldDeclaration.Modifiers) | DeclarationModifiers.Partial,
-                accessibility: GetAccessibilityFromModifiers(fieldDeclaration.Modifiers),
-                getAccessorStatements: null); // Getter will be generated
+            // Create the partial property declaration manually since SyntaxGenerator doesn't support partial properties correctly
+            List<SyntaxToken> modifiers = new List<SyntaxToken>();
+
+            // Add accessibility modifiers
+            foreach (SyntaxToken modifier in fieldDeclaration.Modifiers)
+            {
+                switch (modifier.Kind())
+                {
+                    case SyntaxKind.PublicKeyword:
+                    case SyntaxKind.PrivateKeyword:
+                    case SyntaxKind.ProtectedKeyword:
+                    case SyntaxKind.InternalKeyword:
+                        modifiers.Add(modifier);
+                        break;
+                    case SyntaxKind.StaticKeyword:
+                        modifiers.Add(modifier);
+                        break;
+                    // Skip readonly and const as they don't apply to properties
+                }
+            }
+
+            // Add partial modifier
+            modifiers.Add(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
+
+            // Create accessor list with just a getter
+            AccessorListSyntax accessorList = SyntaxFactory.AccessorList(
+                SyntaxFactory.SingletonList(
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                        .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))));
+
+            // Create the property declaration
+            PropertyDeclarationSyntax partialProperty = SyntaxFactory.PropertyDeclaration(
+                SyntaxFactory.IdentifierName("Regex"),
+                SyntaxFactory.Identifier(fieldName).WithAdditionalAnnotations(RenameAnnotation.Create()))
+                .WithModifiers(SyntaxFactory.TokenList(modifiers))
+                .WithAccessorList(accessorList);
 
             // Add the GeneratedRegex attribute to the property
             partialProperty = (PropertyDeclarationSyntax)generator.AddAttributes(partialProperty, attributes);
-
-            // Add rename annotation for user convenience
-            partialProperty = partialProperty.ReplaceToken(partialProperty.Identifier,
-                SyntaxFactory.Identifier(fieldName).WithAdditionalAnnotations(RenameAnnotation.Create()));
 
             // Find the containing type and ensure it's partial
             TypeDeclarationSyntax? containingType = fieldDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
