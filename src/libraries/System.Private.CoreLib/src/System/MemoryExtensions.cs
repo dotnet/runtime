@@ -4315,9 +4315,9 @@ namespace System
             {
                 if (typeof(TComparer).IsValueType)
                 {
-#pragma warning disable CS8631
-                    ArraySortHelper<T>.Sort<TComparer>(span, comparer);
-#pragma warning restore CS8631
+                    #pragma warning disable CS8631
+                    ArraySortHelperForTComparer<T, TComparer>.Sort(span, comparer);
+                    #pragma warning restore CS8631
                 }
                 else
                 {
@@ -4389,16 +4389,9 @@ namespace System
 
             if (keys.Length > 1)
             {
-                if (typeof(TComparer).IsValueType)
-                {
-#pragma warning disable CS8631
-                    ArraySortHelper<TKey, TValue>.Sort<TComparer>(keys, items, comparer);
-#pragma warning restore CS8631
-                }
-                else
-                {
-                    ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer);
-                }
+                #pragma warning disable CS8631
+                ArraySortHelperForTComparer<TKey, TValue, TComparer>.Sort(keys, items, comparer);
+                #pragma warning restore CS8631
             }
         }
 
