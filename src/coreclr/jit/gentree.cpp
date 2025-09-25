@@ -3698,7 +3698,7 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     }
     else
     {
-        tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
+        tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
 
     return tree;
