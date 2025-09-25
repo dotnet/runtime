@@ -1546,6 +1546,266 @@ public partial class Program
         public async Task DetectsCurrentCulture(string test, string fixedSource)
             => await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
 
+        #region Field and Property Conversion Tests
+
+        [Fact]
+        public async Task ConvertFieldToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static readonly Regex s_regex = [|new Regex(""abc"")|];
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    private static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertFieldToPartialPropertyWithOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static readonly Regex s_regex = [|new Regex(""abc"", RegexOptions.IgnoreCase)|];
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, """")]
+    private static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertPropertyToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static Regex MyRegex { get; } = [|new Regex(""abc"")|];
+    
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertPropertyToPartialPropertyWithOptions()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    private static Regex MyRegex { get; } = [|new Regex(""abc"", RegexOptions.Multiline)|];
+    
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"", RegexOptions.Multiline)]
+    private static partial Regex MyRegex { get; }
+
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertPublicFieldToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static readonly Regex s_regex = [|new Regex(""abc"")|];
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    public static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task ConvertInternalFieldToPartialProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    internal static readonly Regex s_regex = [|new Regex(""abc"")|];
+    
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    [GeneratedRegex(""abc"")]
+    internal static partial Regex s_regex { get; }
+
+    public static void Main()
+    {
+        var match = s_regex.IsMatch(""test"");
+    }
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task MultipleCodeActionsForMethodCall()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main()
+    {
+        var match = [|Regex.IsMatch(""test"", ""abc"")|];
+    }
+}";
+
+            // This should offer multiple code actions - we'll test just one of them
+            string fixedSourceMethod = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main()
+    {
+        var match = MyRegex().IsMatch(""test"");
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex();
+}";
+
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSourceMethod,
+                CodeActionEquivalenceKey = "ConvertToMethod",
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task MultipleCodeActionsForMethodCallProperty()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main()
+    {
+        var match = [|Regex.IsMatch(""test"", ""abc"")|];
+    }
+}";
+
+            // Test the property generation option
+            string fixedSourceProperty = @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main()
+    {
+        var match = MyRegex.IsMatch(""test"");
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}";
+
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSourceProperty,
+                CodeActionEquivalenceKey = "ConvertToProperty",
+            }.RunAsync();
+        }
+
+        #endregion Field and Property Conversion Tests
+
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)
