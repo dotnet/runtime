@@ -17,12 +17,12 @@ internal readonly struct Notifications_1 : INotifications
     void INotifications.SetGcNotification(int condemnedGeneration)
     {
         TargetPointer pGcNotificationFlags = _target.ReadGlobalPointer(Constants.Globals.GcNotificationFlags);
-        ushort currentFlags = _target.Read<ushort>(pGcNotificationFlags);
+        uint currentFlags = _target.Read<uint>(pGcNotificationFlags);
         if (condemnedGeneration == 0)
-            _target.Write<ushort>(pGcNotificationFlags, 0);
+            _target.Write<uint>(pGcNotificationFlags, 0);
         else
         {
-            _target.Write<ushort>(pGcNotificationFlags, (ushort)(currentFlags | condemnedGeneration));
+            _target.Write<uint>(pGcNotificationFlags, currentFlags | (uint)condemnedGeneration);
         }
     }
 }

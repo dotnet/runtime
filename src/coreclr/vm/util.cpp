@@ -1026,7 +1026,7 @@ namespace GcNotifications
             if (ev.condemnedGeneration == 0)
                 g_gcNotificationFlags = 0;
             else
-                g_gcNotificationFlags = (WORD)(g_gcNotificationFlags | ev.condemnedGeneration);
+                g_gcNotificationFlags = (DWORD)(g_gcNotificationFlags | ev.condemnedGeneration);
         }
     }
     BOOL GetNotification(GcEvtArgs ev)

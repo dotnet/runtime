@@ -16,7 +16,7 @@ Data descriptors used: none
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| `GcNotificationFlags` | TargetPointer | 16-bit global flag for storing GC notification data |
+| `GcNotificationFlags` | TargetPointer | Global flag for storing GC notification data |
 
 Contracts used: none
 
@@ -24,12 +24,12 @@ Contracts used: none
 void SetGcNotification(int condemnedGeneration)
 {
     TargetPointer pGcNotificationFlags = _target.ReadGlobalPointer("GcNotificationFlags");
-    ushort currentFlags = _target.Read<ushort>(pGcNotificationFlags);
+    uint currentFlags = _target.Read<uint>(pGcNotificationFlags);
     if (condemnedGeneration == 0)
-        _target.Write<ushort>(pGcNotificationFlags, 0);
+        _target.Write<uint>(pGcNotificationFlags, 0);
     else
     {
-        _target.Write<ushort>(pGcNotificationFlags, (ushort)(currentFlags | condemnedGeneration));
+        _target.Write<uint>(pGcNotificationFlags, (uint)(currentFlags | condemnedGeneration));
     }
 }
 ```

@@ -94,7 +94,7 @@ GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 GVAL_IMPL_INIT(DWORD, g_offsetOfCurrentThreadInfo, 0);
-GVAL_IMPL_INIT(WORD, g_gcNotificationFlags, 0);
+GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
 
 
 MethodTable* g_pCastHelpers;
