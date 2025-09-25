@@ -32,7 +32,7 @@
             $DOTNET__postset: "DOTNET.selfInitialize()",
         };
 
-        // keep in sync with `crossModule`+`crossModuleFn` in src\native\rollup.config.defines.js
+        // keep in sync with `reserved`+`keep_fnames` in src\native\rollup.config.defines.js
         for (const exportName of Reflect.ownKeys(exports.cross)) {
             const name = String(exportName);
             if (name === "netInternals") continue;
