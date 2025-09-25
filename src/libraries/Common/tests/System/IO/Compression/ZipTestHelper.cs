@@ -341,6 +341,7 @@ namespace System.IO.Compression.Tests
 
             if (PlatformDetection.IstvOS || PlatformDetection.IsiOS)
             {
+                // iOS/tvOS filesystems use NFD by default for non-ASCII characters, so we normalize to NFC for cross-platform comparison
                 actualEntries = actualEntries.Select(Path.GetFileName).Select(name => name.Normalize(NormalizationForm.FormC)).Order();
             }
             else
