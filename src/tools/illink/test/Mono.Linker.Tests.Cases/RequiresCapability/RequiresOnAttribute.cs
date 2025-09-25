@@ -120,7 +120,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
         [UnexpectedWarning("IL3002", "--AttributeWhichRequiresAttribute.ctor--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
-        [UnexpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ToolTool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
+        [UnexpectedWarning("IL3050", "--AttributeWhichRequiresAttribute.ctor--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
         [UnexpectedWarning("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
         [ExpectedWarning("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
