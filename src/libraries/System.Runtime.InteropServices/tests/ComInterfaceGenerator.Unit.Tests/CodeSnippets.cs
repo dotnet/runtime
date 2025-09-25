@@ -636,6 +636,38 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
+        public string DocumentedComInterface => $$"""
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            namespace Test
+            {
+                /// <summary>
+                /// This is my interface.
+                /// </summary>
+                {{GeneratedComInterface()}}
+                public partial interface IMyInterface
+                {
+                    /// <summary>
+                    /// This does something.
+                    /// </summary>
+                    void DoSomething();
+                }
+
+                /// <summary>
+                /// This is my other interface.
+                /// </summary>
+                {{GeneratedComInterface()}}
+                public partial interface MyOtherInterface : IMyInterface
+                {
+                    /// <summary>
+                    /// This does something else.
+                    /// </summary>
+                    void DoSomethingElse();
+                }
+            }
+            """;
+
         public string InterfaceWithPropertiesAndEvents => $$"""
             using System;
             using System.Runtime.CompilerServices;

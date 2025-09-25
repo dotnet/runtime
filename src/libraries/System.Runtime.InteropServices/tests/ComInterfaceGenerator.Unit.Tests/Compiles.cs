@@ -4,12 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
@@ -345,6 +341,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeTwoLevelShadows};
             yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
+            yield return new object[] { ID(), codeSnippets.DocumentedComInterface };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref readonly") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
@@ -374,71 +371,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }
 
-        [Fact]
-        public async Task ComInterfaceWithDocumentationDoesNotProduceCS1591()
-        {
-            string source = """
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
 
-                namespace Test
-                {
-                    /// <summary>
-                    /// This is my interface.
-                    /// </summary>
-                    [GeneratedComInterface, Guid("27dd3a3d-4c16-485a-a123-7cd8f39c6ef2")]
-                    public partial interface IMyInterface
-                    {
-                        /// <summary>
-                        /// This does something.
-                        /// </summary>
-                        void DoSomething();
-                    }
-
-                    /// <summary>
-                    /// This is my other interface.
-                    /// </summary>
-                    [GeneratedComInterface, Guid("1b681178-368a-4d13-8893-66b4673d2ff9")]
-                    public partial interface MyOtherInterface : IMyInterface
-                    {
-                        /// <summary>
-                        /// This does something else.
-                        /// </summary>
-                        void DoSomethingElse();
-                    }
-                }
-                """;
-
-            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
-            {
-                TestCode = source,
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
-                CompilationVerifier = compilation =>
-                {
-                    // Verify that no CS1591 warnings are produced in the generated code
-                    var diagnostics = compilation.GetDiagnostics();
-                    var cs1591Diagnostics = diagnostics.Where(d => d.Id == "CS1591").ToList();
-                    
-                    Assert.Empty(cs1591Diagnostics);
-                }
-            };
-            
-            // Enable XML documentation warnings to ensure CS1591 would be raised if not suppressed
-            test.CompilerDiagnostics = CompilerDiagnostics.Warnings;
-            test.SolutionTransforms.Add((solution, projectId) =>
-            {
-                var project = solution.GetProject(projectId);
-                if (project is null) return solution;
-                
-                var compilationOptions = project.CompilationOptions!
-                    .WithSpecificDiagnosticOptions(new Dictionary<string, ReportDiagnostic>
-                    {
-                        ["CS1591"] = ReportDiagnostic.Warn
-                    });
-                return solution.WithProjectCompilationOptions(projectId, compilationOptions);
-            });
-
-            await test.RunAsync();
-        }
     }
 }
