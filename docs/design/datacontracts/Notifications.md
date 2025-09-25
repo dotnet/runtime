@@ -5,7 +5,8 @@ This contract is for debugger notifications.
 ## APIs of contract
 
 ``` csharp
-// Set the GC notification for a specific condemned generation
+// Set the GC notification for condemned generations
+// The argument is a bitmask where the i-th bit set represents the i-th generation.
 void SetGcNotification(int condemnedGeneration);
 ```
 
