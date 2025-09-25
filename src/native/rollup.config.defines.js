@@ -21,7 +21,7 @@ export const reserved = [
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
-export const isDebug = false;//process.env.Configuration !== "Release";
+export const isDebug = process.env.Configuration !== "Release";
 
 export let gitHash;
 try {
