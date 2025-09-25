@@ -34,7 +34,7 @@ namespace ILCompiler.ObjectWriter
 
         private uint _pdataRva;
         private uint _pdataSize;
-        
+
         private uint _debugRva;
         private uint _debugSize;
 
@@ -420,7 +420,9 @@ namespace ILCompiler.ObjectWriter
                 edataHeader.SizeOfRawData = (uint)edataSection.Stream.Length;
                 uint edataRawAligned = (uint)AlignmentHelper.AlignUp((int)edataHeader.SizeOfRawData, (int)fileAlignment);
                 edataHeader.PointerToRawData = pointerToRawData;
+#pragma warning disable IDE0059 // Unnecessary assignment. We don't want to remove this and forget it if we add more sections after .edata.
                 pointerToRawData += edataRawAligned;
+#pragma warning restore IDE0059 // Unnecessary assignment
                 edataHeader.SizeOfRawData = edataRawAligned;
 
                 edataHeader.VirtualAddress = virtualAddress;
