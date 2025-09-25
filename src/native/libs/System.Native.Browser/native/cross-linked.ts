@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    Assert, Logger, Module,
-    netInternals, netLoaderExports, netPublicApi, netNativeBrowserExports, netRuntimeExports, netJSEngine, netBrowserHostExports, netInteropJSExports,
-    netTabulateNBE, netTabulateBHE, netTabulateIJSE, netTabulateLE, netTabulateRE,
-    getInternals, netSetInternals, netUpdateAllInternals, netUpdateModuleInternals,
+    dotnetAssert, dotnetLogger, Module,
+    dotnetInternals, dotnetLoaderExports, dotnetApi, dotnetNativeBrowserExports, dotnetRuntimeExports, dotnetJSEngine, dotnetBrowserHostExports, dotnetInteropJSExports,
+    dotnetTabNBE, dotnetTabBHE, dotnetTabIJSE, dotnetTabLE, dotnetTabRE,
+    dotnetGetInternals, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals,
 } from "../cross-module";
 
 import { } from "../../Common/JavaScript/cross-linked";
 
 export function crossLink() {
     return [
-        Assert, Logger, Module,
-        netInternals, netLoaderExports, netPublicApi, netNativeBrowserExports, netRuntimeExports, netJSEngine, netBrowserHostExports, netInteropJSExports,
-        getInternals, netSetInternals, netUpdateAllInternals, netUpdateModuleInternals,
-        netTabulateBHE, netTabulateIJSE, netTabulateLE, netTabulateNBE, netTabulateRE
+        dotnetAssert, dotnetLogger, Module,
+        dotnetInternals, dotnetLoaderExports, dotnetApi, dotnetNativeBrowserExports, dotnetRuntimeExports, dotnetJSEngine, dotnetBrowserHostExports, dotnetInteropJSExports,
+        dotnetGetInternals, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals,
+        dotnetTabBHE, dotnetTabIJSE, dotnetTabLE, dotnetTabNBE, dotnetTabRE
     ];
 }

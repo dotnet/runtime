@@ -21,12 +21,12 @@
         const lib = {
             $DOTNET: {
                 selfInitialize: () => {
-                    if (typeof netInternals !== "undefined") {
-                        DOTNET.netInternals = netInternals;
-                        DOTNET.netInitializeModule(netInternals);
+                    if (typeof dotnetInternals !== "undefined") {
+                        DOTNET.dotnetInternals = dotnetInternals;
+                        DOTNET.dotnetInitializeModule(dotnetInternals);
                     }
                 },
-                netInitializeModule: exports.netInitializeModule,
+                dotnetInitializeModule: exports.dotnetInitializeModule,
             },
             $DOTNET__deps: commonDeps,
             $DOTNET__postset: "DOTNET.selfInitialize()",
@@ -35,7 +35,7 @@
         // keep in sync with `reserved`+`keep_fnames` in src\native\rollup.config.defines.js
         for (const exportName of Reflect.ownKeys(exports.cross)) {
             const name = String(exportName);
-            if (name === "netInternals") continue;
+            if (name === "dotnetInternals") continue;
             if (name === "Module") continue;
             const emName = "$" + name;
             lib[emName] = exports.cross[exportName];
@@ -44,7 +44,7 @@
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
             if (name === "cross") continue;
-            if (name === "netInitializeModule") continue;
+            if (name === "dotnetInitializeModule") continue;
             lib[name] = exports[name];
         }
 

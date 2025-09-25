@@ -11,12 +11,12 @@
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
-                    if (typeof netInternals !== "undefined") {
-                        BROWSER_HOST.netInternals = netInternals;
+                    if (typeof dotnetInternals !== "undefined") {
+                        BROWSER_HOST.dotnetInternals = dotnetInternals;
 
                         const exports = {};
                         libBrowserHostFn(exports);
-                        exports.netInitializeModule(netInternals);
+                        exports.dotnetInitializeModule(dotnetInternals);
                         BROWSER_HOST.assignExports(exports, BROWSER_HOST);
 
                         const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -24,7 +24,7 @@
                         const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
                         const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
 
-                        const config = netInternals[2/*InternalExchangeIndex.LoaderConfig*/];
+                        const config = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
                         const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
                         const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
                         ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
@@ -50,7 +50,7 @@
         let assignExportsBuilder = "";
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
-            if (name === "netInitializeModule") continue;
+            if (name === "dotnetInitializeModule") continue;
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
         }

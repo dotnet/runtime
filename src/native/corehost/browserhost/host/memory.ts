@@ -9,8 +9,8 @@ export const min_int64_big = BigInt("-9223372036854775808");
 export const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
 
 export function assert_int_in_range(value: Number, min: Number, max: Number) {
-    Assert.check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
-    Assert.check(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
+    dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
+    dotnetAssert.check(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
 }
 
 export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
@@ -86,7 +86,7 @@ export function setHeapI32(offset: MemOffset, value: number): void {
  * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
  */
 export function setHeapI52(offset: MemOffset, value: number): void {
-    Assert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
+    dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
     throw new Error("TODO");
     // const error = cwraps.mono_wasm_f64_to_i52(<any>offset, value);
     // autoThrowI52(error);
@@ -96,27 +96,27 @@ export function setHeapI52(offset: MemOffset, value: number): void {
  * Throws for values which are not 52 bit integer or are negative. See Number.isSafeInteger().
  */
 export function setHeapU52(offset: MemOffset, value: number): void {
-    Assert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
-    Assert.check(value >= 0, "Can't convert negative Number into UInt64");
+    dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
+    dotnetAssert.check(value >= 0, "Can't convert negative Number into UInt64");
     throw new Error("TODO");
     //const error = cwraps.mono_wasm_f64_to_u52(<any>offset, value);
     //autoThrowI52(error);
 }
 
 export function setHeapI64Big(offset: MemOffset, value: bigint): void {
-    Assert.check(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
-    Assert.check(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
+    dotnetAssert.check(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
+    dotnetAssert.check(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
     Module.HEAP64[<any>offset >>> 3] = value;
 }
 
 export function setHeapF32(offset: MemOffset, value: number): void {
-    Assert.check(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
+    dotnetAssert.check(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     Module.HEAPF32[<any>offset >>> 2] = value;
 }
 
 export function setHeapF64(offset: MemOffset, value: number): void {
-    Assert.check(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
+    dotnetAssert.check(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
@@ -124,7 +124,7 @@ export function getHeapB32(offset: MemOffset): boolean {
     const value = (Module.HEAPU32[<any>offset >>> 2]);
     if (value > 1 && !(getHeapB32 as any).warnDirtyBool) {
         (getHeapB32 as any).warnDirtyBool = true;
-        Logger.warn(`getB32: value at ${offset} is not a boolean, but a number: ${value}`);
+        dotnetLogger.warn(`getB32: value at ${offset} is not a boolean, but a number: ${value}`);
     }
     return !!value;
 }

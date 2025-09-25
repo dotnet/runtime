@@ -128,6 +128,6 @@ export const enum InternalExchangeIndex {
 }
 
 export type JsModuleExports = {
-    netInitializeModule<T>(internals: InternalExchange): Promise<T>;
+    dotnetInitializeModule<T>(internals: InternalExchange): Promise<T>;
 };
 

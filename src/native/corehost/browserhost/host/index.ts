@@ -13,7 +13,7 @@ import {
     isSharedArrayBuffer,
 } from "./memory";
 
-export function netInitializeModule(internals: InternalExchange): void {
+export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         runMain,
         runMainAndExit,
@@ -28,12 +28,12 @@ export function netInitializeModule(internals: InternalExchange): void {
         registerDllBytes,
         isSharedArrayBuffer
     };
-    netSetInternals(internals);
+    dotnetSetInternals(internals);
     Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
-    internals[InternalExchangeIndex.BrowserHostExportsTable] = netTabulateBHE(hostNativeExportsLocal);
+    internals[InternalExchangeIndex.BrowserHostExportsTable] = dotnetTabBHE(hostNativeExportsLocal);
     const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
-    if (!updates.includes(netUpdateModuleInternals)) updates.push(netUpdateModuleInternals);
-    netUpdateAllInternals();
+    if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
+    dotnetUpdateAllInternals();
 }
 
 export { BrowserHost_ExternalAssemblyProbe, BrowserHost_ResolveMain, BrowserHost_RejectMain } from "./host";

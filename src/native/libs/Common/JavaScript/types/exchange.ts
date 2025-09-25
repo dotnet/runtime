@@ -20,13 +20,13 @@ export type RuntimeExports = {
 export type RuntimeExportsTable = [
 ]
 
-export type LoggerType = {
+export type dotnetLoggerType = {
     info: typeof info,
     warn: typeof warn,
     error: typeof error,
 }
 
-export type AssertType = {
+export type dotnetAssertType = {
     check: typeof check,
 }
 

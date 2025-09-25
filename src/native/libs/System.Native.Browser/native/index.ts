@@ -6,14 +6,14 @@ import { InternalExchangeIndex } from "../types";
 
 export { SystemJS_RandomBytes } from "./crypto";
 
-export function netInitializeModule(internals: InternalExchange): void {
+export function dotnetInitializeModule(internals: InternalExchange): void {
     const nativeBrowserExportsLocal: NativeBrowserExports = {
     };
-    netSetInternals(internals);
-    internals[InternalExchangeIndex.NativeBrowserExportsTable] = netTabulateNBE(nativeBrowserExportsLocal);
+    dotnetSetInternals(internals);
+    internals[InternalExchangeIndex.NativeBrowserExportsTable] = dotnetTabNBE(nativeBrowserExportsLocal);
     const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
-    if (!updates.includes(netUpdateModuleInternals)) updates.push(netUpdateModuleInternals);
-    netUpdateAllInternals();
+    if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
+    dotnetUpdateAllInternals();
 }
 
 

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { netPublicApi, Logger, netBrowserHostExports } from "../cross-module";
+import { dotnetApi, dotnetLogger, dotnetBrowserHostExports } from "../cross-module";
 
 export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): number {
     // batchedQuotaMax is the max number of bytes as specified by the api spec.
@@ -11,17 +11,17 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
 
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
         if (!(globalThis as any)["cryptoWarnOnce"]) {
-            Logger.warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
+            dotnetLogger.warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
             (globalThis as any)["cryptoWarnOnce"] = true;
         }
         return -1;
     }
 
-    const memoryView = netPublicApi.localHeapViewU8();
+    const memoryView = dotnetApi.localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
     // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = netBrowserHostExports.isSharedArrayBuffer(memoryView.buffer);
+    const needsCopy = dotnetBrowserHostExports.isSharedArrayBuffer(memoryView.buffer);
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;

@@ -6,7 +6,7 @@
 export function check(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
         const message = typeof messageFactory === "string" ? messageFactory : messageFactory();
-        throw new Error(`Assert failed: ${message}`);
+        throw new Error(`dotnetAssert failed: ${message}`);
     }
 }
 

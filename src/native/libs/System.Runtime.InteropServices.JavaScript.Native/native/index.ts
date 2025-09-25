@@ -8,16 +8,16 @@ import { } from "./cross-linked"; // ensure ambient symbols are declared
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SystemInteropJS_InvokeJSImportST(function_handle: JSFnHandle, args: JSMarshalerArguments) {
     // WASM-TODO implementation
-    Logger.error("SystemInteropJS_InvokeJSImportST called");
+    dotnetLogger.error("SystemInteropJS_InvokeJSImportST called");
     return - 1;
 }
 
-export function netInitializeModule(internals: InternalExchange): void {
+export function dotnetInitializeModule(internals: InternalExchange): void {
     const interopJavaScriptNativeExportsLocal: InteropJavaScriptExports = {
     };
-    netSetInternals(internals);
-    internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = netTabulateIJSE(interopJavaScriptNativeExportsLocal);
+    dotnetSetInternals(internals);
+    internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = dotnetTabIJSE(interopJavaScriptNativeExportsLocal);
     const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
-    if (!updates.includes(netUpdateModuleInternals)) updates.push(netUpdateModuleInternals);
-    netUpdateAllInternals();
+    if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
+    dotnetUpdateAllInternals();
 }

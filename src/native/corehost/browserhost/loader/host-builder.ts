@@ -3,7 +3,7 @@
 
 import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallback, DotnetModuleConfig } from "./types";
 
-import { Module, netPublicApi } from "./cross-module";
+import { Module, dotnetApi } from "./cross-module";
 import { downloadConfig, getLoaderConfig, mergeLoaderConfig } from "./config";
 import { createRuntime } from "./bootstrap";
 import { exit } from "./exit";
@@ -14,7 +14,7 @@ let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export class HostBuilder implements DotnetHostBuilder {
-    private netPublicApi: RuntimeAPI | undefined;
+    private dotnetApi: RuntimeAPI | undefined;
     withConfig(config: LoaderConfig): DotnetHostBuilder {
         mergeLoaderConfig(config);
         return this;
@@ -151,8 +151,8 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             await downloadConfig(configUrl, loadBootResourceCallback);
             await createRuntime(false, loadBootResourceCallback);
-            this.netPublicApi = netPublicApi;
-            return this.netPublicApi;
+            this.dotnetApi = dotnetApi;
+            return this.dotnetApi;
         } catch (err) {
             exit(1, err);
             throw err;
@@ -161,11 +161,11 @@ export class HostBuilder implements DotnetHostBuilder {
 
     async run(): Promise<number> {
         try {
-            if (!this.netPublicApi) {
+            if (!this.dotnetApi) {
                 await this.create();
             }
             const config = getLoaderConfig();
-            return this.netPublicApi!.runMainAndExit(config.mainAssemblyName, applicationArguments);
+            return this.dotnetApi!.runMainAndExit(config.mainAssemblyName, applicationArguments);
         } catch (err) {
             exit(1, err);
             throw err;

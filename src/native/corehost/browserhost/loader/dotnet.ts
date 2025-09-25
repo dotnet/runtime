@@ -14,10 +14,10 @@ import { HostBuilder } from "./host-builder";
 import { initPolyfills, initPolyfillsAsync } from "./polyfills";
 import { registerRuntime } from "./runtime-list";
 import { exit } from "./exit";
-import { netInitializeModule } from ".";
+import { dotnetInitializeModule } from ".";
 
 initPolyfills();
-registerRuntime(netInitializeModule());
+registerRuntime(dotnetInitializeModule());
 await initPolyfillsAsync();
 
 export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as DotnetHostBuilder;

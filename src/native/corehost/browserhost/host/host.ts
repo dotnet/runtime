@@ -41,11 +41,11 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr:CharPtr, outDataStartP
 }
 
 export function BrowserHost_ResolveMain(exitCode:number) {
-    netLoaderExports.resolveRunMainPromise(exitCode);
+    dotnetLoaderExports.resolveRunMainPromise(exitCode);
 }
 
 export function BrowserHost_RejectMain(reason:any) {
-    netLoaderExports.rejectRunMainPromise(reason);
+    dotnetLoaderExports.rejectRunMainPromise(reason);
 }
 
 // WASM-TODO: take ideas from Mono
@@ -56,9 +56,9 @@ export function BrowserHost_RejectMain(reason:any) {
 export function exit(exit_code: number, reason: any): void {
     const reasonStr = reason ? (reason.stack ? reason.stack || reason.message : reason.toString()) : "";
     if (exit_code !== 0) {
-        Logger.error(`Exit with code ${exit_code} ${reason ? "and reason: " + reasonStr : ""}`);
+        dotnetLogger.error(`Exit with code ${exit_code} ${reason ? "and reason: " + reasonStr : ""}`);
     }
-    if (netJSEngine.IS_NODE) {
+    if (dotnetJSEngine.IS_NODE) {
         (globalThis as any).process.exit(exit_code);
     }
 }
@@ -73,7 +73,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
         throw reason;
     }
 
-    return netLoaderExports.getRunMainPromise();
+    return dotnetLoaderExports.getRunMainPromise();
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

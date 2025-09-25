@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { netJSEngine } from "./cross-module";
+import { dotnetJSEngine } from "./cross-module";
 
 export function initPolyfills(): void {
     if (typeof globalThis.WeakRef !== "function") {
@@ -24,7 +24,7 @@ export function initPolyfills(): void {
 }
 
 export async function initPolyfillsAsync(): Promise<void> {
-    if (netJSEngine.IS_NODE) {
+    if (dotnetJSEngine.IS_NODE) {
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};
         }
@@ -68,7 +68,7 @@ export async function fetchLike(url: string, init?: RequestInit): Promise<Respon
     try {
         // this need to be detected only after we import node modules in onConfigLoaded
         const hasFetch = typeof (globalThis.fetch) === "function";
-        if (netJSEngine.IS_NODE) {
+        if (dotnetJSEngine.IS_NODE) {
             const isFileUrl = url.startsWith("file://");
             if (!isFileUrl && hasFetch) {
                 return globalThis.fetch(url, init || { credentials: "same-origin" });

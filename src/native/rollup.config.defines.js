@@ -12,12 +12,13 @@ console.log(`Rollup configuration: Configuration=${configuration}, ProductVersio
 export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
 export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
-export const keep_fnames = /(netSetInternals|netUpdateAllInternals|netUpdateModuleInternals|netTabulateLE|netTabulateRE|netTabulateBHE|netTabulateIJSE|netTabulateNBE)/;
+export const keep_fnames = /(dotnetSetInternals|dotnetUpdateAllInternals|dotnetUpdateModuleInternals|dotnetTabLE|dotnetTabRE|dotnetTabBHE|dotnetTabIJSE|dotnetTabNBE)/;
 export const reserved = [
-    "Logger", "Assert", "netJSEngine", "Module", "netInternals", "netPublicApi",
-    "netSetInternals", "netUpdateAllInternals", "netUpdateModuleInternals", "netInitializeModule",
-    "netLoaderExports", "netRuntimeExports", "netBrowserHostExports", "netInteropJSExports", "netNativeBrowserExports",
-    "netTabulateLE", "netTabulateRE", "netTabulateBHE", "netTabulateIJSE", "netTabulateNBE"];
+    "Module", "dotnetApi",
+    "dotnetInternals", "dotnetLogger", "dotnetAssert", "dotnetJSEngine",
+    "dotnetSetInternals", "dotnetUpdateAllInternals", "dotnetUpdateModuleInternals", "dotnetInitializeModule",
+    "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports", "dotnetNativeBrowserExports",
+    "dotnetTabLE", "dotnetTabRE", "dotnetTabBHE", "dotnetTabIJSE", "dotnetTabNBE"];
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";

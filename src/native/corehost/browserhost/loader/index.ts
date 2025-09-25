@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { LoggerType, AssertType, RuntimeAPI, LoaderExports, NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable } from "./types";
+import type { dotnetLoggerType, dotnetAssertType, RuntimeAPI, LoaderExports, NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
 
 import ProductVersion from "consts:productVersion";
@@ -13,10 +13,10 @@ import { exit } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn } from "./logging";
 
-import { Assert, netInternals, netJSEngine, netLoaderExports, netTabulateLE, Logger, netSetInternals, netUpdateAllInternals, netUpdateModuleInternals } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetJSEngine, dotnetLoaderExports, dotnetTabLE, dotnetLogger, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 
-export function netInitializeModule(): RuntimeAPI {
+export function dotnetInitializeModule(): RuntimeAPI {
     const ENVIRONMENT_IS_NODE = () => typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
     const ENVIRONMENT_IS_WEB_WORKER = () => typeof importScripts == "function";
     const ENVIRONMENT_IS_SIDECAR = () => ENVIRONMENT_IS_WEB_WORKER() && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
@@ -24,7 +24,7 @@ export function netInitializeModule(): RuntimeAPI {
     const ENVIRONMENT_IS_WEB = () => typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER() && !ENVIRONMENT_IS_NODE());
     const ENVIRONMENT_IS_SHELL = () => !ENVIRONMENT_IS_WEB() && !ENVIRONMENT_IS_NODE();
 
-    const netPublicApi: Partial<RuntimeAPI> = {
+    const dotnetApi: Partial<RuntimeAPI> = {
         INTERNAL: {},
         Module: {} as any,
         runtimeId: -1,
@@ -39,8 +39,8 @@ export function netInitializeModule(): RuntimeAPI {
     };
 
     const internals:InternalExchange = [
-        netPublicApi as RuntimeAPI, //0
-        [netUpdateModuleInternals], //1
+        dotnetApi as RuntimeAPI, //0
+        [dotnetUpdateModuleInternals], //1
         netLoaderConfig, //2
         null as any as RuntimeExportsTable, //3
         null as any as LoaderExportsTable, //4
@@ -48,7 +48,7 @@ export function netInitializeModule(): RuntimeAPI {
         null as any as InteropJavaScriptExportsTable, //6
         null as any as NativeBrowserExportsTable, //7
     ];
-    netSetInternals(internals);
+    dotnetSetInternals(internals);
     const runtimeApiFunctions: Partial<RuntimeAPI> = {
         getConfig: getLoaderConfig,
         exit,
@@ -71,20 +71,20 @@ export function netInitializeModule(): RuntimeAPI {
         IS_WORKER: ENVIRONMENT_IS_WORKER(),
         IS_SIDECAR: ENVIRONMENT_IS_SIDECAR(),
     };
-    const logger: LoggerType = {
+    const logger: dotnetLoggerType = {
         info,
         warn,
         error,
     };
-    const assert: AssertType = {
+    const assert: dotnetAssertType = {
         check,
     };
-    Object.assign(netPublicApi, runtimeApiFunctions);
-    Object.assign(Logger, logger);
-    Object.assign(Assert, assert);
-    Object.assign(netJSEngine, jsEngine);
-    Object.assign(netLoaderExports, loaderFunctions);
-    netInternals[InternalExchangeIndex.LoaderExportsTable] = netTabulateLE(Logger, Assert, netLoaderExports);
-    netUpdateAllInternals();
-    return netPublicApi as RuntimeAPI;
+    Object.assign(dotnetApi, runtimeApiFunctions);
+    Object.assign(dotnetLogger, logger);
+    Object.assign(dotnetAssert, assert);
+    Object.assign(dotnetJSEngine, jsEngine);
+    Object.assign(dotnetLoaderExports, loaderFunctions);
+    dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = dotnetTabLE(dotnetLogger, dotnetAssert, dotnetLoaderExports);
+    dotnetUpdateAllInternals();
+    return dotnetApi as RuntimeAPI;
 }

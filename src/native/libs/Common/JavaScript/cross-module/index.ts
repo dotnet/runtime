@@ -7,63 +7,63 @@
  * Please keep it small and register it into emscripten as dependency.
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, JSEngineType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, dotnetLoggerType, dotnetAssertType, JSEngineType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
 export let Module: DotnetModuleInternal;
-export let netPublicApi: RuntimeAPI;
-export let Logger: LoggerType = {} as any;
-export let Assert: AssertType = {} as any;
-export let netJSEngine: JSEngineType = {}as any;
-export let netLoaderExports: LoaderExports = {} as any;
-export let netRuntimeExports: RuntimeExports = {} as any;
-export let netBrowserHostExports: BrowserHostExports = {} as any;
-export let netInteropJSExports: InteropJavaScriptExports = {} as any;
-export let netNativeBrowserExports: NativeBrowserExports = {} as any;
-export let netInternals: InternalExchange;
+export let dotnetApi: RuntimeAPI;
+export let dotnetLogger: dotnetLoggerType = {} as any;
+export let dotnetAssert: dotnetAssertType = {} as any;
+export let dotnetJSEngine: JSEngineType = {}as any;
+export let dotnetLoaderExports: LoaderExports = {} as any;
+export let dotnetRuntimeExports: RuntimeExports = {} as any;
+export let dotnetBrowserHostExports: BrowserHostExports = {} as any;
+export let dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
+export let dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
+export let dotnetInternals: InternalExchange;
 
-export function getInternals(): InternalExchange {
-    return netInternals;
+export function dotnetGetInternals(): InternalExchange {
+    return dotnetInternals;
 }
 
-export function netSetInternals(internal: InternalExchange) {
-    netInternals = internal;
-    netPublicApi = netInternals[InternalExchangeIndex.RuntimeAPI];
-    Module = netPublicApi.Module as any;
-    if (netInternals[InternalExchangeIndex.InternalUpdatesCallbacks] === undefined) {
-        netInternals[InternalExchangeIndex.InternalUpdatesCallbacks] = [];
+export function dotnetSetInternals(internal: InternalExchange) {
+    dotnetInternals = internal;
+    dotnetApi = dotnetInternals[InternalExchangeIndex.RuntimeAPI];
+    Module = dotnetApi.Module as any;
+    if (dotnetInternals[InternalExchangeIndex.InternalUpdatesCallbacks] === undefined) {
+        dotnetInternals[InternalExchangeIndex.InternalUpdatesCallbacks] = [];
     }
 }
 
-export function netUpdateAllInternals() {
-    for (const updateImpl of netInternals[InternalExchangeIndex.InternalUpdatesCallbacks]) {
+export function dotnetUpdateAllInternals() {
+    for (const updateImpl of dotnetInternals[InternalExchangeIndex.InternalUpdatesCallbacks]) {
         updateImpl();
     }
 }
 
-export function netUpdateModuleInternals() {
-    if (Object.keys(netLoaderExports).length === 0 && netInternals[InternalExchangeIndex.LoaderExportsTable]) {
-        netLoaderExports = {} as LoaderExports;
-        Logger = {} as LoggerType;
-        Assert = {} as AssertType;
-        netJSEngine = {} as JSEngineType;
-        expandLE(netInternals[InternalExchangeIndex.LoaderExportsTable], Logger, Assert, netJSEngine, netLoaderExports);
+export function dotnetUpdateModuleInternals() {
+    if (Object.keys(dotnetLoaderExports).length === 0 && dotnetInternals[InternalExchangeIndex.LoaderExportsTable]) {
+        dotnetLoaderExports = {} as LoaderExports;
+        dotnetLogger = {} as dotnetLoggerType;
+        dotnetAssert = {} as dotnetAssertType;
+        dotnetJSEngine = {} as JSEngineType;
+        expandLE(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetJSEngine, dotnetLoaderExports);
     }
-    if (Object.keys(netRuntimeExports).length === 0 && netInternals[InternalExchangeIndex.RuntimeExportsTable]) {
-        netRuntimeExports = {} as RuntimeExports;
-        expandRE(netInternals[InternalExchangeIndex.RuntimeExportsTable], netRuntimeExports);
+    if (Object.keys(dotnetRuntimeExports).length === 0 && dotnetInternals[InternalExchangeIndex.RuntimeExportsTable]) {
+        dotnetRuntimeExports = {} as RuntimeExports;
+        expandRE(dotnetInternals[InternalExchangeIndex.RuntimeExportsTable], dotnetRuntimeExports);
     }
-    if (Object.keys(netBrowserHostExports).length === 0 && netInternals[InternalExchangeIndex.BrowserHostExportsTable]) {
-        netBrowserHostExports = {} as BrowserHostExports;
-        expandBHE(netInternals[InternalExchangeIndex.BrowserHostExportsTable], netBrowserHostExports);
+    if (Object.keys(dotnetBrowserHostExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable]) {
+        dotnetBrowserHostExports = {} as BrowserHostExports;
+        expandBHE(dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable], dotnetBrowserHostExports);
     }
-    if (Object.keys(netInteropJSExports).length === 0 && netInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
-        netInteropJSExports = {} as InteropJavaScriptExports;
-        expandIJSE(netInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], netInteropJSExports);
+    if (Object.keys(dotnetInteropJSExports).length === 0 && dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
+        dotnetInteropJSExports = {} as InteropJavaScriptExports;
+        expandIJSE(dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], dotnetInteropJSExports);
     }
-    if (Object.keys(netNativeBrowserExports).length === 0 && netInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
-        netNativeBrowserExports = {} as NativeBrowserExports;
-        expandNBE(netInternals[InternalExchangeIndex.NativeBrowserExportsTable], netNativeBrowserExports);
+    if (Object.keys(dotnetNativeBrowserExports).length === 0 && dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
+        dotnetNativeBrowserExports = {} as NativeBrowserExports;
+        expandNBE(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
     }
 
     function expandRE(table:RuntimeExportsTable, runtime:RuntimeExports):void {
@@ -71,13 +71,13 @@ export function netUpdateModuleInternals() {
         });
     }
 
-    function expandLE(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, jsEngine:JSEngineType, netLoaderExports:LoaderExports):void {
-        const loggerLocal :LoggerType = {
+    function expandLE(table:LoaderExportsTable, logger:dotnetLoggerType, assert:dotnetAssertType, jsEngine:JSEngineType, dotnetLoaderExports:LoaderExports):void {
+        const loggerLocal :dotnetLoggerType = {
             info: table[0],
             warn: table[1],
             error: table[2],
         };
-        const assertLocal :AssertType = {
+        const assertLocal :dotnetAssertType = {
             check: table[3],
         };
         const loaderExportsLocal :LoaderExports = {
@@ -97,7 +97,7 @@ export function netUpdateModuleInternals() {
             IS_WORKER: loaderExportsLocal.ENVIRONMENT_IS_WORKER(),
             IS_SIDECAR: loaderExportsLocal.ENVIRONMENT_IS_SIDECAR(),
         };
-        Object.assign(netLoaderExports, loaderExportsLocal);
+        Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
         Object.assign(assert, assertLocal);
         Object.assign(jsEngine, jsEngineLocal);
@@ -129,30 +129,30 @@ export function netUpdateModuleInternals() {
  * IMPORTANT: If you need to add more functions, make sure that you add them at the end of the table, so that the order of existing functions does not change.
  */
 
-export function netTabulateLE(logger:LoggerType, assert:AssertType, netLoaderExports:LoaderExports):LoaderExportsTable {
+export function dotnetTabLE(logger:dotnetLoggerType, assert:dotnetAssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
     return [
         logger.info,
         logger.warn,
         logger.error,
         assert.check,
-        netLoaderExports.ENVIRONMENT_IS_NODE,
-        netLoaderExports.ENVIRONMENT_IS_SHELL,
-        netLoaderExports.ENVIRONMENT_IS_WEB,
-        netLoaderExports.ENVIRONMENT_IS_WORKER,
-        netLoaderExports.ENVIRONMENT_IS_SIDECAR,
-        netLoaderExports.resolveRunMainPromise,
-        netLoaderExports.rejectRunMainPromise,
-        netLoaderExports.getRunMainPromise,
+        dotnetLoaderExports.ENVIRONMENT_IS_NODE,
+        dotnetLoaderExports.ENVIRONMENT_IS_SHELL,
+        dotnetLoaderExports.ENVIRONMENT_IS_WEB,
+        dotnetLoaderExports.ENVIRONMENT_IS_WORKER,
+        dotnetLoaderExports.ENVIRONMENT_IS_SIDECAR,
+        dotnetLoaderExports.resolveRunMainPromise,
+        dotnetLoaderExports.rejectRunMainPromise,
+        dotnetLoaderExports.getRunMainPromise,
     ];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function netTabulateRE(map:RuntimeExports):RuntimeExportsTable {
+export function dotnetTabRE(map:RuntimeExports):RuntimeExportsTable {
     return [
     ];
 }
 
-export function netTabulateBHE(map:BrowserHostExports):BrowserHostExportsTable {
+export function dotnetTabBHE(map:BrowserHostExports):BrowserHostExportsTable {
     return [
         map.registerDllBytes,
         map.isSharedArrayBuffer,
@@ -160,13 +160,13 @@ export function netTabulateBHE(map:BrowserHostExports):BrowserHostExportsTable {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function netTabulateIJSE(map:InteropJavaScriptExports):InteropJavaScriptExportsTable {
+export function dotnetTabIJSE(map:InteropJavaScriptExports):InteropJavaScriptExportsTable {
     return [
     ];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function netTabulateNBE(map:NativeBrowserExports):NativeBrowserExportsTable {
+export function dotnetTabNBE(map:NativeBrowserExports):NativeBrowserExportsTable {
     return [
     ];
 }

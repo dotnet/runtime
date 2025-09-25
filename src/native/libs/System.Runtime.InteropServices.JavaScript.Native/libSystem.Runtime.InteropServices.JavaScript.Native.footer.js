@@ -21,12 +21,12 @@
         const lib = {
             $DOTNET_INTEROP: {
                 selfInitialize: () => {
-                    if (typeof netInternals !== "undefined") {
-                        DOTNET_INTEROP.netInternals = netInternals;
-                        DOTNET_INTEROP.netInitializeModule(netInternals);
+                    if (typeof dotnetInternals !== "undefined") {
+                        DOTNET_INTEROP.dotnetInternals = dotnetInternals;
+                        DOTNET_INTEROP.dotnetInitializeModule(dotnetInternals);
                     }
                 },
-                netInitializeModule: exports.netInitializeModule,
+                dotnetInitializeModule: exports.dotnetInitializeModule,
             },
             $DOTNET_INTEROP__postset: "DOTNET_INTEROP.selfInitialize()",
             $DOTNET_INTEROP__deps: commonDeps,
@@ -34,7 +34,7 @@
 
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
-            if (name === "netInitializeModule") continue;
+            if (name === "dotnetInitializeModule") continue;
             lib[name] = exports[name];
         }
 

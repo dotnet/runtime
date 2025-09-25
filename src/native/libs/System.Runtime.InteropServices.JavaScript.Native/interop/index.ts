@@ -3,20 +3,20 @@
 
 import type { InternalExchange, RuntimeAPI, RuntimeExports } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { netSetInternals, netUpdateAllInternals, netUpdateModuleInternals, netTabulateRE } from "./cross-module";
+import { dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals, dotnetTabRE } from "./cross-module";
 
-export function netInitializeModule(internals: InternalExchange): void {
+export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         getAssemblyExports,
         setModuleImports,
     };
     const runtimeExportsLocal: RuntimeExports = {
     };
-    netSetInternals(internals);
+    dotnetSetInternals(internals);
     Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
-    internals[InternalExchangeIndex.RuntimeExportsTable] = netTabulateRE(runtimeExportsLocal);
-    internals[InternalExchangeIndex.InternalUpdatesCallbacks].push(netUpdateModuleInternals);
-    netUpdateAllInternals();
+    internals[InternalExchangeIndex.RuntimeExportsTable] = dotnetTabRE(runtimeExportsLocal);
+    internals[InternalExchangeIndex.InternalUpdatesCallbacks].push(dotnetUpdateModuleInternals);
+    dotnetUpdateAllInternals();
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

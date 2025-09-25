@@ -3,7 +3,7 @@
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal } from "./types";
 
-import { Assert, netJSEngine, getInternals, netBrowserHostExports, netUpdateAllInternals } from "./cross-module";
+import { dotnetAssert, dotnetJSEngine, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateAllInternals } from "./cross-module";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
 import { createPromiseController } from "./promise-controller";
@@ -15,7 +15,7 @@ const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
 const nativeModulePromiseController = createPromiseController<EmscriptenModuleInternal>(() => {
-    netUpdateAllInternals();
+    dotnetUpdateAllInternals();
 });
 
 // WASM-TODO: retry logic
@@ -36,11 +36,11 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     // WASM-TODO fetchWasm(config.resources.wasmNative[0]);// start loading early, no await
 
     const nativeModule = await nativeModulePromise;
-    const modulePromise = nativeModule.netInitializeModule<EmscriptenModuleInternal>(getInternals());
+    const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetGetInternals());
     nativeModulePromiseController.propagateFrom(modulePromise);
 
     const runtimeModule = await runtimeModulePromise;
-    const runtimeModuleReady = runtimeModule.netInitializeModule<void>(getInternals());
+    const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetGetInternals());
 
     await nativeModulePromiseController.promise;
     await coreAssembliesPromise;
@@ -76,12 +76,12 @@ async function fetchDll(asset: AssemblyAsset): Promise<void> {
     const bytes = await fetchBytes(asset);
     await nativeModulePromiseController.promise;
 
-    netBrowserHostExports.registerDllBytes(bytes, asset);
+    dotnetBrowserHostExports.registerDllBytes(bytes, asset);
 }
 
 async function fetchBytes(asset: WasmAsset|AssemblyAsset|PdbAsset|IcuAsset): Promise<Uint8Array> {
-    Assert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
-    if (netJSEngine.IS_NODE) {
+    dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
+    if (dotnetJSEngine.IS_NODE) {
         const { promises: fs } = await import("fs");
         const { fileURLToPath } = await import(/*! webpackIgnore: true */"url");
         const isFileUrl = asset.resolvedUrl!.startsWith("file://");
@@ -122,7 +122,7 @@ function normalizeDirectoryUrl(dir: string) {
 const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;
 const windowsAbsoluteRx = /[a-zA-Z]:[\\/]/;
 function isPathAbsolute(path: string): boolean {
-    if (netJSEngine.IS_NODE || netJSEngine.IS_SHELL) {
+    if (dotnetJSEngine.IS_NODE || dotnetJSEngine.IS_SHELL) {
         // unix /x.json
         // windows \x.json
         // windows C:\x.json
