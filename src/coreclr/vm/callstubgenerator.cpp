@@ -1155,12 +1155,14 @@ extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 #ifndef TARGET_64BIT
 extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 #endif // !TARGET_64BIT
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
 #ifndef TARGET_64BIT
 extern "C" void InterpreterStubRetI4();
+extern "C" void InterpreterStubRetFloat();
 #endif // !TARGET_64BIT
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
@@ -1228,6 +1230,8 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
 #ifndef TARGET_64BIT
         case ReturnTypeI4:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
+        case ReturnTypeFloat:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
 #endif // !TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
@@ -1297,6 +1301,8 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #ifndef TARGET_64BIT
         case ReturnTypeI4:
             RETURN_TYPE_HANDLER(InterpreterStubRetI4);
+        case ReturnTypeFloat:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
 #endif // !TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
@@ -1886,6 +1892,10 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
+#ifndef TARGET_64BIT
+                return ReturnTypeFloat;
+                break;
+#endif
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;

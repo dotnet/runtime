@@ -970,6 +970,7 @@ ALTERNATE_ENTRY Store_R3
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2_R3
 
+// TODO: *ref is not tested yet.
 .macro Load_Ref argReg
 
 LEAF_ENTRY Load_Ref_\argReg
@@ -1085,6 +1086,10 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     EMIT_BREAKPOINT // TODO
 NESTED_END CallJittedMethodRetI8, _TEXT
 
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     EMIT_BREAKPOINT // TODO
 NESTED_END CallJittedMethodRetDouble, _TEXT
@@ -1167,8 +1172,32 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetI8, _TEXT
 
+// This is for arm softfp. It is the same to InterpreterStubRetI4.
+NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    sub sp, sp, 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r9
+    mov r2, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r0, [r0]
+    add sp, sp, 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+// This is for arm softfp. It is the same to InterpreterStubRetI8.
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
-    EMIT_BREAKPOINT // TODO
+    PROLOG_PUSH {lr}
+    sub sp, sp, 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r9
+    mov r2, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r2, [r0]
+    ldr r1, [r0, 4]
+    mov r0, r2
+    add sp, sp, 12
+    EPILOG_POP {pc}
 NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler

@@ -68,9 +68,12 @@ class CallStubGenerator
     enum ReturnType
     {
         ReturnTypeVoid,
-        ReturnTypeI4,
         ReturnTypeI8,
         ReturnTypeDouble,
+#ifndef TARGET_64BIT
+        ReturnTypeI4,
+        ReturnTypeFloat,
+#endif // TARGET_64BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
