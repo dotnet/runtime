@@ -121,6 +121,8 @@ To unconditionally bypass the build analysis check (turn it green), you can add 
 /ba-g <reason>
 ```
 
+The reasons are captured by telemetry and regularly analyzed to allow us to find most impactful opportunities for improvement. Use descriptive wording that highlights the issue. Avoid using non-specific justifications like "unrelated issues".
+
 The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
 
 While most failures can be matched via known issues, a few failures modes cannot be matched currently and it is valid to suppress them manually. Please use the following reasons to suppress them:
