@@ -364,6 +364,8 @@ struct InterpBasicBlock
     }
 };
 
+#define UNALLOCATED_VAR_OFFSET -1
+
 struct InterpVar
 {
     CORINFO_CLASS_HANDLE clsHnd;
@@ -391,7 +393,7 @@ struct InterpVar
         this->interpType = interpType;
         this->clsHnd = clsHnd;
         this->size = size;
-        offset = -1;
+        offset = UNALLOCATED_VAR_OFFSET;
         liveStart = NULL;
         bbIndex = -1;
 
@@ -533,7 +535,8 @@ private:
 
     uint8_t* m_ip;
     uint8_t* m_pILCode;
-    int32_t m_ILCodeSize;
+    int32_t m_ILCodeSizeFromILHeader;
+    int32_t m_ILCodeSize; // This can differ from the size of the header if we add instructions for synchronized methods
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
@@ -702,8 +705,16 @@ private:
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
+
+    bool m_isSynchronized = false;
+    int32_t m_synchronizedFlagVarIndex = -1; // If the method is synchronized, this is the index of the argument that flag indicating if the lock was taken
+    int32_t m_synchronizedRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
+    int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
+    int32_t m_synchronizedPostFinallyOffset = -1; // If the method is synchronized, this is the offset of the instruction after the finally which does the actual return
+
     bool m_shadowCopyOfThisPointerActuallyNeeded = false;
     bool m_shadowCopyOfThisPointerHasVar = false;
+    int32_t m_shadowThisVar = -1; // If the method is an instance method and we need a shadow copy of the this pointer, this is the var index of the shadow copy
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
@@ -752,6 +763,8 @@ private:
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
     void    EmitLdLocA(int32_t var);
     void    EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_RESULT &boxType, bool argByRef);
+    void    EmitLeave(int32_t ilOffset, int32_t target);
+    void    EmitPushSyncObject();
 
     // Var Offset allocator
     TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;
@@ -783,6 +796,10 @@ private:
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
     void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
+    void getEHinfo(CORINFO_METHOD_INFO* methodInfo, unsigned int index, CORINFO_EH_CLAUSE* ehClause);
+    unsigned int getEHcount(CORINFO_METHOD_INFO* methodInfo);
+    uint8_t* getILCode(CORINFO_METHOD_INFO* methodInfo);
+    unsigned int getILCodeSize(CORINFO_METHOD_INFO* methodInfo);
 
     // Debug
     void PrintClassName(CORINFO_CLASS_HANDLE cls);
