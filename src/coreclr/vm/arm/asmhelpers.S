@@ -993,9 +993,9 @@ Load_Ref R3
     blt LOCAL_LABEL(CopyBy4\argReg)
 LOCAL_LABEL(RefCopyLoop8\argReg):
     ldr r9, [\argReg], #4
-    ldr r10, [\argReg], #4
+    ldr r4, [\argReg], #4
     str r9, [r7], #4
-    str r10, [r7], #4
+    str r4, [r7], #4
     subs r5, r5, #8
     bgt LOCAL_LABEL(RefCopyLoop8\argReg)
     beq LOCAL_LABEL(RefCopyDone\argReg)
@@ -1025,7 +1025,7 @@ LOCAL_LABEL(RefCopyDone\argReg):
 
 LEAF_ENTRY Store_Ref_\argReg
     ldr r5, [r6], #4 // size of the value type
-    // Copy_Ref \argReg
+    Copy_Ref \argReg
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Store_Ref_\argReg
@@ -1051,14 +1051,14 @@ LOCAL_LABEL(CopyLoop):
 LEAF_END Load_Stack
 
 LEAF_ENTRY Store_Stack
-    ldr r8, [r6], #4 // SP offset
-    ldr r9, [r6], #4 // number of stack slots
-    add r8, sp, r8
-    add r8, r8, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+    ldr r9, [r6], #4 // SP offset
+    ldr r10, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
 LOCAL_LABEL(StoreCopyLoop):
-    ldr r5, [r8], #4
+    ldr r5, [r9], #4
     str r5, [r7], #4
-    subs r9, r9, #4
+    subs r10, r10, #4
     bne LOCAL_LABEL(StoreCopyLoop)
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
@@ -1079,7 +1079,7 @@ LEAF_END Load_Stack_Ref
 
 LEAF_ENTRY Store_Stack_Ref
     ldr r8, [r6], #4 // SP offset
-    ldr r9, [r6], #4 // size of the value type
+    ldr r5, [r6], #4 // size of the value type
     add r8, sp, r8
     ldr r8, [r8, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
     Copy_Ref r8
@@ -1088,49 +1088,47 @@ LEAF_ENTRY Store_Stack_Ref
 LEAF_END Store_Stack_Ref
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_PUSH "{r5-r8,lr}"
-    mov r8, sp
-    sub sp, sp, 12
+    PROLOG_PUSH "{r4-r9,lr}"
+    mov r4, sp
+    sub sp, sp, 4
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
     blx r5
-    mov sp, r8
-    EPILOG_POP "{r5-r8,pc}"
+    mov sp, r4
+    EPILOG_POP "{r4-r9,pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
-    PROLOG_PUSH "{r5-r8,lr}"
-    mov r8, sp
-    sub sp, sp, 12
-    str r2, [sp]
+    PROLOG_PUSH "{r4-r9,lr}"
+    push { r2 }
+    mov r4, sp
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
     blx r5
-    ldr r2, [sp]
+    mov sp, r4
+    pop { r2 }
     str r0, [r2]
-    mov sp, r8
-    EPILOG_POP "{r5-r8,pc}"
+    EPILOG_POP "{r4-r9,pc}"
 NESTED_END CallJittedMethodRetI4, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
-    PROLOG_PUSH "{r5-r8,lr}"
-    mov r8, sp
-    sub sp, sp, 12
-    str r2, [sp]
+    PROLOG_PUSH "{r4-r9,lr}"
+    push { r2 }
+    mov r4, sp
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
     blx r5
-    ldr r2, [sp]
+    mov sp, r4
+    pop { r2 }
     str r0, [r2]
     str r1, [r2, 4]
-    mov sp, r8
-    EPILOG_POP "{r5-r8,pc}"
+    EPILOG_POP "{r4-r9,pc}"
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
@@ -1142,50 +1140,40 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
-    PROLOG_PUSH "{r5-r9,lr}"
-    mov r9, sp
-    sub sp, sp, 8
-    sub sp, sp, r3
-    mov r6, r0
-    mov r7, r1
-    mov r8, r2
-    ldr r5, [r6], #4
-    blx r5
-    mov sp, r9
-    EPILOG_POP "{r5-r9,lr}"
+    EMIT_BREAKPOINT // TODO
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
     // IR bytecode address
-    mov r9, METHODDESC_REGISTER // InterpMethod
+    mov r4, METHODDESC_REGISTER // InterpMethod
 
-    PROLOG_PUSH "{r0-r3}"
+    PROLOG_PUSH "{r0-r4}"
 
     INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
-    mov r10, r0
+    mov r6, r0
 
-    ldr r10, [r10, #OFFSETOF__ThreadLocalInfo__m_pThread]
+    ldr r6, [r6, #OFFSETOF__ThreadLocalInfo__m_pThread]
 
-    ldr r5, [r10, #OFFSETOF__Thread__m_pInterpThreadContext]
+    ldr r5, [r6, #OFFSETOF__Thread__m_pInterpThreadContext]
     cbnz r5, LOCAL_LABEL(HaveInterpThreadContext)
 
-    mov r0, r10
+    mov r0, r6
     bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
     mov r5, r0
 
 LOCAL_LABEL(HaveInterpThreadContext):
 
     # RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
-    EPILOG_POP "{r0-r3}"
+    EPILOG_POP "{r0-r4}"
     # RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 
-    ldr r7, [r9] // InterpMethod*
+    ldr r7, [r4] // InterpMethod*
     ldr r7, [r7, #OFFSETOF__InterpMethod__pCallStub]
     add r6, r7, #OFFSETOF__CallStubHeader__Routines
     ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
-    ldr r5, [r6] // InterpThreadContext
+    ldr r5, [r6], 4 // InterpThreadContext
     blx r5
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1196,7 +1184,7 @@ NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
     PROLOG_PUSH {lr}
     sub sp, sp, 12
     add r0, sp, #__PWTB_TransitionBlock + 16
-    mov r1, r9
+    mov r1, r4
     mov r2, 0
     bl C_FUNC(ExecuteInterpretedMethod)
     add sp, sp, 12
@@ -1207,7 +1195,7 @@ NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
     PROLOG_PUSH {lr}
     sub sp, sp, 12
     add r0, sp, #__PWTB_TransitionBlock + 16
-    mov r1, r9
+    mov r1, r4
     mov r2, 0
     bl C_FUNC(ExecuteInterpretedMethod)
     ldr r0, [r0]
@@ -1219,7 +1207,7 @@ NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     PROLOG_PUSH {lr}
     sub sp, sp, 12
     add r0, sp, #__PWTB_TransitionBlock + 16
-    mov r1, r9
+    mov r1, r4
     mov r2, 0
     bl C_FUNC(ExecuteInterpretedMethod)
     ldr r2, [r0]

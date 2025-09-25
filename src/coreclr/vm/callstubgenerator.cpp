@@ -1653,7 +1653,12 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     else if (m_s1 != NoRange)
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_64BIT
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#else // !TARGET_64BIT
+        pRoutines[m_routineIndex++] = m_s1;
+        pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#endif // TARGET_64BIT
     }
 
     ReturnType returnType = GetReturnType(&argIt);
@@ -1696,7 +1701,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         // No stack argument is used to pass the current argument, but we already have a range of stack arguments,
         // store the routine for the range
         pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_64BIT
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#else // !TARGET_64BIT
+        pRoutines[m_routineIndex++] = m_s1;
+        pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#endif // TARGET_64BIT
         m_s1 = NoRange;
     }
 
@@ -1767,9 +1777,9 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
 #else
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8))
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE))
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
@@ -1782,7 +1792,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         {
             // Discontinuous range - store a routine for the current and start a new one
             pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_64BIT
             pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#else // !TARGET_64BIT
+            pRoutines[m_routineIndex++] = m_s1;
+            pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#endif // TARGET_64BIT
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
@@ -1827,7 +1842,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         //  automatically do alignment of the stack offset themselves when updating the stack offset,
         //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
         int alignedArgSize = m_interpreterToNative
-            ? ALIGN_UP(unalignedArgSize, 8)
+            ? ALIGN_UP(unalignedArgSize, TARGET_POINTER_SIZE)
             : unalignedArgSize;
 
         if (argLocDesc.m_cGenReg == 1)
@@ -1840,7 +1855,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         {
             _ASSERTE(argLocDesc.m_byteStackIndex != -1);
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
+#ifdef TARGET_64BIT
             pRoutines[m_routineIndex++] = ((int64_t)alignedArgSize << 32) | argLocDesc.m_byteStackIndex;
+#else // !TARGET_64BIT
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
+            pRoutines[m_routineIndex++] = alignedArgSize;
+#endif // TARGET_64BIT
             m_s1 = NoRange;
         }
     }
