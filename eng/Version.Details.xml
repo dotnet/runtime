@@ -75,15 +75,15 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>a7953884db4a27857c9a193ba36ab09540df26d7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="2.9.3-beta.25468.102">
+    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="2.9.3-beta.25472.101">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>a7953884db4a27857c9a193ba36ab09540df26d7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="11.0.0-beta.25468.102">
+    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="11.0.0-beta.25472.101">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>a7953884db4a27857c9a193ba36ab09540df26d7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.9.3-beta.25468.102">
+    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.9.3-beta.25472.101">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>a7953884db4a27857c9a193ba36ab09540df26d7</Sha>
     </Dependency>
