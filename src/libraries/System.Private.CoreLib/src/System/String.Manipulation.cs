@@ -1686,11 +1686,11 @@ namespace System
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
         public string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            ReadOnlySpan<char> runeSeparator = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            if (runeSeparator.Length == 1)
+            if (separatorSpan.Length == 1)
             {
-                return Split(runeSeparator[0], count, options);
+                return Split(separatorSpan[0], count, options);
             }
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -1698,7 +1698,7 @@ namespace System
             CheckStringSplitOptions(options);
 
             // Ensure matching the string separator overload.
-            return (count <= 1 || Length == 0) ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(runeSeparator, count, options);
+            return (count <= 1 || Length == 0) ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(separatorSpan, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
