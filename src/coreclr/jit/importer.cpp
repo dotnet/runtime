@@ -9123,9 +9123,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         else
                         {
                             // This can happen in rare cases when the Task-returning method is not a runtime Async
-                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regular call that is Awaited
+                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
+                            // Treat that as a regular call.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
                         }
                     }
                     else
