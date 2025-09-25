@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NUnit.Framework;
 using Mono.Linker.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
