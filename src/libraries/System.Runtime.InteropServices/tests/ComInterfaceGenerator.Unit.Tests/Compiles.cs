@@ -370,7 +370,5 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }
-
-
     }
 }
