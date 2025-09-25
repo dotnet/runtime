@@ -3145,11 +3145,14 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(entryPoint != (PCODE)NULL);
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchEntryPointSlots(entryPoint);
+        return;
     }
-    else if (IsVersionable())
+
+    if (IsVersionable())
     {
         _ASSERTE(IsVersionableWithPrecode());
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
@@ -3157,17 +3160,23 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // SetTargetInterlocked() would return false if it lost the race with another thread. That is fine, this thread
         // can continue assuming it was successful, similarly to it successfully updating the target and another thread
         // updating the target again shortly afterwards.
+        return;
     }
-    else if (HasPrecode() || RequiresStableEntryPoint())
+
+    if (HasPrecode() || RequiresStableEntryPoint())
     {
         // Use this path if there already exists a Precode, OR if RequiresStableEntryPoint is set.
         //
         // RequiresStableEntryPoint currently requires that the entrypoint must be a Precode
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
+        return;
     }
-    else if (!HasStableEntryPoint())
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+    if (!HasStableEntryPoint())
     {
         SetStableEntryPointInterlocked(entryPoint);
+        return;
     }
 }
 
@@ -3287,7 +3296,10 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint, TRUE);
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return fResult;
 }
@@ -3844,9 +3856,15 @@ MethodDesc *MethodDesc::GetInterfaceMD()
 }
 #endif // !DACCESS_COMPILE
 
+bool MethodDesc::IsCollectible()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetLoaderAllocator()->IsCollectible();
+}
+
 PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
     return GetLoaderModule()->GetLoaderAllocator();
 }
 

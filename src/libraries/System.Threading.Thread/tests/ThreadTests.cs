@@ -247,8 +247,20 @@ namespace System.Threading.Threads.Tests
                 Assert.Equal(ApartmentState.MTA, getApartmentState(t));
                 Assert.Equal(0, setApartmentState(t, ApartmentState.MTA));
                 Assert.Equal(ApartmentState.MTA, getApartmentState(t));
-                Assert.Equal(setType == 0 ? 0 : 2, setApartmentState(t, ApartmentState.STA)); // cannot be changed after thread is started
+                Assert.Equal(setType == 0 ? 0 : 2, setApartmentState(t, ApartmentState.STA)); // MTA<->STA cannot be changed directly after thread is started
                 Assert.Equal(ApartmentState.MTA, getApartmentState(t));
+
+                if (!PlatformDetection.IsWindowsNanoServer)
+                {
+                    Assert.Equal(0, setApartmentState(t, ApartmentState.Unknown)); // Compat quirk: MTA<->STA can be changed by going through Unknown
+                    Assert.Equal(ApartmentState.MTA, getApartmentState(t));
+                    Assert.Equal(0, setApartmentState(t, ApartmentState.STA));
+                    Assert.Equal(ApartmentState.STA, getApartmentState(t));
+                    Assert.Equal(0, setApartmentState(t, ApartmentState.Unknown));
+                    Assert.Equal(ApartmentState.MTA, getApartmentState(t));
+                    Assert.Equal(0, setApartmentState(t, ApartmentState.MTA));
+                    Assert.Equal(ApartmentState.MTA, getApartmentState(t));
+                }
             });
         }
 

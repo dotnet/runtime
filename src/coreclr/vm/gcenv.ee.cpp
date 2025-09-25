@@ -1222,6 +1222,14 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+    if (strcmp(privateKey, "gcConservative") == 0)
+    {
+        *value = true;
+        return true;
+    }
+#endif
+
     // these configuration values are given to us via startup flags.
     if (strcmp(privateKey, "gcServer") == 0)
     {
