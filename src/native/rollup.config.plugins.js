@@ -23,10 +23,6 @@ export const terserPlugin = (terserOptions) => {
             drop_console: false, // we log to console
             ...compress
         },
-        // WASM-TODO: remove beautify
-        format: {
-            beautify: true,
-        },
         mangle: {
             ...mangle,
         },
