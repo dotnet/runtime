@@ -178,13 +178,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (!relocsOnly && item.Node is ObjectNode on && on.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
-                // Unmarked nodes are not part of the graph
-                if (!item.Node.Marked && !(item.Node is ObjectNode))
-                {
-                    Debug.Assert(item.Node is DelayLoadMethodCallThunkNodeRange);
-                    continue;
-                }
-
                 builder.EmitInt((int)item.Id);
 
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);

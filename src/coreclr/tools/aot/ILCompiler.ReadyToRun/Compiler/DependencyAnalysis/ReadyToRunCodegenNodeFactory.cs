@@ -700,6 +700,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
             DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
+            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
