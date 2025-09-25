@@ -908,7 +908,7 @@ namespace System.Threading
             lock (m_lockObjAndDisposed)
             {
                 // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
-                currentCount = m_currentCount;
+                int currentCount = m_currentCount;
                 returnCount = currentCount;
 
                 // If the release count would result exceeding the maximum count, throw SemaphoreFullException.
