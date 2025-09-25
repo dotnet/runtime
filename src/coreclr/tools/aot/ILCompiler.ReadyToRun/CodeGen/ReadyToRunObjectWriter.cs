@@ -192,114 +192,135 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitPortableExecutableUsingObjectWriter(Logger logger)
         {
-            var stopwatch = Stopwatch.StartNew();
+            bool succeeded = false;
 
-            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment, _outputInfoBuilder);
-            using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
-            objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
-
-            if (_outputInfoBuilder != null)
+            try
             {
-                foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
-                    _outputInfoBuilder.AddMethod(methodNode, methodNode);
-            }
+                var stopwatch = Stopwatch.StartNew();
 
-            if (_mapFileBuilder != null)
-            {
-                _mapFileBuilder.SetFileSize(stream.Length);
-            }
+                PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment, _outputInfoBuilder);
+                using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
+                objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
 
-            ulong debugOffset = 0;
-            foreach (OutputSection section in _outputInfoBuilder.Sections)
-            {
-                if (section.Name == ".debug")
+                if (_outputInfoBuilder != null)
                 {
-                    debugOffset = section.FilePosition;
-                    break;
+                    foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
+                        _outputInfoBuilder.AddMethod(methodNode, methodNode);
                 }
-            }
 
-            if (debugOffset != 0)
-            {
-                if (_nodeFactory.DebugDirectoryNode.PdbEntry is { } nativeDebugDirectoryEntryNode)
+                if (_mapFileBuilder != null)
                 {
-                    Debug.Assert(_generatePdbFile);
-                    // Compute hash of the output image and store that in the native DebugDirectory entry
-                    using (var hashAlgorithm = SHA256.Create())
+                    _mapFileBuilder.SetFileSize(stream.Length);
+                }
+
+                ulong debugOffset = 0;
+                foreach (OutputSection section in _outputInfoBuilder.Sections)
+                {
+                    if (section.Name == ".debug")
                     {
-                        stream.Seek(0, SeekOrigin.Begin);
-                        byte[] hash = hashAlgorithm.ComputeHash(stream);
-                        byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
+                        debugOffset = section.FilePosition;
+                        break;
+                    }
+                }
+
+                if (debugOffset != 0)
+                {
+                    if (_nodeFactory.DebugDirectoryNode.PdbEntry is { } nativeDebugDirectoryEntryNode)
+                    {
+                        Debug.Assert(_generatePdbFile);
+                        // Compute hash of the output image and store that in the native DebugDirectory entry
+                        using (var hashAlgorithm = SHA256.Create())
+                        {
+                            stream.Seek(0, SeekOrigin.Begin);
+                            byte[] hash = hashAlgorithm.ComputeHash(stream);
+                            byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
+
+                            stream.Seek((long)debugOffset, SeekOrigin.Begin);
+                            stream.Write(rsdsEntry);
+                        }
+                    }
+
+                    if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
+                    {
+                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
+                        byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
+                        byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
 
                         stream.Seek((long)debugOffset, SeekOrigin.Begin);
-                        stream.Write(rsdsEntry);
+                        stream.Write(perfMapEntry);
                     }
                 }
 
-                if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
+                if (_outputInfoBuilder != null)
                 {
-                    Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
-                    byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
-                    byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
-
-                    stream.Seek((long)debugOffset, SeekOrigin.Begin);
-                    stream.Write(perfMapEntry);
-                }
-            }
-
-            if (_outputInfoBuilder != null)
-            {
-                foreach (string inputFile in _inputFiles)
-                {
-                    _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
-                }
-            }
-
-            if (_outputInfoBuilder != null)
-            {
-                if (_generateMapFile)
-                {
-                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
-                    _mapFileBuilder.SaveMap(mapFileName);
-                }
-
-                if (_generateMapCsvFile)
-                {
-                    string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
-                    string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
-                    _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
-                }
-
-                if (_generatePdbFile)
-                {
-                    string path = _pdbPath;
-                    if (string.IsNullOrEmpty(path))
+                    foreach (string inputFile in _inputFiles)
                     {
-                        path = Path.GetDirectoryName(_objectFilePath);
+                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
                     }
-                    _symbolFileBuilder.SavePdb(path, _objectFilePath);
                 }
 
-                if (_generatePerfMapFile)
+                if (_outputInfoBuilder != null)
                 {
-                    string path = _perfMapPath;
-                    if (string.IsNullOrEmpty(path))
+                    if (_generateMapFile)
                     {
-                        path = Path.GetDirectoryName(_objectFilePath);
+                        string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                        _mapFileBuilder.SaveMap(mapFileName);
                     }
-                    _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+
+                    if (_generateMapCsvFile)
+                    {
+                        string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
+                        string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
+                        _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                    }
+
+                    if (_generatePdbFile)
+                    {
+                        string path = _pdbPath;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            path = Path.GetDirectoryName(_objectFilePath);
+                        }
+                        _symbolFileBuilder.SavePdb(path, _objectFilePath);
+                    }
+
+                    if (_generatePerfMapFile)
+                    {
+                        string path = _perfMapPath;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            path = Path.GetDirectoryName(_objectFilePath);
+                        }
+                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                    }
+
+                    if (_profileFileBuilder != null)
+                    {
+                        string path = Path.ChangeExtension(_objectFilePath, ".profile");
+                        _profileFileBuilder.SaveProfile(path);
+                    }
                 }
 
-                if (_profileFileBuilder != null)
+                stopwatch.Stop();
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
+                succeeded = true;
+            }
+            finally
+            {
+                if (!succeeded)
                 {
-                    string path = Path.ChangeExtension(_objectFilePath, ".profile");
-                    _profileFileBuilder.SaveProfile(path);
+                    // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
+                    // object file around.
+                    try
+                    {
+                        File.Delete(_objectFilePath);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
-
-            stopwatch.Stop();
-            if (logger.IsVerbose)
-                logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
         }
 
         public void EmitPortableExecutable()
