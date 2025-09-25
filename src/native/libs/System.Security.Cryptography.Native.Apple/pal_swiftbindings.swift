@@ -208,34 +208,6 @@ enum HKDFError: Error {
     case unknownHashAlgorithm
 }
 
-struct Logger {
-    private static let stdoutLock = NSLock()
-
-    static func log(_ parts: Any..., separator: String = " ", terminator: String = "\n") {
-        let message = parts.map { String(describing: $0) }.joined(separator: separator) + terminator
-
-        stdoutLock.lock()
-        defer { stdoutLock.unlock() }
-
-        if let data = message.data(using: .utf8) {
-            FileHandle.standardOutput.write(data)
-        }
-    }
-
-    static func hexEncode<C: Collection>(_ bytes: C) -> String where C.Element == UInt8 {
-        var s = ""
-        s.reserveCapacity(64)
-        s.append("<\(bytes.count)> ")
-        for b in bytes {
-            s.append(String(UnicodeScalar(_hex[Int(b >> 4)])))
-            s.append(String(UnicodeScalar(_hex[Int(b & 0x0F)])))
-        }
-        return s
-    }
-
-    private static let _hex: [UInt8] = Array("0123456789abcdef".utf8)
-}
-
 @_silgen_name("AppleCryptoNative_HKDFExpand")
 @available(iOS 14, tvOS 14, *)
 public func AppleCryptoNative_HKDFExpand(
@@ -250,8 +222,6 @@ public func AppleCryptoNative_HKDFExpand(
     let prk = Data(bytesNoCopy: prkPtr, count: Int(prkLength), deallocator: Data.Deallocator.none)
     let info = Data(bytesNoCopy: infoPtr, count: Int(infoLength), deallocator: Data.Deallocator.none)
     let destinationLengthInt = Int(destinationLength)
-
-    Logger.log("alg:", hashAlgorithm, "prk:", Logger.hexEncode(prk), "info:", Logger.hexEncode(info))
 
     guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
         return -2
@@ -298,8 +268,6 @@ public func AppleCryptoNative_HKDFExtract(
     let ikm = Data(bytesNoCopy: ikmPtr, count: Int(ikmLength), deallocator: Data.Deallocator.none)
     let salt = Data(bytesNoCopy: saltPtr, count: Int(saltLength), deallocator: Data.Deallocator.none)
     let destinationLengthInt = Int(destinationLength)
-
-    Logger.log("alg:", hashAlgorithm, "ikm:", Logger.hexEncode(ikm), "salt:", Logger.hexEncode(salt))
     let key = SymmetricKey(data: ikm)
 
     guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
@@ -350,8 +318,6 @@ public func AppleCryptoNative_HKDFDeriveKey(
     let salt = Data(bytesNoCopy: saltPtr, count: Int(saltLength), deallocator: Data.Deallocator.none)
     let info = Data(bytesNoCopy: infoPtr, count: Int(infoLength), deallocator: Data.Deallocator.none)
     let destinationLengthInt = Int(destinationLength)
-
-    Logger.log("alg:", hashAlgorithm, "ikm:", Logger.hexEncode(ikm), "salt:", Logger.hexEncode(info), "salt:", Logger.hexEncode(info))
     let key = SymmetricKey(data: ikm)
 
     guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
