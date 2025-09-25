@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import terser from "@rollup/plugin-terser";
 
-import { isContinuousIntegrationBuild } from "./rollup.config.defines.js"
+import { isContinuousIntegrationBuild, gitHash } from "./rollup.config.defines.js"
 
 export const terserPlugin = (terserOptions) => {
     let { compress, mangle } = terserOptions || {};

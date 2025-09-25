@@ -23,7 +23,7 @@ export const externalDependencies = ["module", "process", "perf_hooks", "node:cr
 export const artifactsObjDir = "../../artifacts/obj";
 export const isDebug = process.env.Configuration !== "Release";
 
-let gitHash;
+export let gitHash;
 try {
     const gitInfo = gitCommitInfo();
     gitHash = gitInfo.hash;
