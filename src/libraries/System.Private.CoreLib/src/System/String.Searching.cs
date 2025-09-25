@@ -587,7 +587,7 @@ namespace System
         /// </returns>
         internal int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
-            return LastIndexOf(value, startIndex, startIndex, comparisonType);
+            return LastIndexOf(value, startIndex, startIndex + 1, comparisonType);
         }
 
         /// <summary>
@@ -613,7 +613,7 @@ namespace System
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            int startIndexFromZero = startIndex - count;
+            int startIndexFromZero = startIndex - count + 1;
 
             int subIndex = this.AsSpan(startIndexFromZero..(startIndexFromZero + count)).LastIndexOf(valueChars, comparisonType);
             return subIndex < 0 ? subIndex : startIndexFromZero + subIndex;

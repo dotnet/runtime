@@ -500,11 +500,9 @@ namespace System.Globalization
                 ToLower(valueChars, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
-            else
-            {
-                char lowerChar = ToLower(valueChars[0]);
-                return new Rune(lowerChar);
-            }
+
+            char lowerChar = ToLower(valueChars[0]);
+            return new Rune(lowerChar);
         }
 
         /// <summary>
@@ -524,11 +522,9 @@ namespace System.Globalization
                 ToUpper(valueChars, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
-            else
-            {
-                char upperChar = ToUpper(valueChars[0]);
-                return new Rune(upperChar);
-            }
+
+            char upperChar = ToUpper(valueChars[0]);
+            return new Rune(upperChar);
         }
 
         private bool IsAsciiCasingSameAsInvariant

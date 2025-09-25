@@ -1557,7 +1557,7 @@ namespace System.Tests
         {
             yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC4f'), StringComparison.Ordinal, -1};
             yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC00'), StringComparison.OrdinalIgnoreCase, 0};
-            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), StringComparison.OrdinalIgnoreCase, 7};
 
             yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello\u0200\u0202", new Rune('\u0201'), StringComparison.OrdinalIgnoreCase, 7}; // \u0200 is uppercase of \u0201

@@ -2429,6 +2429,7 @@ namespace System
             {
                 index += trimChars.Length;
             }
+
             if (index >= Length)
             {
                 return Empty;
@@ -2440,7 +2441,8 @@ namespace System
             {
                 endIndex -= trimChars.Length;
             }
-            if (endIndex < 0)
+
+            if (endIndex < index)
             {
                 return Empty;
             }
@@ -2513,6 +2515,7 @@ namespace System
             {
                 index += trimChars.Length;
             }
+
             if (index >= Length)
             {
                 return Empty;
@@ -2586,6 +2589,7 @@ namespace System
             {
                 endIndex -= trimChars.Length;
             }
+
             if (endIndex < 0)
             {
                 return Empty;
