@@ -55,12 +55,12 @@ namespace System.Diagnostics
     /// </summary>
     public partial class Activity : IDisposable
     {
-#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
+#pragma warning restore CA1825
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
-#pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
         private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
 
