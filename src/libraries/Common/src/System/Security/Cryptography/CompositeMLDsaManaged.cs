@@ -446,7 +446,7 @@ namespace System.Security.Cryptography
         {
             checked
             {
-                // M' = Prefix || Domain || len(ctx) || ctx || PH( M )
+                // M' = Prefix || Label || len(ctx) || ctx || PH( M )
 
                 using (IncrementalHash hash = IncrementalHash.CreateHash(metadata.HashAlgorithmName))
                 {
