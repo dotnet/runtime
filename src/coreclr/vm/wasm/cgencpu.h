@@ -32,7 +32,8 @@ struct HijackArgs
 
 inline LPVOID STDCALL GetCurrentSP()
 {
-    _ASSERTE("The function is not implemented on wasm, it lacks registers");
+    // WASM-TODO: check where we reach that, return nullptr for now to not break runtime initialization
+    //PORTABILITY_ASSERT("The function is not implemented on wasm, it lacks registers");
     return nullptr;
 }
 
@@ -75,10 +76,10 @@ class StubLinkerCPU : public StubLinker
 public:
     static void Init() { /* no-op on wasm */ }
     inline void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray) {
-        _ASSERTE("The EmitShuffleThunk is not implemented on wasm");
+        PORTABILITY_ASSERT("The EmitShuffleThunk is not implemented on wasm");
     }
     inline VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg) {
-        _ASSERTE("The EmitComputedInstantiatingMethodStub is not implemented on wasm");
+        PORTABILITY_ASSERT("The EmitComputedInstantiatingMethodStub is not implemented on wasm");
     }
 };
 
@@ -144,13 +145,13 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //------------------------------------------------------------------------
 inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
-    _ASSERTE("emitBackToBackJump is not implemented on wasm");
+    PORTABILITY_ASSERT("emitBackToBackJump is not implemented on wasm");
 }
 
 //------------------------------------------------------------------------
 inline PCODE decodeBackToBackJump(PCODE pBuffer)
 {
-    _ASSERTE("decodeBackToBackJump is not implemented on wasm");
+    PORTABILITY_ASSERT("decodeBackToBackJump is not implemented on wasm");
     return 0;
 }
 
