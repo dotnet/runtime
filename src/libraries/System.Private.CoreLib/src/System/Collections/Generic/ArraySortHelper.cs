@@ -1138,4 +1138,422 @@ namespace System.Collections.Generic
             return left;
         }
     }
+
+    #region ArraySortHelper for TComparer
+
+    #region ArraySortHelper for single arrays
+
+    internal sealed partial class ArraySortHelper<T>
+    {
+        internal static void Sort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>
+        {
+            Debug.Assert(comparer != null);
+
+            // Add a try block here to detect bogus comparisons
+            try
+            {
+                IntrospectiveSort(keys, comparer);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
+        }
+
+        private static void SwapIfGreater<TComparer>(Span<T> keys, TComparer comparer, int i, int j)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            Debug.Assert(i != j);
+
+            if (comparer.Compare(keys[i], keys[j]) > 0)
+            {
+                T key = keys[i];
+                keys[i] = keys[j];
+                keys[j] = key;
+            }
+        }
+
+        internal static void IntrospectiveSort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+
+            if (keys.Length > 1)
+            {
+                IntroSort(keys, 2 * (BitOperations.Log2((uint)keys.Length) + 1), comparer);
+            }
+        }
+
+        // IntroSort is recursive; block it from being inlined into itself as
+        // this is currenly not profitable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void IntroSort<TComparer>(Span<T> keys, int depthLimit, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(depthLimit >= 0);
+            Debug.Assert(comparer != null);
+
+            int partitionSize = keys.Length;
+            while (partitionSize > 1)
+            {
+                if (partitionSize <= Array.IntrosortSizeThreshold)
+                {
+                    if (partitionSize == 2)
+                    {
+                        SwapIfGreater(keys, comparer, 0, 1);
+                        return;
+                    }
+
+                    if (partitionSize == 3)
+                    {
+                        SwapIfGreater(keys, comparer, 0, 1);
+                        SwapIfGreater(keys, comparer, 0, 2);
+                        SwapIfGreater(keys, comparer, 1, 2);
+                        return;
+                    }
+
+                    InsertionSort(keys.Slice(0, partitionSize), comparer);
+                    return;
+                }
+
+                if (depthLimit == 0)
+                {
+                    HeapSort(keys.Slice(0, partitionSize), comparer);
+                    return;
+                }
+                depthLimit--;
+
+                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer);
+
+                // Note we've already partitioned around the pivot and do not have to move the pivot again.
+                IntroSort(keys[(p + 1)..partitionSize], depthLimit, comparer);
+                partitionSize = p;
+            }
+        }
+
+        private static int PickPivotAndPartition<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
+            Debug.Assert(comparer != null);
+
+            int hi = keys.Length - 1;
+
+            // Compute median-of-three.  But also partition them, since we've done the comparison.
+            int middle = hi >> 1;
+
+            // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+            SwapIfGreater(keys, comparer, 0, middle); // swap the low with the mid point
+            SwapIfGreater(keys, comparer, 0, hi); // swap the low with the high
+            SwapIfGreater(keys, comparer, middle, hi); // swap the middle with the high
+
+            T pivot = keys[middle];
+            Swap(keys, middle, hi - 1);
+            int left = 0, right = hi - 1; // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+
+            while (left < right)
+            {
+                while (comparer.Compare(keys[++left], pivot) < 0) ;
+                while (comparer.Compare(pivot, keys[--right]) < 0) ;
+
+                if (left >= right)
+                    break;
+
+                Swap(keys, left, right);
+            }
+
+            // Put pivot in the right location.
+            if (left != hi - 1)
+            {
+                Swap(keys, left, hi - 1);
+            }
+            return left;
+        }
+
+        private static void HeapSort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+            Debug.Assert(!keys.IsEmpty);
+
+            int n = keys.Length;
+            for (int i = n >> 1; i >= 1; i--)
+            {
+                DownHeap(keys, i, n, comparer);
+            }
+
+            for (int i = n; i > 1; i--)
+            {
+                Swap(keys, 0, i - 1);
+                DownHeap(keys, 1, i - 1, comparer);
+            }
+        }
+
+        private static void DownHeap<TComparer>(Span<T> keys, int i, int n, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+
+            T d = keys[i - 1];
+            while (i <= n >> 1)
+            {
+                int child = 2 * i;
+                if (child < n && comparer.Compare(keys[child - 1], keys[child]) < 0)
+                {
+                    child++;
+                }
+
+                if (!(comparer.Compare(d, keys[child - 1]) < 0))
+                    break;
+
+                keys[i - 1] = keys[child - 1];
+                i = child;
+            }
+
+            keys[i - 1] = d;
+        }
+
+        private static void InsertionSort<TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>, allows ref struct
+        {
+            for (int i = 0; i < keys.Length - 1; i++)
+            {
+                T t = keys[i + 1];
+
+                int j = i;
+                while (j >= 0 && comparer.Compare(t, keys[j]) < 0)
+                {
+                    keys[j + 1] = keys[j];
+                    j--;
+                }
+
+                keys[j + 1] = t;
+            }
+        }
+    }
+
+    #endregion
+
+    #region ArraySortHelper for paired key and value arrays
+
+    internal sealed partial class ArraySortHelper<TKey, TValue>
+    {
+        public void Sort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>
+        {
+            Debug.Assert(comparer != null);
+
+            // Add a try block here to detect IComparers (or their
+            // underlying IComparables, etc) that are bogus.
+            try
+            {
+                IntrospectiveSort(keys, values, comparer);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
+        }
+
+        private static void SwapIfGreaterWithValues<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer, int i, int j)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+            Debug.Assert(0 <= i && i < keys.Length && i < values.Length);
+            Debug.Assert(0 <= j && j < keys.Length && j < values.Length);
+            Debug.Assert(i != j);
+
+            if (comparer.Compare(keys[i], keys[j]) > 0)
+            {
+                TKey key = keys[i];
+                keys[i] = keys[j];
+                keys[j] = key;
+
+                TValue value = values[i];
+                values[i] = values[j];
+                values[j] = value;
+            }
+        }
+
+        internal static void IntrospectiveSort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+            Debug.Assert(keys.Length == values.Length);
+
+            if (keys.Length > 1)
+            {
+                IntroSort(keys, values, 2 * (BitOperations.Log2((uint)keys.Length) + 1), comparer);
+            }
+        }
+
+        private static void IntroSort<TComparer>(Span<TKey> keys, Span<TValue> values, int depthLimit, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(!keys.IsEmpty);
+            Debug.Assert(values.Length == keys.Length);
+            Debug.Assert(depthLimit >= 0);
+            Debug.Assert(comparer != null);
+
+            int partitionSize = keys.Length;
+            while (partitionSize > 1)
+            {
+                if (partitionSize <= Array.IntrosortSizeThreshold)
+                {
+                    if (partitionSize == 2)
+                    {
+                        SwapIfGreaterWithValues(keys, values, comparer, 0, 1);
+                        return;
+                    }
+
+                    if (partitionSize == 3)
+                    {
+                        SwapIfGreaterWithValues(keys, values, comparer, 0, 1);
+                        SwapIfGreaterWithValues(keys, values, comparer, 0, 2);
+                        SwapIfGreaterWithValues(keys, values, comparer, 1, 2);
+                        return;
+                    }
+
+                    InsertionSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
+                    return;
+                }
+
+                if (depthLimit == 0)
+                {
+                    HeapSort(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
+                    return;
+                }
+                depthLimit--;
+
+                int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
+
+                // Note we've already partitioned around the pivot and do not have to move the pivot again.
+                IntroSort(keys[(p + 1)..partitionSize], values[(p + 1)..partitionSize], depthLimit, comparer);
+                partitionSize = p;
+            }
+        }
+
+        private static int PickPivotAndPartition<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
+            Debug.Assert(comparer != null);
+
+            int hi = keys.Length - 1;
+
+            // Compute median-of-three.  But also partition them, since we've done the comparison.
+            int middle = hi >> 1;
+
+            // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+            SwapIfGreaterWithValues(keys, values, comparer, 0, middle); // swap the low with the mid point
+            SwapIfGreaterWithValues(keys, values, comparer, 0, hi); // swap the low with the high
+            SwapIfGreaterWithValues(keys, values, comparer, middle, hi); // swap the middle with the high
+
+            TKey pivot = keys[middle];
+            Swap(keys, values, middle, hi - 1);
+            int left = 0, right = hi - 1; // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+
+            while (left < right)
+            {
+                while (comparer.Compare(keys[++left], pivot) < 0) ;
+                while (comparer.Compare(pivot, keys[--right]) < 0) ;
+
+                if (left >= right)
+                    break;
+
+                Swap(keys, values, left, right);
+            }
+
+            // Put pivot in the right location.
+            if (left != hi - 1)
+            {
+                Swap(keys, values, left, hi - 1);
+            }
+            return left;
+        }
+
+        private static void HeapSort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+            Debug.Assert(!keys.IsEmpty);
+
+            int n = keys.Length;
+            for (int i = n >> 1; i >= 1; i--)
+            {
+                DownHeap(keys, values, i, n, comparer);
+            }
+
+            for (int i = n; i > 1; i--)
+            {
+                Swap(keys, values, 0, i - 1);
+                DownHeap(keys, values, 1, i - 1, comparer);
+            }
+        }
+
+        private static void DownHeap<TComparer>(Span<TKey> keys, Span<TValue> values, int i, int n, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+
+            TKey d = keys[i - 1];
+            TValue dValue = values[i - 1];
+
+            while (i <= n >> 1)
+            {
+                int child = 2 * i;
+                if (child < n && comparer.Compare(keys[child - 1], keys[child]) < 0)
+                {
+                    child++;
+                }
+
+                if (!(comparer.Compare(d, keys[child - 1]) < 0))
+                    break;
+
+                keys[i - 1] = keys[child - 1];
+                values[i - 1] = values[child - 1];
+                i = child;
+            }
+
+            keys[i - 1] = d;
+            values[i - 1] = dValue;
+        }
+
+        private static void InsertionSort<TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>, allows ref struct
+        {
+            Debug.Assert(comparer != null);
+
+            for (int i = 0; i < keys.Length - 1; i++)
+            {
+                TKey t = keys[i + 1];
+                TValue tValue = values[i + 1];
+
+                int j = i;
+                while (j >= 0 && comparer.Compare(t, keys[j]) < 0)
+                {
+                    keys[j + 1] = keys[j];
+                    values[j + 1] = values[j];
+                    j--;
+                }
+
+                keys[j + 1] = t;
+                values[j + 1] = tValue;
+            }
+        }
+    }
+
+    #endregion
+
+    #endregion
 }
