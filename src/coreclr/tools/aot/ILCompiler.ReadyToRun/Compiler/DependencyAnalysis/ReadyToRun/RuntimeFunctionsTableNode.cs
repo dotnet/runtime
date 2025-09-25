@@ -25,10 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            if (factory.Target.IsWindows && !factory.OptimizationFlags.IsComponentModule)
-                return ObjectNodeSection.PDataSection;
-            else
-                return ObjectNodeSection.DataSection;
+            return ObjectNodeSection.PDataSection;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
