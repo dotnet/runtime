@@ -165,19 +165,6 @@
     <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*" />
   </ItemGroup>
 
-  <!-- Include msquic in debug version for macOS so we can test it without packages. -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' and
-                          '$(TargetOS)' == 'osx' and
-                          '$(TargetArchitecture)' == 'x64' and
-                          '$(Configuration)' == 'Debug' and
-                          '$(DotNetBuildSourceOnly)' != 'true'">
-      <!-- MsQuic packages do not have macOS binaries. Our transport package is only one source. -->
-      <PackageReference Include="MsQuic.Native"
-                        Version="2.5.6"
-                        PrivateAssets="all"
-                        GeneratePathProperty="true" />
-      <NativeBinPlaceItem Include="$(PkgMsQuic_Native)\runtimes\osx-$(TargetArchitecture)\native\*" />
-  </ItemGroup>
   <ItemGroup Condition="'@(NativeBinplaceItem)' != ''">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
