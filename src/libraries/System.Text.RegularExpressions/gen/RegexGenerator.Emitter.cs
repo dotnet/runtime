@@ -27,12 +27,8 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
-        /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
-        private static string EscapeXmlComment(string text) =>
-            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
-
-        /// <summary>Escapes characters that are invalid in XML comments, including control characters, while preserving backslashes.</summary>
-        private static string EscapeForXmlComment(string text)
+        /// <summary>Escapes characters that are invalid in XML comments, including control characters and XML entities, while preserving backslashes.</summary>
+        private static string EscapeXmlComment(string text)
         {
             if (string.IsNullOrEmpty(text))
                 return text;
@@ -101,7 +97,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeForXmlComment(regexMethod.Pattern)}</code><br/>");
+            writer.WriteLine($"/// <code>{EscapeXmlComment(regexMethod.Pattern)}</code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");
