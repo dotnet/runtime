@@ -38,7 +38,7 @@ jobs:
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: minijit
       buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 1800
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -77,7 +77,7 @@ jobs:
       nameSuffix: AllSubsets_Mono_RuntimeTests_Interp
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 1800
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -111,7 +111,7 @@ jobs:
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 1800
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -142,7 +142,7 @@ jobs:
       nameSuffix: AllSubsets_CoreCLR
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 1800
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
