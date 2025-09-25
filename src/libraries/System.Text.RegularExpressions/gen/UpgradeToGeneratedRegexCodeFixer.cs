@@ -30,6 +30,7 @@ namespace System.Text.RegularExpressions.Generator
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
         private const string GeneratedRegexTypeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
         private const string DefaultRegexMethodName = "MyRegex";
+        private const string DefaultRegexPropertyName = "MyRegex";
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration.Id);
@@ -54,12 +55,47 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken),
-                    equivalenceKey: SR.UseRegexSourceGeneratorTitle),
-                context.Diagnostics);
+            // Check if the nodeToFix is within a field or property declaration
+            FieldDeclarationSyntax? fieldDeclaration = nodeToFix.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault();
+            PropertyDeclarationSyntax? propertyDeclaration = nodeToFix.Ancestors().OfType<PropertyDeclarationSyntax>().FirstOrDefault();
+
+            if (fieldDeclaration is not null)
+            {
+                // For fields, offer to convert to partial property
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        "Convert to partial property with [GeneratedRegex]",
+                        cancellationToken => ConvertFieldToPartialProperty(context.Document, root, nodeToFix, fieldDeclaration, cancellationToken),
+                        equivalenceKey: "ConvertFieldToPartialProperty"),
+                    context.Diagnostics);
+            }
+            else if (propertyDeclaration is not null)
+            {
+                // For properties with initializers, offer to convert to partial property
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        "Convert to partial property with [GeneratedRegex]",
+                        cancellationToken => ConvertPropertyToPartialProperty(context.Document, root, nodeToFix, propertyDeclaration, cancellationToken),
+                        equivalenceKey: "ConvertPropertyToPartialProperty"),
+                    context.Diagnostics);
+            }
+            else
+            {
+                // For other cases (method calls, etc.), offer both method and property options
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        "Generate partial method with [GeneratedRegex]",
+                        cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken, generateMethod: true),
+                        equivalenceKey: "ConvertToMethod"),
+                    context.Diagnostics);
+
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        "Generate partial property with [GeneratedRegex]",
+                        cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken, generateMethod: false),
+                        equivalenceKey: "ConvertToProperty"),
+                    context.Diagnostics);
+            }
         }
 
         /// <summary>
@@ -69,10 +105,10 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="document">The original document.</param>
         /// <param name="root">The root of the syntax tree.</param>
         /// <param name="nodeToFix">The node to fix. This is where the diagnostic was produced.</param>
-        /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
+        /// <param name="generateMethod">True to generate a method, false to generate a property.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, CancellationToken cancellationToken, bool generateMethod = true)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -103,8 +139,8 @@ namespace System.Text.RegularExpressions.Generator
 
             typeDeclarationOrCompilationUnit ??= await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
 
-            // Calculate what name should be used for the generated static partial method
-            string methodName = DefaultRegexMethodName;
+            // Calculate what name should be used for the generated static partial method or property
+            string memberName = generateMethod ? DefaultRegexMethodName : DefaultRegexPropertyName;
 
             INamedTypeSymbol? typeSymbol = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax typeDeclaration ?
                 semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) :
@@ -114,9 +150,10 @@ namespace System.Text.RegularExpressions.Generator
             {
                 IEnumerable<ISymbol> members = GetAllMembers(typeSymbol);
                 int memberCount = 1;
-                while (members.Any(m => m.Name == methodName))
+                string baseName = generateMethod ? DefaultRegexMethodName : DefaultRegexPropertyName;
+                while (members.Any(m => m.Name == memberName))
                 {
-                    methodName = $"{DefaultRegexMethodName}{memberCount++}";
+                    memberName = $"{baseName}{memberCount++}";
                 }
             }
 
@@ -157,7 +194,9 @@ namespace System.Text.RegularExpressions.Generator
 
             // Generate the modified type declaration depending on whether the callsite was a Regex constructor call
             // or a Regex static method invocation.
-            SyntaxNode replacement = generator.InvocationExpression(generator.IdentifierName(methodName));
+            SyntaxNode replacement = generateMethod ?
+                generator.InvocationExpression(generator.IdentifierName(memberName)) :
+                generator.IdentifierName(memberName);
             ImmutableArray<IArgumentOperation> operationArguments;
             if (operation is IInvocationOperation invocationOperation) // When using a Regex static method
             {
@@ -166,7 +205,14 @@ namespace System.Text.RegularExpressions.Generator
                     .Where(arg => arg.Parameter?.Name is not (UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName))
                     .Select(arg => arg.Syntax);
 
-                replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
+                if (generateMethod)
+                {
+                    replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
+                }
+                else
+                {
+                    replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
+                }
             }
             else
             {
@@ -179,15 +225,31 @@ namespace System.Text.RegularExpressions.Generator
             SyntaxNode? patternValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
             SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 
-            // Generate the new static partial method
-            MethodDeclarationSyntax newMethod = (MethodDeclarationSyntax)generator.MethodDeclaration(
-                name: methodName,
-                returnType: generator.TypeExpression(regexSymbol),
-                modifiers: DeclarationModifiers.Static | DeclarationModifiers.Partial,
-                accessibility: Accessibility.Private);
+            // Generate the new static partial method or property
+            SyntaxNode newMember;
+            if (generateMethod)
+            {
+                MethodDeclarationSyntax newMethod = (MethodDeclarationSyntax)generator.MethodDeclaration(
+                    name: memberName,
+                    returnType: generator.TypeExpression(regexSymbol),
+                    modifiers: DeclarationModifiers.Static | DeclarationModifiers.Partial,
+                    accessibility: Accessibility.Private);
 
-            // Allow user to pick a different name for the method.
-            newMethod = newMethod.ReplaceToken(newMethod.Identifier, SyntaxFactory.Identifier(methodName).WithAdditionalAnnotations(RenameAnnotation.Create()));
+                // Allow user to pick a different name for the method.
+                newMember = newMethod.ReplaceToken(newMethod.Identifier, SyntaxFactory.Identifier(memberName).WithAdditionalAnnotations(RenameAnnotation.Create()));
+            }
+            else
+            {
+                PropertyDeclarationSyntax newProperty = (PropertyDeclarationSyntax)generator.PropertyDeclaration(
+                    name: memberName,
+                    type: generator.TypeExpression(regexSymbol),
+                    modifiers: DeclarationModifiers.Static | DeclarationModifiers.Partial,
+                    accessibility: Accessibility.Private,
+                    getAccessorStatements: null); // Getter will be source generated
+
+                // Allow user to pick a different name for the property.
+                newMember = newProperty.ReplaceToken(newProperty.Identifier, SyntaxFactory.Identifier(memberName).WithAdditionalAnnotations(RenameAnnotation.Create()));
+            }
 
             // We now need to check if we have to pass in the cultureName parameter. This parameter will be required in case the option
             // RegexOptions.IgnoreCase is set for this Regex. To determine that, we first get the passed in options (if any), and then,
@@ -228,13 +290,13 @@ namespace System.Text.RegularExpressions.Generator
                 _ => Array.Empty<SyntaxNode>(),
             });
 
-            // Add the attribute to the generated method.
-            newMethod = (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
+            // Add the attribute to the generated member.
+            newMember = generator.AddAttributes(newMember, attributes);
 
-            // Add the method to the type.
+            // Add the member to the type.
             newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit is TypeDeclarationSyntax newTypeDeclaration ?
-                newTypeDeclaration.AddMembers(newMethod) :
-                ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod }));
+                newTypeDeclaration.AddMembers((MemberDeclarationSyntax)newMember) :
+                ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMember }));
 
             // Replace the old type declaration with the new modified one, and return the document.
             return document.WithSyntaxRoot(root.ReplaceNode(typeDeclarationOrCompilationUnit, newTypeDeclarationOrCompilationUnit));
@@ -334,6 +396,355 @@ namespace System.Text.RegularExpressions.Generator
 
             static SyntaxNode WithTrivia(SyntaxNode method, SyntaxNode nodeToFix)
                 => method.WithLeadingTrivia(nodeToFix.GetLeadingTrivia()).WithTrailingTrivia(nodeToFix.GetTrailingTrivia());
+        }
+
+        /// <summary>
+        /// Converts a field declaration containing a Regex object creation to a partial property.
+        /// </summary>
+        private static async Task<Document> ConvertFieldToPartialProperty(Document document, SyntaxNode root, SyntaxNode nodeToFix, FieldDeclarationSyntax fieldDeclaration, CancellationToken cancellationToken)
+        {
+            // Get the variable declarator (the part with the field name and initializer)
+            VariableDeclaratorSyntax? variableDeclarator = fieldDeclaration.Declaration.Variables.FirstOrDefault();
+            if (variableDeclarator is null || variableDeclarator.Initializer is null)
+            {
+                return document;
+            }
+
+            // Get the field name
+            string fieldName = variableDeclarator.Identifier.ValueText;
+
+            // Get the semantic model and symbols
+            SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+            if (semanticModel is null)
+            {
+                return document;
+            }
+
+            Compilation compilation = semanticModel.Compilation;
+            INamedTypeSymbol? regexSymbol = compilation.GetTypeByMetadataName(RegexTypeName);
+            INamedTypeSymbol? generatedRegexAttributeSymbol = compilation.GetTypeByMetadataName(GeneratedRegexTypeName);
+            if (regexSymbol is null || generatedRegexAttributeSymbol is null)
+            {
+                return document;
+            }
+
+            // Get the operation for the initializer
+            IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
+            if (operation is null)
+            {
+                return document;
+            }
+
+            // Extract arguments from the operation
+            ImmutableArray<IArgumentOperation> operationArguments = operation is IObjectCreationOperation objectCreation
+                ? objectCreation.Arguments
+                : ((IInvocationOperation)operation).Arguments;
+
+            DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            SyntaxGenerator generator = editor.Generator;
+
+            // Get the arguments for the GeneratedRegex attribute (reusing the existing helper methods)
+            SyntaxNode? patternValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+            SyntaxNode? regexOptionsValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
+            SyntaxNode? cultureNameValue = GetCultureNameValueIfNeeded(operationArguments, generator);
+
+            // Generate the GeneratedRegex attribute
+            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
+            {
+                ({ }, null, null) => [patternValue],
+                ({ }, { }, null) => [patternValue, regexOptionsValue],
+                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
+                _ => Array.Empty<SyntaxNode>(),
+            });
+
+            // Create the partial property declaration
+            PropertyDeclarationSyntax partialProperty = (PropertyDeclarationSyntax)generator.PropertyDeclaration(
+                name: fieldName,
+                type: generator.TypeExpression(regexSymbol),
+                modifiers: ExtractModifiersFromField(fieldDeclaration.Modifiers) | DeclarationModifiers.Partial,
+                accessibility: GetAccessibilityFromModifiers(fieldDeclaration.Modifiers),
+                getAccessorStatements: null); // Getter will be generated
+
+            // Add the GeneratedRegex attribute to the property
+            partialProperty = (PropertyDeclarationSyntax)generator.AddAttributes(partialProperty, attributes);
+
+            // Add rename annotation for user convenience
+            partialProperty = partialProperty.ReplaceToken(partialProperty.Identifier,
+                SyntaxFactory.Identifier(fieldName).WithAdditionalAnnotations(RenameAnnotation.Create()));
+
+            // Find the containing type and ensure it's partial
+            TypeDeclarationSyntax? containingType = fieldDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            if (containingType is null)
+            {
+                return document;
+            }
+
+            // Make the containing type partial if it isn't already
+            SyntaxNode updatedRoot = root;
+            if (!containingType.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+            {
+                TypeDeclarationSyntax partialType = containingType.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
+                updatedRoot = root.ReplaceNode(containingType, partialType);
+                // Find the field declaration in the updated tree
+                fieldDeclaration = updatedRoot.DescendantNodes().OfType<FieldDeclarationSyntax>()
+                    .FirstOrDefault(f => f.Declaration.Variables.Any(v => v.Identifier.ValueText == fieldName))
+                    ?? fieldDeclaration;
+            }
+
+            // Replace the field with the partial property
+            updatedRoot = updatedRoot.ReplaceNode(fieldDeclaration, partialProperty);
+
+            return document.WithSyntaxRoot(updatedRoot);
+        }
+
+        /// <summary>
+        /// Converts a property declaration with an initializer containing a Regex object creation to a partial property.
+        /// </summary>
+        private static async Task<Document> ConvertPropertyToPartialProperty(Document document, SyntaxNode root, SyntaxNode nodeToFix, PropertyDeclarationSyntax propertyDeclaration, CancellationToken cancellationToken)
+        {
+            // Get the property name
+            string propertyName = propertyDeclaration.Identifier.ValueText;
+
+            // Get the semantic model and symbols
+            SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+            if (semanticModel is null)
+            {
+                return document;
+            }
+
+            Compilation compilation = semanticModel.Compilation;
+            INamedTypeSymbol? regexSymbol = compilation.GetTypeByMetadataName(RegexTypeName);
+            INamedTypeSymbol? generatedRegexAttributeSymbol = compilation.GetTypeByMetadataName(GeneratedRegexTypeName);
+            if (regexSymbol is null || generatedRegexAttributeSymbol is null)
+            {
+                return document;
+            }
+
+            // Get the operation for the initializer
+            IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
+            if (operation is null)
+            {
+                return document;
+            }
+
+            // Extract arguments from the operation
+            ImmutableArray<IArgumentOperation> operationArguments = operation is IObjectCreationOperation objectCreation
+                ? objectCreation.Arguments
+                : ((IInvocationOperation)operation).Arguments;
+
+            DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            SyntaxGenerator generator = editor.Generator;
+
+            // Get the arguments for the GeneratedRegex attribute
+            SyntaxNode? patternValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+            SyntaxNode? regexOptionsValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
+            SyntaxNode? cultureNameValue = GetCultureNameValueIfNeeded(operationArguments, generator);
+
+            // Generate the GeneratedRegex attribute
+            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
+            {
+                ({ }, null, null) => [patternValue],
+                ({ }, { }, null) => [patternValue, regexOptionsValue],
+                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
+                _ => Array.Empty<SyntaxNode>(),
+            });
+
+            // Create the partial property declaration (removing initializer and adding partial modifier)
+            PropertyDeclarationSyntax partialProperty = propertyDeclaration
+                .WithInitializer(null)
+                .WithSemicolonToken(default)
+                .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.SingletonList(
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
+
+            // Add the GeneratedRegex attribute to the property
+            partialProperty = (PropertyDeclarationSyntax)generator.AddAttributes(partialProperty, attributes);
+
+            // Find the containing type and ensure it's partial
+            TypeDeclarationSyntax? containingType = propertyDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            if (containingType is null)
+            {
+                return document;
+            }
+
+            // Make the containing type partial if it isn't already
+            SyntaxNode updatedRoot = root;
+            if (!containingType.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+            {
+                TypeDeclarationSyntax partialType = containingType.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
+                updatedRoot = root.ReplaceNode(containingType, partialType);
+                // Find the property declaration in the updated tree
+                propertyDeclaration = updatedRoot.DescendantNodes().OfType<PropertyDeclarationSyntax>()
+                    .FirstOrDefault(p => p.Identifier.ValueText == propertyName)
+                    ?? propertyDeclaration;
+            }
+
+            // Replace the property with the partial property
+            updatedRoot = updatedRoot.ReplaceNode(propertyDeclaration, partialProperty);
+
+            return document.WithSyntaxRoot(updatedRoot);
+        }
+
+        /// <summary>
+        /// Extracts modifiers from field modifiers, converting them to property-appropriate modifiers.
+        /// </summary>
+        private static DeclarationModifiers ExtractModifiersFromField(SyntaxTokenList fieldModifiers)
+        {
+            DeclarationModifiers modifiers = DeclarationModifiers.None;
+
+            foreach (SyntaxToken modifier in fieldModifiers)
+            {
+                switch (modifier.Kind())
+                {
+                    case SyntaxKind.StaticKeyword:
+                        modifiers |= DeclarationModifiers.Static;
+                        break;
+                    case SyntaxKind.ReadOnlyKeyword:
+                        // readonly fields become get-only properties
+                        break;
+                    case SyntaxKind.ConstKeyword:
+                        // const fields cannot be converted to properties in this context
+                        break;
+                }
+            }
+
+            return modifiers;
+        }
+
+        /// <summary>
+        /// Gets the accessibility level from field modifiers.
+        /// </summary>
+        private static Accessibility GetAccessibilityFromModifiers(SyntaxTokenList modifiers)
+        {
+            foreach (SyntaxToken modifier in modifiers)
+            {
+                switch (modifier.Kind())
+                {
+                    case SyntaxKind.PublicKeyword:
+                        return Accessibility.Public;
+                    case SyntaxKind.PrivateKeyword:
+                        return Accessibility.Private;
+                    case SyntaxKind.ProtectedKeyword:
+                        return Accessibility.Protected;
+                    case SyntaxKind.InternalKeyword:
+                        return Accessibility.Internal;
+                }
+            }
+            return Accessibility.Private; // Default accessibility for fields
+        }
+
+        /// <summary>
+        /// Gets the culture name value if needed based on regex options.
+        /// </summary>
+        private static SyntaxNode? GetCultureNameValueIfNeeded(ImmutableArray<IArgumentOperation> operationArguments, SyntaxGenerator generator)
+        {
+            RegexOptions regexOptions = GetRegexOptionsFromArgumentLocal(operationArguments);
+            string? pattern = GetRegexPatternFromArgumentLocal(operationArguments);
+
+            if (pattern is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+            }
+            catch (RegexParseException)
+            {
+                return null;
+            }
+
+            // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
+            if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
+            {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
+                return generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
+#pragma warning restore RS1035
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Helper method to get the node for pattern or options argument from operation arguments.
+        /// </summary>
+        private static SyntaxNode? GetNodeFromOperation(ImmutableArray<IArgumentOperation> arguments, SyntaxGenerator generator, string parameterName)
+        {
+            IArgumentOperation? argument = arguments.SingleOrDefault(arg => arg.Parameter?.Name == parameterName);
+            if (argument is null)
+            {
+                return null;
+            }
+
+            // Literals and class-level field references should be preserved as-is.
+            if (argument.Value is ILiteralOperation ||
+                argument.Value is IFieldReferenceOperation { Member: IFieldSymbol { IsConst: true } })
+            {
+                return argument.Value.Syntax;
+            }
+
+            switch (parameterName)
+            {
+                case UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName:
+                    string optionsLiteral = LiteralLocal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
+                    return SyntaxFactory.ParseExpression(optionsLiteral);
+
+                case UpgradeToGeneratedRegexAnalyzer.PatternArgumentName:
+                    if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
+                    {
+                        // Special handling for string patterns with escaped characters
+                        string escapedVerbatimText = str.Replace("\"", "\"\"");
+                        return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
+                    }
+                    else
+                    {
+                        // Default handling for all other patterns.
+                        return generator.LiteralExpression(argument.Value.ConstantValue.Value);
+                    }
+
+                default:
+                    return argument.Syntax;
+            }
+        }
+
+        private static string? GetRegexPatternFromArgumentLocal(ImmutableArray<IArgumentOperation> arguments)
+        {
+            IArgumentOperation? patternArgument = arguments.SingleOrDefault(arg => arg.Parameter?.Name == UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+            if (patternArgument is null)
+            {
+                return null;
+            }
+
+            return patternArgument.Value.ConstantValue.Value as string;
+        }
+
+        private static RegexOptions GetRegexOptionsFromArgumentLocal(ImmutableArray<IArgumentOperation> arguments)
+        {
+            IArgumentOperation? optionsArgument = arguments.SingleOrDefault(arg => arg.Parameter?.Name == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
+
+            return optionsArgument is null || !optionsArgument.Value.ConstantValue.HasValue ?
+                RegexOptions.None :
+                (RegexOptions)(int)optionsArgument.Value.ConstantValue.Value!;
+        }
+
+        private static string LiteralLocal(string stringifiedRegexOptions)
+        {
+            if (int.TryParse(stringifiedRegexOptions, NumberStyles.Integer, CultureInfo.InvariantCulture, out int options))
+            {
+                // The options were formatted as an int, which means the runtime couldn't
+                // produce a textual representation.  So just output casting the value as an int.
+                return $"(RegexOptions)({options})";
+            }
+
+            // Parse the runtime-generated "Option1, Option2" into each piece and then concat
+            // them back together.
+            string[] parts = stringifiedRegexOptions.Split(s_comma, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                parts[i] = "RegexOptions." + parts[i].Trim();
+            }
+            return string.Join(" | ", parts);
         }
     }
 }
