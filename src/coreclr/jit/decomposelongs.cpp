@@ -138,6 +138,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
+    // On x86, long->floating casts are implemented in DecomposeCast.
+    // Those nodes, plus any nodes that produce a long, will be examined.
     if (!tree->TypeIs(TYP_LONG) &&
         !(tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree)))
 #else
@@ -159,6 +161,9 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         // HWIntrinsics can consume/produce a long directly, provided its source/target is memory.
         // Here we do a conservative check for specific cases where it is certain the load/store
         // can be contained. In those cases, we can skip decomposition.
+        //
+        // We also look for longs consumed directly by a long->floating cast. These can skip
+        // decomposition because the cast is implemented using HWIntrinsics.
 
         GenTree* user = use.User();
 
@@ -582,36 +587,179 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
-    if (varTypeIsFloating(dstType))
+    if (varTypeIsFloating(srcType) || varTypeIsFloating(dstType))
     {
         // We will reach this path only if morph did not convert the cast to a helper call,
         // meaning we can perform the cast using SIMD instructions.
-        // The sequence this creates is simply:
-        //    AVX512DQ.VL.ConvertToVector128Single(Vector128.CreateScalarUnsafe(LONG)).ToScalar()
-
-        NamedIntrinsic intrinsicId      = NI_Illegal;
-        GenTree*       srcOp            = cast->CastOp();
-        var_types      dstType          = cast->CastToType();
-        CorInfoType    baseFloatingType = (dstType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
-        CorInfoType    baseIntegralType = cast->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
 
         assert(!cast->gtOverflow());
         assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512));
 
-        intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512_ConvertToVector128Single : NI_AVX512_ConvertToVector128Double;
+        GenTree*    srcOp       = cast->CastOp();
+        GenTree*    castResult  = nullptr;
+        LIR::Range  castRange   = LIR::EmptyRange();
+        CorInfoType srcBaseType = CORINFO_TYPE_UNDEF;
+        CorInfoType dstBaseType = CORINFO_TYPE_UNDEF;
 
-        GenTree* createScalar = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, baseIntegralType, 16);
-        GenTree* convert =
-            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, baseIntegralType, 16);
-        GenTree* toScalar = m_compiler->gtNewSimdToScalarNode(dstType, convert, baseFloatingType, 16);
+        if (varTypeIsFloating(srcType))
+        {
+            srcBaseType = (srcType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
+            dstBaseType = (dstType == TYP_ULONG) ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+        }
+        else
+        {
+            srcBaseType = (srcType == TYP_ULONG) ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+            dstBaseType = (dstType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
+        }
 
-        Range().InsertAfter(cast, createScalar, convert, toScalar);
-        Range().Remove(cast);
+        // This creates the equivalent of the following C# code:
+        //   var srcVec = Vector128.CreateScalarUnsafe(castOp);
 
-        if (createScalar->IsCnsVec())
+        GenTree* srcVector = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, srcBaseType, 16);
+        castRange.InsertAtEnd(srcVector);
+
+        if (srcVector->IsCnsVec())
         {
             Range().Remove(srcOp);
         }
+
+        if (varTypeIsFloating(dstType))
+        {
+            // long->floating casts don't require any kind of fixup. We simply use the vector
+            // form of the instructions, because the scalar form is not supported on 32-bit.
+
+            NamedIntrinsic intrinsicId =
+                (dstType == TYP_FLOAT) ? NI_AVX512_ConvertToVector128Single : NI_AVX512_ConvertToVector128Double;
+
+            castResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, intrinsicId, srcBaseType, 16);
+        }
+        else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            // Likewise, the AVX10.2 saturating floating->long instructions give the correct result,
+            // but we have to use the vector form.
+
+            NamedIntrinsic intrinsicId = (dstType == TYP_ULONG)
+                                             ? NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation
+                                             : NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+
+            castResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, intrinsicId, srcBaseType, 16);
+        }
+        else if (dstType == TYP_ULONG)
+        {
+            // AVX-512 unsigned conversion instructions correctly saturate for positive overflow, so
+            // we only need to fix up negative or NaN values before conversion.
+            //
+            // maxs[sd] will take the value from the second operand if the first operand's value is
+            // NaN, which allows us to fix up both negative and NaN values with a single instruction.
+            //
+            // This creates the equivalent of the following C# code:
+            //   var fixupVal = Sse.MaxScalar(srcVec, Vector128<T>.Zero);
+            //   castResult = Avx512DQ.VL.ConvertToVector128UInt64WithTruncation(fixupVal);
+
+            GenTree* zero     = m_compiler->gtNewZeroConNode(TYP_SIMD16);
+            GenTree* fixupVal = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, NI_X86Base_MaxScalar,
+                                                                     srcBaseType, 16);
+
+            castRange.InsertAtEnd(zero);
+            castRange.InsertAtEnd(fixupVal);
+
+            castResult =
+                m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, fixupVal,
+                                                     NI_AVX512_ConvertToVector128UInt64WithTruncation, srcBaseType, 16);
+        }
+        else
+        {
+            assert(dstType == TYP_LONG);
+
+            // We will use the input value multiple times, so we replace it with a lclVar.
+            LIR::Use srcUse;
+            LIR::Use::MakeDummyUse(castRange, srcVector, &srcUse);
+            srcUse.ReplaceWithLclVar(m_compiler);
+            srcVector = srcUse.Def();
+
+            // We fix up NaN values by masking in zero during conversion. Negative saturation is handled
+            // correctly by the conversion instructions. Positive saturation is handled after conversion,
+            // because MaxValue is not precisely representable in the floating format.
+            //
+            // This creates roughly the equivalent of the following C# code:
+            //   var nanMask = Avx.CompareScalar(srcVec, srcVec, FloatComparisonMode.OrderedNonSignaling);
+            //   var convert = Avx512DQ.VL.ConvertToVector128Int64WithTruncation(srcVec);
+            //   convertResult = Vector128.ConditionalSelect(nanMask, convert, Vector128<long>.Zero);
+
+            GenTree* srcClone = m_compiler->gtClone(srcVector);
+            GenTree* compareMode =
+                m_compiler->gtNewIconNode(static_cast<int32_t>(FloatComparisonMode::OrderedNonSignaling));
+            GenTree* nanMask = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, srcVector, srcClone, compareMode,
+                                                                    NI_AVX512_CompareScalarMask, srcBaseType, 16);
+
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(compareMode);
+            castRange.InsertAtEnd(nanMask);
+
+            srcClone = m_compiler->gtClone(srcVector);
+            GenTree* convertResult =
+                m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone,
+                                                     NI_AVX512_ConvertToVector128Int64WithTruncation, srcBaseType, 16);
+
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(convertResult);
+
+            nanMask       = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, nanMask, dstBaseType, 16);
+            GenTree* zero = m_compiler->gtNewZeroConNode(TYP_SIMD16);
+            convertResult = m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, nanMask, convertResult, zero, dstBaseType, 16);
+
+            castRange.InsertAtEnd(nanMask);
+            castRange.InsertAtEnd(zero);
+            castRange.InsertAtEnd(convertResult);
+
+            // Now we handle saturation of the result for positive overflow.
+            //
+            // This creates roughly the equivalent of the following C# code:
+            //   var compareMode = FloatComparisonMode.OrderedGreaterThanOrEqualNonSignaling;
+            //   var maxFloatingValue = Vector128.Create(9223372036854775808.0);
+            //   var compareMax = Avx.CompareScalar(srcVec, maxFloatingValue, compareMode);
+            //   var maxLong = Vector128<long>.AllOnes >>> 1;
+            //   castResult = Vector128.ConditionalSelect(compareMax, maxLong, convertResult);
+
+            compareMode = m_compiler->gtNewIconNode(
+                static_cast<int32_t>(FloatComparisonMode::OrderedGreaterThanOrEqualNonSignaling));
+
+            GenTreeVecCon* maxFloatingValue = m_compiler->gtNewVconNode(TYP_SIMD16);
+            maxFloatingValue->EvaluateBroadcastInPlace(srcType, 9223372036854775808.0);
+
+            srcClone = m_compiler->gtClone(srcVector);
+            GenTree* compareMax =
+                m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, srcClone, maxFloatingValue, compareMode,
+                                                     NI_AVX512_CompareScalarMask, srcBaseType, 16);
+
+            castRange.InsertAtEnd(srcClone);
+            castRange.InsertAtEnd(maxFloatingValue);
+            castRange.InsertAtEnd(compareMode);
+            castRange.InsertAtEnd(compareMax);
+
+            GenTree* allOnes = m_compiler->gtNewAllBitsSetConNode(TYP_SIMD16);
+            GenTree* one     = m_compiler->gtNewIconNode(1);
+            GenTree* maxLong = m_compiler->gtNewSimdBinOpNode(GT_RSZ, TYP_SIMD16, allOnes, one, dstBaseType, 16);
+
+            castRange.InsertAtEnd(allOnes);
+            castRange.InsertAtEnd(one);
+            castRange.InsertAtEnd(maxLong);
+
+            compareMax = m_compiler->gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, compareMax, dstBaseType, 16);
+            castResult =
+                m_compiler->gtNewSimdCndSelNode(TYP_SIMD16, compareMax, maxLong, convertResult, dstBaseType, 16);
+
+            castRange.InsertAtEnd(compareMax);
+        }
+
+        // Because the results are in a SIMD register, we need to ToScalar() them out.
+        GenTree* toScalar = m_compiler->gtNewSimdToScalarNode(genActualType(dstType), castResult, dstBaseType, 16);
+
+        castRange.InsertAtEnd(castResult);
+        castRange.InsertAtEnd(toScalar);
+
+        Range().InsertAfter(cast, std::move(castRange));
+        Range().Remove(cast);
 
         if (use.IsDummyUse())
         {
@@ -619,7 +767,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         }
         use.ReplaceWith(toScalar);
 
-        return toScalar->gtNext;
+        return toScalar;
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_X86
 
