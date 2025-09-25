@@ -10,6 +10,8 @@ DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
 HYBRID_GLOBALIZATION?=true
+USE_MONO_RUNTIME?=true
+AOT?=true
 
 #If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
 #If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
@@ -42,6 +44,8 @@ build-appbundle: clean appbuilder
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
 	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
+	/p:RunAOTCompilation=$(AOT) \
+    /p:UseMonoRuntime=$(USE_MONO_RUNTIME) \
 	/bl
 
 run: clean appbuilder

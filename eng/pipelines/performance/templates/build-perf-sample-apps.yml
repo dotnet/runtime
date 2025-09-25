@@ -212,10 +212,10 @@ steps:
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.runtimeType, 'coreclr')) }}:
     # CoreCLR Interpreter Build
-    - script: ./dotnet.sh publish src/mono/sample/iOS/Program.csproj -c Release /p:TargetOS=ios /p:TargetArchitecture=arm64 /p:DeployAndRun=false /p:UseMonoRuntime=false /p:RunAOTCompilation=false /p:MonoForceInterpreter=false
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false USE_MONO_RUNTIME=false AOT=false
       env:
         DevTeamProvisioning: '-'
-      workingDirectory: $(Build.SourcesDirectory)
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Build HelloiOS sample app
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
