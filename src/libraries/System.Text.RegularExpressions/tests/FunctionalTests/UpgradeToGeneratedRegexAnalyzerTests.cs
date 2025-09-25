@@ -1594,18 +1594,18 @@ public class Program
     }
 }";
 
-            string fixedSource = $@"using System.Text.RegularExpressions;
+            string fixedSource = @"using System.Text.RegularExpressions;
 
 public partial class Program
-{{
-    [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, ""{CultureInfo.CurrentCulture.Name}"")]
-    private static partial Regex s_regex {{ get; }}
-    
+{
+    [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, """")]
+    private static partial Regex s_regex { get; }
+
     public static void Main()
-    {{
+    {
         var match = s_regex.IsMatch(""test"");
-    }}
-}}";
+    }
+}";
 
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
@@ -1631,7 +1631,7 @@ public partial class Program
 {
     [GeneratedRegex(""abc"")]
     private static partial Regex MyRegex { get; }
-    
+
     public static void Main()
     {
         var match = MyRegex.IsMatch(""test"");
@@ -1662,7 +1662,7 @@ public partial class Program
 {
     [GeneratedRegex(""abc"", RegexOptions.Multiline)]
     private static partial Regex MyRegex { get; }
-    
+
     public static void Main()
     {
         var match = MyRegex.IsMatch(""test"");
@@ -1693,7 +1693,7 @@ public partial class Program
 {
     [GeneratedRegex(""abc"")]
     public static partial Regex s_regex { get; }
-    
+
     public static void Main()
     {
         var match = s_regex.IsMatch(""test"");
@@ -1724,7 +1724,7 @@ public partial class Program
 {
     [GeneratedRegex(""abc"")]
     internal static partial Regex s_regex { get; }
-    
+
     public static void Main()
     {
         var match = s_regex.IsMatch(""test"");

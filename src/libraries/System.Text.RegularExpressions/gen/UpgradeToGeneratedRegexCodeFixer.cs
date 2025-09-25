@@ -240,15 +240,28 @@ namespace System.Text.RegularExpressions.Generator
             }
             else
             {
-                PropertyDeclarationSyntax newProperty = (PropertyDeclarationSyntax)generator.PropertyDeclaration(
-                    name: memberName,
-                    type: generator.TypeExpression(regexSymbol),
-                    modifiers: DeclarationModifiers.Static | DeclarationModifiers.Partial,
-                    accessibility: Accessibility.Private,
-                    getAccessorStatements: null); // Getter will be source generated
+                // Create the partial property declaration manually since SyntaxGenerator doesn't support partial properties correctly
+                List<SyntaxToken> modifiers = new List<SyntaxToken>
+                {
+                    SyntaxFactory.Token(SyntaxKind.PrivateKeyword),
+                    SyntaxFactory.Token(SyntaxKind.StaticKeyword),
+                    SyntaxFactory.Token(SyntaxKind.PartialKeyword)
+                };
 
-                // Allow user to pick a different name for the property.
-                newMember = newProperty.ReplaceToken(newProperty.Identifier, SyntaxFactory.Identifier(memberName).WithAdditionalAnnotations(RenameAnnotation.Create()));
+                // Create accessor list with just a getter
+                AccessorListSyntax accessorList = SyntaxFactory.AccessorList(
+                    SyntaxFactory.SingletonList(
+                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                            .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))));
+
+                // Create the property declaration
+                PropertyDeclarationSyntax newProperty = SyntaxFactory.PropertyDeclaration(
+                    SyntaxFactory.IdentifierName("Regex"),
+                    SyntaxFactory.Identifier(memberName).WithAdditionalAnnotations(RenameAnnotation.Create()))
+                    .WithModifiers(SyntaxFactory.TokenList(modifiers))
+                    .WithAccessorList(accessorList);
+
+                newMember = newProperty;
             }
 
             // We now need to check if we have to pass in the cultureName parameter. This parameter will be required in case the option
