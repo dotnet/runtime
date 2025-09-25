@@ -446,7 +446,35 @@ namespace System.Text.RegularExpressions.Generator
             // Get the arguments for the GeneratedRegex attribute (reusing the existing helper methods)
             SyntaxNode? patternValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
             SyntaxNode? regexOptionsValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
-            SyntaxNode? cultureNameValue = GetCultureNameValueIfNeeded(operationArguments, generator);
+
+            // Handle culture name using the same logic as the original method
+            SyntaxNode? cultureNameValue = null;
+            RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgumentLocal(operationArguments) : RegexOptions.None;
+            string? pattern = GetRegexPatternFromArgumentLocal(operationArguments);
+
+            if (pattern is not null)
+            {
+                try
+                {
+                    regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+                }
+                catch (RegexParseException)
+                {
+                    // Pattern parsing failed, skip culture handling
+                }
+
+                // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
+                if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
+                {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
+                    // If CultureInvariant wasn't specified as options, we default to the current culture.
+                    cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
+#pragma warning restore RS1035
+
+                    // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
+                    regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
+                }
+            }
 
             // Generate the GeneratedRegex attribute
             SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
@@ -563,7 +591,35 @@ namespace System.Text.RegularExpressions.Generator
             // Get the arguments for the GeneratedRegex attribute
             SyntaxNode? patternValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
             SyntaxNode? regexOptionsValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
-            SyntaxNode? cultureNameValue = GetCultureNameValueIfNeeded(operationArguments, generator);
+
+            // Handle culture name using the same logic as the original method
+            SyntaxNode? cultureNameValue = null;
+            RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgumentLocal(operationArguments) : RegexOptions.None;
+            string? pattern = GetRegexPatternFromArgumentLocal(operationArguments);
+
+            if (pattern is not null)
+            {
+                try
+                {
+                    regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+                }
+                catch (RegexParseException)
+                {
+                    // Pattern parsing failed, skip culture handling
+                }
+
+                // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
+                if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
+                {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
+                    // If CultureInvariant wasn't specified as options, we default to the current culture.
+                    cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
+#pragma warning restore RS1035
+
+                    // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
+                    regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
+                }
+            }
 
             // Generate the GeneratedRegex attribute
             SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
@@ -656,39 +712,6 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
             return Accessibility.Private; // Default accessibility for fields
-        }
-
-        /// <summary>
-        /// Gets the culture name value if needed based on regex options.
-        /// </summary>
-        private static SyntaxNode? GetCultureNameValueIfNeeded(ImmutableArray<IArgumentOperation> operationArguments, SyntaxGenerator generator)
-        {
-            RegexOptions regexOptions = GetRegexOptionsFromArgumentLocal(operationArguments);
-            string? pattern = GetRegexPatternFromArgumentLocal(operationArguments);
-
-            if (pattern is null)
-            {
-                return null;
-            }
-
-            try
-            {
-                regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
-            }
-            catch (RegexParseException)
-            {
-                return null;
-            }
-
-            // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
-            if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
-            {
-#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
-                return generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
-#pragma warning restore RS1035
-            }
-
-            return null;
         }
 
         /// <summary>

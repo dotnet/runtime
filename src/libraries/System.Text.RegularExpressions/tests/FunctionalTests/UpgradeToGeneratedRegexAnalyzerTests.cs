@@ -1576,12 +1576,7 @@ public partial class Program
     }
 }";
 
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-                FixedCode = fixedSource,
-                CodeActionEquivalenceKey = "ConvertFieldToPartialProperty",
-            }.RunAsync();
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         [Fact]
@@ -1612,12 +1607,7 @@ public partial class Program
     }}
 }}";
 
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-                FixedCode = fixedSource,
-                CodeActionEquivalenceKey = "ConvertFieldToPartialProperty",
-            }.RunAsync();
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
 
         [Fact]
