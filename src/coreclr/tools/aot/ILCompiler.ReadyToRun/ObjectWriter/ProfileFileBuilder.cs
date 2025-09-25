@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.PEWriter
 {
@@ -132,7 +133,7 @@ namespace ILCompiler.PEWriter
                 return;
             }
             _symbolMethodMap = new Dictionary<MethodDesc, ISymbolDefinitionNode>();
-            foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> kvpSymbolMethod in _outputInfoBuilder.MethodSymbolMap)
+            foreach (KeyValuePair<ISymbolDefinitionNode, IMethodNode> kvpSymbolMethod in _outputInfoBuilder.MethodSymbolMap)
             {
                 _symbolMethodMap.Add(kvpSymbolMethod.Value.Method, kvpSymbolMethod.Key);
             }
@@ -156,7 +157,7 @@ namespace ILCompiler.PEWriter
                 if (_symbolMethodMap.TryGetValue(kvpCallerCalleeCount.Key, out ISymbolDefinitionNode callerSymbol) &&
                     _outputInfoBuilder.NodeSymbolMap.TryGetValue(callerSymbol, out callerNode))
                 {
-                    callerRVA = _outputInfoBuilder.Sections[callerNode.SectionIndex].RVAWhenPlaced + callerNode.Offset;
+                    callerRVA = _outputInfoBuilder.Sections[callerNode.SectionIndex].VirtualAddress + callerNode.Offset;
                 }
 
                 foreach (KeyValuePair<MethodDesc, int> kvpCalleeCount in kvpCallerCalleeCount.Value)
@@ -166,7 +167,7 @@ namespace ILCompiler.PEWriter
                     if (_symbolMethodMap.TryGetValue(kvpCalleeCount.Key, out ISymbolDefinitionNode calleeSymbol) &&
                         _outputInfoBuilder.NodeSymbolMap.TryGetValue(calleeSymbol, out calleeNode))
                     {
-                        calleeRVA = _outputInfoBuilder.Sections[calleeNode.SectionIndex].RVAWhenPlaced + calleeNode.Offset;
+                        calleeRVA = _outputInfoBuilder.Sections[calleeNode.SectionIndex].VirtualAddress + calleeNode.Offset;
                     }
 
                     _callInfo.Add(new CallInfo(

@@ -190,7 +190,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void WritePortableExecutableObject(Logger logger)
+        public void EmitPortableExecutableUsingObjectWriter(Logger logger)
         {
             var stopwatch = Stopwatch.StartNew();
 
@@ -226,6 +226,58 @@ namespace ILCompiler.DependencyAnalysis
 
                 stream.Seek(objectWriter.DebugSectionOffsetInStream, SeekOrigin.Begin);
                 stream.Write(perfMapEntry);
+            }
+
+            if (_outputInfoBuilder != null)
+            {
+                foreach (string inputFile in _inputFiles)
+                {
+                    _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                }
+            }
+
+            if (_outputInfoBuilder != null)
+            {
+                r2rPeBuilder.AddSections(_outputInfoBuilder);
+
+                if (_generateMapFile)
+                {
+                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                    _mapFileBuilder.SaveMap(mapFileName);
+                }
+
+                if (_generateMapCsvFile)
+                {
+                    string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
+                    string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
+                    _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                }
+
+                if (_generatePdbFile)
+                {
+                    string path = _pdbPath;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        path = Path.GetDirectoryName(_objectFilePath);
+                    }
+                    _symbolFileBuilder.SavePdb(path, _objectFilePath);
+                }
+
+                if (_generatePerfMapFile)
+                {
+                    string path = _perfMapPath;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        path = Path.GetDirectoryName(_objectFilePath);
+                    }
+                    _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                }
+
+                if (_profileFileBuilder != null)
+                {
+                    string path = Path.ChangeExtension(_objectFilePath, ".profile");
+                    _profileFileBuilder.SaveProfile(path);
+                }
             }
 
             stopwatch.Stop();

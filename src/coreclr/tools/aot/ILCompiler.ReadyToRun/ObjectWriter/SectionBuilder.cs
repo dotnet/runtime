@@ -446,7 +446,7 @@ namespace ILCompiler.PEWriter
         /// <param name="sectionIndex">Section index</param>
         /// <param name="name">Node name to emit in the map file</param>
         /// <param name="outputInfoBuilder">Optional output info to collect (used for creating maps and symbols)</param>
-        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, OutputInfoBuilder outputInfoBuilder)
+        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, ObjectWriter.OutputInfoBuilder outputInfoBuilder)
         {
             Section section = _sections[sectionIndex];
 
@@ -485,7 +485,7 @@ namespace ILCompiler.PEWriter
 
             if (outputInfoBuilder != null)
             {
-                var node = new OutputNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
+                var node = new ObjectWriter.OutputNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
                 outputInfoBuilder.AddNode(node, objectData.DefinedSymbols[0]);
                 if (objectData.Relocs != null)
                 {
@@ -511,7 +511,7 @@ namespace ILCompiler.PEWriter
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         symbol.AppendMangledName(GetNameMangler(), sb);
                         int sectionRelativeOffset = alignedOffset + symbol.Offset;
-                        outputInfoBuilder.AddSymbol(new OutputSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
+                        outputInfoBuilder.AddSymbol(new ObjectWriter.OutputSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
                     }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,
@@ -559,11 +559,11 @@ namespace ILCompiler.PEWriter
             return sectionList;
         }
 
-        public void AddSections(OutputInfoBuilder outputInfoBuilder)
+        public void AddSections(ObjectWriter.OutputInfoBuilder outputInfoBuilder)
         {
             foreach (Section section in _sections)
             {
-                outputInfoBuilder.AddSection(section);
+                outputInfoBuilder.AddSection(new ObjectWriter.OutputSection(section.Name, section.RVAWhenPlaced, section.FilePosWhenPlaced, section.Content.Count));
             }
         }
 

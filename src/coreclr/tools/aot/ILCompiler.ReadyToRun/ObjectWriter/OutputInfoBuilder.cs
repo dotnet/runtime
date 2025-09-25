@@ -18,13 +18,13 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.Diagnostics;
 
-namespace ILCompiler.PEWriter
+namespace ILCompiler.ObjectWriter
 {
     /// <summary>
     /// Base class for symbols and nodes in the output file implements common logic
     /// for section / offset ordering.
     /// </summary>
-    public class OutputItem
+    public abstract class OutputItem
     {
         public class Comparer : IComparer<OutputItem>
         {
@@ -62,7 +62,7 @@ namespace ILCompiler.PEWriter
     /// <summary>
     /// This class represents a single node (contiguous block of data) in the output R2R PE file.
     /// </summary>
-    public class OutputNode : OutputItem
+    public sealed class OutputNode : OutputItem
     {
         /// <summary>
         /// Node length (number of bytes). This doesn't include any external alignment
@@ -93,7 +93,7 @@ namespace ILCompiler.PEWriter
     /// node beginnings (most nodes have a "start symbol" representing the beginning
     /// of the node).
     /// </summary>
-    public class OutputSymbol : OutputItem
+    public sealed class OutputSymbol : OutputItem
     {
         public OutputSymbol(int sectionIndex, int offset, string name)
             : base(sectionIndex, offset, name)
@@ -101,33 +101,36 @@ namespace ILCompiler.PEWriter
         }
     }
 
+    public sealed class OutputSection
+    {
+        public OutputSection(string name, int virtualAddress, int filePosition, int length)
+        {
+            Name = name;
+            VirtualAddress = virtualAddress;
+            FilePosition = filePosition;
+            Length = length;
+        }
+
+        public string Name { get; }
+        public int VirtualAddress { get; }
+        public int FilePosition { get; }
+        public int Length { get; }
+    }
+
     /// <summary>
     /// Common class used to collect information to use when emitting map files and symbol files.
     /// </summary>
     public class OutputInfoBuilder
     {
-        private readonly List<EcmaModule> _inputModules;
-        private readonly List<OutputNode> _nodes;
-        private readonly List<OutputSymbol> _symbols;
-        private readonly List<Section> _sections;
+        private readonly List<EcmaModule> _inputModules = [];
+        private readonly List<OutputNode> _nodes = [];
+        private readonly List<OutputSymbol> _symbols = [];
+        private readonly List<OutputSection> _sections = [];
 
-        private readonly Dictionary<ISymbolDefinitionNode, OutputNode> _nodeSymbolMap;
-        private readonly Dictionary<ISymbolDefinitionNode, MethodWithGCInfo> _methodSymbolMap;
+        private readonly Dictionary<ISymbolDefinitionNode, OutputNode> _nodeSymbolMap = [];
+        private readonly Dictionary<ISymbolDefinitionNode, IMethodNode> _methodSymbolMap = [];
 
-        private readonly Dictionary<RelocType, int> _relocCounts;
-
-        public OutputInfoBuilder()
-        {
-            _inputModules = new List<EcmaModule>();
-            _nodes = new List<OutputNode>();
-            _symbols = new List<OutputSymbol>();
-            _sections = new List<Section>();
-
-            _nodeSymbolMap = new Dictionary<ISymbolDefinitionNode, OutputNode>();
-            _methodSymbolMap = new Dictionary<ISymbolDefinitionNode, MethodWithGCInfo>();
-
-            _relocCounts = new Dictionary<RelocType, int>();
-        }
+        private readonly Dictionary<RelocType, int> _relocCounts = [];
 
         public void AddInputModule(EcmaModule module)
         {
@@ -152,12 +155,12 @@ namespace ILCompiler.PEWriter
             _symbols.Add(symbol);
         }
 
-        public void AddSection(Section section)
+        public void AddSection(OutputSection section)
         {
             _sections.Add(section);
         }
 
-        public void AddMethod(MethodWithGCInfo method, ISymbolDefinitionNode symbol)
+        public void AddMethod(IMethodNode method, ISymbolDefinitionNode symbol)
         {
             _methodSymbolMap.Add(symbol, method);
         }
@@ -183,7 +186,7 @@ namespace ILCompiler.PEWriter
         {
             DebugNameFormatter nameFormatter = new DebugNameFormatter();
             TypeNameFormatter typeNameFormatter = TypeString.Instance;
-            foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> symbolMethodPair in _methodSymbolMap)
+            foreach (KeyValuePair<ISymbolDefinitionNode, IMethodNode> symbolMethodPair in _methodSymbolMap)
             {
                 MethodInfo methodInfo = new MethodInfo();
                 if (symbolMethodPair.Value.Method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
@@ -193,8 +196,8 @@ namespace ILCompiler.PEWriter
                 }
                 methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
                 OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
-                Section section = _sections[node.SectionIndex];
-                methodInfo.HotRVA = (uint)(section.RVAWhenPlaced + node.Offset);
+                OutputSection section = _sections[node.SectionIndex];
+                methodInfo.HotRVA = (uint)(section.VirtualAddress + node.Offset);
                 methodInfo.HotLength = (uint)node.Length;
                 methodInfo.ColdRVA = 0;
                 methodInfo.ColdLength = 0;
@@ -237,11 +240,11 @@ namespace ILCompiler.PEWriter
         }
 
         public IReadOnlyList<OutputNode> Nodes => _nodes;
-        public IReadOnlyList<Section> Sections => _sections;
+        public IReadOnlyList<OutputSection> Sections => _sections;
         public IReadOnlyList<OutputSymbol> Symbols => _symbols;
 
         public IReadOnlyDictionary<ISymbolDefinitionNode, OutputNode> NodeSymbolMap => _nodeSymbolMap;
-        public IReadOnlyDictionary<ISymbolDefinitionNode, MethodWithGCInfo> MethodSymbolMap => _methodSymbolMap;
+        public IReadOnlyDictionary<ISymbolDefinitionNode, IMethodNode> MethodSymbolMap => _methodSymbolMap;
 
         public IReadOnlyDictionary<RelocType, int> RelocCounts => _relocCounts;
     }

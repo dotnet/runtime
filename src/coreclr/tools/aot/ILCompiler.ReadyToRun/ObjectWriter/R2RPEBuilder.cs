@@ -200,7 +200,7 @@ namespace ILCompiler.PEWriter
         /// <param name="section">Target section</param>
         /// <param name="name">Textual name of the object data for diagnostic purposese</param>
         /// <param name="outputInfoBuilder">Optional output info builder to output the data item to</param>
-        public void AddObjectData(DependencyAnalysis.ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, OutputInfoBuilder outputInfoBuilder)
+        public void AddObjectData(DependencyAnalysis.ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, ObjectWriter.OutputInfoBuilder outputInfoBuilder)
         {
             if (_written)
             {
@@ -272,7 +272,7 @@ namespace ILCompiler.PEWriter
         /// Fill in map builder section table.
         /// </summary>
         /// <param name="outputInfoBuilder">Object info builder to set up</param>
-        public void AddSections(OutputInfoBuilder outputInfoBuilder)
+        public void AddSections(ObjectWriter.OutputInfoBuilder outputInfoBuilder)
         {
             _sectionBuilder.AddSections(outputInfoBuilder);
         }
