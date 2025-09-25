@@ -1036,7 +1036,7 @@ CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
 #ifdef FEATURE_COMWRAPPERS
-CDAC_GLOBAL(DispatchThisPtrMask, intptr_t, InteropLib::ABI::DispatchThisPtrMask)
+CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
 CDAC_GLOBAL(NativeObjectWrapperClass, uint32, CLASS__NATIVE_OBJECT_WRAPPER)
 CDAC_GLOBAL_POINTER(MOWQueryInterface, &ManagedObjectWrapper_QueryInterface)
 CDAC_GLOBAL_POINTER(TrackerTargetQueryInterface, &TrackerTarget_QueryInterface)
