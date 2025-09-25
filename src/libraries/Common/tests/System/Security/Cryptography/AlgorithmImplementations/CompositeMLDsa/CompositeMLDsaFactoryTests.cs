@@ -198,6 +198,19 @@ namespace System.Security.Cryptography.Tests
                     WriteECPrivateKey(version: 1, ecdsaKey.D, oid: null, ecdsaKey.Q)));
         }
 
+        [Fact]
+        public static void ImportPrivateKey_ECDsa_HasCurveAndPublicKey()
+        {
+            ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
+
+            // Domain parameters and public key are not allowed
+            AssertImportBadPrivateKey(
+                CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
+                ComposeKeys(
+                    MLDsaTestsData.IetfMLDsa65.PrivateSeed,
+                    WriteECPrivateKey(version: 1, ecdsaKey.D, ecdsaKey.Curve.Oid.Value, ecdsaKey.Q)));
+        }
+
         static byte[] ComposeKeys(byte[] mldsaKey, AsnWriter tradKey)
         {
             byte[] compositeKey = new byte[mldsaKey.Length + tradKey.GetEncodedLength()];
