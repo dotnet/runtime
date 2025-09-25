@@ -1348,7 +1348,7 @@ namespace System.Collections.Generic
     internal sealed class ArraySortHelperForTComparer<TKey, TValue, TComparer>
         where TComparer : IComparer<TKey>
     {
-        public void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+        public static void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
         {
             Debug.Assert(comparer != null);
 
