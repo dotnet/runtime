@@ -122,7 +122,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
     }
 
-    if (target != NULL)
+    if (target != (PCODE)NULL)
     {
         _ASSERTE(pHeader->GetTarget() == target);
     }
