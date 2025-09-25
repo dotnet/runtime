@@ -1,6 +1,7 @@
 parameters:
   hybridGlobalization: true
   mono: false
+  coreclr: false
   nativeAot: false
 
 jobs:
@@ -16,6 +17,24 @@ jobs:
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
           nameSuffix: iOSMono
+          isOfficialBuild: false
+          postBuildSteps:
+            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
+              parameters:
+                hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  - ${{ if eq(parameters.coreclr, false) }}:
+    # build CoreCLR iOS scenarios HybridGlobalization
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms:
+        - ios_arm64
+        jobParameters:
+          buildArgs: -s clr+clr.runtime+libs+packs -c $(_BuildConfig)
+          nameSuffix: iOSCoreCLR
           isOfficialBuild: false
           postBuildSteps:
             - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml

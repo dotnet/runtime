@@ -30,10 +30,6 @@ parameters:
   displayName: Build Coreclr Arm64 Android
   type: boolean
   default: true
-- name: coreclr_arm64_ios
-  displayName: Build Coreclr Arm64 iOS
-  type: boolean
-  default: true
 - name: wasm
   displayName: Build WebAssembly (wasm)
   type: boolean
@@ -118,8 +114,6 @@ extends:
                 - coreclr_x86_windows
               - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
                 - coreclr_arm64_android
-              - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
-                - coreclr_arm64_ios
               - ${{ if eq(parameters.wasm, true) }}:
                 - wasm
               - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
@@ -160,8 +154,6 @@ extends:
               - coreclr_x86_windows
             - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
               - coreclr_arm64_android
-            - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
-              - coreclr_arm64_ios
             - ${{ if eq(parameters.wasm, true) }}:
               - wasm
             - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:
@@ -208,8 +200,6 @@ extends:
                 - coreclr_x86_windows
               - ${{ if eq(parameters.coreclr_arm64_android, true) }}:
                 - coreclr_arm64_android
-              - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
-                - coreclr_arm64_ios
               - ${{ if eq(parameters.wasm, true) }}:
                 - wasm
               - ${{ if eq(parameters.monoAot_arm64_linux, true) }}:

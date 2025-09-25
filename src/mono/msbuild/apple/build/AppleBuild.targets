@@ -314,7 +314,6 @@
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">NativeAOT</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">CoreCLR</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == ''">MonoVM</AppleAppBuilderRuntime>
-      <GenerateXcodeProject>true</GenerateXcodeProject>
     </PropertyGroup>
 
     <AppleAppBuilderTask
