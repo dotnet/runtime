@@ -3,7 +3,7 @@
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptNativeExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
+import { InteropJavaScriptNativeExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -92,32 +92,32 @@ export type LoaderConfigInternal = LoaderConfig & {
 
 
 /// A Promise<T> with a controller attached
-export interface ControllablePromise<T = any> extends Promise<T> {
+export interface ControllablePromise<TResult = any> extends Promise<TResult> {
     __brand: "ControllablePromise"
 }
 
 /// Just a pair of a promise and its controller
-export interface PromiseController<T> {
-    readonly promise: ControllablePromise<T>;
+export interface PromiseCompletionSource<TResult> {
+    readonly promise: ControllablePromise<TResult>;
     isDone: boolean;
-    resolve: (value: T | PromiseLike<T>) => void;
+    resolve: (value: TResult | PromiseLike<TResult>) => void;
     reject: (reason?: any) => void;
-    propagateFrom: (other: Promise<T>) => void;
+    propagateFrom: (other: Promise<TResult>) => void;
 }
 
 
-export type InternalApis = {
-    runtimeApi: RuntimeAPI,
-    runtimeExportsTable: RuntimeExportsTable,
-    loaderExportsTable: LoaderExportsTable,
-    hostNativeExportsTable: HostNativeExportsTable,
-    interopJavaScriptNativeExportsTable: InteropJavaScriptNativeExportsTable,
-    nativeBrowserExportsTable: NativeBrowserExportsTable,
-    config: LoaderConfigInternal,
-    updates: (() => void)[],
+export type InternalExchange = {
+    netPublicApi: RuntimeAPI,
+    netRuntimeExportsTable: RuntimeExportsTable,
+    netLoaderExportsTable: LoaderExportsTable,
+    netBrowserHostExportsTable: HostNativeExportsTable,
+    netInteropJSExportsTable: InteropJavaScriptExportsTable,
+    netNativeBrowserExportsTable: NativeBrowserExportsTable,
+    netLoaderConfig: LoaderConfigInternal,
+    netInternalUpdates: (() => void)[],
 }
 
 export type JsModuleExports = {
-    initialize<T>(internals: InternalApis): Promise<T>;
+    netInitializeModule<T>(internals: InternalExchange): Promise<T>;
 };
 

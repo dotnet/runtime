@@ -13,29 +13,33 @@ add_library(System.Native.Browser-Static
 set_target_properties(System.Native.Browser-Static PROPERTIES OUTPUT_NAME System.Native.Browser CLEAN_DIRECT_OUTPUT 1)
 install(TARGETS System.Native.Browser-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-# WASM-TODO *.ts files instead
-set(ROLLUP_TS_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/loader/dotnet.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/loader/dotnet.d.ts"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/libBrowserHost.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/libSystem.Native.Browser.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/libSystem.Native.Browser.extpost.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/./libSystem.Native.Browser.extpost.js"
-    "${CMAKE_CURRENT_SOURCE_DIR}/./libSystem.Native.Browser.js"
+
+file(GLOB_RECURSE ROLLUP_TS_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../System.Runtime.InteropServices.JavaScript.Native/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../System.Runtime.InteropServices.JavaScript.Native/*.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Common/JavaScript/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../Common/JavaScript/*.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/*.ts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../corehost/browserhost/*.js"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../package.json"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../tsconfig.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../node_modules/.npm-stamp"
 )
 
-# WASM-TODO *.js.map files
 set(ROLLUP_OUTPUTS
     "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/dotnet.d.ts"
     "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/dotnet.runtime.js.map"
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js"
+    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
 )
 
 set(ROLLUP_STAMP
@@ -54,7 +58,7 @@ endif()
 add_custom_command(
     OUTPUT ${ROLLUP_STAMP}
     BYPRODUCTS ${ROLLUP_OUTPUTS}
-    COMMAND npm run rollup:stub -- ${CMAKE_BUILD_TYPE} ${PRODUCT_VERSION_JS} ${CI_BUILD_JS}
+    COMMAND npm run rollup:cmake -- "Configuration:${CMAKE_BUILD_TYPE},ProductVersion:${PRODUCT_VERSION_JS},ContinuousIntegrationBuild:${CI_BUILD_JS}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
     COMMENT "Running 'npm run rollup' to generate JavaScript bundles"
     DEPENDS ${ROLLUP_TS_SOURCES}
