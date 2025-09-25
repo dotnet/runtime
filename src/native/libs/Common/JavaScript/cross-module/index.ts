@@ -64,6 +64,63 @@ export function netUpdateModuleInternals() {
         netNativeBrowserExports = {} as NativeBrowserExports;
         expandNBE(netInternals.netNativeBrowserExportsTable, netNativeBrowserExports);
     }
+
+    function expandRE(table:RuntimeExportsTable, runtime:RuntimeExports):void {
+        Object.assign(runtime, {
+        });
+    }
+
+    function expandLE(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, jsEngine:JSEngineType, netLoaderExports:LoaderExports):void {
+        const loggerLocal :LoggerType = {
+            info: table[0],
+            warn: table[1],
+            error: table[2],
+        };
+        const assertLocal :AssertType = {
+            check: table[3],
+        };
+        const loaderExportsLocal :LoaderExports = {
+            ENVIRONMENT_IS_NODE: table[4],
+            ENVIRONMENT_IS_SHELL: table[5],
+            ENVIRONMENT_IS_WEB: table[6],
+            ENVIRONMENT_IS_WORKER: table[7],
+            ENVIRONMENT_IS_SIDECAR: table[8],
+            resolveRunMainPromise: table[9],
+            rejectRunMainPromise: table[10],
+            getRunMainPromise: table[11],
+        };
+        const jsEngineLocal :JSEngineType = {
+            IS_NODE: loaderExportsLocal.ENVIRONMENT_IS_NODE(),
+            IS_SHELL: loaderExportsLocal.ENVIRONMENT_IS_SHELL(),
+            IS_WEB: loaderExportsLocal.ENVIRONMENT_IS_WEB(),
+            IS_WORKER: loaderExportsLocal.ENVIRONMENT_IS_WORKER(),
+            IS_SIDECAR: loaderExportsLocal.ENVIRONMENT_IS_SIDECAR(),
+        };
+        Object.assign(netLoaderExports, loaderExportsLocal);
+        Object.assign(logger, loggerLocal);
+        Object.assign(assert, assertLocal);
+        Object.assign(jsEngine, jsEngineLocal);
+    }
+
+    function expandHE(table:HostNativeExportsTable, native:HostNativeExports):void {
+        const nativeLocal :HostNativeExports = {
+            registerDllBytes: table[0],
+            isSharedArrayBuffer: table[1],
+        };
+        Object.assign(native, nativeLocal);
+    }
+
+    function expandJSNE(table:InteropJavaScriptNativeExportsTable, interop:InteropJavaScriptNativeExports):void {
+        const interopLocal :InteropJavaScriptNativeExports = {
+        };
+        Object.assign(interop, interopLocal);
+    }
+
+    function expandNBE(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
+        const interopLocal :NativeBrowserExports = {
+        };
+        Object.assign(interop, interopLocal);
+    }
 }
 
 /**
@@ -88,47 +145,10 @@ export function netTabulateLE(logger:LoggerType, assert:AssertType, netLoaderExp
     ];
 }
 
-function expandLE(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, jsEngine:JSEngineType, netLoaderExports:LoaderExports):void {
-    const loggerLocal :LoggerType = {
-        info: table[0],
-        warn: table[1],
-        error: table[2],
-    };
-    const assertLocal :AssertType = {
-        check: table[3],
-    };
-    const loaderExportsLocal :LoaderExports = {
-        ENVIRONMENT_IS_NODE: table[4],
-        ENVIRONMENT_IS_SHELL: table[5],
-        ENVIRONMENT_IS_WEB: table[6],
-        ENVIRONMENT_IS_WORKER: table[7],
-        ENVIRONMENT_IS_SIDECAR: table[8],
-        resolveRunMainPromise: table[9],
-        rejectRunMainPromise: table[10],
-        getRunMainPromise: table[11],
-    };
-    const jsEngineLocal :JSEngineType = {
-        IS_NODE: loaderExportsLocal.ENVIRONMENT_IS_NODE(),
-        IS_SHELL: loaderExportsLocal.ENVIRONMENT_IS_SHELL(),
-        IS_WEB: loaderExportsLocal.ENVIRONMENT_IS_WEB(),
-        IS_WORKER: loaderExportsLocal.ENVIRONMENT_IS_WORKER(),
-        IS_SIDECAR: loaderExportsLocal.ENVIRONMENT_IS_SIDECAR(),
-    };
-    Object.assign(netLoaderExports, loaderExportsLocal);
-    Object.assign(logger, loggerLocal);
-    Object.assign(assert, assertLocal);
-    Object.assign(jsEngine, jsEngineLocal);
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function netTabulateRE(map:RuntimeExports):RuntimeExportsTable {
     return [
     ];
-}
-
-function expandRE(table:RuntimeExportsTable, runtime:RuntimeExports):void {
-    Object.assign(runtime, {
-    });
 }
 
 export function netTabulateHE(map:HostNativeExports):HostNativeExportsTable {
@@ -138,24 +158,10 @@ export function netTabulateHE(map:HostNativeExports):HostNativeExportsTable {
     ];
 }
 
-function expandHE(table:HostNativeExportsTable, native:HostNativeExports):void {
-    const nativeLocal :HostNativeExports = {
-        registerDllBytes: table[0],
-        isSharedArrayBuffer: table[1],
-    };
-    Object.assign(native, nativeLocal);
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function netTabulateJSNE(map:InteropJavaScriptNativeExports):InteropJavaScriptNativeExportsTable {
     return [
     ];
-}
-
-function expandJSNE(table:InteropJavaScriptNativeExportsTable, interop:InteropJavaScriptNativeExports):void {
-    const interopLocal :InteropJavaScriptNativeExports = {
-    };
-    Object.assign(interop, interopLocal);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -164,8 +170,3 @@ export function netTabulateNBE(map:NativeBrowserExports):NativeBrowserExportsTab
     ];
 }
 
-function expandNBE(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
-    const interopLocal :NativeBrowserExports = {
-    };
-    Object.assign(interop, interopLocal);
-}
