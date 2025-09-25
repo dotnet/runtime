@@ -13,7 +13,7 @@ namespace Microsoft.NET.HostModel
     /// <summary>
     /// Provides methods for modifying the embedded native resources in a PE image.
     /// </summary>
-    public class ResourceUpdater : IDisposable
+    public sealed class ResourceUpdater : IDisposable
     {
         private readonly FileStream stream;
         private readonly PEReader _reader;
@@ -331,12 +331,15 @@ namespace Microsoft.NET.HostModel
             GC.SuppressFinalize(this);
         }
 
-        public void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
-            if (disposing && !leaveOpen)
+            if (disposing)
             {
                 _reader.Dispose();
-                stream.Dispose();
+                if (!leaveOpen)
+                {
+                    stream.Dispose();
+                }
             }
         }
     }
