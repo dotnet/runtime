@@ -65,7 +65,10 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
 
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
             MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)token);
-            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
+            MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(moduleHandle);
+            if (mdReader == null)
+                throw new NotImplementedException();
+
             MethodDefinition methodDefinition = mdReader.GetMethodDefinition(methodDefHandle);
             BlobHandle methodBlob = methodDefinition.Signature;
             BlobReader blobReader = mdReader.GetBlobReader(methodBlob);
@@ -138,7 +141,10 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
             }
 
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
+            MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(moduleHandle);
+            if (mdReader == null)
+                throw new NotImplementedException();
+
             StandaloneSignatureHandle localSignatureHandle = MetadataTokens.StandaloneSignatureHandle(localToken);
             BlobHandle localSignatureBlob = mdReader.GetStandaloneSignature(localSignatureHandle).Signature;
             BlobReader blobReader = mdReader.GetBlobReader(localSignatureBlob);
