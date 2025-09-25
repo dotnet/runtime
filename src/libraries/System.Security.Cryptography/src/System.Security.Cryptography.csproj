@@ -1332,6 +1332,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.HKDF.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.HKDF.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs"
@@ -1404,7 +1406,7 @@
     <Compile Include="System\Security\Cryptography\ECDsa.Create.AppleCrypto.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Apple.cs" />
-    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
