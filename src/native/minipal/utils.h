@@ -43,13 +43,13 @@
 #ifdef _MSC_VER
 #define UNREACHABLE_MSG(message) \
     do { \
-        assert((void)message, 0); \
+        assert(!#message); \
         __assume(0); \
     } while (0)
 #else
 #define UNREACHABLE_MSG(message) \
     do { \
-        assert((void)message, 0); \
+        assert(!#message); \
         __builtin_unreachable(); \
     } while (0)
 #endif
