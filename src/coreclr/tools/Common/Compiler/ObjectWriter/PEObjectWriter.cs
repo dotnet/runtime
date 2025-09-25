@@ -22,6 +22,31 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal sealed class PEObjectWriter : CoffObjectWriter
     {
+        internal const int DosHeaderSize = 0x80;
+
+        private static ReadOnlySpan<byte> DosHeader => // DosHeaderSize
+        [
+            0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,
+            0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
+            0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+
+            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == DosHeader.Length)
+
+            0x0e, 0x1f, 0xba, 0x0e, 0x00, 0xb4, 0x09, 0xcd,
+            0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x54, 0x68,
+            0x69, 0x73, 0x20, 0x70, 0x72, 0x6f, 0x67, 0x72,
+            0x61, 0x6d, 0x20, 0x63, 0x61, 0x6e, 0x6e, 0x6f,
+            0x74, 0x20, 0x62, 0x65, 0x20, 0x72, 0x75, 0x6e,
+            0x20, 0x69, 0x6e, 0x20, 0x44, 0x4f, 0x53, 0x20,
+            0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,
+            0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        ];
+
         // PE layout computed ahead of writing the file. These are populated by
         // EmitSectionsAndLayout so that data directories (e.g. exception table)
         // can be filled prior to writing the optional header.
@@ -356,7 +381,7 @@ namespace ILCompiler.ObjectWriter
             _peSectionAlignment = sectionAlignment;
 
             // Compute headers size and align to file alignment
-            uint sizeOfHeadersUnaligned = (uint)(0x80 + 4 + 20 + sizeOfOptionalHeader + 40 * numberOfSections);
+            uint sizeOfHeadersUnaligned = (uint)(DosHeaderSize + 4 + 20 + sizeOfOptionalHeader + 40 * numberOfSections);
             uint sizeOfHeaders = (uint)AlignmentHelper.AlignUp((int)sizeOfHeadersUnaligned, (int)fileAlignment);
 
             // Calculate layout for sections: raw file offsets and virtual addresses
@@ -613,13 +638,9 @@ namespace ILCompiler.ObjectWriter
                 AddRelocSection();
             }
 
-            // Write a minimal DOS stub and set the e_lfanew to 0x80 where we'll
-            // place the PE headers.
-            // TODO: Add DOS execution program stub.
-            var dos = new byte[0x80];
-            "MZ"u8.CopyTo(dos);
-            BinaryPrimitives.WriteInt32LittleEndian(dos.AsSpan(0x3c), 0x80);
-            outputFileStream.Write(dos);
+            outputFileStream.Write(DosHeader);
+            Debug.Assert(DosHeader.Length == DosHeaderSize);
+            outputFileStream.Write("PE\0\0"u8);
 
             ushort numberOfSections = (ushort)_sections.Count;
             bool isPE32Plus = _nodeFactory.Target.PointerSize == 8;
@@ -657,10 +678,6 @@ namespace ILCompiler.ObjectWriter
             uint sizeOfCode = _peSizeOfCode;
             uint sizeOfInitializedData = _peSizeOfInitializedData;
             uint sizeOfImage = _peSizeOfImage;
-
-            // Write PE Signature at e_lfanew (0x80)
-            outputFileStream.Position = 0x80;
-            outputFileStream.Write("PE\0\0"u8);
 
             Characteristics characteristics = Characteristics.ExecutableImage | Characteristics.Dll;
             characteristics |= isPE32Plus ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
