@@ -12,7 +12,6 @@ namespace System.IO.Tests
     public static class TestDataProvider
     {
         private static readonly char[] s_charData;
-        private static readonly Rune[] s_runeData;
         private static readonly char[] s_smallData;
         private static readonly char[] s_largeData;
 
@@ -57,14 +56,6 @@ namespace System.IO.Tests
                 '\u00E6'
             };
 
-            var runeData = new List<Rune>();
-            foreach (char charDataInstance in s_charData)
-            {
-                runeData.Add(new Rune(charDataInstance));
-            }
-            runeData.Add(new Rune(0x01F600));
-            s_runeData = runeData.ToArray();
-
             s_smallData = "HELLO".ToCharArray();
 
             var data = new List<char>();
@@ -76,8 +67,6 @@ namespace System.IO.Tests
         }
 
         public static char[] CharData => s_charData;
-
-        public static Rune[] RuneData => s_runeData;
 
         public static char[] SmallData => s_smallData;
 
