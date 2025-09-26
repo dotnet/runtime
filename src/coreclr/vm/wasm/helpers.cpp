@@ -555,7 +555,6 @@ namespace
 
     void CallFunc_I32_I32IND_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
-        printf("TRACE CallFunc_I32_I32IND_I32_I32IND_I32_RetI32 pcode: %lx arg0: %x arg1: %x arg2: %x\n", pcode, ARG(0), ARG_IND(1), ARG_IND(2));
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
         *(int32_t*)pRet = (*fptr)(ARG(0), ARG_IND(1), ARG(2), ARG_IND(3), ARG(4));
     }
