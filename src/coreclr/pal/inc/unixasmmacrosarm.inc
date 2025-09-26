@@ -172,6 +172,7 @@ C_FUNC(\Name):
         .endif
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
+        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 36
 
         .ifnc \pushArgRegs, DoNotPushArgRegs
                 PUSH_ARGUMENT_REGISTERS

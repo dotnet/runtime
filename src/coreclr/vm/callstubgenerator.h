@@ -74,7 +74,7 @@ class CallStubGenerator
         ReturnTypeI4,
         ReturnTypeFloat,
 #endif // TARGET_64BIT
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if (defined(TARGET_WINDOWS) && defined(TARGET_AMD64)) || defined(TARGET_ARM)
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else

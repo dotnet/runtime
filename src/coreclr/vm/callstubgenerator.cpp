@@ -1144,6 +1144,11 @@ extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t
 extern "C" void CallJittedMethodRetBuffRDX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void InterpreterStubRetBuffRCX();
 extern "C" void InterpreterStubRetBuffRDX();
+#elif defined(TARGET_ARM) // TARGET_ARM
+extern "C" void CallJittedMethodRetBuffR0(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void InterpreterStubRetBuffR0();
+extern "C" void InterpreterStubRetBuffR1();
 #else // TARGET_WINDOWS && TARGET_AMD64
 extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void InterpreterStubRetBuff();
@@ -1216,6 +1221,11 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRCX);
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRDX);
+#elif defined(TARGET_ARM)
+        case ReturnTypeBuffArg1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR0);
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR1);
 #else // TARGET_WINDOWS && TARGET_AMD64
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
@@ -1291,6 +1301,11 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRCX);
         case ReturnTypeBuffArg2:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRDX);
+#elif defined(TARGET_ARM)
+        case ReturnTypeBuffArg1:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffR0);
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffR1);
 #else // TARGET_WINDOWS && TARGET_AMD64
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
@@ -1620,11 +1635,11 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     {
         pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
     }
-    else if (m_x1 != NoRange)
+    if (m_x1 != NoRange)
     {
         pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
     }
-    else if (m_s1 != NoRange)
+    if (m_s1 != NoRange)
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
 #ifdef TARGET_64BIT
@@ -1841,7 +1856,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
 {
     if (pArgIt->HasRetBuffArg())
     {
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if (defined(TARGET_WINDOWS) && defined(TARGET_AMD64)) || defined(TARGET_ARM)
         if (pArgIt->HasThis())
         {
             return ReturnTypeBuffArg2;
