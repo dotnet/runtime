@@ -87,9 +87,7 @@ export function setHeapI32(offset: MemOffset, value: number): void {
  */
 export function setHeapI52(offset: MemOffset, value: number): void {
     dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
-    throw new Error("TODO");
-    // const error = cwraps.mono_wasm_f64_to_i52(<any>offset, value);
-    // autoThrowI52(error);
+    throw new Error("TODO-WASM");
 }
 
 /**
@@ -98,9 +96,7 @@ export function setHeapI52(offset: MemOffset, value: number): void {
 export function setHeapU52(offset: MemOffset, value: number): void {
     dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
     dotnetAssert.check(value >= 0, "Can't convert negative Number into UInt64");
-    throw new Error("TODO");
-    //const error = cwraps.mono_wasm_f64_to_u52(<any>offset, value);
-    //autoThrowI52(error);
+    throw new Error("TODO-WASM");
 }
 
 export function setHeapI64Big(offset: MemOffset, value: bigint): void {
@@ -182,11 +178,7 @@ export function getHeapI32_local(localView: Int32Array, offset: MemOffset): numb
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHeapI52(offset: MemOffset): number {
-    throw new Error("TODO");
-    //const result = cwraps.mono_wasm_i52_to_f64(<any>offset, runtimeHelpers._i52_error_scratch_buffer);
-    //const error = getI32(runtimeHelpers._i52_error_scratch_buffer);
-    //autoThrowI52(error);
-    //return result;
+    throw new Error("TODO-WASM");
 }
 
 /**
@@ -194,11 +186,7 @@ export function getHeapI52(offset: MemOffset): number {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHeapU52(offset: MemOffset): number {
-    throw new Error("TODO");
-    //const result = cwraps.mono_wasm_u52_to_f64(<any>offset, runtimeHelpers._i52_error_scratch_buffer);
-    //const error = getI32(runtimeHelpers._i52_error_scratch_buffer);
-    //autoThrowI52(error);
-    //return result;
+    throw new Error("TODO-WASM");
 }
 
 export function getHeapI64Big(offset: MemOffset): bigint {
