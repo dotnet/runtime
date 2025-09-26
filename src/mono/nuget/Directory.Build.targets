@@ -2,7 +2,7 @@
   <Import Project="..\Directory.Build.targets" />
 
   <PropertyGroup>
-    <StableVersion Condition="'$(DotNetFinalVersionKind)' == 'release'">$(ProductVersion)</StableVersion>
+    <StableVersion Condition="'$(DotNetFinalVersionKind)' == 'release' and '$(IsShipping)' == 'true'">$(ProductVersion)</StableVersion>
   </PropertyGroup>
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
