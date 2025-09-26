@@ -105,10 +105,10 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>8.0.0-rc.1.23406.6</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreAppRuntimewinx64Version>8.0.10</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>8.0.0-rc.1.23406.6</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>8.0.10-servicing.24466.9</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETCoreILAsmVersion>8.0.0-preview.7.23325.2</MicrosoftNETCoreILAsmVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.25311.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.25311.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
@@ -137,16 +137,16 @@
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
     <!-- The following package versions are present in minimum MSBuild / VS version that this release is supported on -->
-    <MicrosoftBclAsyncInterfacesToolsetVersion>7.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
+    <MicrosoftBclAsyncInterfacesToolsetVersion>8.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
     <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
-    <SystemCollectionsImmutableToolsetVersion>7.0.0</SystemCollectionsImmutableToolsetVersion>
+    <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>7.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
-    <SystemReflectionMetadataToolsetVersion>7.0.0</SystemReflectionMetadataToolsetVersion>
-    <SystemTextEncodingsWebToolsetVersion>7.0.0</SystemTextEncodingsWebToolsetVersion>
-    <SystemTextJsonToolsetVersion>7.0.3</SystemTextJsonToolsetVersion>
+    <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
+    <SystemTextEncodingsWebToolsetVersion>8.0.0</SystemTextEncodingsWebToolsetVersion>
+    <SystemTextJsonToolsetVersion>8.0.5</SystemTextJsonToolsetVersion>
     <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
-    <SystemTextJsonVersion>8.0.0-rc.1.23406.6</SystemTextJsonVersion>
+    <SystemTextJsonVersion>8.0.5</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
@@ -182,7 +182,7 @@
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
     <DNNEVersion>2.0.5</DNNEVersion>
-    <MicrosoftBuildVersion>17.8.3</MicrosoftBuildVersion>
+    <MicrosoftBuildVersion>17.8.29</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>$(MicrosoftBuildVersion)</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildUtilitiesCoreVersion>
@@ -223,11 +223,11 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230918.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>8.0.0-rc.1.23406.6</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>8.0.10</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.25471.2</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
-    <MicrosoftDotNetILCompilerVersion>8.0.0-rc.1.23406.6</MicrosoftDotNetILCompilerVersion>
+    <MicrosoftDotNetILCompilerVersion>8.0.10</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-rtm.25466.3</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
