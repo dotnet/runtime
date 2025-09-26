@@ -4087,6 +4087,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             else if (isCalli)
             {
                 EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
+                if (((m_pLastNewIns->data[1] & (int32_t)CalliFlags::PInvoke) != 0)
+                    && m_pVars[dVar].interpType == InterpTypeVT)
+                {
+                    // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
+                    // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
+                    // with the call arguments. The managed calling convention does not have this restriction.
+                    m_pVars[dVar].noCallArgs = true;
+                }
             }
             else
             {
@@ -4108,6 +4116,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 else
                 {
                     opcode = (isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL;
+
+                    if (opcode == INTOP_CALL_PINVOKE && m_pVars[dVar].interpType == InterpTypeVT)
+                    {
+                        // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
+                        // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
+                        // with the call arguments. The managed calling convention does not have this restriction.
+                        m_pVars[dVar].noCallArgs = true;
+                    }
                 }
 
                 if (callInfo.nullInstanceCheck)
@@ -4161,6 +4177,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
             EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
+
+            // These calli calls cannot be pinvoke calls. (If we want to add that, we need to set the noCallArgs flag)
+            assert(!((m_pLastNewIns->data[1] & (int32_t)CalliFlags::PInvoke) != 0));
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
