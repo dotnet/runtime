@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         private readonly List<IPattern>? _excludePatterns;
         private readonly List<IncludeOrExcludeValue<IPattern>>? _includeOrExcludePatterns;
         private readonly PatternBuilder _builder;
-        private readonly StringComparison _comparison;
+        internal readonly StringComparison _comparison;
         private readonly bool _preserveFilterOrder;
 
         /// <summary>

@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         {
             ArgumentNullException.ThrowIfNull(matcher);
 
-            return matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
+            return matcher.Execute(new InMemoryDirectoryInfo(rootDir, files, matcher._comparison));
         }
     }
 }
