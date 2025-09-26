@@ -727,6 +727,8 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
+#elif defined (TARGET_WASM)
+    PORTABILITY_ASSERT("GenerateShuffleArray not implemented for WebAssembly");
 #else
 #error Unsupported architecture
 #endif
