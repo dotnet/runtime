@@ -62,13 +62,6 @@ async function loadJSModule(asset: JsAsset, loadBootResource?: LoadBootResourceC
     return await import(/* webpackIgnore: true */ asset.resolvedUrl);
 }
 
-/* WASM-TODO function fetchWasm(asset: WasmAsset): Promise<Uint8Array> {
-    if (asset.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(asset.name);
-    }
-    return fetchBytes(asset);
-}*/
-
 async function fetchDll(asset: AssemblyAsset): Promise<void> {
     if (asset.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(asset.name);
