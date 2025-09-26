@@ -169,6 +169,10 @@
 #define FEATURE_PORTABLE_SHUFFLE_THUNKS
 #endif
 
+#if defined(TARGET_UNIX) || !defined(TARGET_X86)
+#define FEATURE_INSTANTIATINGSTUB_AS_IL
+#endif
+
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
