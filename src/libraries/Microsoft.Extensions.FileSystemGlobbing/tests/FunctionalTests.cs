@@ -901,5 +901,51 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 Assert.True(matcher.Match([$"../{cwdFolderName}/{file}"]).HasMatches);
             }
         }
+
+        [Theory]
+        [InlineData(@"C:\this\example\root", @"C:\this\EXAMPLE\root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"C:\this\example\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"C:\this\EXAMPLE\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        public void VerifyFiles_InMemory_HasCaseInsensitiveRootMatches(string matchRoot, string filesRoot, string pattern, string[] expectedSubPaths)
+        {
+            Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
+            matcher.AddInclude(pattern);
+
+            PatternMatchingResult patternMatchingResult = matcher.Match(matchRoot,
+                expectedSubPaths.Select(expectedSubPath => Path.Combine(filesRoot, expectedSubPath)));
+
+            Assert.True(patternMatchingResult.HasMatches);
+            Assert.Equal(expectedSubPaths.Length, patternMatchingResult.Files.Count());
+        }
+
+        [Theory]
+        [InlineData(@"C:\this\example\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        public void VerifyFiles_InMemory_HasCaseSensitiveRootMatches(string matchRoot, string filesRoot, string pattern, string[] expectedSubPaths)
+        {
+            Matcher matcher = new(StringComparison.Ordinal);
+            matcher.AddInclude(pattern);
+
+            PatternMatchingResult patternMatchingResult = matcher.Match(matchRoot,
+                expectedSubPaths.Select(expectedSubPath => Path.Combine(filesRoot, expectedSubPath)));
+
+            Assert.True(patternMatchingResult.HasMatches);
+            Assert.Equal(expectedSubPaths.Length, patternMatchingResult.Files.Count());
+        }
+
+
+        [Theory]
+        [InlineData(@"C:\this\example\root", @"C:\this\EXAMPLE\root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"C:\this\EXAMPLE\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        public void VerifyFiles_InMemory_HasCaseSensitiveRootMisses(string matchRoot, string filesRoot, string pattern, string[] expectedSubPaths)
+        {
+            Matcher matcher = new(StringComparison.Ordinal);
+            matcher.AddInclude(pattern);
+
+            PatternMatchingResult patternMatchingResult = matcher.Match(matchRoot,
+                expectedSubPaths.Select(expectedSubPath => Path.Combine(filesRoot, expectedSubPath)));
+
+            Assert.False(patternMatchingResult.HasMatches);
+            Assert.Equal(0, patternMatchingResult.Files.Count());
+        }
     }
 }
