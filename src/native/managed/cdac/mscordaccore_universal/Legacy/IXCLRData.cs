@@ -315,7 +315,12 @@ internal unsafe partial interface IXCLRDataProcess
 
 internal struct GcEvtArgs
 {
-    public /*GcEvt_t*/ uint type;
+    internal enum GcEvt_t
+    {
+        GC_MARK_END = 1,
+        GC_EVENT_TYPE_MAX = GC_MARK_END + 1
+    };
+    public GcEvt_t type;
     public int condemnedGeneration;
 }
 

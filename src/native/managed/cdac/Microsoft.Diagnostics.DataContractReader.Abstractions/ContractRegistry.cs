@@ -78,9 +78,14 @@ public abstract class ContractRegistry
     /// Gets an instance of the SHash contract for the target.
     /// </summary>
     public abstract ISHash SHash { get; }
+    /// <summary>
     /// Gets an instance of the GC contract for the target.
     /// </summary>
     public abstract IGC GC { get; }
+    /// <summary>
+    /// Gets an instance of the Notifications contract for the target.
+    /// </summary>
+    public abstract INotifications Notifications { get; }
     /// <summary>
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>

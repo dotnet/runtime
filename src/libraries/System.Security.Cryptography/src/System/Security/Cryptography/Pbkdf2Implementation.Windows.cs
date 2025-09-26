@@ -30,15 +30,14 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(iterations >= 0);
-            Debug.Assert(hashAlgorithmName.Name is not null);
 
             if (s_useKeyDerivation)
             {
-                FillKeyDerivation(password, salt, iterations, hashAlgorithmName.Name, destination);
+                FillKeyDerivation(password, salt, iterations, hashAlgorithmName, destination);
             }
             else
             {
-                FillDeriveKeyPBKDF2(password, salt, iterations, hashAlgorithmName.Name, destination);
+                FillDeriveKeyPBKDF2(password, salt, iterations, hashAlgorithmName, destination);
             }
         }
 
@@ -46,13 +45,14 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
-            string hashAlgorithmName,
+            HashAlgorithmName hashAlgorithm,
             Span<byte> destination)
         {
+            Debug.Assert(hashAlgorithm.Name is not null);
+            string hashAlgorithmName = hashAlgorithm.Name;
             SafeBCryptKeyHandle keyHandle;
             int hashBlockSizeBytes = GetHashBlockSize(hashAlgorithmName);
 
-            // stackalloc 0 to let compiler know this cannot escape.
             scoped Span<byte> clearSpan;
             scoped ReadOnlySpan<byte> symmetricKeyMaterial;
             int symmetricKeyMaterialLength;
@@ -81,29 +81,12 @@ namespace System.Security.Cryptography
                 // Windows' PBKDF2 will do this up to a point. To ensure we accept arbitrary inputs for
                 // PBKDF2, we do the hashing ourselves.
                 Span<byte> hashBuffer = stackalloc byte[512 / 8]; // 64 bytes is SHA512, the largest digest handled.
-                int hashBufferSize;
 
-                switch (hashAlgorithmName)
+                if (!CryptographicOperations.TryHashData(hashAlgorithm, password, hashBuffer, out int hashBufferSize))
                 {
-                    case HashAlgorithmNames.SHA1:
-                    case HashAlgorithmNames.SHA256:
-                    case HashAlgorithmNames.SHA384:
-                    case HashAlgorithmNames.SHA512:
-                        hashBufferSize = HashProviderDispenser.OneShotHashProvider.HashData(hashAlgorithmName, password, hashBuffer);
-                        break;
-                    case HashAlgorithmNames.SHA3_256:
-                    case HashAlgorithmNames.SHA3_384:
-                    case HashAlgorithmNames.SHA3_512:
-                        if (!HashProviderDispenser.HashSupported(hashAlgorithmName))
-                        {
-                            throw new PlatformNotSupportedException();
-                        }
-
-                        hashBufferSize = HashProviderDispenser.OneShotHashProvider.HashData(hashAlgorithmName, password, hashBuffer);
-                        break;
-                    default:
-                        Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");
-                        throw new CryptographicException();
+                    CryptographicOperations.ZeroMemory(hashBuffer);
+                    Debug.Fail("Preallocated buffer was too small.");
+                    throw new CryptographicException();
                 }
 
                 clearSpan = hashBuffer.Slice(0, hashBufferSize);
@@ -229,9 +212,11 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
-            string hashAlgorithmName,
+            HashAlgorithmName hashAlgorithm,
             Span<byte> destination)
         {
+            Debug.Assert(hashAlgorithm.Name is not null);
+            string hashAlgorithmName = hashAlgorithm.Name;
             const BCryptOpenAlgorithmProviderFlags OpenAlgorithmFlags = BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
 
             // This code path will only be taken on Windows 7, so we can assume pseudo handles are not supported.

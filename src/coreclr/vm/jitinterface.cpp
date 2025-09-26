@@ -13409,8 +13409,28 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
+            InterpreterPrecode* pPrecode = NULL;
             AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            if (ftn->IsDynamicMethod())
+            {
+                // For LCG methods, the precode is stashed in the DynamicMethodDesc, and is shared across all future uses of the DynamicMethodDesc
+                DynamicMethodDesc* pDMD = ftn->AsDynamicMethodDesc();
+                if (pDMD->m_interpreterPrecode != NULL)
+                {
+                    pPrecode = pDMD->m_interpreterPrecode;
+                    pPrecode->GetData()->ByteCodeAddr = ret;
+                    FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
+                }
+                else
+                {
+                    pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+                    pDMD->m_interpreterPrecode = pPrecode;
+                }
+            }
+            else
+            {
+                pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            }
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
 

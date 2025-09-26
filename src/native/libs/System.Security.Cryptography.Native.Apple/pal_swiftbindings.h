@@ -11,3 +11,7 @@ EXTERN_C void* AppleCryptoNative_ChaCha20Poly1305Decrypt;
 EXTERN_C void* AppleCryptoNative_AesGcmEncrypt;
 EXTERN_C void* AppleCryptoNative_AesGcmDecrypt;
 EXTERN_C void* AppleCryptoNative_IsAuthenticationFailure;
+
+EXTERN_C void* AppleCryptoNative_HKDFDeriveKey;
+EXTERN_C void* AppleCryptoNative_HKDFExpand;
+EXTERN_C void* AppleCryptoNative_HKDFExtract;
