@@ -625,7 +625,17 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.DumpNativeImage(loadedBase, name, display, libSupport, dis) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess2.GetGcNotification(GcEvtArgs* gcEvtArgs)
-        => HResults.E_NOTIMPL;
+    {
+        int hr = HResults.E_NOTIMPL;
+#if DEBUG
+        if (_legacyProcess2 is not null)
+        {
+            int hrLocal = _legacyProcess2.GetGcNotification(gcEvtArgs);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess2.SetGcNotification(GcEvtArgs gcEvtArgs)
     {
