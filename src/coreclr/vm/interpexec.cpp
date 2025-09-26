@@ -2319,7 +2319,6 @@ MAIN_LOOP:
                     PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
                     assert(calliFunctionPointer);
 
-                    // Interpreter-FIXME: isTailcall
                     if (flags & (int32_t)CalliFlags::PInvoke)
                     {
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
@@ -2331,6 +2330,16 @@ MAIN_LOOP:
                             InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
                         }
                     }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+// If we're not using portable entrypoints, we can use NonVirtualEntry2MethodDesc to figure out where tailcalls go. Since this is
+// somewhat expensive, we only do it for tailcalls which are relatively rare.
+// TODO-Interpreter: It is plausible that we might want to do the NonVirtualEntry2MethodDesc check for non-tailcall calli as well
+//                   or possibly a slight variant where we build a path for NonVitualEntry2MethodDesc which is lock-free but might fail
+                    else if (isTailcall && (targetMethod = NonVirtualEntry2MethodDesc(calliFunctionPointer)) != NULL)
+                    {
+                        goto CALL_INTERP_METHOD;
+                    }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
                     else
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
