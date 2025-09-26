@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { dotnetLoggerType, dotnetAssertType, RuntimeAPI, LoaderExports, NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable } from "./types";
+import type { LoggerType, AssertType, RuntimeAPI, LoaderExports, NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
 
 import ProductVersion from "consts:productVersion";
@@ -71,12 +71,12 @@ export function dotnetInitializeModule(): RuntimeAPI {
         IS_WORKER: ENVIRONMENT_IS_WORKER(),
         IS_SIDECAR: ENVIRONMENT_IS_SIDECAR(),
     };
-    const logger: dotnetLoggerType = {
+    const logger: LoggerType = {
         info,
         warn,
         error,
     };
-    const assert: dotnetAssertType = {
+    const assert: AssertType = {
         check,
     };
     Object.assign(dotnetApi, runtimeApiFunctions);
@@ -88,7 +88,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
     dotnetUpdateAllInternals();
     return dotnetApi as RuntimeAPI;
 
-    function dotnetTabLE(logger:dotnetLoggerType, assert:dotnetAssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
+    function dotnetTabLE(logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
         // keep in sync with dotnetUpdateModuleInternals()
         return [
             logger.info,

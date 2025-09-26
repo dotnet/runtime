@@ -7,13 +7,13 @@
  * Please keep it small and register it into emscripten as dependency.
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, dotnetLoggerType, dotnetAssertType, JSEngineType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, JSEngineType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
-export let dotnetLogger: dotnetLoggerType = {} as any;
-export let dotnetAssert: dotnetAssertType = {} as any;
+export let dotnetLogger: LoggerType = {} as any;
+export let dotnetAssert: AssertType = {} as any;
 export let dotnetJSEngine: JSEngineType = {}as any;
 export let dotnetLoaderExports: LoaderExports = {} as any;
 export let dotnetRuntimeExports: RuntimeExports = {} as any;
@@ -49,8 +49,8 @@ export function dotnetUpdateModuleInternals() {
 
     if (Object.keys(dotnetLoaderExports).length === 0 && dotnetInternals[InternalExchangeIndex.LoaderExportsTable]) {
         dotnetLoaderExports = {} as LoaderExports;
-        dotnetLogger = {} as dotnetLoggerType;
-        dotnetAssert = {} as dotnetAssertType;
+        dotnetLogger = {} as LoggerType;
+        dotnetAssert = {} as AssertType;
         dotnetJSEngine = {} as JSEngineType;
         expandLoaderExports(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetJSEngine, dotnetLoaderExports);
     }
@@ -78,13 +78,13 @@ export function dotnetUpdateModuleInternals() {
     }
 
     // keep in sync with tabulateLoaderExports()
-    function expandLoaderExports(table:LoaderExportsTable, logger:dotnetLoggerType, assert:dotnetAssertType, jsEngine:JSEngineType, dotnetLoaderExports:LoaderExports):void {
-        const loggerLocal :dotnetLoggerType = {
+    function expandLoaderExports(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, jsEngine:JSEngineType, dotnetLoaderExports:LoaderExports):void {
+        const loggerLocal :LoggerType = {
             info: table[0],
             warn: table[1],
             error: table[2],
         };
-        const assertLocal :dotnetAssertType = {
+        const assertLocal :AssertType = {
             check: table[3],
         };
         const loaderExportsLocal :LoaderExports = {
