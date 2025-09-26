@@ -702,6 +702,7 @@ namespace System.IO
             public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
             public override void Write(char value) { }
+            public override void Write(Rune value) { }
             public override void Write(char[]? buffer) { }
             public override void Write(char[] buffer, int index, int count) { }
             public override void Write(ReadOnlySpan<char> buffer) { }
@@ -722,12 +723,14 @@ namespace System.IO
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) { }
             public override Task WriteAsync(char value) => Task.CompletedTask;
+            public override Task WriteAsync(Rune value) => Task.CompletedTask;
             public override Task WriteAsync(string? value) => Task.CompletedTask;
             public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public override Task WriteAsync(char[] buffer, int index, int count) => Task.CompletedTask;
             public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public override void WriteLine() { }
             public override void WriteLine(char value) { }
+            public override void WriteLine(Rune value) { }
             public override void WriteLine(char[]? buffer) { }
             public override void WriteLine(char[] buffer, int index, int count) { }
             public override void WriteLine(ReadOnlySpan<char> buffer) { }
@@ -748,6 +751,7 @@ namespace System.IO
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) { }
             public override Task WriteLineAsync(char value) => Task.CompletedTask;
+            public override Task WriteLineAsync(Rune value) => Task.CompletedTask;
             public override Task WriteLineAsync(string? value) => Task.CompletedTask;
             public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public override Task WriteLineAsync(char[] buffer, int index, int count) => Task.CompletedTask;
