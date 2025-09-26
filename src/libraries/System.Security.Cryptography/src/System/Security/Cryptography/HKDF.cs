@@ -171,7 +171,7 @@ namespace System.Security.Cryptography
         /// <param name="output">The output buffer representing output keying material.</param>
         /// <param name="salt">The salt value (a non-secret random value).</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
-        /// <exception cref="ArgumentException"><paramref name="ikm"/> is empty, or is larger than the maximum allowed length.</exception>
+        /// <exception cref="ArgumentException"><paramref name="output"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
             int hashLength = Helpers.HashLength(hashAlgorithmName);
