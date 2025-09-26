@@ -47,33 +47,12 @@ This document serves as a comprehensive index to all WebAssembly-related documen
 - **[Debugging WebAssembly Libraries](testing/libraries/debugging-wasm.md)** - Debug library tests in Chrome DevTools and VS Code
 
 ### Runtime Debugging
-- **[WASM Runtime Debugging](debugging/mono/wasm-debugging.md)** - Debug the Mono runtime, native crashes, and collect stack traces
+- **[Native WASM Runtime Debugging](debugging/mono/native-wasm-debugging.md)** - Debug the Mono runtime, native crashes, and collect stack traces
 - **[VS Code Debugging](debugging/libraries/debugging-vscode.md)** - Set up VS Code for debugging WASM applications
 
 ### Common Debugging Scenarios
 
-#### Debug with VS Code
-Add this configuration to your `.vscode/launch.json`:
-```json
-{
-    "name": "Libraries",
-    "request": "attach",
-    "type": "chrome",
-    "address": "localhost",
-    "port": <PROXY_PORT>
-}
-```
-
-See detailed instructions in:
-- [Library debugging guide](testing/libraries/debugging-wasm.md#debug-with-vs-code)
-- [WASI debugging](../src/mono/wasi/README.md#4-debug-it)
-- [VS Code debugging guide](debugging/libraries/debugging-vscode.md)
-
-#### Debug with Chrome DevTools
-1. Open `chrome://inspect/#devices` in Chrome
-2. Configure the proxy address from your test output
-3. Select "Inspect" on your application
-4. Set breakpoints in the Sources tab under `file://`
+For consolidated debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/wasm-debugging-reference.md).
 
 ## Features and Configuration
 
@@ -127,80 +106,27 @@ Located in `src/mono/sample/wasm/`:
 
 ### How do I debug a library test failure seen on CI?
 
-1. **Run the test locally with debugging enabled**:
-   ```bash
-   dotnet run -r browser-wasm -c Debug --project src/libraries/System.Collections/tests/System.Collections.Tests.csproj --debug --host browser -p:DebuggerSupport=true
-   ```
-
-2. **Start Chrome with remote debugging**:
-   ```bash
-   chrome --remote-debugging-port=9222 <APP_URL>
-   ```
-
-3. **Attach debugger**: Use either Chrome DevTools (`chrome://inspect/#devices`) or VS Code with the configuration above.
-
-4. **Set breakpoints**: Start with `WasmTestRunner.cs` to prevent tests from running before you're ready.
+See the [WebAssembly Debugging Reference](debugging/wasm-debugging-reference.md#common-debugging-workflow) for detailed instructions on debugging library tests locally.
 
 ### How do I build for different WebAssembly targets?
 
-- **Browser**: `./build.sh -os browser -subset mono+libs`
-- **WASI**: `./build.sh -os wasi -subset mono+libs`
-- **Specific library**: `dotnet build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser`
+See the [Building for WebAssembly](#building-for-webassembly) section above for comprehensive build instructions for different targets.
 
 ### How do I enable multi-threading?
 
-1. **Add to your .csproj**:
-   ```xml
-   <PropertyGroup>
-     <WasmEnableThreads>true</WasmEnableThreads>
-   </PropertyGroup>
-   ```
-
-2. **Configure HTTP headers** on your server:
-   ```
-   Cross-Origin-Embedder-Policy: require-corp
-   Cross-Origin-Opener-Policy: same-origin
-   ```
+See the [Threading Support](../../src/mono/wasm/threads.md) documentation for detailed multi-threading configuration and limitations.
 
 ### How do I optimize my WebAssembly application?
 
-1. **Enable AOT compilation**:
-   ```xml
-   <PropertyGroup>
-     <RunAOTCompilation>true</RunAOTCompilation>
-   </PropertyGroup>
-   ```
-
-2. **Enable IL trimming**:
-   ```xml
-   <PropertyGroup>
-     <PublishTrimmed>true</PublishTrimmed>
-     <TrimMode>full</TrimMode>
-   </PropertyGroup>
-   ```
-
-3. **Install wasm-tools workload**: `dotnet workload install wasm-tools`
+See the [WebAssembly Features](../../src/mono/wasm/features.md) documentation for AOT compilation, IL trimming, and other optimization options.
 
 ### What JavaScript engines are supported for testing?
 
-- **V8**: Default engine for most tests
-- **SpiderMonkey**: Firefox's JavaScript engine  
-- **JavaScriptCore**: Safari's JavaScript engine
-- **Chrome/Firefox**: For browser-based testing
-
-Install with jsvu: `npm install jsvu -g && jsvu`
+See the [Testing Libraries on WebAssembly](testing/libraries/testing-wasm.md#prerequisites) documentation for JavaScript engine installation and usage.
 
 ### How do I collect native stack traces with symbols?
 
-1. **Add to your .csproj**:
-   ```xml
-   <PropertyGroup>
-     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
-     <WasmNativeStrip>false</WasmNativeStrip>
-   </PropertyGroup>
-   ```
-
-2. **Use Chrome DevTools** with the C/C++ DevTools Support (DWARF) extension
+See the [Native WASM Runtime Debugging](debugging/mono/native-wasm-debugging.md#collecting-stack-traces-with-symbols-in-blazor) documentation for symbol configuration.
 
 ### How do I run tests with different configurations?
 

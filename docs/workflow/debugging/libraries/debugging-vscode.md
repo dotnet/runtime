@@ -24,7 +24,7 @@
 ## Debugging Libraries with Visual Studio Code running on Mono
 
 To debug the libraries on a "desktop" platform (Linux/Mac/Windows, not WebAssembly, or iOS or Android) running on Mono runtime, follow the instructions below.
-See also [Android debugging](../mono/android-debugging.md) and [WebAssembly debugging](../mono/wasm-debugging.md).
+See also [Android debugging](../mono/android-debugging.md) and [WebAssembly debugging](../mono/native-wasm-debugging.md).
 
 For WebAssembly-specific debugging scenarios, see the [WebAssembly Debugging Reference](../wasm-debugging-reference.md).
 

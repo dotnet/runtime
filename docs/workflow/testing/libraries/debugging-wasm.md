@@ -28,27 +28,6 @@ Now you can choose an IDE to start debugging. Remember that the tests wait only 
 
 For detailed Chrome DevTools debugging instructions, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging-reference.md#debug-with-chrome-devtools).
 
-Quick summary:
-1. Open `chrome://inspect/#devices` in Chrome
-2. Configure the proxy address from the program output  
-3. Click "Inspect" on your application
-4. Set breakpoints in the Sources tab under `file://`
-
-Note: It can take time for source files to load. Consider setting an initial breakpoint in `WasmTestRunner.cs` on the first run.
-
 ## Debug with VS Code
 
 For detailed VS Code debugging instructions, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging-reference.md#debug-with-vs-code).
-
-Quick setup:
-```json
-{
-    "name": "Libraries",
-    "request": "attach",
-    "type": "chrome", 
-    "address": "localhost",
-    "port": <PROXY_PORT>
-}
-```
-
-Replace `<PROXY_PORT>` with the port shown in your test output. Set an initial breakpoint in `WasmTestRunner.cs` to prevent tests from running before you're ready to debug.

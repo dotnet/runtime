@@ -115,20 +115,3 @@ Finally, you can build and run the sample:
 ### 4. Debug it
 
 For detailed WASI debugging instructions, see the [WebAssembly Debugging Reference](../../../docs/workflow/debugging/wasm-debugging-reference.md#for-wasi-applications).
-
-Quick setup:
-```bash
-cd sample/console
-make debug
-```
-
-Use VS Code with the Mono Debug extension and this launch.json configuration:
-```json
-{
-    "name": "Attach",
-    "type": "mono",
-    "request": "attach",
-    "address": "localhost", 
-    "port": 64000
-}
-```

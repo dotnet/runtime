@@ -1,9 +1,7 @@
 
-# WASM Runtime Debugging
-
 This document covers debugging the Mono WebAssembly runtime itself, native crashes, and advanced debugging scenarios. For general WebAssembly application debugging, see the [WebAssembly Debugging Reference](../wasm-debugging-reference.md).
 
-## Native Runtime Debugging
+# Native Runtime Debugging
 
 - Disable symbol stripping by setting the `WasmNativeStrip` msbuild property to `false`.  See also, [collecting stack traces with symbols in Blazor](#collecting-stack-traces-with-symbols-in-blazor)
 

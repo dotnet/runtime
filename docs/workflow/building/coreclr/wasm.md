@@ -85,8 +85,6 @@ Note that paths to assemblies are in the `src/native/corehost/browserhost/sample
 
 ## Debugging
 
-For comprehensive debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging-reference.md).
-
 ### Chrome DevTools with DWARF Support
 
 For debugging CoreCLR WebAssembly code, the recommended approach is using Chrome browser with the **C/C++ DevTools Support (DWARF)** extension:
@@ -105,9 +103,7 @@ For debugging CoreCLR WebAssembly code, the recommended approach is using Chrome
 
 ### VS Code WebAssembly Debugging
 
-VS Code, through Node.js, provides a good debugging option for WebAssembly CoreCLR. See the [debugging reference](../debugging/wasm-debugging-reference.md#debug-with-vs-code) for detailed setup instructions.
-
-**Quick setup** for CoreCLR debugging:
+VS Code, through Node.js, provides a good debugging option for WebAssembly CoreCLR:
 
 1. **Install the VS Code extension (Optional):**
    - [WebAssembly Dwarf Debugging](https://marketplace.visualstudio.com/items?itemName=ms-vscode.wasm-dwarf-debugging)

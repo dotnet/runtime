@@ -1,53 +1,30 @@
 # WebAssembly Debugging Reference
 
-This document provides consolidated debugging instructions for WebAssembly applications that are referenced by multiple other documentation files.
+This document provides consolidated debugging instructions for WebAssembly applications.
 
 ## Debug with VS Code
 
 To debug WebAssembly applications with Visual Studio Code:
 
-### 1. Basic Configuration
+### 1. Configuration
 
-Add the following configuration to your `.vscode/launch.json`:
+Add the appropriate configuration to your `.vscode/launch.json` depending on your debugging scenario:
 
+**For WebAssembly applications, library tests, and general debugging:**
 ```json
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "WASM Attach",
-            "request": "attach",
-            "type": "chrome",
-            "address": "localhost",
-            "port": <PROXY_PORT>
-        }
-    ]
-}
-```
-
-Replace `<PROXY_PORT>` with the proxy port shown in your application's output.
-
-### 2. Library Test Debugging
-
-For debugging library tests specifically:
-
-```json
-{
-    "name": "Libraries",
-    "request": "attach", 
+    "name": "WASM Attach",
+    "request": "attach",
     "type": "chrome",
     "address": "localhost",
     "port": <PROXY_PORT>
 }
 ```
 
-### 3. WASI Debugging
-
-For WASI applications, use the Mono Debug extension:
-
+**For WASI applications:**
 ```json
 {
-    "name": "Attach",
+    "name": "WASI Attach",
     "type": "mono",
     "request": "attach", 
     "address": "localhost",
@@ -55,7 +32,9 @@ For WASI applications, use the Mono Debug extension:
 }
 ```
 
-### 4. Setup Steps
+Replace `<PROXY_PORT>` with the proxy port shown in your application's output.
+
+### 2. Setup Steps
 
 1. **Set initial breakpoint**: Place a breakpoint in `WasmTestRunner.cs` or your main entry point to prevent execution before you're ready
 2. **Run the configuration**: Launch the VS Code debug configuration  
@@ -67,15 +46,24 @@ For WASI applications, use the Mono Debug extension:
 ### 1. Basic Setup
 
 1. **Open Chrome Inspector**: Navigate to `chrome://inspect/#devices` in a new Chrome tab
-2. **Configure proxy**: Click "Configure" and add the proxy address from your application output (e.g., `127.0.0.1:58346`)
-3. **Select target**: Click "Inspect" next to your application in the Remote Targets list
+2. **Configure proxy**: Click "Configure":
+
+![image](https://user-images.githubusercontent.com/32700855/201867874-7f707eb1-e859-441c-8205-abb70a7a0d0b.png)
+
+and paste the address of proxy that was provided in the program output:
+
+![image](https://user-images.githubusercontent.com/32700855/201862487-df76a06c-b24d-41a0-bf06-6959bba59a58.png)
+
+3. **Select target**: New remote targets will be displayed, select the address you opened in the other tab by clicking `Inspect`:
+
+![image](https://user-images.githubusercontent.com/32700855/201863048-6a4fe20b-a215-435d-b594-47750fcb2872.png)
 
 ### 2. Using DevTools
 
-1. **Sources tab**: Look for the `file://` directory to browse source files
-2. **Wait for files to load**: It may take time for all source files to appear
-3. **Set breakpoints**: Click on line numbers to set breakpoints
-4. **Initial run strategy**: Consider using the first run to set an initial breakpoint in `WasmTestRunner.cs`, then restart the application
+1. **Sources tab**: A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory to browse source files
+2. **Wait for files to load**: It may take time for all source files to appear. You cannot set breakpoints in Chrome DevTools before the files get loaded
+3. **Set breakpoints**: Click on line numbers to set breakpoints  
+4. **Initial run strategy**: Consider using the first run to set an initial breakpoint in `WasmTestRunner.cs`, then restart the application. DevTools will stop on the previously set breakpoint and you will have time to set breakpoints in the libs you want to debug and click Resume
 
 ### 3. For Native/C Code Debugging
 
