@@ -22,14 +22,17 @@ namespace System.Diagnostics
 
         internal static void EnterMutexWithoutGlobal(string mutexName, ref Mutex mutex)
         {
-            Mutex tmpMutex = new Mutex(false, mutexName, out _);
+            Mutex tmpMutex = new Mutex(false, mutexName, out bool createdNew);
 
-            // Specify a SID in case the mutex has not yet been created; this prevents it from using the SID from the current thread.
-            // This SID (AuthenticatedUserSid) is the same one used by .NET Framework.
-            MutexSecurity sec = new MutexSecurity();
-            SecurityIdentifier authenticatedUserSid = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
-            sec.AddAccessRule(new MutexAccessRule(authenticatedUserSid, MutexRights.Synchronize | MutexRights.Modify, AccessControlType.Allow));
-            tmpMutex.SetAccessControl(sec);
+            if (createdNew)
+            {
+                // Specify a SID in case the mutex has not yet been created; this prevents it from using the SID from the current thread.
+                // This SID (AuthenticatedUserSid) is the same one used by .NET Framework.
+                MutexSecurity sec = new MutexSecurity();
+                SecurityIdentifier authenticatedUserSid = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
+                sec.AddAccessRule(new MutexAccessRule(authenticatedUserSid, MutexRights.Synchronize | MutexRights.Modify, AccessControlType.Allow));
+                tmpMutex.SetAccessControl(sec);
+            }
 
             SafeWaitForMutex(tmpMutex, ref mutex);
         }
