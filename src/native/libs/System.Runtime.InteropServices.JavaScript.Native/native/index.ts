@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { InternalExchange, InteropJavaScriptExports, JSFnHandle, JSMarshalerArguments } from "../interop/types";
+import type { InternalExchange, InteropJavaScriptExports, InteropJavaScriptExportsTable, JSFnHandle, JSMarshalerArguments } from "../interop/types";
 import { InternalExchangeIndex } from "../types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
@@ -16,8 +16,15 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     const interopJavaScriptNativeExportsLocal: InteropJavaScriptExports = {
     };
     dotnetSetInternals(internals);
-    internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = dotnetTabIJSE(interopJavaScriptNativeExportsLocal);
+    internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = tabulateInteropJavaScriptExports(interopJavaScriptNativeExportsLocal);
     const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
     if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
     dotnetUpdateAllInternals();
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function tabulateInteropJavaScriptExports(map:InteropJavaScriptExports):InteropJavaScriptExportsTable {
+        // keep in sync with dotnetUpdateModuleInternals()
+        return [
+        ];
+    }
 }

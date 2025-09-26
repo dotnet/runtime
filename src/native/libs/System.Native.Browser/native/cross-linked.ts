@@ -4,7 +4,6 @@
 import {
     dotnetAssert, dotnetLogger, Module,
     dotnetInternals, dotnetLoaderExports, dotnetApi, dotnetNativeBrowserExports, dotnetRuntimeExports, dotnetJSEngine, dotnetBrowserHostExports, dotnetInteropJSExports,
-    dotnetTabNBE, dotnetTabBHE, dotnetTabIJSE, dotnetTabLE, dotnetTabRE,
     dotnetGetInternals, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals,
 } from "../cross-module";
 
@@ -15,6 +14,5 @@ export function crossLink() {
         dotnetAssert, dotnetLogger, Module,
         dotnetInternals, dotnetLoaderExports, dotnetApi, dotnetNativeBrowserExports, dotnetRuntimeExports, dotnetJSEngine, dotnetBrowserHostExports, dotnetInteropJSExports,
         dotnetGetInternals, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals,
-        dotnetTabBHE, dotnetTabIJSE, dotnetTabLE, dotnetTabNBE, dotnetTabRE
     ];
 }

@@ -42,36 +42,43 @@ export function dotnetUpdateAllInternals() {
 }
 
 export function dotnetUpdateModuleInternals() {
+    /**
+     * Functions below allow our JS modules to exchange internal interfaces by passing tables of functions in known order instead of using string symbols.
+     * IMPORTANT: If you need to add more functions, make sure that you add them at the end of the table, so that the order of existing functions does not change.
+     */
+
     if (Object.keys(dotnetLoaderExports).length === 0 && dotnetInternals[InternalExchangeIndex.LoaderExportsTable]) {
         dotnetLoaderExports = {} as LoaderExports;
         dotnetLogger = {} as dotnetLoggerType;
         dotnetAssert = {} as dotnetAssertType;
         dotnetJSEngine = {} as JSEngineType;
-        expandLE(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetJSEngine, dotnetLoaderExports);
+        expandLoaderExports(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetJSEngine, dotnetLoaderExports);
     }
     if (Object.keys(dotnetRuntimeExports).length === 0 && dotnetInternals[InternalExchangeIndex.RuntimeExportsTable]) {
         dotnetRuntimeExports = {} as RuntimeExports;
-        expandRE(dotnetInternals[InternalExchangeIndex.RuntimeExportsTable], dotnetRuntimeExports);
+        expandRuntimeExports(dotnetInternals[InternalExchangeIndex.RuntimeExportsTable], dotnetRuntimeExports);
     }
     if (Object.keys(dotnetBrowserHostExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable]) {
         dotnetBrowserHostExports = {} as BrowserHostExports;
-        expandBHE(dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable], dotnetBrowserHostExports);
+        expandBrowserHostExports(dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable], dotnetBrowserHostExports);
     }
     if (Object.keys(dotnetInteropJSExports).length === 0 && dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
         dotnetInteropJSExports = {} as InteropJavaScriptExports;
-        expandIJSE(dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], dotnetInteropJSExports);
+        expandInteropJavaScriptExports(dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], dotnetInteropJSExports);
     }
     if (Object.keys(dotnetNativeBrowserExports).length === 0 && dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
         dotnetNativeBrowserExports = {} as NativeBrowserExports;
-        expandNBE(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
+        expandNativeBrowserExports(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
     }
 
-    function expandRE(table:RuntimeExportsTable, runtime:RuntimeExports):void {
+    // keep in sync with tabulateRuntimeExports()
+    function expandRuntimeExports(table:RuntimeExportsTable, runtime:RuntimeExports):void {
         Object.assign(runtime, {
         });
     }
 
-    function expandLE(table:LoaderExportsTable, logger:dotnetLoggerType, assert:dotnetAssertType, jsEngine:JSEngineType, dotnetLoaderExports:LoaderExports):void {
+    // keep in sync with tabulateLoaderExports()
+    function expandLoaderExports(table:LoaderExportsTable, logger:dotnetLoggerType, assert:dotnetAssertType, jsEngine:JSEngineType, dotnetLoaderExports:LoaderExports):void {
         const loggerLocal :dotnetLoggerType = {
             info: table[0],
             warn: table[1],
@@ -103,7 +110,8 @@ export function dotnetUpdateModuleInternals() {
         Object.assign(jsEngine, jsEngineLocal);
     }
 
-    function expandBHE(table:BrowserHostExportsTable, native:BrowserHostExports):void {
+    // keep in sync with tabulateBrowserHostExports()
+    function expandBrowserHostExports(table:BrowserHostExportsTable, native:BrowserHostExports):void {
         const nativeLocal :BrowserHostExports = {
             registerDllBytes: table[0],
             isSharedArrayBuffer: table[1],
@@ -111,63 +119,17 @@ export function dotnetUpdateModuleInternals() {
         Object.assign(native, nativeLocal);
     }
 
-    function expandIJSE(table:InteropJavaScriptExportsTable, interop:InteropJavaScriptExports):void {
+    // keep in sync with tabulateInteropJavaScriptExports()
+    function expandInteropJavaScriptExports(table:InteropJavaScriptExportsTable, interop:InteropJavaScriptExports):void {
         const interopLocal :InteropJavaScriptExports = {
         };
         Object.assign(interop, interopLocal);
     }
 
-    function expandNBE(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
+    // keep in sync with tabulateNativeBrowserExports()
+    function expandNativeBrowserExports(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
         const interopLocal :NativeBrowserExports = {
         };
         Object.assign(interop, interopLocal);
     }
 }
-
-/**
- * Functions below allow our JS modules to exchange internal interfaces by passing tables of functions in known order instead of using string symbols.
- * IMPORTANT: If you need to add more functions, make sure that you add them at the end of the table, so that the order of existing functions does not change.
- */
-
-export function dotnetTabLE(logger:dotnetLoggerType, assert:dotnetAssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
-    return [
-        logger.info,
-        logger.warn,
-        logger.error,
-        assert.check,
-        dotnetLoaderExports.ENVIRONMENT_IS_NODE,
-        dotnetLoaderExports.ENVIRONMENT_IS_SHELL,
-        dotnetLoaderExports.ENVIRONMENT_IS_WEB,
-        dotnetLoaderExports.ENVIRONMENT_IS_WORKER,
-        dotnetLoaderExports.ENVIRONMENT_IS_SIDECAR,
-        dotnetLoaderExports.resolveRunMainPromise,
-        dotnetLoaderExports.rejectRunMainPromise,
-        dotnetLoaderExports.getRunMainPromise,
-    ];
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function dotnetTabRE(map:RuntimeExports):RuntimeExportsTable {
-    return [
-    ];
-}
-
-export function dotnetTabBHE(map:BrowserHostExports):BrowserHostExportsTable {
-    return [
-        map.registerDllBytes,
-        map.isSharedArrayBuffer,
-    ];
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function dotnetTabIJSE(map:InteropJavaScriptExports):InteropJavaScriptExportsTable {
-    return [
-    ];
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function dotnetTabNBE(map:NativeBrowserExports):NativeBrowserExportsTable {
-    return [
-    ];
-}
-

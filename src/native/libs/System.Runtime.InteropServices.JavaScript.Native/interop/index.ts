@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { InternalExchange, RuntimeAPI, RuntimeExports } from "./types";
+import type { InternalExchange, RuntimeAPI, RuntimeExports, RuntimeExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals, dotnetTabRE } from "./cross-module";
+import { dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApiLocal: Partial<RuntimeAPI> = {
@@ -14,9 +14,15 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     };
     dotnetSetInternals(internals);
     Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
-    internals[InternalExchangeIndex.RuntimeExportsTable] = dotnetTabRE(runtimeExportsLocal);
+    internals[InternalExchangeIndex.RuntimeExportsTable] = tabulateRuntimeExports(runtimeExportsLocal);
     internals[InternalExchangeIndex.InternalUpdatesCallbacks].push(dotnetUpdateModuleInternals);
     dotnetUpdateAllInternals();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function tabulateRuntimeExports(map:RuntimeExports):RuntimeExportsTable {
+        // keep in sync with dotnetUpdateModuleInternals()
+        return [
+        ];
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

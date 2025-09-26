@@ -13,7 +13,7 @@ import { exit } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn } from "./logging";
 
-import { dotnetAssert, dotnetInternals, dotnetJSEngine, dotnetLoaderExports, dotnetTabLE, dotnetLogger, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetJSEngine, dotnetLoaderExports, dotnetLogger, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 
 export function dotnetInitializeModule(): RuntimeAPI {
@@ -87,4 +87,22 @@ export function dotnetInitializeModule(): RuntimeAPI {
     dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = dotnetTabLE(dotnetLogger, dotnetAssert, dotnetLoaderExports);
     dotnetUpdateAllInternals();
     return dotnetApi as RuntimeAPI;
+
+    function dotnetTabLE(logger:dotnetLoggerType, assert:dotnetAssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
+        // keep in sync with dotnetUpdateModuleInternals()
+        return [
+            logger.info,
+            logger.warn,
+            logger.error,
+            assert.check,
+            dotnetLoaderExports.ENVIRONMENT_IS_NODE,
+            dotnetLoaderExports.ENVIRONMENT_IS_SHELL,
+            dotnetLoaderExports.ENVIRONMENT_IS_WEB,
+            dotnetLoaderExports.ENVIRONMENT_IS_WORKER,
+            dotnetLoaderExports.ENVIRONMENT_IS_SIDECAR,
+            dotnetLoaderExports.resolveRunMainPromise,
+            dotnetLoaderExports.rejectRunMainPromise,
+            dotnetLoaderExports.getRunMainPromise,
+        ];
+    }
 }
