@@ -287,9 +287,12 @@ namespace System.Linq.Parallel
                                 }
                             }
 
-                            if (_updatesSeen > 0 && _keyComparer.Compare(key, _currentLowKey) > 0)
+                            lock (_operatorState)
                             {
-                                break;
+                                if (_updatesSeen > 0 && _keyComparer.Compare(key, _currentLowKey) > 0)
+                                {
+                                    break;
+                                }
                             }
 
                             // Evaluate the predicate, either indexed or not based on info passed to the ctor.
