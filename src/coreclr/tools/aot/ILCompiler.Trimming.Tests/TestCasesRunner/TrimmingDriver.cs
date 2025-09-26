@@ -137,7 +137,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 options: default,
                 logger: logger,
                 featureSwitchValues: options.FeatureSwitches,
-                rootEntireAssembliesModules: Array.Empty<string>(),
+                rootEntireAssembliesModules: options.RootEntireAssemblies,
                 additionalRootedAssemblies: options.AdditionalRootAssemblies.ToArray(),
                 trimmedAssemblies: options.TrimAssemblies.ToArray(),
                 satelliteAssemblyFilePaths: Array.Empty<string>());
