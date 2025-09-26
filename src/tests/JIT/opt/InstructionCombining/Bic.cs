@@ -5,13 +5,13 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace TestBitwiseClearShift
+namespace TestBic
 {
     public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         [Fact]
-        public static int CheckBitwiseClearShift()
+        public static int CheckBic()
         {
             bool fail = false;
 
@@ -95,6 +95,26 @@ namespace TestBitwiseClearShift
                 fail = true;
             }
 
+            if (!BicsGreaterThan(1, 2))
+            {
+                fail = true;
+            }
+
+            if (!BicsGreaterThanEq(-2, -2))
+            {
+                fail = true;
+            }
+
+            if (!BicsLessThan(-2, 15))
+            {
+                fail = true;
+            }
+
+            if (!BicsLessThanEq(-6, 6))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -117,7 +137,7 @@ namespace TestBitwiseClearShift
         static bool BicLSL(uint a, uint b, uint c)
         {
             //ARM64-FULL-LINE: bic {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
-            if ((a & ~(b<<4)) == c)
+            if ((a & ~(b << 4)) == c)
             {
                 return true;
             }
@@ -128,7 +148,7 @@ namespace TestBitwiseClearShift
         static bool BicLSR(uint a, uint b, uint c)
         {
             //ARM64-FULL-LINE: bic {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #12
-            if ((a & ~(b>>12)) == c)
+            if ((a & ~(b >> 12)) == c)
             {
                 return true;
             }
@@ -139,7 +159,7 @@ namespace TestBitwiseClearShift
         static bool BicASR(int a, int b, int c)
         {
             //ARM64-FULL-LINE: bic {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ASR #7
-            if ((a & ~(b>>7)) == c)
+            if ((a & ~(b >> 7)) == c)
             {
                 return true;
             }
@@ -150,7 +170,7 @@ namespace TestBitwiseClearShift
         static bool BicLargeShift(uint a, uint b, uint c)
         {
             //ARM64-FULL-LINE: bic {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #17
-            if ((a & ~(b<<145)) == c)
+            if ((a & ~(b << 145)) == c)
             {
                 return true;
             }
@@ -161,7 +181,7 @@ namespace TestBitwiseClearShift
         static bool BicLargeShift64Bit(long a, long b, long c)
         {
             //ARM64-FULL-LINE: bic {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ASR #36
-            if ((a & ~(b>>292)) == c)
+            if ((a & ~(b >> 292)) == c)
             {
                 return true;
             }
@@ -183,7 +203,7 @@ namespace TestBitwiseClearShift
         static int BicsLSL(uint a, uint b)
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #31
-            if ((a & ~(b<<31)) == 0)
+            if ((a & ~(b << 31)) == 0)
             {
                 return -1;
             }
@@ -194,7 +214,7 @@ namespace TestBitwiseClearShift
         static int BicsLSR(uint a, uint b)
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #20
-            if ((a & ~(b>>20)) == 0)
+            if ((a & ~(b >> 20)) == 0)
             {
                 return -1;
             }
@@ -205,7 +225,7 @@ namespace TestBitwiseClearShift
         static int BicsASR(int a, int b)
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ASR #9
-            if ((a & ~(b>>9)) == 0)
+            if ((a & ~(b >> 9)) == 0)
             {
                 return -1;
             }
@@ -216,7 +236,7 @@ namespace TestBitwiseClearShift
         static int BicsLargeShift(uint a, uint b)
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #3
-            if ((a & ~(b>>99)) == 0)
+            if ((a & ~(b >> 99)) == 0)
             {
                 return -1;
             }
@@ -227,7 +247,7 @@ namespace TestBitwiseClearShift
         static int BicsLargeShift64Bit(ulong a, ulong b)
         {
             //ARM64-FULL-LINE: bics {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, LSL #51
-            if ((a & ~(b<<179)) == 0)
+            if ((a & ~(b << 179)) == 0)
             {
                 return -1;
             }
@@ -245,7 +265,7 @@ namespace TestBitwiseClearShift
         static bool BicsSingleLineLSL(uint a, uint b)
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #5
-            return (~(a<<5) & b) != 0;
+            return (~(a << 5) & b) != 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -253,7 +273,8 @@ namespace TestBitwiseClearShift
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #8
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #12
-            if (((a & ~(b<<12)) == 0) == ((~(c>>8) & d) == 0)) {
+            if ((a & ~(b << 12)) == 0 == ((~(c >> 8) & d) == 0))
+            {
                 return 1;
             }
             return -1;
@@ -265,6 +286,35 @@ namespace TestBitwiseClearShift
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return ((~a & b) != 0) & ((c & ~d) != 0);
+        }
+        
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsGreaterThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsGreaterThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsLessThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsLessThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) <= 0;
         }
     }
 }
