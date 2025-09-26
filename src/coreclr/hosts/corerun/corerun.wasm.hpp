@@ -5,5 +5,6 @@
 #define __CORERUN_WASM_HPP__
 
 void wasm_add_pinvoke_override();
+int32_t wasm_load_icu_data(const char* assemblyPath);
 
 #endif // __CORERUN_WASM_HPP__
