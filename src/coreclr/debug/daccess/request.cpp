@@ -4346,6 +4346,12 @@ BOOL ClrDataAccess::DACGetComWrappersCCWVTableQIAddress(CLRDATA_ADDRESS ccwPtr, 
         return FALSE;
     }
 
+
+#ifdef TARGET_ARM
+    // clear the THUMB bit on qiAddress before comparing with known vtable entry
+    *qiAddress &= ~THUMB_CODE;
+#endif
+
     return TRUE;
 }
 
@@ -4358,8 +4364,8 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
-        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
+    return (qiAddress == GFN_TADDR(ManagedObjectWrapper_QueryInterface)
+        || qiAddress == GFN_TADDR(TrackerTarget_QueryInterface));
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)

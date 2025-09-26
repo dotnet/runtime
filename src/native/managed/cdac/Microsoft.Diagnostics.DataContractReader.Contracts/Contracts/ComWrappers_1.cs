@@ -25,22 +25,12 @@ internal readonly struct ComWrappers_1 : IComWrappers
 
     private bool GetComWrappersCCWVTableQIAddress(TargetPointer ccw, out TargetPointer vtable, out TargetPointer qiAddress)
     {
-        vtable = TargetPointer.Null;
         qiAddress = TargetPointer.Null;
-        try
-        {
-            TargetPointer vtableAddress = _target.ReadPointer(ccw);
-            if (vtableAddress == TargetPointer.Null)
-                return false;
-            qiAddress = _target.ReadPointer(vtableAddress);
-            if (qiAddress == TargetPointer.Null)
-                return false;
-        }
-        catch (VirtualReadException)
-        {
+        if (!_target.TryReadPointer(ccw, out vtable))
             return false;
-        }
-        qiAddress = CodePointerUtils.AddressFromCodePointer(qiAddress.Value, _target);
+        if (!_target.TryReadCodePointer(vtable, out TargetCodePointer qiCodePtr))
+            return false;
+        qiAddress = CodePointerUtils.AddressFromCodePointer(qiCodePtr, _target);
         return true;
     }
 
@@ -59,14 +49,9 @@ internal readonly struct ComWrappers_1 : IComWrappers
     {
         if (!IsComWrappersCCW(ccw))
             return TargetPointer.Null;
-        try
-        {
-            return _target.ReadPointer(ccw & _target.ReadGlobalPointer(Constants.Globals.DispatchThisPtrMask));
-        }
-        catch (VirtualReadException)
-        {
+        if (!_target.TryReadPointer(ccw & _target.ReadGlobalPointer(Constants.Globals.DispatchThisPtrMask), out TargetPointer MOWWrapper))
             return TargetPointer.Null;
-        }
+        return MOWWrapper;
     }
 
     public TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow)

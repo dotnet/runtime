@@ -52,15 +52,11 @@ private bool GetComWrappersCCWVTableQIAddress(TargetPointer ccw, out TargetPoint
 {
     vtable = TargetPointer.Null;
     qiAddress = TargetPointer.Null;
-    try
-    {
-        // read two levels of indirection from the ccw to get the code pointer
-    }
-    catch (VirtualReadException)
-    {
-        return false;
-    }
-    qiAddress = CodePointerUtils.AddressFromCodePointer(qiAddress.Value, _target);
+
+    // read two levels of indirection from the ccw to get the code pointer into qiAddress
+    // if read fails, return false
+
+    qiAddress = CodePointerUtils.AddressFromCodePointer(qiAddress, _target);
     return true;
 }
 
@@ -69,8 +65,9 @@ private bool IsComWrappersCCW(TargetPointer ccw)
     if (!GetComWrappersCCWVTableQIAddress(ccw, out _, out TargetPointer qiAddress))
         return false;
 
-    return qiAddress == _target.ReadGlobalPointer("MOWQueryInterface") ||
-            qiAddress == _target.ReadGlobalPointer("TrackerTargetQueryInterface");
+    TargetPointer comWrappersVtablePtrs = _target.ReadGlobalPointer("ComWrappersVtablePtrs");
+
+    return /* qiAddress matches either entry in ComWrappersVtablePtrs */ ;
 }
 
 public TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw)
