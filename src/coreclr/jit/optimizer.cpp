@@ -3059,6 +3059,23 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
     auto assign = [=, &map, &sccs, &traits](auto self, BasicBlock* u, BasicBlock* root, BitVec& subset) -> void {
         // Ignore blocks not in the subset
         //
+        // This might be too restrictive. Consider
+        //
+        // X -> A; X -> B;
+        // A -> B; A -> C;
+        // B -> A; B -> B;
+        //
+        // We find the A,B SCC. Its non-header subset is empty.
+        //
+        // Thus we fail to find the B self loop "nested" inside.
+        //
+        // Might need to be: "ignore in-edges from outside the set, or from
+        // non-dominated edges in the set...?" So we'd ignore A->B and B->A,
+        // but not B->B.
+        //
+        // However I think we still find all nested SCCs, since those cannot
+        // share a header with the outer SCC?
+        //
         if (!BitVecOps::IsMember(&traits, subset, u->bbPostorderNum))
         {
             return;
