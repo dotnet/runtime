@@ -3,8 +3,18 @@
 
 import gitCommitInfo from "git-commit-info";
 
-export const configuration = process.env.Configuration || "Debug";
-export const productVersion = process.env.ProductVersion || "10.0.0-dev";
+if (process.env.ContinuousIntegrationBuild === undefined) {
+    throw new Error("ContinuousIntegrationBuild environment variable is not defined");
+}
+if (process.env.Configuration === undefined) {
+    throw new Error("Configuration environment variable is not defined");
+}
+if (process.env.ProductVersion === undefined) {
+    throw new Error("ProductVersion environment variable is not defined");
+}
+
+export const configuration = process.env.Configuration;
+export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
