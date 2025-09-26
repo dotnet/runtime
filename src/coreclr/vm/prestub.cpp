@@ -2398,6 +2398,16 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     else
     {
+else
+{
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        pCode = pStub->GetEntryPoint();
+        pStub->DecRef();
+
+        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+        _ASSERTE(ilStubInterpData != NULL);
+        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+#else
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
             if (pStub->HasExternalEntryPoint())
