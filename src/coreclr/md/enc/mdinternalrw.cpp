@@ -78,7 +78,7 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
                 NULL,               // don't care how many bytes consumed
                 pcbSig);           // [OUT] total number of bytes write to pqkSigEmit
 
-    ErrExit:
+ErrExit:
     return hr;
 #else //!FEATURE_METADATA_EMIT
     // This API doesn't make sense without supporting public Emit APIs
