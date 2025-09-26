@@ -101,42 +101,6 @@ export class HostBuilder implements DotnetHostBuilder {
         return this;
     }
 
-    // internal
-    withConsoleForwarding(): DotnetHostBuilder {
-        // TODO
-        return this;
-    }
-
-    // internal
-    withExitOnUnhandledError(): DotnetHostBuilder {
-        // TODO
-        return this;
-    }
-
-    // internal
-    withAsyncFlushOnExit(): DotnetHostBuilder {
-        // TODO
-        return this;
-    }
-
-    // internal
-    withExitCodeLogging(): DotnetHostBuilder {
-        // TODO
-        return this;
-    }
-
-    // internal
-    withElementOnExit(): DotnetHostBuilder {
-        // TODO
-        return this;
-    }
-
-    // internal
-    withInteropCleanupOnExit(): DotnetHostBuilder {
-        // TODO
-        return this;
-    }
-
     async download(): Promise<void> {
         try {
             await downloadConfig(configUrl, loadBootResourceCallback);
