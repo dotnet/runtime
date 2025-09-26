@@ -14,17 +14,17 @@ internal enum CorILMethodFlags
 }
 internal static class HeaderReaderHelpers
 {
-    public static int GetLocalVarSigToken(Target _target, TargetPointer ilHeader)
+    public static int GetLocalVarSigToken(Target target, TargetPointer ilHeader)
     {
         // see ECMA-335 II.25.4
         if (ilHeader == TargetPointer.Null)
             return -1;
-        ushort sizeAndFlags = _target.Read<ushort>(ilHeader); // get flags and size of il header
+        ushort sizeAndFlags = target.Read<ushort>(ilHeader); // get flags and size of il header
         CorILMethodFlags flags = (CorILMethodFlags)(sizeAndFlags & (int)CorILMethodFlags.CorILMethod_FormatMask);
         if (flags != CorILMethodFlags.CorILMethod_FatFormat)
             return -1;
 
-        int localToken = _target.Read<int>(ilHeader + 8);
+        int localToken = target.Read<int>(ilHeader + 8);
         return localToken;
     }
 }
