@@ -6182,7 +6182,10 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
 
+    DispatchExSecondPass(&exInfo);
+
     GCPROTECT_END();
+    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -7266,42 +7269,6 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     }
 #endif
 }
-
-#ifdef FEATURE_EH_FUNCLETS
-//
-// This function continues exception interception unwind after it crossed native frames using
-// standard EH / SEH.
-//
-VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    GCX_COOP();
-
-    Thread *pThread = GetThread();
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-    UINT_PTR uInterceptStackFrame  = 0;
-
-    pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL,
-                                                        (PBYTE*)&uInterceptStackFrame,
-                                                        NULL, NULL);
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__UNWIND_AND_INTERCEPT);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER((ExInfo*)pExState->GetCurrentExceptionTracker());
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(uInterceptStackFrame);
-    pThread->IncPreventAbort();
-
-    //Ex.RhUnwindAndIntercept(throwable, &exInfo)
-    CRITICAL_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(args)
-
-    UNREACHABLE();
-}
-
-#endif // FEATURE_EH_FUNCLETS
 
 //
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
