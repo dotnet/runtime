@@ -377,6 +377,11 @@ namespace ILCompiler.ObjectWriter
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
+#if !READYTORUN
+                bool recordSize = isMethod;
+#else
+                bool recordSize = true;
+#endif
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
@@ -384,7 +389,7 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
-                        n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
+                        n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
 
                     if (_outputInfoBuilder is not null)
                     {
@@ -397,7 +402,7 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
-                            n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
+                            n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0,
                             global: !isHidden);
 
                         if (n is IMethodNode)
