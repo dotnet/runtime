@@ -19,10 +19,10 @@ extern "C" void Store_Stack_2B();
 extern "C" void Store_Stack_4B();
 #endif // TARGET_APPLE && TARGET_ARM64
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
 extern "C" void Load_Stack_Ref();
 extern "C" void Store_Stack_Ref();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
 
 #ifdef TARGET_AMD64
 
@@ -1003,16 +1003,6 @@ extern "C" void Store_R2();
 extern "C" void Store_R2_R3();
 extern "C" void Store_R3();
 
-extern "C" void Load_Ref_R0();
-extern "C" void Load_Ref_R1();
-extern "C" void Load_Ref_R2();
-extern "C" void Load_Ref_R3();
-
-extern "C" void Store_Ref_R0();
-extern "C" void Store_Ref_R1();
-extern "C" void Store_Ref_R2();
-extern "C" void Store_Ref_R3();
-
 PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_R0,                         // 00
@@ -1051,22 +1041,6 @@ PCODE GPRegsStoreRoutines[] =
     (PCODE)0,                                // 13
     (PCODE)0,                                // 14
     (PCODE)Store_R3,                         // 15
-};
-
-PCODE GPRegsRefRoutines[] =
-{
-    (PCODE)Load_Ref_R0,        // 0
-    (PCODE)Load_Ref_R1,        // 1
-    (PCODE)Load_Ref_R2,        // 2
-    (PCODE)Load_Ref_R3,        // 3
-};
-
-PCODE GPRegsRefStoreRoutines[] =
-{
-    (PCODE)Store_Ref_R0,        // 0
-    (PCODE)Store_Ref_R1,        // 1
-    (PCODE)Store_Ref_R2,        // 2
-    (PCODE)Store_Ref_R3,        // 3
 };
 
 #endif // TARGET_ARM
@@ -1117,7 +1091,7 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
     return m_interpreterToNative ? GPRegsRoutines[index] : GPRegsStoreRoutines[index];
 }
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
 PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
 {
 #if LOG_COMPUTE_CALL_STUB
@@ -1134,7 +1108,7 @@ PCODE CallStubGenerator::GetStackRefRoutine()
     return m_interpreterToNative ? (PCODE)Load_Stack_Ref : (PCODE)Store_Stack_Ref;
 }
 
-#endif // UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
 
 PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 {
@@ -1855,12 +1829,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         {
             _ASSERTE(argLocDesc.m_byteStackIndex != -1);
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
-#ifdef TARGET_64BIT
             pRoutines[m_routineIndex++] = ((int64_t)alignedArgSize << 32) | argLocDesc.m_byteStackIndex;
-#else // !TARGET_64BIT
-            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
-            pRoutines[m_routineIndex++] = alignedArgSize;
-#endif // TARGET_64BIT
             m_s1 = NoRange;
         }
     }

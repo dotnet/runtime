@@ -970,73 +970,6 @@ ALTERNATE_ENTRY Store_R3
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2_R3
 
-// TODO: *ref is not tested yet.
-.macro Load_Ref argReg
-
-LEAF_ENTRY Load_Ref_\argReg
-    mov \argReg, r7
-    ldr r5, [r6], #4
-    add r7, r7, r5
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Load_Ref_\argReg
-
-.endm
-
-Load_Ref R0
-Load_Ref R1
-Load_Ref R2
-Load_Ref R3
-
-.macro Copy_Ref argReg
-    cmp r5, #8
-    blt LOCAL_LABEL(CopyBy4\argReg)
-LOCAL_LABEL(RefCopyLoop8\argReg):
-    ldr r9, [\argReg], #4
-    ldr r4, [\argReg], #4
-    str r9, [r7], #4
-    str r4, [r7], #4
-    subs r5, r5, #8
-    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add r5, r5, #8
-LOCAL_LABEL(CopyBy4\argReg):
-    cmp r5, #4
-    blt LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyLoop4\argReg):
-    ldr r9, [\argReg], #4
-    str r9, [r7], #4
-    subs r5, r5, #4
-    bgt LOCAL_LABEL(RefCopyLoop4\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add r5, r5, #4
-LOCAL_LABEL(RefCopyLoop1\argReg):
-    ldrb r9, [\argReg], #1
-    strb r9, [r7], #1
-    subs r5, r5, #1
-    bne LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyDone\argReg):
-    // Align r7 to the stack slot size
-    add r7, r7, 7
-    and r7, r7, 0xfffffff8
-.endm
-
-.macro Store_Ref argReg
-
-LEAF_ENTRY Store_Ref_\argReg
-    ldr r5, [r6], #4 // size of the value type
-    Copy_Ref \argReg
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_Ref_\argReg
-
-.endm
-
-Store_Ref R0
-Store_Ref R1
-Store_Ref R2
-Store_Ref R3
-
 LEAF_ENTRY Load_Stack
     ldr r8, [r6], #4 // SP offset
     ldr r9, [r6], #4 // number of stack slots
@@ -1063,29 +996,6 @@ LOCAL_LABEL(StoreCopyLoop):
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Store_Stack
-
-LEAF_ENTRY Load_Stack_Ref
-    ldr r8, [r6], #4 // SP offset
-    ldr r9, [r6], #4 // size of the value type
-    add r8, sp,r8
-    str r7, [r8]
-    add r7, r7, r9
-    // Align r7 to the stack slot size
-    add r7, r7, 3
-    and r7, r7, 0xfffffffc
-    ldr r5, [r6], #8
-    EPILOG_BRANCH_REG r5
-LEAF_END Load_Stack_Ref
-
-LEAF_ENTRY Store_Stack_Ref
-    ldr r8, [r6], #4 // SP offset
-    ldr r5, [r6], #4 // size of the value type
-    add r8, sp, r8
-    ldr r8, [r8, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock]
-    Copy_Ref r8
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_Stack_Ref
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     PROLOG_PUSH "{r4-r9,lr}"

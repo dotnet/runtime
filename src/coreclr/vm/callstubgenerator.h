@@ -120,10 +120,10 @@ class CallStubGenerator
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
     PCODE GetStackRefRoutine();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
     PCODE GetStackRoutine();
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     PCODE GetStackRoutine_1B();
