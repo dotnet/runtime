@@ -305,6 +305,8 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int _customPESectionAlignment;
+        private readonly ReadyToRunContainerFormat _format;
+
         /// <summary>
         /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
         /// for the same type during compilation so preserve the computed value.
@@ -337,7 +339,8 @@ namespace ILCompiler
             MethodLayoutAlgorithm methodLayoutAlgorithm,
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
-            bool verifyTypeAndFieldLayout)
+            bool verifyTypeAndFieldLayout,
+            ReadyToRunContainerFormat format)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -361,6 +364,7 @@ namespace ILCompiler
             _perfMapFormatVersion = perfMapFormatVersion;
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
+            _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
@@ -414,6 +418,7 @@ namespace ILCompiler
                     perfMapFormatVersion: _perfMapFormatVersion,
                     generateProfileFile: _generateProfileFile,
                     callChainProfile: _profileData.CallChainProfile,
+                    _format,
                     _customPESectionAlignment,
                     _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
@@ -512,6 +517,7 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
+                ReadyToRunContainerFormat.LegacyPE,
                 customPESectionAlignment: 0,
                 _logger);
         }

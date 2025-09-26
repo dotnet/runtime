@@ -563,7 +563,7 @@ namespace ILCompiler.PEWriter
         {
             foreach (Section section in _sections)
             {
-                outputInfoBuilder.AddSection(new ObjectWriter.OutputSection(section.Name, section.RVAWhenPlaced, section.FilePosWhenPlaced, section.Content.Count));
+                outputInfoBuilder.AddSection(new ObjectWriter.OutputSection(section.Name, (ulong)section.RVAWhenPlaced, (ulong)section.FilePosWhenPlaced, (ulong)section.Content.Count));
             }
         }
 

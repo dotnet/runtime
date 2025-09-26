@@ -426,4 +426,7 @@
   <data name="EnableCachedInterfaceDispatchSupport" xml:space="preserve">
     <value>Enable support for cached interface dispatch</value>
   </data>
+  <data name="OutputFormat" xml:space="preserve">
+    <value>Target output format for the ReadyToRun image</value>
+  </data>
 </root>

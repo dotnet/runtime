@@ -57,9 +57,9 @@ namespace ILCompiler.DependencyAnalysis
         private readonly IReadOnlyCollection<DependencyNode> _nodes;
 
         /// <summary>
-        /// Set to non-null when the executable generator should output a map or symbol file.
+        /// Builder to collect information from executable generation for auxiliary files (map, profile, or symbol files).
         /// </summary>
-        private readonly OutputInfoBuilder _outputInfoBuilder;
+        private readonly OutputInfoBuilder _outputInfoBuilder = new();
 
         /// <summary>
         /// Set to non-null when the executable generator should output a map file.
@@ -171,8 +171,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (generateMap || generateSymbols || generateProfileFile)
             {
-                _outputInfoBuilder = new OutputInfoBuilder();
-
                 if (generateMap)
                 {
                     _mapFileBuilder = new MapFileBuilder(_outputInfoBuilder);
@@ -190,7 +188,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitPortableExecutableUsingObjectWriter(Logger logger)
+        public void EmitReadyToRunObjects(ReadyToRunContainerFormat format, Logger logger)
         {
             bool succeeded = false;
 
@@ -198,15 +196,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var stopwatch = Stopwatch.StartNew();
 
+                Debug.Assert(format == ReadyToRunContainerFormat.PE);
+
                 PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment, _outputInfoBuilder);
                 using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
                 objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
 
-                if (_outputInfoBuilder != null)
-                {
-                    foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
-                        _outputInfoBuilder.AddMethod(methodNode, methodNode);
-                }
+                foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
+                    _outputInfoBuilder.AddMethod(methodNode, methodNode);
 
                 if (_mapFileBuilder != null)
                 {
@@ -242,7 +239,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
                     {
-                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
+                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder.EnumerateInputAssemblies().Any());
                         byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
                         byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
 
@@ -251,54 +248,48 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
-                if (_outputInfoBuilder != null)
+                foreach (string inputFile in _inputFiles)
                 {
-                    foreach (string inputFile in _inputFiles)
-                    {
-                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
-                    }
+                    _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
                 }
 
-                if (_outputInfoBuilder != null)
+                if (_generateMapFile)
                 {
-                    if (_generateMapFile)
-                    {
-                        string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
-                        _mapFileBuilder.SaveMap(mapFileName);
-                    }
+                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                    _mapFileBuilder.SaveMap(mapFileName);
+                }
 
-                    if (_generateMapCsvFile)
-                    {
-                        string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
-                        string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
-                        _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
-                    }
+                if (_generateMapCsvFile)
+                {
+                    string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
+                    string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
+                    _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                }
 
-                    if (_generatePdbFile)
+                if (_generatePdbFile)
+                {
+                    string path = _pdbPath;
+                    if (string.IsNullOrEmpty(path))
                     {
-                        string path = _pdbPath;
-                        if (string.IsNullOrEmpty(path))
-                        {
-                            path = Path.GetDirectoryName(_objectFilePath);
-                        }
-                        _symbolFileBuilder.SavePdb(path, _objectFilePath);
+                        path = Path.GetDirectoryName(_objectFilePath);
                     }
+                    _symbolFileBuilder.SavePdb(path, _objectFilePath);
+                }
 
-                    if (_generatePerfMapFile)
+                if (_generatePerfMapFile)
+                {
+                    string path = _perfMapPath;
+                    if (string.IsNullOrEmpty(path))
                     {
-                        string path = _perfMapPath;
-                        if (string.IsNullOrEmpty(path))
-                        {
-                            path = Path.GetDirectoryName(_objectFilePath);
-                        }
-                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                        path = Path.GetDirectoryName(_objectFilePath);
                     }
+                    _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                }
 
-                    if (_profileFileBuilder != null)
-                    {
-                        string path = Path.ChangeExtension(_objectFilePath, ".profile");
-                        _profileFileBuilder.SaveProfile(path);
-                    }
+                if (_profileFileBuilder != null)
+                {
+                    string path = Path.ChangeExtension(_objectFilePath, ".profile");
+                    _profileFileBuilder.SaveProfile(path);
                 }
 
                 stopwatch.Stop();
@@ -647,6 +638,7 @@ namespace ILCompiler.DependencyAnalysis
             int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
+            ReadyToRunContainerFormat format,
             int customPESectionAlignment,
             Logger logger)
         {
@@ -667,7 +659,15 @@ namespace ILCompiler.DependencyAnalysis
                 generateProfileFile: generateProfileFile,
                 callChainProfile,
                 customPESectionAlignment);
-            objectWriter.EmitPortableExecutable();
+
+            if (format == ReadyToRunContainerFormat.LegacyPE)
+            {
+                objectWriter.EmitPortableExecutable();
+            }
+            else
+            {
+                objectWriter.EmitReadyToRunObjects(format, logger);
+            }
         }
     }
 }

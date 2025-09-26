@@ -45,6 +45,7 @@ namespace ILCompiler
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
+        private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.LegacyPE;
 
         private string _jitPath;
         private string _outputFile;
@@ -220,6 +221,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseContainerFormat(ReadyToRunContainerFormat format)
+        {
+            _format = format;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -344,7 +351,8 @@ namespace ILCompiler
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
-                _verifyTypeAndFieldLayout);
+                _verifyTypeAndFieldLayout,
+                _format);
         }
     }
 }

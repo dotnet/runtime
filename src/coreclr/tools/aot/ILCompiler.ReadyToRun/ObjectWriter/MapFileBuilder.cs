@@ -225,7 +225,7 @@ namespace ILCompiler.PEWriter
                     // No more nodes or next symbol is below next node - emit symbol
                     OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
                     OutputSection section = _outputInfoBuilder.Sections[symbol.SectionIndex];
-                    writer.Write($"0x{symbol.Offset + section.VirtualAddress:X8} | ");
+                    writer.Write($"0x{(ulong)symbol.Offset + section.VirtualAddress:X8} | ");
                     writer.Write("         | ");
                     writer.Write("       | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
@@ -237,7 +237,7 @@ namespace ILCompiler.PEWriter
                     OutputNode node = _outputInfoBuilder.Nodes[nodeIndex++];
                     OutputSection section = _outputInfoBuilder.Sections[node.SectionIndex];
 
-                    writer.Write($"0x{node.Offset + section.VirtualAddress:X8} | ");
+                    writer.Write($"0x{(ulong)node.Offset + section.VirtualAddress:X8} | ");
                     writer.Write($"0x{node.Length:X6} | ");
                     writer.Write($"{node.Relocations,6} | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");

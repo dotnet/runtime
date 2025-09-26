@@ -569,6 +569,7 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_ADDR32NB => 4,
                 RelocType.IMAGE_REL_BASED_REL32 => 4,
                 RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
+                RelocType.IMAGE_REL_FILE_ABSOLUTE => 4,
                 _ => throw new NotSupportedException(),
             };
         }

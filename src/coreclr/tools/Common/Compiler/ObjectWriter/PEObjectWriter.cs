@@ -56,6 +56,9 @@ namespace ILCompiler.ObjectWriter
         private uint _peSectionAlignment;
         private uint _peFileAlignment;
 
+        // Relocations that we can resolve at emit time (ie not file-based relocations).
+        private List<List<SymbolicRelocation>> _resolvableRelocations = [];
+
         private int _pdataSectionIndex;
         private int _debugSectionIndex;
         private int _exportSectionIndex;
@@ -381,8 +384,9 @@ namespace ILCompiler.ObjectWriter
 
             for (int i = 0; i < _sections.Count; i++)
             {
-                var s = _sections[i];
-                var h = s.Header;
+                _resolvableRelocations.Add([]);
+                SectionDefinition s = _sections[i];
+                CoffSectionHeader h = s.Header;
                 h.SizeOfRawData = (uint)s.Stream.Length;
                 uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData) ? 0u : (uint)AlignmentHelper.AlignUp((int)h.SizeOfRawData, (int)fileAlignment);
 
@@ -424,9 +428,9 @@ namespace ILCompiler.ObjectWriter
             if (_exportedSymbolNames.Count > 0)
             {
                 uint edataRva = virtualAddress;
-                var exportDir = new ExportDirectory(_exportedPESymbols, moduleName: "UNKNOWN", edataRva);
-                var edataSection = exportDir.Section;
-                var edataHeader = edataSection.Header;
+                ExportDirectory exportDir = new(_exportedPESymbols, moduleName: "UNKNOWN", edataRva);
+                SectionDefinition edataSection = exportDir.Section;
+                CoffSectionHeader edataHeader = edataSection.Header;
 
                 // Compute raw and virtual sizes and update pointers
                 edataHeader.SizeOfRawData = (uint)edataSection.Stream.Length;
@@ -444,6 +448,7 @@ namespace ILCompiler.ObjectWriter
                 // Add to sections and bookkeeping
                 _sections.Add(edataSection);
                 _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
+                _resolvableRelocations.Add([]);
 
                 sizeOfInitializedData += edataHeader.SizeOfRawData;
 
@@ -463,83 +468,28 @@ namespace ILCompiler.ObjectWriter
         {
             foreach (var reloc in relocationList)
             {
-                switch (reloc.Type)
+                RelocType fileRelocType = Relocation.GetFileRelocationType(reloc.Type);
+
+                if (fileRelocType != reloc.Type)
                 {
-                    case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                    case RelocType.IMAGE_REL_BASED_DIR64:
-                    case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
-                    case RelocType.IMAGE_REL_BASED_ABSOLUTE:
-                    {
-                        // Gather file-level relocations that need to go into the .reloc
-                        // section. We collect entries grouped by 4KB page (page RVA ->
-                        // list of (type<<12 | offsetInPage) WORD entries).
-                        RelocType fileRelocType = Relocation.GetFileRelocationType(reloc.Type);
-                        uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)reloc.Offset;
-                        uint pageRva = targetRva & ~0xFFFu;
-                        ushort offsetInPage = (ushort)(targetRva & 0xFFFu);
-                        ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
-
-                        if (!_baseRelocMap.TryGetValue(pageRva, out var list))
-                        {
-                            list = new List<ushort>();
-                            _baseRelocMap.Add(pageRva, list);
-                        }
-                        list.Add(entry);
-                        break;
-                    }
-                    case RelocType.IMAGE_REL_BASED_ADDR32NB:
-                        fixed (byte* pData = GetRelocDataSpan(reloc))
-                        {
-                            long rva = _sections[sectionIndex].Header.VirtualAddress + reloc.Offset;
-                            Relocation.WriteValue(reloc.Type, (void*)pData, rva);
-                            WriteRelocDataSpan(reloc, pData);
-                        }
-                        break;
-                    case RelocType.IMAGE_REL_BASED_REL32:
-                    case RelocType.IMAGE_REL_BASED_RELPTR32:
-                    {
-                        PESymbol definedSymbol = _definedPESymbols[reloc.SymbolName];
-                        fixed (byte* pData = GetRelocDataSpan(reloc))
-                        {
-                            long adjustedAddend = reloc.Addend;
-
-                            adjustedAddend -= 4;
-
-                            adjustedAddend += definedSymbol.Offset;
-                            adjustedAddend += Relocation.ReadValue(reloc.Type, (void*)pData);
-                            adjustedAddend -= reloc.Offset;
-
-                            Relocation.WriteValue(reloc.Type, (void*)pData, adjustedAddend);
-                            WriteRelocDataSpan(reloc, pData);
-                        }
-                        break;
-                    }
-                    case RelocType.IMAGE_REL_FILE_ABSOLUTE:
-                        fixed (byte* pData = GetRelocDataSpan(reloc))
-                        {
-                            long rva = _sections[sectionIndex].Header.PointerToRawData + reloc.Offset;
-                            Relocation.WriteValue(reloc.Type, (void*)pData, rva);
-                            WriteRelocDataSpan(reloc, pData);
-                        }
-                        break;
-                    default:
-                        throw new NotSupportedException($"Unsupported relocation: {reloc.Type}");
+                    _resolvableRelocations[sectionIndex].Add(reloc);
                 }
-
-                Span<byte> GetRelocDataSpan(SymbolicRelocation reloc)
+                else
                 {
-                    Stream stream = _sections[sectionIndex].Stream;
-                    stream.Position = reloc.Offset;
-                    Span<byte> data = new byte[Relocation.GetSize(reloc.Type)];
-                    stream.ReadExactly(data);
-                    return data;
-                }
+                    // Gather file-level relocations that need to go into the .reloc
+                    // section. We collect entries grouped by 4KB page (page RVA ->
+                    // list of (type<<12 | offsetInPage) WORD entries).
+                    uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)reloc.Offset;
+                    uint pageRva = targetRva & ~0xFFFu;
+                    ushort offsetInPage = (ushort)(targetRva & 0xFFFu);
+                    ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
 
-                void WriteRelocDataSpan(SymbolicRelocation reloc, byte* data)
-                {
-                    Stream stream = _sections[sectionIndex].Stream;
-                    stream.Position = reloc.Offset;
-                    stream.Write(new Span<byte>(data, Relocation.GetSize(reloc.Type)));
+                    if (!_baseRelocMap.TryGetValue(pageRva, out var list))
+                    {
+                        list = new List<ushort>();
+                        _baseRelocMap.Add(pageRva, list);
+                    }
+                    list.Add(entry);
                 }
             }
         }
@@ -612,6 +562,7 @@ namespace ILCompiler.ObjectWriter
 
             _sections.Add(relocSection);
             _sectionIndexToRelocations.Add(new List<SymbolicRelocation>());
+            _resolvableRelocations.Add([]);
 
             _outputSectionLayout.Add(new OutputSection(relocHeader.Name, relocHeader.VirtualAddress, relocHeader.PointerToRawData, relocHeader.SizeOfRawData));
             _baseRelocSectionIndex = _sections.Count - 1;
@@ -748,22 +699,103 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < _sections.Count; i++)
             {
                 var hdr = _sections[i].Header;
+                if (hdr.VirtualSize == 0 && !hdr.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                {
+                    // Don't emit empty sections into the binary
+                    continue;
+                }
                 hdr.Write(outputFileStream, stringTable);
             }
 
             // Write section content
-            foreach (var section in _sections)
+            for (int i = 0; i < _sections.Count; i++)
             {
-                if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
+                SectionDefinition section = _sections[i];
+                if (section.Header.VirtualSize != 0 && !section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                 {
-                    Debug.Assert(outputFileStream.Position == section.Header.PointerToRawData);
-                    section.Stream.Position = 0;
-                    section.Stream.CopyTo(outputFileStream);
+                    Debug.Assert(outputFileStream.Position <= section.Header.PointerToRawData);
+                    outputFileStream.Position = section.Header.PointerToRawData; // Pad to alignment
+                    if (_resolvableRelocations[i] is not [])
+                    {
+                        // Resolve all relocations we can't represent in a PE as we write out the data.
+                        MemoryStream stream = new((int)section.Stream.Length);
+                        section.Stream.Position = 0;
+                        section.Stream.CopyTo(stream);
+                        ResolveNonImageBaseRelocations(i, _resolvableRelocations[i], stream);
+                        stream.Position = 0;
+                        section.Stream.CopyTo(outputFileStream);
+                    }
+                    else
+                    {
+                        section.Stream.Position = 0;
+                        section.Stream.CopyTo(outputFileStream);
+                    }
                 }
             }
 
             // TODO: calculate PE checksum
             // TODO: calculate deterministic timestamp
+        }
+
+        private unsafe void ResolveNonImageBaseRelocations(int sectionIndex, List<SymbolicRelocation> symbolicRelocations, MemoryStream stream)
+        {
+            foreach (SymbolicRelocation reloc in symbolicRelocations)
+            {
+                switch (reloc.Type)
+                {
+                    case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                        {
+                            long rva = _sections[sectionIndex].Header.VirtualAddress + reloc.Offset;
+                            Relocation.WriteValue(reloc.Type, pData, rva);
+                            WriteRelocDataSpan(reloc, pData);
+                        }
+                        break;
+                    case RelocType.IMAGE_REL_BASED_REL32:
+                    case RelocType.IMAGE_REL_BASED_RELPTR32:
+                    {
+                        PESymbol definedSymbol = _definedPESymbols[reloc.SymbolName];
+                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                        {
+                            long adjustedAddend = reloc.Addend;
+
+                            adjustedAddend -= 4;
+
+                            adjustedAddend += definedSymbol.Offset;
+                            adjustedAddend += Relocation.ReadValue(reloc.Type, pData);
+                            adjustedAddend -= reloc.Offset;
+
+                            Relocation.WriteValue(reloc.Type, pData, adjustedAddend);
+                            WriteRelocDataSpan(reloc, pData);
+                        }
+                        break;
+                    }
+                    case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                        {
+                            long rva = _sections[sectionIndex].Header.PointerToRawData + reloc.Offset;
+                            Relocation.WriteValue(reloc.Type, pData, rva);
+                            WriteRelocDataSpan(reloc, pData);
+                        }
+                        break;
+                    default:
+                        throw new NotSupportedException($"Unsupported relocation: {reloc.Type}");
+                }
+
+                Span<byte> GetRelocDataSpan(SymbolicRelocation reloc)
+                {
+                    stream.Position = reloc.Offset;
+                    Span<byte> data = new byte[Relocation.GetSize(reloc.Type)];
+                    stream.ReadExactly(data);
+                    return data;
+                }
+
+                void WriteRelocDataSpan(SymbolicRelocation reloc, byte* data)
+                {
+                    stream.Position = reloc.Offset;
+                    stream.Write(new Span<byte>(data, Relocation.GetSize(reloc.Type)));
+                }
+            }
         }
 
         private static unsafe void WriteLittleEndian<T>(Stream stream, T value)

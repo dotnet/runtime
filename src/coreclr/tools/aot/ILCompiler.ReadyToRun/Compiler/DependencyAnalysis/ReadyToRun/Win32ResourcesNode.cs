@@ -49,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private ObjectData GetDataInternal()
         {
             ObjectDataBuilder builder = new ObjectDataBuilder();
+            builder.RequireInitialAlignment(1);
             builder.AddSymbol(this);
             _resourceData.WriteResources(this, ref builder);
             _size = builder.CountBytes;

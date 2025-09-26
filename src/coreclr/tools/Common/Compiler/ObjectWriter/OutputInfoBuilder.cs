@@ -197,7 +197,7 @@ namespace ILCompiler.ObjectWriter
                 methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
                 OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
                 OutputSection section = _sections[node.SectionIndex];
-                methodInfo.HotRVA = (uint)(section.VirtualAddress + node.Offset);
+                methodInfo.HotRVA = (uint)(section.VirtualAddress + (ulong)node.Offset);
                 methodInfo.HotLength = (uint)node.Length;
                 methodInfo.ColdRVA = 0;
                 methodInfo.ColdLength = 0;

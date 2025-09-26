@@ -30,6 +30,8 @@ namespace ILCompiler
             new("--mibc", "-m") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.MibcFiles };
         public Option<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = SR.OutputFilePath };
+        public Option<ReadyToRunContainerFormat> OutputFormat { get; } =
+            new("--format") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
         public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
         public Option<bool> Optimize { get; } =
@@ -161,6 +163,7 @@ namespace ILCompiler
             Options.Add(MaxVectorTBitWidth);
             Options.Add(MibcFilePaths);
             Options.Add(OutputFilePath);
+            Options.Add(OutputFormat);
             Options.Add(CompositeRootPath);
             Options.Add(Optimize);
             Options.Add(OptimizeDisabled);
@@ -400,6 +403,19 @@ namespace ILCompiler
             {
                 "defaultsort" => FileLayoutAlgorithm.DefaultSort,
                 "methodorder" => FileLayoutAlgorithm.MethodOrder,
+                _ => throw new CommandLineException(SR.InvalidFileLayout)
+            };
+        }
+
+        private static ReadyToRunContainerFormat MakeOutputFormat(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return ReadyToRunContainerFormat.LegacyPE;
+
+            return result.Tokens[0].Value.ToLowerInvariant() switch
+            {
+                "legacype" => ReadyToRunContainerFormat.LegacyPE,
+                "pe" => ReadyToRunContainerFormat.PE,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
             };
         }

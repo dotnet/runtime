@@ -168,6 +168,7 @@
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
+    <Compile Include="CodeGen\ReadyToRunContainerFormat.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs" />
@@ -293,10 +294,8 @@
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
-    <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
-    <Compile Include="ObjectWriter\TypeString.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NoMethodsCompilationModuleGroup.cs" />
@@ -356,5 +355,9 @@
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\aot\ilcompiler.readytorun\codegen\" />
   </ItemGroup>
 </Project>
