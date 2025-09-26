@@ -54,47 +54,62 @@ namespace System.Security.Cryptography.Xml
             X509Certificate2 certificate = new X509Certificate2(cert);
             X509ChainElementCollection elements;
             X509Chain chain;
-            switch (includeOption)
+            try
             {
-                case X509IncludeOption.ExcludeRoot:
-                    // Build the certificate chain
-                    chain = new X509Chain();
-                    chain.Build(certificate);
+                switch (includeOption)
+                {
+                    case X509IncludeOption.ExcludeRoot:
+                        // Build the certificate chain
+                        chain = new X509Chain();
+                        chain.Build(certificate);
 
-                    // Can't honor the option if we only have a partial chain.
-                    if ((chain.ChainStatus.Length > 0) &&
-                        ((chain.ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain))
+                        // Can't honor the option if we only have a partial chain.
+                        if ((chain.ChainStatus.Length > 0) &&
+                            ((chain.ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain))
+                        {
+                            throw new CryptographicException(SR.Cryptography_Partial_Chain);
+                        }
+
+                        elements = (X509ChainElementCollection)chain.ChainElements;
+                        for (int index = 0; index < (Utils.IsSelfSigned(chain) ? 1 : elements.Count - 1); index++)
+                        {
+                            AddCertificate(elements[index].Certificate);
+                        }
+                        break;
+                    case X509IncludeOption.EndCertOnly:
+                        AddCertificate(certificate);
+                        break;
+                    case X509IncludeOption.WholeChain:
+                        // Build the certificate chain
+                        chain = new X509Chain();
+                        chain.Build(certificate);
+
+                        // Can't honor the option if we only have a partial chain.
+                        if ((chain.ChainStatus.Length > 0) &&
+                            ((chain.ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain))
+                        {
+                            throw new CryptographicException(SR.Cryptography_Partial_Chain);
+                        }
+
+                        elements = (X509ChainElementCollection)chain.ChainElements;
+                        foreach (X509ChainElement element in elements)
+                        {
+                            AddCertificate(element.Certificate);
+                        }
+                        break;
+                }
+            }
+            finally
+            {
+                if (chain != null)
+                {
+                    for (int i = 0; i < chain.ChainElements.Count; i++)
                     {
-                        throw new CryptographicException(SR.Cryptography_Partial_Chain);
+                        chain.ChainElements[i].Certificate.Dispose();
                     }
 
-                    elements = (X509ChainElementCollection)chain.ChainElements;
-                    for (int index = 0; index < (Utils.IsSelfSigned(chain) ? 1 : elements.Count - 1); index++)
-                    {
-                        AddCertificate(elements[index].Certificate);
-                    }
-                    break;
-                case X509IncludeOption.EndCertOnly:
-                    AddCertificate(certificate);
-                    break;
-                case X509IncludeOption.WholeChain:
-                    // Build the certificate chain
-                    chain = new X509Chain();
-                    chain.Build(certificate);
-
-                    // Can't honor the option if we only have a partial chain.
-                    if ((chain.ChainStatus.Length > 0) &&
-                        ((chain.ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain))
-                    {
-                        throw new CryptographicException(SR.Cryptography_Partial_Chain);
-                    }
-
-                    elements = (X509ChainElementCollection)chain.ChainElements;
-                    foreach (X509ChainElement element in elements)
-                    {
-                        AddCertificate(element.Certificate);
-                    }
-                    break;
+                    chain.Dispose();
+                }
             }
         }
 
