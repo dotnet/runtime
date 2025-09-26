@@ -339,9 +339,17 @@ namespace System.IO.Compression.Tests
             IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Select(Path.GetFileName);
             IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Select(Path.GetFileName);
 
-            // iOS/tvOS filesystems use NFD by default for non-ASCII characters, so we normalize to NFC for cross-platform comparison
-            actualEntries = actualEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
-            expectedEntries = expectedEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // iOS/tvOS filesystems use NFD by default for non-ASCII characters, so we normalize to NFC for cross-platform comparison
+                actualEntries = actualEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+                expectedEntries = expectedEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+            }
+            else
+            {
+                actualEntries = actualEntries.Order();
+                expectedEntries = expectedEntries.Order();
+            }
 
             AssertExtensions.SequenceEqual(actualEntries.ToArray(), expectedEntries.ToArray());
         }
