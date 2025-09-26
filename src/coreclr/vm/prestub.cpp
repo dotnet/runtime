@@ -1510,7 +1510,8 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     }
 #endif
 
-    if (pTargetMD->RequiresInstMethodTableArg()) {
+    if (pTargetMD->RequiresInstMethodTableArg())
+    {
         // Push the hidden context param
         // The context is going to be captured from the thisptr
         pCode->EmitLoadThis();
@@ -1730,8 +1731,8 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 #endif
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            pstub = CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
-#else
+        pstub = CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 #ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
         if (pUnboxedMD->RequiresInstMethodTableArg())
@@ -2276,7 +2277,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
         SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
-#endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     else if (IsInstantiatingStub())
