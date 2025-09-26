@@ -87,7 +87,7 @@ export function setHeapI32(offset: MemOffset, value: number): void {
  */
 export function setHeapI52(offset: MemOffset, value: number): void {
     dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
-    throw new Error("TODO-WASM");
+    throw new Error("WASM-TODO");
 }
 
 /**
@@ -96,7 +96,7 @@ export function setHeapI52(offset: MemOffset, value: number): void {
 export function setHeapU52(offset: MemOffset, value: number): void {
     dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
     dotnetAssert.check(value >= 0, "Can't convert negative Number into UInt64");
-    throw new Error("TODO-WASM");
+    throw new Error("WASM-TODO");
 }
 
 export function setHeapI64Big(offset: MemOffset, value: bigint): void {
@@ -178,7 +178,7 @@ export function getHeapI32_local(localView: Int32Array, offset: MemOffset): numb
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHeapI52(offset: MemOffset): number {
-    throw new Error("TODO-WASM");
+    throw new Error("WASM-TODO");
 }
 
 /**
@@ -186,7 +186,7 @@ export function getHeapI52(offset: MemOffset): number {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHeapU52(offset: MemOffset): number {
-    throw new Error("TODO-WASM");
+    throw new Error("WASM-TODO");
 }
 
 export function getHeapI64Big(offset: MemOffset): bigint {
