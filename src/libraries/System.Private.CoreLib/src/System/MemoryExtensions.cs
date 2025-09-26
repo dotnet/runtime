@@ -4735,6 +4735,8 @@ namespace System
                 ReplaceDefaultComparer(source, destination, oldValue, newValue);
                 static void ReplaceDefaultComparer(ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue)
                 {
+                    destination = destination.Slice(0, source.Length);
+
                     for (int i = 0; i < source.Length; i++)
                     {
                         destination[i] = EqualityComparer<T>.Default.Equals(source[i], oldValue) ? newValue : source[i];
@@ -4746,7 +4748,9 @@ namespace System
                 ReplaceComparer(source, destination, oldValue, newValue, comparer);
                 static void ReplaceComparer(ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue, IEqualityComparer<T>? comparer)
                 {
+                    destination = destination.Slice(0, source.Length);
                     comparer ??= EqualityComparer<T>.Default;
+
                     for (int i = 0; i < source.Length; i++)
                     {
                         destination[i] = comparer.Equals(source[i], oldValue) ? newValue : source[i];
