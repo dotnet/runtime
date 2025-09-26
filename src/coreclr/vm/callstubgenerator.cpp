@@ -2020,6 +2020,20 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                             break;
                     }
                 }
+#elif TARGET_ARM
+                switch (thReturnValueType.GetSize())
+                {
+                    case 1:
+                    case 2:
+                    case 4:
+                        return ReturnTypeI4;
+                        break;
+                    case 8:
+                        return ReturnTypeI8;
+                    default:
+                        _ASSERTE(!"The return types should be <= 8 bytes in size");
+                        break;
+                }
 #else
                 _ASSERTE(!"Struct returns by value are not supported yet");
 #endif
