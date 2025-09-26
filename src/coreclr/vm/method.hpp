@@ -595,6 +595,8 @@ public:
 
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
 
+    bool IsCollectible();
+
     PTR_LoaderAllocator GetLoaderAllocator();
 
     Module* GetLoaderModule();
@@ -1815,6 +1817,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         VolatileStore(&m_interpreterCode, interpreterCode);
     }
+    void ClearInterpreterCodePointer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, dac_cast<PTR_InterpByteCodeStart>((TADDR)NULL));
+    }
 #endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
@@ -2097,6 +2104,7 @@ private:
     void EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
+    bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType);
@@ -2704,6 +2712,12 @@ protected:
     PTR_DynamicResolver m_pResolver;
 
 public:
+
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    // Cached InterpreterPrecode instance for dynamic methods to avoid repeated allocations.
+    DPTR(struct InterpreterPrecode) m_interpreterPrecode;
+#endif
+
     enum ILStubType : DWORD
     {
         StubNotSet = 0,

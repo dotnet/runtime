@@ -96,8 +96,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // If new writer might remove itself from pipeline, have it callback on this method when it's ready to go
                 IRemovableWriter? removable = value as IRemovableWriter;
-                if (removable != null)
-                    removable.OnRemoveWriterEvent = SetWrappedWriter;
+                removable?.OnRemoveWriterEvent = SetWrappedWriter;
 
                 _xwrt = value;
             }
