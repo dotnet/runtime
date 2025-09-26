@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Xml
 
             X509Certificate2 certificate = new X509Certificate2(cert);
             X509ChainElementCollection elements;
-            X509Chain chain;
+            X509Chain chain = null;
             try
             {
                 switch (includeOption)
