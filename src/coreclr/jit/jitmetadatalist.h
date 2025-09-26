@@ -96,6 +96,7 @@ JITMETADATAMETRIC(MorphLocals,                           int,              0)
 JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
 JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
 JITMETADATAMETRIC(IrreducibleLoopsFoundDuringOpts,       int,              0)
+JITMETADATAMETRIC(IrreducibleNestedLoopsFoundDuringOpts, int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

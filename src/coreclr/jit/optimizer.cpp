@@ -2864,20 +2864,24 @@ class SCC
 {
 private:
 
-    Compiler*    m_comp;
-    BitVecTraits m_traits;
-    BitVec       m_blocks;
-    BitVec       m_entries;
+    Compiler*            m_comp;
+    BitVecTraits         m_traits;
+    BitVec               m_blocks;
+    BitVec               m_entries;
+    jitstd::vector<SCC*> m_nested;
+    unsigned             m_numIrr;
 
 public:
 
-    // Factor out traits?
+    // Factor out traits? Parent links?
     //
     SCC(Compiler* comp, BasicBlock* block)
         : m_comp(comp)
         , m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
         , m_blocks(BitVecOps::UninitVal())
         , m_entries(BitVecOps::UninitVal())
+        , m_nested(comp->getAllocator(CMK_DepthFirstSearch))
+        , m_numIrr(0)
     {
         m_blocks  = BitVecOps::MakeEmpty(&m_traits);
         m_entries = BitVecOps::MakeEmpty(&m_traits);
@@ -2892,6 +2896,7 @@ public:
     void Finalize()
     {
         ComputeEntries();
+        FindNested();
     }
 
     void ComputeEntries()
@@ -2928,22 +2933,79 @@ public:
         return BitVecOps::Diff(&m_traits, m_blocks, m_entries);
     }
 
-    void Dump(Compiler* comp)
+    bool IsIrr()
     {
-        JITDUMP("SCC %p:\n", this);
+        return NumEntries() > 1;
+    }
 
+    unsigned NumIrr()
+    {
+        m_numIrr = IsIrr();
+
+        for (SCC* nested : m_nested)
+        {
+            m_numIrr += nested->NumIrr();
+        }
+
+        return m_numIrr;
+    }
+
+    void Dump(Compiler* comp, int indent = 0)
+    {
         BitVecOps::Iter iterator(&m_traits, m_blocks);
         unsigned int    poNum;
         bool            first = true;
         while (iterator.NextElem(&poNum))
         {
+            if (first)
+            {
+                JITDUMP("%*c", indent, ' ');
+
+                if (NumEntries() > 1)
+                {
+                    JITDUMP("[irrd] ");
+                }
+                else
+                {
+                    JITDUMP("[loop] ");
+                }
+            }
+            else
+            {
+                JITDUMP(", ");
+            }
+            first = false;
+
             BasicBlock* const block   = m_comp->m_dfsTree->GetPostOrder(poNum);
             bool              isEntry = BitVecOps::IsMember(&m_traits, m_entries, poNum);
-            JITDUMP("%s" FMT_BB "%s", first ? "" : ", ", block->bbNum, isEntry ? "e" : "");
-            first = false;
+            JITDUMP(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
+        }
+        JITDUMP("\n");
+
+        for (SCC* child : m_nested)
+        {
+            child->Dump(comp, indent + 3);
+        }
+    }
+
+    void FindNested()
+    {
+        ArrayStack<SCC*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
+        BitVec           nestedBlocks = InternalBlocks();
+        m_comp->optFindSCCs(nestedBlocks, m_traits, nestedSccs);
+
+        const int nNested = nestedSccs.Height();
+
+        if (nNested == 0)
+        {
+            return;
         }
 
-        JITDUMP("\n");
+        for (int i = 0; i < nNested; i++)
+        {
+            SCC* const nestedScc = nestedSccs.Bottom(i);
+            m_nested.push_back(nestedScc);
+        }
     }
 };
 
@@ -2957,7 +3019,8 @@ void Compiler::optFindSCCs()
     ArrayStack<SCC*> sccs(getAllocator(CMK_DepthFirstSearch));
     optFindSCCs(allBlocks, traits, sccs);
 
-    unsigned numIrreducible = 0;
+    unsigned numIrreducible       = 0;
+    unsigned numNestedIrreducible = 0;
 
     if (sccs.Height() > 0)
     {
@@ -2967,7 +3030,8 @@ void Compiler::optFindSCCs()
         {
             SCC* const scc = sccs.Bottom(i);
             scc->Dump(this);
-            numIrreducible += (scc->NumEntries() > 1);
+
+            numIrreducible += scc->NumIrr();
         }
     }
     else
@@ -2977,7 +3041,7 @@ void Compiler::optFindSCCs()
 
     if (numIrreducible > 0)
     {
-        JITDUMP("\n*** %u Irreducible!\n", numIrreducible);
+        JITDUMP("\n*** %u total Irreducible!\n", numIrreducible);
     }
 
     Metrics.IrreducibleLoopsFoundDuringOpts = (int)numIrreducible;
