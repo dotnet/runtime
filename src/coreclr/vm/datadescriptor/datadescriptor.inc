@@ -943,6 +943,13 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
+CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, MowQueryInterface, offsetof(ComWrappersVtablePtrs, MowQueryInterface))
+CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, TtQueryInterface, offsetof(ComWrappersVtablePtrs, TtQueryInterface))
+CDAC_TYPE_END(ComWrappersVtablePtrs)
+#endif
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1038,8 +1045,7 @@ CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
 CDAC_GLOBAL(NativeObjectWrapperClass, uint32, CLASS__NATIVE_OBJECT_WRAPPER)
-CDAC_GLOBAL_POINTER(MOWQueryInterface, &ManagedObjectWrapper_QueryInterface)
-CDAC_GLOBAL_POINTER(TrackerTargetQueryInterface, &TrackerTarget_QueryInterface)
+CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, &g_ComWrappersVtablePtrs)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS

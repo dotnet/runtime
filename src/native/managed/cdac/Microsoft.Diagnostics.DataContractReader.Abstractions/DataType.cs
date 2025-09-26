@@ -71,6 +71,7 @@ public enum DataType
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
+    ComWrappersVtablePtrs,
     String,
     MethodDesc,
     MethodDescChunk,

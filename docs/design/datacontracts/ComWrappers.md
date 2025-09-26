@@ -25,12 +25,13 @@ Data descriptors used:
 | `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
 | `ManagedObjectWrapperHolderObject` | `WrappedObject` | Address of the wrapped object |
 | `ManagedObjectWrapperLayout` | `RefCount` | Reference count of the managed object wrapper |
+| `ComWrappersVtablePtrs` | `MowQueryInterface` | Function pointer of ManagedObjectWrapper_QueryInterface |
+| `ComWrappersVtablePtrs` | `TtQueryInterface` | Function pointer of TrackerTarget_QueryInterface |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| `MOWQueryInterface` | TargetPointer | Code address of ManagedObjectWrapper_QueryInterface |
-| `TrackerTargetQueryInterface` | TargetPointer | Code address of TrackerTarget_QueryInterface |
+| `ComWrappersVtablePtrs` | TargetPointer | Pointer to struct containing ComWrappers-related function pointers |
 | `DispatchThisPtrMask` | TargetPointer | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
 | `NativeObjectWrapperClass` | ushort | The index of the native object wrapper class into the CoreLibBinder classes |
 
