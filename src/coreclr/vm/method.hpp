@@ -2713,7 +2713,7 @@ protected:
 
 public:
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
     // Cached InterpreterPrecode instance for dynamic methods to avoid repeated allocations.
     DPTR(struct InterpreterPrecode) m_interpreterPrecode;
 #endif
