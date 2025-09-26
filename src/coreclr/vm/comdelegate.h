@@ -186,7 +186,11 @@ private:
     {
         STANDARD_VM_CONTRACT;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
+#else
+        PORTABILITY_ASSERT("Shuffle thunks are not supported with portable entrypoints");
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         return NEWSTUB_FL_SHUFFLE_THUNK;
     }
 
