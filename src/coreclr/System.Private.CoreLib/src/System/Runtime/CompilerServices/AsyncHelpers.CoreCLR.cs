@@ -234,9 +234,9 @@ namespace System.Runtime.CompilerServices
                 ThunkTaskCore.MoveNext<ThunkTask<T>, Ops>(this);
             }
 
-            public void HandleSuspended()
+            public void HandleSuspended(Continuation suspendContinuation)
             {
-                ThunkTaskCore.HandleSuspended<ThunkTask<T>, Ops>(this);
+                ThunkTaskCore.HandleSuspended<ThunkTask<T>, Ops>(this, suspendContinuation);
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
@@ -306,9 +306,9 @@ namespace System.Runtime.CompilerServices
                 ThunkTaskCore.MoveNext<ThunkTask, Ops>(this);
             }
 
-            public void HandleSuspended()
+            public void HandleSuspended(Continuation suspendContinuation)
             {
-                ThunkTaskCore.HandleSuspended<ThunkTask, Ops>(this);
+                ThunkTaskCore.HandleSuspended<ThunkTask, Ops>(this, suspendContinuation);
             }
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
@@ -356,7 +356,7 @@ namespace System.Runtime.CompilerServices
                         if (newContinuation != null)
                         {
                             newContinuation.Next = continuation.Next;
-                            HandleSuspended<T, TOps>(task);
+                            HandleSuspended<T, TOps>(task, newContinuation);
                             contexts.Pop();
                             return;
                         }
@@ -422,7 +422,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void HandleSuspended<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
+            public static void HandleSuspended<T, TOps>(T task, Continuation suspendContinuation) where T : Task where TOps : IThunkTaskOps<T>
             {
                 Continuation headContinuation = UnlinkHeadContinuation(out INotifyCompletion? notifier);
 
@@ -435,6 +435,25 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 TOps.SetContinuationState(task, headContinuation);
+
+                // If the continuation wants to continue on thread pool, then
+                // either we do not have an interesting context or the await configured it away.
+                // Either way, clear the context to match the continuation so that OnCompleted
+                // does not need to honor the context as well.
+                Task? currentTask = null;
+                if ((suspendContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL) != 0)
+                {
+                    TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                    if (sched != null && sched != TaskScheduler.Default)
+                    {
+                        currentTask = Task.t_currentTask;
+                        Task.t_currentTask = null;
+                    }
+
+                    // No need to remember the sync context.
+                    // We are about to pop to the original context anyways, so just clear it.
+                    Thread.CurrentThread._synchronizationContext = null;
+                }
 
                 try
                 {
@@ -451,6 +470,11 @@ namespace System.Runtime.CompilerServices
                 catch (Exception ex)
                 {
                     Task.ThrowAsync(ex, targetContext: null);
+                }
+                finally
+                {
+                    if (currentTask != null)
+                        Task.t_currentTask = currentTask;
                 }
             }
 
@@ -534,54 +558,83 @@ namespace System.Runtime.CompilerServices
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
-        private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation)
+        private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation, Exception ex)
         {
-            Continuation finalContinuation = new Continuation();
-
-            // Note that the exact location the return value is placed is tied
-            // into getAsyncResumptionStub in the VM, so do not change this
-            // without also changing that code (and the JIT).
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            if (continuation is not null)
             {
-                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-                finalContinuation.GCData = new object[1];
+                Continuation finalContinuation = new Continuation();
+
+                // Note that the exact location the return value is placed is tied
+                // into getAsyncResumptionStub in the VM, so do not change this
+                // without also changing that code (and the JIT).
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                    finalContinuation.GCData = new object[1];
+                }
+                else
+                {
+                    finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                    finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
+                }
+
+                continuation.Next = finalContinuation;
+
+                ThunkTask<T?> result = new();
+                result.HandleSuspended(continuation);
+                return result;
             }
             else
             {
-                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-                finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
+                Task<T?> task = new();
+                // Tail of AsyncTaskMethodBuilderT.SetException
+                bool successfullySet = ex is OperationCanceledException oce ?
+                    task.TrySetCanceled(oce.CancellationToken, oce) :
+                    task.TrySetException(ex);
+
+                Debug.Assert(successfullySet);
+                return task;
             }
-
-            continuation.Next = finalContinuation;
-
-            ThunkTask<T?> result = new();
-            result.HandleSuspended();
-            return result;
         }
 
-        private static Task FinalizeTaskReturningThunk(Continuation continuation)
+        private static Task FinalizeTaskReturningThunk(Continuation continuation, Exception ex)
         {
-            Continuation finalContinuation = new Continuation
+            if (continuation is not null)
             {
-                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-            };
-            continuation.Next = finalContinuation;
+                Continuation finalContinuation = new Continuation
+                {
+                    Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
+                };
+                continuation.Next = finalContinuation;
 
-            ThunkTask result = new();
-            result.HandleSuspended();
-            return result;
+                ThunkTask result = new();
+                result.HandleSuspended(continuation);
+                return result;
+            }
+            else
+            {
+                Debug.Assert(ex is not null);
+                Task task = new();
+                // Tail of AsyncTaskMethodBuilderT.SetException
+                bool successfullySet = ex is OperationCanceledException oce ?
+                    task.TrySetCanceled(oce.CancellationToken, oce) :
+                    task.TrySetException(ex);
+
+                Debug.Assert(successfullySet);
+                return task;
+            }
         }
 
-        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
+        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation, Exception ex)
         {
             // We only come to these methods in the expensive case (already
             // suspended), so ValueTask optimization here is not relevant.
-            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation));
+            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation, ex));
         }
 
-        private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
+        private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation, Exception ex)
         {
-            return new ValueTask(FinalizeTaskReturningThunk(continuation));
+            return new ValueTask(FinalizeTaskReturningThunk(continuation, ex));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
