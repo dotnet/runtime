@@ -6,4 +6,6 @@ This is the Zstandard v1.5.7 library, released on February 19, 2024.
 The source code was downloaded from the official GitHub repository and extracted.
 Only the 'lib' and 'build' directories from the original source were included to minimize unnecessary code.
 
-The build scripts were patched using zstd.patch to fix build issues on Windows.
+Following patches were applied on top of the 1.5.7 sources:
+- zstd.patch - fixes build issues of CLR on Windows by suppressing enabling of ASM language by CMAKE. zstd contains ASM sources only for Linux
+- zstd-qsort.patch -  based on commit a1a5154b69ddc23cd610e931ee9c6f45884fa9dd to address build issues on Android platform. This patch, together with ZSTD_USE_C90_QSORT define can be removed once we upgrade to 1.5.8.

@@ -23,6 +23,14 @@ if (MSVC)
     set_property(TARGET libzstd_static APPEND PROPERTY COMPILE_DEFINITIONS "ZSTD_DLL_EXPORT=1")
 endif()
 
+if (ANDROID)
+    # qsort_r is not available during android build and zstd's autodetection does not seem
+    # to handle this case correctly
+    # This should no longer be needed once we update to zstd 1.5.8 in the future
+    set_property(TARGET libzstd_static APPEND PROPERTY COMPILE_DEFINITIONS "ZSTD_USE_C90_QSORT=1")
+endif()
+
+
 # disable warnings that occur in the zstd library
 target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>)
 target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-implicit-fallthrough>)
