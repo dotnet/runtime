@@ -15,6 +15,7 @@ export const terserPlugin = (terserOptions) => {
     compress = compress || {};
     mangle = mangle || {};
     return terser({
+        // keep in sync with src/native/tsconfig.json
         ecma: "2020",
         compress: {
             defaults: true,
