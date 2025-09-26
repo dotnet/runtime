@@ -165,6 +165,10 @@
 #define CHAIN_LOOKUP
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
+#if !defined(FEATURE_PORTABLE_ENTRYPOINTS) && !defined(TARGET_X86)
+#define FEATURE_PORTABLE_SHUFFLE_THUNKS
+#endif
+
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
