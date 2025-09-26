@@ -4,11 +4,10 @@
 import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallback, DotnetModuleConfig } from "./types";
 
 import { Module, dotnetApi } from "./cross-module";
-import { downloadConfig, getLoaderConfig, mergeLoaderConfig } from "./config";
+import { getLoaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
 import { createRuntime } from "./bootstrap";
 import { exit } from "./exit";
 
-let configUrl: string | undefined = undefined;
 let applicationArguments: string[] | undefined = [];
 let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 
@@ -19,9 +18,8 @@ export class HostBuilder implements DotnetHostBuilder {
         mergeLoaderConfig(config);
         return this;
     }
-    withConfigSrc(configSrc: string): DotnetHostBuilder {
-        configUrl = configSrc;
-        return this;
+    withConfigSrc(_: string): DotnetHostBuilder {
+        throw new Error("Not supported in this build");
     }
     withApplicationArguments(...args: string[]): DotnetHostBuilder {
         applicationArguments = args;
@@ -103,7 +101,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     async download(): Promise<void> {
         try {
-            await downloadConfig(configUrl, loadBootResourceCallback);
+            validateLoaderConfig();
             return createRuntime(true, loadBootResourceCallback);
         } catch (err) {
             exit(1, err);
@@ -113,7 +111,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     async create(): Promise<RuntimeAPI> {
         try {
-            await downloadConfig(configUrl, loadBootResourceCallback);
+            validateLoaderConfig();
             await createRuntime(false, loadBootResourceCallback);
             this.dotnetApi = dotnetApi;
             return this.dotnetApi;
@@ -128,6 +126,7 @@ export class HostBuilder implements DotnetHostBuilder {
             if (!this.dotnetApi) {
                 await this.create();
             }
+            validateLoaderConfig();
             const config = getLoaderConfig();
             return this.dotnetApi!.runMainAndExit(config.mainAssemblyName, applicationArguments);
         } catch (err) {

@@ -1,36 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { Assets, LoadBootResourceCallback, LoaderConfig, LoaderConfigInternal } from "./types";
+import type { Assets, LoaderConfig, LoaderConfigInternal } from "./types";
 
 export const netLoaderConfig: LoaderConfigInternal = {};
-let isConfigReady = false;
-
-export async function downloadConfig(url: string|undefined, loadBootResource?: LoadBootResourceCallback): Promise<void> {
-    if (loadBootResource) throw new Error("TODO: loadBootResource is not implemented yet");
-    if (isConfigReady) return; // only download if necessary
-    if (!url) {
-        url = "./dotnet.boot.js";
-    }
-
-    // url ends with .json
-    if (url.endsWith(".json")) {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Failed to download config from ${url}: ${response.status} ${response.statusText}`);
-        }
-        const newConfig = await response.json() as Partial<LoaderConfigInternal>;
-        mergeLoaderConfig(newConfig);
-    } else if (url.endsWith(".js") || url.endsWith(".mjs")) {
-        const module = await import(/* webpackIgnore: true */ url);
-        mergeLoaderConfig(module.config);
-    }
-    isConfigReady = true;
-}
 
 export function getLoaderConfig(): LoaderConfig {
     return netLoaderConfig;
 }
+
+export function validateLoaderConfig(): void {
+    if (!netLoaderConfig.mainAssemblyName) {
+        throw new Error("Loader configuration error: 'mainAssemblyName' is required.");
+    }
+    if (!netLoaderConfig.resources || !netLoaderConfig.resources.coreAssembly || netLoaderConfig.resources.coreAssembly.length === 0) {
+        throw new Error("Loader configuration error: 'resources.coreAssembly' is required and must contain at least one assembly.");
+    }
+}
+
 
 export function mergeLoaderConfig(source: Partial<LoaderConfigInternal>): void {
     normalizeConfig(netLoaderConfig);
@@ -54,9 +41,6 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
     source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
     Object.assign(target, source);
-    if (target.resources!.coreAssembly!.length) {
-        isConfigReady = true;
-    }
     return target;
 }
 
