@@ -314,11 +314,23 @@ namespace System.Text.Json
             Debug.Assert(Current.AsyncDisposable is null);
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
-            int stackSize = Math.Max(_count, _continuationCount);
-            for (int i = 0; i < stackSize - 1; i++)
+            if (_stack is not null)
             {
-                Debug.Assert(_stack[i].AsyncDisposable is null);
-                DisposeFrame(_stack[i].CollectionEnumerator, ref exception);
+                int currentIndex = _count - _indexOffset;
+                int stackSize = Math.Max(currentIndex, _continuationCount);
+                for (int i = 0; i < stackSize; i++)
+                {
+                    Debug.Assert(_stack[i].AsyncDisposable is null);
+
+                    if (i == currentIndex)
+                    {
+                        // Matches the entry in Current, skip to avoid double disposal.
+                        Debug.Assert(_stack[i].CollectionEnumerator is null || ReferenceEquals(Current.CollectionEnumerator, _stack[i].CollectionEnumerator));
+                        continue;
+                    }
+
+                    DisposeFrame(_stack[i].CollectionEnumerator, ref exception);
+                }
             }
 
             if (exception is not null)
@@ -352,10 +364,22 @@ namespace System.Text.Json
 
             exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
 
-            int stackSize = Math.Max(_count, _continuationCount);
-            for (int i = 0; i < stackSize - 1; i++)
+            if (_stack is not null)
             {
-                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
+                int currentIndex = _count - _indexOffset;
+                int stackSize = Math.Max(currentIndex, _continuationCount);
+                for (int i = 0; i < stackSize; i++)
+                {
+                    if (i == currentIndex)
+                    {
+                        // Matches the entry in Current, skip to avoid double disposal.
+                        Debug.Assert(_stack[i].CollectionEnumerator is null || ReferenceEquals(Current.CollectionEnumerator, _stack[i].CollectionEnumerator));
+                        Debug.Assert(_stack[i].AsyncDisposable is null || ReferenceEquals(Current.AsyncDisposable, _stack[i].AsyncDisposable));
+                        continue;
+                    }
+
+                    exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
+                }
             }
 
             if (exception is not null)
