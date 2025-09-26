@@ -24,7 +24,7 @@ jobs:
                 hybridGlobalization: ${{ parameters.hybridGlobalization }}
 
   - ${{ if eq(parameters.coreclr, true) }}:
-    # build CoreCLR iOS scenarios HybridGlobalization
+    # build CoreCLR iOS scenarios
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
