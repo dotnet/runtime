@@ -233,6 +233,9 @@ namespace ILCompiler.ObjectWriter
                 WriteLittleEndian(stream, MajorSubsystemVersion);
                 WriteLittleEndian(stream, MinorSubsystemVersion);
 
+                // Win32VersionValue
+                WriteLittleEndian<int>(stream, 0);
+
                 // SizeOfImage
                 WriteLittleEndian(stream, SizeOfImage);
 
@@ -254,11 +257,6 @@ namespace ILCompiler.ObjectWriter
                     WriteLittleEndian(stream, (uint)SizeOfStackCommit);
                     WriteLittleEndian(stream, (uint)SizeOfHeapReserve);
                     WriteLittleEndian(stream, (uint)SizeOfHeapCommit);
-                    WriteLittleEndian(stream, LoaderFlags);
-                    WriteLittleEndian(stream, NumberOfRvaAndSizes);
-
-                    // Data directories start at offset 0x60 for PE32
-                    dataDirectories.WriteTo(stream, (int)NumberOfRvaAndSizes);
                 }
                 else
                 {
@@ -266,12 +264,13 @@ namespace ILCompiler.ObjectWriter
                     WriteLittleEndian(stream, SizeOfStackCommit);
                     WriteLittleEndian(stream, SizeOfHeapReserve);
                     WriteLittleEndian(stream, SizeOfHeapCommit);
-                    WriteLittleEndian(stream, LoaderFlags);
-                    WriteLittleEndian(stream, NumberOfRvaAndSizes);
-
-                    // Data directories start after NumberOfRvaAndSizes for PE32+
-                    dataDirectories.WriteTo(stream, (int)NumberOfRvaAndSizes);
                 }
+
+                WriteLittleEndian(stream, LoaderFlags);
+                WriteLittleEndian(stream, NumberOfRvaAndSizes);
+
+                // Data directories start after NumberOfRvaAndSizes for PE32+
+                dataDirectories.WriteTo(stream, (int)NumberOfRvaAndSizes);
             }
         }
 
@@ -629,7 +628,7 @@ namespace ILCompiler.ObjectWriter
             // COFF File Header
             var coffHeader = new CoffHeader
             {
-                Machine = _machine,
+                Machine = machine,
                 NumberOfSections = (uint)numberOfSections,
                 TimeDateStamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), // TODO: Make deterministic
                 PointerToSymbolTable = 0,
