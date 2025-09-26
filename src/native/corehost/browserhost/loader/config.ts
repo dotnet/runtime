@@ -4,11 +4,11 @@
 import type { Assets, LoadBootResourceCallback, LoaderConfig, LoaderConfigInternal } from "./types";
 
 export const netLoaderConfig: LoaderConfigInternal = {};
-let isConfigDownloaded = false;
+let isConfigReady = false;
 
 export async function downloadConfig(url: string|undefined, loadBootResource?: LoadBootResourceCallback): Promise<void> {
     if (loadBootResource) throw new Error("TODO: loadBootResource is not implemented yet");
-    if (isConfigDownloaded) return; // only download config once
+    if (isConfigReady) return; // only download if necessary
     if (!url) {
         url = "./dotnet.boot.js";
     }
@@ -25,7 +25,7 @@ export async function downloadConfig(url: string|undefined, loadBootResource?: L
         const module = await import(/* webpackIgnore: true */ url);
         mergeLoaderConfig(module.config);
     }
-    isConfigDownloaded = true;
+    isConfigReady = true;
 }
 
 export function getLoaderConfig(): LoaderConfig {
@@ -55,7 +55,7 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
     Object.assign(target, source);
     if (target.resources!.coreAssembly!.length) {
-        isConfigDownloaded = true;
+        isConfigReady = true;
     }
     return target;
 }
