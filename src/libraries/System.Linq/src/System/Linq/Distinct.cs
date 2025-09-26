@@ -168,7 +168,6 @@ namespace System.Linq
         /// An iterator that yields the distinct values in an <see cref="PureOrderedIterator{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source PureOrderedDistinctIterator.</typeparam>
-        /// 
         private sealed partial class PureOrderedDistinctIterator<TSource> : Iterator<TSource>
         {
             private readonly PureOrderedIterator<TSource> _source;
