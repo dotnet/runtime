@@ -63,7 +63,7 @@ For consolidated debugging instructions including VS Code and Chrome DevTools se
 ### Build Configuration
 Key MSBuild properties for WebAssembly applications:
 - `WasmEnableThreads` - Enable multi-threading support
-- `WasmEnableSIMD` - Enable SIMD instruction support  
+- `WasmEnableSIMD` - Enable SIMD instruction support
 - `RunAOTCompilation` - Enable Ahead-of-Time compilation
 - `WasmBuildNative` - Force native rebuild
 - `EnableDiagnostics` - Enable diagnostic features

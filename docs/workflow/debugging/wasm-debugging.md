@@ -26,7 +26,7 @@ Add the appropriate configuration to your `.vscode/launch.json` depending on you
 {
     "name": "WASI Attach",
     "type": "mono",
-    "request": "attach", 
+    "request": "attach",
     "address": "localhost",
     "port": 64000
 }
@@ -37,7 +37,7 @@ Replace `<PROXY_PORT>` with the proxy port shown in your application's output.
 ### 2. Setup Steps
 
 1. **Set initial breakpoint**: Place a breakpoint in `WasmTestRunner.cs` or your main entry point to prevent execution before you're ready
-2. **Run the configuration**: Launch the VS Code debug configuration  
+2. **Run the configuration**: Launch the VS Code debug configuration
 3. **Set additional breakpoints**: Once stopped, set breakpoints in the code you want to debug
 4. **Continue execution**: Click Resume or F5 to continue
 
@@ -62,7 +62,7 @@ and paste the address of proxy that was provided in the program output:
 
 1. **Sources tab**: A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory to browse source files
 2. **Wait for files to load**: It may take time for all source files to appear. You cannot set breakpoints in Chrome DevTools before the files get loaded
-3. **Set breakpoints**: Click on line numbers to set breakpoints  
+3. **Set breakpoints**: Click on line numbers to set breakpoints
 4. **Initial run strategy**: Consider using the first run to set an initial breakpoint in `WasmTestRunner.cs`, then restart the application. DevTools will stop on the previously set breakpoint and you will have time to set breakpoints in the libs you want to debug and click Resume
 
 ### 3. For Native/C Code Debugging
@@ -104,7 +104,7 @@ Replace `<APP_URL>` with the URL shown in your application's output.
 
 1. **Build with debug**:
    ```bash
-   cd sample/console  
+   cd sample/console
    make debug
    ```
 
@@ -168,7 +168,7 @@ For detailed instructions on collecting stack traces and breaking into the JavaS
 ## References
 
 - [Testing Libraries on WebAssembly](../testing/libraries/testing-wasm.md)
-- [Debugging WebAssembly Libraries](../testing/libraries/debugging-wasm.md)  
+- [Debugging WebAssembly Libraries](../testing/libraries/debugging-wasm.md)
 - [WASM Runtime Debugging](debugging/mono/wasm-debugging.md)
 - [WASI Support](../../src/mono/wasi/README.md)
 - [VS Code Debugging Guide](debugging/libraries/debugging-vscode.md)
