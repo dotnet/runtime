@@ -45,7 +45,7 @@ build-appbundle: clean appbuilder
 	/p:DeployAndRun=false \
 	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	/p:RunAOTCompilation=$(AOT) \
-    /p:UseMonoRuntime=$(USE_MONO_RUNTIME) \
+	/p:UseMonoRuntime=$(USE_MONO_RUNTIME) \
 	/bl
 
 run: clean appbuilder
