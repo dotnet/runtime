@@ -465,7 +465,7 @@ def main(main_args):
         else:
             helix_queue = "Ubuntu.2204.Amd64"
     elif platform_name == "osx":
-        helix_queue = "OSX.1200.ARM64" if arch == "arm64" else "OSX.1200.Amd64"
+        helix_queue = "OSX.13.ARM64" if arch == "arm64" else "OSX.13.Amd64"
 
     # Copy the superpmi scripts
 
