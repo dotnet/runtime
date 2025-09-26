@@ -53,6 +53,7 @@ export function BrowserHost_RejectMain(reason:any) {
 // - second call to exit not override the first exit code
 // - improve reason extraction
 // - install global handler for unhandled exceptions and promise rejections
+// - raise ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent()
 export function exit(exit_code: number, reason: any): void {
     const reasonStr = reason ? (reason.stack ? reason.stack || reason.message : reason.toString()) : "";
     if (exit_code !== 0) {
