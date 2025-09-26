@@ -25,6 +25,14 @@
                         const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
 
                         const config = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
+                        if (!config.resources.assembly ||
+                            !config.resources.coreAssembly ||
+                            config.resources.coreAssembly.length === 0 ||
+                            !config.mainAssemblyName ||
+                            !config.virtualWorkingDirectory ||
+                            !config.environmentVariables) {
+                            throw new Error("Invalid runtime config, cannot initialize the runtime.");
+                        }
                         const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
                         const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
                         ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");

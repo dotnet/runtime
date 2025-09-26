@@ -3,7 +3,7 @@
 
 import { dotnetJSEngine, dotnetLogger } from "./cross-module";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// WASM-TODO: redirect to host.ts
 export function exit(exit_code: number, reason: any): void {
     const reasonStr = reason ? (reason.stack ? reason.stack || reason.message : reason.toString()) : "";
     if (exit_code !== 0) {
