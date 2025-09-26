@@ -5,9 +5,42 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Xunit;
+using NS = Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.Namespace______Total_Namespace_Length_100;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
+    namespace Namespace______Total_Namespace_Length_100
+    {
+        /// <summary>
+        /// Used by <see cref="NameClashTests_LongName"/> to test type names eceeding maximum identifier length
+        /// </summary>
+        internal class Config<T>
+        {
+            public T? Value { get; set; }
+        }
+    }
+    namespace Namespace1
+    {
+        /// <summary>
+        /// Used by <see cref="NameClashTests_SameTypeNameDifferentNamespace"/> to test same type name in different namespaces
+        /// </summary>
+        internal class Config
+        {
+            public int Value { get; set; }
+        }
+    }
+
+    namespace Namespace2
+    {
+        /// <summary>
+        /// Used by <see cref="NameClashTests_SameTypeNameDifferentNamespace"/> to test same type name in different namespaces
+        /// </summary>
+        internal class Config
+        {
+            public int Value { get; set; }
+        }
+    }
+
     public partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
         // These are regression tests for https://github.com/dotnet/runtime/issues/90851
@@ -315,6 +348,42 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         /// <summary>
+        /// Both types have the same name but different namespace. See https://github.com/dotnet/runtime/issues/119458
+        /// </summary>
+        [Fact]
+        public void NameClashTests_SameTypeNameDifferentNamespace()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1}");
+
+            var c1 = new Namespace1.Config();
+            var c2 = new Namespace2.Config();
+
+            configuration.Bind(c1);
+            configuration.Bind(c2);
+            Assert.Equal(1, c1.Value);
+            Assert.Equal(1, c2.Value);
+        }
+
+        /// <summary>
+        /// Very long type name strings are successfully truncated and unambigues
+        /// </summary>
+        /// <remarks>
+        /// This generates two variables with very long names in BindingExtensions.g.cs
+        /// </remarks>
+        [Fact]
+        public void NameClashTests_LongName()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                @"{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":1}}}}}}}}}}}");
+
+            var c1 = new NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<Namespace1.Config>>>>>>>>>>();
+
+            configuration.Bind(c1);
+
+            Assert.Equal(1, c1.Value.Value.Value.Value.Value.Value.Value.Value.Value.Value.Value);
+        }
+
+        /// <summary>
         /// These are regression tests for https://github.com/dotnet/runtime/issues/90909.
         /// Ensure that we don't emit root interceptors to handle types/members that
         /// are inaccessible to the generated helpers. Tests for inaccessible transitive members
@@ -374,7 +443,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Equal(1, c1.Value);
             Assert.Equal(1, c2.Value);
             Assert.Equal(1, c3.Value);
-            
+
             Assert.Equal(1, c4[0].Value);
             Assert.Equal(1, c5[0].Value);
             Assert.Equal(1, c6["item1"].Value);
