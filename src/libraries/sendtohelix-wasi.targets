@@ -46,8 +46,6 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
-    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
     <WasiBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'build'))</WasiBuildTargetsDir>
     <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasi-sdk</WasiSdkDirForHelixPayload>
     <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasmtime</WasmtimeDirForHelixPayload>
@@ -62,11 +60,6 @@
     <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-latest</SdkForWorkloadTestingDirName>
     <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
   </PropertyGroup>
-
-  <ItemGroup>
-    <HelixDependenciesToStage Condition="'$(NeedsWasiSdk)' == 'true'"  SourcePath="$(WASI_SDK_PATH)" Include="$(WasiSdkDirForHelixPayload)" />
-    <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
@@ -104,7 +97,20 @@
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
+  <ItemGroup>
+    <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)" Include="$(WasmtimeDirForHelixPayload)" />
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
+
+  <Target Name="IncludeWasiSdkForHelixStaging" Condition="'$(NeedsWasiSdk)' == 'true'"
+          DependsOnTargets="AcquireWasiSdk"
+          BeforeTargets="StageDependenciesForHelix">
+    <ItemGroup>
+      <HelixDependenciesToStage SourcePath="$(RuntimeBuildWasiSdkPath)" Include="$(WasiSdkDirForHelixPayload)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="PrepareHelixCorrelationPayload_Wasi">
     <Error Condition="'$(Scenario)' != 'WasmTestOnWasmtime' and 

@@ -19,6 +19,8 @@ public enum DataType
     nuint,
     pointer,
 
+    /* VM Data Types */
+
     GCHandle,
     CodePointer,
     Thread,
@@ -48,6 +50,7 @@ public enum DataType
     MethodTable,
     DynamicStaticsInfo,
     EEClass,
+    CoreLibBinder,
     ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
@@ -55,6 +58,7 @@ public enum DataType
     ParamTypeDesc,
     TypeVarTypeDesc,
     FnPtrTypeDesc,
+    FieldDesc,
     DynamicMetadata,
     StressLog,
     StressLogModuleDesc,
@@ -64,6 +68,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    NativeObjectWrapperObject,
     String,
     MethodDesc,
     MethodDescChunk,
@@ -110,6 +115,9 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    DynamicILBlobTable,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,
@@ -126,4 +134,14 @@ public enum DataType
     FaultingExceptionFrame,
     HijackFrame,
     TailCallFrame,
+    StubDispatchFrame,
+
+
+    /* GC Data Types */
+
+    GCHeap,
+    Generation,
+    CFinalize,
+    HeapSegment,
+    OomHistory,
 }

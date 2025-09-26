@@ -1353,7 +1353,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
     size_t tempStorageSize = ComputeTempStorageSize(sig);
-    PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
+    PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
     memset(pRoutines, 0, tempStorageSize);
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
@@ -1685,17 +1685,28 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     // we always process single argument passed by reference using single routine.
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
+        int unalignedArgSize = pArgIt->GetArgSize();
+        // For the interpreter-to-native transition we need to make sure that we properly align the offsets
+        //  to interpreter stack slots. Otherwise a VT of i.e. size 12 will misalign the stack offset during
+        //  loads and we will start loading garbage into registers.
+        // We don't need to do this for native-to-interpreter transitions because the Store_Ref_xxx helpers
+        //  automatically do alignment of the stack offset themselves when updating the stack offset,
+        //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
+        int alignedArgSize = m_interpreterToNative
+            ? ALIGN_UP(unalignedArgSize, 8)
+            : unalignedArgSize;
+
         if (argLocDesc.m_cGenReg == 1)
         {
             pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
-            pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
+            pRoutines[m_routineIndex++] = alignedArgSize;
             m_r1 = NoRange;
         }
         else
         {
             _ASSERTE(argLocDesc.m_byteStackIndex != -1);
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
-            pRoutines[m_routineIndex++] = ((int64_t)pArgIt->GetArgSize() << 32) | argLocDesc.m_byteStackIndex;
+            pRoutines[m_routineIndex++] = ((int64_t)alignedArgSize << 32) | argLocDesc.m_byteStackIndex;
             m_s1 = NoRange;
         }
     }

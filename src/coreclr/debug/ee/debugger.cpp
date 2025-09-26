@@ -78,7 +78,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 {
     _ASSERTE(!"Don't call this function. It just does compile time checking\n");
 
-    // We use the C_ASSERT macro here to get a compile-time assert.
+    // We use the static_assert macro here to get a compile-time assert.
 
     // Make sure we don't have any duplicate numbers.
     // The switch statements in the main loops won't always catch this
@@ -107,8 +107,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure all values are subset of the bits specified by DB_IPCE_TYPE_MASK
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((val & e_DB_IPCE_TYPE_MASK) == val);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -116,27 +116,27 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure that no value is DB_IPCE_INVALID_EVENT
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert(val != e_DB_IPCE_INVALID_EVENT);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
     #undef IPC_EVENT_TYPE0
 
     // Make sure first-last values are well structured.
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
-    static_assert_no_msg(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
+    static_assert(e_DB_IPCE_RUNTIME_FIRST < e_DB_IPCE_RUNTIME_LAST);
+    static_assert(e_DB_IPCE_DEBUGGER_FIRST < e_DB_IPCE_DEBUGGER_LAST);
 
     // Make sure that event ranges don't overlap.
     // This check is simplified because L->R events come before R<-L
-    static_assert_no_msg(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
+    static_assert(e_DB_IPCE_RUNTIME_LAST < e_DB_IPCE_DEBUGGER_FIRST);
 
 
     // Make sure values are in the proper ranges
     // Type1 should be in the Runtime range, Type2 in the Debugger range.
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
+    #define IPC_EVENT_TYPE1(type, val)  static_assert((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
+    #define IPC_EVENT_TYPE2(type, val)  static_assert((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -153,7 +153,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     11) && (11 <
     12) && (12 <
     last)
-    static_assert_no_msg(f);
+    static_assert(f);
     */
 
     const bool f1 = (
@@ -167,7 +167,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_RUNTIME_LAST)
     );
-    static_assert_no_msg(f1);
+    static_assert(f1);
 
     const bool f2 = (
         (e_DB_IPCE_DEBUGGER_FIRST <=
@@ -180,7 +180,7 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
         #undef IPC_EVENT_TYPE0
         e_DB_IPCE_DEBUGGER_LAST)
     );
-    static_assert_no_msg(f2);
+    static_assert(f2);
 
 } // end checks
 
@@ -5451,6 +5451,14 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     bool retVal;
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     DebuggerSteppingInfo debuggerSteppingInfo;
+    if ((void*)GetIP(context) == (void*)SetThreadContextNeededFlare)
+    {
+        // The out-of-proc debugger is ignoring the SetThreadContextNeeded flare
+        // SSP will be pointing to the instruction after the breakpoint, so advance the IP to that instruction and continue
+        PCODE ip = ::GetIP(context);
+        ::SetIP(context, ip + CORDbg_BREAK_INSTRUCTION_SIZE);
+        return true;
+    }
 #endif
 
     {
@@ -5473,11 +5481,15 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
-    if (retVal && fIsVEH)
+    // NOTE: During detach, the right-side will wait until all SendSetThreadContextNeeded flares have been sent
+    // We assume that any breakpoint debug event caught on the right-side will result in a SendSetThreadContextNeeded flare
+    // If there is an active patch skip on the thread, then we assume there will be an additional
+    // SendSetThreadContextNeeded flare to move the instruction pointer out of the patch buffer
+    if ((retVal || code == EXCEPTION_BREAKPOINT) && fIsVEH)
     {
-        // This does not return. Out-of-proc debugger will update the thread context
-        // within this call.
-        SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
+        // If retVal is true, the out-of-proc debugger will update the thread context within this call.
+        // Otherwise we are sending a ClearSetIP request, and in which case the out-of-proc debugger will ignore the SetThreadContextNeeded request and simply clear the PendingSetIP flag
+        SendSetThreadContextNeeded(context, &debuggerSteppingInfo, thread->HasActivePatchSkip(), !retVal);
     }
 #endif
     return retVal;
@@ -11708,6 +11720,7 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());
             res->ClassTypeData.vmDomainAssembly.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
+            res->ClassTypeData.vmModule.SetRawPtr(NULL);
             _ASSERTE(!res->ClassTypeData.vmDomainAssembly.IsNull());
             break;
         }
@@ -16167,7 +16180,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip, bool fClearSetIP)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16222,10 +16235,20 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     PRD_TYPE opcode = pDebuggerSteppingInfo != NULL ? pDebuggerSteppingInfo->GetOpcode() : CORDbg_BREAK_INSTRUCTION;
 
     // send the context to the right side
-    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode));
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x fHasDebuggerPatchSkip=%d\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode, fHasDebuggerPatchSkip));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize, fIsInPlaceSingleStep, opcode);
+        DWORD flag = fIsInPlaceSingleStep ? 0x1 : 0;
+        if (fHasDebuggerPatchSkip)
+        {
+            flag |= 0x2;
+        }
+        if (fClearSetIP)
+        {
+            _ASSERTE(!fIsInPlaceSingleStep && !fHasDebuggerPatchSkip);
+            flag |= 0x4;
+        }
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, flag, opcode);
     }
     EX_CATCH
     {
@@ -16236,7 +16259,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
 #endif
 
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
-    _ASSERTE(!"We failed to SetThreadContext from out of process!");
+    _ASSERTE(fClearSetIP);
 }
 
 BOOL Debugger::IsOutOfProcessSetContextEnabled()
@@ -16244,7 +16267,7 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
     return m_fOutOfProcessSetContextEnabled;
 }
 #else
-void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo, bool fHasDebuggerPatchSkip, bool fClearSetIP)
 {
     _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }

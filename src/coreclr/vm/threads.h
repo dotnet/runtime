@@ -3561,6 +3561,12 @@ public:
         _ASSERTE(!m_debuggerActivePatchSkipper.Load());
     }
 
+    bool HasActivePatchSkip() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_debuggerActivePatchSkipper.Load() != NULL;
+    }
+
 private:
 
     static BOOL EnterWorkingOnThreadContext(Thread *pThread)
@@ -3955,9 +3961,10 @@ struct cdac_data<Thread>
     #else
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_currentExInfo);
     #endif
-
     #ifndef TARGET_UNIX
     static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
+    + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
     #endif
 };
 
@@ -5182,7 +5189,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
-        // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+        // static_assert(FRAME_TOP_VALUE != NULL);
         m_pFrame = nullptr;
     }
 };

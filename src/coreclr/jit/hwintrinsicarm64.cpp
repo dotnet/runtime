@@ -1439,6 +1439,40 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_get_E:
+        case NI_Vector128_get_E:
+        {
+            assert(sig->numArgs == 0);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, 2.718281828459045);
+                retNode = vecCns;
+            }
+            break;
+        }
+
+        case NI_Vector64_get_Epsilon:
+        case NI_Vector128_get_Epsilon:
+        {
+            assert(sig->numArgs == 0);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x00000001));
+                retNode = vecCns;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x0000000000000001));
+                retNode = vecCns;
+            }
+            break;
+        }
+
         case NI_Vector64_get_Indices:
         case NI_Vector128_get_Indices:
         {
@@ -1447,11 +1481,133 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_get_NaN:
+        case NI_Vector128_get_NaN:
+        {
+            assert(sig->numArgs == 0);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x7FC00000));
+                retNode = vecCns;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x7FF8000000000000));
+                retNode = vecCns;
+            }
+            break;
+        }
+
+        case NI_Vector64_get_NegativeInfinity:
+        case NI_Vector128_get_NegativeInfinity:
+        {
+            assert(sig->numArgs == 0);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0xFF800000));
+                retNode = vecCns;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0xFFF0000000000000));
+                retNode = vecCns;
+            }
+            break;
+        }
+
+        case NI_Vector64_get_NegativeOne:
+        case NI_Vector128_get_NegativeOne:
+        {
+            assert(sig->numArgs == 0);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, -1.0);
+                retNode = vecCns;
+            }
+            else if (varTypeIsSigned(simdBaseType))
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, static_cast<int64_t>(-1));
+                retNode = vecCns;
+            }
+            break;
+        }
+
+        case NI_Vector64_get_NegativeZero:
+        case NI_Vector128_get_NegativeZero:
+        {
+            assert(sig->numArgs == 0);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, -0.0);
+                retNode = vecCns;
+            }
+            break;
+        }
+
         case NI_Vector64_get_One:
         case NI_Vector128_get_One:
         {
             assert(sig->numArgs == 0);
             retNode = gtNewOneConNode(retType, simdBaseType);
+            break;
+        }
+
+        case NI_Vector64_get_Pi:
+        case NI_Vector128_get_Pi:
+        {
+            assert(sig->numArgs == 0);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, 3.141592653589793);
+                retNode = vecCns;
+            }
+            break;
+        }
+
+        case NI_Vector64_get_PositiveInfinity:
+        case NI_Vector128_get_PositiveInfinity:
+        {
+            assert(sig->numArgs == 0);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_INT, static_cast<int64_t>(0x7F800000));
+                retNode = vecCns;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(TYP_LONG, static_cast<int64_t>(0x7FF0000000000000));
+                retNode = vecCns;
+            }
+            break;
+        }
+
+        case NI_Vector64_get_Tau:
+        case NI_Vector128_get_Tau:
+        {
+            assert(sig->numArgs == 0);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                GenTreeVecCon* vecCns = gtNewVconNode(retType);
+                vecCns->EvaluateBroadcastInPlace(simdBaseType, 6.283185307179586);
+                retNode = vecCns;
+            }
             break;
         }
 
