@@ -187,7 +187,7 @@ HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
 
-const struct ComWrappersVtablePtrs
+struct ComWrappersVtablePtrs
 {
     decltype(&ManagedObjectWrapper_QueryInterface) MowQueryInterface;
     decltype(&TrackerTarget_QueryInterface) TtQueryInterface;
