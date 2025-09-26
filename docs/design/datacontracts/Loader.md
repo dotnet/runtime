@@ -656,7 +656,9 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token)
     {
         TargetPointer peAssembly = loader.GetPEAssembly(handle);
         IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(handle);
+        if (mdReader == null)
+            throw new NotImplementedException();
         MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
         int rva = methodDef.RelativeVirtualAddress;
         headerPtr = loader.GetILAddr(peAssembly, rva);

@@ -3259,29 +3259,29 @@ internal sealed unsafe partial class SOSDacImpl
             pILData->rejitID = 0;
             pILData->il = 0;
 
-            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
-            Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
-            Contracts.ILoader loaderContract = _target.Contracts.Loader;
-            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.IReJIT rejit = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions cv = _target.Contracts.CodeVersions;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
             // getting the module handle and the token from the method desc
-            MethodDescHandle mdh = rtsContract.GetMethodDescHandle(methodDescPtr);
-            TargetPointer mt = rtsContract.GetMethodTable(mdh);
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(mt);
-            TargetPointer modulePtr = rtsContract.GetModule(typeHandle);
-            uint token = rtsContract.GetMethodToken(mdh);
-            Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
+            MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
+            TargetPointer mt = rts.GetMethodTable(mdh);
+            TypeHandle typeHandle = rts.GetTypeHandle(mt);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            uint token = rts.GetMethodToken(mdh);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-            Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(methodDescPtr);
+            Contracts.ILCodeVersionHandle activeILCodeVersion = cv.GetActiveILCodeVersion(methodDescPtr);
 
             // rejit in progress or rejit applied?
-            if (rejitContract.GetRejitState(activeILCodeVersion) != RejitState.Active || !codeVersionsContract.HasDefaultIL(activeILCodeVersion))
+            if (rejit.GetRejitState(activeILCodeVersion) != RejitState.Active || !cv.HasDefaultIL(activeILCodeVersion))
             {
                 pILData->type = DacpProfilerILData.ModificationType.ReJITModified;
-                pILData->rejitID = (uint)rejitContract.GetRejitId(activeILCodeVersion).Value;
+                pILData->rejitID = (uint)rejit.GetRejitId(activeILCodeVersion).Value;
             }
 
-            TargetPointer il = loaderContract.GetDynamicIL(moduleHandle, token);
+            TargetPointer il = loader.GetDynamicIL(moduleHandle, token);
             if (il != 0)
             {
                 pILData->type = DacpProfilerILData.ModificationType.ILModified;
@@ -3313,33 +3313,33 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (mod == 0 || methodDescs == null || pcMethodDescs == null || cMethodDescs == 0)
+            if (mod == 0 || methodDescs == null || cMethodDescs == 0 || pcMethodDescs == null)
                 throw new ArgumentException();
             *pcMethodDescs = 0;
-            Contracts.ILoader loaderContract = _target.Contracts.Loader;
-            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
-            Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.IReJIT rejit = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions cv = _target.Contracts.CodeVersions;
 
             TargetPointer modulePtr = mod.ToTargetPointer(_target);
-            Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
             // iterate through typedef to method table map
-            foreach ((TargetPointer ptr, _) in loaderContract.EnumerateModuleLookupMap(loaderContract.GetLookupTables(moduleHandle).TypeDefToMethodTable))
+            foreach ((TargetPointer ptr, _) in loader.EnumerateModuleLookupMap(loader.GetLookupTables(moduleHandle).TypeDefToMethodTable))
             {
                 if (*pcMethodDescs >= cMethodDescs)
                     break;
-                TypeHandle typeHandle = rtsContract.GetTypeHandle(ptr);
-                foreach (TargetPointer md in rtsContract.GetIntroducedMethodDescs(typeHandle))
+                TypeHandle typeHandle = rts.GetTypeHandle(ptr);
+                foreach (TargetPointer md in rts.GetIntroducedMethodDescs(typeHandle))
                 {
-                    MethodDescHandle mdh = rtsContract.GetMethodDescHandle(md);
-                    uint token = rtsContract.GetMethodToken(mdh);
-                    Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(md);
+                    MethodDescHandle mdh = rts.GetMethodDescHandle(md);
+                    uint token = rts.GetMethodToken(mdh);
+                    Contracts.ILCodeVersionHandle activeILCodeVersion = cv.GetActiveILCodeVersion(md);
                     // first condition: is method in process of being rejitted?
                     // second condition: has rejit been applied or null default IL been otherwise used for profiler modification (see src/coreclr/vm/codeversion.cpp comment)?
                     // third condition: has profiler modified IL through ICorProfilerInfo::SetILFunctionBody?
-                    if (rejitContract.GetRejitState(activeILCodeVersion) != RejitState.Active ||
-                        !codeVersionsContract.HasDefaultIL(activeILCodeVersion) ||
-                        loaderContract.GetDynamicIL(moduleHandle, token) != 0)
+                    if (rejit.GetRejitState(activeILCodeVersion) != RejitState.Active ||
+                        !cv.HasDefaultIL(activeILCodeVersion) ||
+                        loader.GetDynamicIL(moduleHandle, token) != 0)
                     {
                         methodDescs[*pcMethodDescs] = md.ToClrDataAddress(_target);
                         (*pcMethodDescs)++;
@@ -3358,17 +3358,18 @@ internal sealed unsafe partial class SOSDacImpl
         {
             ClrDataAddress[] methodDescsLocal = new ClrDataAddress[cMethodDescs];
             int pcMethodDescsLocal;
+            int hrLocal;
             fixed (ClrDataAddress* ptr = methodDescsLocal)
             {
-                int hrLocal = _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, ptr, cMethodDescs, &pcMethodDescsLocal);
-                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-                if (hr == HResults.S_OK)
+                hrLocal = _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, ptr, cMethodDescs, &pcMethodDescsLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pcMethodDescs == pcMethodDescsLocal, $"cDAC: {*pcMethodDescs}, DAC: {pcMethodDescsLocal}");
+                for (int i = 0; i < *pcMethodDescs; i++)
                 {
-                    Debug.Assert(*pcMethodDescs == pcMethodDescsLocal, $"cDAC: {*pcMethodDescs}, DAC: {pcMethodDescsLocal}");
-                    for (int i = 0; i < *pcMethodDescs; i++)
-                    {
-                        Debug.Assert(methodDescs[i] == methodDescsLocal[i], $"cDAC: {methodDescs[i]:x}, DAC: {methodDescsLocal[i]:x}");
-                    }
+                    Debug.Assert(methodDescs[i] == methodDescsLocal[i], $"cDAC: {methodDescs[i]:x}, DAC: {methodDescsLocal[i]:x}");
                 }
             }
         }
