@@ -42,10 +42,17 @@ namespace System.Linq
         ///
         /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
-        public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
-            TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
-                new ImplicitlyStableOrderedIterator<T>(source, descending: false) :
-                OrderBy(source, EnumerableSorter<T>.IdentityFunc, comparer);
+        public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T>? comparer)
+        {
+            if (TypeCanBePureOrdered<T>() && (comparer is null || comparer == Comparer<T>.Default))
+            {
+                return TypeIsImplicitlyStable<T>() ?
+                    new ImplicitlyStableOrderedIterator<T>(source, descending: false) :
+                    new PureOrderedIteratorImpl<T>(source, descending: false);
+            }
+
+            return OrderBy(source, EnumerableSorter<T>.IdentityFunc, comparer);
+        }
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
             => new OrderedIterator<TSource, TKey>(source, keySelector, null, false, null);
@@ -87,10 +94,17 @@ namespace System.Linq
         ///
         /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
-        public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
-            TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
-                new ImplicitlyStableOrderedIterator<T>(source, descending: true) :
-                OrderByDescending(source, EnumerableSorter<T>.IdentityFunc, comparer);
+        public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T>? comparer)
+        {
+            if (TypeCanBePureOrdered<T>() && (comparer is null || comparer == Comparer<T>.Default))
+            {
+                return TypeIsImplicitlyStable<T>() ?
+                    new ImplicitlyStableOrderedIterator<T>(source, descending: true) :
+                    new PureOrderedIteratorImpl<T>(source, descending: true);
+            }
+
+            return OrderByDescending(source, EnumerableSorter<T>.IdentityFunc, comparer);
+        }
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             new OrderedIterator<TSource, TKey>(source, keySelector, null, true, null);
@@ -148,6 +162,37 @@ namespace System.Linq
                 t = typeof(T).GetEnumUnderlyingType();
             }
 
+            return NonEnumTypeIsImplicitlyStable(t);
+        }
+
+        /// <summary>A type can be pure ordered when every single time equal elements is side by side: [ (someVal), (someVal),  (otherVal), (otherVal) ]</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool TypeCanBePureOrdered<T>()
+        {
+            Type t = typeof(T);
+
+            Type? nullableUnderlyingType = Nullable.GetUnderlyingType(t);
+            if (nullableUnderlyingType != null)
+            {
+                t = nullableUnderlyingType;
+            }
+
+            if (typeof(T).IsEnum)
+            {
+                t = typeof(T).GetEnumUnderlyingType();
+            }
+
+            return NonEnumTypeIsImplicitlyStable(t) ||
+                t == typeof(Half) || t == typeof(float) ||
+                t == typeof(double) || t == typeof(decimal) ||
+                t == typeof(string) || t == typeof(Guid) ||
+                t == typeof(DateTime) || t == typeof(DateTimeOffset) ||
+                t == typeof(TimeSpan);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool NonEnumTypeIsImplicitlyStable(Type t)
+        {
             // Check for integral primitive types that compare equally iff they have the same bit pattern.
             // bool is included because, even though technically it can have 256 different values, anything
             // other than 0/1 is only producible using unsafe code. It's tempting to include a type like string

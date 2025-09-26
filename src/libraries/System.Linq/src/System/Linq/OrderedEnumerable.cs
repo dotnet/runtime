@@ -61,6 +61,20 @@ namespace System.Linq
             }
         }
 
+        /// <summary>
+        /// An ordered enumerable that for the same input always produces the same output
+        /// </summary>
+        /// <remarks>
+        /// A pure ordered enumerable means that always equal elements will be side by side: [ (someVal), (someVal),  (otherVal), (otherVal) ], see github.com/dotnet/runtime/issues/120125
+        /// </remarks>
+        private abstract partial class PureOrderedIterator<TElement> : OrderedIterator<TElement>
+        {
+            protected PureOrderedIterator(IEnumerable<TElement> source) : base(source)
+            {
+                Debug.Assert(TypeCanBePureOrdered<TElement>());
+            }
+        }
+
         private sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
         {
             private readonly OrderedIterator<TElement>? _parent;
@@ -122,7 +136,78 @@ namespace System.Linq
             {
                 int state = _state;
 
-                Initialized:
+            Initialized:
+                if (state > 1)
+                {
+                    Debug.Assert(_buffer is not null);
+                    Debug.Assert(_map is not null);
+                    Debug.Assert(_map.Length == _buffer.Length);
+
+                    int[] map = _map;
+                    int i = state - 2;
+                    if ((uint)i < (uint)map.Length)
+                    {
+                        _current = _buffer[map[i]];
+                        _state++;
+                        return true;
+                    }
+                }
+                else if (state == 1)
+                {
+                    TElement[] buffer = _source.ToArray();
+                    if (buffer.Length != 0)
+                    {
+                        _map = SortedMap(buffer);
+                        _buffer = buffer;
+                        _state = state = 2;
+                        goto Initialized;
+                    }
+                }
+
+                Dispose();
+                return false;
+            }
+
+            public override void Dispose()
+            {
+                _buffer = null;
+                _map = null;
+                base.Dispose();
+            }
+        }
+
+        private sealed partial class PureOrderedIteratorImpl<TElement> : PureOrderedIterator<TElement>
+        {
+            private readonly bool _descending;
+            private TElement[]? _buffer;
+            private int[]? _map;
+
+            internal PureOrderedIteratorImpl(IEnumerable<TElement> source, bool descending) :
+                base(source)
+            {
+                if (source is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                }
+
+                _descending = descending;
+            }
+
+            private protected override Iterator<TElement> Clone() => new PureOrderedIteratorImpl<TElement>(_source, _descending);
+
+            internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next) =>
+                new EnumerableSorter<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, next);
+
+            internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
+                childComparer is null ?
+                    new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending) :
+                    new CachingComparerWithChild<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, childComparer);
+
+            public override bool MoveNext()
+            {
+                int state = _state;
+
+            Initialized:
                 if (state > 1)
                 {
                     Debug.Assert(_buffer is not null);
@@ -163,7 +248,7 @@ namespace System.Linq
         }
 
         /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
-        private sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
+        private sealed partial class ImplicitlyStableOrderedIterator<TElement> : PureOrderedIterator<TElement>
         {
             private readonly bool _descending;
             private TElement[]? _buffer;
@@ -195,7 +280,7 @@ namespace System.Linq
                 int state = _state;
                 TElement[]? buffer;
 
-                Initialized:
+            Initialized:
                 if (state > 1)
                 {
                     buffer = _buffer;
