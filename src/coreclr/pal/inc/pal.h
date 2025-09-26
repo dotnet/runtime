@@ -2402,6 +2402,11 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 typedef struct _CONTEXT {
     ULONG ContextFlags;
+
+    DWORD InterpreterWalkFramePointer;
+    DWORD InterpreterSP;
+    DWORD InterpreterFP;
+    DWORD InterpreterIP;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
@@ -2739,14 +2744,19 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_OSX) && defined(HOST_ARM64)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
+#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+
+// Define empty macro for platforms that don't allow JIT write protection
+#define PAL_JitWriteProtect(writeEnable) do { } while(0)
+
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 
 PALIMPORT
@@ -3576,11 +3586,6 @@ PALAPI
 RtlCaptureContext(
   OUT PCONTEXT ContextRecord
 );
-
-PALIMPORT
-VOID
-PALAPI
-FlushProcessWriteBuffers();
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
 typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace System.Globalization
 {
@@ -443,12 +444,13 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedRegions, newTable, null) ?? newTable;
             }
             else
             {
                 // Check the hash table
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -481,14 +483,10 @@ namespace System.Globalization
             if (retVal != null && !retVal.IsNeutralCulture)
             {
                 // first add it to the cache
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     tempHashTable[hashName] = retVal;
                 }
-
-                // Copy the hashtable to the corresponding member variables.  This will potentially overwrite
-                // new tables simultaneously created by a new thread, but maximizes thread safety.
-                s_cachedRegions = tempHashTable;
             }
             else
             {
@@ -658,7 +656,6 @@ namespace System.Globalization
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
-        private static readonly object s_lock = new object();
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
@@ -683,14 +680,15 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedCultures, newTable, null) ?? newTable;
             }
             else
             {
                 // Check the hash table
                 bool ret;
                 CultureData? retVal;
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     ret = tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -707,14 +705,10 @@ namespace System.Globalization
             }
 
             // Found one, add it to the cache
-            lock (s_lock)
+            lock (tempHashTable)
             {
                 tempHashTable[hashName] = culture;
             }
-
-            // Copy the hashtable to the corresponding member variables.  This will potentially overwrite
-            // new tables simultaneously created by a new thread, but maximizes thread safety.
-            s_cachedCultures = tempHashTable;
 
             return culture;
         }
@@ -824,7 +818,7 @@ namespace System.Globalization
         private bool InitCompatibilityCultureData()
         {
             // for compatibility handle the deprecated ids: zh-chs, zh-cht
-            string cultureName = _sRealName!;
+            string cultureName = _sRealName;
 
             string fallbackCultureName;
             string realCultureName;
@@ -927,7 +921,7 @@ namespace System.Globalization
 
         // Parent name (which may be a custom locale/culture)
         // Ask using the real name, so that we get parents of neutrals
-        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName!, LocaleStringData.ParentName);
+        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName, LocaleStringData.ParentName);
 
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal string DisplayName
@@ -956,7 +950,7 @@ namespace System.Globalization
                     }
                 }
 
-                return localizedDisplayName!;
+                return localizedDisplayName;
             }
         }
 
@@ -1106,8 +1100,8 @@ namespace System.Globalization
         /// abbreviated windows language name (ie: enu) (non-standard, avoid this)
         /// </summary>
         internal string ThreeLetterWindowsLanguageName => _sAbbrevLang ??= GlobalizationMode.UseNls ?
-                                                                            NlsGetThreeLetterWindowsLanguageName(_sRealName!) :
-                                                                            IcuGetThreeLetterWindowsLanguageName(_sRealName!);
+                                                                            NlsGetThreeLetterWindowsLanguageName(_sRealName) :
+                                                                            IcuGetThreeLetterWindowsLanguageName(_sRealName);
 
         /// <summary>
         /// Localized name for this language
@@ -1151,7 +1145,7 @@ namespace System.Globalization
             {
                 if (_iGeoId == undef && !GlobalizationMode.Invariant)
                 {
-                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName!);
+                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName);
                 }
                 return _iGeoId;
             }
@@ -1228,8 +1222,8 @@ namespace System.Globalization
         /// Console fallback name (ie: locale to use for console apps for unicode-only locales)
         /// </summary>
         internal string SCONSOLEFALLBACKNAME => _sConsoleFallbackName ??= GlobalizationMode.UseNls ?
-                                                                            NlsGetConsoleFallbackName(_sRealName!) :
-                                                                            IcuGetConsoleFallbackName(_sRealName!);
+                                                                            NlsGetConsoleFallbackName(_sRealName) :
+                                                                            IcuGetConsoleFallbackName(_sRealName);
 
         /// <summary>
         /// grouping of digits
@@ -1830,7 +1824,7 @@ namespace System.Globalization
             {
                 if (_iDefaultAnsiCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName!);
+                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName);
                 }
                 return _iDefaultAnsiCodePage;
             }
@@ -1845,7 +1839,7 @@ namespace System.Globalization
             {
                 if (_iDefaultOemCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultOemCodePage = GetOemCodePage(_sRealName!);
+                    _iDefaultOemCodePage = GetOemCodePage(_sRealName);
                 }
                 return _iDefaultOemCodePage;
             }
@@ -1860,7 +1854,7 @@ namespace System.Globalization
             {
                 if (_iDefaultMacCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultMacCodePage = GetMacCodePage(_sRealName!);
+                    _iDefaultMacCodePage = GetMacCodePage(_sRealName);
                 }
                 return _iDefaultMacCodePage;
             }
@@ -1875,7 +1869,7 @@ namespace System.Globalization
             {
                 if (_iDefaultEbcdicCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName!);
+                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName);
                 }
                 return _iDefaultEbcdicCodePage;
             }

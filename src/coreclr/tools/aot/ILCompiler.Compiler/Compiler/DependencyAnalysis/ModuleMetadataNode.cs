@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable module: " + ((IAssemblyDesc)_module).GetName().FullName;
+            return "Reflectable module: " + ((IAssemblyDesc)_module).GetName().Name;
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;

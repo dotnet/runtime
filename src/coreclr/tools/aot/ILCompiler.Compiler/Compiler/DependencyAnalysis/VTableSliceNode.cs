@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Finalizers are called via a field on the MethodTable, not through the VTable
-                if (isObjectType && method.Name == "Finalize")
+                if (isObjectType && method.Name.SequenceEqual("Finalize"u8))
                     continue;
 
                 // Current type doesn't define this slot.
@@ -123,7 +123,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsSlotUsed(MethodDesc slot)
         {
-            Debug.Assert(Array.IndexOf(_slots, slot) != -1);
+            Debug.Assert(Array.IndexOf(_slots, slot) >= 0);
             return true;
         }
 
@@ -176,7 +176,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsSlotUsed(MethodDesc slot)
         {
-            Debug.Assert(Array.IndexOf(_slots, slot) != -1);
+            Debug.Assert(Array.IndexOf(_slots, slot) >= 0);
 #if DEBUG
             _isLocked = true;
 #endif
@@ -198,13 +198,13 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
             Debug.Assert(virtualMethod.OwningType == _type);
-            Debug.Assert(Array.IndexOf(_slots, virtualMethod) != -1);
+            Debug.Assert(Array.IndexOf(_slots, virtualMethod) >= 0);
 #if DEBUG
             Debug.Assert(!_isLocked);
 #endif
 
             // Finalizers are called via a field on the MethodTable, not through the VTable
-            if (_type.IsObject && virtualMethod.Name == "Finalize")
+            if (_type.IsObject && virtualMethod.Name.SequenceEqual("Finalize"u8))
                 return;
 
             _usedMethods.Add(virtualMethod);

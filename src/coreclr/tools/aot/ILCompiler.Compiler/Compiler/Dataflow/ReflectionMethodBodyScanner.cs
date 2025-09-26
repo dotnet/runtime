@@ -171,7 +171,7 @@ namespace ILCompiler.Dataflow
                 // Apply any annotations that didn't exist on the base type to the base type.
                 // This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
                 // subset of those annotations.
-                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type.GetDisplayName(), declaredOnly: false);
+                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type, declaredOnly: false);
             }
 
             // Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
@@ -186,14 +186,14 @@ namespace ILCompiler.Dataflow
 
                     // Apply All or Interfaces to the interface type.
                     // DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
-                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type.GetDisplayName(), declaredOnly: false);
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type, declaredOnly: false);
                 }
             }
 
             // The annotations this type inherited from its base types or interfaces should not produce
             // warnings on the respective base/interface members, since those are already covered by applying
             // the annotations to those types. So we only need to handle the members directly declared on this type.
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName(), declaredOnly: true);
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type, declaredOnly: true);
             return reflectionMarker.Dependencies;
         }
 
@@ -235,7 +235,7 @@ namespace ILCompiler.Dataflow
             return _annotations.GetFieldValue(field);
         }
 
-        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodIL, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, int? parameterIndex, string reason)
+        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodIL, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, int? parameterIndex, TypeSystemEntity reason)
         {
             if (targetValue.DynamicallyAccessedMemberTypes != 0)
             {
@@ -245,13 +245,13 @@ namespace ILCompiler.Dataflow
         }
 
         protected override void HandleStoreField(MethodIL methodIL, int offset, FieldValue field, MultiValue valueToStore, int? parameterIndex)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, field, valueToStore, parameterIndex, field.Field.GetDisplayName());
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, field, valueToStore, parameterIndex, field.Field);
 
         protected override void HandleStoreParameter(MethodIL methodIL, int offset, MethodParameterValue parameter, MultiValue valueToStore, int? parameterIndex)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, parameter, valueToStore, parameterIndex, parameter.Parameter.Method.GetDisplayName());
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, parameter, valueToStore, parameterIndex, parameter.Parameter.Method.Method);
 
         protected override void HandleReturnValue(MethodIL methodIL, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, returnValue, valueToStore, null, returnValue.Method.GetDisplayName());
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, returnValue, valueToStore, null, returnValue.Method.Method);
 
         protected override void HandleTypeTokenAccess(MethodIL methodIL, int offset, TypeDesc accessedType)
         {
@@ -342,7 +342,7 @@ namespace ILCompiler.Dataflow
                 RequiresReflectionMethodBodyScannerForCallSite(reflectionMarker.Annotations, calledMethod) ||
                 annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
-            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
+            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
             if (!handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
                 throw new NotImplementedException($"Unhandled intrinsic {intrinsicId}");

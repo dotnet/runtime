@@ -212,10 +212,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
-            [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/113249")]
             static Requires<T> StaticField;
 
-            [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/113249")]
             Requires<T> InstanceField;
 
             [ExpectedWarning("IL2091", "PublicFields", "Requires<T>")]

@@ -474,14 +474,14 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static void ThrowIfEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IEquatable<T>? { }
+        public static void ThrowIfEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) { }
         public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IComparable<T> { }
         public static void ThrowIfGreaterThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IComparable<T> { }
         public static void ThrowIfLessThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IComparable<T> { }
         public static void ThrowIfLessThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IComparable<T> { }
         public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.Numerics.INumberBase<T> { }
         public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.Numerics.INumberBase<T> { }
-        public static void ThrowIfNotEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IEquatable<T>? { }
+        public static void ThrowIfNotEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) { }
         public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.Numerics.INumberBase<T> { }
     }
     public partial class ArithmeticException : System.SystemException
@@ -5654,6 +5654,8 @@ namespace System
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(char value) { throw null; }
         public bool Contains(char value, System.StringComparison comparisonType) { throw null; }
+        public bool Contains(System.Text.Rune value) { throw null; }
+        public bool Contains(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public bool Contains(string value) { throw null; }
         public bool Contains(string value, System.StringComparison comparisonType) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -5665,6 +5667,9 @@ namespace System
         public static string Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "provider", "initialBuffer"})] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
         public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) where TState : allows ref struct { throw null; }
         public bool EndsWith(char value) { throw null; }
+        public bool EndsWith(char value, System.StringComparison comparisonType) { throw null; }
+        public bool EndsWith(System.Text.Rune value) { throw null; }
+        public bool EndsWith(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public bool EndsWith(string value) { throw null; }
         public bool EndsWith(string value, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public bool EndsWith(string value, System.StringComparison comparisonType) { throw null; }
@@ -5707,6 +5712,10 @@ namespace System
         public int IndexOf(string value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(string value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(string value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
+        public int IndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5739,6 +5748,10 @@ namespace System
         public int LastIndexOf(string value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(string value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(string value, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOfAny(char[] anyOf) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5754,6 +5767,7 @@ namespace System
         public string Remove(int startIndex) { throw null; }
         public string Remove(int startIndex, int count) { throw null; }
         public string Replace(char oldChar, char newChar) { throw null; }
+        public string Replace(System.Text.Rune oldRune, System.Text.Rune newRune) { throw null; }
         public string Replace(string oldValue, string? newValue) { throw null; }
         public string Replace(string oldValue, string? newValue, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public string Replace(string oldValue, string? newValue, System.StringComparison comparisonType) { throw null; }
@@ -5761,6 +5775,8 @@ namespace System
         public string ReplaceLineEndings(string replacementText) { throw null; }
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(System.Text.Rune separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(System.Text.Rune separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[]? separator) { throw null; }
         public string[] Split(params System.ReadOnlySpan<char> separator) { throw null; }
         public string[] Split(char[]? separator, int count) { throw null; }
@@ -5771,6 +5787,9 @@ namespace System
         public string[] Split(string[]? separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(string[]? separator, System.StringSplitOptions options) { throw null; }
         public bool StartsWith(char value) { throw null; }
+        public bool StartsWith(char value, System.StringComparison comparisonType) { throw null; }
+        public bool StartsWith(System.Text.Rune value) { throw null; }
+        public bool StartsWith(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public bool StartsWith(string value) { throw null; }
         public bool StartsWith(string value, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public bool StartsWith(string value, System.StringComparison comparisonType) { throw null; }
@@ -5809,12 +5828,15 @@ namespace System
         public string ToUpperInvariant() { throw null; }
         public string Trim() { throw null; }
         public string Trim(char trimChar) { throw null; }
+        public string Trim(System.Text.Rune trimRune) { throw null; }
         public string Trim(params char[]? trimChars) { throw null; }
         public string TrimEnd() { throw null; }
         public string TrimEnd(char trimChar) { throw null; }
+        public string TrimEnd(System.Text.Rune trimRune) { throw null; }
         public string TrimEnd(params char[]? trimChars) { throw null; }
         public string TrimStart() { throw null; }
         public string TrimStart(char trimChar) { throw null; }
+        public string TrimStart(System.Text.Rune trimRune) { throw null; }
         public string TrimStart(params char[]? trimChars) { throw null; }
         public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
@@ -9896,6 +9918,8 @@ namespace System.Globalization
         public string ToTitleCase(string str) { throw null; }
         public char ToUpper(char c) { throw null; }
         public string ToUpper(string str) { throw null; }
+        public System.Text.Rune ToLower(System.Text.Rune value) { throw null; }
+        public System.Text.Rune ToUpper(System.Text.Rune value) { throw null; }
     }
     public partial class ThaiBuddhistCalendar : System.Globalization.Calendar
     {
@@ -10990,6 +11014,7 @@ namespace System.IO
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public virtual void Write(char value) { }
+        public virtual void Write(System.Text.Rune value) { }
         public virtual void Write(char[]? buffer) { }
         public virtual void Write(char[] buffer, int index, int count) { }
         public virtual void Write(decimal value) { }
@@ -11011,6 +11036,7 @@ namespace System.IO
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
         public virtual System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteAsync(System.Text.Rune value) { throw null; }
         public System.Threading.Tasks.Task WriteAsync(char[]? buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -11019,6 +11045,7 @@ namespace System.IO
         public virtual void WriteLine() { }
         public virtual void WriteLine(bool value) { }
         public virtual void WriteLine(char value) { }
+        public virtual void WriteLine(System.Text.Rune value) { }
         public virtual void WriteLine(char[]? buffer) { }
         public virtual void WriteLine(char[] buffer, int index, int count) { }
         public virtual void WriteLine(decimal value) { }
@@ -11041,6 +11068,7 @@ namespace System.IO
         public virtual void WriteLine(ulong value) { }
         public virtual System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.Rune value) { throw null; }
         public System.Threading.Tasks.Task WriteLineAsync(char[]? buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -12805,6 +12833,7 @@ namespace System.Reflection
         VisibilityMask = 7,
         SequentialLayout = 8,
         ExplicitLayout = 16,
+        ExtendedLayout = 24,
         LayoutMask = 24,
         ClassSemanticsMask = 32,
         Interface = 32,
@@ -14230,6 +14259,16 @@ namespace System.Runtime.InteropServices
         protected void SetHandle(System.IntPtr handle) { }
         public void SetHandleAsInvalid() { }
     }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, Inherited=false)]
+    public sealed class ExtendedLayoutAttribute : System.Attribute
+    {
+        public ExtendedLayoutAttribute(System.Runtime.InteropServices.ExtendedLayoutKind layoutKind) { }
+    }
+    public enum ExtendedLayoutKind
+    {
+        CStruct = 0,
+    }
     public partial class ExternalException : System.SystemException
     {
         public ExternalException() { }
@@ -14311,6 +14350,7 @@ namespace System.Runtime.InteropServices
     public enum LayoutKind
     {
         Sequential = 0,
+        Extended = 1,
         Explicit = 2,
         Auto = 3,
     }
@@ -15660,6 +15700,7 @@ namespace System.Text
         public int EncodeToUtf8(System.Span<byte> destination) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Text.Rune other) { throw null; }
+        public bool Equals(System.Text.Rune other, System.StringComparison comparisonType) { throw null; }
         public override int GetHashCode() { throw null; }
         public static double GetNumericValue(System.Text.Rune value) { throw null; }
         public static System.Text.Rune GetRuneAt(string input, int index) { throw null; }
@@ -15708,6 +15749,48 @@ namespace System.Text
         public bool TryEncodeToUtf8(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryGetRuneAt(string input, int index, out System.Text.Rune value) { throw null; }
     }
+    public readonly partial struct RunePosition : System.IEquatable<System.Text.RunePosition>
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Text.RunePosition.Utf16Enumerator EnumerateUtf16(System.ReadOnlySpan<char> span) { throw null; }
+        public static System.Text.RunePosition.Utf8Enumerator EnumerateUtf8(System.ReadOnlySpan<byte> span) { throw null; }
+        public System.Text.Rune Rune { get { throw null; } }
+        public int StartIndex { get { throw null; } }
+        public int Length { get { throw null; } }
+        public bool WasReplaced { get { throw null; } }
+        public RunePosition(Rune rune, int startIndex, int length, bool wasReplaced) { throw null; }
+        public bool Equals(System.Text.RunePosition other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out System.Text.Rune rune, out int startIndex) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out System.Text.Rune rune, out int startIndex, out int length) { throw null; }
+        public static bool operator ==(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
+        public static bool operator !=(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
+        public ref partial struct Utf16Enumerator : System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
+        {
+            private readonly int _dummyPrimitive;
+            public System.Text.RunePosition Current { get { throw null; } }
+            public System.Text.RunePosition.Utf16Enumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+            public void Reset() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { }
+            void System.IDisposable.Dispose() { }
+        }
+        public ref partial struct Utf8Enumerator: System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
+        {
+            private readonly int _dummyPrimitive;
+            public System.Text.RunePosition Current { get { throw null; } }
+            public System.Text.RunePosition.Utf8Enumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+            public void Reset() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { }
+            void System.IDisposable.Dispose() { }
+        }
+    }
     public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {
         public StringBuilder() { }
@@ -15724,6 +15807,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(bool value) { throw null; }
         public System.Text.StringBuilder Append(byte value) { throw null; }
         public System.Text.StringBuilder Append(char value) { throw null; }
+        public System.Text.StringBuilder Append(System.Text.Rune value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe System.Text.StringBuilder Append(char* value, int valueCount) { throw null; }
         public System.Text.StringBuilder Append(char value, int repeatCount) { throw null; }
@@ -15788,9 +15872,12 @@ namespace System.Text
         public bool Equals(System.ReadOnlySpan<char> span) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Text.StringBuilder? sb) { throw null; }
         public System.Text.StringBuilder.ChunkEnumerator GetChunks() { throw null; }
+        public System.Text.StringBuilderRuneEnumerator EnumerateRunes() { throw null; }
+        public Rune GetRuneAt(int index) { throw null; }
         public System.Text.StringBuilder Insert(int index, bool value) { throw null; }
         public System.Text.StringBuilder Insert(int index, byte value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
+        public System.Text.StringBuilder Insert(int index, System.Text.Rune value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[]? value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[]? value, int startIndex, int charCount) { throw null; }
         public System.Text.StringBuilder Insert(int index, decimal value) { throw null; }
@@ -15814,6 +15901,8 @@ namespace System.Text
         public System.Text.StringBuilder Remove(int startIndex, int length) { throw null; }
         public System.Text.StringBuilder Replace(char oldChar, char newChar) { throw null; }
         public System.Text.StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) { throw null; }
+        public System.Text.StringBuilder Replace(System.Text.Rune oldRune, System.Text.Rune newRune) { throw null; }
+        public System.Text.StringBuilder Replace(System.Text.Rune oldRune, System.Text.Rune newRune, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(System.ReadOnlySpan<char> oldValue, System.ReadOnlySpan<char> newValue) { throw null; }
         public System.Text.StringBuilder Replace(System.ReadOnlySpan<char> oldValue, System.ReadOnlySpan<char> newValue, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue) { throw null; }
@@ -15821,6 +15910,7 @@ namespace System.Text
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }
+        public bool TryGetRuneAt(int index, out Rune value) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public partial struct AppendInterpolatedStringHandler
@@ -15849,6 +15939,19 @@ namespace System.Text
             public System.Text.StringBuilder.ChunkEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }
+    }
+    public partial struct StringBuilderRuneEnumerator : System.Collections.Generic.IEnumerable<System.Text.Rune>, System.Collections.Generic.IEnumerator<System.Text.Rune>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Text.Rune Current { get { throw null; } }
+        object? System.Collections.IEnumerator.Current { get { throw null; } }
+        public System.Text.StringBuilderRuneEnumerator GetEnumerator() { throw null; }
+        public bool MoveNext() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Text.Rune> System.Collections.Generic.IEnumerable<System.Text.Rune>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        void System.Collections.IEnumerator.Reset() { }
+        void System.IDisposable.Dispose() { }
     }
     public partial struct StringRuneEnumerator : System.Collections.Generic.IEnumerable<System.Text.Rune>, System.Collections.Generic.IEnumerator<System.Text.Rune>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
     {

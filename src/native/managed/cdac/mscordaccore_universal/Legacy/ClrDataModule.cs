@@ -36,7 +36,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         _target = target;
         _legacyModule = legacyImpl;
         _legacyModule2 = legacyImpl as IXCLRDataModule2;
-        if (legacyImpl is not null && ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
+        if (legacyImpl is not null && System.Runtime.InteropServices.ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
         {
             // Release the AddRef from TryGetComInstance. We rely on the ref-count from holding on to IXCLRDataModule.
             Marshal.Release(_legacyModulePointer);
@@ -138,10 +138,10 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             {
                 result = contract.GetPath(handle);
             }
-            catch (InvalidOperationException)
+            catch (VirtualReadException)
             {
                 // The memory for the path may not be enumerated - for example, in triage dumps
-                // In this case, GetPath will throw InvalidOperationException
+                // In this case, GetPath will throw VirtualReadException
             }
 
             if (string.IsNullOrEmpty(result))

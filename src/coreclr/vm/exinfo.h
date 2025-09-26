@@ -209,6 +209,7 @@ struct LastReportedFuncletInfo
 
 struct ExInfo
 {
+    friend struct ::cdac_data<ExInfo>;
     struct DAC_EXCEPTION_POINTERS
     {
         PTR_EXCEPTION_RECORD    ExceptionRecord;
@@ -509,6 +510,15 @@ private:
 
     static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
 };
+
+#ifndef TARGET_UNIX
+template<>
+struct cdac_data<ExInfo>
+{
+    static constexpr size_t ExceptionWatsonBucketTrackerBuckets = offsetof(ExInfo, m_WatsonBucketTracker)
+        + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
+};
+#endif // TARGET_UNIX
 
 #endif // !FEATURE_EH_FUNCLETS
 #endif // __ExInfo_h__
