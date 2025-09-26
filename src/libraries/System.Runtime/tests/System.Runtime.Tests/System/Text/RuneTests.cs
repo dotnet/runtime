@@ -333,39 +333,6 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [InlineData('a', 'a', StringComparison.CurrentCulture, true)]
-        [InlineData('a', 'A', StringComparison.CurrentCulture, false)]
-        [InlineData(0x1F600, 0x1F600, StringComparison.CurrentCulture, true)]
-        [InlineData(0x1F601, 0x1F600, StringComparison.CurrentCulture, false)]
-        [InlineData('a', 'a', StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData('a', 'A', StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData(0x1F600, 0x1F600, StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData(0x1F601, 0x1F600, StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData('a', 'a', StringComparison.InvariantCulture, true)]
-        [InlineData('a', 'A', StringComparison.InvariantCulture, false)]
-        [InlineData(0x1F600, 0x1F600, StringComparison.InvariantCulture, true)]
-        [InlineData(0x1F601, 0x1F600, StringComparison.InvariantCulture, false)]
-        [InlineData('a', 'a', StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData('a', 'A', StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData(0x1F600, 0x1F600, StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData(0x1F601, 0x1F600, StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData('a', 'a', StringComparison.Ordinal, true)]
-        [InlineData('a', 'A', StringComparison.Ordinal, false)]
-        [InlineData(0x1F600, 0x1F600, StringComparison.Ordinal, true)]
-        [InlineData(0x1F601, 0x1F600, StringComparison.Ordinal, false)]
-        [InlineData('a', 'a', StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData('a', 'A', StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData(0x1F600, 0x1F600, StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData(0x1F601, 0x1F600, StringComparison.OrdinalIgnoreCase, false)]
-        public static void Equals_StringComparison(int first, int other, StringComparison comparisonType, bool expected)
-        {
-            Rune a = new Rune(first);
-            Rune b = new Rune(other);
-
-            Assert.Equal(expected, a.Equals(b, comparisonType));
-        }
-
-        [Theory]
         [InlineData(0)]
         [InlineData('a')]
         [InlineData('\uFFFD')]
