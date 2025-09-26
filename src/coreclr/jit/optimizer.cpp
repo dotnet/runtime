@@ -2366,6 +2366,8 @@ void Compiler::optFindLoops()
     // loops by removing edges.
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
+
+    optFindSCCs();
 }
 
 //-----------------------------------------------------------------------------
@@ -2852,6 +2854,215 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     else
     {
         block->RemoveFlags(BBF_PROF_WEIGHT);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// optFindSCCs: Find strongly connected components.
+//
+class SCC
+{
+private:
+
+    Compiler*    m_comp;
+    BitVecTraits m_traits;
+    BitVec       m_blocks;
+    BitVec       m_entries;
+
+public:
+
+    // Factor out traits?
+    //
+    SCC(Compiler* comp, BasicBlock* block)
+        : m_comp(comp)
+        , m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
+        , m_blocks(BitVecOps::UninitVal())
+        , m_entries(BitVecOps::UninitVal())
+    {
+        m_blocks  = BitVecOps::MakeEmpty(&m_traits);
+        m_entries = BitVecOps::MakeEmpty(&m_traits);
+        Add(block);
+    }
+
+    void Add(BasicBlock* block)
+    {
+        BitVecOps::AddElemD(&m_traits, m_blocks, block->bbPostorderNum);
+    }
+
+    void Finalize()
+    {
+        ComputeEntries();
+    }
+
+    void ComputeEntries()
+    {
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        while (iterator.NextElem(&poNum))
+        {
+            BasicBlock* const block = m_comp->m_dfsTree->GetPostOrder(poNum);
+
+            for (BasicBlock* pred : block->PredBlocks())
+            {
+                if (!BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
+                {
+                    BitVecOps::AddElemD(&m_traits, m_entries, block->bbPostorderNum);
+                    break;
+                }
+            }
+        }
+    }
+
+    unsigned NumEntries()
+    {
+        return BitVecOps::Count(&m_traits, m_entries);
+    }
+
+    unsigned NumBlocks()
+    {
+        return BitVecOps::Count(&m_traits, m_blocks);
+    }
+
+    BitVec InternalBlocks()
+    {
+        return BitVecOps::Diff(&m_traits, m_blocks, m_entries);
+    }
+
+    void Dump(Compiler* comp)
+    {
+        JITDUMP("SCC %p:\n", this);
+
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        bool            first = true;
+        while (iterator.NextElem(&poNum))
+        {
+            BasicBlock* const block   = m_comp->m_dfsTree->GetPostOrder(poNum);
+            bool              isEntry = BitVecOps::IsMember(&m_traits, m_entries, poNum);
+            JITDUMP("%s" FMT_BB "%s", first ? "" : ", ", block->bbNum, isEntry ? "e" : "");
+            first = false;
+        }
+
+        JITDUMP("\n");
+    }
+};
+
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SCC*> SCCMap;
+
+void Compiler::optFindSCCs()
+{
+    BitVecTraits traits(m_dfsTree->GetPostOrderCount(), this);
+    BitVec       allBlocks = BitVecOps::MakeFull(&traits);
+
+    ArrayStack<SCC*> sccs(getAllocator(CMK_DepthFirstSearch));
+    optFindSCCs(allBlocks, traits, sccs);
+
+    unsigned numIrreducible = 0;
+
+    if (sccs.Height() > 0)
+    {
+        JITDUMP("\n*** SCCs\n");
+
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            SCC* const scc = sccs.Bottom(i);
+            scc->Dump(this);
+            numIrreducible += (scc->NumEntries() > 1);
+        }
+    }
+    else
+    {
+        JITDUMP("\n*** No SCCs\n");
+    }
+
+    if (numIrreducible > 0)
+    {
+        JITDUMP("\n*** %u Irreducible!\n", numIrreducible);
+    }
+
+    Metrics.IrreducibleLoopsFoundDuringOpts = (int)numIrreducible;
+}
+
+void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs)
+{
+    // Initially we map a block to a null entry in the map.
+    // If we then get a second block in that SCC, we allocate an SCC instance.
+    //
+    // We probably want to ignore flow through finallies (back ignore preds that are callfinally ret?)
+    //
+    SCCMap map(getAllocator(CMK_DepthFirstSearch));
+
+    auto assign = [=, &map, &sccs, &traits](auto self, BasicBlock* u, BasicBlock* root, BitVec& subset) -> void {
+        // Ignore blocks not in the subset
+        //
+        if (!BitVecOps::IsMember(&traits, subset, u->bbPostorderNum))
+        {
+            return;
+        }
+
+        // If we've assigned u an scc, no more work needed.
+        //
+        if (map.Lookup(u))
+        {
+            return;
+        }
+
+        // Else see if there's an SCC for root
+        //
+        SCC* scc   = nullptr;
+        bool found = map.Lookup(root, &scc);
+
+        if (found)
+        {
+            assert(u != root);
+
+            if (scc == nullptr)
+            {
+                scc = new (this, CMK_DepthFirstSearch) SCC(this, root);
+                map.Set(root, scc, SCCMap::SetKind::Overwrite);
+                sccs.Push(scc);
+            }
+
+            scc->Add(u);
+        }
+
+        // Indicate we've visited u
+        //
+        map.Set(u, scc);
+
+        // Walk u's preds looking for more SCC members
+        //
+        for (BasicBlock* p : u->PredBlocks())
+        {
+            if (p->KindIs(BBJ_CALLFINALLYRET))
+            {
+                // Should we find the matching callfinally
+                // and walk back from there? Should just
+                // be our bbpred, right?
+                //
+                continue;
+            }
+
+            self(self, p, root, subset);
+        }
+    };
+
+    // proper rdfs here? Seems like recursion might be bad
+    //
+    for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
+    {
+        unsigned          rpoNum = m_dfsTree->GetPostOrderCount() - i - 1;
+        BasicBlock* const block  = m_dfsTree->GetPostOrder(rpoNum);
+        assign(assign, block, block, subset);
+    }
+
+    if (sccs.Height() > 0)
+    {
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            SCC* const scc = sccs.Bottom(i);
+            scc->Finalize();
+        }
     }
 }
 
