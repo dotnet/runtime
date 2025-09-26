@@ -27,54 +27,33 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
-        /// <summary>Escapes characters that are invalid in XML comments, including control characters and XML entities, while preserving backslashes.</summary>
+        /// <summary>Escapes characters that are invalid in XML comments.</summary>
         private static string EscapeXmlComment(string text)
         {
-            if (string.IsNullOrEmpty(text))
-                return text;
-
-            var sb = new StringBuilder(text.Length);
-            foreach (char c in text)
+            if (!string.IsNullOrEmpty(text))
             {
-                // XML 1.0 valid characters:
-                // #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
-                // However, we need to escape:
-                // - Whitespace characters like \t, \n, \r (to avoid breaking XML comment structure)
-                // - C1 control characters (0x80-0x9F) even though they're valid XML (they may cause display issues)
-                if (c >= 0x20 && c <= 0x7F)  // ASCII printable characters
+                StringBuilder sb = new(text.Length);
+                foreach (char c in text)
                 {
-                    // Handle XML entities
-                    switch (c)
+                    switch ((int)c)
                     {
-                        case '&':
-                            sb.Append("&amp;");
-                            break;
-                        case '<':
-                            sb.Append("&lt;");
-                            break;
-                        case '>':
-                            sb.Append("&gt;");
-                            break;
-                        default:
-                            sb.Append(c);
-                            break;
+                        // Escape XML entities.
+                        case '&': sb.Append("&amp;"); break;
+                        case '<': sb.Append("&lt;"); break;
+                        case '>': sb.Append("&gt;"); break;
+
+                        // Propagate all other valid XML characters as-is. Control chars are considered invalid.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+
+                        // Use Unicode escape sequences for everything else.
+                        default: sb.Append($"\\u{(int)c:X4}"); break;
                     }
                 }
-                else if (c >= 0xA0 && c <= 0xD7FF)  // Latin-1 Supplement and higher Unicode ranges (excluding C1 controls)
-                {
-                    sb.Append(c);
-                }
-                else if (c >= 0xE000 && c <= 0xFFFD)  // Private Use Area and other valid ranges
-                {
-                    sb.Append(c);
-                }
-                else
-                {
-                    // Replace invalid XML characters, whitespace control characters, and C1 control characters with Unicode escape sequences
-                    sb.Append($"\\u{(int)c:X4}");
-                }
+
+                text = sb.ToString();
             }
-            return sb.ToString();
+
+            return text;
         }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
