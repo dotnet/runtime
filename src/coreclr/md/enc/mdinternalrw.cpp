@@ -59,10 +59,10 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
     CMiniMdRW *pMiniMdAssemEmit = pAssemEmitRM ? &pAssemEmitRM->m_pStgdb->m_MiniMd : NULL;
     CMiniMdRW *pMiniMdEmit      = &(pEmitRM->m_pStgdb->m_MiniMd);
 
+    IMetaModelCommon *pCommonAssemImport = pAssemImport ? pAssemImport->GetMetaModelCommon() : NULL;
+
     CMDSemReadWrite cSem(pEmitRM->m_pSemReadWrite);
     IfFailGo(cSem.LockWrite());
-
-    IMetaModelCommon *pCommonAssemImport = pAssemImport ? pAssemImport->GetMetaModelCommon() : NULL;
 
     hr = ImportHelper::MergeUpdateTokenInSig(
                 pMiniMdAssemEmit,   // The assembly emit scope.
