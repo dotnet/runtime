@@ -26,8 +26,8 @@ Now you can choose an IDE to start debugging. Remember that the tests wait only 
 
 ## Debug with Chrome DevTools
 
-For detailed Chrome DevTools debugging instructions, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging-reference.md#debug-with-chrome-devtools).
+For detailed Chrome DevTools debugging instructions, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging.md#debug-with-chrome-devtools).
 
 ## Debug with VS Code
 
-For detailed VS Code debugging instructions, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging-reference.md#debug-with-vs-code).
+For detailed VS Code debugging instructions, see the [WebAssembly Debugging Reference](../debugging/wasm-debugging.md#debug-with-vs-code).

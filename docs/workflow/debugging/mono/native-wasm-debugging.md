@@ -1,5 +1,5 @@
 
-This document covers debugging the Mono WebAssembly runtime itself, native crashes, and advanced debugging scenarios. For general WebAssembly application debugging, see the [WebAssembly Debugging Reference](../wasm-debugging-reference.md).
+This document covers debugging the Mono WebAssembly runtime itself, native crashes, and advanced debugging scenarios. For general WebAssembly application debugging, see the [WebAssembly Debugging Reference](../wasm-debugging.md).
 
 # Native Runtime Debugging
 

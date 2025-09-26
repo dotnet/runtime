@@ -52,7 +52,7 @@ This document serves as a comprehensive index to all WebAssembly-related documen
 
 ### Common Debugging Scenarios
 
-For consolidated debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/wasm-debugging-reference.md).
+For consolidated debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/wasm-debugging.md).
 
 ## Features and Configuration
 
@@ -106,7 +106,7 @@ Located in `src/mono/sample/wasm/`:
 
 ### How do I debug a library test failure seen on CI?
 
-See the [WebAssembly Debugging Reference](debugging/wasm-debugging-reference.md#common-debugging-workflow) for detailed instructions on debugging library tests locally.
+See the [WebAssembly Debugging Reference](debugging/wasm-debugging.md#common-debugging-workflow) for detailed instructions on debugging library tests locally.
 
 ### How do I build for different WebAssembly targets?
 

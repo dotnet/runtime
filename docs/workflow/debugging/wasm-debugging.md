@@ -163,18 +163,7 @@ For native crashes with symbols:
 
 ### Collect Stack Traces
 
-From runtime code:
-```c
-#ifdef HOST_WASM
-mono_wasm_print_stack_trace();
-#endif
-```
-
-Or break into JavaScript debugger:
-```c
-#include <emscripten.h>
-EM_ASM(debugger;);
-```
+For detailed instructions on collecting stack traces and breaking into the JavaScript debugger from runtime code, see the [Native WASM Runtime Debugging](mono/native-wasm-debugging.md) documentation.
 
 ## References
 
