@@ -15,7 +15,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.Diagnostics;
 
 namespace ILCompiler.ObjectWriter
@@ -28,7 +27,7 @@ namespace ILCompiler.ObjectWriter
     {
         public class Comparer : IComparer<OutputItem>
         {
-            public readonly static Comparer Instance = new Comparer();
+            public static readonly Comparer Instance = new Comparer();
 
             public int Compare([AllowNull] OutputItem x, [AllowNull] OutputItem y)
             {
@@ -184,11 +183,10 @@ namespace ILCompiler.ObjectWriter
 
         public IEnumerable<MethodInfo> EnumerateMethods()
         {
-            DebugNameFormatter nameFormatter = new DebugNameFormatter();
             TypeNameFormatter typeNameFormatter = TypeString.Instance;
             foreach (KeyValuePair<ISymbolDefinitionNode, IMethodNode> symbolMethodPair in _methodSymbolMap)
             {
-                MethodInfo methodInfo = new MethodInfo();
+                MethodInfo methodInfo = default;
                 if (symbolMethodPair.Value.Method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
                     methodInfo.MethodToken = (uint)MetadataTokens.GetToken(ecmaMethod.Handle);
@@ -215,18 +213,18 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private string FormatMethodName(MethodDesc method, TypeNameFormatter typeNameFormatter)
+        private static string FormatMethodName(MethodDesc method, TypeNameFormatter typeNameFormatter)
         {
             StringBuilder output = new StringBuilder();
             if (!method.Signature.ReturnType.IsVoid)
             {
                 output.Append(typeNameFormatter.FormatName(method.Signature.ReturnType));
-                output.Append(" ");
+                output.Append(' ');
             }
             output.Append(typeNameFormatter.FormatName(method.OwningType));
             output.Append("::");
             output.Append(method.GetName());
-            output.Append("(");
+            output.Append('(');
             for (int paramIndex = 0; paramIndex < method.Signature.Length; paramIndex++)
             {
                 if (paramIndex != 0)
@@ -235,7 +233,7 @@ namespace ILCompiler.ObjectWriter
                 }
                 output.Append(typeNameFormatter.FormatName(method.Signature[paramIndex]));
             }
-            output.Append(")");
+            output.Append(')');
             return output.ToString();
         }
 

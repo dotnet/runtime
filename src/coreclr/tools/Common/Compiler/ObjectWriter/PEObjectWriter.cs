@@ -390,8 +390,6 @@ namespace ILCompiler.ObjectWriter
                 h.SizeOfRawData = (uint)s.Stream.Length;
                 uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData) ? 0u : (uint)AlignmentHelper.AlignUp((int)h.SizeOfRawData, (int)fileAlignment);
 
-                uint offsetToStart = pointerToRawData;
-
                 if (rawAligned != 0)
                 {
                     h.PointerToRawData = pointerToRawData;

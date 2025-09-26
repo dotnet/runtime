@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 
@@ -337,11 +338,13 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfObjectWriter.cs" Link="Compiler\ObjectWriter\ElfObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\UnixObjectWriter.cs" Link="Compiler\ObjectWriter\UnixObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CoffObjectWriter.cs" Link="Compiler\ObjectWriter\CoffObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\OutputInfoBuilder.cs" Link="Compiler\ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\PEObjectWriter.cs" Link="Compiler\ObjectWriter\PEObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\PETargetExtensions.cs" Link="Compiler\ObjectWriter\PETargetExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionData.cs" Link="Compiler\ObjectWriter\SectionData.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
