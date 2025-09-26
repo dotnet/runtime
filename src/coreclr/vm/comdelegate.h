@@ -170,6 +170,7 @@ struct ShuffleEntry
 
 #include <poppack.h>
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 class ShuffleThunkCache : public StubCacheBase
 {
 public:
@@ -186,11 +187,7 @@ private:
     {
         STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-#else
-        PORTABILITY_ASSERT("Shuffle thunks are not supported with portable entrypoints");
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         return NEWSTUB_FL_SHUFFLE_THUNK;
     }
 
@@ -208,5 +205,6 @@ private:
         return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
     }
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif  // _COMDELEGATE_H_
