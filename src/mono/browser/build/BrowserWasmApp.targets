@@ -27,6 +27,7 @@
       $(WasmGenerateAppBundleDependsOn);
       GenerateBuildRuntimeConfigurationFiles;
       _GetWasmGenerateAppBundleDependencies;
+      _CopyDotnetTypeScriptDefinitions;
       _WasmGenerateAppBundle;
       _WasmGenerateRunV8Script;
     </WasmGenerateAppBundleDependsOn>
@@ -608,5 +609,30 @@
     </ItemGroup>
 
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunV8ScriptPath)&quot;" />
+  </Target>
+
+  <!-- Copy dotnet.d.ts to wwwroot for TypeScript development experience -->
+  <Target Name="_CopyDotnetTypeScriptDefinitions" 
+          Condition="Exists('$(MSBuildProjectDirectory)\wwwroot') and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.d.ts')">
+    
+    <PropertyGroup>
+      <_DotnetTypesSourcePath>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.d.ts</_DotnetTypesSourcePath>
+      <_DotnetTypesDestPath>$(MSBuildProjectDirectory)\wwwroot\dotnet.d.ts</_DotnetTypesDestPath>
+    </PropertyGroup>
+    
+    <!-- Only copy if source exists and is newer than destination or destination doesn't exist -->
+    <Copy SourceFiles="$(_DotnetTypesSourcePath)"
+          DestinationFiles="$(_DotnetTypesDestPath)"
+          Condition="!Exists('$(_DotnetTypesDestPath)') Or '$([System.IO.File]::GetLastWriteTime($(_DotnetTypesSourcePath)))' &gt; '$([System.IO.File]::GetLastWriteTime($(_DotnetTypesDestPath)))'"
+          SkipUnchangedFiles="true" />
+          
+    <Message Text="Copied dotnet.d.ts to wwwroot directory for TypeScript IntelliSense" 
+             Condition="Exists('$(_DotnetTypesSourcePath)')" 
+             Importance="low" />
+             
+    <!-- Add the file as Content so it gets included in the project -->
+    <ItemGroup Condition="Exists('$(_DotnetTypesDestPath)')">
+      <Content Include="wwwroot\dotnet.d.ts" Condition="'@(Content)' == '' Or !(@(Content->AnyHaveMetadataValue('Identity', 'wwwroot\dotnet.d.ts')))" />
+    </ItemGroup>
   </Target>
 </Project>
