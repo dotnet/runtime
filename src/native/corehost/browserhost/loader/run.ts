@@ -13,6 +13,7 @@ export function BrowserHost_InitializeCoreCLR():void {
         return;
     }
     // int BrowserHost_InitializeCoreCLR(void)
+    // WASM-TODO: add more formal ccall wrapper like cwraps in Mono
     const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number") as number;
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
