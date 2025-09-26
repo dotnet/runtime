@@ -437,7 +437,7 @@ export function mono_interp_flush_jitcall_queue (): void {
         if (trace > 0)
             mono_log_info(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
-        const traceModule = new WebAssembly.Module(buffer);
+        const traceModule = new WebAssembly.Module(buffer as BufferSource);
         const wasmImports = builder.getWasmImports();
 
         const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
@@ -504,7 +504,7 @@ export function mono_interp_flush_jitcall_queue (): void {
                     builder.endSection();
             } catch {
                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                ;
+
             }
 
             const buf = builder.getArrayView(false, true);
