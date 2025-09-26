@@ -2376,30 +2376,14 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     MemoryBarrier();
 #endif
 
-#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    if (pStub != NULL)
-    {
-        pCode = pStub->GetEntryPoint();
-        pStub->DecRef();
-        pStub = NULL;
-
-        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
-        _ASSERTE(ilStubInterpData != NULL);
-        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
-    }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
     if (pCode != (PCODE)NULL)
     {
         _ASSERTE(!MayHaveEntryPointSlotsToBackpatch()); // This path doesn't lock the MethodDescBackpatchTracker as it should only
                                                         // happen for jump-stampable or non-versionable methods
         SetCodeEntryPoint(pCode);
     }
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     else
     {
-else
-{
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         pCode = pStub->GetEntryPoint();
         pStub->DecRef();
@@ -2407,6 +2391,7 @@ else
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
         SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+        SetCodeEntryPoint(pCode);
 #else
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
@@ -2427,12 +2412,11 @@ else
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
-    }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+    }
 
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
-
 
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
