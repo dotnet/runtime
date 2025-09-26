@@ -3,6 +3,8 @@
 #ifndef __RHASSERT_H__
 #define __RHASSERT_H__
 
+#include <minipal/utils.h>
+
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
 #define ASSERT(expr) \
@@ -45,6 +47,11 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
     UNREACHABLE(); \
+
+#ifdef assert
+#undef assert
+#define assert(_expr) ASSERT(_expr)
+#endif
 
 #ifdef HOST_WINDOWS
 #define RhFailFast() ::RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
