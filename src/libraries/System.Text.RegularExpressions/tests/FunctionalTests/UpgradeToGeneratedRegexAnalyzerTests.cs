@@ -1594,18 +1594,18 @@ public class Program
     }
 }";
 
-            string fixedSource = @"using System.Text.RegularExpressions;
+            string fixedSource = $@"using System.Text.RegularExpressions;
 
 public partial class Program
-{
-    [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, """")]
-    private static partial Regex s_regex { get; }
+{{
+    [GeneratedRegex(""abc"", RegexOptions.IgnoreCase, ""{CultureInfo.CurrentCulture.Name}"")]
+    private static partial Regex s_regex {{ get; }}
 
     public static void Main()
-    {
+    {{
         var match = s_regex.IsMatch(""test"");
-    }
-}";
+    }}
+}}";
 
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
