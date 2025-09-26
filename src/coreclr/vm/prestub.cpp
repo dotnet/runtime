@@ -2381,7 +2381,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         pCode = pStub->GetEntryPoint();
         pStub->DecRef();
-        delete pStub;
         pStub = NULL;
 
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
