@@ -352,7 +352,10 @@ public:
 
     //****************************************************************************************
 
+private:
     Assembly();
+
+public:
     ~Assembly();
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,

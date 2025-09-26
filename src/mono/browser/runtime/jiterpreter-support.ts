@@ -661,7 +661,7 @@ export class WasmBuilder {
                         func.blob = this.endFunction(false);
                 } catch {
                     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                    ;
+
                 }
             }
         }
