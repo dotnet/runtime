@@ -932,7 +932,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             Assert.Equal(expectedSubPaths.Length, patternMatchingResult.Files.Count());
         }
 
-
         [Theory]
         [InlineData(@"C:\this\example\root", @"C:\this\EXAMPLE\root", "**/*", new[] { "some/test/file.txt" })]
         [InlineData(@"C:\this\EXAMPLE\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
