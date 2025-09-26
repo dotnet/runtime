@@ -810,6 +810,9 @@ namespace System.IO
             public override void Write(char value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void Write(Rune value) => _out.Write(value);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(char[]? buffer) => _out.Write(buffer);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -871,6 +874,9 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(char value) => _out.WriteLine(value);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void WriteLine(Rune value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(decimal value) => _out.WriteLine(value);
@@ -948,6 +954,13 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteAsync(Rune value)
+            {
+                Write(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteAsync(string? value)
             {
                 Write(value);
@@ -999,6 +1012,13 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteLineAsync(char value)
+            {
+                WriteLine(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteLineAsync(Rune value)
             {
                 WriteLine(value);
                 return Task.CompletedTask;
