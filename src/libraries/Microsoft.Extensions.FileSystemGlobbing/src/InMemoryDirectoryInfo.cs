@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
         /// <param name="comparisonType">The comparison type for the root directory. When files are enumerated they will be compared with the root directory using this comparison type.</param>
-        public InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, StringComparison comparisonType)
+        internal InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, StringComparison comparisonType)
             : this(rootDir, files, false, comparisonType)
         {
         }
