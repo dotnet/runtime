@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -22,8 +21,6 @@ namespace System.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(',', Count));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(',', Count, Options));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new Rune(','), Count));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new Rune(','), Count, Options));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new[] { ',' }, Count));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(new[] { ',' }, Count, Options));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Value.Split(",", Count));
@@ -41,8 +38,6 @@ namespace System.Tests
             {
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(',', options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(',', Count, options));
-                AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new Rune(','), options));
-                AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new Rune(','), Count, options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new[] { ',' }, options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(new[] { ',' }, Count, options));
                 AssertExtensions.Throws<ArgumentException>("options", () => Value.Split(",", options));
@@ -64,12 +59,10 @@ namespace System.Tests
             const int Count = 0;
             const StringSplitOptions Options = StringSplitOptions.None;
 
-            string[] expected = Array.Empty<string>();
+            string[] expected = new string[0];
 
             Assert.Equal(expected, Value.Split(',', Count));
             Assert.Equal(expected, Value.Split(',', Count, Options));
-            Assert.Equal(expected, Value.Split(new Rune(','), Count));
-            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
             Assert.Equal(expected, Value.Split(",", Count));
@@ -92,8 +85,6 @@ namespace System.Tests
 
             Assert.Equal(expected, Value.Split(',', Options));
             Assert.Equal(expected, Value.Split(',', Count, Options));
-            Assert.Equal(expected, Value.Split(new Rune(','), Options));
-            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
             Assert.Equal(expected, Value.Split(",", Options));
@@ -118,8 +109,6 @@ namespace System.Tests
 
             Assert.Equal(expected, Value.Split(',', Count));
             Assert.Equal(expected, Value.Split(',', Count, Options));
-            Assert.Equal(expected, Value.Split(new Rune(','), Count));
-            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Count, Options));
             Assert.Equal(expected, Value.Split(",", Count));
@@ -153,9 +142,6 @@ namespace System.Tests
             Assert.Equal(expected, Value.Split(','));
             Assert.Equal(expected, Value.Split(',', Options));
             Assert.Equal(expected, Value.Split(',', Count, Options));
-            Assert.Equal(expected, Value.Split(new Rune(',')));
-            Assert.Equal(expected, Value.Split(new Rune(','), Options));
-            Assert.Equal(expected, Value.Split(new Rune(','), Count, Options));
             Assert.Equal(expected, Value.Split(new[] { ',' }));
             Assert.Equal(expected, Value.Split((ReadOnlySpan<char>)new[] { ',' }));
             Assert.Equal(expected, Value.Split(new[] { ',' }, Options));
@@ -518,14 +504,12 @@ namespace System.Tests
         public static void SplitCharSeparator(string value, char separator, int count, StringSplitOptions options, string[] expected)
         {
             Assert.Equal(expected, value.Split(separator, count, options));
-            Assert.Equal(expected, value.Split(new Rune(separator), count, options));
             Assert.Equal(expected, value.Split(new[] { separator }, count, options));
             Assert.Equal(expected, value.Split(separator.ToString(), count, options));
             Assert.Equal(expected, value.Split(new[] { separator.ToString() }, count, options));
             if (count == int.MaxValue)
             {
                 Assert.Equal(expected, value.Split(separator, options));
-                Assert.Equal(expected, value.Split(new Rune(separator), options));
                 Assert.Equal(expected, value.Split(new[] { separator }, options));
                 Assert.Equal(expected, value.Split(separator.ToString(), options));
                 Assert.Equal(expected, value.Split(new[] { separator.ToString() }, options));
@@ -533,14 +517,12 @@ namespace System.Tests
             if (options == StringSplitOptions.None)
             {
                 Assert.Equal(expected, value.Split(separator, count));
-                Assert.Equal(expected, value.Split(new Rune(separator), count));
                 Assert.Equal(expected, value.Split(new[] { separator }, count));
                 Assert.Equal(expected, value.Split(separator.ToString(), count));
             }
             if (count == int.MaxValue && options == StringSplitOptions.None)
             {
                 Assert.Equal(expected, value.Split(separator));
-                Assert.Equal(expected, value.Split(new Rune(separator)));
                 Assert.Equal(expected, value.Split(new[] { separator }));
                 Assert.Equal(expected, value.Split((ReadOnlySpan<char>)new[] { separator }));
                 Assert.Equal(expected, value.Split(separator.ToString()));
@@ -557,53 +539,6 @@ namespace System.Tests
 
             Assert.Equal(expected.Length, value.AsSpan().Split(ranges, separator.ToString(), options));
             Assert.Equal(expected, ranges.Take(expected.Length).Select(r => value[r]).ToArray());
-        }
-
-        [Theory]
-        [InlineData("", ',', 0, StringSplitOptions.None, new string[0])]
-        [InlineData("", ',', 1, StringSplitOptions.None, new[] { "" })]
-        [InlineData("a,b,c", ',', M, StringSplitOptions.None, new[] { "a", "b", "c" })]
-        [InlineData("a,b,c", ',', 1, StringSplitOptions.None, new[] { "a,b,c" })]
-        [InlineData("a,b,c", ',', 2, StringSplitOptions.None, new[] { "a", "b,c" })]
-        [InlineData("a,b,c", ',', M, StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b", "c" })]
-        [InlineData("a,b,c", ',', 1, StringSplitOptions.RemoveEmptyEntries, new[] { "a,b,c" })]
-        [InlineData("a,b,c", ',', 2, StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b,c" })]
-        [InlineData("a,b,c", ',', M, StringSplitOptions.TrimEntries, new[] { "a", "b", "c" })]
-        [InlineData("a,b,c", ',', 1, StringSplitOptions.TrimEntries, new[] { "a,b,c" })]
-        [InlineData("a,b,c", ',', 2, StringSplitOptions.TrimEntries, new[] { "a", "b,c" })]
-        [InlineData("a,,b, , c", ',', M, StringSplitOptions.None, new[] { "a", "", "b", " ", " c" })]
-        [InlineData("a,,b, , c", ',', M, StringSplitOptions.RemoveEmptyEntries, new[] { "a", "b", " ", " c" })]
-        [InlineData("a,,b, , c", ',', M, StringSplitOptions.TrimEntries, new[] { "a", "", "b", "", "c" })]
-        [InlineData("a,,b, , c", ',', M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "a", "b", "c" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.None, new[] { "A", "B ", "C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.None, new[] { "A\U0001F600B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 2, StringSplitOptions.None, new[] { "A", "B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.RemoveEmptyEntries, new[] { "A", "B ", "C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.RemoveEmptyEntries, new[] { "A\U0001F600B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 2, StringSplitOptions.RemoveEmptyEntries, new[] { "A", "B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.TrimEntries, new[] { "A", "B", "C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.TrimEntries, new[] { "A\U0001F600B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 2, StringSplitOptions.TrimEntries, new[] { "A", "B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, M, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "A", "B", "C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 1, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "A\U0001F600B \U0001F600C" })]
-        [InlineData("A\U0001F600B \U0001F600C", 0x1F600, 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries, new[] { "A", "B \U0001F600C" })]
-        public static void SplitRuneSeparator(string value, int separatorAsInt, int count, StringSplitOptions options, string[] expected)
-        {
-            var separator = new Rune(separatorAsInt);
-
-            Assert.Equal(expected, value.Split(separator, count, options));
-            if (count == int.MaxValue)
-            {
-                Assert.Equal(expected, value.Split(separator, options));
-            }
-            if (options == StringSplitOptions.None)
-            {
-                Assert.Equal(expected, value.Split(separator, count));
-            }
-            if (count == int.MaxValue && options == StringSplitOptions.None)
-            {
-                Assert.Equal(expected, value.Split(separator));
-            }
         }
 
         [Theory]
