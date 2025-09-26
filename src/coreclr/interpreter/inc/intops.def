@@ -396,6 +396,9 @@ OPDEF(INTOP_CALL_HELPER_P_GA, "call.helper.p.ga", 6, 1, 2, InterpOpGenericHelper
 OPDEF(INTOP_CALL_HELPER_V_APS, "call.helper.v.aps", 5, 1, 1, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_V_AGS, "call.helper.v.ags", 6, 1, 2, InterpOpGenericHelperFtn)
 
+// Call a helper function with a signature of void helper(SVar1, AddrOfSVar2)
+OPDEF(INTOP_CALL_HELPER_V_SA, "call.helper.v.sa", 4, 0, 2, InterpOpHelperFtnNoArgs)
+
 OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)

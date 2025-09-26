@@ -35,6 +35,7 @@ public static class Constants
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
         public const string NativeObjectWrapperClass = nameof(NativeObjectWrapperClass);
         public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
+        public const string GcNotificationFlags = nameof(GcNotificationFlags);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);

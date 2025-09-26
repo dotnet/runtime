@@ -287,6 +287,7 @@ typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
 typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
+typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -740,9 +741,13 @@ MAIN_LOOP:
                     ip++;
                     break;
                 case INTOP_STORESTUBCONTEXT:
-                    LOCAL_VAR(ip[1], void*) = GetMostRecentUMEntryThunkData();
+                {
+                    void *thunkData = GetMostRecentUMEntryThunkData();
+                    assert(thunkData);
+                    LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
                     break;
+                }
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;
@@ -2245,6 +2250,33 @@ MAIN_LOOP:
                     break;
                 }
 
+                case INTOP_CALL_HELPER_V_SA:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    helperFtn(helperArg1, helperArg2);
+                    ip += 4;
+                    break;
+                }
+
                 case INTOP_CALLVIRT_TAIL:
                 case INTOP_CALLVIRT:
                 {
@@ -2284,21 +2316,23 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
+                    PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
+                    assert(calliFunctionPointer);
+
                     // Interpreter-FIXME: isTailcall
                     if (flags & (int32_t)CalliFlags::PInvoke)
                     {
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
                         {
-                            InvokeUnmanagedCalli(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, callArgsAddress, returnValueAddress);
+                            InvokeUnmanagedCalli(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress);
                         }
                         else
                         {
-                            InvokeUnmanagedCalliWithTransition(LOCAL_VAR(calliFunctionPointerVar, PCODE), cookie, stack, pFrame, callArgsAddress, returnValueAddress);
+                            InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
                         }
                     }
                     else
                     {
-                        PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // WASM-TODO: We may end up here with native JIT helper entrypoint without MethodDesc
                         // that CALL_INTERP_METHOD is not able to handle. This is a potential problem for

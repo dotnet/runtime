@@ -1047,6 +1047,7 @@ CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask
 CDAC_GLOBAL(NativeObjectWrapperClass, uint32, CLASS__NATIVE_OBJECT_WRAPPER)
 CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, &g_ComWrappersVtablePtrs)
 #endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
@@ -1082,6 +1083,7 @@ CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
 CDAC_GLOBAL_CONTRACT(Loader, 1)
+CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
