@@ -136,7 +136,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES="$(IlasmResourceFile)"</_IlasmSwitches>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_IlasmDir)ilasm&quot; $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile->'&quot;%(Identity)&quot', ' ')">
+    <Exec Command="&quot;$(_IlasmDir)ilasm&quot; $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile->'&quot;%(Identity)&quot;', ' ')">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
 
