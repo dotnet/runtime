@@ -72,6 +72,8 @@ if /i "%1" == "--"                       (set processedArgs=!processedArgs! %1&s
 if /i "%1" == "x64"                      (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                      (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                    (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "wasm"                     (set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "browser"                  (set __TargetOS=browser&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                    (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"                  (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -374,7 +376,7 @@ echo All arguments are optional and case-insensitive, and the '-' prefix is opti
 echo.
 echo.-? -h --help: View this message.
 echo.
-echo Build architecture: one of "x64", "x86", "arm64" ^(default: x64^).
+echo Build architecture: one of "x64", "x86", "arm64", "wasm" ^(default: x64^).
 echo Build type: one of "Debug", "Checked", "Release" ^(default: Debug^).
 echo.
 echo -Rebuild: Clean up all test artifacts prior to building tests.

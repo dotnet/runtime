@@ -4,6 +4,7 @@
 import type { InternalExchange, RuntimeAPI, RuntimeExports, RuntimeExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
 import { dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "./strings";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApiLocal: Partial<RuntimeAPI> = {
@@ -11,6 +12,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         setModuleImports,
     };
     const runtimeExportsLocal: RuntimeExports = {
+        utf16ToString,
+        stringToUTF16,
+        stringToUTF16Ptr,
     };
     dotnetSetInternals(internals);
     Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
@@ -21,6 +25,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     function tabulateRuntimeExports(map:RuntimeExports):RuntimeExportsTable {
         // keep in sync with dotnetUpdateModuleInternals()
         return [
+            map.utf16ToString,
+            map.stringToUTF16,
+            map.stringToUTF16Ptr,
         ];
     }
 }

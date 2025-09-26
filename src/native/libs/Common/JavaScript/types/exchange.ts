@@ -5,6 +5,7 @@ import type { registerDllBytes } from "../../../../corehost/browserhost/host/hos
 import type { isSharedArrayBuffer } from "../../../../corehost/browserhost/host/memory";
 import type { check, error, info, warn } from "../../../../corehost/browserhost/loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
+import type { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/strings";
 
 export type JSEngineType = {
     IS_NODE: boolean,
@@ -15,9 +16,15 @@ export type JSEngineType = {
 }
 
 export type RuntimeExports = {
+    utf16ToString: typeof utf16ToString,
+    stringToUTF16: typeof stringToUTF16,
+    stringToUTF16Ptr: typeof stringToUTF16Ptr,
 }
 
 export type RuntimeExportsTable = [
+    typeof utf16ToString,
+    typeof stringToUTF16,
+    typeof stringToUTF16Ptr,
 ]
 
 export type LoggerType = {

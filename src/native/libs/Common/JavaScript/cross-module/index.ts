@@ -74,6 +74,9 @@ export function dotnetUpdateModuleInternals() {
     // keep in sync with tabulateRuntimeExports()
     function expandRuntimeExports(table:RuntimeExportsTable, runtime:RuntimeExports):void {
         Object.assign(runtime, {
+            utf16ToString: table[0],
+            stringToUTF16: table[1],
+            stringToUTF16Ptr: table[2],
         });
     }
 
