@@ -111,6 +111,7 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         int hr = HResults.S_OK;
         try
         {
+            *numLocals = 0;
             IStackWalk stackWalk = _target.Contracts.StackWalk;
             TargetPointer methodDesc = stackWalk.GetMethodDescPtr(_dataFrame);
             if (methodDesc == TargetPointer.Null)
@@ -119,10 +120,7 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
             if (!rts.IsIL(mdh))
-            {
-                *numLocals = 0;
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            }
 
             // get token and module from method desc
             TargetPointer mtAddr = rts.GetMethodTable(mdh);
@@ -133,12 +131,12 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
             uint token = rts.GetMethodToken(mdh);
 
             TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
+            if (ilHeader == TargetPointer.Null)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
             int localToken = HeaderReaderHelpers.GetLocalVarSigToken(_target, ilHeader);
             if (localToken < 0)
-            {
-                *numLocals = 0;
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            }
 
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
             MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(moduleHandle);
