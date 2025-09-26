@@ -1521,11 +1521,11 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     {
         pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
     }
-    else if (m_x1 != NoRange)
+    if (m_x1 != NoRange)
     {
         pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
     }
-    else if (m_s1 != NoRange)
+    if (m_s1 != NoRange)
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
