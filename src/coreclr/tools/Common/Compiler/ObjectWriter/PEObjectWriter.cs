@@ -63,6 +63,7 @@ namespace ILCompiler.ObjectWriter
         private int _debugSectionIndex;
         private int _exportSectionIndex;
         private int _baseRelocSectionIndex;
+        private int _corMetaSectionIndex;
 
         // Base relocation (.reloc) bookkeeping
         private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
@@ -421,6 +422,10 @@ namespace ILCompiler.ObjectWriter
                 {
                     _debugSectionIndex = i;
                 }
+                else if (h.Name == ".cormeta")
+                {
+                    _corMetaSectionIndex = i;
+                }
             }
 
             // If we have exports, create an export data section (.edata) and place it after other sections.
@@ -690,6 +695,10 @@ namespace ILCompiler.ObjectWriter
             {
                 dataDirs.Set((int)ImageDirectoryEntry.Debug, (uint)_outputSectionLayout[_debugSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_debugSectionIndex].Length);
             }
+            if (_corMetaSectionIndex != 0)
+            {
+                dataDirs.Set((int)ImageDirectoryEntry.CLRRuntimeHeader, (uint)_outputSectionLayout[_corMetaSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_corMetaSectionIndex].Length);
+            }
             peOptional.Write(outputFileStream, dataDirs);
 
             CoffStringTable stringTable = new();
@@ -703,6 +712,9 @@ namespace ILCompiler.ObjectWriter
                     // Don't emit empty sections into the binary
                     continue;
                 }
+
+                // The alignment flags aren't valid in PE image files, only in COFF object files.
+                hdr.SectionCharacteristics &= ~SectionCharacteristics.AlignMask;
                 hdr.Write(outputFileStream, stringTable);
             }
 
@@ -722,7 +734,7 @@ namespace ILCompiler.ObjectWriter
                         section.Stream.CopyTo(stream);
                         ResolveNonImageBaseRelocations(i, _resolvableRelocations[i], stream);
                         stream.Position = 0;
-                        section.Stream.CopyTo(outputFileStream);
+                        stream.CopyTo(outputFileStream);
                     }
                     else
                     {
