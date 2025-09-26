@@ -46,10 +46,6 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
     ASSERT_UNCONDITIONALLY(message); \
     UNREACHABLE(); \
 
-#define UNREACHABLE_MSG(message) \
-    ASSERT_UNCONDITIONALLY(message); \
-    UNREACHABLE();  \
-
 #ifdef HOST_WINDOWS
 #define RhFailFast() ::RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
 #else
