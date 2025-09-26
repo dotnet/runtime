@@ -1835,6 +1835,12 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<TADDR>(VolatileLoadWithoutBarrier(&m_interpreterCode)) == INTERPRETER_CODE_POISON;
     }
+
+    void ClearInterpreterCodePointer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, dac_cast<PTR_InterpByteCodeStart>((TADDR)NULL));
+    }
 #endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
@@ -2725,6 +2731,12 @@ protected:
     PTR_DynamicResolver m_pResolver;
 
 public:
+
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    // Cached InterpreterPrecode instance for dynamic methods to avoid repeated allocations.
+    DPTR(struct InterpreterPrecode) m_interpreterPrecode;
+#endif
+
     enum ILStubType : DWORD
     {
         StubNotSet = 0,

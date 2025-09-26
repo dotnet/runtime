@@ -12,8 +12,6 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class CompositeMLDsaAlgorithm : IEquatable<CompositeMLDsaAlgorithm>
     {
-        internal const int RandomizerSizeInBytes = 32;
-
         /// <summary>
         ///   Gets the name of the algorithm.
         /// </summary>
@@ -454,8 +452,8 @@ namespace System.Security.Cryptography
                 mldsaAlgorithm.PrivateSeedSizeInBytes + maxRsaPrivateKeySizeInBytes,
                 mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes, // Private key contains at least n
                 mldsaAlgorithm.PublicKeySizeInBytes + maxRsaPublicKeySizeInBytes,
-                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
-                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
                 oid);
         }
 
@@ -465,28 +463,7 @@ namespace System.Security.Cryptography
             int keySizeInBits,
             string oid)
         {
-            // The key size calculation depends on the size of the curve algorithm's OID, and only includes the curves
-            // supported at the time of writing this code. If more curves are added, ensure the OID length is accounted for in the calculation.
-            Debug.Assert(oid is
-                Oids.MLDsa44WithECDsaP256PreHashSha256 or
-                Oids.MLDsa65WithECDsaP256PreHashSha512 or
-                Oids.MLDsa65WithECDsaP384PreHashSha512 or
-                Oids.MLDsa87WithECDsaP384PreHashSha512 or
-                Oids.MLDsa87WithECDsaP521PreHashSha512 or
-                Oids.MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 or
-                Oids.MLDsa87WithECDsaBrainpoolP384r1PreHashSha512);
-
             int keySizeInBytes = (keySizeInBits + 7) / 8;
-
-            const int MaxUniversalTagLength = 1;
-
-            // long form prefix and 4 bytes for length. CLR arrays and spans only support length up to int.MaxValue.
-            // Padding with leading zero bytes is allowed, but we still limit the length to 4 bytes since the only
-            // plausible scenario would be encoding a 4-byte numeric data type without trimming.
-            // Note this bound also covers indefinite length encodings which require only 1 + 2 bytes of overhead.
-            const int MaxLengthLength = 1 + 4;
-
-            const int MaxPrefixLength = MaxUniversalTagLength + MaxLengthLength;
 
             // RFC 5915, Section 3
             // ECPrivateKey ::= SEQUENCE {
@@ -496,51 +473,32 @@ namespace System.Security.Cryptography
             //   publicKey  [1] BIT STRING OPTIONAL
             // }
 
-            int maxPrivateKeySizeInBytes =
-                MaxPrefixLength +
-                (
-                    // version
-                    MaxPrefixLength + 1 + // Version should always be 1
+            int versionSizeInBytes =
+                1 + // Tag for INTEGER
+                1 + // Length field
+                1;  // Value (always 1)
 
-                    // privateKey
-                    MaxPrefixLength + keySizeInBytes +
+            int privateKeySizeInBytes =
+                1 +                                     // Tag for OCTET STRING
+                GetDerLengthLength(keySizeInBytes) +    // Length field
+                keySizeInBytes;                         // Value
 
-                    // parameters
-                    1 + MaxLengthLength + // Explicit tag
-                    (
-                        // RFC5480, Section 2.1.1
-                        // ECParameters ::= CHOICE {
-                        //   namedCurve         OBJECT IDENTIFIER
-                        //   -- implicitCurve   NULL
-                        //   -- specifiedCurve  SpecifiedECDomain
-                        // }
-                        // -- implicitCurve and specifiedCurve MUST NOT be used in PKIX.
-                        //
-                        // So this is a CHOICE with with the only option being a namedCurve OBJECT IDENTIFIER.
-                        //
-                        // Curve           | OID                   | DER Encoding with prefix         | Length without prefix
-                        // ----------------|-----------------------|----------------------------------|----------------------
-                        // secp256r1       | 1.2.840.10045.3.1.7   | 06 08 2A 86 48 CE 3D 03 01 07    | 8
-                        // secp384r1       | 1.3.132.0.34          | 06 05 2B 81 04 00 22             | 5
-                        // secp521r1       | 1.3.132.0.35          | 06 05 2B 81 04 00 23             | 5
-                        // brainpoolP256r1 | 1.3.36.3.3.2.8.1.1.7  | 06 09 2B 24 03 03 02 08 01 01 07 | 9
-                        // brainpoolP384r1 | 1.3.36.3.3.2.8.1.1.11 | 06 09 2B 24 03 03 02 08 01 01 0B | 9
-                        MaxPrefixLength + 9 // This doesn't need to be exact, but it does need to consider all supported curves.
-                    ) +
+            // parameters and publicKey must be omitted for Composite ML-DSA
 
-                    // publicKey
-                    1 + MaxLengthLength + // Explicit tag
-                        1 + 2 * keySizeInBytes
-                );
+            int ecPrivateKeySizeInBytes =
+                1 +                                                                 // Tag for SEQUENCE
+                GetDerLengthLength(versionSizeInBytes + privateKeySizeInBytes) +    // Length field
+                versionSizeInBytes +                                                // Version
+                privateKeySizeInBytes;
 
             return new CompositeMLDsaAlgorithm(
                 name,
-                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // ECPrivateKey has at least the private key
-                mldsaAlgorithm.PrivateSeedSizeInBytes + maxPrivateKeySizeInBytes,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + ecPrivateKeySizeInBytes,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + ecPrivateKeySizeInBytes,
                 mldsaAlgorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
                 mldsaAlgorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
-                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 + 3 * 2, // 2 non-zero INTEGERS and overhead for 3 ASN.1 values
-                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(keySizeInBits),
+                mldsaAlgorithm.SignatureSizeInBytes + 2 + 3 * 2, // 2 non-zero INTEGERS and overhead for 3 ASN.1 values
+                mldsaAlgorithm.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(keySizeInBits),
                 oid);
         }
 
@@ -559,9 +517,28 @@ namespace System.Security.Cryptography
                 mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes,
                 mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes,
                 mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes,
-                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
-                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
+                mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
+                mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
                 oid);
+        }
+
+        private static int GetDerLengthLength(int payloadLength)
+        {
+            Debug.Assert(payloadLength >= 0);
+
+            if (payloadLength <= 0x7F)
+                return 1;
+
+            if (payloadLength <= 0xFF)
+                return 2;
+
+            if (payloadLength <= 0xFFFF)
+                return 3;
+
+            if (payloadLength <= 0xFFFFFF)
+                return 4;
+
+            return 5;
         }
     }
 }

@@ -7,7 +7,11 @@ namespace System.Security.Cryptography
 {
     public static partial class HKDF
     {
-        private static readonly bool s_hasOpenSslImplementation = Interop.Crypto.EvpKdfAlgs.Hkdf is not null;
+        private static readonly bool s_hasCryptoKitImplementation =
+            OperatingSystem.IsMacOS() ||
+            OperatingSystem.IsMacCatalyst() ||
+            OperatingSystem.IsIOSVersionAtLeast(14) ||
+            OperatingSystem.IsTvOSVersionAtLeast(14);
 
         private static void ExtractCore(
             HashAlgorithmName hashAlgorithmName,
@@ -15,12 +19,11 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             Span<byte> prk)
         {
-            if (s_hasOpenSslImplementation)
-            {
-                Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
-                Debug.Assert(hashAlgorithmName.Name is not null);
+            ThrowForUnsupportedHashAlgorithm(hashAlgorithmName);
 
-                Interop.Crypto.HkdfExtract(Interop.Crypto.EvpKdfAlgs.Hkdf, ikm, hashAlgorithmName.Name, salt, prk);
+            if (s_hasCryptoKitImplementation)
+            {
+                Interop.AppleCrypto.HKDFExtract(hashAlgorithmName, ikm, salt, prk);
             }
             else
             {
@@ -35,12 +38,11 @@ namespace System.Security.Cryptography
             Span<byte> output,
             ReadOnlySpan<byte> info)
         {
-            if (s_hasOpenSslImplementation)
-            {
-                Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
-                Debug.Assert(hashAlgorithmName.Name is not null);
+            ThrowForUnsupportedHashAlgorithm(hashAlgorithmName);
 
-                Interop.Crypto.HkdfExpand(Interop.Crypto.EvpKdfAlgs.Hkdf, prk, hashAlgorithmName.Name, info, output);
+            if (s_hasCryptoKitImplementation)
+            {
+                Interop.AppleCrypto.HkdfExpand(hashAlgorithmName, prk, info, output);
             }
             else
             {
@@ -56,23 +58,28 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             ReadOnlySpan<byte> info)
         {
-            if (s_hasOpenSslImplementation)
-            {
-                Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
-                Debug.Assert(hashAlgorithmName.Name is not null);
+            ThrowForUnsupportedHashAlgorithm(hashAlgorithmName);
 
-                Interop.Crypto.HkdfDeriveKey(
-                    Interop.Crypto.EvpKdfAlgs.Hkdf,
-                    ikm,
-                    hashAlgorithmName.Name,
-                    salt,
-                    info,
-                    output);
+            if (s_hasCryptoKitImplementation)
+            {
+                Interop.AppleCrypto.HKDFDeriveKey(hashAlgorithmName, ikm, salt, info, output);
             }
             else
             {
                 HKDFManagedImplementation.DeriveKey(hashAlgorithmName, hashLength, ikm, output, salt, info);
             }
+        }
+
+        private static void ThrowForUnsupportedHashAlgorithm(HashAlgorithmName hashAlgorithmName)
+        {
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_256 || hashAlgorithmName == HashAlgorithmName.SHA3_384 ||
+                hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // Unknown algorithms are handled outside of this as a CryptographicException. SHA-3 is known, it's just
+            // not supported.
         }
     }
 }
