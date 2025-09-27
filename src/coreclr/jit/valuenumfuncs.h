@@ -90,14 +90,14 @@ ValueNumFuncDef(ILogB, 1, false, false, false)
 ValueNumFuncDef(Log, 1, false, false, false)
 ValueNumFuncDef(Log2, 1, false, false, false)
 ValueNumFuncDef(Log10, 1, false, false, false)
-ValueNumFuncDef(Max, 2, true, false, false)
-ValueNumFuncDef(MaxMagnitude, 2, true, false, false)
-ValueNumFuncDef(MaxMagnitudeNumber, 2, true, false, false)
-ValueNumFuncDef(MaxNumber, 2, true, false, false)
-ValueNumFuncDef(Min, 2, true, false, false)
-ValueNumFuncDef(MinMagnitude, 2, true, false, false)
-ValueNumFuncDef(MinMagnitudeNumber, 2, true, false, false)
-ValueNumFuncDef(MinNumber, 2, true, false, false)
+ValueNumFuncDef(Max, 2, false, false, false)
+ValueNumFuncDef(MaxMagnitude, 2, false, false, false)
+ValueNumFuncDef(MaxMagnitudeNumber, 2, false, false, false)
+ValueNumFuncDef(MaxNumber, 2, false, false, false)
+ValueNumFuncDef(Min, 2, false, false, false)
+ValueNumFuncDef(MinMagnitude, 2, false, false, false)
+ValueNumFuncDef(MinMagnitudeNumber, 2, false, false, false)
+ValueNumFuncDef(MinNumber, 2, false, false, false)
 ValueNumFuncDef(Pow, 2, false, false, false)
 ValueNumFuncDef(RoundDouble, 1, false, false, false)
 ValueNumFuncDef(RoundInt32, 1, false, false, false)
@@ -207,8 +207,11 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
-    ValueNumFuncDef(Min_UN, 2, true, false, false)  // unsigned min/max intrinsics
-    ValueNumFuncDef(Max_UN, 2, true, false, false)
+    // Signed/Unsigned integer min/max intrinsics
+    ValueNumFuncDef(MinInt, 2, true, false, false)
+    ValueNumFuncDef(MaxInt, 2, true, false, false)
+    ValueNumFuncDef(MinInt_UN, 2, true, false, false)
+    ValueNumFuncDef(MaxInt_UN, 2, true, false, false)
 #else
 #error Unsupported platform
 #endif
