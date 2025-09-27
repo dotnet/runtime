@@ -738,7 +738,7 @@ namespace System
             const uint SingleBiasedExponentMask = float.BiasedExponentMask;
             // Exponent displacement #2
             const uint Exponent13 = 0x0680_0000u;
-            // Maximum value that is not Infinity in Half
+            // The maximum infinitely precise value that will round down to MaxValue
             const float MaxHalfValueBelowInfinity = 65520.0f;
             // Mask for exponent bits in Half
             const uint ExponentMask = BiasedExponentMask;
@@ -1015,7 +1015,7 @@ namespace System
                 exp -= 1;
             }
 
-            return CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
+            return double.CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
         }
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>
@@ -1176,10 +1176,6 @@ namespace System
 
             return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
-
-        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
-
-        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
 
         #endregion
 
@@ -1360,7 +1356,7 @@ namespace System
         int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+        int IFloatingPoint<Half>.GetSignificandBitLength() => SignificandLength;
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
@@ -2339,7 +2335,7 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
-        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => PositiveInfinityBits;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
         static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
@@ -2351,15 +2347,15 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
-        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => BiasedExponentLength;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
-        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => MaxBiasedExponent;
 
         static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -26;
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;
