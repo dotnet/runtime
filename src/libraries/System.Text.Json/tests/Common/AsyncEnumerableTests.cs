@@ -387,6 +387,32 @@ namespace System.Text.Json.Serialization.Tests
             static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int bufferSize, DeserializeAsyncEnumerableOverload overload) => new object[] { source, bufferSize, overload };
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(5)]
+        [InlineData(43)]
+        public async Task SerializeAsyncEnumerable_Cancellation_DisposesEnumerators(int depth)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/120010
+
+            using SelfCancellingAsyncEnumerable enumerable = new();
+            using MemoryStream stream = new MemoryStream();
+
+            object wrappingValue = enumerable;
+            while (depth-- > 0)
+            {
+                // Use a LINQ enumerable instead of array/list
+                // to force use of enumerators in every layer.
+                wrappingValue = Enumerable.Repeat(wrappingValue, 1);
+            }
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => StreamingSerializer.SerializeWrapper(stream, wrappingValue, cancellationToken: enumerable.CancellationToken));
+            Assert.True(enumerable.IsEnumeratorDisposed);
+        }
+
         public enum DeserializeAsyncEnumerableOverload { JsonSerializerOptions, JsonTypeInfo };
 
         private IAsyncEnumerable<T> DeserializeAsyncEnumerableWrapper<T>(Stream stream, JsonSerializerOptions options = null, CancellationToken cancellationToken = default, DeserializeAsyncEnumerableOverload overload = DeserializeAsyncEnumerableOverload.JsonSerializerOptions)
@@ -456,6 +482,36 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => throw new NotImplementedException();
+        }
+
+        sealed class SelfCancellingAsyncEnumerable : IAsyncEnumerable<int>, IDisposable
+        {
+            private readonly CancellationTokenSource _cts = new();
+            public CancellationToken CancellationToken => _cts.Token;
+            public bool IsEnumeratorDisposed { get; private set; }
+            public IAsyncEnumerator<int> GetAsyncEnumerator(CancellationToken _) => new Enumerator(this);
+            private sealed class Enumerator(SelfCancellingAsyncEnumerable parent) : IAsyncEnumerator<int>
+            {
+                public int Current { get; private set; }
+                public async ValueTask<bool> MoveNextAsync()
+                {
+                    await Task.Yield();
+                    if (++Current == 10)
+                    {
+                        parent._cts.Cancel();
+                    }
+
+                    return true;
+                }
+
+                public ValueTask DisposeAsync()
+                {
+                    parent.IsEnumeratorDisposed = true;
+                    return default;
+                }
+            }
+
+            public void Dispose() => _cts.Dispose();
         }
     }
 }
