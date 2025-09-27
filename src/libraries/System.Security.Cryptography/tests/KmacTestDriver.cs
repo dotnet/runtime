@@ -325,7 +325,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
-        public void KnownAnswerTests_VerifyCurrentHash()
+        public void KnownAnswerTests_VerifyCurrentHash_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
             {
@@ -346,7 +346,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
-        public void KnownAnswerTests_VerifyHashAndReset()
+        public void KnownAnswerTests_VerifyHashAndReset_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
             {
@@ -363,6 +363,55 @@ namespace System.Security.Cryptography.Tests
                     TKmacTrait.AppendData(kmac, testVector.MsgBytes);
                     validHash = TKmacTrait.VerifyHashAndReset(kmac, testVector.MacBytes);
                     AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_VerifyCurrentHash_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] tamperedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(tamperedMac);
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+
+                    bool validHash = TKmacTrait.VerifyCurrentHash(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
+
+                    validHash = TKmacTrait.VerifyCurrentHash(kmac, new ReadOnlySpan<byte>(tamperedMac));
+                    AssertExtensions.FalseExpression(validHash);
+
+                    validHash = TKmacTrait.VerifyCurrentHash(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_VerifyHashAndReset_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] tamperedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(tamperedMac);
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                    bool validHash = TKmacTrait.VerifyHashAndReset(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
+
+                    TKmacTrait.AppendData(kmac, new ReadOnlySpan<byte>(testVector.MsgBytes));
+                    validHash = TKmacTrait.VerifyHashAndReset(kmac, new ReadOnlySpan<byte>(tamperedMac));
+                    AssertExtensions.FalseExpression(validHash);
+
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                    validHash = TKmacTrait.VerifyHashAndReset(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
                 }
             }
         }
