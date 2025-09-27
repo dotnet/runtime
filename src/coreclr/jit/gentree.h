@@ -5784,6 +5784,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
+    bool IsHelperCallOrUserEquivalent(Compiler* compiler, unsigned helper) const;
+
     bool IsRuntimeLookupHelperCall(Compiler* compiler) const;
 
     bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
