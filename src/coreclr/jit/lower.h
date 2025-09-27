@@ -402,6 +402,7 @@ private:
 
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
+    void     DeleteOperandsRecursively(GenTree* tree);
     GenTree* TryLowerMorphedModIfNotCsed(GenTreeOp* binOp);
 #endif // TARGET_XARCH
 
