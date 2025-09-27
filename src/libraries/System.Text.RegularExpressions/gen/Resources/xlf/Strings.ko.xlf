@@ -262,16 +262,6 @@
         <target state="translated">'GeneratedRegexAttribute'로 변환합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UseRegexSourceGeneratorTitleMethod">
-        <source>Convert to 'GeneratedRegexAttribute' (method).</source>
-        <target state="new">Convert to 'GeneratedRegexAttribute' (method).</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UseRegexSourceGeneratorTitleProperty">
-        <source>Convert to 'GeneratedRegexAttribute' (property).</source>
-        <target state="new">Convert to 'GeneratedRegexAttribute' (property).</target>
-        <note />
-      </trans-unit>
     </body>
   </file>
 </xliff>
