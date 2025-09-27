@@ -392,6 +392,8 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
 
             break;
         }
+        default:
+            break;
     }
 
     return nullptr;
