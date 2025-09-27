@@ -271,6 +271,58 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void PureOrderedDistinct()
+        {
+            int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
+            int[] expected = [1, 2, 3];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinctToArray()
+        {
+            int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
+            int[] expected = [1, 2, 3];
+
+            Assert.Equal(expected, source.Order().Distinct().ToArray());
+        }
+
+        [Fact]
+        public void PureOrderedDistinctToList()
+        {
+            int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
+            int[] expected = [1, 2, 3];
+
+            Assert.Equal(expected, source.Order().Distinct().ToList());
+        }
+
+        [Fact]
+        public void PureOrderedDistinctCount()
+        {
+            int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
+
+            Assert.Equal(3, source.Order().Distinct().Count());
+        }
+
+        [Fact]
+        public void PureOrderedDistinctAllUnique()
+        {
+            int[] source = [-5, 0, 2, 6, 9, 10];
+
+            Assert.Equal(source, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinctAllDuplicates()
+        {
+            int[] source = [5, 5, 5, 5, 5, 5];
+            int[] expected = [5];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
         public void DistinctBy_SourceNull_ThrowsArgumentNullException()
         {
             string[] first = null;

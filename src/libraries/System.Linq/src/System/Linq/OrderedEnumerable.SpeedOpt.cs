@@ -250,6 +250,10 @@ namespace System.Linq
             }
         }
 
+        private abstract partial class PureOrderedIterator<TElement> : OrderedIterator<TElement>
+        {
+        }
+
         private sealed partial class OrderedIterator<TElement, TKey> : OrderedIterator<TElement>
         {
             // For complicated cases, rely on the base implementation that's more comprehensive.
@@ -361,7 +365,11 @@ namespace System.Linq
             }
         }
 
-        private sealed partial class ImplicitlyStableOrderedIterator<TElement> : OrderedIterator<TElement>
+        private sealed partial class PureOrderedIteratorImpl<TElement> : PureOrderedIterator<TElement>
+        {
+        }
+
+        private sealed partial class ImplicitlyStableOrderedIterator<TElement> : PureOrderedIterator<TElement>
         {
             public override TElement[] ToArray()
             {
@@ -461,7 +469,7 @@ namespace System.Linq
             {
                 int state = _state;
 
-                Initialized:
+            Initialized:
                 if (state > 1)
                 {
                     Debug.Assert(_buffer is not null);
