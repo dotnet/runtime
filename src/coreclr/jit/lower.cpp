@@ -4429,6 +4429,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 GenTree* reversed = comp->gtReverseCond(op1);
                 assert(reversed == op1);
+#ifdef TARGET_RISCV64
+                LowerNode(op1);
+                op1 = cmp->gtGetOp1();
+#endif
             }
 
             // Relops and SETCC can be either TYP_INT or TYP_LONG typed, so we
@@ -4511,7 +4515,26 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             cmp->gtFlags |= GTF_UNSIGNED;
         }
     }
-#endif // TARGET_XARCH
+#elif defined(TARGET_RISCV64)
+    // Branches will be lowered in LowerJTrue
+    LIR::Use cmpUse;
+    if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
+        return cmp->gtNext;
+
+    bool isReversed =
+        varTypeIsFloating(cmp->gtGetOp1()) ? LowerAndReverseFloatingCompare(cmp) : LowerAndReverseIntegerCompare(cmp);
+    if (isReversed)
+    {
+        GenTree* one   = comp->gtNewIconNode(1);
+        GenTree* notOp = comp->gtNewOperNode(GT_XOR, cmp->gtType, cmp, one);
+        BlockRange().InsertAfter(cmp, one, notOp);
+        one->SetContained();
+        cmpUse.ReplaceWith(notOp);
+    }
+    if (!cmp->OperIsCmpCompare()) // comparison was optimized out to some other node
+        return cmp->gtNext;
+#endif // TARGET_RISCV64
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -7789,7 +7812,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         {
             divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
-            ContainCheckNode(divMod);
+            LowerNode(divMod);
             return true;
         }
     }

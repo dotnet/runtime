@@ -64,24 +64,14 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_EQ:
-            case GT_NE:
-                return emitter::isValidSimm12(-immVal) || (immVal == -2048);
-
-            case GT_LE: // a <= N  ->  a < N+1
-            case GT_GT: // a > N  ->  !(a <= N)  ->  !(a < N+1)
-                immVal += 1;
-                FALLTHROUGH;
             case GT_LT:
-            case GT_GE:
             case GT_ADD:
             case GT_AND:
             case GT_OR:
             case GT_XOR:
                 return emitter::isValidSimm12(immVal);
-            case GT_JCMP:
-                return true;
 
+            case GT_JCMP:
             case GT_CMPXCHG:
             case GT_XORR:
             case GT_XAND:
@@ -133,57 +123,218 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    GenTree*     op = jtrue->gtGetOp1();
-    GenCondition cond;
-    GenTree*     cmpOp1;
-    GenTree*     cmpOp2;
+    GenTree* cmp = jtrue->gtGetOp1();
+    assert(!cmp->OperIsCompare() || cmp->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
 
-    assert(!op->OperIsCompare() || op->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
-
-    if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
+    // for RISCV64's compare and condition-branch instructions, it's very similar to the IL instructions.
+    jtrue->ChangeOper(GT_JCMP);
+    GenTreeOpCC* jcmp = jtrue->AsOpCC();
+    if (cmp->OperIsCompare() && !varTypeIsFloating(cmp->gtGetOp1()))
     {
-        cond = GenCondition::FromRelop(op);
-
-        cmpOp1 = op->gtGetOp1();
-        cmpOp2 = op->gtGetOp2();
-
-        // We will fall through and turn this into a JCMP(op1, op2, kind), but need to remove the relop here.
-        BlockRange().Remove(op);
+        jcmp->gtCondition = GenCondition::FromIntegralRelop(cmp);
+        jcmp->gtOp1       = cmp->gtGetOp1();
+        jcmp->gtOp2       = cmp->gtGetOp2();
+        if (cmp->OperIs(GT_GT, GT_LE))
+        {
+            // ">" and "<=" are achieved by swapping inputs for "<" and ">="
+            jcmp->gtCondition = GenCondition::Swap(jcmp->gtCondition);
+            std::swap(jcmp->gtOp1, jcmp->gtOp2);
+        }
+        BlockRange().Remove(cmp);
     }
     else
     {
+        // branch if (cond)  --->  branch if (cond != 0)
         GenCondition::Code code = GenCondition::NE;
-        if (op->OperIsCompare() && varTypeIsFloating(op->gtGetOp1()) && (op->gtFlags & GTF_RELOP_NAN_UN) != 0)
+        if (cmp->OperIsCompare() && varTypeIsFloating(cmp->gtGetOp1()))
         {
-            // Unordered floating-point comparisons are achieved by neg'ing the ordered counterparts. Avoid that by
-            // reversing both the FP comparison and the zero-comparison fused with the branch.
-            op->ChangeOper(GenTree::ReverseRelop(op->OperGet()));
-            op->gtFlags &= ~GTF_RELOP_NAN_UN;
-            code = GenCondition::EQ;
+            if (LowerAndReverseFloatingCompare(cmp))
+                code = GenCondition::EQ;
         }
-        cond = GenCondition(code);
-
-        cmpOp1 = op;
-        cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());
-
-        BlockRange().InsertBefore(jtrue, cmpOp2);
-
-        // Fall through and turn this into a JCMP(op1, 0, NE).
+        jcmp->gtCondition = GenCondition(code);
+        jcmp->gtOp1       = cmp;
+        jcmp->gtOp2       = comp->gtNewZeroConNode(cmp->TypeGet());
+        BlockRange().InsertBefore(jcmp, jcmp->gtOp2);
     }
 
-    // for RISCV64's compare and condition-branch instructions,
-    // it's very similar to the IL instructions.
-    jtrue->ChangeOper(GT_JCMP);
-    jtrue->gtOp1                 = cmpOp1;
-    jtrue->gtOp2                 = cmpOp2;
-    jtrue->AsOpCC()->gtCondition = cond;
-
-    if (cmpOp2->IsCnsIntOrI())
+    for (GenTree** op : {&jcmp->gtOp1, &jcmp->gtOp2})
     {
-        cmpOp2->SetContained();
+        SignExtendIfNecessary(op);
+        CheckImmedAndMakeContained(jcmp, *op);
     }
 
-    return jtrue->gtNext;
+    return jcmp->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerAndReverseFloatingCompare: lowers and reverses a floating-point comparison so that it matches the
+// available instructions: "<", "<=", "==" (ordered only, register only)
+//
+// Arguments:
+//    cmp - the floating-point comparison to lower
+//
+// Returns:
+//    Whether the comparison was reversed.
+//
+bool Lowering::LowerAndReverseFloatingCompare(GenTree* cmp)
+{
+    assert(cmp->OperIsCmpCompare() && varTypeIsFloating(cmp->gtGetOp1()));
+    bool isUnordered = (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0;
+    if (isUnordered)
+    {
+        // a CMP b (unordered)  --->   !(a reversedCMP b (ordered))
+        cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+        cmp->gtFlags &= ~GTF_RELOP_NAN_UN;
+    }
+    if (cmp->OperIs(GT_GT, GT_GE))
+    {
+        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+        std::swap(cmp->AsOp()->gtOp1, cmp->AsOp()->gtOp2);
+    }
+    assert(cmp->OperIs(GT_EQ, GT_LT, GT_LE));
+    return isUnordered;
+}
+
+//------------------------------------------------------------------------
+// LowerAndReverseIntegerCompare: lowers and reverses an integer comparison so that it matches the available
+// instructions: only "<" (with unsigned and immediate variants)
+//
+// Arguments:
+//    cmp - the integer comparison to lower
+//
+// Returns:
+//    Whether the comparison was reversed.
+//
+bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
+{
+    GenTree*& left  = cmp->AsOp()->gtOp1;
+    GenTree*& right = cmp->AsOp()->gtOp2;
+    assert(cmp->OperIsCmpCompare() && varTypeUsesIntReg(left));
+    bool isReversed = false;
+
+    if (left->IsIntegralConst() && !right->IsIntegralConst())
+    {
+        // Normally const operand is ordered on the right. If we're here, it means we're lowering the second time
+        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+        std::swap(left, right);
+    }
+
+    if (cmp->OperIs(GT_EQ, GT_NE))
+    {
+        if (!right->IsIntegralConst(0))
+        {
+            // a == b  --->  (a - b) == 0
+            var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
+            genTreeOps oper = GT_SUB;
+            if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
+            {
+                INT64 value  = right->AsIntConCommon()->IntegralValue();
+                INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
+
+                const INT64 min12BitImm = -2048;
+                if (value == min12BitImm)
+                {
+                    // (a - C) == 0 ---> (a ^ C) == 0
+                    oper = GT_XOR;
+                }
+                else if (value != minVal)
+                {
+                    // a - C  --->  a + (-C)
+                    oper = GT_ADD;
+                    right->AsIntConCommon()->SetIntegralValue(-value);
+                }
+            }
+            left  = comp->gtNewOperNode(oper, type, left, right);
+            right = comp->gtNewZeroConNode(type);
+            BlockRange().InsertBefore(cmp, left, right);
+            ContainCheckBinary(left->AsOp());
+        }
+        // a != 0  --->  a > 0 (unsigned)
+        cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
+        cmp->SetUnsigned();
+    }
+
+    if (cmp->OperIs(GT_LE, GT_GE))
+    {
+        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            // a <= C  --->  a < C+1
+            INT64 value = right->AsIntConCommon()->IntegralValue();
+
+            bool isOverflow;
+            if (cmp->OperIs(GT_LE))
+            {
+                isOverflow = genActualTypeIsInt(left)
+                                 ? CheckedOps::AddOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
+                                 : CheckedOps::AddOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
+            }
+            else
+            {
+                isOverflow = genActualTypeIsInt(left)
+                                 ? CheckedOps::SubOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
+                                 : CheckedOps::SubOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
+            }
+            if (isOverflow)
+            {
+                BlockRange().Remove(left);
+                BlockRange().Remove(right);
+                cmp->BashToConst(1);
+                return false;
+            }
+            right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
+            cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
+        }
+        else
+        {
+            // a <= b  --->  !(a > b)
+            isReversed = true;
+            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+        }
+    }
+
+    if (cmp->OperIs(GT_GT))
+    {
+        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+        std::swap(left, right);
+    }
+    assert(cmp->OperIs(GT_LT));
+
+    if (right->IsIntegralConst(0) && !right->AsIntCon()->ImmedValNeedsReloc(comp) && !cmp->IsUnsigned())
+    {
+        // a < 0 (signed)  --->  shift the sign bit into the lowest bit
+        cmp->SetOperRaw(GT_RSZ);
+        cmp->ChangeType(genActualType(left));
+        right->AsIntConCommon()->SetIntegralValue(genTypeSize(cmp) * BITS_PER_BYTE - 1);
+        right->SetContained();
+        return isReversed;
+    }
+
+    SignExtendIfNecessary(&left);
+    SignExtendIfNecessary(&right);
+    return isReversed;
+}
+
+//------------------------------------------------------------------------
+// SignExtendIfNecessary: inserts a 32-bit sign extension unless the argument is full-register or is known to be
+// implemented with a sign-extending instruction.
+//
+// Arguments:
+//    arg - the argument to sign-extend
+//
+void Lowering::SignExtendIfNecessary(GenTree** arg)
+{
+    assert(varTypeUsesIntReg(*arg));
+    if (!genActualTypeIsInt(*arg))
+        return;
+
+    if ((*arg)->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_MOD, GT_UMOD, GT_DIV, GT_UDIV, GT_CNS_INT))
+        return;
+
+    if ((*arg)->OperIsShiftOrRotate() || (*arg)->OperIsCmpCompare() || (*arg)->OperIsAtomicOp())
+        return;
+
+    *arg = comp->gtNewCastNode(TYP_I_IMPL, *arg, false, TYP_I_IMPL);
+    BlockRange().InsertAfter((*arg)->gtGetOp1(), *arg);
 }
 
 //------------------------------------------------------------------------
@@ -1140,6 +1291,9 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
+    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp))
+        MakeSrcContained(cmp, cmp->gtOp1);
+
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
