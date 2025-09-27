@@ -18,7 +18,7 @@ namespace System.IO.Tests
 
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
 
-        protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
+        protected static bool LowTemporalResolution => isHFS;
         protected static bool HighTemporalResolution => !LowTemporalResolution;
 
         protected abstract bool CanBeReadOnly { get; }
@@ -268,7 +268,7 @@ namespace System.IO.Tests
         public void TimesIncludeMillisecondPart_LowTempRes()
         {
             T item = GetExistingItem();
-            // OSX HFS driver format and Browser do not support millisec granularity
+            // OSX HFS driver format does not support millisec granularity
             Assert.All(TimeFunctions(), (function) =>
             {
                 DateTime time = function.Getter(item);
