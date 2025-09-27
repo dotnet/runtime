@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -856,6 +857,73 @@ namespace DispatchProxyTests
             Assert.True((bool)method.Invoke(null, null));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Verify_Correct_Interface_Using_Cached_ALCs(bool collectable)
+        {
+            var asmBytes = CompileTestAssemblyBytes();
+
+            // Write the compiled assembly to a temporary file
+            var tempAssemblyPath = Path.Combine(Path.GetTempPath(), $"SharedInterface_{Guid.NewGuid():N}.dll");
+            File.WriteAllBytes(tempAssemblyPath, asmBytes);
+
+            var alc1 = new DisposableALC(collectable);
+            var alc2 = new DisposableALC(collectable);
+
+            try
+            {
+                var a1 = alc1.LoadFromAssemblyPath(tempAssemblyPath);
+                var a2 = alc2.LoadFromAssemblyPath(tempAssemblyPath);
+
+                var interface1 = a1.GetType("Shared.ITest") ?? throw new Exception("interface1 not found");
+                var interface2 = a2.GetType("Shared.ITest") ?? throw new Exception("interface2 not found");
+
+                Assert.NotEqual(interface1, interface2); // types from different ALCs must not be equal
+
+                // 1) Create a proxy for interface1. This populates DispatchProxy's internal cache.
+                var proxy1 = DispatchProxy.Create(interface1, typeof(ForwardingDispatchProxy));
+                Assert.NotNull(proxy1);
+
+                // 2) Now create a proxy for interface2 WITHOUT entering contextual reflection.
+                // According to the bug, this can produce a proxy that implements interface1
+                // (from the other ALC) rather than interface2.
+                var proxy2 = DispatchProxy.Create(interface2, typeof(ForwardingDispatchProxy));
+                Assert.NotNull(proxy2);
+
+                // Collect interfaces implemented by proxy2's runtime type.
+                var implemented = proxy2.GetType().GetInterfaces();
+
+                // Assert: proxy should not be castable across ALC boundaries
+                Assert.Throws<InvalidCastException>(() =>
+                {
+                    var _ = Convert.ChangeType(proxy1, interface2);
+                });
+
+                // We expect the created proxy to implement interface2. On affected runtimes it will
+                // implement interface1 instead and this assertion will fail.
+                Assert.Contains(interface2, implemented);
+
+                // For additional clarity, make the negative assertion that it should not be the other.
+                Assert.DoesNotContain(interface1, implemented.Where(t => t.Assembly == interface1.Assembly && t.FullName == interface1.FullName));
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempAssemblyPath))
+                        File.Delete(tempAssemblyPath);
+
+                    if (collectable)
+                    {
+                        alc1.Unload();
+                        alc2.Unload();
+                    }
+                }
+                catch { }
+            }
+        }
+
         internal static bool Demo()
         {
             TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, InternalInvokeProxy>();
@@ -871,6 +939,89 @@ namespace DispatchProxyTests
             }
 
             return (TInterface)DispatchProxy.Create(typeof(TInterface), typeof(TProxy));
+        }
+
+        // Compile a small assembly in-memory that contains a single public interface Shared.ITest
+        private static byte[] CompileTestAssemblyBytes()
+        {
+            const string source = @"
+                namespace Shared
+                {
+                    public interface ITest
+                    {
+                        void DoSomething();
+                        int GetValue();
+                    }
+                } ";
+
+            var syntaxTree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source);
+            var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create(
+            assemblyName: "SharedInterfaceAssembly",
+            new[] { syntaxTree },
+            options: new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary),
+            references: new[] { Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location) });
+
+            using var ms = new MemoryStream();
+            var emitResult = compilation.Emit(ms);
+            if (!emitResult.Success)
+            {
+                var diag = string.Join("\n", emitResult.Diagnostics.Select(d => d.ToString()));
+                throw new InvalidOperationException("Compilation failed:\n" + diag);
+            }
+            return ms.ToArray();
+        }
+
+        // ForwardingDispatchProxy is a custom proxy base for our tests.
+        public class ForwardingDispatchProxy : DispatchProxy
+        {
+            protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+            {
+                if (targetMethod == null)
+                    throw new ArgumentNullException(nameof(targetMethod));
+
+                if (targetMethod.ReturnType == typeof(void))
+                    return null!;
+
+                if (targetMethod.ReturnType.IsValueType)
+                    return Activator.CreateInstance(targetMethod.ReturnType)!;
+
+                return null;
+            }
+        }
+
+        internal class DisposableALC : AssemblyLoadContext, IDisposable
+        {
+            private bool _disposed = false;
+
+            public DisposableALC(bool isCollectible = true) : base(isCollectible) { }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!_disposed)
+                {
+                    if (disposing)
+                    {
+                        // Dispose managed resources here
+                    }
+
+                    if (IsCollectible)
+                    {
+                        Unload();
+                    }
+                    _disposed = true;
+                }
+            }
+
+            ~DisposableALC()
+            {
+                Dispose(false);
+            }
         }
     }
 }
