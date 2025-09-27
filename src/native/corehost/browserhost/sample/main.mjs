@@ -3,8 +3,34 @@
 
 import { dotnet, exit } from './dotnet.js'
 
+
+async function downloadConfig(url) {
+    if (isConfigReady) return; // only download if necessary
+    if (!url) {
+        url = "./dotnet.boot.js";
+    }
+
+    // url ends with .json
+    if (url.endsWith(".json")) {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to download config from ${url}: ${response.status} ${response.statusText}`);
+        }
+        const newConfig = await response.json();
+        mergeLoaderConfig(newConfig);
+    } else if (url.endsWith(".js") || url.endsWith(".mjs")) {
+        const module = await import(/* webpackIgnore: true */ url);
+        mergeLoaderConfig(module.config);
+    }
+    isConfigReady = true;
+}
+
+
 try {
-    await dotnet.run();
+    const config = await downloadConfig("./dotnet.boot.json");
+    await dotnet
+        .withConfig(config)
+        .run();
 }
 catch (err) {
     console.error(err);

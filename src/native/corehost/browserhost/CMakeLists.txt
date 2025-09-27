@@ -72,9 +72,9 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     )
 endif ()
 
-# TODO-WASM    -sWASM_BIGINT=1
-# TODO-WASM    -emit-llvm
-# TODO-WASM    --source-map-base http://microsoft.com
+# WASM-TODO    -sWASM_BIGINT=1
+# WASM-TODO    -emit-llvm
+# WASM-TODO    --source-map-base http://microsoft.com
 target_link_options(browserhost PRIVATE
     -sINITIAL_MEMORY=134217728
     -sMAXIMUM_MEMORY=2147483648
@@ -85,7 +85,7 @@ target_link_options(browserhost PRIVATE
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
     -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_browserHostInitializeCoreCLR,_browserHostExecuteAssembly,___cpp_exception
+    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
     -sEXPORT_NAME=createDotnetRuntime
     -fwasm-exceptions
     -msimd128
