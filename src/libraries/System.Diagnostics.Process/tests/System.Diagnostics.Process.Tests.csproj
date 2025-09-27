@@ -69,9 +69,9 @@
              Link="Common\Interop\OSX\Interop.libproc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
              Link="Common\Interop\OSX\Interop.libSystem.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" 
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" 
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
              Link="Common\Interop\Unix\System.Native\Interop.PosixSignal.cs" />
   </ItemGroup>
   <ItemGroup>

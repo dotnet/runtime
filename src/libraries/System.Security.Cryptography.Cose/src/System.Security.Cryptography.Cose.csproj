@@ -43,7 +43,7 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\IncrementalHash.netfx.cs"
              Link="Common\System\Security\Cryptography\IncrementalHash.cs" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
   </ItemGroup>
@@ -60,5 +60,5 @@
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
-  
+
 </Project>
