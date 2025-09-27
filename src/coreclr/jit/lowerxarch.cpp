@@ -300,15 +300,13 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                     {
                         return nullptr;
                     }
-                    GenTree*   modeOp1 = comp->gtClone(binOp211);
-                    GenTree*   modeOp2 = comp->gtClone(binOp212);
                     GenTreeOp* loweredNode =
-                        comp->gtNewOperNode(binOp21->OperIs(GT_UDIV) ? GT_UMOD : GT_MOD, type, modeOp1, modeOp2);
+                        comp->gtNewOperNode(binOp21->OperIs(GT_UDIV) ? GT_UMOD : GT_MOD, type, binOp211, binOp212);
                     GenTree* insertionPoint = binOp->gtNext;
                     DeleteOperandsRecursively(binOp);
                     BlockRange().InsertBefore(insertionPoint, loweredNode);
-                    BlockRange().InsertBefore(loweredNode, modeOp2);
-                    BlockRange().InsertBefore(modeOp2, modeOp1);
+                    BlockRange().InsertBefore(loweredNode, binOp212);
+                    BlockRange().InsertBefore(binOp212, binOp211);
                     use.ReplaceWith(loweredNode);
                     return loweredNode;
                 }
@@ -359,14 +357,13 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                                     return nullptr;
                                 }
 
-                                GenTree*   modeOp1        = comp->gtClone(binOp1);
                                 GenTree*   modeOp2        = comp->gtNewIconNode(divisorValue);
-                                GenTreeOp* loweredNode    = comp->gtNewOperNode(GT_MOD, type, modeOp1, modeOp2);
+                                GenTreeOp* loweredNode    = comp->gtNewOperNode(GT_MOD, type, binOp1, modeOp2);
                                 GenTree*   insertionPoint = binOp->gtNext;
                                 DeleteOperandsRecursively(binOp);
                                 BlockRange().InsertBefore(insertionPoint, loweredNode);
                                 BlockRange().InsertBefore(loweredNode, modeOp2);
-                                BlockRange().InsertBefore(modeOp2, modeOp1);
+                                BlockRange().InsertBefore(modeOp2, binOp1);
                                 use.ReplaceWith(loweredNode);
                                 return LowerSignedDivOrMod(loweredNode)->gtPrev;
                             }
@@ -395,14 +392,13 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                         }
 
                         ssize_t    divisorValue   = (ssize_t)pow(2, pow2Exponent);
-                        GenTree*   modeOp1        = comp->gtClone(binOp1);
                         GenTree*   modeOp2        = comp->gtNewIconNode(divisorValue);
-                        GenTreeOp* loweredNode    = comp->gtNewOperNode(GT_UMOD, type, modeOp1, modeOp2);
+                        GenTreeOp* loweredNode    = comp->gtNewOperNode(GT_UMOD, type, binOp1, modeOp2);
                         GenTree*   insertionPoint = binOp->gtNext;
                         DeleteOperandsRecursively(binOp);
                         BlockRange().InsertBefore(insertionPoint, loweredNode);
                         BlockRange().InsertBefore(loweredNode, modeOp2);
-                        BlockRange().InsertBefore(modeOp2, modeOp1);
+                        BlockRange().InsertBefore(modeOp2, binOp1);
                         use.ReplaceWith(loweredNode);
                         if (!LowerUnsignedDivOrMod(loweredNode))
                         {
