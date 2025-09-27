@@ -26,6 +26,8 @@
 #define ALIGN_UP_TO(val,align) ((((size_t)val) + (size_t)((align) - 1)) & (~((size_t)(align - 1))))
 
 #ifdef DEBUG
+bool IsInterpDumpActive();
+
 extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 
 #undef assert
