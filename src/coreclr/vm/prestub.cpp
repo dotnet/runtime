@@ -1459,7 +1459,7 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
 
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 
-Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetMD)
+Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
     CONTRACT(Stub*)
@@ -1510,13 +1510,16 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     }
 #endif
 
-    // Push the hidden context param
-    // The context is going to be captured from the thisptr
-    pCode->EmitLoadThis();
-    pCode->EmitLDFLDA(tokRawData);
-    pCode->EmitLDC(Object::GetOffsetOfFirstField());
-    pCode->EmitSUB();
-    pCode->EmitLDIND_I();
+    if (pTargetMD->RequiresInstMethodTableArg())
+    {
+        // Push the hidden context param
+        // The context is going to be captured from the thisptr
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLDA(tokRawData);
+        pCode->EmitLDC(Object::GetOffsetOfFirstField());
+        pCode->EmitSUB();
+        pCode->EmitLDIND_I();
+    }
 
 #ifndef TARGET_X86
     if (msig.HasAsyncContinuation())
@@ -1727,13 +1730,16 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
     else
 #endif
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        pstub = CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 #ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
         if (pUnboxedMD->RequiresInstMethodTableArg())
 #endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
         {
             _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg());
-            pstub = CreateUnboxingILStubForSharedGenericValueTypeMethods(pUnboxedMD);
+            pstub = CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
         }
 #ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
         else
@@ -1746,6 +1752,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
             pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
         }
 #endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     RETURN pstub;
 }
@@ -2377,6 +2384,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
     else
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        pCode = pStub->GetEntryPoint();
+        pStub->DecRef();
+
+        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+        _ASSERTE(ilStubInterpData != NULL);
+        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+        SetCodeEntryPoint(pCode);
+#else
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
             if (pStub->HasExternalEntryPoint())
@@ -2396,11 +2412,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
-
 
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 

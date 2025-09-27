@@ -635,6 +635,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
@@ -773,8 +774,8 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
     return TRUE;
 }
-
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // One time init.
 void COMDelegate::Init()
@@ -786,8 +787,9 @@ void COMDelegate::Init()
         MODE_ANY;
     }
     CONTRACTL_END;
-
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+#endif
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -913,6 +915,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     MethodDesc *pMD = pClass->GetInvokeMethod();
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
@@ -928,6 +931,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0], "DelegateShuffleThunk");
     }
     else
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     {
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
