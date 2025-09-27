@@ -414,6 +414,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerMul(node->AsOp());
 
         case GT_UDIV:
+        case GT_UMOD:
             if (!LowerUnsignedDivOrMod(node->AsOp()))
             {
                 ContainCheckDivOrMod(node->AsOp());
@@ -421,6 +422,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_DIV:
+        case GT_MOD:
             return LowerSignedDivOrMod(node);
 
         case GT_SWITCH:

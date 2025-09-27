@@ -294,13 +294,7 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                     BlockRange().InsertBefore(loweredNode, modeOp2);
                     BlockRange().InsertBefore(modeOp2, modeOp1);
                     use.ReplaceWith(loweredNode);
-                    BlockRange().Remove(binOp211);
-                    BlockRange().Remove(binOp212);
-                    BlockRange().Remove(binOp21);
-                    BlockRange().Remove(binOp22);
-                    BlockRange().Remove(binOp1);
-                    BlockRange().Remove(binOp2);
-                    BlockRange().Remove(binOp);
+                    BlockRange().Remove(binOp, true);
                     return loweredNode;
                 }
             }
@@ -316,13 +310,13 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
             GenTree* binOp21 = binOp2->gtGetOp1();
             GenTree* binOp22 = binOp2->gtGetOp2();
 
-            if (binOp21->OperIs(GT_RSH) && binOp22->OperIs(GT_CNS_INT))
+            if (binOp21->OperIs(GT_RSH) && binOp22->OperIs(GT_CNS_INT, GT_CNS_LNG))
             {
                 GenTree* binOp211     = binOp21->gtGetOp1();
                 GenTree* binOp212     = binOp21->gtGetOp2();
                 INT64    pow2Exponent = binOp22->AsIntConCommon()->IntegralValue();
 
-                if (binOp211->OperIs(GT_ADD) && binOp212->OperIs(GT_CNS_INT) &&
+                if (binOp211->OperIs(GT_ADD) && binOp212->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
                     binOp212->AsIntConCommon()->IntegralValue() == pow2Exponent)
                 {
                     GenTree* binOp2111 = binOp211->gtGetOp1();
@@ -332,15 +326,15 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                     {
                         GenTree* binOp21111   = binOp2111->gtGetOp1();
                         GenTree* binOp21112   = binOp2111->gtGetOp2();
-                        INT64    divisorValue = (INT64)pow(2, pow2Exponent);
+                        ssize_t  divisorValue = (ssize_t)pow(2, pow2Exponent);
 
-                        if (binOp21111->OperIs(GT_RSH) && binOp21112->OperIs(GT_CNS_INT) &&
+                        if (binOp21111->OperIs(GT_RSH) && binOp21112->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
                             binOp21112->AsIntConCommon()->IntegralValue() == divisorValue - 1)
                         {
                             GenTree* binOp211111 = binOp21111->gtGetOp1();
                             GenTree* binOp211112 = binOp21111->gtGetOp2();
 
-                            if (GenTree::Compare(binOp1, binOp211111) && binOp211112->OperIs(GT_CNS_INT) &&
+                            if (GenTree::Compare(binOp1, binOp211111) && binOp211112->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
                                 binOp211112->AsIntConCommon()->IntegralValue() == genTypeSize(type) * 8 - 1)
                             {
                                 LIR::Use use;
@@ -356,19 +350,7 @@ GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
                                 BlockRange().InsertBefore(loweredNode, modeOp2);
                                 BlockRange().InsertBefore(modeOp2, modeOp1);
                                 use.ReplaceWith(loweredNode);
-                                BlockRange().Remove(binOp211111);
-                                BlockRange().Remove(binOp211112);
-                                BlockRange().Remove(binOp21111);
-                                BlockRange().Remove(binOp21112);
-                                BlockRange().Remove(binOp2111);
-                                BlockRange().Remove(binOp2112);
-                                BlockRange().Remove(binOp211);
-                                BlockRange().Remove(binOp212);
-                                BlockRange().Remove(binOp21);
-                                BlockRange().Remove(binOp22);
-                                BlockRange().Remove(binOp1);
-                                BlockRange().Remove(binOp2);
-                                BlockRange().Remove(binOp);
+                                BlockRange().Remove(binOp, true);
                                 return LowerSignedDivOrMod(loweredNode)->gtPrev;
                             }
                         }
