@@ -245,6 +245,8 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     {
+        if (rva == 0)
+            return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
             throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
