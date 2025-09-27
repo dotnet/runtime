@@ -67,9 +67,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private static readonly SymbolDisplayFormat s_identifierCompatibleFormat = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
             genericsOptions: SymbolDisplayGenericsOptions.None,
-            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.None);
 
         private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
@@ -89,35 +89,56 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             entryCollection.Add(entry);
         }
 
+        /// <summary>
+        /// Returns unique identifier compatible name based on the fully qualified type name, including fully qualified type arguments.
+        /// Names are truncated at 1000 characters.
+        /// This leaves 23 characters for custom name prefix.
+        /// </summary>
+        /// <remarks>
+        /// When names are longer than 1000 characters a hash code of the original string is appended to maintain identifier uniqueness
+        /// </remarks>
         public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type)
+        {
+            StringBuilder sb = new StringBuilder(50);
+            ToIdentifierCompatibleSubstringBuilder(type, sb);
+
+            sb.Replace(".", "").Replace("[", "").Replace("]", "");
+
+            if (sb.Length > 1000)
+            {
+                string hash = sb.ToString().GetHashCode().ToString().Replace('-', '_');
+                sb.Remove(989, sb.Length - 989).Append(hash);
+            }
+            return sb.ToString();
+        }
+
+
+        private static void ToIdentifierCompatibleSubstringBuilder(ITypeSymbol type, StringBuilder displaySubstring)
         {
             if (type is IArrayTypeSymbol arrayType)
             {
                 int rank = arrayType.Rank;
                 string suffix = rank == 1 ? "Array" : $"Array{rank}D"; // Array, Array2D, Array3D, ...
-                return ToIdentifierCompatibleSubstring(arrayType.ElementType) + suffix;
+                ToIdentifierCompatibleSubstringBuilder(arrayType.ElementType, displaySubstring);
+                displaySubstring.Append(suffix);
             }
 
-            string displayString = type.ContainingType is null
-                ? type.Name
-                : type.ToDisplayString(s_identifierCompatibleFormat).Replace(".", string.Empty);
+            displaySubstring.Append(type.ToDisplayString(s_identifierCompatibleFormat));
 
             if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
             {
-                return displayString;
+                return;
             }
-
-            StringBuilder sb = new(displayString);
 
             if (namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
             {
                 foreach (ITypeSymbol genericArg in typeArgsInScope)
                 {
-                    sb.Append(ToIdentifierCompatibleSubstring(genericArg));
+                    ToIdentifierCompatibleSubstringBuilder(genericArg, displaySubstring);
                 }
             }
 
-            return sb.ToString();
+            return;
         }
 
         public static (string DisplayString, string FullName) GetTypeNames(this ITypeSymbol type)
