@@ -449,54 +449,66 @@ namespace System.Security.Cryptography.Pkcs
                 else if (IncludeOption != X509IncludeOption.None)
                 {
                     X509Chain chain = new X509Chain();
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-                    chain.ChainPolicy.VerificationTime = Certificate!.NotBefore;
-
-                    if (!chain.Build(Certificate!))
+                    try
                     {
-                        foreach (X509ChainStatus status in chain.ChainStatus)
+                        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                        chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                        chain.ChainPolicy.VerificationTime = Certificate!.NotBefore;
+
+                        if (!chain.Build(Certificate!))
                         {
-                            if (status.Status == X509ChainStatusFlags.PartialChain)
+                            foreach (X509ChainStatus status in chain.ChainStatus)
                             {
-                                if (chain.ChainElements.Count == 0)
+                                if (status.Status == X509ChainStatusFlags.PartialChain)
                                 {
-                                    // On Android, we will fail with PartialChain to build a cert chain
-                                    // even if the failure is an untrusted root cert since the underlying platform
-                                    // does not provide a way to distinguish the failure.
-                                    // In that case, just use the provided cert.
-                                    certs.Add(Certificate!);
-                                }
-                                else
-                                {
-                                    throw new CryptographicException(SR.Cryptography_Cms_IncompleteCertChain);
+                                    if (chain.ChainElements.Count == 0)
+                                    {
+                                        // On Android, we will fail with PartialChain to build a cert chain
+                                        // even if the failure is an untrusted root cert since the underlying platform
+                                        // does not provide a way to distinguish the failure.
+                                        // In that case, just use the provided cert.
+                                        certs.Add(Certificate!);
+                                    }
+                                    else
+                                    {
+                                        throw new CryptographicException(SR.Cryptography_Cms_IncompleteCertChain);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    X509ChainElementCollection elements = chain.ChainElements;
-                    int count = elements.Count;
-                    int last = count - 1;
+                        X509ChainElementCollection elements = chain.ChainElements;
+                        int count = elements.Count;
+                        int last = count - 1;
 
-                    if (last == 0)
-                    {
-                        // If there's always one cert treat it as EE, not root.
-                        last = -1;
-                    }
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        X509Certificate2 cert = elements[i].Certificate;
-
-                        if (i == last &&
-                            IncludeOption == X509IncludeOption.ExcludeRoot &&
-                            cert.SubjectName.RawData.AsSpan().SequenceEqual(cert.IssuerName.RawData))
+                        if (last == 0)
                         {
-                            break;
+                            // If there's always one cert treat it as EE, not root.
+                            last = -1;
                         }
 
-                        certs.Add(cert);
+                        for (int i = 0; i < count; i++)
+                        {
+                            X509Certificate2 cert = elements[i].Certificate;
+
+                            if (i == last &&
+                                IncludeOption == X509IncludeOption.ExcludeRoot &&
+                                cert.SubjectName.RawData.AsSpan().SequenceEqual(cert.IssuerName.RawData))
+                            {
+                                break;
+                            }
+
+                            certs.Add(cert);
+                        }
+                    }
+                    finally
+                    {
+                        for (int i = 0; i < chain.ChainElements.Count; i++)
+                        {
+                            chain.ChainElements[i].Certificate.Dispose();
+                        }
+
+                        chain.Dispose();
                     }
                 }
             }
