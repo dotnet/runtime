@@ -5304,7 +5304,7 @@ struct initial_memory_details
             case 0: return block_size_normal;
             case 1: return block_size_large;
             case 2: return block_size_pinned;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -5317,7 +5317,7 @@ struct initial_memory_details
             case soh_gen2: return initial_normal_heap[h_number].memory_base;
             case loh_generation: return initial_large_heap[h_number].memory_base;
             case poh_generation: return initial_pinned_heap[h_number].memory_base;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -5330,7 +5330,7 @@ struct initial_memory_details
             case soh_gen2: return block_size_normal;
             case loh_generation: return block_size_large;
             case poh_generation: return block_size_pinned;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
