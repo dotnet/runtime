@@ -7,6 +7,38 @@ using Microsoft.Extensions.Configuration;
 using Xunit;
 using NS = Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.Namespace______Total_Namespace_Length_100;
 
+internal class AB<T>
+{
+    /// <summary>
+    /// Used by <see cref="NameClashTests_ABC"/>. Must not be a part of a namespace
+    /// </summary>
+    public T? Value { get; set; }
+}
+
+internal class A<T>
+{
+    /// <summary>
+    /// Used by <see cref="NameClashTests_ABC"/>. Must not be a part of a namespace
+    /// </summary>
+    public T? Value { get; set; }
+}
+
+internal class BC
+{
+    /// <summary>
+    /// Used by <see cref="NameClashTests_ABC"/>. Must not be a part of a namespace
+    /// </summary>
+    public int Value { get; set; }
+}
+
+internal class C
+{
+    /// <summary>
+    /// Used by <see cref="NameClashTests_ABC"/>. Must not be a part of a namespace
+    /// </summary>
+    public int Value { get; set; }
+}
+
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     namespace Namespace______Total_Namespace_Length_100
@@ -348,7 +380,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         /// <summary>
-        /// Both types have the same name but different namespace. See https://github.com/dotnet/runtime/issues/119458
+        /// Both types have the same name but different namespace. Test for https://github.com/dotnet/runtime/issues/119458
         /// </summary>
         [Fact]
         public void NameClashTests_SameTypeNameDifferentNamespace()
@@ -365,7 +397,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         /// <summary>
-        /// Very long type name strings are successfully truncated and unambigues
+        /// Very long type name strings are successfully truncated and unambigues. Test for https://github.com/dotnet/runtime/issues/119458
         /// </summary>
         /// <remarks>
         /// This generates two variables with very long names in BindingExtensions.g.cs
@@ -374,13 +406,34 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public void NameClashTests_LongName()
         {
             IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
-                @"{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":1}}}}}}}}}}}");
+                @"{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":{""Value"":1}}}}}}}}");
 
-            var c1 = new NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<Namespace1.Config>>>>>>>>>>();
+            var c1 = new NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<NS.Config<Namespace1.Config>>>>>>>();
 
             configuration.Bind(c1);
 
-            Assert.Equal(1, c1.Value.Value.Value.Value.Value.Value.Value.Value.Value.Value.Value);
+            Assert.Equal(1, c1.Value.Value.Value.Value.Value.Value.Value.Value);
+        }
+
+        /// <summary>
+        /// Naming clash A&lt;BC&gt; vs AB&lt;C&gt;. Test for https://github.com/dotnet/runtime/issues/119458
+        /// </summary>
+        /// <remarks>
+        /// Tests identifier name delimitation of generic class arguments. Variation of <see cref="NameClashTests_NamingPatternsThatCouldCauseClashes"/> 
+        /// </remarks>
+        [Fact]
+        public void NameClashTests_ABC()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                @"{""Value"":{""Value"":1}}");
+
+            var c1 = new A<BC>();
+            var c2 = new AB<C>();
+
+            configuration.Bind(c1);
+            configuration.Bind(c2);
+
+            Assert.Equal(1, c1.Value.Value);
         }
 
         /// <summary>

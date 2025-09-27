@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
             genericsOptions: SymbolDisplayGenericsOptions.None,
-            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.None);
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes );
 
         private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
@@ -91,27 +91,32 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         /// <summary>
         /// Returns unique identifier compatible name based on the fully qualified type name, including fully qualified type arguments.
-        /// Names are truncated at 1000 characters.
-        /// This leaves 23 characters for custom name prefix.
+        /// Names are truncated at 500 characters. (1023 is maximum identifier length)
         /// </summary>
         /// <remarks>
-        /// When names are longer than 1000 characters a hash code of the original string is appended to maintain identifier uniqueness
+        /// When names are longer than 500 characters a hash code of the original string is appended to maintain identifier uniqueness.
+        /// Examples:
+        /// Namespace1.Namespace2.Type -> Namespace1__Namespace2__Type ;
+        /// Namespace.GenericType&lt;Namespace.Type&gt; -> Namespace__GenericType___Namespace__Type___ ;
         /// </remarks>
+
         public static string ToIdentifierCompatibleSubstring(this ITypeSymbol type)
         {
             StringBuilder sb = new StringBuilder(50);
             ToIdentifierCompatibleSubstringBuilder(type, sb);
 
-            sb.Replace(".", "").Replace("[", "").Replace("]", "");
+            //Replace . with __; remove invalid characters
+            sb.Replace(".", "__").Replace("[", "").Replace("]", "");
 
-            if (sb.Length > 1000)
+            // string.GetHashCode uses randomized string hashing.
+            // Causes false negatives in Baseline tests if threshold is too small
+            if (sb.Length > 500)
             {
-                string hash = sb.ToString().GetHashCode().ToString().Replace('-', '_');
-                sb.Remove(989, sb.Length - 989).Append(hash);
+                string hash = ((uint)sb.ToString().GetHashCode()).ToString("D10");
+                sb.Remove(490, sb.Length - 490).Append(hash);
             }
             return sb.ToString();
         }
-
 
         private static void ToIdentifierCompatibleSubstringBuilder(ITypeSymbol type, StringBuilder displaySubstring)
         {
@@ -132,10 +137,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
             {
+                displaySubstring.Append("___");
                 foreach (ITypeSymbol genericArg in typeArgsInScope)
                 {
                     ToIdentifierCompatibleSubstringBuilder(genericArg, displaySubstring);
                 }
+                displaySubstring.Append("___");
             }
 
             return;
