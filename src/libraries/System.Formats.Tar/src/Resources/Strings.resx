@@ -208,4 +208,10 @@
   <data name="ExtHeaderInvalidRecords" xml:space="preserve">
     <value>The extended header contains invalid records.</value>
   </data>
+  <data name="TarSupportedCompressionDetected" xml:space="preserve">
+    <value>The archive appears to be a {0} compressed file. Wrap the stream with {1} before reading it as a tar archive.</value>
+  </data>
+  <data name="TarUnsupportedCompressionDetected" xml:space="preserve">
+    <value>The archive appears to be a {0} compressed file. Decompress the file before reading it as a tar archive. Note: {0} decompression is not built into .NET.</value>
+  </data>
 </root>
