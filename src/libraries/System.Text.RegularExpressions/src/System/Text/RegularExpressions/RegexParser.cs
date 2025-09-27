@@ -150,7 +150,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Escapes all metacharacters (including |,(,),[,{,|,^,$,*,+,?,\, spaces and #)</summary>
         public static string Escape(string input)
         {
-            int indexOfMetachar = IndexOfMetachar(input.AsSpan());
+            int indexOfMetachar = input.AsSpan().IndexOfAny(s_metachars);
             return indexOfMetachar < 0
                 ? input
                 : EscapeImpl(input.AsSpan(), indexOfMetachar);
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions
                 vsb.Append(ch);
                 input = input.Slice(1);
 
-                indexOfMetachar = IndexOfMetachar(input);
+                indexOfMetachar = input.IndexOfAny(s_metachars);
                 if (indexOfMetachar < 0)
                 {
                     indexOfMetachar = input.Length;
@@ -1938,26 +1938,8 @@ namespace System.Text.RegularExpressions
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0
         ];
 
-#if NET
         private static readonly SearchValues<char> s_metachars =
             SearchValues.Create("\t\n\f\r #$()*+.?[\\^{|");
-
-        private static int IndexOfMetachar(ReadOnlySpan<char> input) =>
-            input.IndexOfAny(s_metachars);
-#else
-        private static int IndexOfMetachar(ReadOnlySpan<char> input)
-        {
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (input[i] <= '|' && Category[input[i]] > 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-#endif
 
         /// <summary>Returns true for those characters that terminate a string of ordinary chars.</summary>
         private static bool IsSpecial(char ch) => ch <= '|' && Category[ch] >= S;

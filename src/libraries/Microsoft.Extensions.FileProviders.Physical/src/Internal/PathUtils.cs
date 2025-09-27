@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
         private static char[] GetInvalidFilterChars() => GetInvalidFileNameChars()
             .Where(c => c != '*' && c != '|' && c != '?').ToArray();
 
-#if NET
         private static readonly SearchValues<char> _invalidFileNameChars = SearchValues.Create(GetInvalidFileNameChars());
         private static readonly SearchValues<char> _invalidFilterChars = SearchValues.Create(GetInvalidFilterChars());
 
@@ -26,16 +25,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
 
         internal static bool HasInvalidFilterChars(string path) =>
             path.AsSpan().ContainsAny(_invalidFilterChars);
-#else
-        private static readonly char[] _invalidFileNameChars = GetInvalidFileNameChars();
-        private static readonly char[] _invalidFilterChars = GetInvalidFilterChars();
-
-        internal static bool HasInvalidPathChars(string path) =>
-            path.IndexOfAny(_invalidFileNameChars) >= 0;
-
-        internal static bool HasInvalidFilterChars(string path) =>
-            path.IndexOfAny(_invalidFilterChars) >= 0;
-#endif
 
         private static readonly char[] _pathSeparators = new[]
             {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar};
