@@ -79,7 +79,7 @@ namespace System.Threading
         /// Gets the current count of the <see cref="SemaphoreSlim"/>.
         /// </summary>
         /// <value>The current count of the <see cref="SemaphoreSlim"/>.</value>
-        public int CurrentCount => m_currentCount;
+        public int CurrentCount => Math.Max(m_currentCount, 0);
 
         /// <summary>
         /// Returns a <see cref="WaitHandle"/> that can be used to wait on the semaphore.
@@ -279,6 +279,14 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
+
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
+
+
             return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
 
@@ -311,6 +319,29 @@ namespace System.Threading
         }
 
         /// <summary>
+        /// Attempts to enter the <see cref="SemaphoreSlim"/> immediately, and returns a value that indicates whether the
+        /// attempt was successful.
+        /// </summary>
+        /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>; otherwise, false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryAcquireSemaphore()
+        {
+            if (m_currentCount <= 0)
+            {
+                return false;
+            }
+
+            int newCount = Interlocked.Decrement(ref m_currentCount);
+            if (newCount < 0)
+            {
+                Interlocked.Increment(ref m_currentCount);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Blocks the current thread until it can enter the <see cref="SemaphoreSlim"/>,
         /// using a 32-bit unsigned integer to measure the time interval,
         /// while observing a <see cref="CancellationToken"/>.
@@ -334,6 +365,17 @@ namespace System.Threading
             {
                 // Pessimistic fail fast, check volatile count outside lock (only when timeout is zero!)
                 return false;
+            }
+
+            // Fast Path: If the count is greater than zero, try to acquire the semaphore.
+            // Check if it's possible to decrease the current count with an Interlocked operation instead of taking the Monitor lock.
+            // Only attempt this if there is no wait handle, otherwise it's not possible to guarantee that the wait handle is in the correct state with this optimization.
+            if (m_waitHandle is null)
+            {
+                if (TryAcquireSemaphore())
+                {
+                    return true;
+                }
             }
 
             long startTime = 0;
@@ -374,6 +416,7 @@ namespace System.Threading
                     }
                 }
                 Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
+
                 m_waitCount++;
 
                 // If there are any async waiters, for fairness we'll get in line behind
@@ -387,43 +430,15 @@ namespace System.Threading
                 // There are no async waiters, so we can proceed with normal synchronous waiting.
                 else
                 {
-                    // If the count > 0 we are good to move on.
-                    // If not, then wait if we were given allowed some wait duration
-
-                    OperationCanceledException? oce = null;
-
-                    if (m_currentCount == 0)
+                    // If we cannot wait, then try to acquire the semaphore.
+                    // If the new count becomes negative, that means that the count was zero
+                    // so we should revert this invalid operation and return false.
+                    if (millisecondsTimeout == 0)
                     {
-                        if (millisecondsTimeout == 0)
-                        {
-                            return false;
-                        }
-
-                        // Prepare for the main wait...
-                        // wait until the count become greater than zero or the timeout is expired
-                        try
-                        {
-                            waitSuccessful = WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
-                        }
-                        catch (OperationCanceledException e) { oce = e; }
+                        return TryAcquireSemaphore();
                     }
 
-                    // Now try to acquire.  We prioritize acquisition over cancellation/timeout so that we don't
-                    // lose any counts when there are asynchronous waiters in the mix.  Asynchronous waiters
-                    // defer to synchronous waiters in priority, which means that if it's possible an asynchronous
-                    // waiter didn't get released because a synchronous waiter was present, we need to ensure
-                    // that synchronous waiter succeeds so that they have a chance to release.
-                    Debug.Assert(!waitSuccessful || m_currentCount > 0,
-                        "If the wait was successful, there should be count available.");
-                    if (m_currentCount > 0)
-                    {
-                        waitSuccessful = true;
-                        m_currentCount--;
-                    }
-                    else if (oce is not null)
-                    {
-                        throw oce;
-                    }
+                    waitSuccessful = WaitUntilCountOrTimeout(millisecondsTimeout, startTime, cancellationToken);
 
                     // Exposing wait handle which is lazily initialized if needed
                     if (m_waitHandle is not null && m_currentCount == 0)
@@ -470,9 +485,14 @@ namespace System.Threading
 #endif
             int monitorWaitMilliseconds = Timeout.Infinite;
 
-            // Wait on the monitor as long as the count is zero
-            while (m_currentCount == 0)
+            // Wait on the monitor as long we cannot acquire the semaphore
+            while (true)
             {
+                if (TryAcquireSemaphore())
+                {
+                    return true;
+                }
+
                 // If cancelled, we throw. Trying to wait could lead to deadlock.
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -519,8 +539,6 @@ namespace System.Threading
                     return false;
                 }
             }
-
-            return true;
         }
 
         /// <summary>
@@ -688,12 +706,21 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<bool>(cancellationToken);
 
+            // Perf: Check if it's possible to decrease the current count with an Interlocked operation instead of taking the Monitor lock.
+            // Only attempt this if there is no wait handle, otherwise it's not possible to guarantee that the wait handle is in the correct state with this optimization.
+            if (m_waitHandle is null)
+            {
+                if (TryAcquireSemaphore())
+                {
+                    return Task.FromResult(true);
+                }
+            }
+
             lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
-                if (m_currentCount > 0)
+                if (TryAcquireSemaphore())
                 {
-                    --m_currentCount;
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
                     return Task.FromResult(true);
                 }
@@ -709,9 +736,10 @@ namespace System.Threading
                 {
                     Debug.Assert(m_currentCount == 0, "m_currentCount should never be negative");
                     TaskNode asyncWaiter = CreateAndAddAsyncWaiter();
-                    return (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled) ?
+                    Task<bool> result = (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled) ?
                         asyncWaiter :
                         WaitUntilCountOrTimeoutAsync(asyncWaiter, millisecondsTimeout, cancellationToken);
+                    return result;
                 }
             }
         }
@@ -848,7 +876,34 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(
                     nameof(releaseCount), releaseCount, SR.SemaphoreSlim_Release_CountWrong);
             }
+
+            // Fast path: If the count is greater than zero, try to release the semaphore without taking the lock.
+            // If it's zero or less, we need to take the lock to ensure that we properly wake up waiters
+            // and potentially update m_waitHandle.
+            while (m_currentCount > 0)
+            {
+                int currentCount = m_currentCount;
+                if (currentCount > 0 && currentCount + releaseCount <= m_maxCount &&
+                    Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
+                {
+                    return currentCount;
+                }
+            }
+
             int returnCount;
+
+            // If m_currentCount was not greater than 0, it may be negative if some threads attempted to acquire
+            // the semaphore during the wait fast path but failed.
+            // In this case, the threads themselves will make the count back to zero after a little while, spin until then.
+            SpinWait spinner = default;
+            while (m_currentCount < 0)
+            {
+                spinner.SpinOnce();
+            }
+
+            // The current count must be 0 and we can take the lock knowing that no threads executing a wait operation
+            // will be able to modify the count until we release the lock.
+            Debug.Assert(m_currentCount == 0, "m_currentCount should be exactly zero before taking the lock");
 
             lock (m_lockObjAndDisposed)
             {
