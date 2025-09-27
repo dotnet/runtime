@@ -180,7 +180,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         private static UnboxedOnly Unbox(object o)
         {
-            return (UnboxedOnly) o;
+            return (UnboxedOnly)o;
         }
 
         [Kept]
