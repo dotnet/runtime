@@ -1,0 +1,25 @@
+name: Markdown Link Check
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "**.md"
+  push:
+    branches: [ main ]
+    paths:
+      - "**.md"
+  workflow_dispatch:
+
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Markdown Link Check
+      uses: becheran/mlc@v1
