@@ -100,8 +100,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         private readonly List<IPattern>? _excludePatterns;
         private readonly List<IncludeOrExcludeValue<IPattern>>? _includeOrExcludePatterns;
         private readonly PatternBuilder _builder;
-        private readonly StringComparison _comparison;
         private readonly bool _preserveFilterOrder;
+
+        internal StringComparison ComparisonType { get; }
 
         /// <summary>
         /// Initializes an instance of <see cref="Matcher" /> using case-insensitive matching
@@ -130,7 +131,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </param>
         public Matcher(StringComparison comparisonType = StringComparison.OrdinalIgnoreCase, bool preserveFilterOrder = false)
         {
-            _comparison = comparisonType;
+            ComparisonType = comparisonType;
             _builder = new PatternBuilder(comparisonType);
             _preserveFilterOrder = preserveFilterOrder;
 
@@ -199,8 +200,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             ArgumentNullException.ThrowIfNull(directoryInfo);
 
             return _preserveFilterOrder ?
-                new MatcherContext(_includeOrExcludePatterns!, directoryInfo, _comparison).Execute() :
-                new MatcherContext(_includePatterns!, _excludePatterns!, directoryInfo, _comparison).Execute();
+                new MatcherContext(_includeOrExcludePatterns!, directoryInfo, ComparisonType).Execute() :
+                new MatcherContext(_includePatterns!, _excludePatterns!, directoryInfo, ComparisonType).Execute();
         }
     }
 }
