@@ -64,7 +64,7 @@ namespace System.Text.RegularExpressions.Generator
                 // For fields, offer to convert to partial property
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        "Convert to partial property with [GeneratedRegex]",
+                        SR.UseRegexSourceGeneratorTitle,
                         cancellationToken => ConvertFieldToPartialProperty(context.Document, root, nodeToFix, fieldDeclaration, cancellationToken),
                         equivalenceKey: "ConvertFieldToPartialProperty"),
                     context.Diagnostics);
@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions.Generator
                 // For properties with initializers, offer to convert to partial property
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        "Convert to partial property with [GeneratedRegex]",
+                        SR.UseRegexSourceGeneratorTitle,
                         cancellationToken => ConvertPropertyToPartialProperty(context.Document, root, nodeToFix, propertyDeclaration, cancellationToken),
                         equivalenceKey: "ConvertPropertyToPartialProperty"),
                     context.Diagnostics);
@@ -84,14 +84,14 @@ namespace System.Text.RegularExpressions.Generator
                 // For other cases (method calls, etc.), offer both method and property options
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        "Generate partial method with [GeneratedRegex]",
+                        SR.UseRegexSourceGeneratorTitleMethod,
                         cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken, generateMethod: true),
                         equivalenceKey: "ConvertToMethod"),
                     context.Diagnostics);
 
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        "Generate partial property with [GeneratedRegex]",
+                        SR.UseRegexSourceGeneratorTitleProperty,
                         cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken, generateMethod: false),
                         equivalenceKey: "ConvertToProperty"),
                     context.Diagnostics);

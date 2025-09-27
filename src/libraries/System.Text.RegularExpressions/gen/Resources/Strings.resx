@@ -276,4 +276,10 @@
   <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
     <value>Convert to 'GeneratedRegexAttribute'.</value>
   </data>
+  <data name="UseRegexSourceGeneratorTitleMethod" xml:space="preserve">
+    <value>Convert to 'GeneratedRegexAttribute' (method).</value>
+  </data>
+  <data name="UseRegexSourceGeneratorTitleProperty" xml:space="preserve">
+    <value>Convert to 'GeneratedRegexAttribute' (property).</value>
+  </data>
 </root>
