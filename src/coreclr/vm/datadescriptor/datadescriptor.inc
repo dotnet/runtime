@@ -153,6 +153,16 @@ CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
 CDAC_TYPE_INDETERMINATE(NativeObjectWrapperObject)
 CDAC_TYPE_FIELD(NativeObjectWrapperObject, /*pointer*/, ExternalComObject, cdac_data<NativeObjectWrapperObject>::ExternalComObject)
 CDAC_TYPE_END(NativeObjectWrapperObject)
+
+CDAC_TYPE_BEGIN(ManagedObjectWrapperHolderObject)
+CDAC_TYPE_INDETERMINATE(ManagedObjectWrapperHolderObject)
+CDAC_TYPE_FIELD(ManagedObjectWrapperHolderObject, /*pointer*/, WrappedObject, cdac_data<ManagedObjectWrapperHolderObject>::WrappedObject)
+CDAC_TYPE_END(ManagedObjectWrapperHolderObject)
+
+CDAC_TYPE_BEGIN(ManagedObjectWrapperLayout)
+CDAC_TYPE_INDETERMINATE(ManagedObjectWrapperLayout)
+CDAC_TYPE_FIELD(ManagedObjectWrapperLayout, /*int64*/, RefCount, cdac_data<InteropLib::ABI::ManagedObjectWrapperLayout>::RefCount)
+CDAC_TYPE_END(ManagedObjectWrapperLayout)
 #endif // FEATURE_COMWRAPPERS
 
 CDAC_TYPE_BEGIN(SyncTableEntry)
@@ -933,6 +943,13 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
+CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, MowQueryInterface, offsetof(ComWrappersVtablePtrs, MowQueryInterface))
+CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, TtQueryInterface, offsetof(ComWrappersVtablePtrs, TtQueryInterface))
+CDAC_TYPE_END(ComWrappersVtablePtrs)
+#endif
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1025,6 +1042,11 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
+#ifdef FEATURE_COMWRAPPERS
+CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
+CDAC_GLOBAL(NativeObjectWrapperClass, uint32, CLASS__NATIVE_OBJECT_WRAPPER)
+CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, &g_ComWrappersVtablePtrs)
+#endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS

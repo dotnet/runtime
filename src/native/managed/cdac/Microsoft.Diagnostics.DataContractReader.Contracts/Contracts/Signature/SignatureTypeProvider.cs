@@ -66,7 +66,7 @@ public class SignatureTypeProvider<T> : ISignatureTypeProvider<TypeHandle, T>
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Ptr, 0, []);
 
     public TypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
-        => _runtimeTypeSystem.GetPrimitiveType((CorElementType)typeCode);
+        => _runtimeTypeSystem.GetBinderType((ushort)typeCode);
 
     public TypeHandle GetSZArrayType(TypeHandle elementType)
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, []);

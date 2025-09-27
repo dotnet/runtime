@@ -142,7 +142,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
     TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments) => throw new NotImplementedException();
-    TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
+    TypeHandle GetBinderType(ushort typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
