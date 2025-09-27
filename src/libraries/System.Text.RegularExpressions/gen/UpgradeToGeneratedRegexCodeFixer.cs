@@ -207,67 +207,46 @@ namespace System.Text.RegularExpressions.Generator
             SyntaxNode? regexOptionsValue = GetNode(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 
             // Generate the new static partial property
-            // Create the partial property declaration manually since SyntaxGenerator doesn't support partial properties correctly
-            List<SyntaxToken> modifiers = new List<SyntaxToken>
-            {
-                SyntaxFactory.Token(SyntaxKind.PrivateKeyword),
-                SyntaxFactory.Token(SyntaxKind.StaticKeyword),
-                SyntaxFactory.Token(SyntaxKind.PartialKeyword)
-            };
+            // Try using SyntaxGenerator first, then add partial modifier manually
+            PropertyDeclarationSyntax newProperty = (PropertyDeclarationSyntax)generator.PropertyDeclaration(
+                name: memberName,
+                type: generator.TypeExpression(regexSymbol),
+                accessibility: Accessibility.Private,
+                modifiers: DeclarationModifiers.Static,
+                getAccessorStatements: null);
 
-            // Create accessor list with just a getter
-            AccessorListSyntax accessorList = SyntaxFactory.AccessorList(
-                SyntaxFactory.SingletonList(
-                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                        .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))));
+            // Add the partial modifier manually since SyntaxGenerator doesn't support it
+            newProperty = newProperty.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
 
-            // Create the property declaration
-            PropertyDeclarationSyntax newProperty = SyntaxFactory.PropertyDeclaration(
-                SyntaxFactory.IdentifierName("Regex"),
-                SyntaxFactory.Identifier(memberName).WithAdditionalAnnotations(RenameAnnotation.Create()))
-                .WithModifiers(SyntaxFactory.TokenList(modifiers))
-                .WithAccessorList(accessorList);
+            // Add rename annotation
+            newProperty = newProperty.ReplaceToken(newProperty.Identifier,
+                newProperty.Identifier.WithAdditionalAnnotations(RenameAnnotation.Create()));
 
             SyntaxNode newMember = newProperty;
 
-            // We now need to check if we have to pass in the cultureName parameter. This parameter will be required in case the option
-            // RegexOptions.IgnoreCase is set for this Regex. To determine that, we first get the passed in options (if any), and then,
-            // we also need to parse the pattern in case there are options that were specified inside the pattern via the `(?i)` switch.
-            SyntaxNode? cultureNameValue = null;
+            // Handle culture parameter for IgnoreCase scenarios
             RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgument(operationArguments) : RegexOptions.None;
             string pattern = GetRegexPatternFromArgument(operationArguments)!;
 
-            try
-            {
-                regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
-            }
-            catch (RegexParseException)
-            {
-                // We can't safely make the fix without knowing the options
-                return document;
-            }
+            var (cultureNameValue, adjustedRegexOptionsValue) = HandleCultureForIgnoreCase(generator, regexOptions, regexOptionsValue, pattern);
 
-            // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture in order to pass
-            // it in as a parameter. If the user specified IgnoreCase, but also selected CultureInvariant, then we skip as the default is to use Invariant culture.
-            if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
+            // If pattern parsing failed in culture handling, we can't safely make the fix
+            if (pattern is not null && cultureNameValue is null && adjustedRegexOptionsValue == regexOptionsValue &&
+                (regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
             {
-#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
-                // If CultureInvariant wasn't specified as options, we default to the current culture.
-                cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
-#pragma warning restore RS1035
-
-                // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
-                regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
+                try
+                {
+                    RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+                }
+                catch (RegexParseException)
+                {
+                    // We can't safely make the fix without knowing the options
+                    return document;
+                }
             }
 
-            // Generate the GeneratedRegex attribute syntax node with the specified parameters.
-            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
-            {
-                ({ }, null, null) => [patternValue],
-                ({ }, { }, null) => [patternValue, regexOptionsValue],
-                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
-                _ => Array.Empty<SyntaxNode>(),
-            });
+            // Generate the GeneratedRegex attribute
+            SyntaxNode attributes = GenerateRegexAttribute(generator, generatedRegexAttributeSymbol, patternValue, adjustedRegexOptionsValue, cultureNameValue);
 
             // Add the attribute to the generated member.
             newMember = generator.AddAttributes(newMember, attributes);
@@ -426,43 +405,14 @@ namespace System.Text.RegularExpressions.Generator
             SyntaxNode? patternValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
             SyntaxNode? regexOptionsValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 
-            // Handle culture name using the same logic as the original method
-            SyntaxNode? cultureNameValue = null;
+            // Handle culture name using helper method
             RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgumentLocal(operationArguments) : RegexOptions.None;
             string? pattern = GetRegexPatternFromArgumentLocal(operationArguments);
 
-            if (pattern is not null)
-            {
-                try
-                {
-                    regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
-                }
-                catch (RegexParseException)
-                {
-                    // Pattern parsing failed, skip culture handling
-                }
-
-                // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
-                if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
-                {
-#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
-                    // If CultureInvariant wasn't specified as options, we default to the current culture.
-                    cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
-#pragma warning restore RS1035
-
-                    // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
-                    regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
-                }
-            }
+            var (cultureNameValue, adjustedRegexOptionsValue) = HandleCultureForIgnoreCase(generator, regexOptions, regexOptionsValue, pattern);
 
             // Generate the GeneratedRegex attribute
-            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
-            {
-                ({ }, null, null) => [patternValue],
-                ({ }, { }, null) => [patternValue, regexOptionsValue],
-                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
-                _ => Array.Empty<SyntaxNode>(),
-            });
+            SyntaxNode attributes = GenerateRegexAttribute(generator, generatedRegexAttributeSymbol, patternValue, adjustedRegexOptionsValue, cultureNameValue);
 
             // Create the partial property declaration manually since SyntaxGenerator doesn't support partial properties correctly
             List<SyntaxToken> modifiers = new List<SyntaxToken>();
@@ -571,43 +521,14 @@ namespace System.Text.RegularExpressions.Generator
             SyntaxNode? patternValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
             SyntaxNode? regexOptionsValue = GetNodeFromOperation(operationArguments, generator, UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 
-            // Handle culture name using the same logic as the original method
-            SyntaxNode? cultureNameValue = null;
+            // Handle culture name using helper method
             RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgumentLocal(operationArguments) : RegexOptions.None;
             string? pattern = GetRegexPatternFromArgumentLocal(operationArguments);
 
-            if (pattern is not null)
-            {
-                try
-                {
-                    regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
-                }
-                catch (RegexParseException)
-                {
-                    // Pattern parsing failed, skip culture handling
-                }
-
-                // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
-                if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
-                {
-#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
-                    // If CultureInvariant wasn't specified as options, we default to the current culture.
-                    cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
-#pragma warning restore RS1035
-
-                    // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
-                    regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
-                }
-            }
+            var (cultureNameValue, adjustedRegexOptionsValue) = HandleCultureForIgnoreCase(generator, regexOptions, regexOptionsValue, pattern);
 
             // Generate the GeneratedRegex attribute
-            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
-            {
-                ({ }, null, null) => [patternValue],
-                ({ }, { }, null) => [patternValue, regexOptionsValue],
-                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
-                _ => Array.Empty<SyntaxNode>(),
-            });
+            SyntaxNode attributes = GenerateRegexAttribute(generator, generatedRegexAttributeSymbol, patternValue, adjustedRegexOptionsValue, cultureNameValue);
 
             // Create the partial property declaration (removing initializer and adding partial modifier)
             PropertyDeclarationSyntax partialProperty = propertyDeclaration
@@ -772,6 +693,66 @@ namespace System.Text.RegularExpressions.Generator
                 parts[i] = "RegexOptions." + parts[i].Trim();
             }
             return string.Join(" | ", parts);
+        }
+
+        /// <summary>
+        /// Helper method to handle culture parameter generation for IgnoreCase scenarios.
+        /// Returns (cultureNameValue, adjustedRegexOptionsValue) tuple.
+        /// </summary>
+        private static (SyntaxNode? cultureNameValue, SyntaxNode? adjustedRegexOptionsValue) HandleCultureForIgnoreCase(
+            SyntaxGenerator generator,
+            RegexOptions regexOptions,
+            SyntaxNode? regexOptionsValue,
+            string? pattern)
+        {
+            SyntaxNode? cultureNameValue = null;
+
+            // Try to parse options from pattern if available
+            if (pattern is not null)
+            {
+                try
+                {
+                    regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+                }
+                catch (RegexParseException)
+                {
+                    // Pattern parsing failed, skip culture handling
+                    return (null, regexOptionsValue);
+                }
+            }
+
+            // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture
+            if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
+            {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
+                // If CultureInvariant wasn't specified as options, we default to the current culture.
+                cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
+#pragma warning restore RS1035
+
+                // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
+                regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
+            }
+
+            return (cultureNameValue, regexOptionsValue);
+        }
+
+        /// <summary>
+        /// Helper method to generate GeneratedRegex attribute with proper arguments.
+        /// </summary>
+        private static SyntaxNode GenerateRegexAttribute(
+            SyntaxGenerator generator,
+            INamedTypeSymbol generatedRegexAttributeSymbol,
+            SyntaxNode? patternValue,
+            SyntaxNode? regexOptionsValue,
+            SyntaxNode? cultureNameValue)
+        {
+            return generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
+            {
+                ({ }, null, null) => [patternValue],
+                ({ }, { }, null) => [patternValue, regexOptionsValue],
+                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
+                _ => Array.Empty<SyntaxNode>(),
+            });
         }
     }
 }
