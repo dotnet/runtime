@@ -3429,8 +3429,12 @@ public:
     static void* GetFiberPtrId()
     {
         LIMITED_METHOD_CONTRACT;
+#if TARGET_WASM
+        return (void*)(size_t)1;
+#else // !TARGET_WASM
         // not fiber for HOST_UNIX - use the regular thread ID
         return (void *)(size_t)GetCurrentThreadId();
+#endif // TARGET_WASM
     }
 
     static void* GetStackBase()
