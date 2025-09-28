@@ -903,9 +903,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
-        [InlineData(@"C:\this\example\root", @"C:\this\EXAMPLE\root", "**/*", new[] { "some/test/file.txt" })]
-        [InlineData(@"C:\this\example\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
-        [InlineData(@"C:\this\EXAMPLE\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"/this/example/root", @"/this/EXAMPLE/root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"/this/example/root", @"/this/example/root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"/this/EXAMPLE/root", @"/this/example/root", "**/*", new[] { "some/test/file.txt" })]
         public void VerifyFiles_InMemory_HasCaseInsensitiveRootMatches(string matchRoot, string filesRoot, string pattern, string[] expectedSubPaths)
         {
             Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
@@ -919,7 +919,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
-        [InlineData(@"C:\this\example\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"/this/example/root", @"/this/example/root", "**/*", new[] { "some/test/file.txt" })]
         public void VerifyFiles_InMemory_HasCaseSensitiveRootMatches(string matchRoot, string filesRoot, string pattern, string[] expectedSubPaths)
         {
             Matcher matcher = new(StringComparison.Ordinal);
@@ -933,8 +933,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
-        [InlineData(@"C:\this\example\root", @"C:\this\EXAMPLE\root", "**/*", new[] { "some/test/file.txt" })]
-        [InlineData(@"C:\this\EXAMPLE\root", @"C:\this\example\root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"/this/example/root", @"/this/EXAMPLE/root", "**/*", new[] { "some/test/file.txt" })]
+        [InlineData(@"/this/EXAMPLE/root", @"/this/example/root", "**/*", new[] { "some/test/file.txt" })]
         public void VerifyFiles_InMemory_HasCaseSensitiveRootMisses(string matchRoot, string filesRoot, string pattern, string[] expectedSubPaths)
         {
             Matcher matcher = new(StringComparison.Ordinal);
