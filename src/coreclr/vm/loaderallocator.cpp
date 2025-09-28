@@ -1767,6 +1767,7 @@ void AssemblyLoaderAllocator::Init()
     m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
     LoaderAllocator::Init(NULL /*pExecutableHeapMemory*/);
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (IsCollectible())
     {
         // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
@@ -1775,6 +1776,7 @@ void AssemblyLoaderAllocator::Init()
         // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
         m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 
@@ -1786,8 +1788,10 @@ AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
         m_binderToRelease = NULL;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pShuffleThunkCache;
     m_pShuffleThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelease)
