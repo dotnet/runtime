@@ -44,7 +44,10 @@ extern "C" {
 static inline size_t minipal_get_current_thread_id(void)
 {
 #if defined(__wasm) && !defined(_REENTRANT)
-    return 0;
+    pthread_t this_thread = pthread_self();
+    size_t thread_id;
+    memcpy(&thread_id, &this_thread, sizeof(this_thread) < sizeof(thread_id) ? sizeof(this_thread) : sizeof(thread_id));
+    return thread_id;
 #else
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
     // gcc doesn't like _Thread_local when __cplusplus is defined.
