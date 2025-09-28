@@ -46,11 +46,16 @@ const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 /*****************************************************************************/
 #ifdef DEBUG
 thread_local bool t_interpDump;
+#endif // DEBUG
+
 bool IsInterpDumpActive()
 {
+#ifdef DEBUG
     return t_interpDump;
-}
+#else // !DEBUG
+    return false;
 #endif // DEBUG
+}
 
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 {
