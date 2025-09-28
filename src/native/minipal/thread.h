@@ -43,6 +43,10 @@ extern "C" {
  */
 static inline size_t minipal_get_current_thread_id(void)
 {
+#if defined(__wasm) && !defined(_REENTRANT)
+    return 1; // In non-reentrant WASM builds, we define a single thread with ID 1.
+
+#else // !__wasm || _REENTRANT
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
     // gcc doesn't like _Thread_local when __cplusplus is defined.
     // although thread_local is C2x, which other compilers don't allow with C11.
@@ -67,7 +71,7 @@ static inline size_t minipal_get_current_thread_id(void)
         tid = (size_t)find_thread(NULL);
 #elif defined(__sun)
         tid = (size_t)pthread_self();
-#elif defined(__wasm) && !defined(_REENTRANT)
+#elif defined(__wasm)
         tid = (size_t)(void*)pthread_self();
 #else
 #error "Unsupported platform"
@@ -75,6 +79,7 @@ static inline size_t minipal_get_current_thread_id(void)
     }
 
     return tid;
+#endif // __wasm && !_REENTRANT
 }
 
 /**
