@@ -141,7 +141,7 @@ namespace System.Speech.AudioFormat
         {
             get
             {
-                WAVEFORMATEX wfx = new();
+                WAVEFORMATEX wfx = default;
                 wfx.wFormatTag = (short)EncodingFormat;
                 wfx.nChannels = (short)ChannelCount;
                 wfx.nSamplesPerSec = SamplesPerSecond;

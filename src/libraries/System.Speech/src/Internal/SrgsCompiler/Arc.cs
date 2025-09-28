@@ -183,7 +183,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal float Serialize(StreamMarshaler streamBuffer, bool isLast, uint arcIndex)
         {
-            CfgArc A = new();
+            CfgArc A = default;
 
             A.LastArc = isLast;
             A.HasSemanticTag = SemanticTagCount > 0;
@@ -223,7 +223,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal static float SerializeExtraEpsilonWithTag(StreamMarshaler streamBuffer, Arc arc, bool isLast, uint arcIndex)
         {
-            CfgArc A = new();
+            CfgArc A = default;
 
             A.LastArc = isLast;
             A.HasSemanticTag = true;

@@ -91,7 +91,7 @@ namespace System.Speech.Internal.Synthesis
             if (_waveFormat == null || !Array.Equals(targetWaveFormat, _waveFormat))
             {
                 IntPtr waveFormat = IntPtr.Zero;
-                GCHandle targetFormat = new();
+                GCHandle targetFormat = default;
 
                 if (targetWaveFormat != null)
                 {

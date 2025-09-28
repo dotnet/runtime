@@ -759,7 +759,7 @@ namespace System.Speech.Internal.Synthesis
                                             //--- Make sure we have a voice defined by now
                                             if (!paramSpeak._isXml)
                                             {
-                                                FragmentState fragmentState = new();
+                                                FragmentState fragmentState = default;
                                                 fragmentState.Action = TtsEngineAction.Speak;
                                                 fragmentState.Prosody = new Prosody();
                                                 TextFragment textFragment = new(fragmentState, paramSpeak._textToSpeak);
