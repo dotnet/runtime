@@ -43,12 +43,6 @@ extern "C" {
  */
 static inline size_t minipal_get_current_thread_id(void)
 {
-#if defined(__wasm) && !defined(_REENTRANT)
-    pthread_t this_thread = pthread_self();
-    size_t tid = 0;
-    memcpy(&tid, &this_thread, sizeof(this_thread) < sizeof(tid) ? sizeof(this_thread) : sizeof(tid));
-    return tid;
-#else
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
     // gcc doesn't like _Thread_local when __cplusplus is defined.
     // although thread_local is C2x, which other compilers don't allow with C11.
@@ -58,14 +52,13 @@ static inline size_t minipal_get_current_thread_id(void)
 #endif
 
     if (!tid)
+    {
 #if defined(__linux__)
         tid = (size_t)syscall(SYS_gettid);
 #elif defined(__APPLE__)
-    {
         uint64_t thread_id;
         pthread_threadid_np(pthread_self(), &thread_id);
         tid = (size_t)thread_id;  // Cast the uint64_t thread ID to size_t
-    }
 #elif defined(__FreeBSD__)
         tid = (size_t)pthread_getthreadid_np();
 #elif defined(__NetBSD__)
@@ -74,12 +67,14 @@ static inline size_t minipal_get_current_thread_id(void)
         tid = (size_t)find_thread(NULL);
 #elif defined(__sun)
         tid = (size_t)pthread_self();
-#else
+#elif defined(__wasm) && !defined(_REENTRANT)
         tid = (size_t)(void*)pthread_self();
+#else
+#error "Unsupported platform"
 #endif
+    }
 
     return tid;
-#endif
 }
 
 /**
