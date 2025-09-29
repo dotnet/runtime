@@ -8,43 +8,39 @@ export const max_int64_big = BigInt("9223372036854775807");
 export const min_int64_big = BigInt("-9223372036854775808");
 export const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
 
-export function assert_int_in_range(value: Number, min: Number, max: Number) {
+export function assertIntInRange(value: Number, min: Number, max: Number) {
     dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
     dotnetAssert.check(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
-}
-
-export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
-    localHeapViewU8().fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
 /** note: boolean is 8 bits not 32 bits when inside a structure or array */
 export function setHeapB32(offset: MemOffset, value: number | boolean): void {
     const boolValue = !!value;
     if (typeof (value) === "number")
-        assert_int_in_range(value, 0, 1);
+        assertIntInRange(value, 0, 1);
     Module.HEAP32[<any>offset >>> 2] = boolValue ? 1 : 0;
 }
 
 export function setHeapB8(offset: MemOffset, value: number | boolean): void {
     const boolValue = !!value;
     if (typeof (value) === "number")
-        assert_int_in_range(value, 0, 1);
+        assertIntInRange(value, 0, 1);
     Module.HEAPU8[<any>offset] = boolValue ? 1 : 0;
 }
 
 export function setHeapU8(offset: MemOffset, value: number): void {
-    assert_int_in_range(value, 0, 0xFF);
+    assertIntInRange(value, 0, 0xFF);
     Module.HEAPU8[<any>offset] = value;
 }
 
 export function setHeapU16(offset: MemOffset, value: number): void {
-    assert_int_in_range(value, 0, 0xFFFF);
+    assertIntInRange(value, 0, 0xFFFF);
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
 // does not check for growable heap
 export function setHeapU16_local(localView: Uint16Array, offset: MemOffset, value: number): void {
-    assert_int_in_range(value, 0, 0xFFFF);
+    assertIntInRange(value, 0, 0xFFFF);
     localView[<any>offset >>> 1] = value;
 }
 
@@ -59,17 +55,17 @@ export function setHeapU32_unchecked(offset: MemOffset, value: NumberOrPointer):
 }
 
 export function setHeapU32(offset: MemOffset, value: NumberOrPointer): void {
-    assert_int_in_range(<any>value, 0, 0xFFFF_FFFF);
+    assertIntInRange(<any>value, 0, 0xFFFF_FFFF);
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
 export function setHeapI8(offset: MemOffset, value: number): void {
-    assert_int_in_range(value, -0x80, 0x7F);
+    assertIntInRange(value, -0x80, 0x7F);
     Module.HEAP8[<any>offset] = value;
 }
 
 export function setHeapI16(offset: MemOffset, value: number): void {
-    assert_int_in_range(value, -0x8000, 0x7FFF);
+    assertIntInRange(value, -0x8000, 0x7FFF);
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
@@ -78,7 +74,7 @@ export function setHeapI32_unchecked(offset: MemOffset, value: number): void {
 }
 
 export function setHeapI32(offset: MemOffset, value: number): void {
-    assert_int_in_range(<any>value, -0x8000_0000, 0x7FFF_FFFF);
+    assertIntInRange(<any>value, -0x8000_0000, 0x7FFF_FFFF);
     Module.HEAP32[<any>offset >>> 2] = value;
 }
 
