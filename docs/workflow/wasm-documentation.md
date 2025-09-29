@@ -55,6 +55,9 @@ For consolidated debugging instructions including VS Code and Chrome DevTools se
 - **[WebAssembly Features](../../src/mono/wasm/features.md)** - Configure browser features, SIMD, threads, AOT, and more
 - **[Threading Support](../../src/mono/wasm/threads.md)** - Multi-threading support and limitations
 
+### JavaScript Interop
+- **[JSInterop in WASM](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop/wasm-browser-app)** - JavaScript interoperability for WebAssembly applications
+
 ### Build Configuration
 Key MSBuild properties for WebAssembly applications:
 - `WasmEnableThreads` - Enable multi-threading support
