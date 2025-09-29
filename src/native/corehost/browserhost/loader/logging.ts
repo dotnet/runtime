@@ -12,7 +12,7 @@ export function check(condition: unknown, messageFactory: string | (() => string
 
 /* eslint-disable no-console */
 
-const prefix = "CLR_WASM: ";
+const prefix = "DOTNET: ";
 
 export function info(msg: string, ...data: any) {
     console.info(prefix + msg, ...data);
