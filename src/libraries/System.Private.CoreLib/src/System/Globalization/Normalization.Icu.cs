@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System.Globalization
 {
@@ -205,59 +206,10 @@ namespace System.Globalization
                 throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
             }
 
-            if (HasInvalidUnicodeSequence(strInput))
+            if (!Utf16.IsValid(strInput))
             {
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, paramName);
             }
-        }
-
-        /// <summary>
-        /// ICU does not signal an error during normalization if the input string has invalid unicode,
-        /// unlike Windows (which uses the ERROR_NO_UNICODE_TRANSLATION error value to signal an error).
-        ///
-        /// We walk the string ourselves looking for these bad sequences so we can continue to throw
-        /// ArgumentException in these cases.
-        /// </summary>
-        private static bool HasInvalidUnicodeSequence(ReadOnlySpan<char> s)
-        {
-            const char Noncharacter = '\uFFFE';
-
-            int i = s.IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, Noncharacter);
-
-            for (; (uint)i < (uint)s.Length; i++)
-            {
-                char c = s[i];
-
-                if (c < CharUnicodeInfo.HIGH_SURROGATE_START)
-                {
-                    continue;
-                }
-
-                if (c == Noncharacter)
-                {
-                    return true;
-                }
-
-                // If we see low surrogate before a high one, the string is invalid.
-                if (char.IsLowSurrogate(c))
-                {
-                    return true;
-                }
-
-                if (char.IsHighSurrogate(c))
-                {
-                    if ((uint)(i + 1) >= (uint)s.Length || !char.IsLowSurrogate(s[i + 1]))
-                    {
-                        // A high surrogate at the end of the string or a high surrogate
-                        // not followed by a low surrogate
-                        return true;
-                    }
-
-                    i++; // consume the low surrogate.
-                }
-            }
-
-            return false;
         }
     }
 }
