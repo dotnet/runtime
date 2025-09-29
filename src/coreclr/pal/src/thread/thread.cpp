@@ -2514,7 +2514,16 @@ CPalThread::GetStackLimit()
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 #else // TARGET_BROWSER
-    stackLimit = (void*)emscripten_stack_get_end();
+    uintptr_t stackLimitMaybe = emscripten_stack_get_end();
+    if (stackLimitMaybe == 0) // emscripten_stack_get_end can return 0.
+    {
+        stackLimitMaybe += sizeof(size_t);
+
+        // CoreCLR doesn't like using 0 as a limit address.
+        // So we bump it up a bit and tell emscripten about it.
+        emscripten_stack_set_limits(GetStackBase(), (void*)stackLimitMaybe);
+    }
+    stackLimit = (void*)stackLimitMaybe;
 #endif // TARGET_BROWSER
 #endif // !TARGET_APPLE
 
