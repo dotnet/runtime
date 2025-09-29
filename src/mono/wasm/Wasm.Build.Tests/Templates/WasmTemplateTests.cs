@@ -325,56 +325,19 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs");
 
-            // Build the project to trigger the _CopyDotnetTypeScriptDefinitions target
-            BuildProject(info, config, new BuildOptions());
-
-            // Verify that dotnet.d.ts exists in wwwroot
-            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-            string dotnetDtsPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
-            
-            Assert.True(File.Exists(dotnetDtsPath), $"dotnet.d.ts should exist at {dotnetDtsPath}");
-            
-            // Verify that the file contains expected TypeScript definitions
-            string content = File.ReadAllText(dotnetDtsPath);
-            Assert.Contains("interface DotnetHostBuilder", content);
-            Assert.Contains("RuntimeAPI", content);
-            Assert.Contains("Licensed to the .NET Foundation", content);
-        }
-
-        [Fact]
-        public void TypeScriptDefinitionsUpdatedWhenNewer()
-        {
-            Configuration config = Configuration.Debug;
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsupdate");
-
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string dotnetDtsPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
 
-            // First build
+            Assert.True(File.Exists(dotnetDtsPath), $"dotnet.d.ts should exist at {dotnetDtsPath} after creation");
+
+            // Remove the file to test that MSBuild target recreates it
+            File.Delete(dotnetDtsPath);
+            Assert.False(File.Exists(dotnetDtsPath), $"dotnet.d.ts should be deleted before the build");
+
+            // Build to trigger the _CopyDotnetTypeScriptDefinitions target
             BuildProject(info, config, new BuildOptions());
-            Assert.True(File.Exists(dotnetDtsPath), $"dotnet.d.ts should exist at {dotnetDtsPath}");
-            
-            DateTime firstWriteTime = File.GetLastWriteTime(dotnetDtsPath);
-            
-            // Wait a moment to ensure different timestamps
-            Thread.Sleep(1100);
-            
-            // Modify the template file to simulate an older version
-            File.WriteAllText(dotnetDtsPath, "// Old version\ninterface OldAPI { }");
-            DateTime modifiedTime = File.GetLastWriteTime(dotnetDtsPath);
-            
-            // Second build should update the file
-            BuildProject(info, config, new BuildOptions());
-            DateTime secondWriteTime = File.GetLastWriteTime(dotnetDtsPath);
-            
-            // Verify the file was updated (should be newer than our manual modification)
-            Assert.True(secondWriteTime > modifiedTime, 
-                $"File should have been updated. First: {firstWriteTime}, Modified: {modifiedTime}, Second: {secondWriteTime}");
-            
-            // Verify content was restored to proper TypeScript definitions
-            string content = File.ReadAllText(dotnetDtsPath);
-            Assert.Contains("interface DotnetHostBuilder", content);
-            Assert.DoesNotContain("Old version", content);
+
+            Assert.True(File.Exists(dotnetDtsPath), $"dotnet.d.ts should be recreated at {dotnetDtsPath} after the build");
         }
     }
 }

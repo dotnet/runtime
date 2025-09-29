@@ -98,6 +98,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Static Web Assets -->
     <ResolveStaticWebAssetsInputsDependsOn>
       $(ResolveStaticWebAssetsInputsDependsOn);
+      _EnsureDotnetTypeScriptDefinitions;
       _AddWasmStaticWebAssets;
     </ResolveStaticWebAssetsInputsDependsOn>
     <ResolvePublishStaticWebAssetsDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
@@ -855,5 +856,22 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
       <WasmAssembliesToBundle Include="@(ResolvedFileToPublish)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
     </ItemGroup>
+  </Target>
+
+  <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience -->
+  <Target Name="_EnsureDotnetTypeScriptDefinitions">
+    <PropertyGroup>
+      <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
+      <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
+      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
+      <_DotnetTypesSourcePath>$(_RuntimePackNativeDir)dotnet.d.ts</_DotnetTypesSourcePath>
+      <_DotnetTypesDestPath>$(MSBuildProjectDirectory)\wwwroot\dotnet.d.ts</_DotnetTypesDestPath>
+    </PropertyGroup>
+    
+    <!-- Copy dotnet.d.ts if source exists. MSBuild will skip if files are identical. -->
+    <Copy SourceFiles="$(_DotnetTypesSourcePath)"
+          DestinationFiles="$(_DotnetTypesDestPath)"
+          Condition="Exists('$(_DotnetTypesSourcePath)')"
+          SkipUnchangedFiles="true" />
   </Target>
 </Project>

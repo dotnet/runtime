@@ -259,14 +259,6 @@ if (isDebug) {
     });
 }
 
-// Always copy to the wasmbrowser template so it stays in sync
-typesConfig.output.push({
-    format: "es",
-    file: "../../wasm/templates/templates/browser/wwwroot/dotnet.d.ts",
-    banner: banner_dts,
-    plugins: [alwaysLF(), writeOnChangePlugin()],
-});
-
 const allConfigs = [
     loaderConfig,
     runtimeConfig,
