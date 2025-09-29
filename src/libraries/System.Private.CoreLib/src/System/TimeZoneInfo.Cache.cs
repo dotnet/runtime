@@ -679,7 +679,7 @@ namespace System
                             //
 
                             DateTime previousYearTransitionEnd = SafeCreateDateTimeFromTicks(previousRule.DateEnd.Ticks + 1); // UTC coordinate
-                            if (previousYearTransitionEnd.Ticks < rule.DateStart.Ticks - 1)
+                            if (previousYearTransitionEnd.Ticks <= rule.DateStart.Ticks - 1)
                             {
                                 // Gap between the last year transition end and current year transition start. no daylight
                                 AddTransition(ref allTransitions, ref transitionCount,
@@ -736,11 +736,11 @@ namespace System
                                 long previousEndOfYearUtcTicks = new DateTime(year, 1, 1).Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks + previousRule.DaylightDelta.Ticks) - 2;
                                 DateTime previousEndOfYearUtc = SafeCreateDateTimeFromTicks(previousEndOfYearUtcTicks, DateTimeKind.Utc);
 
-                                if (previousEndOfYearUtc.Ticks < rule.DateStart.Ticks - 1)
+                                if (previousEndOfYearUtc.Ticks <= rule.DateStart.Ticks - 1)
                                 {
                                     // Gap between the end of the last year and current year transition start. no daylight
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(SafeCreateDateTimeFromTicks(previousEndOfYearUtc.Ticks + 1), SafeCreateDateTimeFromTicks(rule.DateStart.Ticks - 1), rule.BaseUtcOffsetDelta, false));
+                                        new TimeTransition(previousEndOfYearUtc, SafeCreateDateTimeFromTicks(rule.DateStart.Ticks - 1), rule.BaseUtcOffsetDelta, false));
                                 }
 
                                 // The daylight start should be around the end of the year and go through the end
@@ -944,7 +944,7 @@ namespace System
                                 //
 
                                 DateTime previousYearTransitionEnd = SafeCreateDateTimeFromTicks(previousYearRule.DateEnd.Ticks + 1); // UTC coordinate
-                                if (previousYearTransitionEnd.Ticks < startOfCurrentYearUtc.Ticks - 1)
+                                if (previousYearTransitionEnd.Ticks <= startOfCurrentYearUtc.Ticks - 1)
                                 {
                                     // Gap between the last year transition end and current year transition start. no daylight
                                     AddTransition(ref allTransitions, ref transitionCount,
