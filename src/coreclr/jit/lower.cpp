@@ -3177,10 +3177,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
-#ifdef TARGET_AMD64
-    assert(!comp->getNeedsGSSecurityCookie()); // jit64 compat: tail calls from methods that need GS check
-#endif                                         // TARGET_AMD64
-
     // We expect to see a call that meets the following conditions
     assert(call->IsFastTailCall());
 
