@@ -2403,16 +2403,15 @@ MAIN_LOOP:
                     break;
                 }
 
+                case INTOP_CALLDELEGATE_TAIL:
                 case INTOP_CALLDELEGATE:
                 {
-                    isTailcall = false;
+                    isTailcall = (*ip == INTOP_CALLDELEGATE_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
 
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
-                    // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
-                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 
                     ip += 4;
 
@@ -2420,7 +2419,67 @@ MAIN_LOOP:
                     NULL_CHECK(delegateObj);
                     PCODE targetAddress = delegateObj->GetMethodPtr();
                     OBJECTREF targetMethodObj = delegateObj->GetTarget();
+                    DelegateEEClass *pDelClass = (DelegateEEClass*)targetMethodObj->GetMethodTable()->GetClass();
+                    if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
+                        (pDelClass->m_pStaticCallStub != NULL && pDelClass->m_pStaticCallStub->GetEntryPoint() == targetAddress))
+                    {
+                        // This implies that we're using a delegate shuffle thunk to strip off the first parameter to the method
+                        // and call the actual underlying method. We allow for tail-calls to work and for greater efficiency in the
+                        // interpreter by skipping the shuffle thunk and calling the actual target method directly.
+                        PCODE actualTarget = delegateObj->GetMethodPtrAux();
+                        PTR_InterpByteCodeStart targetIp;
+                        if ((targetMethod = NonVirtualEntry2MethodDesc(actualTarget)) && (targetIp = targetMethod->GetInterpreterCode()) != NULL)
+                        {
+                            pFrame->ip = ip;
+                            InterpMethod* pTargetMethod = targetIp->Method;
+                            if (isTailcall)
+                            {
+                                // Move args from callArgsOffset to start of stack frame.
+                                assert(pTargetMethod->CheckIntegrity());
+                                // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
+                                // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
+                                //  different signature from the caller.
+                                memcpy(pFrame->pStack, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), pTargetMethod->argsSize);
+                                // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
+                                //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
+                                pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+                            }
+                            else
+                            {
+                                // Shift args down by one slot to remove the delegate obj pointer
+                                memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), pTargetMethod->argsSize);
+                                // Allocate child frame.
+                                InterpMethodContextFrame *pChildFrame = pFrame->pNext;
+                                if (!pChildFrame)
+                                {
+                                    pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                    pChildFrame->pNext = NULL;
+                                    pFrame->pNext = pChildFrame;
+                                    // Save the lowest SP in the current method so that we can identify it by that during stackwalk
+                                    pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
+                                }
+                                pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
+                                pFrame = pChildFrame;
+                            }
+                            // Set execution state for the new frame
+                            pMethod = pFrame->startIp->Method;
+                            assert(pMethod->CheckIntegrity());
+                            stack = pFrame->pStack;
+                            ip = pFrame->startIp->GetByteCodes();
+                            pThreadContext->pStackPointer = stack + pMethod->allocaSize;
+                            break;
+                        }
+                    }
+                    
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
+                    
+                    if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
+                    {
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
                     int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
 
                     // Save current execution state for when we return from called method

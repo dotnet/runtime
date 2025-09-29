@@ -400,6 +400,9 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 {
     STANDARD_VM_CONTRACT;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    return FALSE;
+#else
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 
@@ -632,6 +635,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     pShuffleEntryArray->Append(entry);
 
     return TRUE;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
@@ -829,7 +833,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -933,7 +937,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     else
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
     {
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
