@@ -31,7 +31,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserUtilsExportsToTable(map:BrowserUtilsExports):BrowserUtilsExportsTable {
-        // keep in sync with dotnetUpdateInternalsSubscriber()
+        // keep in sync with browserUtilsExportsFromTable()
         return [
             map.utf16ToString,
             map.stringToUTF16,

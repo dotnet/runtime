@@ -19,7 +19,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserHostExportsToTable(map:BrowserHostExports):BrowserHostExportsTable {
-        // keep in sync with dotnetUpdateInternalsSubscriber()
+        // keep in sync with browserHostExportsFromTable()
         return [
             map.registerDllBytes,
         ];
