@@ -406,13 +406,6 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
     RETURN res;
 }
 
-
-inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *clsRet = NULL)
-{
-    WRAPPER_NO_CONTRACT;
-    return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
-}
-
 enum ConvToJitSigFlags : int
 {
     CONV_TO_JITSIG_FLAGS_NONE       = 0x0,
@@ -2580,7 +2573,7 @@ CorInfoType CEEInfo::asCorInfoType (CORINFO_CLASS_HANDLE clsHnd)
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
-    result = toJitType(VMClsHnd);
+    result = asCorInfoType(VMClsHnd.GetInternalCorElementType(), VMClsHnd);
 
     EE_TO_JIT_TRANSITION();
 
