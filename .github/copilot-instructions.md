@@ -1,3 +1,18 @@
+# dotnet/runtime — AI Coding Agent Instructions
+
+## Essential Architecture
+
+The .NET runtime repository builds the complete .NET runtime, libraries, and host installers for all supported platforms. Understanding the major components and their interactions is critical for effective development:
+
+- **CoreCLR**: Main .NET runtime implementation (`src/coreclr/`, `src/tests/`)
+- **Mono**: Alternative runtime with WASM/mobile support (`src/mono/`)
+- **Libraries**: Base Class Library and framework libraries (`src/libraries/`)
+- **Host/Installers**: Native host (`dotnet`) and installer components (`src/native/corehost/`, `src/installer/`)
+
+**Cross-component dependencies**: Changes affecting multiple components require building and testing all affected areas. Use component mapping in [section 1.1](#11-determine-affected-components) to identify impact scope.
+
+## Mandatory Verification Requirements
+
 **All code you commit MUST compile successfully, and all new and existing tests related to the change MUST pass.**
 
 You are REQUIRED to ensure your changes satisfy these criteria before completing any task. You MUST NOT complete a task or claim success unless:
@@ -40,6 +55,23 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
+
+## Project-Specific Conventions
+
+**Component Integration**:
+- External dependencies are managed via `NuGet.config` and individual project files
+- Cross-component communication uses public APIs and shared contracts; avoid direct internal calls across major component boundaries (CoreCLR ↔ Mono ↔ Libraries ↔ Host)
+- WASM/WASI builds require special workflows; see [WebAssembly workflow](#6-webassembly-wasm-libraries-workflow)
+
+**Build System Patterns**:
+- Always use provided build scripts (`build.cmd`/`build.sh`) from repository root
+- Component detection by file path determines required build/test scope
+- Cross-platform builds may require different target platforms than build platforms
+
+**Testing Workflows**:
+- Establish clean baseline on default branch before making changes
+- Test filtering during development is acceptable, but final verification requires ALL relevant tests to pass
+- Component-specific test commands vary; see workflow sections below
 
 ---
 
