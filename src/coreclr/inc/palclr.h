@@ -96,7 +96,7 @@
 // Ports in progress - run-time asserts only
 #define PORTABILITY_WARNING(message)
 #define PORTABILITY_ASSERT(message)     _ASSERTE(false && (message))
-#endif
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM || TARGET_ARM64
 
 #define DIRECTORY_SEPARATOR_CHAR_A '\\'
 #define DIRECTORY_SEPARATOR_STR_A "\\"
