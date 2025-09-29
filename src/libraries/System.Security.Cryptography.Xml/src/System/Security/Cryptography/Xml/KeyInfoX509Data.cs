@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Xml
 
             X509Certificate2 certificate = new X509Certificate2(cert);
             X509ChainElementCollection elements;
-            X509Chain chain = null;
+            X509Chain? chain = null;
             try
             {
                 switch (includeOption)
@@ -103,11 +103,6 @@ namespace System.Security.Cryptography.Xml
             {
                 if (chain != null)
                 {
-                    for (int i = 0; i < chain.ChainElements.Count; i++)
-                    {
-                        chain.ChainElements[i].Certificate.Dispose();
-                    }
-
                     chain.Dispose();
                 }
             }
