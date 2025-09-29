@@ -6,14 +6,6 @@ import type { isSharedArrayBuffer } from "../../../../corehost/browserhost/host/
 import type { check, error, info, warn } from "../../../../corehost/browserhost/loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
 
-export type JSEngineType = {
-    IS_NODE: boolean,
-    IS_SHELL: boolean,
-    IS_WEB: boolean,
-    IS_WORKER: boolean,
-    IS_SIDECAR: boolean,
-}
-
 export type RuntimeExports = {
 }
 
@@ -31,11 +23,6 @@ export type AssertType = {
 }
 
 export type LoaderExports = {
-    ENVIRONMENT_IS_NODE: ()=> boolean,
-    ENVIRONMENT_IS_SHELL: ()=> boolean,
-    ENVIRONMENT_IS_WEB: ()=> boolean,
-    ENVIRONMENT_IS_WORKER: ()=> boolean,
-    ENVIRONMENT_IS_SIDECAR: ()=> boolean,
     resolveRunMainPromise:typeof resolveRunMainPromise,
     rejectRunMainPromise:typeof rejectRunMainPromise,
     getRunMainPromise:typeof getRunMainPromise,
@@ -46,11 +33,6 @@ export type LoaderExportsTable = [
     typeof warn,
     typeof error,
     typeof check,
-    ()=> boolean,
-    ()=> boolean,
-    ()=> boolean,
-    ()=> boolean,
-    ()=> boolean,
     typeof resolveRunMainPromise,
     typeof rejectRunMainPromise,
     typeof getRunMainPromise,

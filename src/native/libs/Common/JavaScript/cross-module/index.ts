@@ -7,14 +7,13 @@
  * Please keep it small and register it into emscripten as dependency.
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, JSEngineType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
 export let dotnetLogger: LoggerType = {} as any;
 export let dotnetAssert: AssertType = {} as any;
-export let dotnetJSEngine: JSEngineType = {}as any;
 export let dotnetLoaderExports: LoaderExports = {} as any;
 export let dotnetRuntimeExports: RuntimeExports = {} as any;
 export let dotnetBrowserHostExports: BrowserHostExports = {} as any;
@@ -51,8 +50,7 @@ export function dotnetUpdateModuleInternals() {
         dotnetLoaderExports = {} as LoaderExports;
         dotnetLogger = {} as LoggerType;
         dotnetAssert = {} as AssertType;
-        dotnetJSEngine = {} as JSEngineType;
-        expandLoaderExports(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetJSEngine, dotnetLoaderExports);
+        expandLoaderExports(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetLoaderExports);
     }
     if (Object.keys(dotnetRuntimeExports).length === 0 && dotnetInternals[InternalExchangeIndex.RuntimeExportsTable]) {
         dotnetRuntimeExports = {} as RuntimeExports;
@@ -78,7 +76,7 @@ export function dotnetUpdateModuleInternals() {
     }
 
     // keep in sync with tabulateLoaderExports()
-    function expandLoaderExports(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, jsEngine:JSEngineType, dotnetLoaderExports:LoaderExports):void {
+    function expandLoaderExports(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):void {
         const loggerLocal :LoggerType = {
             info: table[0],
             warn: table[1],
@@ -88,26 +86,13 @@ export function dotnetUpdateModuleInternals() {
             check: table[3],
         };
         const loaderExportsLocal :LoaderExports = {
-            ENVIRONMENT_IS_NODE: table[4],
-            ENVIRONMENT_IS_SHELL: table[5],
-            ENVIRONMENT_IS_WEB: table[6],
-            ENVIRONMENT_IS_WORKER: table[7],
-            ENVIRONMENT_IS_SIDECAR: table[8],
-            resolveRunMainPromise: table[9],
-            rejectRunMainPromise: table[10],
-            getRunMainPromise: table[11],
-        };
-        const jsEngineLocal :JSEngineType = {
-            IS_NODE: loaderExportsLocal.ENVIRONMENT_IS_NODE(),
-            IS_SHELL: loaderExportsLocal.ENVIRONMENT_IS_SHELL(),
-            IS_WEB: loaderExportsLocal.ENVIRONMENT_IS_WEB(),
-            IS_WORKER: loaderExportsLocal.ENVIRONMENT_IS_WORKER(),
-            IS_SIDECAR: loaderExportsLocal.ENVIRONMENT_IS_SIDECAR(),
+            resolveRunMainPromise: table[4],
+            rejectRunMainPromise: table[5],
+            getRunMainPromise: table[6],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
         Object.assign(assert, assertLocal);
-        Object.assign(jsEngine, jsEngineLocal);
     }
 
     // keep in sync with tabulateBrowserHostExports()

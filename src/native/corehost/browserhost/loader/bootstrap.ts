@@ -3,7 +3,8 @@
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal } from "./types";
 
-import { dotnetAssert, dotnetJSEngine, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateAllInternals } from "./cross-module";
+import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateAllInternals } from "./cross-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
 import { createPromiseController } from "./promise-controller";
@@ -74,7 +75,7 @@ async function fetchDll(asset: AssemblyAsset): Promise<void> {
 
 async function fetchBytes(asset: WasmAsset|AssemblyAsset|PdbAsset|IcuAsset): Promise<Uint8Array> {
     dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
-    if (dotnetJSEngine.IS_NODE) {
+    if (ENVIRONMENT_IS_NODE) {
         const { promises: fs } = await import("fs");
         const { fileURLToPath } = await import(/*! webpackIgnore: true */"url");
         const isFileUrl = asset.resolvedUrl!.startsWith("file://");
@@ -115,7 +116,7 @@ function normalizeDirectoryUrl(dir: string) {
 const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;
 const windowsAbsoluteRx = /[a-zA-Z]:[\\/]/;
 function isPathAbsolute(path: string): boolean {
-    if (dotnetJSEngine.IS_NODE || dotnetJSEngine.IS_SHELL) {
+    if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
         // unix /x.json
         // windows \x.json
         // windows C:\x.json

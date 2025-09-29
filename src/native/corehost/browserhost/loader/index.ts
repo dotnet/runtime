@@ -13,16 +13,10 @@ import { exit } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn } from "./logging";
 
-import { dotnetAssert, dotnetInternals, dotnetJSEngine, dotnetLoaderExports, dotnetLogger, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetLoaderExports, dotnetLogger, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 
 export function dotnetInitializeModule(): RuntimeAPI {
-    const ENVIRONMENT_IS_NODE = () => typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-    const ENVIRONMENT_IS_WEB_WORKER = () => typeof importScripts == "function";
-    const ENVIRONMENT_IS_SIDECAR = () => ENVIRONMENT_IS_WEB_WORKER() && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
-    const ENVIRONMENT_IS_WORKER = () => ENVIRONMENT_IS_WEB_WORKER() && !ENVIRONMENT_IS_SIDECAR(); // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
-    const ENVIRONMENT_IS_WEB = () => typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER() && !ENVIRONMENT_IS_NODE());
-    const ENVIRONMENT_IS_SHELL = () => !ENVIRONMENT_IS_WEB() && !ENVIRONMENT_IS_NODE();
 
     const dotnetApi: Partial<RuntimeAPI> = {
         INTERNAL: {},
@@ -55,21 +49,9 @@ export function dotnetInitializeModule(): RuntimeAPI {
         invokeLibraryInitializers,
     };
     const loaderFunctions: LoaderExports = {
-        ENVIRONMENT_IS_NODE,
-        ENVIRONMENT_IS_SHELL,
-        ENVIRONMENT_IS_WEB,
-        ENVIRONMENT_IS_WORKER,
-        ENVIRONMENT_IS_SIDECAR,
         getRunMainPromise,
         rejectRunMainPromise,
         resolveRunMainPromise,
-    };
-    const jsEngine = {
-        IS_NODE: ENVIRONMENT_IS_NODE(),
-        IS_SHELL: ENVIRONMENT_IS_SHELL(),
-        IS_WEB: ENVIRONMENT_IS_WEB(),
-        IS_WORKER: ENVIRONMENT_IS_WORKER(),
-        IS_SIDECAR: ENVIRONMENT_IS_SIDECAR(),
     };
     const logger: LoggerType = {
         info,
@@ -82,7 +64,6 @@ export function dotnetInitializeModule(): RuntimeAPI {
     Object.assign(dotnetApi, runtimeApiFunctions);
     Object.assign(dotnetLogger, logger);
     Object.assign(dotnetAssert, assert);
-    Object.assign(dotnetJSEngine, jsEngine);
     Object.assign(dotnetLoaderExports, loaderFunctions);
     dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = dotnetTabLE(dotnetLogger, dotnetAssert, dotnetLoaderExports);
     dotnetUpdateAllInternals();
@@ -95,11 +76,6 @@ export function dotnetInitializeModule(): RuntimeAPI {
             logger.warn,
             logger.error,
             assert.check,
-            dotnetLoaderExports.ENVIRONMENT_IS_NODE,
-            dotnetLoaderExports.ENVIRONMENT_IS_SHELL,
-            dotnetLoaderExports.ENVIRONMENT_IS_WEB,
-            dotnetLoaderExports.ENVIRONMENT_IS_WORKER,
-            dotnetLoaderExports.ENVIRONMENT_IS_SIDECAR,
             dotnetLoaderExports.resolveRunMainPromise,
             dotnetLoaderExports.rejectRunMainPromise,
             dotnetLoaderExports.getRunMainPromise,

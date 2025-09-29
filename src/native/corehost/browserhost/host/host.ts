@@ -59,7 +59,7 @@ export function exit(exit_code: number, reason: any): void {
     if (exit_code !== 0) {
         dotnetLogger.error(`Exit with code ${exit_code} ${reason ? "and reason: " + reasonStr : ""}`);
     }
-    if (dotnetJSEngine.IS_NODE) {
+    if (ENVIRONMENT_IS_NODE) {
         (globalThis as any).process.exit(exit_code);
     }
 }

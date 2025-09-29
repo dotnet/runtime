@@ -4,6 +4,7 @@
 import type { InternalExchange, RuntimeAPI, RuntimeExports, RuntimeExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
 import { dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
+import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApiLocal: Partial<RuntimeAPI> = {
@@ -28,6 +29,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
     throw new Error("Not implemented");
+    return ENVIRONMENT_IS_NODE; // dummy
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
