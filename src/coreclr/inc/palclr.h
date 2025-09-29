@@ -88,7 +88,7 @@
 // The message in these two macros should not contain any keywords like TODO
 // or NYI. It should be just the brief description of the problem.
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 // Finished ports - compile-time errors
 #define PORTABILITY_WARNING(message)    NEED_TO_PORT_THIS_ONE(NEED_TO_PORT_THIS_ONE)
 #define PORTABILITY_ASSERT(message)     NEED_TO_PORT_THIS_ONE(NEED_TO_PORT_THIS_ONE)
