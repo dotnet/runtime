@@ -9,6 +9,7 @@ import {
 
 import { } from "../../Common/JavaScript/cross-linked";
 
+// this is dummy function that references all cross-linked symbols, so that the bundler does not drop them as unused
 export function crossLink() {
     return [
         dotnetAssert, dotnetLogger, Module,
