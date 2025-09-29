@@ -3883,7 +3883,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     CONTRACTL_END;
 
     StackWalkAction retVal = SWA_FAILED;
-    CLR_BOOL isPropagatingToNativeCode = FALSE;
+    CLR_BOOL success = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pTopExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -3915,24 +3915,40 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         // Move the stack frame iterator to the InterpreterFrame and extract the IP of the real caller of the interpreted code.
         retVal = pThis->Next();
         _ASSERTE(retVal != SWA_FAILED);
+        _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
         _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+        InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)pThis->m_crawl.GetFrame();
         // Move to the caller of the interpreted code
         retVal = pThis->Next();
         _ASSERTE(retVal != SWA_FAILED);
+        if (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
+        {
+            // The caller of the interpreted code is not managed.
+            if (pInterpreterFrame->GetReturnAddress() != 0)
+            {
+                // The caller is not InterpreterCodeManager::CallFunclet, so we can update the regdisplay
+                // (The CallFunclet has no TransitionFrame to update from)
+                pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
+            }
+        }
     }
 #endif // FEATURE_INTERPRETER
 
     // Check for reverse pinvoke or CallDescrWorkerInternal.
-    if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
+    if ((pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
+#ifdef FEATURE_INTERPRETER
+         || (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE)
+#endif // FEATURE_INTERPRETER
+        )
     {
         EECodeInfo codeInfo(preUnwindControlPC);
 #ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-        isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+        CLR_BOOL isPropagatingToNativeCode = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
         hdrInfo *hdrInfoBody;
         codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
-        isPropagatingToNativeCode = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+        CLR_BOOL isPropagatingToNativeCode = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
         bool isPropagatingToExternalNativeCode = false;
 
@@ -4016,10 +4032,13 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 }
             }
 
-            // Unwind to the caller of the managed code
-            retVal = pThis->Next();
-            _ASSERTE(retVal != SWA_FAILED);
-            _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
+            *pfIsExceptionIntercepted = FALSE;
+
+            if (fUnwoundReversePInvoke)
+            {
+                *fUnwoundReversePInvoke = TRUE;
+            }
+
             goto Exit;
         }
     }
@@ -4030,7 +4049,6 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE)
         {
             EH_LOG((LL_INFO100, "SfiNext (pass=%d): no more managed frames found on stack", pTopExInfo->m_passNumber));
-            retVal = SWA_FAILED;
             goto Exit;
         }
 
@@ -4096,6 +4114,10 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     {
         EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
     }
+    else
+    {
+        success = TRUE;
+    }
 
     if (!isCollided)
     {
@@ -4104,7 +4126,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
 Exit:;
 
-    if (retVal != SWA_FAILED)
+    if (success)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
@@ -4117,7 +4139,7 @@ Exit:;
 
         if (fUnwoundReversePInvoke)
         {
-            *fUnwoundReversePInvoke = isPropagatingToNativeCode;
+            *fUnwoundReversePInvoke = FALSE;
         }
 
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
@@ -4126,10 +4148,9 @@ Exit:;
                 pTopExInfo->m_passNumber, controlPC, GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()),
                 pThis->m_crawl.GetFunction()->m_pszDebugClassName, pThis->m_crawl.GetFunction()->m_pszDebugMethodName));
         }
-        return TRUE;
     }
 
-    return FALSE;
+    return success;
 }
 
 extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
