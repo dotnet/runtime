@@ -65,11 +65,11 @@ export function dotnetInitializeModule(): RuntimeAPI {
     Object.assign(dotnetLogger, logger);
     Object.assign(dotnetAssert, assert);
     Object.assign(dotnetLoaderExports, loaderFunctions);
-    dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = dotnetTabLE(dotnetLogger, dotnetAssert, dotnetLoaderExports);
+    dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = tabulateLoaderExports(dotnetLogger, dotnetAssert, dotnetLoaderExports);
     dotnetUpdateAllInternals();
     return dotnetApi as RuntimeAPI;
 
-    function dotnetTabLE(logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
+    function tabulateLoaderExports(logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
         // keep in sync with dotnetUpdateModuleInternals()
         return [
             logger.info,
