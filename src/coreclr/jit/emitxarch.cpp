@@ -758,6 +758,21 @@ bool emitter::DoesWriteSignFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesResetOverflowFlag: check if the instruction resets the OF flag to 0.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction resets the OF flag, false otherwise.
+//
+bool emitter::DoesResetOverflowFlag(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Resets_OF) == Resets_OF;
+}
+
+//------------------------------------------------------------------------
 // DoesResetOverflowAndCarryFlags: check if the instruction resets the
 //     OF and CF flag to 0.
 //
@@ -1467,6 +1482,23 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    if ((cond.GetCode() == GenCondition::SLT) || (cond.GetCode() == GenCondition::SGE))
+    {
+        if (DoesResetOverflowFlag(lastIns) && DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    if ((cond.GetCode() == GenCondition::SGT) || (cond.GetCode() == GenCondition::SLE))
+    {
+        if (DoesResetOverflowFlag(lastIns) && DoesWriteZeroFlag(lastIns) && DoesWriteSignFlag(lastIns) &&
+            IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
