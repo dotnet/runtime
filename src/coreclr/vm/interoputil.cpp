@@ -1379,7 +1379,6 @@ VOID EnsureComStarted()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
         PRECONDITION(g_fEEStarted);
     }
     CONTRACTL_END;
@@ -1396,7 +1395,6 @@ HRESULT EnsureComStartedNoThrow()
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(g_fEEStarted);
-        PRECONDITION(GetThreadNULLOk() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
     CONTRACTL_END;
 

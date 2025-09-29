@@ -85,16 +85,6 @@ extern "C" void STDCALL FixupPrecodeCode_End()
     PORTABILITY_ASSERT("FixupPrecodeCode_End is not implemented on wasm");
 }
 
-extern "C" void STDCALL JIT_PatchedCodeLast()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeLast is not implemented on wasm");
-}
-
-extern "C" void STDCALL JIT_PatchedCodeStart()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeStart is not implemented on wasm");
-}
-
 extern "C" void RhpInitialInterfaceDispatch()
 {
     PORTABILITY_ASSERT("RhpInitialInterfaceDispatch is not implemented on wasm");
