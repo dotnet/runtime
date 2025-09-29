@@ -5,36 +5,23 @@ import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExpor
 import { InternalExchangeIndex } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
-import { exit, runMain, runMainAndExit, setEnvironmentVariable, registerDllBytes } from "./host";
-import {
-    setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
-    getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
-    localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
-    isSharedArrayBuffer,
-} from "./memory";
+import { runMain, runMainAndExit, registerDllBytes } from "./host";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         runMain,
         runMainAndExit,
-        setEnvironmentVariable,
-        exit,
-        setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
-        getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
-        localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     };
     Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,
-        isSharedArrayBuffer
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserHostExportsToTable(map:BrowserHostExports):BrowserHostExportsTable {
         // keep in sync with dotnetUpdateInternalsSubscriber()
         return [
             map.registerDllBytes,
-            map.isSharedArrayBuffer,
         ];
     }
 }

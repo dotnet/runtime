@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnetApi, dotnetLogger, dotnetBrowserHostExports } from "../cross-module";
+import { } from "./cross-linked"; // ensure ambient symbols are declared
 
 export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): number {
     // batchedQuotaMax is the max number of bytes as specified by the api spec.
@@ -21,7 +21,7 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
     // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = dotnetBrowserHostExports.isSharedArrayBuffer(memoryView.buffer);
+    const needsCopy = false;//TODOHelpers.isSharedArrayBuffer(memoryView.buffer);
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;

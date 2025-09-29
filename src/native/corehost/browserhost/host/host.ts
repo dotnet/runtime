@@ -48,29 +48,13 @@ export function BrowserHost_RejectMain(reason:any) {
     dotnetLoaderExports.rejectRunMainPromise(reason);
 }
 
-// WASM-TODO: take ideas from Mono
-// - second call to exit should be silent
-// - second call to exit not override the first exit code
-// - improve reason extraction
-// - install global handler for unhandled exceptions and promise rejections
-// - raise ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent()
-export function exit(exit_code: number, reason: any): void {
-    const reasonStr = reason ? (reason.stack ? reason.stack || reason.message : reason.toString()) : "";
-    if (exit_code !== 0) {
-        dotnetLogger.error(`Exit with code ${exit_code} ${reason ? "and reason: " + reasonStr : ""}`);
-    }
-    if (ENVIRONMENT_IS_NODE) {
-        (globalThis as any).process.exit(exit_code);
-    }
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
     // int BrowserHost_ExecuteAssembly(char * assemblyPath)
     const res = Module.ccall("BrowserHost_ExecuteAssembly", "number", ["string"], [mainAssemblyName]) as number;
     if (res != 0) {
         const reason = new Error("Failed to execute assembly");
-        exit(res, reason);
+        dotnetApi.exit(res, reason);
         throw reason;
     }
 
@@ -82,14 +66,10 @@ export async function runMainAndExit(mainAssemblyName?: string, args?: string[])
     try {
         await runMain(mainAssemblyName, args);
     } catch (error) {
-        exit(1, error);
+        dotnetApi.exit(1, error);
         throw error;
     }
-    exit(0, null);
+    dotnetApi.exit(0, null);
     return 0;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function setEnvironmentVariable(name: string, value: string): void {
-    throw new Error("Not implemented");
-}

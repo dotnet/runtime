@@ -68,6 +68,26 @@ const libNativeBrowser = configure({
     }
 });
 
+const libBrowserUtils = configure({
+    input: "./libs/System.Native.Browser/utils/index.ts",
+    output: [{
+        name: "libBrowserUtils",
+        format: "iife",
+        file: artifactsObjDir + `/native/browser-${configuration}-wasm/System.Native.Browser/libSystem.Browser.Utils.js`,
+        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"),
+    }],
+    terser: {
+        compress: {
+            toplevel: true,
+            keep_fnames,
+        }, mangle: {
+            toplevel: true,
+            keep_fnames,
+            reserved,
+        }
+    }
+});
+
 const dotnetRuntimeJS = configure({
     input: "./libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts",
     output: [{
@@ -127,6 +147,7 @@ export default defineConfig([
     dotnetJS,
     dotnetDTS,
     libNativeBrowser,
+    libBrowserUtils,
     dotnetRuntimeJS,
     libInteropJavaScriptNative,
     libBrowserHost,

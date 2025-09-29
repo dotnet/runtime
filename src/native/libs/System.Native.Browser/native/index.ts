@@ -5,6 +5,7 @@ import type { InternalExchange, NativeBrowserExports, NativeBrowserExportsTable 
 import { InternalExchangeIndex } from "../types";
 
 export { SystemJS_RandomBytes } from "./crypto";
+export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
@@ -18,7 +19,3 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         ];
     }
 }
-
-
-// see also `reserved` in `rollup.config.defines.js`
-export * as cross from "../cross-module";

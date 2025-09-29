@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
-import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
+import type { EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
+import { InteropJavaScriptExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -17,10 +17,6 @@ export type JSFnHandle = {
 
 export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
-
-export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
-export const CharPtrNull: CharPtr = <CharPtr><any>0;
-export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
@@ -116,6 +112,7 @@ export type InternalExchange = [
     BrowserHostExportsTable, //5
     InteropJavaScriptExportsTable, //6
     NativeBrowserExportsTable, //7
+    BrowserUtilsExportsTable, //8
 ]
 export const enum InternalExchangeIndex {
     RuntimeAPI = 0,
@@ -126,6 +123,7 @@ export const enum InternalExchangeIndex {
     BrowserHostExportsTable = 5,
     InteropJavaScriptExportsTable = 6,
     NativeBrowserExportsTable = 7,
+    BrowserUtilsExportsTable = 8,
 }
 
 export type JsModuleExports = {

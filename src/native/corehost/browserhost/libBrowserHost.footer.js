@@ -3,11 +3,21 @@
 
 /**
  * This is root of **Emscripten library** that would become part of `dotnet.native.js`
- * It implements the corehost and a part of public JS API related to memory and runtime hosting.
+ * It implements the corehost and JS related to runtime hosting.
  */
 
 (function () {
     function libFactory() {
+        // this executes the function at link time in order to capture exports
+        // this is what Emscripten does for linking JS libraries
+        // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
+        // it would execute the code at link time and call .toString() on functions to move it to the final output
+        // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
+        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
+        const exports = {}
+        libBrowserHost(exports);
+
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -44,17 +54,9 @@
             },
             $libBrowserHostFn: libBrowserHost,
             $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
+            $BROWSER_HOST__deps: commonDeps,
         };
 
-        // this executes the function at link time in order to capture exports
-        // this is what Emscripten does for linking JS libraries
-        // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
-        // it would execute the code at link time and call .toString() on functions to move it to the final output
-        // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
-        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
-        const exports = {}
-        libBrowserHost(exports);
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
         let assignExportsBuilder = "";
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
@@ -63,7 +65,6 @@
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
         }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
-        lib["$BROWSER_HOST__deps"] = commonDeps;
 
         autoAddDeps(lib, "$BROWSER_HOST");
         addToLibrary(lib);

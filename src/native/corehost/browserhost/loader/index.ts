@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { LoggerType, AssertType, RuntimeAPI, LoaderExports, NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable } from "./types";
+import type {
+    LoggerType, AssertType, RuntimeAPI, LoaderExports,
+    NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable, BrowserUtilsExportsTable
+} from "./types";
 import { InternalExchangeIndex } from "../types";
 
 import ProductVersion from "consts:productVersion";
@@ -44,6 +47,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
         null as any as BrowserHostExportsTable, //5
         null as any as InteropJavaScriptExportsTable, //6
         null as any as NativeBrowserExportsTable, //7
+        null as any as BrowserUtilsExportsTable, //8
     ];
     Object.assign(dotnetInternals, internals);
     const loaderFunctions: LoaderExports = {

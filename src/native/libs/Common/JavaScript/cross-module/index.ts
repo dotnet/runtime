@@ -19,7 +19,7 @@
  *  - each JS module to use exported symbols in ergonomic way
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer } from "../types";
 import { InternalExchangeIndex } from "../types";
 
 export let Module: DotnetModuleInternal;
@@ -31,7 +31,12 @@ export let dotnetRuntimeExports: RuntimeExports = {} as any;
 export let dotnetBrowserHostExports: BrowserHostExports = {} as any;
 export let dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export let dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
+export let dotnetNativeHelperExports: BrowserUtilsExports = {} as any;
 export let dotnetInternals: InternalExchange = {} as any;
+
+export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
+export const CharPtrNull: CharPtr = <CharPtr><any>0;
+export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function dotnetGetInternals(): InternalExchange {
     return dotnetInternals;
@@ -81,6 +86,10 @@ export function dotnetUpdateInternalsSubscriber() {
         dotnetBrowserHostExports = {} as BrowserHostExports;
         browserHostExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable], dotnetBrowserHostExports);
     }
+    if (Object.keys(dotnetNativeHelperExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable]) {
+        dotnetNativeHelperExports = {} as BrowserUtilsExports;
+        nativeHelperExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable], dotnetNativeHelperExports);
+    }
     if (Object.keys(dotnetInteropJSExports).length === 0 && dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
         dotnetInteropJSExports = {} as InteropJavaScriptExports;
         interopJavaScriptExportsFromTable(dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], dotnetInteropJSExports);
@@ -120,7 +129,6 @@ export function dotnetUpdateInternalsSubscriber() {
     function browserHostExportsFromTable(table:BrowserHostExportsTable, native:BrowserHostExports):void {
         const nativeLocal :BrowserHostExports = {
             registerDllBytes: table[0],
-            isSharedArrayBuffer: table[1],
         };
         Object.assign(native, nativeLocal);
     }
@@ -135,6 +143,16 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with nativeBrowserExportsToTable()
     function nativeBrowserExportsFromTable(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
         const interopLocal :NativeBrowserExports = {
+        };
+        Object.assign(interop, interopLocal);
+    }
+
+    // keep in sync with nativeHelperExportsToTable()
+    function nativeHelperExportsFromTable(table:BrowserUtilsExportsTable, interop:BrowserUtilsExports):void {
+        const interopLocal :BrowserUtilsExports = {
+            utf16ToString: table[0],
+            stringToUTF16: table[1],
+            stringToUTF16Ptr: table[2],
         };
         Object.assign(interop, interopLocal);
     }

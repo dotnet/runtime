@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MemOffset, NumberOrPointer, VoidPtr } from "./types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import type { CharPtr, MemOffset, NumberOrPointer, VoidPtr } from "../types";
+import { Module, dotnetAssert, dotnetLogger } from "./cross-module";
 
-export const max_int64_big = BigInt("9223372036854775807");
-export const min_int64_big = BigInt("-9223372036854775808");
-export const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
+const max_int64_big = BigInt("9223372036854775807");
+const min_int64_big = BigInt("-9223372036854775808");
+const sharedArrayBufferDefined = typeof SharedArrayBuffer !== "undefined";
 
 export function assertIntInRange(value: Number, min: Number, max: Number) {
     dotnetAssert.check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
@@ -252,4 +252,30 @@ export function isSharedArrayBuffer(buffer: any): buffer is SharedArrayBuffer {
     // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
     // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
     return sharedArrayBufferDefined && buffer[Symbol.toStringTag] === "SharedArrayBuffer";
+}
+
+// does not check for growable heap
+export function getU16Local(localView: Uint16Array, offset: MemOffset): number {
+    return localView[<any>offset >>> 1];
+}
+
+// does not check for growable heap
+export function setU16Local(localView: Uint16Array, offset: MemOffset, value: number): void {
+    assertIntInRange(value, 0, 0xFFFF);
+    localView[<any>offset >>> 1] = value;
+}
+
+// When threading is enabled, TextDecoder does not accept a view of a
+// SharedArrayBuffer, we must make a copy of the array first.
+// See https://github.com/whatwg/encoding/issues/172
+export function viewOrCopy(view: Uint8Array, start: CharPtr, end: CharPtr): Uint8Array {
+    // this condition should be eliminated by rollup on non-threading builds
+    const needsCopy = isSharedArrayBuffer(view.buffer);
+    return needsCopy
+        ? view.slice(<any>start, <any>end)
+        : view.subarray(<any>start, <any>end);
+}
+
+export function zeroRegion(byteOffset: VoidPtr, sizeBytes: number): void {
+    localHeapViewU8().fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { registerDllBytes } from "../../../../corehost/browserhost/host/host";
-import type { isSharedArrayBuffer } from "../../../../corehost/browserhost/host/memory";
 import type { check, error, info, warn } from "../../../../corehost/browserhost/loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
+import type { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 
 export type RuntimeExports = {
 }
@@ -39,13 +39,11 @@ export type LoaderExportsTable = [
 ]
 
 export type BrowserHostExports = {
-    isSharedArrayBuffer : typeof isSharedArrayBuffer,
     registerDllBytes: typeof registerDllBytes
 }
 
 export type BrowserHostExportsTable = [
     typeof registerDllBytes,
-    typeof isSharedArrayBuffer,
 ]
 
 export type InteropJavaScriptExports = {
@@ -58,4 +56,16 @@ export type NativeBrowserExports = {
 }
 
 export type NativeBrowserExportsTable = [
+]
+
+export type BrowserUtilsExports = {
+    utf16ToString: typeof utf16ToString,
+    stringToUTF16: typeof stringToUTF16,
+    stringToUTF16Ptr: typeof stringToUTF16Ptr,
+}
+
+export type BrowserUtilsExportsTable = [
+    typeof utf16ToString,
+    typeof stringToUTF16,
+    typeof stringToUTF16Ptr,
 ]
