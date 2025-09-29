@@ -972,6 +972,8 @@ DWORD GetRuntimeId()
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
 
+#ifndef FEATURE_PORTABLE_HELPERS
+
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
@@ -1023,6 +1025,20 @@ extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#else // FEATURE_PORTABLE_HELPERS
+
+BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
+{
+    return FALSE;
+}
+
+PCODE AdjustWriteBarrierIP(PCODE controlPc)
+{
+    UNREACHABLE();
+}
+
+#endif // FEATURE_PORTABLE_HELPERS
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -4625,9 +4641,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // This method can be called on current thread only
     _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
 
-    // Reset any bits that request for CoInitialize
-    ResetRequiresCoInitialize();
-
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
     if (state == AS_Unknown)
@@ -4787,10 +4800,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
             _ASSERTE(!"Unexpected HRESULT From RoInitialize");
         }
     }
-
-    // Since we've just called CoInitialize, COM has effectively been started up.
-    // To ensure the CLR is aware of this, we need to call EnsureComStarted.
-    EnsureComStarted(FALSE);
 
     return GetApartment();
 }
@@ -6036,13 +6045,11 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     {
         m_CacheStackBase  = GetStackUpperBound();
         m_CacheStackLimit = GetStackLowerBound();
-#if !defined(TARGET_WASM) // WASM-TODO: stack can start at address 0 on wasm/emscripten and usually does in Debug builds
         if (m_CacheStackLimit == NULL)
         {
             _ASSERTE(!"Failed to set stack limits");
             return FALSE;
         }
-#endif
 
         // Compute the limit used by TryEnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and

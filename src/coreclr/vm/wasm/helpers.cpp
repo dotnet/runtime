@@ -86,16 +86,6 @@ extern "C" void STDCALL FixupPrecodeCode_End()
     PORTABILITY_ASSERT("FixupPrecodeCode_End is not implemented on wasm");
 }
 
-extern "C" void STDCALL JIT_PatchedCodeLast()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeLast is not implemented on wasm");
-}
-
-extern "C" void STDCALL JIT_PatchedCodeStart()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeStart is not implemented on wasm");
-}
-
 extern "C" void RhpInitialInterfaceDispatch()
 {
     PORTABILITY_ASSERT("RhpInitialInterfaceDispatch is not implemented on wasm");
@@ -540,6 +530,12 @@ namespace
         (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2));
     }
 
+    void CallFunc_I32IND_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3));
+    }
+
     void CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -712,6 +708,7 @@ namespace
         { "vn", (void*)&CallFunc_I32IND_RetVoid },
         { "vni", (void*)&CallFunc_I32IND_I32_RetVoid },
         { "vnii", (void*)&CallFunc_I32IND_I32_I32_RetVoid },
+        { "vniii", (void)&CallFunc_I32IND_I32_I32_I32_RetVoid,
         { "vniiiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid },
 
         { "i", (void*)&CallFunc_Void_RetI32 },
