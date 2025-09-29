@@ -131,7 +131,7 @@ While most failures can be matched via known issues, a few failures modes cannot
 - `/ba-g deadletter` - Helix infrastructure failed with "This is a helix work item crash with status: DeadLetter." error message. Validate that the coverage provided by the dead-lettered leg is not relevant to the PR first. Rerun the leg instead if the coverage is relevant.
 - `/ba-g missing logs` - Logs are completely missing.
 - `/ba-g insufficient info in logs` - There is no good unique pattern in the logs to open a known issue.
-- `/ba-g recently fixed known issue` - The fix for the known issue had already been merged, but the CI run was triggered beforehand.
+- `/ba-g recently fixed known issue #<Known Issue number>` - The fix for the known issue had already been merged, but the CI run was triggered beforehand.
 On release branches, Build Analysis does not automatically turn green, even for known issues. Authors are required to use `/ba-g <reason>` to manually inspect the build analysis results and update its status as appropriate.
 For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md
 
