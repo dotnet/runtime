@@ -150,18 +150,10 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
-                // If non-null, filter out members that have this attribute defined on them.
-                private readonly RuntimeType? m_metadataUpdateDeletedAttribute;
-
-                // The module that defines the members being filtered, or null if not needed.
-                private readonly RuntimeModule? m_declaringModule;
-
-                public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType, RuntimeType? metadataUpdateDeletedAttribute, RuntimeModule? declaringModule)
+                public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
                     m_listType = listType;
-                    m_metadataUpdateDeletedAttribute = metadataUpdateDeletedAttribute;
-                    m_declaringModule = declaringModule;
                 }
 
                 public bool Match(MdUtf8String name)
@@ -189,16 +181,6 @@ namespace System
                 }
 
                 public bool CaseSensitive() => m_listType == MemberListType.CaseSensitive;
-
-                public bool FilterMetadataUpdateDeletedMembers
-                    => MetadataUpdater.IsSupported && m_metadataUpdateDeletedAttribute != null;
-
-                public bool IsMetadataUpdateDeleted(int memberToken)
-                {
-                    Debug.Assert(m_metadataUpdateDeletedAttribute != null);
-                    Debug.Assert(m_declaringModule != null);
-                    return CustomAttribute.IsCustomAttributeDefined(m_declaringModule, memberToken, m_metadataUpdateDeletedAttribute);
-                }
             }
 
             private sealed class MemberInfoCache<T> where T : MemberInfo
@@ -370,13 +352,9 @@ namespace System
                     if (name.Length != 0)
                         Encoding.UTF8.GetBytes(name, utf8Name);
 
-                    var (metadataUpdateDeletedAttributeRuntimeType, declaringModule) = MetadataUpdater.IsSupported && RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers
-                        ? (typeof(System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute).UnderlyingSystemType as RuntimeType, ReflectedType.GetRuntimeModule())
-                        : default;
-
                     fixed (byte* pUtf8Name = utf8Name)
                     {
-                        Filter filter = new Filter(pUtf8Name, utf8Name.Length, listType, metadataUpdateDeletedAttributeRuntimeType, declaringModule);
+                        Filter filter = new Filter(pUtf8Name, utf8Name.Length, listType);
                         object list = null!;
 
                         switch (cacheType)
@@ -603,6 +581,8 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+
                     if (declaringType.IsActualInterface)
                     {
                         #region IsInterface
@@ -629,7 +609,9 @@ namespace System
                                 continue;
                             #endregion
 
-                            if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeMethodHandle.GetMethodDef(methodHandle)))
                             {
                                 continue;
                             }
@@ -715,7 +697,9 @@ namespace System
                                 #endregion
 
                                 // Filter out deleted method before setting override state, so that a deleted override in a subclass does not hide override in an ancestor.
-                                if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                if (MetadataUpdater.IsSupported &&
+                                    RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                    RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeMethodHandle.GetMethodDef(methodHandle)))
                                 {
                                     continue;
                                 }
@@ -765,6 +749,7 @@ namespace System
                         #endregion
                     }
 
+                    GC.KeepAlive(declaringModule);
                     return list.ToArray();
                 }
 
@@ -778,6 +763,7 @@ namespace System
                     ListBuilder<RuntimeConstructorInfo> list = default;
 
                     RuntimeType declaringType = ReflectedType;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
 
                     foreach (RuntimeMethodHandleInternal methodHandle in RuntimeTypeHandle.GetIntroducedMethods(declaringType))
                     {
@@ -799,7 +785,9 @@ namespace System
                             (methodAttributes & MethodAttributes.Abstract) == 0 &&
                             (methodAttributes & MethodAttributes.Virtual) == 0);
 
-                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeMethodHandle.GetMethodDef(methodHandle)))
                         {
                             continue;
                         }
@@ -819,6 +807,7 @@ namespace System
                         list.Add(runtimeConstructorInfo);
                     }
 
+                    GC.KeepAlive(declaringModule);
                     return list.ToArray();
                 }
 
@@ -893,6 +882,7 @@ namespace System
 
                     bool needsStaticFieldForGeneric = declaringType.IsGenericType && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
 
                     foreach (IntPtr handle in fieldHandles)
                     {
@@ -915,7 +905,9 @@ namespace System
                                 continue;
                         }
 
-                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeFieldHandle.GetToken(handle)))
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(handle)))
                         {
                             continue;
                         }
@@ -934,6 +926,8 @@ namespace System
 
                         list.Add(runtimeFieldInfo);
                     }
+
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private void PopulateLiteralFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
@@ -947,8 +941,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -980,7 +974,9 @@ namespace System
                                     continue;
                             }
 
-                            if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(tkField))
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(tkField)))
                             {
                                 continue;
                             }
@@ -997,7 +993,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private void AddSpecialInterface(
@@ -1193,8 +1189,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1213,7 +1209,9 @@ namespace System
                                 continue;
                         }
 
-                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(tkEvent))
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(tkEvent)))
                         {
                             continue;
                         }
@@ -1245,7 +1243,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1305,8 +1303,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1331,7 +1329,9 @@ namespace System
                         }
 
                         // Filter out deleted property before updating usedSlots, so that a deleted override in a subclass does not hide override in an ancestor.
-                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(tkProperty))
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(tkProperty)))
                         {
                             continue;
                         }
@@ -1425,7 +1425,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
                 #endregion
 

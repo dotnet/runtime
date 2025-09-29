@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 
 [assembly: MetadataUpdateHandler(typeof(RuntimeTypeMetadataUpdateHandler))]
 
@@ -15,6 +16,9 @@ namespace System.Reflection.Metadata
         /// True to enable filtering deleted members from Reflection results. Set after the first metadata update.
         /// </summary>
         internal static bool FilterDeletedMembers { get; private set; }
+
+        internal static bool IsMetadataUpdateDeleted(RuntimeModule module, int memberToken)
+            => CustomAttribute.IsCustomAttributeDefined(module, memberToken, (RuntimeType)typeof(MetadataUpdateDeletedAttribute));
 
         /// <summary>Clear type caches in response to an update notification.</summary>
         /// <param name="types">The specific types to be cleared, or null to clear everything.</param>
