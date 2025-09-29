@@ -400,9 +400,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    return FALSE;
-#else
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 
@@ -635,7 +632,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     pShuffleEntryArray->Append(entry);
 
     return TRUE;
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
