@@ -31,7 +31,7 @@ export let dotnetRuntimeExports: RuntimeExports = {} as any;
 export let dotnetBrowserHostExports: BrowserHostExports = {} as any;
 export let dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export let dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
-export let dotnetNativeHelperExports: BrowserUtilsExports = {} as any;
+export let dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
 export let dotnetInternals: InternalExchange = {} as any;
 
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
@@ -86,9 +86,9 @@ export function dotnetUpdateInternalsSubscriber() {
         dotnetBrowserHostExports = {} as BrowserHostExports;
         browserHostExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable], dotnetBrowserHostExports);
     }
-    if (Object.keys(dotnetNativeHelperExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable]) {
-        dotnetNativeHelperExports = {} as BrowserUtilsExports;
-        nativeHelperExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable], dotnetNativeHelperExports);
+    if (Object.keys(dotnetBrowserUtilsExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable]) {
+        dotnetBrowserUtilsExports = {} as BrowserUtilsExports;
+        nativeHelperExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable], dotnetBrowserUtilsExports);
     }
     if (Object.keys(dotnetInteropJSExports).length === 0 && dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
         dotnetInteropJSExports = {} as InteropJavaScriptExports;

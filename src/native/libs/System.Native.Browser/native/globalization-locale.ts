@@ -8,15 +8,15 @@ import { } from "./cross-linked"; // ensure ambient symbols are declared
 export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     const OUTER_SEPARATOR = "##";
     try {
-        const localeNameOriginal = dotnetNativeHelperExports.utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
+        const localeNameOriginal = dotnetBrowserUtilsExports.utf16ToString(<any>locale, <any>(locale + 2 * localeLength));
         const localeName = normalizeLocale(localeNameOriginal);
         if (!localeName && localeNameOriginal) {
             // handle non-standard or malformed locales by forwarding the locale code
-            dotnetNativeHelperExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+            dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
             dotnetApi.setHeapI32( dstLength, localeNameOriginal.length);
             return VoidPtrNull;
         }
-        const cultureNameOriginal = dotnetNativeHelperExports.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureNameOriginal = dotnetBrowserUtilsExports.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureName = normalizeLocale(cultureNameOriginal);
 
         if (!localeName || !cultureName)
@@ -43,7 +43,7 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
                 } catch (error) {
                     if (error instanceof RangeError && localeNameOriginal) {
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
-                        dotnetNativeHelperExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+                        dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
                         dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
                         return VoidPtrNull;
                     }
@@ -65,12 +65,12 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
         if (result.length > dstMaxLength)
             throw new Error(`Locale info for locale=${localeName} exceeds length of ${dstMaxLength}.`);
 
-        dotnetNativeHelperExports.stringToUTF16(dst, dst + 2 * result.length, result);
+        dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * result.length, result);
         dotnetApi.setHeapI32(dstLength, result.length);
         return VoidPtrNull;
     } catch (ex: any) {
         dotnetApi.setHeapI32(dstLength, -1);
-        return dotnetNativeHelperExports.stringToUTF16Ptr(ex.toString());
+        return dotnetBrowserUtilsExports.stringToUTF16Ptr(ex.toString());
     }
 
     function normalizeLocale(locale: string | null) {

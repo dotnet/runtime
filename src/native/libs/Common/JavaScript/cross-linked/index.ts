@@ -11,7 +11,7 @@ declare global {
     export const dotnetAssert:AssertType;
     export const dotnetLogger:LoggerType;
     export const dotnetLoaderExports:LoaderExports;
-    export const dotnetNativeHelperExports:BrowserUtilsExports;
+    export const dotnetBrowserUtilsExports:BrowserUtilsExports;
     export const dotnetUpdateInternals:(internals?:Partial<InternalExchange>, subscriber?:InternalExchangeSubscriber) => void;
     export const dotnetUpdateInternalsSubscriber:(internals:InternalExchange) => void;
 

@@ -27,7 +27,7 @@ export const reserved = [
     "Module", "dotnetApi",
     "dotnetInternals", "dotnetLogger", "dotnetAssert", "dotnetJSEngine",
     "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
-    "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports", "dotnetNativeBrowserExports",
+    "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports", "dotnetNativeBrowserExports", "dotnetBrowserUtilsExports",
 ];
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
