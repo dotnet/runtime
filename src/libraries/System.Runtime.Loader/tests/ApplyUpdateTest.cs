@@ -59,7 +59,7 @@ namespace System.Reflection.Metadata
                     "P3 : ReflectionDeleteMember",
                     "E1 : ReflectionDeleteMember",
                     "F1 : ReflectionDeleteMember",
-                ], Inspect(type_ReflectionDeleteMember_Derived2));
+                ], Inspect(type_ReflectionDeleteMember));
 
                 Assert.Equal(
                 [
@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata
                     "E1 : ReflectionDeleteMember",
                     "F1 : ReflectionDeleteMember_Derived",
                     "F1 : ReflectionDeleteMember",
-                ], Inspect(type_ReflectionDeleteMember_Derived2));
+                ], Inspect(type_ReflectionDeleteMember_Derived));
 
                 Assert.Equal(
                 [
@@ -126,7 +126,7 @@ namespace System.Reflection.Metadata
                     "P2 : IReflectionDeleteMember",
                     "E1 : IReflectionDeleteMember",
                     "E2 : IReflectionDeleteMember",
-                ], Inspect(type_ReflectionDeleteMember_Derived2));
+                ], Inspect(type_IReflectionDeleteMember));
             });
 
             static IEnumerable<string> Inspect(Type type)
