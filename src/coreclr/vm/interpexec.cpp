@@ -2418,8 +2418,7 @@ MAIN_LOOP:
                     DELEGATEREF delegateObj = LOCAL_VAR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(delegateObj);
                     PCODE targetAddress = delegateObj->GetMethodPtr();
-                    OBJECTREF targetMethodObj = delegateObj->GetTarget();
-                    DelegateEEClass *pDelClass = (DelegateEEClass*)targetMethodObj->GetMethodTable()->GetClass();
+                    DelegateEEClass *pDelClass = (DelegateEEClass*)delegateObj->GetMethodTable()->GetClass();
                     if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
                         (pDelClass->m_pStaticCallStub != NULL && pDelClass->m_pStaticCallStub->GetEntryPoint() == targetAddress))
                     {
@@ -2471,6 +2470,7 @@ MAIN_LOOP:
                         }
                     }
                     
+                    OBJECTREF targetMethodObj = delegateObj->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
                     
                     if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
