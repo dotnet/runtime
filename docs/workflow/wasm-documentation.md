@@ -1,6 +1,6 @@
 # WebAssembly (WASM) Documentation
 
-This document serves as a comprehensive index to all WebAssembly-related documentation in the dotnet/runtime repository. Whether you're building, testing, debugging, or deploying .NET applications for WebAssembly, this guide will help you find the right resources.
+This document serves as a comprehensive guide for contributors to the WebAssembly implementation in the dotnet/runtime repository. It provides links and references to technical documentation, workflows, and resources relevant to developing and maintaining WebAssembly support within this codebase.
 
 ## Table of Contents
 
@@ -60,28 +60,17 @@ For consolidated debugging instructions including VS Code and Chrome DevTools se
 
 ### Build Configuration
 Key MSBuild properties for WebAssembly applications:
-- `WasmEnableThreads` - Enable multi-threading support
-- `WasmEnableSIMD` - Enable SIMD instruction support
-- `RunAOTCompilation` - Enable Ahead-of-Time compilation
+- [`WasmEnableThreads`](../../src/mono/wasm/features.md#multi-threading) - Enable multi-threading support
+- [`WasmEnableSIMD`](../../src/mono/wasm/features.md#simd---single-instruction-multiple-data) - Enable SIMD instruction support
+- [`RunAOTCompilation`](../../src/mono/wasm/features.md#aot) - Enable Ahead-of-Time compilation
 - `WasmBuildNative` - Force native rebuild
 - `EnableDiagnostics` - Enable diagnostic features
 
 ### Globalization and ICU
 - **[ICU for WebAssembly](../../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
 
-## Deployment and Hosting
-
-### Application Structure
-- **AppBundle folder**: Contains your deployed application
-- **_framework folder**: Runtime and managed assemblies
-- **dotnet.js**: Main entry point and JavaScript API
-- **dotnet.native.wasm**: Compiled .NET runtime binary
-
-### Web Server Configuration
-Ensure your web server is configured with proper MIME types:
-- `.wasm` files: `application/wasm`
-- `.js` files: `text/javascript`
-- `.json` files: `application/json`
+### Testing WebAssembly Changes
+For testing WebAssembly implementation changes end-to-end, see the [testing documentation](../testing/mono/testing.md#testing-webassembly).
 
 ## Advanced Topics
 
@@ -109,6 +98,10 @@ See the [WebAssembly Debugging Reference](debugging/wasm-debugging.md#common-deb
 ### How do I build for different WebAssembly targets?
 
 See the [Building for WebAssembly](#building-for-webassembly) section above for comprehensive build instructions for different targets.
+
+### How do I test WASM changes end to end?
+
+Use Wasm.Build.Tests or Wasi.Build.Tests. See the [Wasm.Build.Tests README](../../src/mono/wasm/Wasm.Build.Tests/README.md) for detailed instructions.
 
 ### How do I enable multi-threading?
 
