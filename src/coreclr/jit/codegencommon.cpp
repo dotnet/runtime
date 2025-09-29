@@ -1552,14 +1552,11 @@ void CodeGen::genExitCode(BasicBlock* block)
        Note that this may result in a duplicate IPmapping entry, and
        that this is ok  */
 
-    // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
 #ifdef DEBUG
     // For returnining epilogs do some validation that the GC info looks right.
-    if (!jmpEpilog)
+    if (!block->HasFlag(BBF_HAS_JMP))
     {
         if (compiler->compMethodReturnsRetBufAddr())
         {
@@ -1583,7 +1580,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     if (compiler->getNeedsGSSecurityCookie())
     {
-        genEmitGSCookieCheck(jmpEpilog);
+        genEmitGSCookieCheck(block);
     }
 
     genReserveEpilog(block);
@@ -2506,6 +2503,44 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
         default:
             unreached();
     }
+}
+
+// -----------------------------------------------------------------------------
+// genGetGSCookieTempRegs:
+//   Get a mask of registers to use for the GS cookie check for a specific
+//   terminating block.
+//
+// Returns:
+//   Mask of all the registers that can be used. Some targets may need more
+//   than one register.
+//
+regMaskTP CodeGenInterface::genGetGSCookieTempRegs(BasicBlock* block)
+{
+#ifdef TARGET_XARCH
+    if (block->HasFlag(BBF_HAS_JMP))
+    {
+        // If we are tailcalling then return registers are available for use
+        return RBM_RAX;
+    }
+
+#ifdef TARGET_AMD64
+    // Otherwise on x64 (win-x64 and SysV) r8 is never used for return values
+    return RBM_R8;
+#else
+    // On x86 it's more difficult: we have only eax, ecx and edx available as volatile
+    // registers, and all of them may be used for return values (longs + async continuation).
+    if (compiler->compIsAsync())
+    {
+        // Just use a callee save for this rare async + gs cookie check case.
+        return RBM_ESI;
+    }
+
+    // Outside async ecx is not used for returns.
+    return RBM_ECX;
+#endif
+#else
+    return RBM_GSCOOKIE_TMP;
+#endif
 }
 
 //----------------------------------------------------------------------

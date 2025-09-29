@@ -84,64 +84,20 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     }
 }
 
-/*****************************************************************************
- *
- *   Generate code to check that the GS cookie wasn't thrashed by a buffer
- *   overrun.  If pushReg is true, preserve all registers around code sequence.
- *   Otherwise ECX could be modified.
- *
- *   Implementation Note: pushReg = true, in case of tail calls.
- */
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
+//---------------------------------------------------------------------
+// genEmitGSCookieCheck:
+//   Emit the check that the GS cookie has its original value.
+//
+// Parameters:
+//   block - The basic block that is having a GS cookie check emitted
+//
+void CodeGen::genEmitGSCookieCheck(BasicBlock* block)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    regNumber regGSCheck;
-    regMaskTP regMaskGSCheck = RBM_NONE;
-
-    if (!pushReg)
-    {
-        // Non-tail call: we can use any callee trash register that is not
-        // a return register or contain 'this' pointer (keep alive this), since
-        // we are generating GS cookie check after a GT_RETURN block.
-        // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well
-        // as return register for two-register-returned structs.
-#ifdef TARGET_X86
-        // Note: ARG_0 can be REG_ASYNC_CONTINUATION_RET
-        // we will check for that later if we end up saving/restoring this.
-        regGSCheck                      = REG_ARG_0;
-        regNumber regGSCheckAlternative = REG_ARG_1;
-#else
-        // these cannot be a part of any kind of return
-        regGSCheck                      = REG_R8;
-        regNumber regGSCheckAlternative = REG_R9;
-#endif
-
-        if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
-            (compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum() == regGSCheck))
-        {
-            regGSCheck = regGSCheckAlternative;
-        }
-    }
-    else
-    {
-#ifdef TARGET_X86
-        // It doesn't matter which register we pick, since we're going to save and restore it
-        // around the check.
-        // TODO-CQ: Can we optimize the choice of register to avoid doing the push/pop sometimes?
-        regGSCheck     = REG_EAX;
-        regMaskGSCheck = RBM_EAX;
-#else  // !TARGET_X86
-       // Jmp calls: specify method handle using which JIT queries VM for its entry point
-       // address and hence it can neither be a VSD call nor PInvoke calli with cookie
-       // parameter.  Therefore, in case of jmp calls it is safe to use R11.
-        regGSCheck = REG_R11;
-#endif // !TARGET_X86
-    }
-
-    regMaskTP byrefPushedRegs = RBM_NONE;
-    regMaskTP norefPushedRegs = RBM_NONE;
-    regMaskTP pushedRegs      = RBM_NONE;
+    regMaskTP tempRegs = genGetGSCookieTempRegs(block);
+    assert(tempRegs != RBM_NONE);
+    regNumber regGSCheck = genFirstRegNumFromMask(tempRegs);
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -163,18 +119,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-        // AOT case - GS cookie value needs to be accessed through an indirection.
-
-        // if we use the continuation reg, the pop/push requires no-GC
-        // this can happen only when AOT supports async on x86
-        if (compiler->compIsAsync() && (regGSCheck == REG_ASYNC_CONTINUATION_RET))
-        {
-            regMaskGSCheck = RBM_ASYNC_CONTINUATION_RET;
-            GetEmitter()->emitDisableGC();
-        }
-
-        pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
-
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSCheck, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, regGSCheck, regGSCheck, 0);
         GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
@@ -184,8 +128,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     inst_JMP(EJ_je, gsCheckBlk);
     genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
     genDefineTempLabel(gsCheckBlk);
-
-    genPopRegs(pushedRegs, byrefPushedRegs, norefPushedRegs);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
@@ -6057,7 +5999,7 @@ void CodeGen::genCall(GenTreeCall* call)
             assert(compiler->gsGlobalSecurityCookieAddr == nullptr);
             assert((int)compiler->gsGlobalSecurityCookieVal == (ssize_t)compiler->gsGlobalSecurityCookieVal);
 #endif
-            genEmitGSCookieCheck(true);
+            genEmitGSCookieCheck(compiler->compCurBB);
         }
     }
 

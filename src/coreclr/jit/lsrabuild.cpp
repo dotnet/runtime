@@ -2535,6 +2535,15 @@ void LinearScan::buildIntervals()
             currentLoc += 2;
         }
 
+        if (compiler->getNeedsGSSecurityCookie() && block->KindIs(BBJ_RETURN))
+        {
+            // The cookie check will kill some registers that it is using.
+            // Model this to ensure values that are kept live throughout the
+            // method are properly made available.
+            addKillForRegs(compiler->codeGen->genGetGSCookieTempRegs(block), currentLoc + 1);
+            currentLoc += 2;
+        }
+
         if (localVarsEnregistered)
         {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE

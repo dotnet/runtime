@@ -1097,7 +1097,7 @@ protected:
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
 #endif
-    void genEmitGSCookieCheck(bool pushReg);
+    void genEmitGSCookieCheck(BasicBlock* block);
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
