@@ -67,9 +67,9 @@ For testing WebAssembly implementation changes end-to-end, see the [testing docu
 ## Advanced Topics
 
 ### Performance and Optimization
-- **Profiling**: Use browser dev tools profiler integration
-- **AOT Compilation**: Improve runtime performance with ahead-of-time compilation
-- **IL Trimming**: Reduce application size by removing unused code
+- **[Profiling](../../src/mono/wasm/features.md#profiling-in-the-browser-dev-tools)**: Use browser dev tools profiler integration
+- **[AOT Compilation](../../src/mono/wasm/features.md#aot)**: Improve runtime performance with ahead-of-time compilation
+- **[IL Trimming](../../src/mono/wasm/features.md#trimming)**: Reduce application size by removing unused code
 
 ### Samples and Examples
 Located in `src/mono/sample/wasm/`:
@@ -98,10 +98,6 @@ Use Wasm.Build.Tests or Wasi.Build.Tests. See the [Wasm.Build.Tests README](../.
 ### How do I enable multi-threading?
 
 See the [Threading Support](../../src/mono/wasm/threads.md) documentation for detailed multi-threading configuration and limitations.
-
-### How do I optimize my WebAssembly application?
-
-See the [WebAssembly Features](../../src/mono/wasm/features.md) documentation for AOT compilation, IL trimming, and other optimization options.
 
 ### What JavaScript engines are supported for testing?
 
