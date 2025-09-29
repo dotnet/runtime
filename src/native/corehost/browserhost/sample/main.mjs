@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { dotnet, exit } from './dotnet.js'
+import { config } from './dotnet.boot.js'
 
 
 async function downloadConfig(url) {
-    if (isConfigReady) return; // only download if necessary
-    if (!url) {
-        url = "./dotnet.boot.js";
-    }
-
-    // url ends with .json
     if (url.endsWith(".json")) {
         const response = await fetch(url);
         if (!response.ok) {
@@ -19,15 +14,11 @@ async function downloadConfig(url) {
         const newConfig = await response.json();
         mergeLoaderConfig(newConfig);
     } else if (url.endsWith(".js") || url.endsWith(".mjs")) {
-        const module = await import(/* webpackIgnore: true */ url);
-        mergeLoaderConfig(module.config);
     }
-    isConfigReady = true;
 }
 
 
 try {
-    const config = await downloadConfig("./dotnet.boot.json");
     await dotnet
         .withConfig(config)
         .run();
