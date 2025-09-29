@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
@@ -121,6 +122,38 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             gcVersion = Target.ReadGlobal<uint>(Constants.Globals.GCInfoVersion);
             gcInfo = realCodeHeader.GCInfo;
+        }
+
+        public override IEnumerable<EHClause> GetEHClauses(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        {
+            if (rangeSection.IsRangeList)
+                yield break;
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null)
+                yield break;
+            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
+
+            if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
+                yield break;
+
+            // number of EH clauses is stored in a pointer sized integer just before the EHInfo array
+            TargetNUInt ehClauseCount = Target.ReadNUInt(realCodeHeader.EHInfo - (uint)Target.PointerSize);
+            uint ehClauseSize = Target.GetTypeInfo(DataType.EEILExceptionClause).Size ?? throw new InvalidOperationException("EEILExceptionClause size is not known");
+
+            for (uint i = 0; i < ehClauseCount.Value; i++)
+            {
+                TargetPointer clauseAddress = realCodeHeader.EHInfo + (i * ehClauseSize);
+                Data.EEILExceptionClause clause = Target.ProcessedData.GetOrAdd<Data.EEILExceptionClause>(clauseAddress);
+                yield return new EHClause()
+                {
+                    Flags = (EHClause.CorExceptionFlag)clause.Flags,
+                    FilterOffset = clause.FilterOffset
+                };
+            }
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

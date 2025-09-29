@@ -564,6 +564,7 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumHotColdMap, cdac_data<ReadyToRunI
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, ExceptionInfoSection, cdac_data<ReadyToRunInfo>::ExceptionInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_END(ReadyToRunInfo)
 
@@ -578,6 +579,12 @@ CDAC_TYPE_SIZE(sizeof(IMAGE_DATA_DIRECTORY))
 CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, VirtualAddress, offsetof(IMAGE_DATA_DIRECTORY, VirtualAddress))
 CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, Size, offsetof(IMAGE_DATA_DIRECTORY, Size))
 CDAC_TYPE_END(ImageDataDirectory)
+
+CDAC_TYPE_BEGIN(CorCompileExceptionLookupEntry)
+CDAC_TYPE_SIZE(sizeof(CORCOMPILE_EXCEPTION_LOOKUP_ENTRY))
+CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, MethodStartRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_ENTRY, MethodStartRVA))
+CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, ExceptionInfoRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_ENTRY, ExceptionInfoRVA))
+CDAC_TYPE_END(CorCompileExceptionLookupEntry)
 
 CDAC_TYPE_BEGIN(RuntimeFunction)
 CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION))
@@ -639,12 +646,25 @@ CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
+CDAC_TYPE_FIELD(RealCodeHeader, /*uint16*/, EHInfo, offsetof(RealCodeHeader, phdrJitEHInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
 #ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
+
+CDAC_TYPE_BEGIN(EEILExceptionClause)
+CDAC_TYPE_SIZE(sizeof(EE_ILEXCEPTION_CLAUSE))
+CDAC_TYPE_FIELD(EEILExceptionClause, /*uint32*/, Flags, offsetof(EE_ILEXCEPTION_CLAUSE, Flags))
+CDAC_TYPE_FIELD(EEILExceptionClause, /*uint32*/, FilterOffset, offsetof(EE_ILEXCEPTION_CLAUSE, FilterOffset))
+CDAC_TYPE_END(EEILExceptionClause)
+
+CDAC_TYPE_BEGIN(CorCompileExceptionClause)
+CDAC_TYPE_SIZE(sizeof(CORCOMPILE_EXCEPTION_CLAUSE))
+CDAC_TYPE_FIELD(CorCompileExceptionClause, /*uint32*/, Flags, offsetof(CORCOMPILE_EXCEPTION_CLAUSE, Flags))
+CDAC_TYPE_FIELD(CorCompileExceptionClause, /*uint32*/, FilterOffset, offsetof(CORCOMPILE_EXCEPTION_CLAUSE, FilterOffset))
+CDAC_TYPE_END(CorCompileExceptionClause)
 
 CDAC_TYPE_BEGIN(PatchpointInfo)
 CDAC_TYPE_SIZE(sizeof(PatchpointInfo))

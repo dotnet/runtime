@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
@@ -68,6 +69,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
+        public abstract IEnumerable<EHClause> GetEHClauses(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
     }
 
     private sealed class RangeSection
@@ -119,6 +121,22 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             }
             return new RangeSection(rangeSection);
         }
+    }
+
+    private sealed class EHClause
+    {
+        public enum CorExceptionFlag : uint
+        {
+            COR_ILEXCEPTION_CLAUSE_NONE = 0x0,
+            COR_ILEXCEPTION_CLAUSE_FILTER = 0x1,
+            COR_ILEXCEPTION_CLAUSE_FINALLY = 0x2,
+            COR_ILEXCEPTION_CLAUSE_FAULT = 0x4,
+        }
+
+        public CorExceptionFlag Flags { get; init; }
+        public uint FilterOffset { get; init; }
+
+        public bool IsFilterHandler => Flags.HasFlag(CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FILTER);
     }
 
     private JitManager GetJitManager(Data.RangeSection rangeSectionData)
@@ -203,6 +221,50 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         // non-fragment RuntimeFunction
 
         return range.Data.RangeBegin + runtimeFunction.BeginAddress;
+    }
+
+    bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) ==
+               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+    }
+
+    bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
+        if (range.Data == null)
+            throw new InvalidOperationException("Unable to get runtime function address");
+        JitManager jitManager = GetJitManager(range.Data);
+
+        IExecutionManager eman = this;
+
+        if (eman.IsFunclet(codeInfoHandle) == false)
+            return false;
+
+        TargetPointer codeAddress = info.StartAddress.Value + info.RelativeOffset.Value;
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+
+        uint relativeOffsetInFunclet = (uint)(codeAddress - funcletStartAddress);
+        Debug.Assert(eman.GetRelativeOffset(codeInfoHandle).Value >= relativeOffsetInFunclet);
+
+        uint funcletStartOffset = (uint)(eman.GetRelativeOffset(codeInfoHandle).Value - relativeOffsetInFunclet);
+        // can we calculate this much more simply??
+        uint funcletStartOffset2 = (uint)(funcletStartAddress - info.StartAddress);
+        Debug.Assert(funcletStartOffset == funcletStartOffset2);
+
+        IEnumerable<EHClause> ehClauses = jitManager.GetEHClauses(range, codeInfoHandle.Address.Value);
+        foreach (EHClause ehClause in ehClauses)
+        {
+            if (ehClause.IsFilterHandler && ehClause.FilterOffset == funcletStartOffset)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle)

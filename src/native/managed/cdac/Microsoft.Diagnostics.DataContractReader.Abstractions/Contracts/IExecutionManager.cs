@@ -19,6 +19,8 @@ public interface IExecutionManager : IContract
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
@@ -149,6 +150,76 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 RuntimeInfoArchitecture.X86 => sizeof(uint),
                 _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
             };
+        }
+
+        public override IEnumerable<EHClause> GetEHClauses(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        {
+            // ReadyToRunJitManager::GetEHClauses
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                yield break;
+
+            index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
+            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+            uint methodStartRva = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index).BeginAddress;
+
+            if (r2rInfo.ExceptionInfoSection == TargetPointer.Null)
+                yield break;
+            Data.ImageDataDirectory exceptionInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.ExceptionInfoSection);
+
+            // R2R images are always mapped so we can directly add the RVA to the base address
+            TargetPointer pExceptionLookupTable = imageBase + exceptionInfoData.VirtualAddress;
+            uint numEntries = exceptionInfoData.Size / Target.GetTypeInfo(DataType.CorCompileExceptionLookupEntry).Size
+                ?? throw new InvalidOperationException("CorCompileExceptionLookupEntry size is not known");
+
+            // at least 2 entries (1 valid + 1 sentinel)
+            Debug.Assert(numEntries >= 2);
+            Debug.Assert(GetExceptionLookupEntry(pExceptionLookupTable, numEntries - 1).MethodStartRva == uint.MaxValue);
+
+            if (!BinaryThenLinearSearch.Search(
+                0,
+                numEntries - 2,
+                Compare,
+                Match,
+                out uint ehInfoIndex))
+                yield break;
+
+            bool Compare(uint index)
+            {
+                Data.CorCompileExceptionLookupEntry exceptionEntry = GetExceptionLookupEntry(pExceptionLookupTable, index);
+                return methodStartRva < exceptionEntry.MethodStartRva;
+            }
+
+            bool Match(uint index)
+            {
+                Data.CorCompileExceptionLookupEntry exceptionEntry = GetExceptionLookupEntry(pExceptionLookupTable, index);
+                return methodStartRva == exceptionEntry.MethodStartRva;
+            }
+
+            Data.CorCompileExceptionLookupEntry entry = GetExceptionLookupEntry(pExceptionLookupTable, ehInfoIndex);
+            Data.CorCompileExceptionLookupEntry nextEntry = GetExceptionLookupEntry(pExceptionLookupTable, ehInfoIndex + 1);
+            uint exceptionInfoSize = nextEntry.ExceptionInfoRva - entry.ExceptionInfoRva;
+            uint clauseSize = Target.GetTypeInfo(DataType.CorCompileExceptionClause).Size
+                ?? throw new InvalidOperationException("CorCompileExceptionClause size is not known");
+            uint numClauses = exceptionInfoSize / clauseSize;
+
+            for (uint i = 0; i < numClauses; i++)
+            {
+                TargetPointer clauseAddress = imageBase + (i * clauseSize);
+                Data.CorCompileExceptionClause clause = Target.ProcessedData.GetOrAdd<Data.CorCompileExceptionClause>(clauseAddress);
+                yield return new EHClause()
+                {
+                    Flags = (EHClause.CorExceptionFlag)clause.Flags,
+                    FilterOffset = clause.FilterOffset
+                };
+            }
+        }
+
+        private Data.CorCompileExceptionLookupEntry GetExceptionLookupEntry(TargetPointer table, uint index)
+        {
+            TargetPointer entryAddress = table + (index * (Target.GetTypeInfo(DataType.CorCompileExceptionLookupEntry).Size
+                ?? throw new InvalidOperationException("CorCompileExceptionLookupEntry size is not known")));
+            return Target.ProcessedData.GetOrAdd<Data.CorCompileExceptionLookupEntry>(entryAddress);
         }
 
         #region RuntimeFunction Helpers

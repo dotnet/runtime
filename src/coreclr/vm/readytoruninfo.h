@@ -120,6 +120,7 @@ class ReadyToRunInfo
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
+    PTR_IMAGE_DATA_DIRECTORY        m_pSectionExceptionInfo;
 
     PTR_READYTORUN_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
@@ -162,6 +163,7 @@ public:
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
     PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
+    PTR_IMAGE_DATA_DIRECTORY GetExceptionInfoSection() const { return m_pSectionExceptionInfo; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
@@ -353,6 +355,7 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
+    static constexpr size_t ExceptionInfoSection = offsetof(ReadyToRunInfo, m_pSectionExceptionInfo);
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
 };
 

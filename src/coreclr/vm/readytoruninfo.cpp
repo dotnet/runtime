@@ -884,6 +884,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
     m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
+    m_pSectionExceptionInfo = m_pComposite->FindSection(ReadyToRunSectionType::ExceptionInfo);
 
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
