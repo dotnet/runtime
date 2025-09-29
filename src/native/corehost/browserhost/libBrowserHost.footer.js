@@ -6,7 +6,7 @@
  * It implements the corehost and a part of public JS API related to memory and runtime hosting.
  */
 
-(function (exports) {
+(function () {
     function libFactory() {
         const lib = {
             $BROWSER_HOST: {
@@ -69,5 +69,4 @@
         addToLibrary(lib);
     }
     libFactory();
-    return exports;
-})({});
+})();

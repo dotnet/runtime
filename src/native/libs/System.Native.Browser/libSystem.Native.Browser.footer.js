@@ -6,7 +6,7 @@
  * It implements PAL for the VM/runtime.
  */
 
-(function (exports) {
+(function () {
     function libFactory() {
         // this executes the function at link time in order to capture exports
         // this is what Emscripten does for linking JS libraries
@@ -52,5 +52,4 @@
         addToLibrary(lib);
     }
     libFactory();
-    return exports;
-})({});
+})();
