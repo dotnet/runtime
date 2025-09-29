@@ -10,7 +10,6 @@
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --crashdump</TestRunnerAdditionalArguments>
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --hangdump --hangdump-timeout 5m --hangdump-type full</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
-    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
 </Project>
