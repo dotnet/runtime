@@ -9,8 +9,6 @@
 
 #include <new> // for std::bad_alloc
 
-thread_local bool t_interpDump;
-
 static const StackType g_stackTypeFromInterpType[] =
 {
     StackTypeI4, // I1
@@ -46,9 +44,17 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
 /*****************************************************************************/
+#ifdef DEBUG
+thread_local bool t_interpDump;
+#endif // DEBUG
+
 bool IsInterpDumpActive()
 {
+#ifdef DEBUG
     return t_interpDump;
+#else // !DEBUG
+    return false;
+#endif // DEBUG
 }
 
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
@@ -145,7 +151,7 @@ void InterpCompiler::CopyToInterpGenericLookup(InterpGenericLookup* dst, const C
         GetGenericLookupOffset(src, 2) > UINT16_MAX || GetGenericLookupOffset(src, 3) > UINT16_MAX)
     {
 #ifdef DEBUG
-        if (t_interpDump)
+        if (IsInterpDumpActive())
         {
             printf("CopyToInterpGenericLookup: Offsets too large for generic lookup, unable to compile\n");
             printf("  Indirections: %d\n", (int)src->indirections);
@@ -1634,22 +1640,16 @@ static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
-    :
-#ifdef DEBUG
-#ifdef TARGET_WASM
-    // enable verbose output on wasm temporarily
-    m_dumpScope(true),
-#else
-    m_dumpScope(InterpConfig.InterpDump().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args)),
-#endif
-    m_methodName(GetMallocAllocator()),
-#endif
-    m_stackmapsByClass(FreeInterpreterStackMap)
+    : m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
     , m_leavesTable(this)
     , m_dataItems(this)
     , m_globalVarsWithRefsStackTop(0)
+#ifdef DEBUG
+    , m_dumpScope(InterpConfig.InterpDump().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args))
+    , m_methodName(GetMallocAllocator())
+#endif
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
 
@@ -1677,7 +1677,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
-    if (t_interpDump || InterpConfig.InterpList())
+    if (IsInterpDumpActive() || InterpConfig.InterpList())
     {
         printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
@@ -1693,7 +1693,7 @@ InterpMethod* InterpCompiler::CompileMethod()
     GenerateCode(m_methodInfo);
 
 #ifdef DEBUG
-    if (t_interpDump)
+    if (IsInterpDumpActive())
     {
         printf("\nUnoptimized IR:\n");
         PrintCode();
@@ -1706,7 +1706,7 @@ InterpMethod* InterpCompiler::CompileMethod()
     EmitCode();
 
 #ifdef DEBUG
-    if (t_interpDump)
+    if (IsInterpDumpActive())
     {
         printf("\nCompiled method: ");
         PrintMethodName(m_methodHnd);
@@ -2746,7 +2746,7 @@ void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry,
     {
         if (entry->type != StackTypeR4 && entry->type != StackTypeR8)
             NO_WAY("ConvertFloatingPointStackEntryToStackType: entry is not floating point");
-        
+
         if (type == StackTypeR8 && entry->type == StackTypeR4)
         {
             EmitConv(entry, StackTypeR8, INTOP_CONV_R8_R4);
@@ -2889,16 +2889,16 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
                 NO_WAY("ConvertToIntegerNative: source type is not floating point");
             }
 
-            if (g_stackTypeFromInterpType[targetType] != StackTypeI4 && 
+            if (g_stackTypeFromInterpType[targetType] != StackTypeI4 &&
                 g_stackTypeFromInterpType[targetType] != StackTypeI8)
             {
                 goto FAIL_TO_EXPAND_INTRINSIC;
             }
 
             InterpOpcode convOp;
-            
+
             // Interpreter-TODO: In theory this should use the "native" variants of the conversion opcodes which are likely faster
-            // than the ones with cross-platform consistent behavior; however, that is quite a lot of new opcodes for probably little gain, so 
+            // than the ones with cross-platform consistent behavior; however, that is quite a lot of new opcodes for probably little gain, so
             // for now we just use the consistent ones like normal conversions.
             switch (sig.retType)
             {
@@ -3278,7 +3278,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         {
             FAIL_TO_EXPAND_INTRINSIC:
 #ifdef DEBUG
-            if (t_interpDump || mustExpand)
+            if (IsInterpDumpActive() || mustExpand)
             {
                 const char* className = NULL;
                 const char* namespaceName = NULL;
@@ -3661,7 +3661,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     {
         if (!m_isSynchronized)
             NO_WAY("INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT used in a non-synchronized method");
-        
+
         INTERP_DUMP("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED with synchronized ret val var V%d\n", (int)m_synchronizedRetValVarIndex);
 
         if (m_synchronizedRetValVarIndex != -1)
@@ -4594,7 +4594,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         // add a set of extra "IL" opcodes at the end of the method which do the monitor finally and actual return
         // logic. We also add a variable to hold the flag indicating the lock was taken.
 
-        uint8_t opCodesForSynchronizedMethodFinally[] = { CEE_CALL, 
+        uint8_t opCodesForSynchronizedMethodFinally[] = { CEE_CALL,
                                                           getLittleEndianByte(INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT, 0),
                                                           getLittleEndianByte(INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT, 1),
                                                           getLittleEndianByte(INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT, 2),
@@ -4875,7 +4875,7 @@ retry_emit:
         m_ppOffsetToBB[insOffset] = m_pCBB;
 
 #ifdef DEBUG
-        if (t_interpDump)
+        if (IsInterpDumpActive())
         {
             const uint8_t *ip = m_ip;
             printf("IL_%04x %-10s, sp %d, %s",
