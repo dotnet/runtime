@@ -160,7 +160,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
             MethodDesc *pMDTarget = GetTargetPInvokeMethodDesc(target);
             MethodDesc *pMDHeaderTarget = GetTargetPInvokeMethodDesc(pHeader->GetTarget());
 
-            _ASSERTE(pMDTarget == NULL || pMDHeaderTarget == NULL);
+            _ASSERTE(pMDTarget == NULL || pMDHeaderTarget == NULL || pMDTarget == pMDHeaderTarget);
             _ASSERTE(pMDTarget == NULL || pMDTarget == pMD);
             _ASSERTE(pMDHeaderTarget == NULL || pMDHeaderTarget == pMD);
 #endif // DEBUG
