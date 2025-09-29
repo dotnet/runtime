@@ -5,6 +5,18 @@
  * Common symbols shared between multiple JS modules.
  * IMPORTANT: Anything you add into this folder could be duplicated into multiple JS bundles!
  * Please keep it small and register it into emscripten as dependency.
+ *
+ * The cross-module API consists of a passed table `internals` which has indexed slots for exports of various JS modules or emscripten JS sub-modules.
+ * The slots denoted by compile-time integer constant `InternalExchangeIndex` and has sub-tables described by their TS type. For example `LoaderExportsTable`.
+ * The JS modules are loaded gradually, so the internals are populated over time, during runtime startup.
+ * Each JS module could subscribe to updates and set it's own internal symbols to functions that other modules exported.
+ * This subscriber is implemented by `dotnetUpdateInternalsSubscriber()` function below.
+ * Note that copy of this function is in each JS module and has visibility to the current module's internal closure.
+ * After each update, the providers should call `dotnetUpdateInternals()` function to notify all subscribers.
+ *
+ * This design allows
+ *  - each JS module to be efficiently minified without exposing symbolic names
+ *  - each JS module to use exported symbols in ergonomic way
  */
 
 import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber } from "../types";
