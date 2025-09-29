@@ -1991,7 +1991,7 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
         }
 
         // If the leave target is inside the try region, we don't need to create a finally call island block.
-        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset <= (clause.TryOffset + clause.TryLength))
+        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
