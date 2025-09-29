@@ -40,14 +40,10 @@ It can be enabled with `<WasmEnableSIMD>true</WasmEnableSIMD>` and disabled with
 
 For more information on this feature, see [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md).
 
-Older versions of NodeJS hosts may need `--experimental-wasm-simd` command line option.
-
 ### EH - Exception handling
 WebAssembly exception handling provides higher performance for code containing `try` blocks by allowing exceptions to be caught and thrown natively without the use of JavaScript. It is currently enabled by default and can be disabled via `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 For more information on this feature, see [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
-
-Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line option.
 
 ### BigInt
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
@@ -59,14 +55,10 @@ Because web browsers do not expose direct access to sockets, we are unable to pr
 
 A prominent limitation is that your application must obey `Cross-Origin Resource Sharing` (CORS) rules in order to perform network requests successfully - see [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) for more information.
 
-For your application to be able to perform HTTP requests in a NodeJS host, you need to install the `node-fetch` and `node-abort-controller` npm packages.
-
 ### WebSocket
 Applications using the [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
 
 As with HTTP and HttpClient, we are unable to ship a custom implementation of this feature, so its behavior will depend on the browser being used to run the application.
-
-WebSocket support in NodeJS hosts requires the `ws` npm package.
 
 ### Initial Memory Size
 By default the .NET runtime will reserve a small amount of memory at startup, and as your application allocates more objects the runtime will attempt to "grow" this memory. This growth operation takes time and could fail if your device's memory is limited, which would result in an application error or "tab crash".
@@ -289,26 +281,8 @@ Mobile browsers typically have strict limits on the amount of memory they can us
 
 A WebAssembly application that works well on desktop PCs browser may take minutes to download or run out of memory before it is able to start on a mobile device, and the same is true for .NET.
 
-### Shell environments - NodeJS & V8
-While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
-
-#### NodeJS < 20
-Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
-
-```json
-"wasmHostProperties": {
-    "perHostConfig": [
-        {
-            "name": "node",
-            ...
-            "host-args": [
-                "--experimental-wasm-simd", // 👈 Enable SIMD support
-                "--experimental-wasm-eh" // 👈 Enable exception handling support
-            ]
-        }
-    ]
-}
-```
+### Shell environments - V8
+While our primary target is web browsers, we have partial support for D8/V8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
