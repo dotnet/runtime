@@ -23,20 +23,15 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
         localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     };
+    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
 
-    const hostNativeExportsLocal: BrowserHostExports = {
+    internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,
         isSharedArrayBuffer
-    };
-    dotnetSetInternals(internals);
-    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
-    internals[InternalExchangeIndex.BrowserHostExportsTable] = tabulateBrowserHostExports(hostNativeExportsLocal);
-    const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
-    if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
-    dotnetUpdateAllInternals();
-
-    function tabulateBrowserHostExports(map:BrowserHostExports):BrowserHostExportsTable {
-        // keep in sync with dotnetUpdateModuleInternals()
+    });
+    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+    function browserHostExportsToTable(map:BrowserHostExports):BrowserHostExportsTable {
+        // keep in sync with dotnetUpdateInternalsSubscriber()
         return [
             map.registerDllBytes,
             map.isSharedArrayBuffer,

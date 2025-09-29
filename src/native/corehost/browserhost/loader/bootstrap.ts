@@ -3,7 +3,7 @@
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal } from "./types";
 
-import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateAllInternals } from "./cross-module";
+import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
@@ -16,7 +16,7 @@ const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
 const nativeModulePromiseController = createPromiseController<EmscriptenModuleInternal>(() => {
-    dotnetUpdateAllInternals();
+    dotnetUpdateInternals();
 });
 
 // WASM-TODO: retry logic

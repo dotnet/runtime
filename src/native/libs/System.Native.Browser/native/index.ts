@@ -7,17 +7,13 @@ import { InternalExchangeIndex } from "../types";
 export { SystemJS_RandomBytes } from "./crypto";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
-    const nativeBrowserExportsLocal: NativeBrowserExports = {
-    };
-    dotnetSetInternals(internals);
-    internals[InternalExchangeIndex.NativeBrowserExportsTable] = tabulateNativeBrowserExports(nativeBrowserExportsLocal);
-    const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
-    if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
-    dotnetUpdateAllInternals();
+    internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
+    });
+    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function tabulateNativeBrowserExports(map:NativeBrowserExports):NativeBrowserExportsTable {
-        // keep in sync with dotnetUpdateModuleInternals()
+    function nativeBrowserExportsToTable(map:NativeBrowserExports):NativeBrowserExportsTable {
+        // keep in sync with nativeBrowserExportsFromTable()
         return [
         ];
     }

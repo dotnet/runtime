@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange } from "../types";
+import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange, InternalExchangeSubscriber } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
 // which are installed there by libSystem.Native.Browser.footer.js
@@ -10,9 +10,8 @@ declare global {
     export const dotnetAssert:AssertType;
     export const dotnetLogger:LoggerType;
     export const dotnetLoaderExports:LoaderExports;
-    export const dotnetSetInternals:(internals:Partial<InternalExchange>) => void;
-    export const dotnetUpdateAllInternals:() => void;
-    export const dotnetUpdateModuleInternals:() => void;
+    export const dotnetUpdateInternals:(internals?:Partial<InternalExchange>, subscriber?:InternalExchangeSubscriber) => void;
+    export const dotnetUpdateInternalsSubscriber:(internals:InternalExchange) => void;
 
     // ambient in the emscripten closure
     export const Module:EmscriptenModuleInternal;

@@ -13,18 +13,13 @@ export function SystemInteropJS_InvokeJSImportST(function_handle: JSFnHandle, ar
 }
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
-    const interopJavaScriptNativeExportsLocal: InteropJavaScriptExports = {
-    };
-    dotnetSetInternals(internals);
-    internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = tabulateInteropJavaScriptExports(interopJavaScriptNativeExportsLocal);
-    const updates = internals[InternalExchangeIndex.InternalUpdatesCallbacks];
-    if (!updates.includes(dotnetUpdateModuleInternals)) updates.push(dotnetUpdateModuleInternals);
-    dotnetUpdateAllInternals();
-
+    internals[InternalExchangeIndex.InteropJavaScriptExportsTable] = interopJavaScriptExportsToTable({
+    });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function tabulateInteropJavaScriptExports(map:InteropJavaScriptExports):InteropJavaScriptExportsTable {
-        // keep in sync with dotnetUpdateModuleInternals()
+    function interopJavaScriptExportsToTable(map: InteropJavaScriptExports): InteropJavaScriptExportsTable {
+        // keep in sync with interopJavaScriptExportsFromTable()
         return [
         ];
     }
+    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 }

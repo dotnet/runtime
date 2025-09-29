@@ -105,13 +105,14 @@ export interface PromiseController<T> {
     propagateFrom: (other: Promise<T>) => void;
 }
 
+export type InternalExchangeSubscriber = (internals: InternalExchange) => void;
 
 export type InternalExchange = [
     RuntimeAPI, //0
-    (() => void)[], //1
+    InternalExchangeSubscriber[], //1
     LoaderConfigInternal, //2
-    RuntimeExportsTable, //3
-    LoaderExportsTable, //4
+    LoaderExportsTable, //3
+    RuntimeExportsTable, //4
     BrowserHostExportsTable, //5
     InteropJavaScriptExportsTable, //6
     NativeBrowserExportsTable, //7
@@ -120,8 +121,8 @@ export const enum InternalExchangeIndex {
     RuntimeAPI = 0,
     InternalUpdatesCallbacks = 1,
     LoaderConfig = 2,
-    RuntimeExportsTable = 3,
-    LoaderExportsTable = 4,
+    LoaderExportsTable = 3,
+    RuntimeExportsTable = 4,
     BrowserHostExportsTable = 5,
     InteropJavaScriptExportsTable = 6,
     NativeBrowserExportsTable = 7,

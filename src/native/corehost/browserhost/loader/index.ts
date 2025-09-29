@@ -13,7 +13,7 @@ import { exit } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn } from "./logging";
 
-import { dotnetAssert, dotnetInternals, dotnetLoaderExports, dotnetLogger, dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 
 export function dotnetInitializeModule(): RuntimeAPI {
@@ -30,47 +30,45 @@ export function dotnetInitializeModule(): RuntimeAPI {
             wasmEnableSIMD: true,
             wasmEnableExceptionHandling: true,
         },
-    };
-
-    const internals:InternalExchange = [
-        dotnetApi as RuntimeAPI, //0
-        [dotnetUpdateModuleInternals], //1
-        netLoaderConfig, //2
-        null as any as RuntimeExportsTable, //3
-        null as any as LoaderExportsTable, //4
-        null as any as BrowserHostExportsTable, //5
-        null as any as InteropJavaScriptExportsTable, //6
-        null as any as NativeBrowserExportsTable, //7
-    ];
-    dotnetSetInternals(internals);
-    const runtimeApiFunctions: Partial<RuntimeAPI> = {
         getConfig: getLoaderConfig,
         exit,
         invokeLibraryInitializers,
     };
+
+    const internals:InternalExchange = [
+        dotnetApi as RuntimeAPI, //0
+        [], //1
+        netLoaderConfig, //2
+        null as any as LoaderExportsTable, //3
+        null as any as RuntimeExportsTable, //4
+        null as any as BrowserHostExportsTable, //5
+        null as any as InteropJavaScriptExportsTable, //6
+        null as any as NativeBrowserExportsTable, //7
+    ];
+    Object.assign(dotnetInternals, internals);
     const loaderFunctions: LoaderExports = {
         getRunMainPromise,
         rejectRunMainPromise,
         resolveRunMainPromise,
     };
+    Object.assign(dotnetLoaderExports, loaderFunctions);
     const logger: LoggerType = {
         info,
         warn,
         error,
     };
+    Object.assign(dotnetLogger, logger);
     const assert: AssertType = {
         check,
     };
-    Object.assign(dotnetApi, runtimeApiFunctions);
-    Object.assign(dotnetLogger, logger);
     Object.assign(dotnetAssert, assert);
-    Object.assign(dotnetLoaderExports, loaderFunctions);
-    dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = tabulateLoaderExports(dotnetLogger, dotnetAssert, dotnetLoaderExports);
-    dotnetUpdateAllInternals();
+
+    dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = loaderExportsToTable(dotnetLogger, dotnetAssert, dotnetLoaderExports);
+    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     return dotnetApi as RuntimeAPI;
 
-    function tabulateLoaderExports(logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
-        // keep in sync with dotnetUpdateModuleInternals()
+    function loaderExportsToTable(logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
+        // keep in sync with loaderExportsFromTable()
         return [
             logger.info,
             logger.warn,

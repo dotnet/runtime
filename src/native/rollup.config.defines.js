@@ -22,11 +22,11 @@ console.log(`Rollup configuration: Configuration=${configuration}, ProductVersio
 export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
 export const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment)/;
-export const keep_fnames = /(dotnetSetInternals|dotnetUpdateAllInternals|dotnetUpdateModuleInternals)/;
+export const keep_fnames = /(dotnetUpdateInternals|dotnetUpdateInternalsSubscriber)/;
 export const reserved = [
     "Module", "dotnetApi",
     "dotnetInternals", "dotnetLogger", "dotnetAssert", "dotnetJSEngine",
-    "dotnetSetInternals", "dotnetUpdateAllInternals", "dotnetUpdateModuleInternals", "dotnetInitializeModule",
+    "dotnetUpdateInternals", "dotnetUpdateInternalsSubscriber", "dotnetInitializeModule",
     "dotnetLoaderExports", "dotnetRuntimeExports", "dotnetBrowserHostExports", "dotnetInteropJSExports", "dotnetNativeBrowserExports",
 ];
 

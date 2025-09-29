@@ -3,7 +3,7 @@
 
 import type { InternalExchange, RuntimeAPI, RuntimeExports, RuntimeExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
-import { dotnetSetInternals, dotnetUpdateAllInternals, dotnetUpdateModuleInternals } from "./cross-module";
+import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -11,16 +11,15 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getAssemblyExports,
         setModuleImports,
     };
-    const runtimeExportsLocal: RuntimeExports = {
-    };
-    dotnetSetInternals(internals);
     Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
-    internals[InternalExchangeIndex.RuntimeExportsTable] = tabulateRuntimeExports(runtimeExportsLocal);
-    internals[InternalExchangeIndex.InternalUpdatesCallbacks].push(dotnetUpdateModuleInternals);
-    dotnetUpdateAllInternals();
+
+    internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
+    });
+    dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function tabulateRuntimeExports(map:RuntimeExports):RuntimeExportsTable {
-        // keep in sync with dotnetUpdateModuleInternals()
+    function runtimeExportsToTable(map:RuntimeExports):RuntimeExportsTable {
+        // keep in sync with runtimeExportsFromTable()
         return [
         ];
     }
