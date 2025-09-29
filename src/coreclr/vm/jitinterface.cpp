@@ -13061,6 +13061,24 @@ void ThrowExceptionForJit(HRESULT res)
     }
  }
 
+static void AllocateAndFreeHandles()
+{
+    const int N = 30;
+
+    OBJECTHANDLE h[N];
+
+    {
+        GCX_COOP();
+        for (int i = 0; i < N; i++)
+            h[i] = AppDomain::GetCurrentDomain()->CreateHandle(StringObject::GetEmptyString());
+    }
+
+    for (int i = 0; i < N; i++)
+    {
+        DestroyHandle(h[i]);
+    }
+}
+
 // ********************************************************************
 //#define PERF_TRACK_METHOD_JITTIMES
 
@@ -13071,6 +13089,8 @@ static TADDR UnsafeJitFunctionWorker(
     _Out_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
+
+    AllocateAndFreeHandles();
 
     CORINFO_METHOD_INFO* methodInfo = pJitInfo->getMethodInfoInternal();
     MethodDesc* pMethodForSecurity = pJitInfo->GetMethodForSecurity(methodInfo->ftn);
