@@ -22,11 +22,6 @@ This document serves as a comprehensive index to all WebAssembly-related documen
 - **Browser (browser-wasm)**: Run .NET applications in web browsers
 - **WASI (wasi-wasm)**: Run .NET applications in WASI-compatible environments
 
-### Quick Start
-1. Install the workload: `dotnet workload install wasm-tools`
-2. Create a new project: `dotnet new wasmbrowser` or `dotnet new wasiconsole`
-3. Build and run: `dotnet run`
-
 ## Building for WebAssembly
 
 ### Core Runtime Building
