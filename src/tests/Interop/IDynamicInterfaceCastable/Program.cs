@@ -356,7 +356,6 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
-        [Xunit.SkipOnCoreClrAttribute("Assert failure: targetSSP == 0 || (pHandlerIP != NULL) && (exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager()) || (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC)", RuntimeTestModes.InterpreterActive)]
         public static void ValidateBasicInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateBasicInterface)}");
@@ -546,7 +545,6 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
-        [Xunit.SkipOnCoreClrAttribute("Assert failure: targetSSP == 0 || (pHandlerIP != NULL) && (exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager()) || (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC)", RuntimeTestModes.InterpreterActive)]
         public static void ValidateErrorHandling()
         {
             Console.WriteLine($"Running {nameof(ValidateErrorHandling)}");
