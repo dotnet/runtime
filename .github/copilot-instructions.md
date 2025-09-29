@@ -169,7 +169,7 @@ A change is considered WASM/WASI-relevant if:
 **Failure Resolution:**
 - Maximum 3 attempts to fix build failures before escalating
 - Maximum 3 attempts to fix test failures before escalating
-- If the same error persists after 2 fix attempts, you MUST try a different approach
+- If the same error persists after 3 fix attempts, you MUST try a different approach
 - If you cannot achieve passing builds and tests after reasonable effort, explain the blocking issues with full diagnostic information
 
 **No Shortcuts:** You cannot skip verification steps or claim success without demonstrated passing builds and tests.
