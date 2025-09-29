@@ -15920,9 +15920,15 @@ namespace System.Text
 }
 namespace System.Text.Unicode
 {
+    public static partial class Utf16
+    {
+        public static int IndexOfInvalidSubsequence(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
+    }
     public static partial class Utf8
     {
         public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
+        public static int IndexOfInvalidSubsequence(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
         public static bool TryWrite(System.Span<byte> destination, System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "destination", "provider"})] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }
