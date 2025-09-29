@@ -160,7 +160,7 @@ private:
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
 #ifdef TARGET_RISCV64
-    bool LowerAndReverseIntegerCompare(GenTree* cmp);
+    void LowerIntegerCompare(GenTree* cmp);
     void SignExtendIfNecessary(GenTree** arg);
 #endif
     GenTree*   LowerSelect(GenTreeConditional* cond);

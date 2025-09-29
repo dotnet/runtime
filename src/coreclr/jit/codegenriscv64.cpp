@@ -3108,7 +3108,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCompare: Produce code for a GT_EQ/GT_LT/GT_LE node.
+// genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
 //
 // Arguments:
 //    tree - the node
@@ -3131,14 +3131,15 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     assert(targetReg != REG_NA);
     assert(!tree->TypeIs(TYP_VOID));
 
+    bool isReversed = false;
     if (varTypeIsFloating(op1Type))
     {
         assert(!op1->isContainedIntOrIImmed() && !op2->isContainedIntOrIImmed());
         assert(op1->TypeIs(op2->TypeGet()));
         genTreeOps oper = tree->OperGet();
 
-        bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-        if (isUnordered)
+        isReversed = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        if (isReversed)
         {
             oper = GenTree::ReverseRelop(oper);
         }
@@ -3164,12 +3165,24 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 unreached();
         }
         emit->emitIns_R_R_R(instr, cmpSize, targetReg, op1->GetRegNum(), op2->GetRegNum());
-        if (isUnordered)
-            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
     }
     else
     {
-        noway_assert(tree->OperIs(GT_LT));
+        noway_assert(tree->OperIs(GT_LT, GT_GT, GT_LE, GT_GE));
+        genTreeOps oper = tree->OperGet();
+
+        isReversed = (oper == GT_LE || oper == GT_GE);
+        if (isReversed)
+        {
+            oper = GenTree::ReverseRelop(oper);
+        }
+        if (oper == GT_GT)
+        {
+            INDEBUG(oper = GenTree::SwapRelop(oper));
+            std::swap(op1, op2);
+        }
+        assert(oper == GT_LT); // RISC-V only has set-less-than instructions
+
         assert(!op1->isContainedIntOrIImmed() || op1->IsIntegralConst(0));
         regNumber reg1 = op1->isContainedIntOrIImmed() ? REG_ZERO : op1->GetRegNum();
         if (op2->isContainedIntOrIImmed())
@@ -3183,6 +3196,9 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             emit->emitIns_R_R_R(slt, EA_PTRSIZE, targetReg, reg1, op2->GetRegNum());
         }
     }
+
+    if (isReversed)
+        emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
 
     genProduceReg(tree);
 }

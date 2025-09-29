@@ -71,6 +71,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
                 return emitter::isValidSimm12(immVal);
 
+            case GT_GT:
             case GT_JCMP:
             case GT_CMPXCHG:
             case GT_XORR:
@@ -170,28 +171,16 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 }
 
 //------------------------------------------------------------------------
-// LowerAndReverseIntegerCompare: lowers and reverses an integer comparison so that it matches the available
-// instructions: only "<" (with unsigned and immediate variants)
+// LowerIntegerCompare: lowers an integer comparison so that it matches the available instructions better
 //
 // Arguments:
 //    cmp - the integer comparison to lower
 //
-// Returns:
-//    Whether the comparison was reversed.
-//
-bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
+void Lowering::LowerIntegerCompare(GenTree* cmp)
 {
     GenTree*& left  = cmp->AsOp()->gtOp1;
     GenTree*& right = cmp->AsOp()->gtOp2;
     assert(cmp->OperIsCmpCompare() && varTypeUsesIntReg(left));
-    bool isReversed = false;
-
-    if (left->IsIntegralConst() && !right->IsIntegralConst())
-    {
-        // Normally const operand is ordered on the right. If we're here, it means we're lowering the second time
-        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-        std::swap(left, right);
-    }
 
     if (cmp->OperIs(GT_EQ, GT_NE))
     {
@@ -253,39 +242,26 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
                 BlockRange().Remove(left);
                 BlockRange().Remove(right);
                 cmp->BashToConst(1);
-                return false;
+                return;
             }
             right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
             cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
         }
-        else
-        {
-            // a <= b  --->  !(a > b)
-            isReversed = true;
-            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
-        }
     }
 
-    if (cmp->OperIs(GT_GT))
-    {
-        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-        std::swap(left, right);
-    }
-    assert(cmp->OperIs(GT_LT));
-
-    if (right->IsIntegralConst(0) && !right->AsIntCon()->ImmedValNeedsReloc(comp) && !cmp->IsUnsigned())
+    if (cmp->OperIs(GT_LT) && right->IsIntegralConst(0) && !right->AsIntCon()->ImmedValNeedsReloc(comp) &&
+        !cmp->IsUnsigned())
     {
         // a < 0 (signed)  --->  shift the sign bit into the lowest bit
         cmp->SetOperRaw(GT_RSZ);
         cmp->ChangeType(genActualType(left));
         right->AsIntConCommon()->SetIntegralValue(genTypeSize(cmp) * BITS_PER_BYTE - 1);
         right->SetContained();
-        return isReversed;
+        return;
     }
 
     SignExtendIfNecessary(&left);
     SignExtendIfNecessary(&right);
-    return isReversed;
 }
 
 //------------------------------------------------------------------------

@@ -4460,15 +4460,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 
     if (!varTypeIsFloating(cmp->gtGetOp1()))
     {
-        if (LowerAndReverseIntegerCompare(cmp))
-        {
-            GenTree* one   = comp->gtNewIconNode(1);
-            GenTree* notOp = comp->gtNewOperNode(GT_XOR, cmp->gtType, cmp, one);
-            BlockRange().InsertAfter(cmp, one, notOp);
-            one->SetContained();
-            cmpUse.ReplaceWith(notOp);
-        }
-
+        LowerIntegerCompare(cmp);
         if (!cmp->OperIsCmpCompare()) // comparison was optimized out to some other node
             return cmp->gtNext;
     }
