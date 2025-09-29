@@ -125,7 +125,7 @@ The reasons are captured by telemetry and regularly analyzed to allow us to find
 
 The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
 
-While most failures can be matched via known issues, a few failures modes cannot be matched currently and it is valid to suppress them manually. Please use the following reasons to suppress them:
+While most failures can be matched via known issues, a few failures modes cannot be matched currently and it is valid to suppress them manually. Suggested wording to use in these situations (this list is not exhaustive):
 
 - `/ba-g doc changes only` - build analysis won't turn green for PRs that contain documentation .md file changes only.
 - `/ba-g deadletter` - Helix infrastructure failed with "This is a helix work item crash with status: DeadLetter." error message. Validate that the coverage provided by the dead-lettered leg is not relevant to the PR first. Rerun the leg instead if the coverage is relevant.
