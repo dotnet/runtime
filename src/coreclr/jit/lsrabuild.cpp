@@ -2540,7 +2540,8 @@ void LinearScan::buildIntervals()
             // The cookie check will kill some registers that it is using.
             // Model this to ensure values that are kept live throughout the
             // method are properly made available.
-            addKillForRegs(compiler->codeGen->genGetGSCookieTempRegs(block), currentLoc + 1);
+            bool isTailCall = block->HasFlag(BBF_HAS_JMP);
+            addKillForRegs(compiler->codeGen->genGetGSCookieTempRegs(isTailCall), currentLoc + 1);
             currentLoc += 2;
         }
 

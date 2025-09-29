@@ -1580,7 +1580,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     if (compiler->getNeedsGSSecurityCookie())
     {
-        genEmitGSCookieCheck(block);
+        genEmitGSCookieCheck(block->HasFlag(BBF_HAS_JMP));
     }
 
     genReserveEpilog(block);
@@ -2507,17 +2507,20 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
 
 // -----------------------------------------------------------------------------
 // genGetGSCookieTempRegs:
-//   Get a mask of registers to use for the GS cookie check for a specific
-//   terminating block.
+//   Get a mask of registers to use for the GS cookie check generated in a
+//   block.
+//
+// Parameters:
+//   tailCall - Whether the block is a tailcall
 //
 // Returns:
 //   Mask of all the registers that can be used. Some targets may need more
 //   than one register.
 //
-regMaskTP CodeGenInterface::genGetGSCookieTempRegs(BasicBlock* block)
+regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
 {
 #ifdef TARGET_XARCH
-    if (block->HasFlag(BBF_HAS_JMP))
+    if (tailCall)
     {
         // If we are tailcalling then return registers are available for use
         return RBM_RAX;
