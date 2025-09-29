@@ -553,6 +553,12 @@ namespace
         *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1));
     }
 
+    void CallFunc_I32_I32IND_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG(0), ARG_IND(1), ARG(2), ARG_IND(3), ARG(4));
+    }
+
     void CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -690,6 +696,16 @@ namespace
                         return (void*)&CallFunc_I32IND_I32_RetI32;
                     }
                     break;
+                case 5:
+                    if (args[0] == ConvertType::ToI32 &&
+                        args[1] == ConvertType::ToI32Indirect &&
+                        args[2] == ConvertType::ToI32 &&
+                        args[3] == ConvertType::ToI32Indirect &&
+                        args[4] == ConvertType::ToI32)
+                    {
+                        return (void*)&CallFunc_I32_I32IND_I32_I32IND_I32_RetI32;
+                    }
+                    break;
                 case 6:
                     if (args[0] == ConvertType::ToI32Indirect &&
                         args[1] == ConvertType::ToI32 &&
@@ -802,7 +818,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 
     _ASSERTE(cookie != NULL);
 
-    InvokeCalliStub(target, cookie, pArgs, pRet);
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
