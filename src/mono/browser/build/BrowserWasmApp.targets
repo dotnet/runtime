@@ -609,6 +609,4 @@
 
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunV8ScriptPath)&quot;" />
   </Target>
-
-
 </Project>
