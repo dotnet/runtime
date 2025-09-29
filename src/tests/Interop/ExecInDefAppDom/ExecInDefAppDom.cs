@@ -81,10 +81,17 @@ public class Program
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "WrongReturnType", "None", COR_E_MISSINGMETHOD, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "Return0", "None", S_OK, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "Return1", "None", S_OK, 1);
-        result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ThrowAnything", "None", COR_E_EXCEPTION, 0);
+        // Interpreter-FIXME: This requires EH interop which is not currently supported by the interpreter
+        if (!TestLibrary.Utilities.IsClrInterpreterActive)
+        {
+            result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ThrowAnything", "None", COR_E_EXCEPTION, 0);
+        }
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "0", S_OK, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "200", S_OK, 200);
-        result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "None", COR_E_FORMAT, 0);
+        if (!TestLibrary.Utilities.IsClrInterpreterActive)
+        {
+            result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "None", COR_E_FORMAT, 0);
+        }
         result += TestExecuteInAppDomain(injectedPath, "InjectedCode", "ParseArgument", "300", S_OK, 300);
 
         return result;
