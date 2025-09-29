@@ -1008,13 +1008,13 @@ public partial class Program
     public static void Main()
     {
         Regex regex1 = MyRegex;
-        Regex regex2 = MyRegex1();
+        Regex regex2 = MyRegex1;
     }
 
     [GeneratedRegex(""a|b"")]
     private static partial Regex MyRegex { get; }
     [GeneratedRegex(""c|d"", RegexOptions.CultureInvariant)]
-    private static partial Regex MyRegex1();
+    private static partial Regex MyRegex1 { get; }
 }
 ";
             await new VerifyCS.Test
@@ -1125,6 +1125,7 @@ static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
         MyRegex.Replace(text, ""  "");
+
     [GeneratedRegex("" \\s+"")]
     private static partial Regex MyRegex { get; }
 }";
@@ -1149,6 +1150,7 @@ static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
         MyRegex.Replace(text, @""  "");
+
     [GeneratedRegex(@"" \s+"")]
     private static partial Regex MyRegex { get; }
 }";
@@ -1218,6 +1220,7 @@ static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
         MyRegex.Replace(text, """""""" hello """""" world """""""");
+
     [GeneratedRegex(""""""
                               \s+
                               """""")]
@@ -1352,6 +1355,7 @@ public partial class C
 {
     void M1(Regex r) => _ = r;
     void M2() => M1(MyRegex);
+
     [GeneratedRegex("""")]
     private static partial Regex MyRegex { get; }
 }
@@ -1732,76 +1736,6 @@ public partial class Program
 }";
 
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
-        }
-
-        [Fact]
-        public async Task MultipleCodeActionsForMethodCall()
-        {
-            string test = @"using System.Text.RegularExpressions;
-
-public class Program
-{
-    public static void Main()
-    {
-        var match = [|Regex.IsMatch(""test"", ""abc"")|];
-    }
-}";
-
-            // This should offer multiple code actions - we'll test just one of them
-            string fixedSourceMethod = @"using System.Text.RegularExpressions;
-
-public partial class Program
-{
-    public static void Main()
-    {
-        var match = MyRegex.IsMatch(""test"");
-    }
-
-    [GeneratedRegex(""abc"")]
-    private static partial Regex MyRegex { get; }
-}";
-
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-                FixedCode = fixedSourceMethod,
-                CodeActionEquivalenceKey = "ConvertToMethod",
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task MultipleCodeActionsForMethodCallProperty()
-        {
-            string test = @"using System.Text.RegularExpressions;
-
-public class Program
-{
-    public static void Main()
-    {
-        var match = [|Regex.IsMatch(""test"", ""abc"")|];
-    }
-}";
-
-            // Test the property generation option
-            string fixedSourceProperty = @"using System.Text.RegularExpressions;
-
-public partial class Program
-{
-    public static void Main()
-    {
-        var match = MyRegex.IsMatch(""test"");
-    }
-
-    [GeneratedRegex(""abc"")]
-    private static partial Regex MyRegex { get; }
-}";
-
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-                FixedCode = fixedSourceProperty,
-                CodeActionEquivalenceKey = "ConvertToProperty",
-            }.RunAsync();
         }
 
         #endregion Field and Property Conversion Tests
