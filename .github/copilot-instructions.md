@@ -24,16 +24,9 @@ If you cannot achieve successful builds and passing tests, you MUST continue wor
 
 CRITICAL: You MUST verify that builds succeed and tests pass after making your final edits. Never assume your changes work - always verify through actual build and test execution.
 
-## NON-NEGOTIABLE VERIFICATION REQUIREMENTS
+Additionally, you MUST provide evidence—show the successful build and test output in your completion message.
 
-**BEFORE COMPLETING ANY TASK:**
-1. **Execute the appropriate build command** for your component - it MUST succeed with exit code 0
-2. **Execute the appropriate test command** for your component - ALL tests MUST pass
-3. **Re-verify after final edits** - success earlier in your workflow does not guarantee current success
-4. **Provide evidence** - show the successful build and test output in your completion message
-
-**FAILURE TO MEET THESE REQUIREMENTS MEANS THE TASK IS INCOMPLETE** - regardless of how much code was written or how close you came to a solution.
-
+FAILURE TO MEET THESE REQUIREMENTS MEANS THE TASK IS INCOMPLETE—regardless of how much code was written or how close you came to a solution.
 ---
 
 You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
