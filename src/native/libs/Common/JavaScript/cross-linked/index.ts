@@ -4,7 +4,7 @@
 import type { AssertType, EmscriptenModuleInternal, LoggerType, LoaderExports, InternalExchange, InternalExchangeSubscriber, RuntimeAPI, BrowserUtilsExports, NativePointer, CharPtr, VoidPtr } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
-// which are installed there by libSystem.Native.Browser.footer.js
+// which are installed there by libSystem.Browser.Utils.footer.js
 // see also `reserved` in `rollup.config.defines.js`
 declare global {
     export const dotnetApi: RuntimeAPI;

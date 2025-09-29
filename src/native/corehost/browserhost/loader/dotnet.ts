@@ -4,7 +4,7 @@
 /**
  * This is root of **JavaScript module** that would become of `dotnet.js`.
  * It implements host for the browser together with `src/native/corehost/browserhost`.
- * It exposes the public JS runtime APIs that is implemented in `Dotnet.Runtime.ts`.
+ * It exposes the public JS runtime APIs that is implemented in `dotnet.runtime.ts`.
  * It's good to keep this file small.
  */
 

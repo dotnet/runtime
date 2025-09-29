@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import terser from "@rollup/plugin-terser";
 
-import { isContinuousIntegrationBuild, gitHash } from "./rollup.config.defines.js"
+import { isContinuousIntegrationBuild, gitHash } from "./rollup.config.defines.js";
 
 export const terserPlugin = (terserOptions) => {
     let { compress, mangle } = terserOptions || {};
@@ -27,8 +27,8 @@ export const terserPlugin = (terserOptions) => {
         mangle: {
             ...mangle,
         },
-    })
-}
+    });
+};
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 export const writeOnChangePlugin = () => ({
@@ -49,7 +49,7 @@ export function iife2fe() {
             asset.code = code
                 .replace(/}\({}\);/, "};") // }({}); ->};
                 .replace(/}\)\({}\);/, "});") // })({}); ->});
-                ;
+            ;
         }
     };
 }

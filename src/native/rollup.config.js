@@ -8,8 +8,8 @@ import dts from "rollup-plugin-dts";
 import {
     externalDependencies, isDebug, artifactsObjDir, envConstants, banner, banner_dts, configuration,
     keep_classnames, keep_fnames, reserved
-} from "./rollup.config.defines.js"
-import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, sourcemapPathTransform } from "./rollup.config.plugins.js"
+} from "./rollup.config.defines.js";
+import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, sourcemapPathTransform } from "./rollup.config.plugins.js";
 import { promises as fs } from "fs";
 
 const dotnetDTS = {
@@ -167,7 +167,7 @@ function configure({ input, output, terser }) {
                 sourcemap: true, //isDebug ? true : "hidden",
                 sourcemapPathTransform,
                 ...o
-            }
+            };
         }),
         external: externalDependencies,
         plugins: [
@@ -178,5 +178,5 @@ function configure({ input, output, terser }) {
             })
         ],
         onwarn,
-    }
+    };
 }

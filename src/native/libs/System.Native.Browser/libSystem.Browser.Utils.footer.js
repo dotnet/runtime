@@ -6,6 +6,8 @@
  * It implements utilities and a public JS API related to memory and runtime hosting.
  */
 
+/* eslint-disable no-undef */
+/* eslint-disable space-before-function-paren */
 (function () {
     function libFactory() {
         // this executes the function at link time in order to capture exports

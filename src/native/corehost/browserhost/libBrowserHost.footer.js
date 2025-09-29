@@ -6,6 +6,8 @@
  * It implements the corehost and JS related to runtime hosting.
  */
 
+/* eslint-disable no-undef */
+/* eslint-disable space-before-function-paren */
 (function () {
     function libFactory() {
         // this executes the function at link time in order to capture exports
@@ -14,7 +16,7 @@
         // it would execute the code at link time and call .toString() on functions to move it to the final output
         // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
         // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
-        const exports = {}
+        const exports = {};
         libBrowserHost(exports);
 
         let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
