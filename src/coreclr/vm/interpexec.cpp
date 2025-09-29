@@ -2475,6 +2475,9 @@ MAIN_LOOP:
                     
                     if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
                     {
+                        // In this case targetMethod holds a pointer to the MethodDesc that will be called by using targetMethodObj as
+                        // the this pointer. This may be the final method (in the case of instance method delegates), or it may be a
+                        // shuffle thunk, or multicast invoke method.
                         goto CALL_INTERP_METHOD;
                     }
 
@@ -2485,9 +2488,6 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    // TODO! Once we are investigating performance here, we may want to optimize this so that
-                    // delegate calls to interpeted methods don't have to go through the native invoke here, but for
-                    // now this should work well.
                     InvokeDelegateInvokeMethod(targetMethod, callArgsAddress, returnValueAddress, targetAddress);
                     break;
                 }
