@@ -2,7 +2,7 @@
   <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and
                               ('$(Scenario)' == 'WasmTestOnV8' or
                                '$(Scenario)' == 'WasmTestOnChrome' or
-                               '$(Scenario)' == 'WasmTestOnFirefox'">
+                               '$(Scenario)' == 'WasmTestOnFirefox')">
 
     <HelixExtensionTargets>$(HelixExtensionTargets);_AddMiddlewarePayload</HelixExtensionTargets>
     <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
