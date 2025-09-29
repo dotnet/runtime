@@ -429,8 +429,11 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_EQ:
+        case GT_NE:
         case GT_LT:
         case GT_LE:
+        case GT_GE:
+        case GT_GT:
         case GT_JCMP:
             srcCount = BuildCmp(tree);
             break;

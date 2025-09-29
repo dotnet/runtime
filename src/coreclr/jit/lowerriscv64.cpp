@@ -146,10 +146,13 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     {
         // branch if (cond)  --->  branch if (cond != 0)
         GenCondition::Code code = GenCondition::NE;
-        if (cmp->OperIsCompare() && varTypeIsFloating(cmp->gtGetOp1()))
+        if (cmp->OperIsCompare() && varTypeIsFloating(cmp->gtGetOp1()) && (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
         {
-            if (LowerAndReverseFloatingCompare(cmp))
-                code = GenCondition::EQ;
+            // Unordered floating-point comparisons are achieved by neg'ing the ordered counterparts. Avoid that by
+            // reversing both the FP comparison and the zero-comparison fused with the branch.
+            cmp->ChangeOper(GenTree::ReverseRelop(cmp->OperGet()));
+            cmp->gtFlags &= ~GTF_RELOP_NAN_UN;
+            code = GenCondition::EQ;
         }
         jcmp->gtCondition = GenCondition(code);
         jcmp->gtOp1       = cmp;
@@ -164,35 +167,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     }
 
     return jcmp->gtNext;
-}
-
-//------------------------------------------------------------------------
-// LowerAndReverseFloatingCompare: lowers and reverses a floating-point comparison so that it matches the
-// available instructions: "<", "<=", "==" (ordered only, register only)
-//
-// Arguments:
-//    cmp - the floating-point comparison to lower
-//
-// Returns:
-//    Whether the comparison was reversed.
-//
-bool Lowering::LowerAndReverseFloatingCompare(GenTree* cmp)
-{
-    assert(cmp->OperIsCmpCompare() && varTypeIsFloating(cmp->gtGetOp1()));
-    bool isUnordered = (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0;
-    if (isUnordered)
-    {
-        // a CMP b (unordered)  --->   !(a reversedCMP b (ordered))
-        cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
-        cmp->gtFlags &= ~GTF_RELOP_NAN_UN;
-    }
-    if (cmp->OperIs(GT_GT, GT_GE))
-    {
-        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
-        std::swap(cmp->AsOp()->gtOp1, cmp->AsOp()->gtOp2);
-    }
-    assert(cmp->OperIs(GT_EQ, GT_LT, GT_LE));
-    return isUnordered;
 }
 
 //------------------------------------------------------------------------

@@ -3135,10 +3135,21 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     {
         assert(!op1->isContainedIntOrIImmed() && !op2->isContainedIntOrIImmed());
         assert(op1->TypeIs(op2->TypeGet()));
-        noway_assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
+        genTreeOps oper = tree->OperGet();
+
+        bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        if (isUnordered)
+        {
+            oper = GenTree::ReverseRelop(oper);
+        }
+        if (oper == GT_GT || oper == GT_GE)
+        {
+            oper = GenTree::SwapRelop(oper);
+            std::swap(op1, op2);
+        }
 
         instruction instr = INS_none;
-        switch (tree->OperGet())
+        switch (oper)
         {
             case GT_LT:
                 instr = (cmpSize == EA_4BYTE) ? INS_flt_s : INS_flt_d;
@@ -3153,6 +3164,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 unreached();
         }
         emit->emitIns_R_R_R(instr, cmpSize, targetReg, op1->GetRegNum(), op2->GetRegNum());
+        if (isUnordered)
+            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
     }
     else
     {

@@ -4458,18 +4458,20 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
         return cmp->gtNext;
 
-    bool isReversed =
-        varTypeIsFloating(cmp->gtGetOp1()) ? LowerAndReverseFloatingCompare(cmp) : LowerAndReverseIntegerCompare(cmp);
-    if (isReversed)
+    if (!varTypeIsFloating(cmp->gtGetOp1()))
     {
-        GenTree* one   = comp->gtNewIconNode(1);
-        GenTree* notOp = comp->gtNewOperNode(GT_XOR, cmp->gtType, cmp, one);
-        BlockRange().InsertAfter(cmp, one, notOp);
-        one->SetContained();
-        cmpUse.ReplaceWith(notOp);
+        if (LowerAndReverseIntegerCompare(cmp))
+        {
+            GenTree* one   = comp->gtNewIconNode(1);
+            GenTree* notOp = comp->gtNewOperNode(GT_XOR, cmp->gtType, cmp, one);
+            BlockRange().InsertAfter(cmp, one, notOp);
+            one->SetContained();
+            cmpUse.ReplaceWith(notOp);
+        }
+
+        if (!cmp->OperIsCmpCompare()) // comparison was optimized out to some other node
+            return cmp->gtNext;
     }
-    if (!cmp->OperIsCmpCompare()) // comparison was optimized out to some other node
-        return cmp->gtNext;
 #endif // TARGET_RISCV64
 
     ContainCheckCompare(cmp->AsOp());
