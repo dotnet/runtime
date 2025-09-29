@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,26 +21,116 @@ namespace System.Reflection.Metadata
     [Collection(nameof(DisableParallelization))]
     public class ApplyUpdateTest
     {
+
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         void DeleteMethodTest()
         {
             ApplyUpdateUtil.TestCase(static () =>
             {
-                var assm = typeof (ApplyUpdate.Test.ReflectionDeleteMethod).Assembly;
+                var assm = typeof (ApplyUpdate.Test.ReflectionDeleteMember).Assembly;
 
-                var t = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMethod");
-                Assert.NotNull(t);
-
-                var mi = t.GetProperty("FullName");
-                Assert.NotNull(mi);
+                var type_ReflectionDeleteMember = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember");
+                var type_ReflectionDeleteMember_Derived = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember_Derived");
+                var type_ReflectionDeleteMember_Derived2 = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember_Derived2");
+                var type_IReflectionDeleteMember = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.IReflectionDeleteMember");
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
                 ApplyUpdateUtil.ClearAllReflectionCaches();
 
-                // FullName should be filtered out now
-                mi = t.GetProperty("FullName");
-                Assert.Null(mi);
+                Assert.Equal(
+                [
+                    "get_P1 : ReflectionDeleteMember",
+                    "set_P1 : ReflectionDeleteMember",
+                    "M1 : ReflectionDeleteMember",
+                    "get_P2 : ReflectionDeleteMember",
+                    "M2 : ReflectionDeleteMember",
+                    "get_P3 : ReflectionDeleteMember",
+                    "set_P3 : ReflectionDeleteMember",
+                    "M3 : ReflectionDeleteMember",
+                    "add_E1 : ReflectionDeleteMember",
+                    "remove_E1 : ReflectionDeleteMember",
+                    "GetType : Object",
+                    "ToString : Object",
+                    "Equals : Object",
+                    "GetHashCode : Object",
+                    ".ctor(0) : ReflectionDeleteMember",
+                    "P1 : ReflectionDeleteMember",
+                    "P2 : ReflectionDeleteMember",
+                    "P3 : ReflectionDeleteMember",
+                    "E1 : ReflectionDeleteMember",
+                    "F1 : ReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember_Derived2));
+
+                Assert.Equal(
+                [
+                    "get_P1 : ReflectionDeleteMember_Derived",
+                    "set_P1 : ReflectionDeleteMember_Derived",
+                    "M1 : ReflectionDeleteMember_Derived",
+                    "get_P2 : ReflectionDeleteMember_Derived",
+                    "M2 : ReflectionDeleteMember_Derived",
+                    "get_P3 : ReflectionDeleteMember",
+                    "set_P3 : ReflectionDeleteMember",
+                    "M3 : ReflectionDeleteMember",
+                    "add_E1 : ReflectionDeleteMember",
+                    "remove_E1 : ReflectionDeleteMember",
+                    "GetType : Object",
+                    "ToString : Object",
+                    "Equals : Object",
+                    "GetHashCode : Object",
+                    ".ctor(0) : ReflectionDeleteMember_Derived",
+                    "P1 : ReflectionDeleteMember_Derived",
+                    "P2 : ReflectionDeleteMember_Derived",
+                    "P3 : ReflectionDeleteMember",
+                    "E1 : ReflectionDeleteMember",
+                    "F1 : ReflectionDeleteMember_Derived",
+                    "F1 : ReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember_Derived2));
+
+                Assert.Equal(
+                [
+                    "get_P1 : ReflectionDeleteMember_Derived2",
+                    "set_P1 : ReflectionDeleteMember_Derived2",
+                    "M1 : ReflectionDeleteMember_Derived2",
+                    "get_P2 : ReflectionDeleteMember_Derived2",
+                    "M2 : ReflectionDeleteMember_Derived2",
+                    "get_P3 : ReflectionDeleteMember",
+                    "set_P3 : ReflectionDeleteMember",
+                    "M3 : ReflectionDeleteMember",
+                    "add_E1 : ReflectionDeleteMember",
+                    "remove_E1 : ReflectionDeleteMember",
+                    "GetType : Object",
+                    "ToString : Object",
+                    "Equals : Object",
+                    "GetHashCode : Object",
+                    ".ctor(0) : ReflectionDeleteMember_Derived2",
+                    "P1 : ReflectionDeleteMember_Derived2",
+                    "P2 : ReflectionDeleteMember_Derived2",
+                    "P3 : ReflectionDeleteMember",
+                    "E1 : ReflectionDeleteMember",
+                    "F1 : ReflectionDeleteMember_Derived",
+                    "F1 : ReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember_Derived2));
+
+                Assert.Equal(
+                [
+                    "get_P1 : IReflectionDeleteMember",
+                    "set_P1 : IReflectionDeleteMember",
+                    "get_P2 : IReflectionDeleteMember",
+                    "M1 : IReflectionDeleteMember",
+                    "M2 : IReflectionDeleteMember",
+                    "add_E1 : IReflectionDeleteMember",
+                    "remove_E1 : IReflectionDeleteMember",
+                    "add_E2 : IReflectionDeleteMember",
+                    "remove_E2 : IReflectionDeleteMember",
+                    "P1 : IReflectionDeleteMember",
+                    "P2 : IReflectionDeleteMember",
+                    "E1 : IReflectionDeleteMember",
+                    "E2 : IReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember_Derived2));
             });
+
+            static IEnumerable<string> Inspect(Type type)
+                => type.GetMembers().Select(m => m is ConstructorInfo ctor ? $"{ctor.Name}({ctor.GetParameters().Length}) : {m.DeclaringType!.Name}" : m.Name);
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
@@ -648,7 +740,7 @@ namespace System.Reflection.Metadata
             if (nestedIdx != -1)
                 comparisonName = typeName.Substring(nestedIdx+1);
             Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
-            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
+            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn'type_ReflectionDeleteMember in {callerMemberName}");
             if (moreChecks != null)
                 moreChecks(ty);
             return ty;

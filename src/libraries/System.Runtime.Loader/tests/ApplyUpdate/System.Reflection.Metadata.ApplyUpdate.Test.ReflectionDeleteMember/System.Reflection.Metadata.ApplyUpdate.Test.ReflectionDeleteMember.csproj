@@ -6,6 +6,6 @@
     <DeltaScript>deltascript.json</DeltaScript>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ReflectionDeleteMethod.cs" />
+    <Compile Include="ReflectionDeleteMember.cs" />
   </ItemGroup>
 </Project>

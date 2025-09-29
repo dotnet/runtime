@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -148,10 +150,18 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
-                public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
+                // If non-null, filter out members that have this attribute defined on them.
+                private readonly RuntimeType? m_metadataUpdateDeletedAttribute;
+
+                // The module that defines the members being filtered, or null if not needed.
+                private readonly RuntimeModule? m_declaringModule;
+
+                public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType, RuntimeType? metadataUpdateDeletedAttribute, RuntimeModule? declaringModule)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
                     m_listType = listType;
+                    m_metadataUpdateDeletedAttribute = metadataUpdateDeletedAttribute;
+                    m_declaringModule = declaringModule;
                 }
 
                 public bool Match(MdUtf8String name)
@@ -179,6 +189,16 @@ namespace System
                 }
 
                 public bool CaseSensitive() => m_listType == MemberListType.CaseSensitive;
+
+                public bool FilterMetadataUpdateDeletedMembers
+                    => MetadataUpdater.IsSupported && m_metadataUpdateDeletedAttribute != null;
+
+                public bool IsMetadataUpdateDeleted(int memberToken)
+                {
+                    Debug.Assert(m_metadataUpdateDeletedAttribute != null);
+                    Debug.Assert(m_declaringModule != null);
+                    return CustomAttribute.IsCustomAttributeDefined(m_declaringModule, memberToken, m_metadataUpdateDeletedAttribute);
+                }
             }
 
             private sealed class MemberInfoCache<T> where T : MemberInfo
@@ -350,9 +370,13 @@ namespace System
                     if (name.Length != 0)
                         Encoding.UTF8.GetBytes(name, utf8Name);
 
+                    var (metadataUpdateDeletedAttributeRuntimeType, declaringModule) = MetadataUpdater.IsSupported && RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers
+                        ? (typeof(System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute).UnderlyingSystemType as RuntimeType, ReflectedType.GetRuntimeModule())
+                        : default;
+
                     fixed (byte* pUtf8Name = utf8Name)
                     {
-                        Filter filter = new Filter(pUtf8Name, utf8Name.Length, listType);
+                        Filter filter = new Filter(pUtf8Name, utf8Name.Length, listType, metadataUpdateDeletedAttributeRuntimeType, declaringModule);
                         object list = null!;
 
                         switch (cacheType)
@@ -382,26 +406,7 @@ namespace System
                                 Debug.Fail("Invalid CacheType");
                                 break;
                         }
-
-                        if (RuntimeType.FilterDeletedMembers)
-                        {
-                            T[] sourceItems = (T[])list;
-                            ListBuilder<T> nonDeletedList = default;
-
-                            for (int i = 0; i < sourceItems.Length; i++)
-                            {
-                                if (!sourceItems[i].IsDefined(typeof(System.Runtime.CompilerServices.MetadataUpdateDeletedAttribute), true))
-                                {
-                                    nonDeletedList.Add(sourceItems[i]);
-                                }
-                            }
-
-                            return nonDeletedList.ToArray();
-                        }
-                        else
-                        {
-                            return (T[])list;
-                        }
+                        return (T[])list;
                     }
                 }
 
@@ -624,6 +629,11 @@ namespace System
                                 continue;
                             #endregion
 
+                            if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
                             bool isStatic = (methodAttributes & MethodAttributes.Static) != 0;
@@ -634,7 +644,7 @@ namespace System
                             RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                             RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                            instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                             list.Add(runtimeMethodInfo);
                             #endregion
@@ -704,6 +714,12 @@ namespace System
 
                                 #endregion
 
+                                // Filter out deleted method before setting override state, so that a deleted override in a subclass does not hide override in an ancestor.
+                                if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                {
+                                    continue;
+                                }
+
                                 #region Continue if this is a virtual and is already overridden
                                 if (isVirtual)
                                 {
@@ -738,7 +754,7 @@ namespace System
                                 RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                                 RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                    instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                                 list.Add(runtimeMethodInfo);
                                 #endregion
@@ -782,6 +798,11 @@ namespace System
                         Debug.Assert(
                             (methodAttributes & MethodAttributes.Abstract) == 0 &&
                             (methodAttributes & MethodAttributes.Virtual) == 0);
+
+                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                        {
+                            continue;
+                        }
 
                         #region Calculate Binding Flags
                         bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
@@ -894,6 +915,11 @@ namespace System
                                 continue;
                         }
 
+                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(RuntimeFieldHandle.GetToken(handle)))
+                        {
+                            continue;
+                        }
+
                         #region Calculate Binding Flags
                         bool isPublic = fieldAccess == FieldAttributes.Public;
                         bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -904,8 +930,7 @@ namespace System
                         if (needsStaticFieldForGeneric && isStatic)
                             runtimeFieldHandle = RuntimeFieldHandle.GetStaticFieldForGenericType(runtimeFieldHandle, declaringType);
 
-                        RuntimeFieldInfo runtimeFieldInfo =
-                            new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
+                        var runtimeFieldInfo = new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
 
                         list.Add(runtimeFieldInfo);
                     }
@@ -953,6 +978,11 @@ namespace System
 
                                 if (!filter.Match(name))
                                     continue;
+                            }
+
+                            if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(tkField))
+                            {
+                                continue;
                             }
 
                             #region Calculate Binding Flags
@@ -1183,6 +1213,11 @@ namespace System
                                 continue;
                         }
 
+                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(tkEvent))
+                        {
+                            continue;
+                        }
+
                         RuntimeEventInfo eventInfo = new RuntimeEventInfo(
                             tkEvent, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
@@ -1293,6 +1328,12 @@ namespace System
 
                             if (!filter.Match(name))
                                 continue;
+                        }
+
+                        // Filter out deleted property before updating usedSlots, so that a deleted override in a subclass does not hide override in an ancestor.
+                        if (filter.FilterMetadataUpdateDeletedMembers && filter.IsMetadataUpdateDeleted(tkProperty))
+                        {
+                            continue;
                         }
 
                         RuntimePropertyInfo propertyInfo =
@@ -1477,6 +1518,7 @@ namespace System
 
                 return existingCache;
             }
+
             #endregion
 
             #region Internal Members

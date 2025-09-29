@@ -1024,7 +1024,5 @@ namespace System
 
             return CheckValueStatus.ArgumentException;
         }
-
-        internal static bool FilterDeletedMembers { get; set; }
     }
 }

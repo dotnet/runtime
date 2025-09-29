@@ -4,9 +4,8 @@
 namespace System.Runtime.CompilerServices;
 
 /// <summary>
-/// This attribute is emitted by Roslyn when a type is deleted during a
-/// hot reload session. The intent is to use it as a filter in places we cannot
-/// delete the type outright.
+/// This attribute is emitted by the compiler when a metadata entity is deleted during a
+/// Hot Reload session.
 /// </summary>
 [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = false)]
 public sealed class MetadataUpdateDeletedAttribute : Attribute;
