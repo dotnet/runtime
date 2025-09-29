@@ -132,6 +132,8 @@ While most failures can be matched via known issues, a few failures modes cannot
 - `/ba-g missing logs` - Logs are completely missing.
 - `/ba-g insufficient info in logs` - No good unique pattern in the logs to open a known issue.
 - `/ba-g recently fixed known issue #<Known Issue number>` - The fix for the known issue had already been merged, but the CI run was triggered beforehand.
+- `/ba-g all known issue filled #<Known Issue number 1>, #<Known Issue number 2>, ...` - All failures have known issues filled, but the build analysis is not turning green for some reasons.
+
 On release branches, Build Analysis does not automatically turn green, even for known issues. Authors are required to use `/ba-g <reason>` to manually inspect the build analysis results and update its status as appropriate.
 For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md
 
