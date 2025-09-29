@@ -83,6 +83,8 @@ TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
+TargetPointer GetILHeader(ModuleHandle handle, uint token);
+TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 ```
 
 ## Version 1
@@ -650,10 +652,22 @@ private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
 
 TargetPointer GetILHeader(ModuleHandle handle, uint token)
 {
-    // we need module
-    ILoader loader = this;
-    TargetPointer peAssembly = loader.GetPEAssembly(handle);
-    TargetPointer headerPtr = GetDynamicIL(handle, token);
+    if (GetDynamicIL(handle, token) == TargetPointer.Null)
+    {
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(handle);
+        if (mdReader == null)
+            throw new NotImplementedException();
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        int rva = methodDef.RelativeVirtualAddress;
+        headerPtr = loader.GetILAddr(peAssembly, rva);
+    }
+    return headerPtr;
+}
+
+TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+{
     TargetPointer dynamicBlobTablePtr = target.ReadPointer(handle.Address + /* Module::DynamicILBlobTable offset */);
     Contracts.IThread shashContract = target.Contracts.SHash;
     DynamicILBlobTraits traits = new();
@@ -664,15 +678,7 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token)
     */
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
-    if (blobEntry.EntryIL == TargetPointer.Null)
-    {
-        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
-        int rva = methodDef.RelativeVirtualAddress;
-        headerPtr = loader.GetILAddr(peAssembly, rva);
-    }
-    return headerPtr;
+    return /* blob entry IL address */
 }
 ```
 

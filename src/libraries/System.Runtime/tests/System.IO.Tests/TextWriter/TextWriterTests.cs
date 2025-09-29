@@ -3,6 +3,7 @@
 
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -656,8 +657,10 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public void WriteStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public void WriteStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
+            StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
+
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
                 TextWriter tw = isSynchronized ? TextWriter.Synchronized(ctw) : ctw;
@@ -669,8 +672,10 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public void WriteLineStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public void WriteLineStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
+            StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
+
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
                 TextWriter tw = isSynchronized ? TextWriter.Synchronized(ctw) : ctw;
@@ -682,8 +687,10 @@ namespace System.IO.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public async Task WriteAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public async Task WriteAsyncStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
+            StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
+
             if (!isSynchronized && !PlatformDetection.IsThreadingSupported)
             {
                 throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
@@ -700,8 +707,10 @@ namespace System.IO.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
+            StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
+
             if (!isSynchronized && !PlatformDetection.IsThreadingSupported)
             {
                 throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
@@ -994,20 +1003,44 @@ namespace System.IO.Tests
             protected override void Dispose(bool disposing) => DisposeAction?.Invoke();
         }
 
+        public enum TestStringBuilderKind
+        {
+            Empty,
+            Simple,
+            Complex
+        }
+
+        private static StringBuilder GetTestStringBuilder(TestStringBuilderKind kind)
+        {
+            switch (kind)
+            {
+                case TestStringBuilderKind.Empty:
+                    return new StringBuilder("");
+                case TestStringBuilderKind.Simple:
+                    return new StringBuilder(new string(TestDataProvider.CharData));
+                case TestStringBuilderKind.Complex:
+                {
+                    // Make a string that has 10 or so 8K chunks (probably).
+                    StringBuilder complexStringBuilder = new StringBuilder();
+                    for (int i = 0; i < 4000; i++)
+                        complexStringBuilder.Append(TestDataProvider.CharData); // CharData ~ 25 chars
+                    return complexStringBuilder;
+                }
+                default:
+                    throw new UnreachableException();
+            }
+        }
+
         // Generate data for TextWriter.Write* methods that take a stringBuilder.
         // We test both the synchronized and unsynchronized variation, on strinbuilder with 0, small and large values.
+        // We use an enum to represent the test StringBuilder to avoid logging the lengthy contents of the complex case.
         public static IEnumerable<object[]> GetStringBuilderTestData()
         {
-            // Make a string that has 10 or so 8K chunks (probably).
-            StringBuilder complexStringBuilder = new StringBuilder();
-            for (int i = 0; i < 4000; i++)
-                complexStringBuilder.Append(TestDataProvider.CharData); // CharData ~ 25 chars
-
-            foreach (StringBuilder testData in new StringBuilder[] { new StringBuilder(""), new StringBuilder(new string(TestDataProvider.CharData)), complexStringBuilder })
+            foreach (TestStringBuilderKind testStringBuilderKind in new[] { TestStringBuilderKind.Empty, TestStringBuilderKind.Simple, TestStringBuilderKind.Complex })
             {
                 foreach (bool isSynchronized in new bool[] { true, false })
                 {
-                    yield return new object[] { isSynchronized, testData };
+                    yield return new object[] { isSynchronized, testStringBuilderKind };
                 }
             }
         }
