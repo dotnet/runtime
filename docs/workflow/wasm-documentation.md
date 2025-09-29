@@ -42,7 +42,7 @@ This document serves as a comprehensive guide for contributors to the WebAssembl
 - **[Debugging WebAssembly Libraries](testing/libraries/debugging-wasm.md)** - Debug library tests in Chrome DevTools and VS Code
 
 ### Runtime Debugging
-- **[Native WASM Runtime Debugging](debugging/mono/native-wasm-debugging.md)** - Debug the Mono runtime, native crashes, and collect stack traces
+- **[WebAssembly Debugging](debugging/wasm-debugging.md)** - Consolidated debugging reference for WebAssembly applications and native runtime debugging
 - **[VS Code Debugging](debugging/libraries/debugging-vscode.md)** - Set up VS Code for debugging WASM applications
 
 ### Common Debugging Scenarios
@@ -105,7 +105,7 @@ See the [Testing Libraries on WebAssembly](testing/libraries/testing-wasm.md#pre
 
 ### How do I collect native stack traces with symbols?
 
-See the [Native WASM Runtime Debugging](debugging/mono/native-wasm-debugging.md#collecting-stack-traces-with-symbols-in-blazor) documentation for symbol configuration.
+See the [WebAssembly Debugging](debugging/wasm-debugging.md#collecting-stack-traces-with-symbols-in-blazor) documentation for symbol configuration.
 
 ### How do I run tests with different configurations?
 
