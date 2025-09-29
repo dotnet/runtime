@@ -1131,6 +1131,8 @@ INST3(vucomxsd,         "vucomxsd",         IUM_RD, BAD_CODE,               BAD_
 INST3(vucomxss,         "vucomxss",         IUM_RD, BAD_CODE,               BAD_CODE,     SSEDBL(0x2E),                  3C,                1C,         INS_TT_TUPLE1_SCALAR,                Input_32Bit                      | REX_W0                       | Encoding_EVEX    | Writes_OF | Writes_SF | Writes_ZF | Writes_PF | Writes_CF | Resets_AF)                                                       // Perform an unordered compare of single precision floating point values and set flags
 #define LAST_AVX512_INSTRUCTION INS_vucomxss
 
+INST3(vbmacor16x16x16,  "vbmacor16x16x16",  IUM_WR, BAD_CODE,               BAD_CODE,     PCKFLTMAP(0x06, 0x80),         ILLEGAL,           ILLEGAL,    INS_TT_FULL_MEM,                     Input_16Bit    | KMask_Base8     | REX_W0                       | Encoding_EVEX)                                                                                                                                  // Multiply Packed FP16 Values
+
 //    id                nm                  um      mr            mi            rm                                       lat                tp          tt              flags
 #define FIRST_APX_INSTRUCTION INS_ccmpo
 #define FIRST_CCMP_INSTRUCTION INS_ccmpo

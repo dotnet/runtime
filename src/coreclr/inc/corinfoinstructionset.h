@@ -97,6 +97,8 @@ enum CORINFO_InstructionSet
     InstructionSet_SHA_X64=43,
     InstructionSet_WAITPKG_X64=44,
     InstructionSet_X86Serialize_X64=45,
+    InstructionSet_AVX512BMM=46,
+    InstructionSet_AVX512BMM_X64=47,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -144,6 +146,8 @@ enum CORINFO_InstructionSet
     InstructionSet_SHA_X64=43,
     InstructionSet_WAITPKG_X64=44,
     InstructionSet_X86Serialize_X64=45,
+    InstructionSet_AVX512BMM=46,
+    InstructionSet_AVX512BMM_X64=47,
 #endif // TARGET_X86
 
 };

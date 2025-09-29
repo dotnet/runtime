@@ -987,6 +987,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SHA_X64
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG_X64
     { NI_Illegal, NI_Illegal },                                 //      X86Serialize_X64
+    { FIRST_NI_AVX512BMM, LAST_NI_AVX512BMM },                  // AVX512BMM
 #elif defined (TARGET_ARM64)
     { FIRST_NI_ArmBase, LAST_NI_ArmBase },                      // ArmBase
     { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },                      // AdvSimd
