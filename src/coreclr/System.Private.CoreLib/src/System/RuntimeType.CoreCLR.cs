@@ -807,7 +807,6 @@ namespace System
                         list.Add(runtimeConstructorInfo);
                     }
 
-                    GC.KeepAlive(declaringModule);
                     return list.ToArray();
                 }
 
@@ -926,8 +925,6 @@ namespace System
 
                         list.Add(runtimeFieldInfo);
                     }
-
-                    GC.KeepAlive(declaringModule);
                 }
 
                 private void PopulateLiteralFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
