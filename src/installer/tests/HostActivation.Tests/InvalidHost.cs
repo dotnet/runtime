@@ -34,8 +34,7 @@ namespace HostActivation.Tests
                 .And.ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        [PlatformSpecificFact(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_NotBound_GUI()
         {
             Command.Create(sharedTestState.UnboundAppHostGUI)
@@ -46,8 +45,7 @@ namespace HostActivation.Tests
                 .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        [PlatformSpecificFact(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_NotBound_GUI_TraceFile()
         {
             string traceFilePath;

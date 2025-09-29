@@ -4,13 +4,13 @@
   <PropertyGroup>
     <TestArtifactsOutputRoot>$(ArtifactsDir)tests\host\$(TargetOS).$(TargetArchitecture).$(Configuration)\</TestArtifactsOutputRoot>
     <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
-    <TestCaseFilter>category!=failing</TestCaseFilter>
-    <TestRunnerAdditionalArguments>--filter $(TestCaseFilter) -v detailed</TestRunnerAdditionalArguments>
+    <TestCaseFilter>/[category!=failing]</TestCaseFilter>
+    <TestRunnerAdditionalArguments>--filter-query $(TestCaseFilter)</TestRunnerAdditionalArguments>
     <!-- Enable crash and hang dumps -->
-    <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --blame-crash-dump-type full</TestRunnerAdditionalArguments>
-    <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --blame-hang-timeout 5m --blame-hang-dump-type full</TestRunnerAdditionalArguments>
-    <UseVSTestRunner>true</UseVSTestRunner>
+    <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --crashdump</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --hangdump --hangdump-timeout 5m --hangdump-type full</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
 </Project>

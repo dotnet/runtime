@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.Win32;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
     public class WindowsSpecificBehavior : IClassFixture<WindowsSpecificBehavior.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -17,12 +16,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public WindowsSpecificBehavior(SharedTestState fixture)
         {
             sharedTestState = fixture;
+
+            Assert.SkipUnless(OperatingSystem.IsWindows(), "Test only runs on Windows");
         }
 
         [Fact]
         public void DotNet_NoCompatShims()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "compat_shims")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "compat_shims")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -36,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Command.Create(sharedTestState.App.AppExe, "compat_shims")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Reported OS version is lower than the true OS version - shims in use.");
@@ -55,10 +56,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [ConditionalFact(nameof(LongPathsEnabled))]
+        [Fact]
         public void DotNet_LongPath_Succeeds()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "long_path", sharedTestState.App.Location)
+            Assert.SkipUnless(LongPathsEnabled(), "Long paths not enabled on this machine");
+
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "long_path", sharedTestState.App.Location)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()

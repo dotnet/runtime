@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <Description>Apphost Bundle Tests</Description>
+    <OutputType>Exe</OutputType>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>AppHost.Bundle.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -9,7 +10,8 @@
     <TestsOutputName>ahb</TestsOutputName>
     <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
          This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
-    <NoWarn>$(NoWarn);NU1511</NoWarn>
+    <NoWarn>$(NoWarn);NU1511;xUnit1004</NoWarn>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>

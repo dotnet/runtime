@@ -109,7 +109,7 @@ namespace HostActivation.Tests
             string expectedList = string.Join(';', f.LocalSdkPaths);
 
             string api = ApiNames.hostfxr_get_available_sdks;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -130,7 +130,7 @@ namespace HostActivation.Tests
             });
 
             string api = ApiNames.hostfxr_resolve_sdk2;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "0")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "0")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -151,7 +151,7 @@ namespace HostActivation.Tests
             });
 
             string api = ApiNames.hostfxr_resolve_sdk2;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "disallow_prerelease")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "disallow_prerelease")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -175,7 +175,7 @@ namespace HostActivation.Tests
 
             string api = ApiNames.hostfxr_resolve_sdk2;
             string flags = do_not_print_errors ? "disallow_prerelease,do_not_print_errors" : "disallow_prerelease";
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, flags)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, flags)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -204,7 +204,7 @@ namespace HostActivation.Tests
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "disallow_prerelease")
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "disallow_prerelease")
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
@@ -235,7 +235,7 @@ namespace HostActivation.Tests
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
@@ -261,7 +261,7 @@ namespace HostActivation.Tests
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
@@ -288,7 +288,7 @@ namespace HostActivation.Tests
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
@@ -316,7 +316,7 @@ namespace HostActivation.Tests
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
@@ -337,7 +337,7 @@ namespace HostActivation.Tests
             string invalidVersion = "1.2.0"; // feature band < 1 triggers __invalid_data_no_fallback
             GlobalJson.CreateWithVersion(workingDir.Location, invalidVersion);
 
-            var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, do_not_print_errors ? "do_not_print_errors" : "0")
+            var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, do_not_print_errors ? "do_not_print_errors" : "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute();
@@ -354,7 +354,7 @@ namespace HostActivation.Tests
         [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass();
@@ -373,7 +373,7 @@ namespace HostActivation.Tests
             string expectedFrameworkPaths = string.Join(';', frameworks.Select(fw => Path.Combine(f.LocalFrameworksDir, fw.Name)));
 
             string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -402,7 +402,7 @@ namespace HostActivation.Tests
             string expectedFrameworkPaths = string.Join(';', frameworks.Select(fw => Path.Combine(f.LocalFrameworksDir, fw.Name)));
 
             string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
+            var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir)
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.DisableRuntimeVersions.EnvironmentVariable, string.Join(';', disabledVersions))
                 .Execute();
@@ -423,7 +423,7 @@ namespace HostActivation.Tests
         public void Hostfxr_get_dotnet_environment_info_global_install_path()
         {
             string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -434,7 +434,7 @@ namespace HostActivation.Tests
         public void Hostfxr_get_dotnet_environment_info_result_is_nullptr_fails()
         {
             string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, "test_invalid_result_ptr")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, "test_invalid_result_ptr")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -446,7 +446,7 @@ namespace HostActivation.Tests
         public void Hostfxr_get_dotnet_environment_info_reserved_is_not_nullptr_fails()
         {
             string api = ApiNames.hostfxr_get_dotnet_environment_info;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, "test_invalid_reserved_ptr")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, "test_invalid_reserved_ptr")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -470,12 +470,12 @@ namespace HostActivation.Tests
                     .WithFramework(requested.Name, requested.Version)
                     .Save(withUtf8Bom);
 
-                var builder = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet");
+                var builder = new DotNetBuilder(artifact.Location, HostTestContext.BuiltDotNet.BinPath, "dotnet");
                 if (!isMissing)
                     builder.AddFramework(requested.Name, requested.Version, c => { });
 
                 DotNetCli dotnet = builder.Build();
-                var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
+                var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
@@ -509,7 +509,7 @@ namespace HostActivation.Tests
 
                 config.Save();
 
-                var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath)
+                var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
@@ -577,11 +577,11 @@ namespace HostActivation.Tests
                 };
 
                 string actualVersion = version.ToString(3);
-                DotNetCli dotnet = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet")
+                DotNetCli dotnet = new DotNetBuilder(artifact.Location, HostTestContext.BuiltDotNet.BinPath, "dotnet")
                     .AddFramework(requested.Name, actualVersion, c => { })
                     .Build();
 
-                var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
+                var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
@@ -611,16 +611,16 @@ namespace HostActivation.Tests
                 if (isMissing)
                 {
                     // Request a higher major framework version than the one available relative to the running hostfxr
-                    Version existingVersion = Version.Parse(TestContext.MicrosoftNETCoreAppVersion.Contains('-')
-                        ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                        : TestContext.MicrosoftNETCoreAppVersion);
+                    Version existingVersion = Version.Parse(HostTestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                        ? HostTestContext.MicrosoftNETCoreAppVersion[..HostTestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                        : HostTestContext.MicrosoftNETCoreAppVersion);
                     Version newerVersion = new Version(existingVersion.Major + 1, existingVersion.Minor, existingVersion.Build);
                     requestedVersion = newerVersion.ToString(3);
                 }
                 else
                 {
                     // Request the framework version that is available relative to the running hostfxr
-                    requestedVersion = TestContext.MicrosoftNETCoreAppVersion;
+                    requestedVersion = HostTestContext.MicrosoftNETCoreAppVersion;
                 }
 
                 (string Name, string Version) requested = (Constants.MicrosoftNETCoreApp, requestedVersion);
@@ -632,7 +632,7 @@ namespace HostActivation.Tests
                     .Save();
 
                 // API should use the running hostfxr when dotnet root is not specified
-                var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath)
+                var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
@@ -645,7 +645,7 @@ namespace HostActivation.Tests
                 }
                 else
                 {
-                    result.Should().ReturnResolvedFramework(requested.Name, requested.Version, GetFrameworkPath(requested.Name, requested.Version, TestContext.BuiltDotNet.BinPath));
+                    result.Should().ReturnResolvedFramework(requested.Name, requested.Version, GetFrameworkPath(requested.Name, requested.Version, HostTestContext.BuiltDotNet.BinPath));
                 }
             }
         }
@@ -670,7 +670,7 @@ namespace HostActivation.Tests
 
                 config.Save();
 
-                var builder = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet");
+                var builder = new DotNetBuilder(artifact.Location, HostTestContext.BuiltDotNet.BinPath, "dotnet");
                 foreach (var framework in expectedFrameworks)
                 {
                     builder.AddFramework(framework.Name, framework.Version, c => { });
@@ -678,7 +678,7 @@ namespace HostActivation.Tests
 
                 DotNetCli dotnet = builder.Build();
 
-                var result = TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
+                var result = HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
@@ -718,12 +718,12 @@ namespace HostActivation.Tests
                 config.Save();
 
                 var expectedFramework = requested[0];
-                DotNetCli dotnet = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet")
+                DotNetCli dotnet = new DotNetBuilder(artifact.Location, HostTestContext.BuiltDotNet.BinPath, "dotnet")
                     .AddFramework(expectedFramework.Name, expectedFramework.Version,
                         c => c.WithFramework(incompatibleHigher.Name, incompatibleHigher.Version))
                     .Build();
 
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute()
@@ -748,14 +748,14 @@ namespace HostActivation.Tests
                     .WithFramework(requested.Name, requested.Version)
                     .Save();
 
-                DotNetCli dotnet = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet")
+                DotNetCli dotnet = new DotNetBuilder(artifact.Location, HostTestContext.BuiltDotNet.BinPath, "dotnet")
                     .AddFramework(requested.Name, requested.Version, c => { })
                     .Build();
 
                 string frameworkPath = Path.Combine(dotnet.BinPath, "shared", requested.Name, requested.Version);
                 File.WriteAllText(Path.Combine(frameworkPath, $"{requested.Name}.runtimeconfig.json"), "{}");
 
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, dotnet.BinPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute()
@@ -788,7 +788,7 @@ namespace HostActivation.Tests
 
                 config.Save();
 
-                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, TestContext.BuiltDotNet.BinPath)
+                HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, configPath, HostTestContext.BuiltDotNet.BinPath)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute()
@@ -801,7 +801,7 @@ namespace HostActivation.Tests
         [Fact]
         public void Hostpolicy_corehost_set_error_writer_test()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_corehost_set_error_writer")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_corehost_set_error_writer")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass();
@@ -811,12 +811,12 @@ namespace HostActivation.Tests
         public void HostRuntimeContract_get_runtime_property()
         {
             TestApp app = sharedTestState.HostApiInvokerApp;
-            TestContext.BuiltDotNet.Exec(app.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+            HostTestContext.BuiltDotNet.Exec(app.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(app.AppDll)}")
-                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {TestContext.BuildRID}")
+                .And.HaveStdOutContaining($"RUNTIME_IDENTIFIER = {HostTestContext.BuildRID}")
                 .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
                 .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {app.AssemblyName}");
         }
@@ -824,7 +824,7 @@ namespace HostActivation.Tests
         [Fact]
         public void HostRuntimeContract_bundle_probe()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "host_runtime_contract.bundle_probe", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "host_runtime_contract.bundle_probe", "APP_CONTEXT_BASE_DIRECTORY", "RUNTIME_IDENTIFIER", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -847,7 +847,7 @@ namespace HostActivation.Tests
                 // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so provide the app with
                 // paths to hostfxr so that it can handle resolving the library.
                 RuntimeConfig.FromFile(HostApiInvokerApp.RuntimeConfigJson)
-                    .WithProperty("HOSTFXR_PATH", TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath)
+                    .WithProperty("HOSTFXR_PATH", HostTestContext.BuiltDotNet.GreatestVersionHostFxrFilePath)
                     .Save();
 
                 SdkAndFrameworkFixture = new SdkAndFrameworkFixture();

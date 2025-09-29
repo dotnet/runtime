@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>HostActivation.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -9,6 +10,7 @@
     <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
          This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>

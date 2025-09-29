@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
     <AssemblyName>Microsoft.NET.HostModel.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
@@ -9,6 +10,7 @@
     <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
          This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="Microsoft.NET.HostModel.TestData" Version="$(MicrosoftNETHostModelTestDataVersion)" />
   </ItemGroup>
 
