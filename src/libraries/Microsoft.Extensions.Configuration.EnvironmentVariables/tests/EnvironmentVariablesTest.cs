@@ -286,6 +286,27 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
+            // Instrumentation for https://github.com/dotnet/runtime/issues/109904. Failfast to generate a crash dump when the test fails with NullReferenceException.
+            try
+            {
+                BindingDoesNotThrowIfReloadedDuringBindingWorker();
+            }
+            catch (NullReferenceException) when (FailFast())
+            {
+            }
+
+            static bool FailFast()
+            {
+                Environment.FailFast(
+                    "Instrumentation for https://github.com/dotnet/runtime/issues/109904" + Environment.NewLine +
+                    "Microsoft.Extensions.Configuration.EnvironmentVariables.Test.EnvironmentVariablesTest.BindingDoesNotThrowIfReloadedDuringBinding [FAIL]" + Environment.NewLine +
+                    "System.NullReferenceException : Object reference not set to an instance of an object.");
+                return false;
+            }
+        }
+
+        private void BindingDoesNotThrowIfReloadedDuringBindingWorker()
+        {
             var dic = new Dictionary<string, string>
             {
                 {"Number", "-2"},

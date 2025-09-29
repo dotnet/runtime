@@ -45,6 +45,13 @@ struct CallStubHeader
         Routines[NumRoutines - 1] = target;
     }
 
+    PCODE GetTarget()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return Routines[NumRoutines - 1];
+    }
+
     size_t GetSize()
     {
         LIMITED_METHOD_CONTRACT;

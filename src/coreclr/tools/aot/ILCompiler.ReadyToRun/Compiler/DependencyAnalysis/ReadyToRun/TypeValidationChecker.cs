@@ -141,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // Validate that all fields on the type are both loadable
                     if (!await ValidateTypeWorkerHelper(field.FieldType))
                     {
-                        AddTypeValidationError(type, $"Field {field.Name}'s type failed validation");
+                        AddTypeValidationError(type, $"Field {field.GetName()}'s type failed validation");
                         return false;
                     }
 
@@ -161,7 +161,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     catch
                     {
-                        AddTypeValidationError(type, $"Signature could not be loaded for method {method.Name}");
+                        AddTypeValidationError(type, $"Signature could not be loaded for method {method.GetName()}");
                         return false;
                     }
 
@@ -215,7 +215,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (methodDef.Attributes.HasFlag(MethodAttributes.RTSpecialName))
                         {
-                            if ((method.Name != ".cctor") && !method.Name.StartsWith("_VtblGap"))
+                            if (!method.Name.SequenceEqual(".cctor"u8) && !method.Name.StartsWith("_VtblGap"u8))
                             {
                                 AddTypeValidationError(type, $"Special name method {method} defined on interface");
                                 return false;

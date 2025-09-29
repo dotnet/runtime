@@ -345,6 +345,13 @@ namespace ILLink.Shared.TrimAnalysis
                     if (annotation == DynamicallyAccessedMemberTypes.None)
                         continue;
 
+                    if (CompilerGeneratedNames.IsExtensionType(type.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
+
                     if (!IsTypeInterestingForDataflow(property.PropertyType))
                     {
                         _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings, property.GetDisplayName());
@@ -433,39 +440,22 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    if (IsAutoProperty(property))
+
+                    FieldDefinition? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
+                    if (backingField is not null)
                     {
-                        FieldDefinition? backingField = null;
-                        // If it's an annotated auto-prop, we should be able to find the compiler generated field
-                        if ((property.SetMethod is not null
-                                && property.SetMethod.IsCompilerGenerated()
-                                && backingFieldFromSetter is null)
-                            || (property.GetMethod is not null
-                                && property.GetMethod.IsCompilerGenerated()
-                                && backingFieldFromGetter is null))
+                        bool validBackingFieldFound = backingFieldFromGetter is null
+                            || backingFieldFromSetter is null
+                            || backingFieldFromGetter == backingFieldFromSetter;
+                        if (validBackingFieldFound)
                         {
-                            // We failed to find the backing field of an auto-property accessor
-                            _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        }
-                        else if (backingFieldFromGetter is not null && backingFieldFromSetter is not null
-                            && backingFieldFromSetter != backingFieldFromGetter)
-                        {
-                            // We found two different backing fields for the getter and the setter
-                            _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        }
-                        else
-                        {
-                            // We either have a single auto-property accessor or both accessors point to the same backing field
-                            backingField = backingFieldFromSetter ?? backingFieldFromGetter;
-                        }
-                        if (backingField != null)
-                        {
-                            if (annotatedFields.Any(a => a.Field == backingField))
+                            if (annotatedFields.Any(a => a.Field == backingField && a.Annotation != annotation))
                             {
                                 _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
                             }
                             else
                             {
+                                // Unique backing field with no conflicts with property or existing field
                                 annotatedFields.Add(new FieldAnnotation(backingField, annotation));
                             }
                         }

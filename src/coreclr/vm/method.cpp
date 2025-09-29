@@ -2426,6 +2426,11 @@ void MethodDesc::Reset()
     {
         *GetAddrOfNativeCodeSlot() = (PCODE)NULL;
     }
+
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
     _ASSERTE(!HasNativeCode());
 }
 
@@ -3759,6 +3764,7 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             EX_TRY
             {
+                ilVersion.GetModule()->LookupMethodDef(ilVersion.GetMethodDef());
                 ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
                 ilVersion.GetVersionId();
                 ilVersion.GetRejitState();
@@ -3856,9 +3862,15 @@ MethodDesc *MethodDesc::GetInterfaceMD()
 }
 #endif // !DACCESS_COMPILE
 
+bool MethodDesc::IsCollectible()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetLoaderAllocator()->IsCollectible();
+}
+
 PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
     return GetLoaderModule()->GetLoaderAllocator();
 }
 

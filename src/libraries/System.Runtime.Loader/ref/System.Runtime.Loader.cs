@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Reflection.Metadata
 {
     public static partial class AssemblyExtensions
@@ -13,36 +11,38 @@ namespace System.Reflection.Metadata
         [System.CLSCompliantAttribute(false)]
         public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]
+    public sealed partial class MetadataUpdateHandlerAttribute : System.Attribute
+    {
+        public MetadataUpdateHandlerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type handlerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
+        public System.Type HandlerType { get { throw null; } }
+    }
     public static partial class MetadataUpdater
     {
-        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta) { throw null; }
         [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
         public static bool IsSupported { get { throw null; } }
-    }
-    [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class MetadataUpdateHandlerAttribute : System.Attribute
-    {
-        public MetadataUpdateHandlerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods)] System.Type handlerType) { }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public System.Type HandlerType { get { throw null; } }
+        public static void ApplyUpdate(System.Reflection.Assembly assembly, System.ReadOnlySpan<byte> metadataDelta, System.ReadOnlySpan<byte> ilDelta, System.ReadOnlySpan<byte> pdbDelta) { }
     }
 }
 namespace System.Runtime.CompilerServices
 {
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
-    public sealed class CreateNewOnMetadataUpdateAttribute : System.Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false)]
+    public sealed partial class CreateNewOnMetadataUpdateAttribute : System.Attribute
+    {
+        public CreateNewOnMetadataUpdateAttribute() { }
+    }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple = false, Inherited = false)]
+    public sealed partial class MetadataUpdateDeletedAttribute : Attribute
     {
     }
-    [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = false)]
-    public sealed class MetadataUpdateDeletedAttribute : Attribute
+    
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    public partial class MetadataUpdateOriginalTypeAttribute : System.Attribute
     {
-    }
-    [AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct,
-                    AllowMultiple=false, Inherited=false)]
-    public class MetadataUpdateOriginalTypeAttribute : Attribute
-    {
-	public MetadataUpdateOriginalTypeAttribute(Type originalType) { throw null; }
-	public Type OriginalType { get { throw null; } }
+        public MetadataUpdateOriginalTypeAttribute(System.Type originalType) { }
+        public System.Type OriginalType { get { throw null; } }
     }
 }
 namespace System.Runtime.Loader

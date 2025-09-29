@@ -3326,7 +3326,7 @@ BOOL PInvoke::MarshalingRequired(
     // We enable the runtime marshalling system whenever it is enabled on the module as a whole
     // or when the call is a COM interop call. COM interop calls are already using a significant portion of the runtime
     // marshalling system just to function at all, so we aren't going to disable the parameter marshalling;
-    // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
+    // we'd rather have developers use the feature flag to disable the whole COM interop subsystem at once.
     bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
 #ifdef FEATURE_COMINTEROP
     runtimeMarshallingEnabled |= pMD && pMD->IsCLRToCOMCall();

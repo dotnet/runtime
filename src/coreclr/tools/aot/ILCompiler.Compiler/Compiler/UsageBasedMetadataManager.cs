@@ -303,7 +303,7 @@ namespace ILCompiler
                 // in places where they assume IL-level trimming (where the method cannot be removed).
                 // We ask for a full reflectable method with its method body instead of just the
                 // metadata.
-                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
                 if (!IsReflectionBlocked(invokeMethod))
                 {
                     dependencies ??= new DependencyList();

@@ -37,6 +37,8 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfGuid => field ??= typeof(Guid);
         internal static Type TypeOfDateTimeOffset => field ??= typeof(DateTimeOffset);
         internal static Type TypeOfDateTimeOffsetAdapter => field ??= typeof(DateTimeOffsetAdapter);
+        internal static Type TypeOfDateOnly => field ??= typeof(DateOnly);
+        internal static Type TypeOfTimeOnly => field ??= typeof(TimeOnly);
         internal static Type TypeOfMemoryStream => field ??= typeof(MemoryStream);
         internal static Type TypeOfMemoryStreamAdapter => field ??= typeof(MemoryStreamAdapter);
         internal static Type TypeOfUri => field ??= typeof(Uri);
@@ -264,6 +266,16 @@ namespace System.Runtime.Serialization
   <xs:attribute name='FactoryType' type='xs:QName' />
   <xs:attribute name='Id' type='xs:ID' />
   <xs:attribute name='Ref' type='xs:IDREF' />
+  <xs:simpleType name='dateOnly'>
+    <xs:restriction base='xs:date'>
+      <xs:pattern value='([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name='timeOnly'>
+    <xs:restriction base='xs:time'>
+      <xs:pattern value='([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?' />
+    </xs:restriction>
+  </xs:simpleType>
 </xs:schema>
 ";
     }

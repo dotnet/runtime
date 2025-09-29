@@ -562,7 +562,7 @@ namespace Microsoft.Interop.Analyzers
                         // Named arguments in specified order, followed by any named arguments with no preferred order
                         string name = arg.NameEquals.Name.Identifier.Text;
                         int index = System.Array.IndexOf(s_preferredAttributeArgumentOrder, name);
-                        return index == -1 ? int.MaxValue : index;
+                        return index < 0 ? int.MaxValue : index;
                     })));
             return generator.ReplaceNode(attribute, attribute.ArgumentList, updatedArgList);
         }

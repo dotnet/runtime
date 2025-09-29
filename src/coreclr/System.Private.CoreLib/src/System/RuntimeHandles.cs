@@ -824,9 +824,6 @@ namespace System
             return type!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
-        internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
         internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
@@ -1053,8 +1050,8 @@ namespace System
             return ptr;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetIsCollectible")]
-        internal static partial Interop.BOOL GetIsCollectible(RuntimeMethodHandleInternal handle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsCollectible(RuntimeMethodHandleInternal method);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_IsCAVisibleFromDecoratedType")]
         internal static partial Interop.BOOL IsCAVisibleFromDecoratedType(
