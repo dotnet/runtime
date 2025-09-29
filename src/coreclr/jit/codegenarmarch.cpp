@@ -3270,8 +3270,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
 
-        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
-        // non-standard args that may be trash if this is a tailcall.
+        // The epilog may use and trash some registers for the GS cookie check.
+        // Make sure we have no non-standard args that may be trash if this is
+        // a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
             trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
