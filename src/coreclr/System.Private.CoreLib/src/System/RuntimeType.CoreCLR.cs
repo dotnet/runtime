@@ -581,8 +581,6 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
-
                     if (declaringType.IsActualInterface)
                     {
                         #region IsInterface
@@ -611,7 +609,7 @@ namespace System
 
                             if (MetadataUpdater.IsSupported &&
                                 RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
                             {
                                 continue;
                             }
@@ -699,7 +697,7 @@ namespace System
                                 // Filter out deleted method before setting override state, so that a deleted override in a subclass does not hide override in an ancestor.
                                 if (MetadataUpdater.IsSupported &&
                                     RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                                    RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                    RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
                                 {
                                     continue;
                                 }
@@ -749,7 +747,6 @@ namespace System
                         #endregion
                     }
 
-                    GC.KeepAlive(declaringModule);
                     return list.ToArray();
                 }
 
@@ -763,7 +760,6 @@ namespace System
                     ListBuilder<RuntimeConstructorInfo> list = default;
 
                     RuntimeType declaringType = ReflectedType;
-                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
 
                     foreach (RuntimeMethodHandleInternal methodHandle in RuntimeTypeHandle.GetIntroducedMethods(declaringType))
                     {
@@ -787,7 +783,7 @@ namespace System
 
                         if (MetadataUpdater.IsSupported &&
                             RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
                         {
                             continue;
                         }
@@ -881,7 +877,6 @@ namespace System
 
                     bool needsStaticFieldForGeneric = declaringType.IsGenericType && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
-                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
 
                     foreach (IntPtr handle in fieldHandles)
                     {
@@ -906,7 +901,7 @@ namespace System
 
                         if (MetadataUpdater.IsSupported &&
                             RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(handle)))
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeFieldHandle.GetToken(handle)))
                         {
                             continue;
                         }
