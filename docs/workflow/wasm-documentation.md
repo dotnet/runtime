@@ -58,14 +58,6 @@ For consolidated debugging instructions including VS Code and Chrome DevTools se
 ### JavaScript Interop
 - **[JSInterop in WASM](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop/wasm-browser-app)** - JavaScript interoperability for WebAssembly applications
 
-### Build Configuration
-Key MSBuild properties for WebAssembly applications:
-- [`WasmEnableThreads`](../../src/mono/wasm/features.md#multi-threading) - Enable multi-threading support
-- [`WasmEnableSIMD`](../../src/mono/wasm/features.md#simd---single-instruction-multiple-data) - Enable SIMD instruction support
-- [`RunAOTCompilation`](../../src/mono/wasm/features.md#aot) - Enable Ahead-of-Time compilation
-- `WasmBuildNative` - Force native rebuild
-- `EnableDiagnostics` - Enable diagnostic features
-
 ### Globalization and ICU
 - **[ICU for WebAssembly](../../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
 
