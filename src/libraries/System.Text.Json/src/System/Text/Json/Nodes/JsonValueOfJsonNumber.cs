@@ -6,21 +6,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Nodes
 {
-    internal sealed class JsonValueOfJsonNumber : JsonValue
+    internal sealed class JsonValueOfJsonNumber : JsonValue<byte[]>
     {
-        // This can be optimized to store the decimal point position and the exponent so that
-        // conversion to different numeric types can be done without parsing the string again.
-        // Utf8Parser uses an internal ref struct, Number.NumberBuffer, which is really the
-        // same functionality that we would want here.
-        private readonly byte[] _value;
-
-        internal JsonValueOfJsonNumber(byte[] number, JsonNodeOptions? options)
-            : base(options)
+        internal JsonValueOfJsonNumber(byte[] value, JsonNodeOptions? options)
+            : base(value, options)
         {
-            _value = number;
         }
 
-        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonNumber(_value, Options);
+        internal override JsonNode DeepCloneCore() => new JsonValueOfJsonNumber(Value, Options);
         private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Number;
 
         public override T GetValue<T>()
@@ -38,7 +31,7 @@ namespace System.Text.Json.Nodes
         {
             if (typeof(T) == typeof(JsonElement))
             {
-                value = (T)(object)JsonElement.Parse(_value);
+                value = (T)(object)JsonElement.Parse(Value);
                 return true;
             }
 
@@ -46,8 +39,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(int) || typeof(T) == typeof(int?))
             {
-                success = Utf8Parser.TryParse(_value, out int result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out int result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -55,8 +48,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(long) || typeof(T) == typeof(long?))
             {
-                success = Utf8Parser.TryParse(_value, out long result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out long result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -64,8 +57,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(double) || typeof(T) == typeof(double?))
             {
-                success = Utf8Parser.TryParse(_value, out double result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out double result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -73,8 +66,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(short) || typeof(T) == typeof(short?))
             {
-                success = Utf8Parser.TryParse(_value, out short result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out short result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -82,8 +75,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(decimal) || typeof(T) == typeof(decimal?))
             {
-                success = Utf8Parser.TryParse(_value, out decimal result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out decimal result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -91,8 +84,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(byte?))
             {
-                success = Utf8Parser.TryParse(_value, out byte result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out byte result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -100,8 +93,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(float) || typeof(T) == typeof(float?))
             {
-                success = Utf8Parser.TryParse(_value, out float result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out float result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -109,8 +102,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(uint) || typeof(T) == typeof(uint?))
             {
-                success = Utf8Parser.TryParse(_value, out uint result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out uint result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -118,8 +111,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(ushort) || typeof(T) == typeof(ushort?))
             {
-                success = Utf8Parser.TryParse(_value, out ushort result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out ushort result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -127,8 +120,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(ulong) || typeof(T) == typeof(ulong?))
             {
-                success = Utf8Parser.TryParse(_value, out ulong result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out ulong result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -136,8 +129,8 @@ namespace System.Text.Json.Nodes
 
             if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(sbyte?))
             {
-                success = Utf8Parser.TryParse(_value, out sbyte result, out int consumed) &&
-                            consumed == _value.Length;
+                success = Utf8Parser.TryParse(Value, out sbyte result, out int consumed) &&
+                            consumed == Value.Length;
 
                 value = (T)(object)result;
                 return success;
@@ -151,7 +144,7 @@ namespace System.Text.Json.Nodes
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-            writer.WriteNumberValue(_value);
+            writer.WriteNumberValue(Value);
         }
     }
 }
