@@ -345,6 +345,12 @@ CreateFileWrapper(
 
 int fopen_u16_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
     LongPathString path(LongPathString::Literal, filename);
 
     if (SUCCEEDED(LongFile::NormalizePath(path)))
