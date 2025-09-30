@@ -78,7 +78,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         private static void ProcessSpeakElement(XmlReader reader, ISsmlParser engine, object voice)
         {
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             ssmlAttributes._voice = voice;
             ssmlAttributes._age = VoiceAge.NotSet;
             ssmlAttributes._gender = VoiceGender.NotSet;
@@ -217,7 +217,7 @@ namespace System.Speech.Internal.Synthesis
         private static void ProcessElement(XmlReader reader, ISsmlParser engine, string sElement, SsmlElement possibleElements, SsmlAttributes ssmAttributesParent, bool fIgnore, List<SsmlXmlAttribute> extraAttributes)
         {
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -296,7 +296,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Audio, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -357,7 +357,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Break, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -432,7 +432,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Desc, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -488,7 +488,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Emphasis, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -548,7 +548,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Mark, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -645,7 +645,7 @@ namespace System.Speech.Internal.Synthesis
         private static void ParseTextBlock(XmlReader reader, ISsmlParser engine, bool isParagraph, string sElement, SsmlAttributes ssmAttributesParent, bool fIgnore)
         {
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -713,7 +713,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Phoneme, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -835,7 +835,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Prosody, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -918,7 +918,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.SayAs, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -987,7 +987,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Sub, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -1050,7 +1050,7 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -1219,7 +1219,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.Lexicon, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
             List<SsmlXmlAttribute> extraAttributes = null;
 
             // This is equivalent to a memcpy
@@ -1288,7 +1288,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(elementAllowed, element, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -1322,7 +1322,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(elementAllowed, element, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -1381,7 +1381,7 @@ namespace System.Speech.Internal.Synthesis
             string sElement = ValidateElement(element, SsmlElement.PromptEngineDatabase, reader.Name);
 
             // Make a local copy of the ssmlAttribute
-            SsmlAttributes ssmlAttributes = new();
+            SsmlAttributes ssmlAttributes = default;
 
             // This is equivalent to a memcpy
             ssmlAttributes = ssmAttributesParent;
@@ -1539,8 +1539,8 @@ namespace System.Speech.Internal.Synthesis
                     int comma = NextChar(achContour, start, ',', true, out percent);
                     int parenthesis = NextChar(achContour, comma, ')', true, out ignored);
 
-                    ProsodyNumber timePosition = new();
-                    ProsodyNumber target = new();
+                    ProsodyNumber timePosition = default;
+                    ProsodyNumber target = default;
 
                     // Parse the 2 numbers
                     if (!percent || !TryParseNumber(contour.Substring(start, comma - (start + 1)), ref timePosition) || timePosition.SsmlAttributeId == ProsodyNumber.AbsoluteNumber)

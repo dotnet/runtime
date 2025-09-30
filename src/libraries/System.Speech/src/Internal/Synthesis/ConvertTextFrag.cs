@@ -28,7 +28,7 @@ namespace System.Speech.Internal.Synthesis
                 SPVTEXTFRAG sapiFrag = new();
 
                 // start with the text fragment
-                sapiFrag.gcNext = fFirst ? new GCHandle() : sapiFragLast;
+                sapiFrag.gcNext = fFirst ? default : sapiFragLast;
                 sapiFrag.pNext = fFirst ? IntPtr.Zero : sapiFragLast.AddrOfPinnedObject();
                 sapiFrag.gcText = GCHandle.Alloc(textFragment.TextToSpeak, GCHandleType.Pinned);
                 sapiFrag.pTextStart = sapiFrag.gcText.AddrOfPinnedObject();
@@ -36,7 +36,7 @@ namespace System.Speech.Internal.Synthesis
                 sapiFrag.ulTextLen = textFragment.TextLength;
 
                 // State
-                SPVSTATE sapiState = new();
+                SPVSTATE sapiState = default;
                 FragmentState ssmlState = textFragment.State;
                 sapiState.eAction = (SPVACTIONS)ssmlState.Action;
                 sapiState.LangID = (short)ssmlState.LangId;
@@ -72,7 +72,7 @@ namespace System.Speech.Internal.Synthesis
                 }
                 else
                 {
-                    sapiFrag.gcPhoneme = new GCHandle();
+                    sapiFrag.gcPhoneme = default;
                     sapiState.pPhoneIds = IntPtr.Zero;
                 }
 
