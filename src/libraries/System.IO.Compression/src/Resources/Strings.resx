@@ -296,4 +296,13 @@
   <data name="InvalidOffsetToZip64EOCD" xml:space="preserve">
     <value>Invalid offset to the Zip64 End of Central Directory record.</value>
   </data>
+  <data name="CannotBeWrittenInReadMode" xml:space="preserve">
+    <value>Cannot open entry for writing when archive is opened in read-only mode.</value>
+  </data>
+  <data name="CannotBeReadInCreateMode" xml:space="preserve">
+    <value>Cannot open entry for reading when archive is opened in create mode.</value>
+  </data>
+  <data name="InvalidFileAccess" xml:space="preserve">
+    <value>The specified FileAccess value is not valid.</value>
+  </data>
 </root>
