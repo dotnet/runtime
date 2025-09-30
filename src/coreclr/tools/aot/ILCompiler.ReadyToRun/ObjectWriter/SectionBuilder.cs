@@ -916,6 +916,12 @@ namespace ILCompiler.PEWriter
                 {
                     foreach (Relocation relocation in placedObjectData.Relocs)
                     {
+                        if (relocation.RelocType == RelocType.IMAGE_REL_FILE_CHECKSUM_CALLBACK)
+                        {
+                            // Checksums are handled manually for PEWriter.
+                            continue;
+                        }
+
                         // Process a single relocation
                         int relocationRVA = section.RVAWhenPlaced + placedObjectData.Offset + relocation.Offset;
                         int relocationFilePos = relocationRVA + rvaToFilePosDelta;

@@ -69,9 +69,12 @@ namespace ILCompiler.DependencyAnalysis
 
         //
         // Relocations for R2R image production
+        // None of these are "real" relocations that map to an object file's relocation.
+        // All must be emulated by the object writer.
         //
         IMAGE_REL_SYMBOL_SIZE                = 0x1000, // The size of data in the image represented by the target symbol node
         IMAGE_REL_FILE_ABSOLUTE              = 0x1001, // 32 bit offset from beginning of image
+        IMAGE_REL_FILE_CHECKSUM_CALLBACK     = 0x1002, // After the image has been emitted, call the IChecksumNode.EmitChecksum method on the target symbol to emit the checksum data.
     }
 
     public struct Relocation

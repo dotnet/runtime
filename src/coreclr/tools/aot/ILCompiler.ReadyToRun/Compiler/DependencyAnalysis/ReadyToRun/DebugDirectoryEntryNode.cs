@@ -14,6 +14,8 @@ using System.IO;
 using System.Collections.Immutable;
 using System.Collections.Generic;
 using ILCompiler.Diagnostics;
+using ILCompiler.DependencyAnalysisFramework;
+using System.Security.Cryptography;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -160,7 +162,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _pdbName = pdbName;
         }
 
-        private string _pdbName;
+        private readonly string _pdbName;
+        private readonly RSDSChecksumNode _checksumNode = new();
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -174,8 +177,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            // Emit empty entry. This will be filled with data after the output image is emitted
-            builder.EmitZeros(RSDSSize);
+            builder.EmitUInt(RsdsMagic);
+
+            builder.EmitChecksumReloc(_checksumNode);
+
+            // Age
+            builder.EmitInt(1);
+
+            string pdbFileName = _pdbName;
+            byte[] pdbFileNameBytes = Encoding.UTF8.GetBytes(pdbFileName);
+            builder.EmitBytes(pdbFileNameBytes);
+            builder.EmitByte(0); // Null terminator
+
+            Debug.Assert(builder.CountBytes <= RSDSSize);
 
             return builder.ToObjectData();
         }
@@ -221,6 +235,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitInt(Size);
             builder.EmitReloc(this, RelocType.IMAGE_REL_BASED_ADDR32NB);
             builder.EmitReloc(this, RelocType.IMAGE_REL_FILE_ABSOLUTE);
+        }
+
+        private class RSDSChecksumNode : DependencyNodeCore<NodeFactory>, IChecksumNode
+        {
+            public int ChecksumSize => 16;
+
+            public void EmitChecksum(ReadOnlySpan<byte> outputBlob, Span<byte> checksumLocation)
+            {
+                Debug.Assert(checksumLocation.Length == ChecksumSize);
+                SHA256.HashData(outputBlob)[0..ChecksumSize].CopyTo(checksumLocation);
+            }
+
+            public override bool InterestingForDynamicDependencyAnalysis => false;
+
+            public override bool HasDynamicDependencies => false;
+
+            public override bool HasConditionalStaticDependencies => false;
+
+            public override bool StaticDependenciesAreComputed => true;
+
+            public int Offset => 0;
+
+            public bool RepresentsIndirectionCell => false;
+
+            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            {
+                sb.Append(nameMangler.CompilationUnitPrefix);
+                sb.Append($"__RSDSChecksum");
+            }
+
+            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
+            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
+            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+            protected override string GetName(NodeFactory context)
+            {
+                return "RSDSChecksum";
+            }
         }
     }
 

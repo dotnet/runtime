@@ -91,6 +91,16 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Represents a node that generates a checksum for the resulting output blob.
+    /// </summary>
+    public interface IChecksumNode : ISymbolNode
+    {
+        int ChecksumSize { get; }
+
+        void EmitChecksum(ReadOnlySpan<byte> outputBlob, Span<byte> checksumLocation);
+    }
+
+    /// <summary>
     /// Represents a symbol that should not be shared with another symbol during writing of the object file.
     /// </summary>
     public interface IUniqueSymbolNode : ISymbolNode

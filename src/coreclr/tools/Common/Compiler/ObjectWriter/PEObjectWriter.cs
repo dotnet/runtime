@@ -445,6 +445,8 @@ namespace ILCompiler.ObjectWriter
                 if (recordFinalLayout)
                 {
                     // Use the stream length so we don't include any space that's appended just for alignment purposes.
+                    // To ensure that we match the section indexes in _sections, we don't skip empty sections here
+                    // even though we omit them in EmitObjectFile.
                     _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, (uint)s.Stream.Length));
                 }
             }

@@ -210,37 +210,9 @@ namespace ILCompiler.DependencyAnalysis
                     _mapFileBuilder.SetFileSize(stream.Length);
                 }
 
-                ulong debugOffset = 0;
-                foreach (OutputSection section in _outputInfoBuilder.Sections)
-                {
-                    if (section.Name == ".debug")
-                    {
-                        debugOffset = section.FilePosition;
-                        break;
-                    }
-                }
-
                 foreach (string inputFile in _inputFiles)
                 {
                     _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
-                }
-
-                if (debugOffset != 0)
-                {
-                    if (_nodeFactory.DebugDirectoryNode.PdbEntry is { } nativeDebugDirectoryEntryNode)
-                    {
-                        Debug.Assert(_generatePdbFile);
-                        // Compute hash of the output image and store that in the native DebugDirectory entry
-                        using (var hashAlgorithm = SHA256.Create())
-                        {
-                            stream.Seek(0, SeekOrigin.Begin);
-                            byte[] hash = hashAlgorithm.ComputeHash(stream);
-                            byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
-
-                            stream.Seek((long)debugOffset, SeekOrigin.Begin);
-                            stream.Write(rsdsEntry);
-                        }
-                    }
                 }
 
                 if (_generateMapFile)

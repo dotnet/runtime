@@ -330,6 +330,7 @@ namespace ILCompiler.ObjectWriter
 
             List<ISymbolRangeNode> symbolRangeNodes = [];
             List<BlockToRelocate> blocksToRelocate = [];
+            List<BlockToRelocate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
                 if (depNode is ISymbolRangeNode symbolRange)
@@ -503,6 +504,7 @@ namespace ILCompiler.ObjectWriter
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
             {
+                ArrayBuilder<Relocation> checksumRelocationsBuilder = default;
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
 #if READYTORUN
@@ -510,6 +512,14 @@ namespace ILCompiler.ObjectWriter
 #else
                     ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
 #endif
+
+                    if (reloc.RelocType == RelocType.IMAGE_REL_FILE_CHECKSUM_CALLBACK)
+                    {
+                        // Checksum relocations don't get emitted into the image.
+                        // We manually proces them after we do all other object emission.
+                        checksumRelocationsBuilder.Add(reloc);
+                        continue;
+                    }
 
                     string relocSymbolName = GetMangledName(relocTarget);
 
@@ -526,6 +536,7 @@ namespace ILCompiler.ObjectWriter
                         HandleControlFlowForRelocation(relocTarget, relocSymbolName);
                     }
                 }
+                checksumRelocations.Add(blockToRelocate with { Relocations = checksumRelocationsBuilder.ToArray() });
             }
             blocksToRelocate.Clear();
 
@@ -547,11 +558,39 @@ namespace ILCompiler.ObjectWriter
 
             EmitObjectFile(outputFileStream);
 
+            if (checksumRelocations.Count > 0)
+            {
+                EmitChecksums(outputFileStream, checksumRelocations);
+            }
+
             if (_outputInfoBuilder is not null)
             {
                 foreach (var outputSection in _outputSectionLayout)
                 {
                     _outputInfoBuilder.AddSection(outputSection);
+                }
+            }
+        }
+
+        private void EmitChecksums(Stream outputFileStream, List<BlockToRelocate> checksumRelocations)
+        {
+            MemoryStream originalOutputStream = new();
+            outputFileStream.Seek(0, SeekOrigin.Begin);
+            outputFileStream.CopyTo(originalOutputStream);
+            byte[] originalOutput = originalOutputStream.ToArray();
+
+            foreach (var block in checksumRelocations)
+            {
+                foreach (var reloc in block.Relocations)
+                {
+                    IChecksumNode checksum = (IChecksumNode)reloc.Target;
+
+                    byte[] checksumValue = new byte[checksum.ChecksumSize];
+                    checksum.EmitChecksum(originalOutput, checksumValue);
+
+                    var checksumOffset = (long)_outputSectionLayout[block.SectionIndex].FilePosition + block.Offset + reloc.Offset;
+                    outputFileStream.Seek(checksumOffset, SeekOrigin.Begin);
+                    outputFileStream.Write(checksumValue);
                 }
             }
         }
