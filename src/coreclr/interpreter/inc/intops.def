@@ -23,7 +23,7 @@ OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
 OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_LDPTR_DEREF, "ldptr.deref", 3, 1, 0, InterpOpLdPtr)
-OPDEF(INTOP_NULLCHECK, "nullcheck", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_NULLCHECK, "nullcheck", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpPointerHelperFtn)
 OPDEF(INTOP_NEWARR_GENERIC, "newarr.generic", 6, 1, 2, InterpOpGenericHelperFtn)
 OPDEF(INTOP_NEWMDARR, "newmdarr", 5, 1, 1, InterpOpPointerInt)
@@ -360,7 +360,9 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALL_NULLCHECK, "call.nullcheck", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLDELEGATE, "call.delegate", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLDELEGATE_TAIL, "call.delegate.tail", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI, "calli", 6, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only
@@ -395,6 +397,9 @@ OPDEF(INTOP_CALL_HELPER_P_GA, "call.helper.p.ga", 6, 1, 2, InterpOpGenericHelper
 OPDEF(INTOP_CALL_HELPER_V_APS, "call.helper.v.aps", 5, 1, 1, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_V_AGS, "call.helper.v.ags", 6, 1, 2, InterpOpGenericHelperFtn)
 
+// Call a helper function with a signature of void helper(SVar1, AddrOfSVar2)
+OPDEF(INTOP_CALL_HELPER_V_SA, "call.helper.v.sa", 4, 0, 2, InterpOpHelperFtnNoArgs)
+
 OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
@@ -416,10 +421,18 @@ OPDEF(INTOP_THROW_PNSE, "throw.pnse", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
 
 // Intrinsics
+OPDEF(INTOP_COMPARE_EXCHANGE_U1, "compare.exchange.u1", 5, 1, 3, InterpOpNoArgs)
+OPDEF(INTOP_COMPARE_EXCHANGE_U2, "compare.exchange.u2", 5, 1, 3, InterpOpNoArgs)
 OPDEF(INTOP_COMPARE_EXCHANGE_I4, "compare.exchange.i4", 5, 1, 3, InterpOpNoArgs)
 OPDEF(INTOP_COMPARE_EXCHANGE_I8, "compare.exchange.i8", 5, 1, 3, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_U1, "exchange.U1", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGE_U2, "exchange.U2", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGE_I4, "exchange.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGE_I8, "exchange.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGEADD_I4, "exchangeadd.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_EXCHANGEADD_I8, "exchangeadd.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SQRT_R4, "sqrt.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_SQRT_R8, "sqrt.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed

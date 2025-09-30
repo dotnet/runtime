@@ -3112,7 +3112,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         break;
 
                     default:
-                        assert("unsupported");
+                        assert(!"unsupported");
                 }
 
                 if (!op3->OperIs(GT_LCL_VAR))

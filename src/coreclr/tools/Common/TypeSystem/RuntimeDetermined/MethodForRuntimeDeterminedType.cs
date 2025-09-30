@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -35,7 +36,7 @@ namespace Internal.TypeSystem
         public override bool IsAbstract => _typicalMethodDef.IsAbstract;
         public override bool IsFinal => _typicalMethodDef.IsFinal;
         public override bool IsDefaultConstructor => _typicalMethodDef.IsDefaultConstructor;
-        public override string Name => _typicalMethodDef.Name;
+        public override ReadOnlySpan<byte> Name => _typicalMethodDef.Name;
         public override MethodDesc GetTypicalMethodDefinition() => _typicalMethodDef;
         public override Instantiation Instantiation => _typicalMethodDef.Instantiation;
 

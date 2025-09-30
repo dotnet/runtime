@@ -44,7 +44,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72951", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ExtractToDirectoryUnicode(bool async)
         {
             string zipFileName = zfile("unicode.zip");
