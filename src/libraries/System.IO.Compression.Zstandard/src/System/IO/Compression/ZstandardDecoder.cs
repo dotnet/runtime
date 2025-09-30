@@ -15,6 +15,20 @@ namespace System.IO.Compression
         // True if we finished decompressing the entire input.
         private bool _finished;
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified maximum window size.</summary>
+        /// <param name="maxWindow">The maximum window size to use for decompression.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindow"/> is not between the minimum and maximum allowed values.</exception>
+        public ZstandardDecoder(int maxWindow)
+        {
+            if (maxWindow <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxWindow), "Max window size must be positive.");
+
+            _disposed = false;
+
+            InitializeDecoder();
+            SetWindow(maxWindow);
+        }
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
@@ -25,6 +39,31 @@ namespace System.IO.Compression
             _disposed = false;
 
             InitializeDecoder();
+
+            try
+            {
+                _context!.SetDictionary(dictionary.DecompressionDictionary);
+            }
+            catch
+            {
+                _context!.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary and maximum window size.</summary>
+        /// <param name="dictionary">The decompression dictionary to use.</param>
+        /// <param name="maxWindow">The maximum window size to use for decompression.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindow"/> is not between the minimum and maximum allowed values.</exception>
+        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindow)
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            _disposed = false;
+
+            InitializeDecoder();
+            SetWindow(maxWindow);
 
             try
             {
@@ -251,6 +290,24 @@ namespace System.IO.Compression
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ZstandardDecoder), SR.ZstandardDecoder_Disposed);
+        }
+
+        internal void SetWindow(int maxWindow)
+        {
+            EnsureNotDisposed();
+            if (maxWindow < ZstandardUtils.WindowBits_Min || maxWindow > ZstandardUtils.WindowBits_Max)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxWindow), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
+            }
+            if (_context == null || _context.IsInvalid || _context.IsClosed)
+            {
+                InitializeDecoder();
+            }
+            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindow);
+            if (ZstandardUtils.IsError(result))
+            {
+                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
+            }
         }
     }
 }

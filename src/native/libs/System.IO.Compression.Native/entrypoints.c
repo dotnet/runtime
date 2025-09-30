@@ -61,6 +61,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_compress_usingCDict)
     DllImportEntry(ZSTD_compressStream2)
     DllImportEntry(ZSTD_CCtx_setParameter)
+    DllImportEntry(ZSTD_DCtx_setParameter)
     DllImportEntry(ZSTD_CCtx_reset)
     DllImportEntry(ZSTD_minCLevel)
     DllImportEntry(ZSTD_maxCLevel)

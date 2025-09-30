@@ -43,6 +43,7 @@ EXPORTS
     ZSTD_compress_usingCDict
     ZSTD_compressStream2
     ZSTD_CCtx_setParameter
+    ZSTD_DCtx_setParameter
     ZSTD_CCtx_reset
     ZSTD_minCLevel
     ZSTD_maxCLevel
