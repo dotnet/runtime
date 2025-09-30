@@ -155,6 +155,22 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        public void Encoder_Finalize()
+        {
+            {
+                var encoder = new ZstandardEncoder(ValidQuality, ValidWindow);
+                byte[] input = CreateTestData();
+                byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+                OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        [Fact]
         public void Compress_AfterDispose_ThrowsObjectDisposedException()
         {
             var encoder = new ZstandardEncoder(ValidQuality, ValidWindow);
