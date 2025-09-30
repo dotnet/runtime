@@ -12,7 +12,7 @@ typedef uint32_t HRESULT;
 #include <dn-u16.h>
 #include <minipal/utf8.h>
 
-int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode)
+int u16_fopen_s(FILE** stream, const WCHAR* path, const WCHAR* mode)
 {
     size_t pathLen = u16_strlen(path);
     size_t pathU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)path, pathLen, 0);

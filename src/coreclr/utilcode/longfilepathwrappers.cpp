@@ -343,7 +343,7 @@ CreateFileWrapper(
     return ret;
 }
 
-int fopen_u16_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
+int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
 {
     CONTRACTL
     {
@@ -355,7 +355,7 @@ int fopen_u16_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
 
     if (SUCCEEDED(LongFile::NormalizePath(path)))
     {
-        return fopen_u16(stream, path.GetUnicode(), mode);
+        return u16_fopen_s(stream, path.GetUnicode(), mode);
     }
 
     return -1;

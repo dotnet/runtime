@@ -8,7 +8,7 @@
 // Wrappers for stdio with UTF-16 path.
 //
 
-int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode);
+int u16_fopen_s(FILE** stream, const WCHAR* path, const WCHAR* mode);
 int64_t fgetsize(FILE* stream);
 int64_t ftell_64(FILE* stream);
 int fsetpos_64(FILE* stream, int64_t pos);

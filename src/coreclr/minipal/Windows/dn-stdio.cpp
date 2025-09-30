@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <dn-stdio.h>
 
-int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode)
+int u16_fopen_s(FILE** stream, const WCHAR* path, const WCHAR* mode)
 {
     return _wfopen_s(stream, path, mode);
 }
