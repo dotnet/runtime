@@ -3037,9 +3037,28 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         }
 
         case NI_Throw_PlatformNotSupportedException:
+        {
+            // This NI is used in places where a method is not supported on the current platform. We
+            // need to adjust the IL stack as if the method was actually called, so pop the arguments and push a return value.
+            int numArgsFromStack = sig.numArgs + (sig.hasThis() ? 1 : 0);
+            CHECK_STACK(numArgsFromStack);
+            m_pStackPointer -= numArgsFromStack;
+            if (sig.retType != CORINFO_TYPE_VOID)
+            {
+                InterpType retType = GetInterpType(sig.retType);
+                CORINFO_CLASS_HANDLE clsHnd = NULL;
+                if (sig.retType == CORINFO_TYPE_VALUECLASS)
+                {
+                    clsHnd = sig.retTypeClass;
+                }
+                PushInterpType(retType, clsHnd);
+                AddIns(INTOP_DEF);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            }
+
             AddIns(INTOP_THROW_PNSE);
             return true;
-
+        }
         case NI_System_StubHelpers_GetStubContext:
         {
             assert(m_hiddenArgumentVar >= 0);
