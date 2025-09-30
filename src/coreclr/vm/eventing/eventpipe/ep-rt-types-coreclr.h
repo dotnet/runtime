@@ -56,7 +56,7 @@ typedef class MethodDesc ep_rt_method_desc_t;
  */
 
 #undef ep_rt_file_handle_t
-typedef void * ep_rt_file_handle_t;
+typedef void* ep_rt_file_handle_t;
 
 #undef ep_rt_wait_event_handle_t
 typedef struct _rt_coreclr_event_internal_t ep_rt_wait_event_handle_t;

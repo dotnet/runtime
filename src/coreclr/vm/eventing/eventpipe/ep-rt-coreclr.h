@@ -19,11 +19,11 @@
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
-#else
+#else // !HOST_WINDOWS
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#endif
+#endif // HOST_WINDOWS
 
 #include <minipal/guid.h>
 #include <minipal/strings.h>
@@ -1085,7 +1085,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
     if (!path)
         return INVALID_HANDLE_VALUE;
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
     if (!path_utf16)
         return INVALID_HANDLE_VALUE;
@@ -1093,14 +1093,14 @@ ep_rt_file_open_write (const ep_char8_t *path)
     HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     ep_rt_utf16_string_free (path_utf16);
     return static_cast<ep_rt_file_handle_t>(res);
-#else
+#else // !HOST_WINDOWS
     mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     int fd = creat (path, perms);
     if (fd == -1)
         return INVALID_HANDLE_VALUE;
 
     return (ep_rt_file_handle_t)(ptrdiff_t)fd;
-#endif
+#endif // HOST_WINDOWS
 }
 
 static
@@ -1110,13 +1110,13 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     return ::CloseHandle (file_handle) != FALSE;
-#else
+#else // !HOST_WINDOWS
     int fd = (int)(ptrdiff_t)file_handle;
     close (fd);
     return true;
-#endif
+#endif // HOST_WINDOWS
 }
 
 static
@@ -1133,9 +1133,9 @@ ep_rt_file_write (
 
 	ep_return_false_if_nok (file_handle != NULL);
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
-#else
+#else // !HOST_WINDOWS
     int fd = (int)(ptrdiff_t)file_handle;
     int ret;
     do {
@@ -1154,7 +1154,7 @@ ep_rt_file_write (
         *bytes_written = ret;
 
     return true;
-#endif
+#endif // HOST_WINDOWS
 }
 
 static
