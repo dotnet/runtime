@@ -49,3 +49,5 @@ ZSTD_maxCLevel
 ZSTD_defaultCLevel
 ZSTD_isError
 ZSTD_getErrorName
+ZSTD_DCtx_refPrefix
+ZSTD_CCtx_refPrefix

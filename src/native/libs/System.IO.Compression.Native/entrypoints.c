@@ -61,6 +61,8 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_defaultCLevel)
     DllImportEntry(ZSTD_isError)
     DllImportEntry(ZSTD_getErrorName)
+    DllImportEntry(ZSTD_DCtx_refPrefix)
+    DllImportEntry(ZSTD_CCtx_refPrefix)
 };
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name);
