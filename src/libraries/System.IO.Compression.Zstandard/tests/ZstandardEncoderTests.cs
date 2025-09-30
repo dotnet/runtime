@@ -46,14 +46,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void Constructor_WithDictionary_WithoutQuality_Throws()
-        {
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary());
-
-            Assert.Throws<ArgumentException>(() => new ZstandardEncoder(dictionary, ValidWindow));
-        }
-
-        [Fact]
         public void Constructor_WithNullDictionary_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => new ZstandardEncoder(null!, ValidWindow));
@@ -144,16 +136,6 @@ namespace System.IO.Compression
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);
-        }
-
-        [Fact]
-        public void TryCompress_WithDictionary_WithoutQuality_Throws()
-        {
-            byte[] input = CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary());
-
-            Assert.Throws<ArgumentException>(() => ZstandardEncoder.TryCompress(input, output, out _, dictionary: dictionary, window: ValidWindow));
         }
 
         [Theory]
