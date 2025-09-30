@@ -93,7 +93,7 @@ namespace System.IO.Compression
                     SetWindow(options.Window);
                 }
 
-                if (options.EnableChecksum)
+                if (options.AppendChecksum)
                 {
                     SetFlag(Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag);
                 }

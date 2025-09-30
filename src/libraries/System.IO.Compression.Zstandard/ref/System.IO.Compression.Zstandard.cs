@@ -12,7 +12,7 @@ namespace System.IO.Compression
         public static int DefaultQuality { get { throw null; } }
         public static int DefaultWindow { get { throw null; } }
         public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
-        public bool EnableChecksum { get { throw null; } set { } }
+        public bool AppendChecksum { get { throw null; } set { } }
         public bool EnableLongDistanceMatching { get { throw null; } set { } }
         public static int MaxQuality { get { throw null; } }
         public static int MaxWindow { get { throw null; } }
