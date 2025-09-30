@@ -4366,10 +4366,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 GenTree* reversed = comp->gtReverseCond(op1);
                 assert(reversed == op1);
-#ifdef TARGET_RISCV64
-                LowerNode(op1);
-                op1 = cmp->gtGetOp1();
-#endif
             }
 
             // Relops and SETCC can be either TYP_INT or TYP_LONG typed, so we
