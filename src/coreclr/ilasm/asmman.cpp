@@ -950,13 +950,13 @@ HRESULT AsmMan::EmitManifest()
             }
             else // embedded mgd.resource, go after the file
             {
-                HANDLE hFile = INVALID_HANDLE_VALUE;
+                FILE* fp = NULL;
                 int j;
                 WCHAR   wzFileName[2048];
                 WCHAR*  pwz;
 
                 pManRes->ulOffset = m_dwMResSizeTotal;
-                for(j=0; (hFile == INVALID_HANDLE_VALUE)&&(pwzInputFiles[j] != NULL); j++)
+                for(j=0; (fp == NULL)&&(pwzInputFiles[j] != NULL); j++)
                 {
                     wcscpy_s(wzFileName,2048,pwzInputFiles[j]);
                     pwz = (WCHAR*)u16_strrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
@@ -966,10 +966,9 @@ HRESULT AsmMan::EmitManifest()
                     if(pwz == NULL) pwz = &wzFileName[0];
                     else pwz++;
                     wcscpy_s(pwz,2048-(pwz-wzFileName),wzUniBuf);
-                    hFile = WszCreateFile(wzFileName, GENERIC_READ, FILE_SHARE_READ,
-                             0, OPEN_EXISTING, 0, 0);
+                    fopen_lp(&fp, wzFileName, W("rb"));
                 }
-                if (hFile == INVALID_HANDLE_VALUE)
+                if (fp == NULL)
                 {
                     report->error("Failed to open managed resource file '%s'\n",pManRes->szAlias);
                     fOK = FALSE;
@@ -983,14 +982,15 @@ HRESULT AsmMan::EmitManifest()
                     }
                     else
                     {
-                        m_dwMResSize[m_dwMResNum] = SafeGetFileSize(hFile,NULL);
-                        if(m_dwMResSize[m_dwMResNum] == 0xFFFFFFFF)
+                        uint64_t fSize = fgetsize(fp);
+                        if(fSize >= 0xFFFFFFFF)
                         {
                             report->error("Failed to get size of managed resource file '%s'\n",pManRes->szAlias);
                             fOK = FALSE;
                         }
                         else
                         {
+                            m_dwMResSize[m_dwMResNum] = (DWORD)fSize;
                             m_dwMResSizeTotal += m_dwMResSize[m_dwMResNum]+sizeof(DWORD);
                             m_wzMResName[m_dwMResNum] = new WCHAR[u16_strlen(wzFileName)+1];
                             wcscpy_s(m_wzMResName[m_dwMResNum],u16_strlen(wzFileName)+1,wzFileName);
@@ -999,7 +999,7 @@ HRESULT AsmMan::EmitManifest()
                         }
                     }
 
-                    CloseHandle(hFile);
+                    fclose(fp);
                 }
             }
             if(fOK || ((Assembler*)m_pAssembler)->OnErrGo)
