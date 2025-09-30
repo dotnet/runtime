@@ -43,14 +43,14 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Offset relative to section beginning
         /// </summary>
-        public readonly int Offset;
+        public readonly ulong Offset;
 
         /// <summary>
         /// Item name
         /// </summary>
         public readonly string Name;
 
-        public OutputItem(int sectionIndex, int offset, string name)
+        public OutputItem(int sectionIndex, ulong offset, string name)
         {
             SectionIndex = sectionIndex;
             Offset = offset;
@@ -74,7 +74,7 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         public int Relocations { get; private set; }
 
-        public OutputNode(int sectionIndex, int offset, int length, string name)
+        public OutputNode(int sectionIndex, ulong offset, int length, string name)
             : base(sectionIndex, offset, name)
         {
             Length = length;
@@ -94,7 +94,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     public sealed class OutputSymbol : OutputItem
     {
-        public OutputSymbol(int sectionIndex, int offset, string name)
+        public OutputSymbol(int sectionIndex, ulong offset, string name)
             : base(sectionIndex, offset, name)
         {
         }

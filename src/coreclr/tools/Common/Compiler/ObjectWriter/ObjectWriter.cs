@@ -390,7 +390,7 @@ namespace ILCompiler.ObjectWriter
                         n.Offset + thumbBit,
                         n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
 
-                    _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, n.Offset, mangledName));
+                    _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 
                     if (_nodeFactory.GetSymbolAlternateName(n, out bool isHidden) is string alternateName)
                     {
@@ -407,7 +407,7 @@ namespace ILCompiler.ObjectWriter
                             EmitReferencedMethod(alternateCName);
                         }
 
-                        _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, n.Offset, alternateCName));
+                        _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), alternateCName));
                     }
                 }
 
@@ -448,7 +448,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (_outputInfoBuilder is not null)
                 {
-                    var outputNode = new OutputNode(sectionWriter.SectionIndex, checked((int)sectionWriter.Position), nodeContents.Data.Length, currentSymbolName);
+                    var outputNode = new OutputNode(sectionWriter.SectionIndex, checked((ulong)sectionWriter.Position), nodeContents.Data.Length, currentSymbolName);
                     _outputInfoBuilder.AddNode(outputNode, nodeContents.DefinedSymbols[0]);
                     if (nodeContents.Relocs is not null)
                     {

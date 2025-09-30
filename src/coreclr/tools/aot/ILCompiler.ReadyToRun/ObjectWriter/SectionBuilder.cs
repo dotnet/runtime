@@ -485,7 +485,7 @@ namespace ILCompiler.PEWriter
 
             if (outputInfoBuilder != null)
             {
-                var node = new ObjectWriter.OutputNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
+                var node = new ObjectWriter.OutputNode(sectionIndex, (ulong)alignedOffset, objectData.Data.Length, name);
                 outputInfoBuilder.AddNode(node, objectData.DefinedSymbols[0]);
                 if (objectData.Relocs != null)
                 {
@@ -511,7 +511,7 @@ namespace ILCompiler.PEWriter
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         symbol.AppendMangledName(GetNameMangler(), sb);
                         int sectionRelativeOffset = alignedOffset + symbol.Offset;
-                        outputInfoBuilder.AddSymbol(new ObjectWriter.OutputSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
+                        outputInfoBuilder.AddSymbol(new ObjectWriter.OutputSymbol(sectionIndex, (ulong)sectionRelativeOffset, sb.ToString()));
                     }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,

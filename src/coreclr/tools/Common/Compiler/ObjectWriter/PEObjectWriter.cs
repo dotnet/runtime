@@ -791,7 +791,7 @@ namespace ILCompiler.ObjectWriter
                     case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                         fixed (byte* pData = GetRelocDataSpan(reloc))
                         {
-                            long rva = _sections[sectionIndex].Header.PointerToRawData + reloc.Offset;
+                            long rva = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, rva);
                             WriteRelocDataSpan(reloc, pData);
                         }
