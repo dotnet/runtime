@@ -6,7 +6,7 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 
 ```csharp
     // Gets a pointer to the MethodDesc for a given stub entrypoint
-    TargetPointer GetMethodDescFromPrecode(TargetCodePointer entryPoint);
+    TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
 ```
 
 ## Version 1, 2, and 3
@@ -289,7 +289,7 @@ After the initial precode type is determined, for stub precodes a refined precod
         throw new InvalidOperationException($"Invalid precode type 0x{instrPointer:x16}");
     }
 
-    TargetPointer IPrecodeStubs.GetMethodDescFromPrecode(TargetCodePointer entryPoint)
+    TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
     {
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 

@@ -355,7 +355,7 @@ TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer ent
     if (/* range flags indicate RangeList */)
     {
         IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-        return precodeStubs.GetMethodDescFromPrecode(entrypoint);
+        return precodeStubs.GetMethodDescFromStubAddress(entrypoint);
     }
     else
     {

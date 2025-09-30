@@ -594,6 +594,7 @@ CDAC_TYPE_END(RuntimeFunction)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 CDAC_TYPE_BEGIN(UnwindInfo)
+CDAC_TYPE_INDETERMINATE(UnwindInfo)
 #ifdef TARGET_X86
 CDAC_TYPE_FIELD(UnwindInfo, /*uint32*/, FunctionLength, offsetof(UNWIND_INFO, FunctionLength))
 #endif
