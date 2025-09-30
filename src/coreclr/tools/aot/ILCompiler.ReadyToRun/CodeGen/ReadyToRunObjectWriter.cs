@@ -361,19 +361,10 @@ namespace ILCompiler.DependencyAnalysis
                 PerfMapDebugDirectoryEntryNode perfMapDebugDirectoryEntryNode = null;
                 ObjectNode lastWrittenObjectNode = null;
 
-                // Save cold method nodes here, and emit them to execution section last.
-                List<ObjectNode> methodColdCodeNodes = new List<ObjectNode>();
-
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
-
-                    if (node is MethodColdCodeNode)
-                    {
-                        methodColdCodeNodes.Add(node);
-                        continue;
-                    }
 
                     ++nodeIndex;
 
@@ -411,22 +402,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
                         _outputInfoBuilder.AddMethod(methodNode, methodNode);
-                }
-
-                // Emit cold method nodes to end of execution section.
-                foreach (ObjectNode node in methodColdCodeNodes)
-                {
-                    ++nodeIndex;
-
-                    if (node == null)
-                    {
-                        continue;
-                    }
-
-                    ObjectData nodeContents = node.GetData(_nodeFactory);
-                    string name = GetDependencyNodeName(node);
-
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
