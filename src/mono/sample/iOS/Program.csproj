@@ -24,6 +24,10 @@
     <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' != 'true'">CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
     <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
+
+    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_InterpMode=3" />
+    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_ReadyToRun=0" />
+    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_InterpDump=*!*" />
   </PropertyGroup>
 
   <ItemGroup>
