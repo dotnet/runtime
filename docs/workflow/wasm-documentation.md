@@ -122,10 +122,9 @@ See the [WebAssembly Debugging](debugging/mono/wasm-debugging.md#collecting-stac
 - Install VS Code ESLint plugin for real-time checking
 
 ### Building Changes
-When making changes that affect native code or build configuration:
-1. Clean build artifacts: `git clean -xfd`
-2. Rebuild: `./build.sh -os browser -subset mono+libs`
-3. Test your changes with relevant test suites
+When making changes that affect native code or build configuration, see [Building the Repo](https://github.com/dotnet/runtime/tree/main/docs/workflow#building-the-repo) for detailed instructions.
+
+Then test your changes with [Testing the Repo](https://github.com/dotnet/runtime/tree/main/docs/workflow#testing-the-repo) using the relevant test suites.
 
 ### Documentation Updates
 When updating WebAssembly documentation:
