@@ -28,7 +28,6 @@ resources:
     - repository: performance
       type: git
       name: internal/dotnet-performance
-      ref: feature/clr-ios-performance-benchmarks
 
 variables:
 - template: /eng/pipelines/common/variables.yml
