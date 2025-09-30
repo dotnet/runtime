@@ -2502,6 +2502,7 @@ CALL_INTERP_METHOD:
                             if (!pChildFrame)
                             {
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                pChildFrame = new (pChildFrame) InterpMethodContextFrame();
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
                                 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
@@ -2673,13 +2674,36 @@ CALL_INTERP_METHOD:
                     int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3]);
+                    void* dest = LOCAL_VAR_ADDR(dreg, void);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3], &pILTargetMethod);
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
+                    Object *src = LOCAL_VAR(sreg, Object*);
+
+                    if (pILTargetMethod != NULL)
+                    {
+                        // Leave space for unboxed
+                        callArgsOffset = ALIGN_UP(pMethod->allocaSize + INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
+                        returnOffset = callArgsOffset - INTERP_STACK_SLOT_SIZE;
+                        void* unboxed = LOCAL_VAR_ADDR(returnOffset, void);
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = pMT;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = src;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+
+                        pFrame->delegateBeforeExit = [=]()
+                        {
+                            CopyValueClassUnchecked(dest, *(void**)unboxed, pMT);
+                        };
+                        goto CALL_INTERP_METHOD;
+                    }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    Object *src = LOCAL_VAR(sreg, Object*);
                     void *unboxedData = helper(pMT, src);
-                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMT);
+                    CopyValueClassUnchecked(dest, unboxedData, pMT);
 
                     ip += 5;
                     break;
@@ -3266,6 +3290,7 @@ do                                                                      \
                         if (!pChildFrame)
                         {
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                            pChildFrame = new (pChildFrame) InterpMethodContextFrame();
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
                             // Save the lowest SP in the current method so that we can identify it by that during stackwalk
@@ -3335,6 +3360,12 @@ do                                                                      \
     }
 
 EXIT_FRAME:
+
+    if (pFrame->delegateBeforeExit)
+    {
+        pFrame->delegateBeforeExit();
+        pFrame->delegateBeforeExit = std::function<void()>();
+    }
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
     pThreadContext->frameDataAllocator.PopInfo(pFrame);

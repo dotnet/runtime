@@ -6,6 +6,7 @@
 
 #include <interpretershared.h>
 #include "interpframeallocator.h"
+#include <functional>
 
 #define INTERP_STACK_SIZE 1024*1024
 #define INTERP_STACK_FRAGMENT_SIZE 4096
@@ -35,6 +36,7 @@ struct InterpMethodContextFrame
     int8_t *pRetVal;
     const int32_t *ip; // This ip is updated only when execution can leave the frame
     PTR_InterpMethodContextFrame pNext;
+    std::function<void()> delegateBeforeExit;
 
 #ifndef DACCESS_COMPILE
     void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, int8_t *pStack)
@@ -44,6 +46,7 @@ struct InterpMethodContextFrame
         this->pRetVal = pRetVal;
         this->pStack = pStack;
         this->ip = NULL;
+        this->delegateBeforeExit = std::function<void()>();
     }
 #endif // DACCESS_COMPILE
 };
