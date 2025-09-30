@@ -1089,6 +1089,7 @@ namespace System
         public static int ConvertToUtf32(char highSurrogate, char lowSurrogate) { throw null; }
         public static int ConvertToUtf32(string s, int index) { throw null; }
         public bool Equals(char obj) { throw null; }
+        public bool Equals(char right, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static double GetNumericValue(char c) { throw null; }
@@ -5706,6 +5707,8 @@ namespace System
         public int IndexOf(char value, int startIndex) { throw null; }
         public int IndexOf(char value, int startIndex, int count) { throw null; }
         public int IndexOf(char value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(string value) { throw null; }
         public int IndexOf(string value, int startIndex) { throw null; }
         public int IndexOf(string value, int startIndex, int count) { throw null; }
@@ -5716,6 +5719,8 @@ namespace System
         public int IndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int IndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
         public int IndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5742,6 +5747,8 @@ namespace System
         public int LastIndexOf(char value) { throw null; }
         public int LastIndexOf(char value, int startIndex) { throw null; }
         public int LastIndexOf(char value, int startIndex, int count) { throw null; }
+        public int LastIndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(string value) { throw null; }
         public int LastIndexOf(string value, int startIndex) { throw null; }
         public int LastIndexOf(string value, int startIndex, int count) { throw null; }
@@ -5752,6 +5759,8 @@ namespace System
         public int LastIndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int LastIndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
         public int LastIndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOfAny(char[] anyOf) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
