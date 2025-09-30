@@ -1513,7 +1513,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
         LPCUTF8 nameSpace;
@@ -1538,11 +1538,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
             IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
+        // All the functions in System.Runtime.Intrinsics.<arch> are hardware intrinsics.
 #if defined(TARGET_ARM64)
-        // All the funtions in System.Runtime.Intrinsics.Arm are hardware intrinsics.
         if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm") == 0)
+#elif defined(TARGET_WASM)
+        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Wasm") == 0)
 #else
-        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
@@ -5034,7 +5035,7 @@ MethodTableBuilder::ValidateMethods()
             }
         }
 
-        // Make sure that fcalls have a 0 rva.  This is assumed by the prejit fixup logic
+        // Make sure that fcalls have a 0 rva.
         if (it.MethodType() == mcFCall && it.RVA() != 0)
         {
             BuildMethodTableThrowException(BFA_ECALLS_MUST_HAVE_ZERO_RVA, it.Token());

@@ -2,17 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { registerDllBytes } from "../../../../corehost/browserhost/host/host";
-import type { isSharedArrayBuffer } from "../../../../corehost/browserhost/host/memory";
 import type { check, error, info, warn } from "../../../../corehost/browserhost/loader/logging";
-import type { browserHostResolveMain, browserHostRejectMain, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
-
-export type EnvironmentType = {
-    IS_NODE: boolean,
-    IS_SHELL: boolean,
-    IS_WEB: boolean,
-    IS_WORKER: boolean,
-    IS_SIDECAR: boolean,
-}
+import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
+import type { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 
 export type RuntimeExports = {
 }
@@ -31,13 +23,8 @@ export type AssertType = {
 }
 
 export type LoaderExports = {
-    ENVIRONMENT_IS_NODE: ()=> boolean,
-    ENVIRONMENT_IS_SHELL: ()=> boolean,
-    ENVIRONMENT_IS_WEB: ()=> boolean,
-    ENVIRONMENT_IS_WORKER: ()=> boolean,
-    ENVIRONMENT_IS_SIDECAR: ()=> boolean,
-    browserHostResolveMain:typeof browserHostResolveMain,
-    browserHostRejectMain:typeof browserHostRejectMain,
+    resolveRunMainPromise:typeof resolveRunMainPromise,
+    rejectRunMainPromise:typeof rejectRunMainPromise,
     getRunMainPromise:typeof getRunMainPromise,
 }
 
@@ -46,34 +33,39 @@ export type LoaderExportsTable = [
     typeof warn,
     typeof error,
     typeof check,
-    ()=> boolean,
-    ()=> boolean,
-    ()=> boolean,
-    ()=> boolean,
-    ()=> boolean,
-    typeof browserHostResolveMain,
-    typeof browserHostRejectMain,
+    typeof resolveRunMainPromise,
+    typeof rejectRunMainPromise,
     typeof getRunMainPromise,
 ]
 
-export type HostNativeExports = {
-    isSharedArrayBuffer : typeof isSharedArrayBuffer,
+export type BrowserHostExports = {
     registerDllBytes: typeof registerDllBytes
 }
 
-export type HostNativeExportsTable = [
+export type BrowserHostExportsTable = [
     typeof registerDllBytes,
-    typeof isSharedArrayBuffer,
 ]
 
-export type InteropJavaScriptNativeExports = {
+export type InteropJavaScriptExports = {
 }
 
-export type InteropJavaScriptNativeExportsTable = [
+export type InteropJavaScriptExportsTable = [
 ]
 
 export type NativeBrowserExports = {
 }
 
 export type NativeBrowserExportsTable = [
+]
+
+export type BrowserUtilsExports = {
+    utf16ToString: typeof utf16ToString,
+    stringToUTF16: typeof stringToUTF16,
+    stringToUTF16Ptr: typeof stringToUTF16Ptr,
+}
+
+export type BrowserUtilsExportsTable = [
+    typeof utf16ToString,
+    typeof stringToUTF16,
+    typeof stringToUTF16Ptr,
 ]

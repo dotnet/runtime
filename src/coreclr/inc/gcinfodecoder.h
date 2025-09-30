@@ -248,6 +248,8 @@ enum GcInfoHeaderFlags
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
+#else
+    // unused                           = 0x80,
 #endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
@@ -639,7 +641,7 @@ private:
     {
         typedef T type;
     };
-    template <typename T> 
+    template <typename T>
     struct TypeMaybeConst<true, T>
     {
         typedef const T type;

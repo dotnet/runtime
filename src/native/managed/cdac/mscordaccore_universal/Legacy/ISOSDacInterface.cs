@@ -768,6 +768,20 @@ internal struct DacpReJitData2
     public ClrDataAddress ilCodeVersionNodePtr;
 }
 
+internal struct DacpProfilerILData
+{
+    public enum ModificationType
+    {
+        Unmodified,
+        ILModified,
+        ReJITModified,
+    };
+
+    public ModificationType type;
+    public ClrDataAddress il;
+    public uint rejitID;
+};
+
 [GeneratedComInterface]
 [Guid("c1020dde-fe98-4536-a53b-f35a74c327eb")]
 internal unsafe partial interface ISOSDacInterface7
@@ -777,7 +791,7 @@ internal unsafe partial interface ISOSDacInterface7
     [PreserveSig]
     int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData);
     [PreserveSig]
-    int GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData);
+    int GetProfilerModifiedILInformation(ClrDataAddress methodDesc, DacpProfilerILData* pILData);
     [PreserveSig]
     int GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs);
 };

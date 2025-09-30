@@ -317,7 +317,8 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return typeID > MAX_TYPE_ID_SMALL
-#ifdef _DEBUG
+// WASM-TODO: fix fat tokens
+#if defined(_DEBUG) && !defined(TARGET_WASM)
             // Stress the overflow mechanism in debug builds.
             || ((typeID != TYPE_ID_THIS_CLASS) && ((typeID % 7) < 4))
 #endif
