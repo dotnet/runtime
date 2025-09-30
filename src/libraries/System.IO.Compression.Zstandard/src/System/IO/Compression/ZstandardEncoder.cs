@@ -62,6 +62,54 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified compression options.</summary>
+        /// <param name="options">The compression options to use.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The quality or window size in <paramref name="options"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
+        public ZstandardEncoder(ZstandardCompressionOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            _disposed = false;
+            InitializeEncoder();
+
+            try
+            {
+                if (options.Dictionary is not null)
+                {
+                    if (options.Dictionary.CompressionDictionary is null)
+                        throw new ArgumentException(SR.ZstandardEncoder_InvalidDictionary);
+
+                    _context!.SetDictionary(options.Dictionary.CompressionDictionary);
+                }
+                else
+                {
+                    SetQuality(options.Quality);
+                }
+
+                if (options.Window != 0)
+                {
+                    SetWindow(options.Window);
+                }
+
+                if (options.EnableChecksum)
+                {
+                    SetFlag(Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag);
+                }
+
+                if (options.EnableLongDistanceMatching)
+                {
+                    SetFlag(Interop.Zstd.ZstdCParameter.ZSTD_c_enableLongDistanceMatching);
+                }
+            }
+            catch
+            {
+                _context!.Dispose();
+                throw;
+            }
+        }
+
         /// <summary>
         /// Performs a lazy initialization of the native encoder using the default Quality and Window values.
         /// </summary>
@@ -310,6 +358,15 @@ namespace System.IO.Compression
                 InitializeEncoder();
             }
             nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);
+            if (ZstandardUtils.IsError(result))
+            {
+                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
+            }
+        }
+
+        internal void SetFlag(Interop.Zstd.ZstdCParameter parameter)
+        {
+            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, parameter, 1);
             if (ZstandardUtils.IsError(result))
             {
                 throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));

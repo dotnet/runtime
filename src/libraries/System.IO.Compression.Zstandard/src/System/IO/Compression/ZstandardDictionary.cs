@@ -9,12 +9,12 @@ namespace System.IO.Compression
     /// <summary>Represents a Zstandard compression dictionary.</summary>
     public sealed class ZstandardDictionary : IDisposable
     {
-        private readonly SafeZstdCDictHandle? _compressionDictionary;
+        private readonly SafeZstdCDictHandle _compressionDictionary;
         private readonly SafeZstdDDictHandle _decompressionDictionary;
         private readonly byte[] _dictionaryData;
         private bool _disposed;
 
-        private ZstandardDictionary(SafeZstdCDictHandle? compressionDict, SafeZstdDDictHandle decompressionDict, byte[] data)
+        private ZstandardDictionary(SafeZstdCDictHandle compressionDict, SafeZstdDDictHandle decompressionDict, byte[] data)
         {
             _compressionDictionary = compressionDict;
             _decompressionDictionary = decompressionDict;
@@ -25,28 +25,7 @@ namespace System.IO.Compression
         /// <param name="buffer">The buffer containing the dictionary data.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
         /// <exception cref="ArgumentException">The buffer is empty.</exception>
-        public static ZstandardDictionary Create(ReadOnlyMemory<byte> buffer)
-        {
-            if (buffer.IsEmpty)
-                throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(buffer));
-
-            byte[] dictionaryData = buffer.ToArray();
-
-            unsafe
-            {
-                fixed (byte* dictPtr = dictionaryData)
-                {
-                    IntPtr dictData = (IntPtr)dictPtr;
-
-                    // Create only decompression dictionary since no quality level is specified
-                    SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict(dictData, (nuint)dictionaryData.Length);
-                    if (decompressionDict.IsInvalid)
-                        throw new InvalidOperationException(SR.ZstandardDictionary_CreateDecompressionFailed);
-
-                    return new ZstandardDictionary(null, decompressionDict, dictionaryData);
-                }
-            }
-        }
+        public static ZstandardDictionary Create(ReadOnlyMemory<byte> buffer) => Create(buffer, ZstandardUtils.Quality_Default);
 
         /// <summary>Creates a Zstandard dictionary from the specified buffer with the specified quality level.</summary>
         /// <param name="buffer">The buffer containing the dictionary data.</param>
@@ -85,7 +64,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Gets the compression dictionary handle.</summary>
-        internal SafeZstdCDictHandle? CompressionDictionary
+        internal SafeZstdCDictHandle CompressionDictionary
         {
             get
             {
@@ -119,8 +98,8 @@ namespace System.IO.Compression
         {
             if (!_disposed)
             {
-                _compressionDictionary?.Dispose();
-                _decompressionDictionary?.Dispose();
+                _compressionDictionary.Dispose();
+                _decompressionDictionary.Dispose();
                 _disposed = true;
             }
         }
