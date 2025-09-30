@@ -503,11 +503,6 @@ namespace System.Security.Cryptography.Pkcs
                     }
                     finally
                     {
-                        for (int i = 0; i < chain.ChainElements.Count; i++)
-                        {
-                            chain.ChainElements[i].Certificate.Dispose();
-                        }
-
                         chain.Dispose();
                     }
                 }
