@@ -212,7 +212,7 @@ steps:
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.runtimeType, 'coreclr')) }}:
     # CoreCLR Interpreter Build
-    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Debug DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false USE_MONO_RUNTIME=false AOT=false
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Checked DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false USE_MONO_RUNTIME=false AOT=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS

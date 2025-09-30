@@ -28,7 +28,7 @@ jobs:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: release
+        buildConfig: checked
         runtimeFlavor: coreclr
         platforms:
         - ios_arm64
