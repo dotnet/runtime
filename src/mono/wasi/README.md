@@ -114,4 +114,4 @@ Finally, you can build and run the sample:
 
 ### 4. Debug it
 
-For detailed WASI debugging instructions, see the [WebAssembly Debugging Reference](../../../docs/workflow/debugging/wasm-debugging.md#for-wasi-applications).
+For detailed WASI debugging instructions, see the [WebAssembly Debugging Reference](../../../docs/workflow/debugging/mono/wasm-debugging.md#for-wasi-applications).

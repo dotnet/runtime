@@ -42,12 +42,12 @@ This document serves as a comprehensive guide for contributors to the WebAssembl
 - **[Debugging WebAssembly Libraries](testing/libraries/debugging-wasm.md)** - Debug library tests in Chrome DevTools and VS Code
 
 ### Runtime Debugging
-- **[WebAssembly Debugging](debugging/wasm-debugging.md)** - Consolidated debugging reference for WebAssembly applications and native runtime debugging
+- **[WebAssembly Debugging](debugging/mono/wasm-debugging.md)** - Consolidated debugging reference for WebAssembly applications and native runtime debugging
 - **[VS Code Debugging](debugging/libraries/debugging-vscode.md)** - Set up VS Code for debugging WASM applications
 
 ### Common Debugging Scenarios
 
-For consolidated debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/wasm-debugging.md).
+For consolidated debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md).
 
 ## Features and Configuration
 
@@ -85,7 +85,7 @@ Located in `src/mono/sample/wasm/`:
 
 ### How do I debug a library test failure seen on CI?
 
-See the [WebAssembly Debugging Reference](debugging/wasm-debugging.md#common-debugging-workflow) for detailed instructions on debugging library tests locally.
+See the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md#common-debugging-workflow) for detailed instructions on debugging library tests locally.
 
 ### How do I build for different WebAssembly targets?
 
@@ -105,7 +105,7 @@ See the [Testing Libraries on WebAssembly](testing/libraries/testing-wasm.md#pre
 
 ### How do I collect native stack traces with symbols?
 
-See the [WebAssembly Debugging](debugging/wasm-debugging.md#collecting-stack-traces-with-symbols-in-blazor) documentation for symbol configuration.
+See the [WebAssembly Debugging](debugging/mono/wasm-debugging.md#collecting-stack-traces-with-symbols-in-blazor) documentation for symbol configuration.
 
 ### How do I run tests with different configurations?
 
