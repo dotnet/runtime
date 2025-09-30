@@ -165,7 +165,7 @@ namespace System.Linq
             return NonEnumTypeIsImplicitlyStable(t);
         }
 
-        /// <summary>A type can be pure ordered when every single time equal elements is side by side: [ (someVal), (someVal),  (otherVal), (otherVal) ]</summary>
+        /// <summary>A type can be pure ordered when every single time equal elements is side by side: [ (someVal), (someVal),  (otherVal), (otherVal) ] see: #120125</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TypeCanBePureOrdered<T>()
         {
@@ -187,7 +187,8 @@ namespace System.Linq
                 t == typeof(double) || t == typeof(decimal) ||
                 t == typeof(string) || t == typeof(Guid) ||
                 t == typeof(DateTime) || t == typeof(DateTimeOffset) ||
-                t == typeof(TimeSpan);
+                t == typeof(TimeSpan) || t == typeof(TimeOnly) ||
+                t == typeof(DateOnly);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

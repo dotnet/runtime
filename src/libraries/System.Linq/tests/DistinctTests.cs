@@ -271,7 +271,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void PureOrderedDistinct()
+        public void PureOrderedDistinct_Iterator()
         {
             int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
             int[] expected = [1, 2, 3];
@@ -280,7 +280,171 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void PureOrderedDistinctToArray()
+        public void PureOrderedDistinct_NullableType_Iterator()
+        {
+            int?[] source = [null, null, 1, 1, 1, 2, 2, 2, 3, 3, 3];
+            int?[] expected = [null, 1, 2, 3];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_DateTime_Iterator()
+        {
+            DateTime[] source =
+            [
+                DateTime.Parse("2025-09-30 15:45:00"), DateTime.Parse("2025-09-30 15:45:00"),
+                DateTime.Parse("2025-09-30 15:50:00"), DateTime.Parse("2025-09-30 15:50:00"), DateTime.Parse("2025-09-30 15:50:00"),
+                DateTime.Parse("2025-09-30 15:51:00"), DateTime.Parse("2025-09-30 15:51:00"),
+                DateTime.Parse("2025-09-30 15:59:00"),
+            ];
+            DateTime[] expected = [DateTime.Parse("2025-09-30 15:45:00"), DateTime.Parse("2025-09-30 15:50:00"), DateTime.Parse("2025-09-30 15:51:00"), DateTime.Parse("2025-09-30 15:59:00")];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_Float_Iterator()
+        {
+            float[] source =
+            [
+                1.1F, 1.1F,
+                2.1F, 2.1F, 2.1F,
+                2.7F, 2.7F,
+                4.4F,
+            ];
+            float[] expected = [1.1F, 2.1F, 2.7F, 4.4F];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_Double_Iterator()
+        {
+            double[] source =
+            [
+                1.1D, 1.1D,
+                2.1D, 2.1D, 2.1D,
+                2.7D, 2.7D,
+                4.4D,
+            ];
+            double[] expected = [1.1D, 2.1D, 2.7D, 4.4D];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_Decimal_Iterator()
+        {
+            decimal[] source =
+            [
+                1.1M, 1.1M,
+                2.1M, 2.1M, 2.1M,
+                2.7M, 2.7M,
+                4.4M,
+            ];
+            decimal[] expected = [1.1M, 2.1M, 2.7M, 4.4M];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_Guid_Iterator()
+        {
+            Guid[] source =
+            [
+                Guid.Parse("10000000-0000-0000-0000-000000000000"), Guid.Parse("10000000-0000-0000-0000-000000000000"),
+                Guid.Parse("20000000-0000-0000-0000-000000000000"), Guid.Parse("20000000-0000-0000-0000-000000000000"), Guid.Parse("20000000-0000-0000-0000-000000000000"),
+                Guid.Parse("30000000-0000-0000-0000-000000000000"), Guid.Parse("30000000-0000-0000-0000-000000000000"),
+                Guid.Parse("40000000-0000-0000-0000-000000000000"),
+            ];
+            Guid[] expected = [Guid.Parse("10000000-0000-0000-0000-000000000000"), Guid.Parse("20000000-0000-0000-0000-000000000000"), Guid.Parse("30000000-0000-0000-0000-000000000000"), Guid.Parse("40000000-0000-0000-0000-000000000000")];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_String_Iterator()
+        {
+            string[] source =
+            [
+                "alpha",
+                "beta", "beta",
+                "delta", "delta",
+                "gamma", "gamma",
+            ];
+
+            string[] expected = ["alpha", "beta", "delta", "gamma"];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_DateTimeOffset_Iterator()
+        {
+            DateTimeOffset[] source =
+            [
+                DateTimeOffset.Parse("2025-09-29T09:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T09:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T08:00:00-01:00"), // Equals because of the timezone
+                DateTimeOffset.Parse("2025-09-29T10:00:00+00:00"),
+                DateTimeOffset.Parse("2025-09-29T11:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T11:00:00+00:00"),
+                DateTimeOffset.Parse("2025-09-29T12:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T12:00:00+00:00"),
+            ];
+
+            DateTimeOffset[] expected = [DateTimeOffset.Parse("2025-09-29T09:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T10:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T11:00:00+00:00"), DateTimeOffset.Parse("2025-09-29T12:00:00+00:00")];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_TimeSpan_Iterator()
+        {
+            TimeSpan[] source =
+            [
+                TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(2),
+                TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3),
+                TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4),
+            ];
+
+            TimeSpan[] expected = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(4)];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_TimeOnly_Iterator()
+        {
+            TimeOnly[] source =
+            [
+                new TimeOnly(4, 00), new TimeOnly(4, 00),
+                new TimeOnly(4, 30),
+                new TimeOnly(4, 44), new TimeOnly(4, 44),
+                new TimeOnly(5, 00), new TimeOnly(5, 00), new TimeOnly(5, 00),
+            ];
+
+            TimeOnly[] expected = [new TimeOnly(4, 00), new TimeOnly(4, 30), new TimeOnly(4, 44), new TimeOnly(5, 00)];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_DateOnly_Iterator()
+        {
+            DateOnly[] source =
+            [
+                new DateOnly(2025, 09, 1), new DateOnly(2025, 09, 1),
+                new DateOnly(2025, 09, 2),
+                new DateOnly(2025, 09, 3), new DateOnly(2025, 09, 3),
+                new DateOnly(2025, 09, 4), new DateOnly(2025, 09, 4), new DateOnly(2025, 09, 4),
+            ];
+
+            DateOnly[] expected = [new DateOnly(2025, 09, 1), new DateOnly(2025, 09, 2), new DateOnly(2025, 09, 3), new DateOnly(2025, 09, 4)];
+
+            Assert.Equal(expected, source.Order().Distinct());
+        }
+
+        [Fact]
+        public void PureOrderedDistinct_ToArray()
         {
             int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
             int[] expected = [1, 2, 3];
@@ -289,7 +453,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void PureOrderedDistinctToList()
+        public void PureOrderedDistinct_ToList()
         {
             int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
             int[] expected = [1, 2, 3];
@@ -298,7 +462,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void PureOrderedDistinctCount()
+        public void PureOrderedDistinct_Count()
         {
             int[] source = [1, 1, 1, 2, 2, 2, 3, 3, 3];
 
@@ -306,7 +470,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void PureOrderedDistinctAllUnique()
+        public void PureOrderedDistinct_AllUnique_Should_Not_Change()
         {
             int[] source = [-5, 0, 2, 6, 9, 10];
 
@@ -314,7 +478,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void PureOrderedDistinctAllDuplicates()
+        public void PureOrderedDistinct_Should_Remove_All_Duplicates()
         {
             int[] source = [5, 5, 5, 5, 5, 5];
             int[] expected = [5];
