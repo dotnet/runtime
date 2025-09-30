@@ -212,7 +212,7 @@ steps:
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.runtimeType, 'coreclr')) }}:
     # CoreCLR Interpreter Build
-    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false USE_MONO_RUNTIME=false AOT=false
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Checked DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false USE_MONO_RUNTIME=false AOT=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -225,7 +225,7 @@ steps:
         artifactName:  iOSCoreCLRArm64BuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Checked-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App
         artifactName: iOSSampleApp
