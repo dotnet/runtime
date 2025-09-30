@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private bool _insertDeterministicEntry;
 
-        public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName, bool shouldAddNiPdb, bool shouldGeneratePerfmap)
+        public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName, bool shouldAddNiPdb, bool shouldGeneratePerfmap, int perfMapFormatVersion)
         {
             _module = sourceModule;
             _insertDeterministicEntry = sourceModule == null; // Mark module as deterministic if generating composite image
@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (shouldGeneratePerfmap)
             {
-                _perfMapEntry = new PerfMapDebugDirectoryEntryNode(pdbNameRoot + ".ni.r2rmap");
+                _perfMapEntry = new PerfMapDebugDirectoryEntryNode(pdbNameRoot + ".ni.r2rmap", perfMapFormatVersion);
             }
         }
 

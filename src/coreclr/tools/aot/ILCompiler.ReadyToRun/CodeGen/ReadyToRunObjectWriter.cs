@@ -220,6 +220,11 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
+                foreach (string inputFile in _inputFiles)
+                {
+                    _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                }
+
                 if (debugOffset != 0)
                 {
                     if (_nodeFactory.DebugDirectoryNode.PdbEntry is { } nativeDebugDirectoryEntryNode)
@@ -236,21 +241,6 @@ namespace ILCompiler.DependencyAnalysis
                             stream.Write(rsdsEntry);
                         }
                     }
-
-                    if (_nodeFactory.DebugDirectoryNode.PerfMapEntry is { } perfMapDebugDirectoryEntryNode)
-                    {
-                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder.EnumerateInputAssemblies().Any());
-                        byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
-                        byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
-
-                        stream.Seek((long)debugOffset, SeekOrigin.Begin);
-                        stream.Write(perfMapEntry);
-                    }
-                }
-
-                foreach (string inputFile in _inputFiles)
-                {
-                    _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
                 }
 
                 if (_generateMapFile)
@@ -451,17 +441,6 @@ namespace ILCompiler.DependencyAnalysis
                             peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
                             peStream.Write(rsdsEntry);
                         }
-                    }
-
-                    if (perfMapDebugDirectoryEntryNode is not null)
-                    {
-                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
-                        byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
-                        byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
-
-                        int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(perfMapDebugDirectoryEntryNode);
-                        peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
-                        peStream.Write(perfMapEntry);
                     }
                 }
 

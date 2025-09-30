@@ -12,6 +12,8 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using System.IO;
 using System.Collections.Immutable;
+using System.Collections.Generic;
+using ILCompiler.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -77,13 +79,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public unsafe int Size => PerfMapEntrySize;
 
-        public PerfMapDebugDirectoryEntryNode(string entryName)
+        public PerfMapDebugDirectoryEntryNode(string entryName, int perfMapFormatVersion)
             : base(null)
         {
             _entryName = entryName;
+            _perfMapFormatVersion = perfMapFormatVersion;
         }
 
-        private string _entryName;
+        private readonly string _entryName;
+        private readonly int _perfMapFormatVersion;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -97,30 +101,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            // Emit empty entry. This will be filled with data after the output image is emitted
-            builder.EmitZeros(PerfMapEntrySize);
+            List<AssemblyInfo> assemblies = [];
+            foreach (string inputPath in factory.TypeSystemContext.InputFilePaths.Values)
+            {
+                EcmaModule module = factory.TypeSystemContext.GetModuleFromPath(inputPath);
+                assemblies.Add(new AssemblyInfo(module.Assembly.GetName().Name, module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid)));
+            }
+
+            byte[] signature = PerfMapWriter.PerfMapV1SignatureHelper(assemblies, factory.Target);
+
+            builder.EmitUInt(PerfMapMagic);
+            builder.EmitBytes(signature);
+            builder.EmitInt(_perfMapFormatVersion);
+
+            builder.EmitBytes(Encoding.UTF8.GetBytes(_entryName));
+            builder.EmitByte(0);
+
+            Debug.Assert(builder.CountBytes <= PerfMapEntrySize);
 
             return builder.ToObjectData();
-        }
-
-        public byte[] GeneratePerfMapEntryData(byte[] signature, int version)
-        {
-            Debug.Assert(SignatureSize == signature.Length);
-            MemoryStream perfmapEntry = new MemoryStream(PerfMapEntrySize);
-
-            using (BinaryWriter writer = new BinaryWriter(perfmapEntry))
-            {
-                writer.Write(PerfMapMagic);
-                writer.Write(signature);
-                writer.Write(version);
-
-                byte[] perfmapNameBytes = Encoding.UTF8.GetBytes(_entryName);
-                writer.Write(perfmapNameBytes);
-                writer.Write(0); // Null terminator
-
-                Debug.Assert(perfmapEntry.Length <= PerfMapEntrySize);
-                return perfmapEntry.ToArray();
-            }
         }
 
         internal void EmitHeader(ref ObjectDataBuilder builder)
