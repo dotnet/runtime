@@ -362,6 +362,7 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_NULLCHECK, "call.nullcheck", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLDELEGATE, "call.delegate", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLDELEGATE_TAIL, "call.delegate.tail", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI, "calli", 6, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only

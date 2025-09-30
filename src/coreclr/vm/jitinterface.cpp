@@ -12453,8 +12453,17 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
+
+    // Only try instrumenting tiering-eligible methods
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+    if (pMD->IsEligibleForTieredCompilation())
+    {
+        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+    }
+    else
+    {
+        hr = E_NOTIMPL;
+    }
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;

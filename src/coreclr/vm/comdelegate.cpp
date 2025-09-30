@@ -829,7 +829,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -933,7 +933,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     else
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
     {
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);

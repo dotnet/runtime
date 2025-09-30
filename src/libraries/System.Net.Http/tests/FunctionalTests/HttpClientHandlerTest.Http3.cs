@@ -449,7 +449,7 @@ namespace System.Net.Http.Functional.Tests
                     RequestUri = server.Address,
                     Version = HttpVersion30,
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                    Content = new ByteAtATimeContent(64*1024)
+                    Content = new ByteAtATimeContent(64 * 1024)
                 };
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 var content = await response.Content.ReadAsStringAsync();
@@ -1943,7 +1943,8 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                { "https://quic.nginx.org/" }, // Nginx with content
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/120257")]
+                // { "https://quic.nginx.org/" }, // Nginx with content
             };
     }
 

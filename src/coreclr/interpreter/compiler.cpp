@@ -4112,7 +4112,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 if (isDelegateInvoke)
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
-                    opcode = INTOP_CALLDELEGATE;
+                    if (tailcall)
+                        opcode = INTOP_CALLDELEGATE_TAIL;
+                    else
+                        opcode = INTOP_CALLDELEGATE;
                 }
                 else if (tailcall)
                 {
