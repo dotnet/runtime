@@ -226,6 +226,15 @@ namespace System.IO.Compression
             _finished = false;
         }
 
+        /// <summary>References a prefix for the next compression operation.</summary>
+        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.</remarks>
+        public void ReferencePrefix(ReadOnlyMemory<byte> prefix)
+        {
+            EnsureInitialized();
+
+            _context!.SetPrefix(prefix);
+        }
+
         /// <summary>Releases all resources used by the <see cref="ZstandardDecoder"/>.</summary>
         public void Dispose()
         {

@@ -306,14 +306,16 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
 
-            if (_context is null)
-                return;
+            _context?.Reset();
+        }
 
-            nuint result = Interop.Zstd.ZSTD_CCtx_reset(_context, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
-            }
+        /// <summary>References a prefix for the next compression operation.</summary>
+        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.</remarks>
+        public void ReferencePrefix(ReadOnlyMemory<byte> prefix)
+        {
+            EnsureInitialized();
+
+            _context!.SetPrefix(prefix);
         }
 
         /// <summary>Releases all resources used by the <see cref="ZstandardEncoder"/>.</summary>

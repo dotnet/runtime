@@ -29,6 +29,7 @@ namespace System.IO.Compression
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
         public static int GetMaxDecompressedLength(System.ReadOnlySpan<byte> data) { throw null; }
+        public void ReferencePrefix(System.ReadOnlyMemory<byte> prefix) { }
         public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.IO.Compression.ZstandardDictionary dictionary, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -51,6 +52,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static int GetMaxCompressedLength(int inputSize) { throw null; }
+        public void ReferencePrefix(System.ReadOnlyMemory<byte> prefix) { }
         public void Reset() { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int window) { throw null; }
