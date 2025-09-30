@@ -605,15 +605,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		switch (m_class_get_byval_arg (klass)->type) {
 			case MONO_TYPE_I1:
 				if (mono_defaults.byte_class)
-					klass->cast_class = mono_defaults.byte_class;
+					mono_defaults.byte_class->cast_class = klass;
 				break;
 			case MONO_TYPE_U1:
 				if (mono_defaults.sbyte_class)
-					mono_defaults.sbyte_class = klass;
+					klass->cast_class = mono_defaults.sbyte_class;
 				break;
 			case MONO_TYPE_I2:
 				if (mono_defaults.uint16_class)
-					mono_defaults.uint16_class = klass;
+					mono_defaults.uint16_class->cast_class = klass;
 				break;
 			case MONO_TYPE_U2:
 				if (mono_defaults.int16_class)
@@ -621,7 +621,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 				break;
 			case MONO_TYPE_I4:
 				if (mono_defaults.uint32_class)
-					mono_defaults.uint32_class = klass;
+					mono_defaults.uint32_class->cast_class = klass;
 				break;
 			case MONO_TYPE_U4:
 				if (mono_defaults.int32_class)
@@ -629,7 +629,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 				break;
 			case MONO_TYPE_I8:
 				if (mono_defaults.uint64_class)
-					mono_defaults.uint64_class = klass;
+					mono_defaults.uint64_class->cast_class = klass;
 				break;
 			case MONO_TYPE_U8:
 				if (mono_defaults.int64_class)
