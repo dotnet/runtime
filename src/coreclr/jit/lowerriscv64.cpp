@@ -135,12 +135,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         jcmp->gtCondition = GenCondition::FromIntegralRelop(cmp);
         jcmp->gtOp1       = cmp->gtGetOp1();
         jcmp->gtOp2       = cmp->gtGetOp2();
-        if (cmp->OperIs(GT_GT, GT_LE))
-        {
-            // ">" and "<=" are achieved by swapping inputs for "<" and ">="
-            jcmp->gtCondition = GenCondition::Swap(jcmp->gtCondition);
-            std::swap(jcmp->gtOp1, jcmp->gtOp2);
-        }
         BlockRange().Remove(cmp);
     }
     else
@@ -161,11 +155,9 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         BlockRange().InsertBefore(jcmp, jcmp->gtOp2);
     }
 
-    for (GenTree** op : {&jcmp->gtOp1, &jcmp->gtOp2})
-    {
-        SignExtendIfNecessary(op);
-        CheckImmedAndMakeContained(jcmp, *op);
-    }
+    SignExtendIfNecessary(&jcmp->gtOp1);
+    SignExtendIfNecessary(&jcmp->gtOp2);
+    CheckImmedAndMakeContained(jcmp, jcmp->gtOp2);
 
     return jcmp->gtNext;
 }

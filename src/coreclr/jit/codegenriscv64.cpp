@@ -3223,9 +3223,26 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(tree->TypeIs(TYP_VOID));
     assert(tree->GetRegNum() == REG_NA);
 
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+    assert(!op1->isUsedFromMemory());
+    assert(!op2->isUsedFromMemory());
+    assert(!op1->isContainedIntOrIImmed());
+    assert(!op2->isContainedIntOrIImmed() || op2->IsIntegralConst(0));
+
+    GenCondition cond = tree->gtCondition;
     genConsumeOperands(tree);
+    regNumber reg1 = op1->GetRegNum();
+    regNumber reg2 = op2->isContainedIntOrIImmed() ? REG_ZERO : op2->GetRegNum();
+    if (cond.Is(GenCondition::SGT, GenCondition::UGT, GenCondition::SLE, GenCondition::ULE))
+    {
+        // ">" and "<=" are achieved by swapping inputs for "<" and ">="
+        cond = GenCondition::Swap(cond);
+        std::swap(reg1, reg2);
+    }
+
     instruction ins = INS_invalid;
-    switch (tree->gtCondition.GetCode())
+    switch (cond.GetCode())
     {
         case GenCondition::EQ:
             ins = INS_beq;
@@ -3250,14 +3267,6 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             break;
     }
 
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
-    assert(!op1->isUsedFromMemory());
-    assert(!op2->isUsedFromMemory());
-    assert(!op1->isContained() || op1->IsIntegralConst(0));
-    assert(!op2->isContained() || op2->IsIntegralConst(0));
-    regNumber reg1 = op1->isContained() ? REG_ZERO : op1->GetRegNum();
-    regNumber reg2 = op2->isContained() ? REG_ZERO : op2->GetRegNum();
     assert(emitter::isGeneralRegisterOrR0(reg1) && emitter::isGeneralRegisterOrR0(reg2));
     int regs = (int)reg1 | (((int)reg2) << 5);
     GetEmitter()->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs);
