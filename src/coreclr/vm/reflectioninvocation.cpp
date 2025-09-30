@@ -711,7 +711,7 @@ struct SkipStruct {
 #ifdef FEATURE_INTERPRETER
         return stackMarkOnOSStack;
 #else
-        return (PTR_VOID)stackMark;
+        return (PTR_VOID)pStackMark;
 #endif
     }
     MethodDesc*     pMeth = NULL;

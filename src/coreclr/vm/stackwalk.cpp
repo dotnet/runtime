@@ -56,7 +56,6 @@ PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMa
     if ((stackMark < pThread->GetCachedStackLimit()) || stackMark > pThread->GetCachedStackBase())
     {
         PTR_Frame pFrame = pThread->GetFrame();
-        PTR_InterpMethodContextFrame pLastFoundWhereStackIsLessThanOrEqualToStackMark = NULL;
         while (pFrame != FRAME_TOP)
         {
             if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
