@@ -23,14 +23,13 @@ namespace System.Xml.XslCompiledTransformApiTests
         public SameInstanceXslTransformTestCase(ITestOutputHelper output) : base(output)
         {
             _output = output;
-            Init(null);
+            Init();
         }
 
-        public new void Init(object objParam)
+        public void Init()
         {
             xsltSameInstance = new XslCompiledTransform();
             _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
-            return;
         }
     }
 

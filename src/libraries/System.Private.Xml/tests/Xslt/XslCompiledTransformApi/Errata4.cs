@@ -373,10 +373,5 @@ namespace System.Xml.XslCompiledTransformApiTests
                     throw new CTestFailedException("TEST ISSUE: CharType FAILURE!");
             }
         }
-
-        public new int Init(object objParam)
-        {
-            return 1;
-        }
     }
 }
