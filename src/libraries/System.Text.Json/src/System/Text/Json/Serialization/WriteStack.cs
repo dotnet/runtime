@@ -183,6 +183,8 @@ namespace System.Text.Json
 
         public void Push()
         {
+            Debug.Assert(_continuationCount == 0 || _count < _continuationCount);
+
             if (_continuationCount == 0)
             {
                 Debug.Assert(Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntrySuspended);
@@ -234,6 +236,7 @@ namespace System.Text.Json
         public void Pop(bool success)
         {
             Debug.Assert(_count > 0);
+            Debug.Assert(_continuationCount == 0 || _count < _continuationCount);
 
             if (!success)
             {
@@ -366,6 +369,7 @@ namespace System.Text.Json
 
             if (_stack is not null)
             {
+                Debug.Assert(_continuationCount == 0 || _count < _continuationCount);
                 int currentIndex = _count - _indexOffset;
                 int stackSize = Math.Max(currentIndex, _continuationCount);
                 for (int i = 0; i < stackSize; i++)
