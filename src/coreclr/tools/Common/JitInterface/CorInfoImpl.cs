@@ -3191,7 +3191,7 @@ namespace Internal.JitInterface
         private bool canOmitPinning(CORINFO_FIELD_STRUCT_* fldHnd)
         {
             FieldDesc field = HandleToObject(fldHnd);
-            if (!field.IsStatic || field.IsThreadStatic || field.HasGCStaticBase || field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (!field.IsStatic || field.IsThreadStatic || field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 return false;
             }
