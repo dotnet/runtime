@@ -77,33 +77,50 @@ namespace System
 
         public int IndexOf(char value, StringComparison comparisonType)
         {
+            return IndexOf(value, 0, comparisonType);
+        }
+
+        public int IndexOf(char value, int startIndex, StringComparison comparisonType)
+        {
+            return IndexOf(value, startIndex, Length - startIndex, comparisonType);
+        }
+
+        public int IndexOf(char value, int startIndex, int count, StringComparison comparisonType)
+        {
             return comparisonType switch
             {
-                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType)),
-                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => CompareInfo.Invariant.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType)),
-                StringComparison.Ordinal => IndexOf(value),
-                StringComparison.OrdinalIgnoreCase => IndexOfCharOrdinalIgnoreCase(value),
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal => IndexOf(value, startIndex, count),
+                StringComparison.OrdinalIgnoreCase => IndexOfCharOrdinalIgnoreCase(value, startIndex, count),
                 _ => throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType)),
             };
         }
 
-        private int IndexOfCharOrdinalIgnoreCase(char value)
+        private int IndexOfCharOrdinalIgnoreCase(char value, int startIndex, int count)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
+
             if (!char.IsAscii(value))
             {
-                return Ordinal.IndexOfOrdinalIgnoreCase(this, new ReadOnlySpan<char>(in value));
+                return Ordinal.IndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
             }
+
+            ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
 
             if (char.IsAsciiLetter(value))
             {
                 char valueLc = (char)(value | 0x20);
                 char valueUc = (char)(value & ~0x20);
                 return PackedSpanHelpers.PackedIndexOfIsSupported
-                    ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref _firstChar, valueLc, Length)
-                    : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
+                    ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref startChar, valueLc, count)
+                    : SpanHelpers.IndexOfAnyChar(ref startChar, valueLc, valueUc, count);
             }
 
-            return SpanHelpers.IndexOfChar(ref _firstChar, value, Length);
+            return SpanHelpers.IndexOfChar(ref startChar, value, count);
         }
 
         public int IndexOf(char value, int startIndex, int count)
@@ -357,7 +374,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
         /// if that rune is found, or -1 if it is not.
         /// </returns>
-        internal int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
+        public int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
             return IndexOf(value, startIndex, Length - startIndex, comparisonType);
         }
@@ -375,7 +392,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
         /// if that rune is found, or -1 if it is not.
         /// </returns>
-        internal int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        public int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
@@ -421,6 +438,92 @@ namespace System
             int result = SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref Unsafe.Add(ref _firstChar, startSearchAt)), (short)value, count);
 
             return result < 0 ? result : result + startSearchAt;
+        }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified character in the current String object.
+        /// A parameter specifies the type of search to use for the specified character.
+        /// </summary>
+        /// <param name="value">The character to seek.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that character is found, or -1 if it is not.
+        /// </returns>
+        internal int LastIndexOf(char value, StringComparison comparisonType)
+        {
+            return LastIndexOf(value, 0, comparisonType);
+        }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified character in the current String object.
+        /// Parameters specify the starting search position in the current string and the type of search to use for
+        /// the specified character.
+        /// </summary>
+        /// <param name="value">The character to seek.</param>
+        /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that character is found, or -1 if it is not.
+        /// </returns>
+        public int LastIndexOf(char value, int startIndex, StringComparison comparisonType)
+        {
+            return LastIndexOf(value, startIndex, startIndex + 1, comparisonType);
+        }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of the specified character in the current String object.
+        /// Parameters specify the starting search position in the current string, the number of characters in the
+        /// current string to search, and the type of search to use for the specified character.
+        /// </summary>
+        /// <param name="value">The character to seek.</param>
+        /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
+        /// <param name="count">The number of character positions to examine.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the end of the current instance
+        /// if that character is found, or -1 if it is not.
+        /// </returns>
+        public int LastIndexOf(char value, int startIndex, int count, StringComparison comparisonType)
+        {
+            return comparisonType switch
+            {
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => CompareInfo.Invariant.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal => LastIndexOf(value, startIndex, count),
+                StringComparison.OrdinalIgnoreCase => LastIndexOfCharOrdinalIgnoreCase(value, startIndex, count),
+                _ => throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType)),
+            };
+        }
+
+        private int LastIndexOfCharOrdinalIgnoreCase(char value, int startIndex, int count)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex - (startIndex + 1));
+
+            if (!char.IsAscii(value))
+            {
+                return Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
+            }
+
+            ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
+
+            if (char.IsAsciiLetter(value))
+            {
+                char valueLc = (char)(value | 0x20);
+                char valueUc = (char)(value & ~0x20);
+                /*
+                 * Potential optimization possible here if there was a
+                 * PackedSpanHelpers.LastIndexOfAnyIgnoreCase(ref startChar, valueLc, count)
+                 * method, which would be complex to implement
+                 */
+                return SpanHelpers.LastIndexOfAnyChar(ref startChar, valueLc, valueUc, count);
+            }
+
+            return SpanHelpers.LastIndexOfChar(ref startChar, value, count);
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
@@ -585,7 +688,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
         /// if that rune is found, or -1 if it is not.
         /// </returns>
-        internal int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
+        public int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
             return LastIndexOf(value, startIndex, startIndex + 1, comparisonType);
         }
@@ -603,7 +706,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
         /// if that rune is found, or -1 if it is not.
         /// </returns>
-        internal int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        public int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);

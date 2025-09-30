@@ -129,7 +129,13 @@ namespace System
             return m_value == obj;
         }
 
-        internal bool Equals(char right, StringComparison comparisonType)
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified character are equal using the specified comparison option.
+        /// </summary>
+        /// <param name="right">The character to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if the current instance and <paramref name="right"/> are equal; otherwise, <see langword="false"/>.</returns>
+        public bool Equals(char right, StringComparison comparisonType)
         {
             switch (comparisonType)
             {
