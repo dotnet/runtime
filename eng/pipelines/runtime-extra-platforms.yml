@@ -82,7 +82,6 @@ extends:
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-          isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
           isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Add Mac Catalyst jobs
