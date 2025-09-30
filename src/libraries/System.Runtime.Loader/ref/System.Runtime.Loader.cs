@@ -32,12 +32,11 @@ namespace System.Runtime.CompilerServices
     {
         public CreateNewOnMetadataUpdateAttribute() { }
     }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple = false, Inherited = false)]
-    public sealed partial class MetadataUpdateDeletedAttribute : Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=false, Inherited=false)]
+    public sealed partial class MetadataUpdateDeletedAttribute : System.Attribute
     {
+        public MetadataUpdateDeletedAttribute() { }
     }
-    
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public partial class MetadataUpdateOriginalTypeAttribute : System.Attribute
     {
