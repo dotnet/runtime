@@ -146,7 +146,6 @@ public class CriticalHandleTest
     private static void OutWorker(IntPtr handleValue)
     {
         MyCriticalHandle handle;
-        // Interpreter-FIXME: the `out handle` here does not populate handle with a class instance.
         Native.Out(handleValue, out handle);
         Assert.Equal(handleValue.ToInt32(), handle.Handle.ToInt32());
     }
