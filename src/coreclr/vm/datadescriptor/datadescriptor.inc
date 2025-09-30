@@ -592,14 +592,12 @@ CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, EndAddress, offsetof(RUNTIME_FUNCTI
 CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, UnwindData, offsetof(RUNTIME_FUNCTION, UnwindData))
 CDAC_TYPE_END(RuntimeFunction)
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
 CDAC_TYPE_BEGIN(UnwindInfo)
 CDAC_TYPE_INDETERMINATE(UnwindInfo)
 #ifdef TARGET_X86
 CDAC_TYPE_FIELD(UnwindInfo, /*uint32*/, FunctionLength, offsetof(UNWIND_INFO, FunctionLength))
 #endif
 CDAC_TYPE_END(UnwindInfo)
-#endif
 
 CDAC_TYPE_BEGIN(HashMap)
 CDAC_TYPE_INDETERMINATE(HashMap)
