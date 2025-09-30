@@ -668,7 +668,7 @@ namespace
         {
             ConvertType retType = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
             if (retType == ConvertType::NotConvertible)
-                return NULL;
+                return false;
 
             keyBuffer[pos++] = GetTypeCode(retType);
         }
@@ -687,7 +687,7 @@ namespace
         _ASSERTE(pos < maxSize);
         keyBuffer[pos] = 0;
 
-        return keyBuffer;
+        return true;
     }
 
     struct StringToWasmSigThunk
