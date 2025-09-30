@@ -408,7 +408,7 @@ fi
 
 if [ ! -z "$RunInterpreter" ]; then
 # $(InputAssemblyName)
-  export DOTNET_Interpreter='$(AssemblyName)!*'
+  export DOTNET_InterpMode=3
 fi
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
