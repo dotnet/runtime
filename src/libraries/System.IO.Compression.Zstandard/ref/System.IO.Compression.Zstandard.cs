@@ -9,10 +9,10 @@ namespace System.IO.Compression
     public sealed partial class ZstandardCompressionOptions
     {
         public ZstandardCompressionOptions() { }
+        public bool AppendChecksum { get { throw null; } set { } }
         public static int DefaultQuality { get { throw null; } }
         public static int DefaultWindow { get { throw null; } }
         public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
-        public bool AppendChecksum { get { throw null; } set { } }
         public bool EnableLongDistanceMatching { get { throw null; } set { } }
         public static int MaxQuality { get { throw null; } }
         public static int MaxWindow { get { throw null; } }
@@ -25,7 +25,9 @@ namespace System.IO.Compression
     {
         private object _dummy;
         private int _dummyPrimitive;
+        public ZstandardDecoder(int maxWindow) { throw null; }
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary) { throw null; }
+        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindow) { throw null; }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
         public static int GetMaxDecompressedLength(System.ReadOnlySpan<byte> data) { throw null; }
