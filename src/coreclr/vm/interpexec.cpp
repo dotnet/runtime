@@ -104,6 +104,33 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
     return header;
 }
 
+MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer((void*)target));
+    }
+    CONTRACTL_END
+
+    GCX_PREEMP();
+
+    RangeSection * pRS = ExecutionManager::FindCodeRange(target, ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (((StubPrecode*)target)->GetType() == PRECODE_PINVOKE_IMPORT)
+            {
+                return dac_cast<PTR_MethodDesc>(((PInvokeImportPrecode*)target)->GetMethodDesc());
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     CONTRACTL
@@ -124,7 +151,22 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 
     if (target != (PCODE)NULL)
     {
-        _ASSERTE(pHeader->GetTarget() == target);
+        PCODE headerTarget = pHeader->GetTarget();
+        if (target != headerTarget)
+        {
+#ifdef DEBUG
+            // For pinvokes we may have a PInvokeImportPrecode as a pointer, and need to use passed in target preferentially
+            // Since on multiple threads we may be racing to use this method, it is possible that the current target could be
+            // the PInvokeImportPrecode or the actual target method, so we should allow either of them to match.
+            MethodDesc *pMDTarget = GetTargetPInvokeMethodDesc(target);
+            MethodDesc *pMDHeaderTarget = GetTargetPInvokeMethodDesc(headerTarget);
+
+            _ASSERTE(pMDTarget == NULL || pMDHeaderTarget == NULL);
+            _ASSERTE(pMDTarget == NULL || pMDTarget == pMD);
+            _ASSERTE(pMDHeaderTarget == NULL || pMDHeaderTarget == pMD);
+#endif // DEBUG
+            pHeader->SetTarget(target);
+        }
     }
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
