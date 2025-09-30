@@ -43,8 +43,8 @@ namespace System.IO.Compression
         /// <value>The window size for compression.</value>
         public int Window { get; set; }
 
-        /// <summary>If enabled, will append a 32-bit checksum at the end of the compressed data.</summary>
-        public bool EnableChecksum { get; set; }
+        /// <summary>If <lang keyword="true"/>, will append a 32-bit checksum at the end of the compressed data.</summary>
+        public bool AppendChecksum { get; set; }
 
         /// <summary>Gets the dictionary to use for compression. If set, the quality specified during dictionary creation will take precedence over the <see cref="Quality"/> property.</summary>
         /// <value>The compression dictionary, or null if no dictionary is used.</value>
