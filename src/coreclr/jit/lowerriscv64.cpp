@@ -72,6 +72,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
                 return emitter::isValidSimm12(immVal);
 
+            case GT_EQ:
+            case GT_NE:
             case GT_GT:
             case GT_LE:
             case GT_JCMP:
@@ -206,9 +208,6 @@ void Lowering::LowerIntegerCompare(GenTree* cmp)
             BlockRange().InsertBefore(cmp, left, right);
             ContainCheckBinary(left->AsOp());
         }
-        // a != 0  --->  a > 0 (unsigned)
-        cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
-        cmp->SetUnsigned();
     }
 
     if (cmp->OperIs(GT_LE, GT_GE))

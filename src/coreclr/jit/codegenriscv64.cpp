@@ -3115,6 +3115,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 //
 void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
+    assert(tree->OperIsCmpCompare());
     GenTree*  op1     = tree->gtOp1;
     GenTree*  op2     = tree->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
@@ -3168,8 +3169,15 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
     else
     {
-        noway_assert(tree->OperIs(GT_LT, GT_GT, GT_LE, GT_GE));
+        bool isUnsigned = tree->IsUnsigned();
+
         genTreeOps oper = tree->OperGet();
+        if (oper == GT_EQ || oper == GT_NE)
+        {
+            assert(op2->isContainedIntOrIImmed() && op2->IsIntegralConst(0));
+            oper       = (oper == GT_EQ) ? GT_LE : GT_GT;
+            isUnsigned = true;
+        }
 
         isReversed = (oper == GT_LE || oper == GT_GE);
         if (isReversed)
@@ -3187,12 +3195,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         regNumber reg1 = op1->isContainedIntOrIImmed() ? REG_ZERO : op1->GetRegNum();
         if (op2->isContainedIntOrIImmed())
         {
-            instruction slti = tree->IsUnsigned() ? INS_sltiu : INS_slti;
+            instruction slti = isUnsigned ? INS_sltiu : INS_slti;
             emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->gtIconVal);
         }
         else
         {
-            instruction slt = tree->IsUnsigned() ? INS_sltu : INS_slt;
+            instruction slt = isUnsigned ? INS_sltu : INS_slt;
             emit->emitIns_R_R_R(slt, EA_PTRSIZE, targetReg, reg1, op2->GetRegNum());
         }
     }
