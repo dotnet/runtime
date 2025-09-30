@@ -122,13 +122,13 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
                 if (scopeHandler)
                 {
-                    var pipelineStartMessage = Assert.Single(sink.Writes.Where(m => m.EventId == EventIds.PipelineStart));
+                    var pipelineStartMessage = Assert.Single(sink.Writes, m => m.EventId == EventIds.PipelineStart);
                     Assert.Equal($"HTTP GET {baseUri}?*", pipelineStartMessage.Scope.ToString());
                     Assert.Equal($"Start processing HTTP request GET {baseUri}?*", pipelineStartMessage.Message);
                 }
                 else
                 {
-                    var requestStartMessage = Assert.Single(sink.Writes.Where(m => m.EventId == EventIds.RequestStart));
+                    var requestStartMessage = Assert.Single(sink.Writes, m => m.EventId == EventIds.RequestStart);
                     Assert.Equal($"Sending HTTP request GET {baseUri}?*", requestStartMessage.Message);
                 }
             }, syncApi.ToString(), scopeHandler.ToString()).DisposeAsync();
@@ -181,13 +181,13 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     _ = await client.SendAsync(request);
                 }
 
-                var pipelineStartMessage = Assert.Single(sink.Writes.Where(m =>
+                var pipelineStartMessage = Assert.Single(sink.Writes, m =>
                         m.EventId == EventIds.PipelineStart &&
-                        m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler"));
+                        m.LoggerName == "System.Net.Http.HttpClient.test.LogicalHandler");
 
-                var requestStartMessage = Assert.Single(sink.Writes.Where(m =>
+                var requestStartMessage = Assert.Single(sink.Writes, m =>
                         m.EventId == EventIds.RequestStart &&
-                        m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler"));
+                        m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler");
 
                 string expectedUri = disableUriQueryRedaction ? destinationUri : $"{baseUri}?*";
 

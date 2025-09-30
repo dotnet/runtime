@@ -900,13 +900,15 @@ extends:
 
       # WASI/WASM
 
-      # - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - wasi_wasm
-      #       - wasi_wasm_win
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     alwaysRun: ${{ variables.isRollingBuild }}
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          publishArtifactsForWorkload: false
+          publishWBT: false
 
       #
       # Android devices
@@ -961,8 +963,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-          # Tracking issue: https://github.com/dotnet/dnceng/issues/5909
-          # - android_x64
+          - android_x64
           - android_arm64
           variables:
             # map dependencies variables to local variables
@@ -974,7 +975,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

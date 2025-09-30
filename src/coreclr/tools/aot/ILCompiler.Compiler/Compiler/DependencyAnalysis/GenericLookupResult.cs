@@ -270,6 +270,60 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Generic lookup result that points to an MethodTable.
+    /// </summary>
+    public sealed class MetadataTypeHandleGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -4892308;
+
+        public MetadataTypeHandleGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedType);
+
+            return factory.MetadataTypeSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("MetadataTypeHandle_"u8);
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public TypeDesc Type => _type;
+        public override string ToString() => $"MetadataTypeHandle: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeHandleDictionarySlot(_type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((MetadataTypeHandleGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MetadataTypeHandleGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
     /// Generic lookup result that points to an MethodTable where if the type is Nullable&lt;X&gt; the MethodTable is X
     /// </summary>
     public sealed class UnwrapNullableTypeHandleGenericLookupResult : GenericLookupResult
@@ -901,30 +955,38 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             MethodDesc implMethod;
 
+            MethodDesc instantiatedConstrainedMethodDefinition = instantiatedConstrainedMethod.GetMethodDefinition();
+
             if (instantiatedConstrainedMethod.OwningType.IsInterface)
             {
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
-                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
-                    if (implMethod == null)
-                    {
-                        DefaultInterfaceMethodResolution resolution =
-                            instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
-                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                        {
-                            // TODO: diamond/reabstraction
-                            ThrowHelper.ThrowInvalidProgramException();
-                        }
-                    }
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethodDefinition);
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethodDefinition);
+                }
+
+                if (implMethod == null)
+                {
+                    DefaultInterfaceMethodResolution resolution =
+                        instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethodDefinition, out implMethod);
+                    if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                    {
+                        // TODO: diamond/reabstraction: https://github.com/dotnet/runtime/issues/72589
+                        ThrowHelper.ThrowInvalidProgramException();
+                    }
                 }
             }
             else
             {
-                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethod);
+                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethodDefinition);
+            }
+
+            if (instantiatedConstrainedMethod != instantiatedConstrainedMethodDefinition)
+            {
+                implMethod = implMethod.MakeInstantiatedMethod(instantiatedConstrainedMethod.Instantiation);
             }
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
@@ -933,21 +995,10 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
 
             // TODO-SIZE: this is address taken only in the delegate target case
-            if (implMethod.Signature.IsStatic)
-            {
-                if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
-                    return factory.ExactCallableAddressTakenAddress(implMethod);
-                else
-                    return factory.AddressTakenMethodEntrypoint(implMethod);
-            }
-            else if (implMethod.HasInstantiation)
-            {
+            if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
                 return factory.ExactCallableAddressTakenAddress(implMethod);
-            }
             else
-            {
-                return factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-            }
+                return factory.AddressTakenMethodEntrypoint(implMethod);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

@@ -28,6 +28,7 @@ namespace Wasm.Build.Tests
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
+                // ("RunAOTCompilation", false) -- tested separately as it changes build behavior significantly
             };
 
             TheoryData<Configuration, string, bool, bool, bool> data = new();
@@ -143,7 +144,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: true,
+                                wasmNativeDebugSymbols: config == Configuration.Debug && !expectedWasmNativeStripValue,
                                 wasmBuildingForNestedPublish: null);
         }
 
@@ -157,7 +158,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: true,
+                                wasmNativeDebugSymbols: false,
                                 wasmBuildingForNestedPublish: true);
         }
 
@@ -224,12 +225,19 @@ namespace Wasm.Build.Tests
         private void InferAndCheckPropertyValues(string? line, bool isPublish, bool wasmBuildNative, Configuration config)
         {
             bool expectedWasmNativeStripValue;
+            bool expectedWasmNativeDebugSymbols;
             if (!isPublish && wasmBuildNative && config == Configuration.Debug)
+            {
                 expectedWasmNativeStripValue = false;
+                expectedWasmNativeDebugSymbols = true;
+            }
             else
+            {
+                expectedWasmNativeDebugSymbols = false;
                 expectedWasmNativeStripValue = true;
+            }
 
-            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, /*wasmNativeDebugSymbols*/true, isPublish);
+            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, expectedWasmNativeDebugSymbols, isPublish);
         }
 
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
@@ -239,6 +247,11 @@ namespace Wasm.Build.Tests
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
                             $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'";
+            if (!line.Contains(expected))
+            {
+                _testOutput.WriteLine($"Actual:   {line}");
+                _testOutput.WriteLine($"Expected: {expected}");
+            }
             Assert.Contains(expected, line);
         }
     }

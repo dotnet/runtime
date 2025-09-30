@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem.Ecma
@@ -309,6 +311,35 @@ namespace Internal.TypeSystem.Ecma
         public static unsafe byte* GetMethodNamePointer(this MetadataReader reader, MethodDefinitionHandle handle)
         {
             return reader.GetBlobReader(reader.GetMethodDefinition(handle).Name).CurrentPointer;
+        }
+
+        public static unsafe ReadOnlySpan<byte> GetStringBytes(this MetadataReader reader, StringHandle handle)
+        {
+            BlobReader blobReader = reader.GetBlobReader(handle);
+            return new ReadOnlySpan<byte>(blobReader.CurrentPointer, blobReader.Length);
+        }
+
+        public static unsafe bool StringEquals(this MetadataReader reader, StringHandle handle, ReadOnlySpan<byte> otherString)
+        {
+            int stringOffset = reader.GetHeapOffset(handle);
+
+            // Could the heap hold a string this big?
+            if (stringOffset + otherString.Length >= reader.GetHeapSize(HeapIndex.String))
+                return false;
+
+            // Check for null terminator at the expected location
+            byte* currentChar = reader.MetadataPointer + reader.GetHeapMetadataOffset(HeapIndex.String) + stringOffset;
+            if (*(currentChar + otherString.Length) != 0)
+                return false;
+
+            // Compare characters
+            for (int i = 0; i < otherString.Length; i++)
+            {
+                if (otherString[i] != *(currentChar++))
+                    return false;
+            }
+
+            return true;
         }
     }
 }

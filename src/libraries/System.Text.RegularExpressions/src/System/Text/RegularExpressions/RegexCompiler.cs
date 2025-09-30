@@ -3753,7 +3753,7 @@ namespace System.Text.RegularExpressions
 
                     // startingPos = slice.IndexOf(literal);
                     Ldloc(slice);
-                    EmitIndexOf(node, useLast: false, negate: false);
+                    EmitIndexOf(literal2, useLast: false, negate: false);
                     Stloc(startingPos);
 
                     // if (startingPos < 0) goto doneLabel;

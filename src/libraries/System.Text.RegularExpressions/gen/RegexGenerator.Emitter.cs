@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -26,9 +27,34 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
-        /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
-        private static string EscapeXmlComment(string text) =>
-            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+        /// <summary>Escapes characters that are invalid in XML comments.</summary>
+        private static string EscapeXmlComment(string text)
+        {
+            if (!string.IsNullOrEmpty(text))
+            {
+                StringBuilder sb = new(text.Length);
+                foreach (char c in text)
+                {
+                    switch ((int)c)
+                    {
+                        // Escape XML entities.
+                        case '&': sb.Append("&amp;"); break;
+                        case '<': sb.Append("&lt;"); break;
+                        case '>': sb.Append("&gt;"); break;
+
+                        // Propagate all other valid XML characters as-is. Control chars are considered invalid.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+
+                        // Use Unicode escape sequences for everything else.
+                        default: sb.Append($"\\u{(int)c:X4}"); break;
+                    }
+                }
+
+                text = sb.ToString();
+            }
+
+            return text;
+        }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
@@ -59,7 +85,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeXmlComment(Literal(regexMethod.Pattern, quote: false))}</code><br/>");
+            writer.WriteLine($"/// <code>{EscapeXmlComment(regexMethod.Pattern)}</code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");
@@ -5632,22 +5658,103 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of what characters match a set.</summary>
-        private static string DescribeSet(string charClass) =>
-            charClass switch
+        private static string DescribeSet(string charClass)
+        {
+            string? description = charClass switch
             {
                 RegexCharClass.AnyClass => "any character",
-                RegexCharClass.DigitClass => "a Unicode digit",
+                RegexCharClass.AsciiLetterClass => "an ASCII letter",
+                RegexCharClass.AsciiLetterOrDigitClass => "an ASCII letter or digit",
                 RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
                 RegexCharClass.ECMAWordClass => "a word character (ECMA)",
+                RegexCharClass.HexDigitClass => "a hexadecimal digit",
+                RegexCharClass.HexDigitLowerClass => "a lowercase hexadecimal digit",
+                RegexCharClass.HexDigitUpperClass => "an uppercase hexadecimal digit",
+                RegexCharClass.LetterClass => "a Unicode letter",
+                RegexCharClass.LetterOrDigitClass => "a Unicode letter or digit",
+                RegexCharClass.NotAsciiLetterClass => "any character other than an ASCII letter",
+                RegexCharClass.NotAsciiLetterOrDigitClass => "any character other than an ASCII letter or digit",
+                RegexCharClass.NotControlClass => "any character other than a Unicode control character",
                 RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
                 RegexCharClass.NotECMASpaceClass => "any character other than a whitespace character (ECMA)",
                 RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
+                RegexCharClass.NotHexDigitClass => "any character other than a hexadecimal digit",
+                RegexCharClass.NotHexDigitLowerClass => "any character other than a lowercase hexadecimal digit",
+                RegexCharClass.NotHexDigitUpperClass => "any character other than an uppercase hexadecimal digit",
+                RegexCharClass.NotLetterClass => "any character other than a Unicode letter",
+                RegexCharClass.NotLetterOrDigitClass => "any character other than a Unicode letter or digit",
+                RegexCharClass.NotLowerClass => "any character other than a Unicode lowercase letter",
+                RegexCharClass.NotNumberClass => "any character other than a Unicode number",
+                RegexCharClass.NotPunctuationClass => "any character other than a Unicode punctuation character",
+                RegexCharClass.NotSeparatorClass => "any character other than a Unicode separator",
                 RegexCharClass.NotSpaceClass => "any character other than a whitespace character",
+                RegexCharClass.NotSymbolClass => "any character other than a Unicode symbol",
+                RegexCharClass.NotUpperClass => "any character other than a Unicode uppercase letter",
                 RegexCharClass.NotWordClass => "any character other than a word character",
+                RegexCharClass.NumberClass => "a Unicode number",
+                RegexCharClass.PunctuationClass => "a Unicode punctuation character",
+                RegexCharClass.SeparatorClass => "a Unicode separator",
                 RegexCharClass.SpaceClass => "a whitespace character",
+                RegexCharClass.SymbolClass => "a Unicode symbol",
                 RegexCharClass.WordClass => "a word character",
-                _ => $"a character in the set {RegexCharClass.DescribeSet(charClass)}",
+                _ => null,
             };
+
+            if (description is not null)
+            {
+                return description;
+            }
+
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[1];
+            if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negatedCategories) &&
+                numCategories == 1)
+            {
+                ReadOnlySpan<string?> categoryDescriptions =
+                [
+                    "a Unicode uppercase letter", // UppercaseLetter = 0,
+                    "a Unicode lowercase letter", // LowercaseLetter = 1,
+                    "a Unicode titlecase letter", // TitlecaseLetter = 2,
+                    "a Unicode modifier letter", // ModifierLetter = 3,
+                    null, // OtherLetter = 4,
+                    "a Unicode non-spacing mark", // NonSpacingMark = 5,
+                    "a Unicode spacing-combining mark", // SpacingCombiningMark = 6,
+                    "a Unicode enclosing mark", // EnclosingMark = 7,
+                    "a Unicode digit", // DecimalDigitNumber = 8,
+                    "a Unicode letter number", // LetterNumber = 9,
+                    null, // OtherNumber = 10,
+                    "a Unicode space separator", // SpaceSeparator = 11,
+                    "a Unicode line separator", // LineSeparator = 12,
+                    "a Unicode paragraph separator", // ParagraphSeparator = 13,
+                    "a Unicode control character", // Control = 14,
+                    "a Unicode format character", // Format = 15,
+                    "a Unicode surrogate character", // Surrogate = 16,
+                    "a Unicode private-use character", // PrivateUse = 17,
+                    "a Unicode connector punctuation character", // ConnectorPunctuation = 18,
+                    "a Unicode dash punctuation character", // DashPunctuation = 19,
+                    "a Unicode open punctuation character", // OpenPunctuation = 20,
+                    "a Unicode close punctuation character", // ClosePunctuation = 21,
+                    "a Unicode initial quote punctuation character", // InitialQuotePunctuation = 22,
+                    "a Unicode final quote punctuation character", // FinalQuotePunctuation = 23,
+                    null, // OtherPunctuation = 24,
+                    "a Unicode math symbol", // MathSymbol = 25,
+                    "a Unicode currency symbol", // CurrencySymbol = 26,
+                    "a Unicode modifier symbol", // ModifierSymbol = 27,
+                    null, // OtherSymbol = 28,
+                    "an unassigned Unicode code point", // OtherNotAssigned = 29,
+                ];
+
+                int cat = (int)categories[0];
+                if ((uint)cat < (uint)categoryDescriptions.Length &&
+                    (description = categoryDescriptions[cat]) is not null)
+                {
+                    return negatedCategories ?
+                        $"any character other than {description}" :
+                        description;
+                }
+            }
+
+            return $"a character in the set {RegexCharClass.DescribeSet(charClass)}";
+        }
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
         /// <param name="writer">The writer to which the description should be written.</param>
@@ -5732,9 +5839,8 @@ namespace System.Text.RegularExpressions.Generator
                 _ when node.M == node.N => "exactly",
                 RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic => "atomically",
                 RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop => "greedily",
-                RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy => "lazily",
-                RegexNodeKind.Loop => rm.Analysis.IsAtomicByAncestor(node) ? "greedily and atomically" : "greedily",
-                _ /* RegexNodeKind.Lazyloop */ => rm.Analysis.IsAtomicByAncestor(node) ? "lazily and atomically" : "lazily",
+                RegexNodeKind.Loop => rm.Analysis.IsAtomicByAncestor(node) ? "atomically" : "greedily",
+                _ => "lazily", // Onelazy or Notonelazy or Setlazy or Lazyloop
             };
 
             string bounds =

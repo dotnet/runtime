@@ -23,7 +23,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, null, null, null)]
         [InlineData("", "", "", "")]
         [InlineData("dataSource", "displayMember", "valueMember", "lookupMember")]
-        public void Ctor_String_String_String_String(string dataSource, string displayMember, string valueMember, string lookupMember)
+        public void Ctor_String_String_String_String(string? dataSource, string? displayMember, string? valueMember, string? lookupMember)
         {
             var attribute = new LookupBindingPropertiesAttribute(dataSource, displayMember, valueMember, lookupMember);
             Assert.Equal(dataSource, attribute.DataSource);

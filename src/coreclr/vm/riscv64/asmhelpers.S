@@ -318,14 +318,14 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     SAVE_ARGUMENT_REGISTERS  sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0x60
 
     addi  a0, t2, 0
-    call C_FUNC(NDirectImportWorker)
+    call C_FUNC(PInvokeImportWorker)
     addi  t4, a0, 0
 
     // pop the stack and restore original register state
@@ -334,10 +334,10 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     //EPILOG_RESTORE_REG  gp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 // ThePreStubPatch()
@@ -822,6 +822,10 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -838,7 +842,7 @@ LEAF_ENTRY JIT_PatchpointForced, _TEXT
     j C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()

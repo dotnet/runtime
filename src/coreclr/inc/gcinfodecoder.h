@@ -248,6 +248,8 @@ enum GcInfoHeaderFlags
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
+#else
+    // unused                           = 0x80,
 #endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
@@ -598,9 +600,7 @@ public:
 #endif
     size_t  GetNumBytesRead();
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32  GetSizeOfStackParameterArea();
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    UINT32 GetSizeOfStackParameterArea();
 
     inline UINT32 Version()
     {
@@ -636,9 +636,18 @@ private:
 #endif
     UINT32  m_NumInterruptibleRanges;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T>
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = 0;
 
 #ifdef _DEBUG
     GcInfoDecoderFlags m_Flags;

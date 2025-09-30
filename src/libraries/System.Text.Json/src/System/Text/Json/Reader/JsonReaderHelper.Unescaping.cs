@@ -321,7 +321,7 @@ namespace System.Text.Json
 
         public static void ValidateUtf8(ReadOnlySpan<byte> utf8Buffer)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (!Utf8.IsValid(utf8Buffer))
             {
                 throw ThrowHelper.GetInvalidOperationException_ReadInvalidUTF8();
@@ -329,13 +329,11 @@ namespace System.Text.Json
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(utf8Buffer);
-#else
                 if (utf8Buffer.IsEmpty)
                 {
                     return;
                 }
+
                 unsafe
                 {
                     fixed (byte* srcPtr = utf8Buffer)
@@ -343,7 +341,6 @@ namespace System.Text.Json
                         s_utf8Encoding.GetCharCount(srcPtr, utf8Buffer.Length);
                     }
                 }
-#endif
             }
             catch (DecoderFallbackException ex)
             {

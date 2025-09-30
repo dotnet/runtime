@@ -59,25 +59,21 @@ namespace Internal.TypeSystem
     /// </summary>
     internal sealed partial class CanonType : CanonBaseType
     {
-        private const string _Namespace = "System";
-        private const string _Name = "__Canon";
-        public const string FullName = _Namespace + "." + _Name;
-
         private int _hashcode;
 
-        public override string Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
-                return _Namespace;
+                return "System"u8;
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return _Name;
+                return "__Canon"u8;
             }
         }
 
@@ -135,7 +131,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode(FullName);
+                _hashcode = VersionResilientHashCode.NameHashCode(Namespace, Name);
             }
 
             return _hashcode;
@@ -147,25 +143,21 @@ namespace Internal.TypeSystem
     /// </summary>
     internal sealed partial class UniversalCanonType : CanonBaseType
     {
-        private const string _Namespace = "System";
-        private const string _Name = "__UniversalCanon";
-        public const string FullName = _Namespace + "." + _Name;
-
         private int _hashcode;
 
-        public override string Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
-                return _Namespace;
+                return "System"u8;
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return _Name;
+                return "__UniversalCanon"u8;
             }
         }
 
@@ -221,7 +213,7 @@ namespace Internal.TypeSystem
         {
             if (_hashcode == 0)
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNameHashCode(FullName);
+                _hashcode = VersionResilientHashCode.NameHashCode(Namespace, Name);
             }
 
             return _hashcode;

@@ -7,7 +7,7 @@
 
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
-    IMPORT NDirectImportWorker
+    IMPORT PInvokeImportWorker
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
 #endif
@@ -24,8 +24,7 @@
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
 #ifdef FEATURE_INTERPRETER
-    SETALIAS Thread_GetInterpThreadContext, ?GetInterpThreadContext@Thread@@QEAAPEAUInterpThreadContext@@XZ
-    IMPORT $Thread_GetInterpThreadContext
+    IMPORT GetInterpThreadContextWithPossiblyMissingThread
     IMPORT ExecuteInterpretedMethod
 #endif
 
@@ -96,15 +95,15 @@
     LEAF_END
 
 ; ------------------------------------------------------------------
-; The call in ndirect import precode points to this function.
-        NESTED_ENTRY NDirectImportThunk
+; The call in PInvokeImportPrecode points to this function.
+        NESTED_ENTRY PInvokeImportThunk
 
         PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
         SAVE_ARGUMENT_REGISTERS        sp, 16
         SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
 
         mov     x0, x12
-        bl      NDirectImportWorker
+        bl      PInvokeImportWorker
         mov     x12, x0
 
         ; pop the stack and restore original register state
@@ -112,7 +111,7 @@
         RESTORE_ARGUMENT_REGISTERS        sp, 16
         EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
 
-        ; If we got back from NDirectImportWorker, the MD has been successfully
+        ; If we got back from PInvokeImportWorker, the MD has been successfully
         ; linked. Proceed to execute the original DLL call.
         EPILOG_BRANCH_REG x12
 
@@ -1065,12 +1064,14 @@ JIT_PollGCRarePath
         PROLOG_WITH_TRANSITION_BLOCK
 
         INLINE_GETTHREAD x20, x19
+        cbz x20, NoManagedThread
 
         ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
         cbnz x11, HaveInterpThreadContext
 
+NoManagedThread
         mov x0, x20
-        bl $Thread_GetInterpThreadContext
+        bl GetInterpThreadContextWithPossiblyMissingThread
         mov x11, x0
         RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
         RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters

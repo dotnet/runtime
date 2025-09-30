@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         private static void VerifyInstanceIsUsable(SlhDsaOpenSsl slhDsa)
         {
-            _ = slhDsa.ExportSlhDsaSecretKey(); // does not throw
+            _ = slhDsa.ExportSlhDsaPrivateKey(); // does not throw
 
             // usable
             byte[] data = [1, 2, 3];
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             return new SlhDsaOpenSsl(key);
         }
 
-        protected override SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        protected override SlhDsa ImportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             using SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
             return new SlhDsaOpenSsl(key);

@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
-        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsAzureLinux;
+        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsSymCryptOpenSsl;
     }
 
     public static partial class ECDsaFactory

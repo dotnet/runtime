@@ -692,7 +692,7 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOption
         assert(INS_setge == (INS_setge_apx + offset));
         assert(INS_setle == (INS_setle_apx + offset));
         assert(INS_setg == (INS_setg_apx + offset));
-        ins = (instruction)(ins + offset);
+        ins = (instruction)(ins - offset);
     }
 #endif
 
@@ -1103,7 +1103,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
-                case NI_SSE42_LoadAndDuplicateToVector128:
+                case NI_X86Base_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
@@ -1127,13 +1127,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     }
                 }
 
-                case NI_SSE42_MoveAndDuplicate:
+                case NI_X86Base_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512_BroadcastScalarToVector512:
                 {
                     assert(hwintrinsic->isContained());
-                    if (intrinsicId == NI_SSE42_MoveAndDuplicate)
+                    if (intrinsicId == NI_X86Base_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }

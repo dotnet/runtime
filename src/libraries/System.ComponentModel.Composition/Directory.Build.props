@@ -3,5 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
     <IsTrimmable>false</IsTrimmable>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>
