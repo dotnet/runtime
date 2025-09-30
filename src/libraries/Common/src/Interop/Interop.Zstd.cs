@@ -67,6 +67,9 @@ internal static partial class Interop
         internal static partial nuint ZSTD_decompressStream(SafeZstdDecompressHandle dctx, ref ZstdOutBuffer output, ref ZstdInBuffer input);
 
         [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint ZSTD_DCtx_refPrefix(SafeZstdDecompressHandle dctx, IntPtr prefix, nuint prefixSize);
+
+        [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_DCtx_reset(SafeZstdDecompressHandle dctx, ZstdResetDirective reset);
 
         // Streaming compression
@@ -75,6 +78,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_CCtx_setParameter(SafeZstdCompressHandle cctx, ZstdCParameter param, int value);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint ZSTD_CCtx_refPrefix(SafeZstdCompressHandle cctx, IntPtr prefix, nuint prefixSize);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_CCtx_reset(SafeZstdCompressHandle cctx, ZstdResetDirective reset);
