@@ -1421,7 +1421,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
         // Stub path, read address as a Precode and get the MethodDesc from it
         {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromPrecode(pCode);
+            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
             return methodDescPtr;
         }
     }

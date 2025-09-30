@@ -262,7 +262,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (range.IsRangeList)
         {
             IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-            return precodeStubs.GetMethodDescFromPrecode(entrypoint);
+            return precodeStubs.GetMethodDescFromStubAddress(entrypoint);
         }
         else
         {
