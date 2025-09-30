@@ -46,7 +46,7 @@ struct InterpMethodContextFrame
         this->pRetVal = pRetVal;
         this->pStack = pStack;
         this->ip = NULL;
-        this->delegateBeforeExit = std::function<void()>();
+        this->delegateBeforeExit = nullptr;
     }
 #endif // DACCESS_COMPILE
 };

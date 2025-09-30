@@ -3364,7 +3364,7 @@ EXIT_FRAME:
     if (pFrame->delegateBeforeExit)
     {
         pFrame->delegateBeforeExit();
-        pFrame->delegateBeforeExit = std::function<void()>();
+        pFrame->delegateBeforeExit = nullptr;
     }
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
