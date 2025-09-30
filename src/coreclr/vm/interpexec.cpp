@@ -2461,7 +2461,7 @@ MAIN_LOOP:
                     ip += 4;
 
                     DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
-                    NULL_CHECK(delegateObj);
+                    NULL_CHECK(*delegateObj);
                     PCODE targetAddress = (*delegateObj)->GetMethodPtr();
                     DelegateEEClass *pDelClass = (DelegateEEClass*)(*delegateObj)->GetMethodTable()->GetClass();
                     if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
