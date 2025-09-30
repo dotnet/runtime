@@ -8,11 +8,10 @@ namespace System.Diagnostics
     /// </summary>
     internal sealed class RandomNumberGenerator
     {
-        [ThreadStatic] private static RandomNumberGenerator? t_random;
-
         private ulong _s0, _s1, _s2, _s3;
 
-        public static RandomNumberGenerator Current => t_random ??= new RandomNumberGenerator();
+        [field: ThreadStatic]
+        public static RandomNumberGenerator Current => field ??= new();
 
         public unsafe RandomNumberGenerator()
         {
