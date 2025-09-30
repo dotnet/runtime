@@ -45,6 +45,54 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark)
+{
+#ifdef FEATURE_INTERPRETER
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (stackMark == NULL)
+        return NULL;
+
+    if ((stackMark < pThread->GetCachedStackLimit()) || stackMark > pThread->GetCachedStackBase())
+    {
+        PTR_Frame pFrame = pThread->GetFrame();
+        PTR_InterpMethodContextFrame pLastFoundWhereStackIsLessThanOrEqualToStackMark = NULL;
+        while (pFrame != FRAME_TOP)
+        {
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pFrame);
+                PTR_InterpMethodContextFrame pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+                while (pTopInterpMethodContextFrame->pNext && pTopInterpMethodContextFrame->pNext->ip != 0)
+                {
+                    pTopInterpMethodContextFrame = pTopInterpMethodContextFrame->pNext;
+                }
+                while (pTopInterpMethodContextFrame->pParent && pTopInterpMethodContextFrame->ip == 0)
+                {
+                    pTopInterpMethodContextFrame = pTopInterpMethodContextFrame->pParent;
+                }
+
+                PTR_InterpMethodContextFrame pCurrent = pTopInterpMethodContextFrame;
+                do
+                {
+                    if (dac_cast<PTR_VOID>(pCurrent->pStack) <= stackMark)
+                    {
+                        return dac_cast<PTR_VOID>(dac_cast<TADDR>(pCurrent) + 1);
+                    }
+                    pCurrent = pCurrent->pParent;
+                } while (pCurrent != NULL);
+                
+            }
+
+            pFrame = pFrame->PtrNextFrame();
+        }
+
+        _ASSERTE(!"Unable to find InterpMethodContextFrame for stackMark that appears to be on the interpreter stack");
+    }
+#endif
+    return stackMark;
+}
+
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
