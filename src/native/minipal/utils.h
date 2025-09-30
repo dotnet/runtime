@@ -4,7 +4,9 @@
 #ifndef HAVE_MINIPAL_UTILS_H
 #define HAVE_MINIPAL_UTILS_H
 
+#ifndef assert
 #include <assert.h>
+#endif
 
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
