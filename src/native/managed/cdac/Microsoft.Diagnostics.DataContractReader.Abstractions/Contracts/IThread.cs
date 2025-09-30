@@ -29,7 +29,7 @@ public enum ThreadState
 }
 
 public record struct ThreadData(
-    TargetPointer threadAddress,
+    TargetPointer ThreadAddress,
     uint Id,
     TargetNUInt OSId,
     ThreadState State,
@@ -51,7 +51,7 @@ public interface IThread : IContract
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
-    bool IsInStackRegionUnwoundBySpecifiedException(ThreadData threadData, TargetPointer stackPointer) => throw new NotImplementedException();
+    bool IsInStackRegionUnwoundBySpecifiedException(TargetPointer threadAddress, TargetPointer stackPointer) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }

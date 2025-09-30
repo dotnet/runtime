@@ -6,11 +6,6 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public struct GCInfoToken
-{
-    public int Version;
-    public TargetPointer Address;
-}
 
 public interface IGCInfoHandle { }
 
@@ -18,7 +13,7 @@ public interface IGCInfo : IContract
 {
     static string IContract.Name { get; } = nameof(GCInfo);
 
-    IGCInfoHandle DecodeGCInfo(GCInfoToken token) => throw new NotImplementedException();
+    IGCInfoHandle DecodeGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
     uint GetCodeLength(IGCInfoHandle handle) => throw new NotImplementedException();
 }
 

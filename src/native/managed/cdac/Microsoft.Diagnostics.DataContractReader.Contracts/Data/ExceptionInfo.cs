@@ -19,6 +19,12 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
         StackHighBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackHighBound)].Offset);
         if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
             ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
+
+        PassNumber = target.Read<byte>(address + (ulong)type.Fields[nameof(PassNumber)].Offset);
+        CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
+        CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
+        CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
+        LastReportedFuncletInfo = target.ProcessedData.GetOrAdd<Data.LastReportedFuncletInfo>(address + (ulong)type.Fields[nameof(LastReportedFuncletInfo)].Offset);
     }
 
     public TargetPointer PreviousNestedInfo { get; }
@@ -27,4 +33,9 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     public TargetPointer StackLowBound { get; }
     public TargetPointer StackHighBound { get; }
     public TargetPointer ExceptionWatsonBucketTrackerBuckets { get; }
+    public byte PassNumber { get; }
+    public TargetPointer CSFEHClause { get; }
+    public TargetPointer CSFEnclosingClause { get; }
+    public TargetPointer CallerOfActualHandlerFrame { get; }
+    public LastReportedFuncletInfo LastReportedFuncletInfo { get; }
 }

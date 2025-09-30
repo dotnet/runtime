@@ -24,4 +24,22 @@ internal class AMD64GCInfoTraits : IGCInfoTraits
     public static int REVERSE_PINVOKE_FRAME_ENCBASE => 6;
     public static int NUM_SAFE_POINTS_ENCBASE => 3;
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
+
+    public static int INTERRUPTIBLE_RANGE_DELTA1_ENCBACE => 6;
+
+    public static int INTERRUPTIBLE_RANGE_DELTA2_ENCBACE => 6;
+
+    public static int NUM_REGISTERS_ENCBASE => 2;
+
+    public static int NUM_STACK_SLOTS_ENCBASE => 2;
+
+    public static int NUM_UNTRACKED_SLOTS_ENCBASE => 1;
+
+    public static int REGISTER_ENCBASE => 3;
+
+    public static int REGISTER_DELTA_ENCBASE => 2;
+
+    public static int STACK_SLOT_ENCBASE => 6;
+
+    public static int STACK_SLOT_DELTA_ENCBASE => 4;
 }

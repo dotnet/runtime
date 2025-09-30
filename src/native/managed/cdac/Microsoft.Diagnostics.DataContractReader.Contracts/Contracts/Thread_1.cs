@@ -155,10 +155,10 @@ internal readonly struct Thread_1 : IThread
         return threadLocalStaticBase;
     }
 
-    bool IThread.IsInStackRegionUnwoundBySpecifiedException(ThreadData threadData, TargetPointer stackPointer)
+    bool IThread.IsInStackRegionUnwoundBySpecifiedException(TargetPointer threadAddress, TargetPointer stackPointer)
     {
         // See ExInfo::IsInStackRegionUnwoundBySpecifiedException for explanation
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.threadAddress);
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadAddress);
         TargetPointer exInfo = thread.ExceptionTracker;
         while (exInfo != TargetPointer.Null)
         {

@@ -105,16 +105,25 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
-CDAC_TYPE_FIELD(ExceptionFlags, /*uint32*/, ExceptionFlags, offsetof(ExInfo, m_ExceptionFlags.m_flags))
-CDAC_TYPE_FIELD(StackLowBound, /*pointer*/, StackLowBound, cdac_data<ExInfo>::StackLowBound)
-CDAC_TYPE_FIELD(StackHighBound, /*pointer*/, StackHighBound, cdac_data<ExInfo>::StackHighBound)
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint32*/, ExceptionFlags, offsetof(ExInfo, m_ExceptionFlags.m_flags))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, StackLowBound, cdac_data<ExInfo>::StackLowBound)
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, StackHighBound, cdac_data<ExInfo>::StackHighBound)
 #ifndef TARGET_UNIX
-CDAC_TYPE_FIELD(ExceptionWatsonBucketTrackerBuckets, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
 #endif // TARGET_UNIX
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint8*/, PassNumber, offsetof(ExInfo, m_passNumber))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEHClause, offsetof(ExInfo, m_csfEHClause))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEnclosingClause, offsetof(ExInfo, m_csfEnclosingClause))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CallerOfActualHandlerFrame, offsetof(ExInfo, m_sfCallerOfActualHandlerFrame))
+CDAC_TYPE_FIELD(ExceptionInfo, /*LastReportedFuncletInfo*/, LastReportedFuncletInfo, offsetof(ExInfo, m_lastReportedFunclet))
 CDAC_TYPE_END(ExceptionInfo)
 
+CDAC_TYPE_BEGIN(LastReportedFuncletInfo)
+CDAC_TYPE_INDETERMINATE(LastReportedFuncletInfo)
+CDAC_TYPE_FIELD(LastReportedFuncletInfo, /*PCODE*/, IP, offsetof(LastReportedFuncletInfo, IP))
+CDAC_TYPE_END(LastReportedFuncletInfo)
 
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
@@ -581,9 +590,9 @@ CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, Size, offsetof(IMAGE_DATA_DIRECT
 CDAC_TYPE_END(ImageDataDirectory)
 
 CDAC_TYPE_BEGIN(CorCompileExceptionLookupEntry)
-CDAC_TYPE_SIZE(sizeof(CORCOMPILE_EXCEPTION_LOOKUP_ENTRY))
-CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, MethodStartRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_ENTRY, MethodStartRVA))
-CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, ExceptionInfoRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_ENTRY, ExceptionInfoRVA))
+CDAC_TYPE_SIZE(sizeof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY))
+CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, MethodStartRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY, MethodStartRVA))
+CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, ExceptionInfoRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY, ExceptionInfoRVA))
 CDAC_TYPE_END(CorCompileExceptionLookupEntry)
 
 CDAC_TYPE_BEGIN(RuntimeFunction)

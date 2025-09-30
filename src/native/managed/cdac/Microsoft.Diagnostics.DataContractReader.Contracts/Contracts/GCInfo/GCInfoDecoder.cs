@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Xml.Linq;
 using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -65,24 +64,27 @@ internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTra
 
         /* Shared fields */
         public readonly GcSlotFlags Flags;
+        public readonly bool IsRegister;
 
-        private GcSlotDesc(uint registerNumber, int spOffset, GcStackSlotBase slotBase, GcSlotFlags flags)
+        private GcSlotDesc(uint registerNumber, int spOffset, GcStackSlotBase slotBase, GcSlotFlags flags, bool isRegister = false)
         {
             RegisterNumber = registerNumber;
             SpOffset = spOffset;
             Base = slotBase;
             Flags = flags;
+            IsRegister = isRegister;
         }
 
         public static GcSlotDesc CreateRegisterSlot(uint registerNumber, GcSlotFlags flags)
-            => new GcSlotDesc(registerNumber, 0, 0, flags);
+            => new GcSlotDesc(registerNumber, 0, 0, flags, isRegister: true);
 
         public static GcSlotDesc CreateStackSlot(int spOffset, GcStackSlotBase slotBase, GcSlotFlags flags)
-            => new GcSlotDesc(0, spOffset, slotBase, flags);
+            => new GcSlotDesc(0, spOffset, slotBase, flags, isRegister: false);
     }
 
     private readonly Target _target;
-    private readonly GCInfoToken _token;
+    private readonly TargetPointer _pGcInfo;
+    private readonly uint _gcVersion;
     private readonly NativeReader _reader;
     private readonly RuntimeInfoArchitecture _arch;
     private readonly bool PartiallyInterruptibleGCSupported = true;
@@ -112,12 +114,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTra
     private uint _numSlots;
     private List<GcSlotDesc> _slots = [];
 
-    public GcInfoDecoder(Target target, GCInfoToken token)
+    public GcInfoDecoder(Target target, TargetPointer gcInfoAddress, uint gcVersion)
     {
         _target = target;
-        _token = token;
+        _pGcInfo = gcInfoAddress;
+        _gcVersion = gcVersion;
 
-        TargetStream targetStream = new TargetStream(_target, _token.Address, /*arbitrary*/ 10000);
+        TargetStream targetStream = new TargetStream(_target, _pGcInfo, /*arbitrary*/ 10000);
         _reader = new NativeReader(targetStream, _target.IsLittleEndian);
 
         _arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
