@@ -28,7 +28,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     {
         var result = new SortedDictionary<string, bool>()
         {
-            { "dotnet.d.ts", false },
             { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
@@ -40,6 +39,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js", true },
             { "dotnet.diagnostics.js.map", false },
         };
+
+        if (assertOptions.BuildOptions.WasmEmitTypeScriptDefinitions)
+        {
+            result["dotnet.d.ts"] = false;
+        }
 
         if ((assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js")) ?? false)
             result[assertOptions.BuildOptions.BootConfigFileName] = true;
@@ -54,12 +58,16 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     {
         SortedSet<string> res = new()
         {
-           "dotnet.d.ts",
            "dotnet.js",
            "dotnet.native.wasm",
            "dotnet.native.js",
            "dotnet.runtime.js",
         };
+        
+        if (assertOptions.BuildOptions.WasmEmitTypeScriptDefinitions)
+        {
+            res.Add("dotnet.d.ts");
+        }
         if (assertOptions.BuildOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
             res.Add("dotnet.native.worker.mjs");

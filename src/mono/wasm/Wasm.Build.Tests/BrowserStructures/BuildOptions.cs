@@ -26,7 +26,8 @@ public record BuildOptions : MSBuildOptions
         string? BootConfigFileName                                   = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
-        bool EnableDiagnostics                                      = false
+        bool EnableDiagnostics                                      = false,
+        bool WasmEmitTypeScriptDefinitions                          = false
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,
@@ -44,7 +45,8 @@ public record BuildOptions : MSBuildOptions
         BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        EnableDiagnostics
+        EnableDiagnostics,
+        WasmEmitTypeScriptDefinitions
     )
     {
     }

@@ -98,7 +98,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Static Web Assets -->
     <ResolveStaticWebAssetsInputsDependsOn>
       $(ResolveStaticWebAssetsInputsDependsOn);
-      _EnsureDotnetTypeScriptDefinitions;
       _AddWasmStaticWebAssets;
     </ResolveStaticWebAssetsInputsDependsOn>
     <ResolvePublishStaticWebAssetsDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
@@ -273,6 +272,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
+      EmitTypeScriptDefinitions="$(WasmEmitTypeScriptDefinitions)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
     >
@@ -624,6 +624,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
+      EmitTypeScriptDefinitions="$(WasmEmitTypeScriptDefinitions)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
     >
@@ -858,8 +859,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience -->
-  <Target Name="_EnsureDotnetTypeScriptDefinitions">
+  <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
+  <Target Name="_EnsureDotnetTypeScriptDefinitions" 
+          AfterTargets="Restore" 
+          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>

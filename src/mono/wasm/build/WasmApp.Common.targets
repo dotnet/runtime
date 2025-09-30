@@ -93,6 +93,8 @@
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
+      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the output. 
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -189,6 +191,7 @@
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
     <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
+    <WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</WasmEmitTypeScriptDefinitions>
 
     <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
          So, we need to escape it here, so the paths don't get split up when converting
