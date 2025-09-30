@@ -7,6 +7,8 @@
 #include "gcenv.h"
 #include "interpexec.h"
 #include "frames.h"
+#include "virtualcallstub.h"
+#include "comdelegate.h"
 
 // for numeric_limits
 #include <limits>
@@ -17,6 +19,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target);
+extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
@@ -2457,19 +2460,44 @@ MAIN_LOOP:
 
                     ip += 4;
 
-                    DELEGATEREF delegateObj = LOCAL_VAR(callArgsOffset, DELEGATEREF);
+                    DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(delegateObj);
-                    PCODE targetAddress = delegateObj->GetMethodPtr();
-                    DelegateEEClass *pDelClass = (DelegateEEClass*)delegateObj->GetMethodTable()->GetClass();
+                    PCODE targetAddress = (*delegateObj)->GetMethodPtr();
+                    DelegateEEClass *pDelClass = (DelegateEEClass*)(*delegateObj)->GetMethodTable()->GetClass();
                     if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
                         (pDelClass->m_pStaticCallStub != NULL && pDelClass->m_pStaticCallStub->GetEntryPoint() == targetAddress))
                     {
                         // This implies that we're using a delegate shuffle thunk to strip off the first parameter to the method
                         // and call the actual underlying method. We allow for tail-calls to work and for greater efficiency in the
                         // interpreter by skipping the shuffle thunk and calling the actual target method directly.
-                        PCODE actualTarget = delegateObj->GetMethodPtrAux();
+                        PCODE actualTarget = (*delegateObj)->GetMethodPtrAux();
+
+                        // Detect open virtual dispatch scenario
+                        bool isOpenVirtual = false;
+                        INTERFACE_DISPATCH_CACHED_OR_VSD(
+                            if (actualTarget == (PCODE)CID_VirtualOpenDelegateDispatch)
+                            {
+                                isOpenVirtual = true;
+                            },
+                            if (VirtualCallStubManager::isStubStatic(actualTarget))
+                            {
+                                isOpenVirtual = true;
+                            }
+                        );
+
+                        if (isOpenVirtual)
+                        {
+                            targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
+                            targetMethod = targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                            // GetMethodDescOfVirtualizedCode will invalidate delegateObj as it is a method which may trigger a GC
+                        }
+                        else
+                        {
+                            targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
+                        }
+
                         PTR_InterpByteCodeStart targetIp;
-                        if ((targetMethod = NonVirtualEntry2MethodDesc(actualTarget)) && (targetIp = targetMethod->GetInterpreterCode()) != NULL)
+                        if ((targetMethod) && (targetIp = targetMethod->GetInterpreterCode()) != NULL)
                         {
                             pFrame->ip = ip;
                             InterpMethod* pTargetMethod = targetIp->Method;
@@ -2512,7 +2540,7 @@ MAIN_LOOP:
                         }
                     }
                     
-                    OBJECTREF targetMethodObj = delegateObj->GetTarget();
+                    OBJECTREF targetMethodObj = (*delegateObj)->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
                     
                     if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
