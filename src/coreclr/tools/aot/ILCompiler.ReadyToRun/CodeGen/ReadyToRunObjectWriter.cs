@@ -57,9 +57,9 @@ namespace ILCompiler.DependencyAnalysis
         private readonly IReadOnlyCollection<DependencyNode> _nodes;
 
         /// <summary>
-        /// Builder to collect information from executable generation for auxiliary files (map, profile, or symbol files).
+        /// Set to non-null when generating symbol info or profile info.
         /// </summary>
-        private readonly OutputInfoBuilder _outputInfoBuilder = new();
+        private readonly OutputInfoBuilder _outputInfoBuilder;
 
         /// <summary>
         /// Set to non-null when the executable generator should output a map file.
@@ -171,6 +171,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (generateMap || generateSymbols || generateProfileFile)
             {
+                _outputInfoBuilder = new OutputInfoBuilder();
                 if (generateMap)
                 {
                     _mapFileBuilder = new MapFileBuilder(_outputInfoBuilder);
@@ -202,17 +203,23 @@ namespace ILCompiler.DependencyAnalysis
                 using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
                 objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
 
-                foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
-                    _outputInfoBuilder.AddMethod(methodNode, methodNode);
+                if (_outputInfoBuilder is not null)
+                {
+                    foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
+                        _outputInfoBuilder.AddMethod(methodNode, methodNode);
+                }
 
                 if (_mapFileBuilder != null)
                 {
                     _mapFileBuilder.SetFileSize(stream.Length);
                 }
 
-                foreach (string inputFile in _inputFiles)
+                if (_outputInfoBuilder is not null)
                 {
-                    _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                    }
                 }
 
                 if (_generateMapFile)
