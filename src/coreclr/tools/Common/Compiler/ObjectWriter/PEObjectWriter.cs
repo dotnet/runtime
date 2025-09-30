@@ -444,7 +444,8 @@ namespace ILCompiler.ObjectWriter
 
                 if (recordFinalLayout)
                 {
-                    _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, h.SizeOfRawData));
+                    // Use the stream length so we don't include any space that's appended just for alignment purposes.
+                    _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, (uint)s.Stream.Length));
                 }
             }
 
