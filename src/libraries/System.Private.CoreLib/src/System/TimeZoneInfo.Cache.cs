@@ -733,14 +733,14 @@ namespace System
                                 // Previous year has two transition periods. One start from the year beginning while the second go through the end of the year
                                 //
 
-                                long previousEndOfYearUtcTicks = new DateTime(year, 1, 1).Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks + previousRule.DaylightDelta.Ticks) - 2;
+                                long previousEndOfYearUtcTicks = new DateTime(year, 1, 1).Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks + previousRule.DaylightDelta.Ticks) - 1;
                                 DateTime previousEndOfYearUtc = SafeCreateDateTimeFromTicks(previousEndOfYearUtcTicks, DateTimeKind.Utc);
 
-                                if (previousEndOfYearUtc.Ticks <= rule.DateStart.Ticks - 1)
+                                if (previousEndOfYearUtc.Ticks < rule.DateStart.Ticks - 1)
                                 {
                                     // Gap between the end of the last year and current year transition start. no daylight
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(previousEndOfYearUtc, SafeCreateDateTimeFromTicks(rule.DateStart.Ticks - 1), rule.BaseUtcOffsetDelta, false));
+                                        new TimeTransition(SafeCreateDateTimeFromTicks(previousEndOfYearUtc.Ticks + 1), SafeCreateDateTimeFromTicks(rule.DateStart.Ticks - 1), rule.BaseUtcOffsetDelta, false));
                                 }
 
                                 // The daylight start should be around the end of the year and go through the end
