@@ -9,15 +9,17 @@ namespace System.IO.Compression
     public sealed partial class ZstandardCompressionOptions
     {
         public ZstandardCompressionOptions() { }
-        public ZstandardCompressionOptions(int quality) { }
-        public ZstandardCompressionOptions(System.IO.Compression.CompressionLevel level) { }
-        public ZstandardCompressionOptions(System.IO.Compression.ZstandardDictionary dictionary) { }
         public static int DefaultQuality { get { throw null; } }
         public static int DefaultWindow { get { throw null; } }
-        public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } }
+        public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
+        public bool EnableChecksum { get { throw null; } set { } }
+        public bool EnableLongDistanceMatching { get { throw null; } set { } }
         public static int MaxQuality { get { throw null; } }
+        public static int MaxWindow { get { throw null; } }
         public static int MinQuality { get { throw null; } }
-        public int Quality { get { throw null; } }
+        public static int MinWindow { get { throw null; } }
+        public int Quality { get { throw null; } set { } }
+        public int Window { get { throw null; } set { } }
     }
     public partial struct ZstandardDecoder : System.IDisposable
     {
@@ -43,6 +45,7 @@ namespace System.IO.Compression
         private object _dummy;
         private int _dummyPrimitive;
         public ZstandardEncoder(int quality, int window) { throw null; }
+        public ZstandardEncoder(System.IO.Compression.ZstandardCompressionOptions options) { throw null; }
         public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary, int window) { throw null; }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }

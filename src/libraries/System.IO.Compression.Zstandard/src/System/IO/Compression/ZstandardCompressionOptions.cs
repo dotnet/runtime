@@ -18,42 +18,15 @@ namespace System.IO.Compression
         /// <summary>The default window size to use for Zstandard compression.</summary>
         public static int DefaultWindow => ZstandardUtils.WindowBits_Default;
 
+        /// <summary>The minimum window size to use for Zstandard compression.</summary>
+        public static int MinWindow => ZstandardUtils.WindowBits_Min;
+
+        /// <summary>The maximum window size to use for Zstandard compression.</summary>
+        public static int MaxWindow => ZstandardUtils.WindowBits_Max;
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class.</summary>
         public ZstandardCompressionOptions()
         {
-            Quality = DefaultQuality;
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class with the specified compression level.</summary>
-        /// <param name="level">One of the enumeration values that indicates whether to emphasize speed or compression efficiency.</param>
-        public ZstandardCompressionOptions(CompressionLevel level) : this(ZstandardUtils.GetQualityFromCompressionLevel(level))
-        {
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class with the specified dictionary.</summary>
-        /// <param name="dictionary">The compression dictionary to use.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        public ZstandardCompressionOptions(ZstandardDictionary dictionary)
-        {
-            ArgumentNullException.ThrowIfNull(dictionary);
-
-            if (dictionary.CompressionDictionary is null)
-            {
-                throw new ArgumentException(SR.ZstandardEncoder_InvalidDictionary);
-            }
-
-            Dictionary = dictionary;
-            Quality = dictionary.CompressionDictionary.Quality;
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class with the specified quality.</summary>
-        /// <param name="quality">The compression quality level.</param>
-        /// <exception cref="ArgumentOutOfRangeException">The quality is less than <see cref="MinQuality"/> or greater than <see cref="MaxQuality"/>.</exception>
-        public ZstandardCompressionOptions(int quality)
-        {
-            if (quality < MinQuality || quality > MaxQuality)
-                throw new ArgumentOutOfRangeException(nameof(quality), $"Quality must be between {MinQuality} and {MaxQuality}.");
-            Quality = quality;
         }
 
         /// <summary>Gets the compression quality to use for Zstandard compression.</summary>
@@ -64,10 +37,20 @@ namespace System.IO.Compression
         /// Values 1-22 are normal compression levels, with <see cref="DefaultQuality"/> being the default.
         /// Values 20-22 require more memory and should be used with caution.
         /// </remarks>
-        public int Quality { get; }
+        public int Quality { get; set; }
 
-        /// <summary>Gets the dictionary to use for compression.</summary>
+        /// <summary>Gets the window size to use for Zstandard compression.</summary>
+        /// <value>The window size for compression.</value>
+        public int Window { get; set; }
+
+        /// <summary>If enabled, will append a 32-bit checksum at the end of the compressed data.</summary>
+        public bool EnableChecksum { get; set; }
+
+        /// <summary>Gets the dictionary to use for compression. If set, the quality specified during dictionary creation will take precedence over the <see cref="Quality"/> property.</summary>
         /// <value>The compression dictionary, or null if no dictionary is used.</value>
-        public ZstandardDictionary? Dictionary { get; }
+        public ZstandardDictionary? Dictionary { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether long distance matching is enabled. This may improve compression ratios for large files at the cost of larger memory usage.</summary>
+        public bool EnableLongDistanceMatching { get; set; }
     }
 }

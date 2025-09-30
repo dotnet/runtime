@@ -14,7 +14,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new ZstandardStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new ZstandardStream(stream, level, leaveOpen);
         public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) =>
-            new ZstandardStream(stream, options == null ? null : new ZstandardCompressionOptions(options.CompressionLevel), leaveOpen);
+            new ZstandardStream(stream, options == null ? null : new ZstandardCompressionOptions { Quality = options.CompressionLevel }, leaveOpen);
 
         public override Stream BaseStream(Stream stream) => ((ZstandardStream)stream).BaseStream;
 
