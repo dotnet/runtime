@@ -13,6 +13,7 @@ namespace System.Runtime.Caching.Configuration
     {
         internal const string CacheMemoryLimitMegabytes = "cacheMemoryLimitMegabytes";
         internal const string PhysicalMemoryLimitPercentage = "physicalMemoryLimitPercentage";
+        internal const string PhysicalMemoryMode = "physicalMemoryMode";
         internal const string PollingInterval = "pollingInterval";
         internal const string UseMemoryCacheManager = "useMemoryCacheManager";
         internal const string ThrowOnDisposed = "throwOnDisposed";
@@ -92,6 +93,44 @@ namespace System.Runtime.Caching.Configuration
             }
 
             return bValue;
+        }
+
+        internal static string GetStringValue(NameValueCollection config, string valueName, string defaultValue)
+        {
+            string sValue = config[valueName];
+            return sValue ?? defaultValue;
+        }
+
+        internal static void ParsePhysicalMemoryMode(string rawValue, out PhysicalMemoryMode parsedMode, out long? parsedMemoryBytes)
+        {
+            string[] parts = rawValue.Split(':');
+
+            // Parse the mode part - This part is required
+            if (!Enum.TryParse<PhysicalMemoryMode>(parts[0], true, out PhysicalMemoryMode mode))
+            {
+                // Ugly hack until we can add a new localized exception message for this.
+                var msgFormat = new InvalidEnumArgumentException(ConfigUtil.PhysicalMemoryMode, -999, typeof(PhysicalMemoryMode));
+                throw new ArgumentException(msgFormat.Message.Replace("-999", parts[0]));
+            }
+
+            parsedMode = mode;
+            parsedMemoryBytes = null;
+
+            // Parse the optional memory bytes part
+            if (parts.Length > 1)
+            {
+                if (parts.Length > 2)
+                {
+                    throw new ArgumentException(null, ConfigUtil.PhysicalMemoryMode);
+                }
+
+                if (!long.TryParse(parts[1], out long memoryBytes) || memoryBytes < 0)
+                {
+                    throw new ArgumentException(RH.Format(SR.Argument_out_of_range, ConfigUtil.PhysicalMemoryMode, 0, long.MaxValue));
+                }
+
+                parsedMemoryBytes = memoryBytes;
+            }
         }
     }
 }
