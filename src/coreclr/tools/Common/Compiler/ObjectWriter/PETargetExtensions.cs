@@ -27,7 +27,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal static class PEHeaderConstants
     {
-        public const int SectionAlignment = 0x1000;
+        public const uint SectionAlignment = 0x1000;
 
         public const byte MajorLinkerVersion = 11;
         public const byte MinorLinkerVersion = 0;

@@ -100,7 +100,7 @@ namespace ILCompiler.ObjectWriter
                 }
             };
 
-            if (section == DebugTypesSection)
+            if (section == DebugTypesSection || section == ObjectNodeSection.DebugDirectorySection)
             {
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |

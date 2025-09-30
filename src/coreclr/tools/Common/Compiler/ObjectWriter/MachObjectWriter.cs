@@ -154,7 +154,10 @@ namespace ILCompiler.ObjectWriter
 
                 segmentSize = Math.Max(segmentSize, virtualAddress);
 
-                _outputSectionLayout.Add(new OutputSection($"{section.SectionName}{section.SegmentName}", section.VirtualAddress, section.FileOffset, (ulong)section.Stream.Length));
+                if (recordFinalLayout)
+                {
+                    _outputSectionLayout.Add(new OutputSection($"{section.SectionName}{section.SegmentName}", section.VirtualAddress, section.FileOffset, (ulong)section.Stream.Length));
+                }
             }
 
             // ...and the relocation tables

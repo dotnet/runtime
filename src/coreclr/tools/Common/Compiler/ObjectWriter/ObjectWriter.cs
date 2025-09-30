@@ -22,7 +22,7 @@ namespace ILCompiler.ObjectWriter
     {
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
-        private protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
+        private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
 
         private protected readonly NodeFactory _nodeFactory;
         private protected readonly ObjectWritingOptions _options;
@@ -36,12 +36,11 @@ namespace ILCompiler.ObjectWriter
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
         private readonly List<SectionData> _sectionIndexToData = new();
-        protected readonly List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
+        private readonly List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
         private protected readonly List<OutputSection> _outputSectionLayout = [];
 
         // Symbol table
         private readonly Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
-
 
         private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
         {
