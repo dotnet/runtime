@@ -32,7 +32,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public void SetDictionary(SafeZstdCDictHandle dictionary)
         {
-            Debug.Assert(_dictionary != null);
+            Debug.Assert(_dictionary == null);
             Debug.Assert(dictionary != null);
 
             bool added = false;
@@ -119,7 +119,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public void SetDictionary(SafeZstdDDictHandle dictionary)
         {
-            Debug.Assert(_dictionary != null);
+            Debug.Assert(_dictionary == null);
             Debug.Assert(dictionary != null);
 
             bool added = false;
