@@ -1307,7 +1307,7 @@ struct CallersDataWithStackMark
     }
     StackCrawlMark* const stackMark;
 #ifdef FEATURE_INTERPRETER
-    PTR_VOID stackMarkOnOSStack;
+    PTR_VOID const stackMarkOnOSStack;
 #endif
     PTR_VOID GetStackMarkPointerToCheckAgainstStack()
     {
