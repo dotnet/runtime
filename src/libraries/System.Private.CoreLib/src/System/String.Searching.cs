@@ -104,23 +104,31 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
 
+            int subIndex;
+
             if (!char.IsAscii(value))
             {
-                return Ordinal.IndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
+                subIndex = Ordinal.IndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
             }
-
-            ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
-
-            if (char.IsAsciiLetter(value))
+            else
             {
-                char valueLc = (char)(value | 0x20);
-                char valueUc = (char)(value & ~0x20);
-                return PackedSpanHelpers.PackedIndexOfIsSupported
-                    ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref startChar, valueLc, count)
-                    : SpanHelpers.IndexOfAnyChar(ref startChar, valueLc, valueUc, count);
+                ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
+
+                if (char.IsAsciiLetter(value))
+                {
+                    char valueLc = (char)(value | 0x20);
+                    char valueUc = (char)(value & ~0x20);
+                    subIndex = PackedSpanHelpers.PackedIndexOfIsSupported
+                        ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref startChar, valueLc, count)
+                        : SpanHelpers.IndexOfAnyChar(ref startChar, valueLc, valueUc, count);
+                }
+                else
+                {
+                    subIndex = SpanHelpers.IndexOfChar(ref startChar, value, count);
+                }
             }
 
-            return SpanHelpers.IndexOfChar(ref startChar, value, count);
+            return subIndex < 0 ? subIndex : startIndex + subIndex;
         }
 
         public int IndexOf(char value, int startIndex, int count)
@@ -504,26 +512,34 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex - (startIndex + 1));
 
+            int subIndex;
+
             if (!char.IsAscii(value))
             {
-                return Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
+                subIndex = Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
             }
-
-            ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
-
-            if (char.IsAsciiLetter(value))
+            else
             {
-                char valueLc = (char)(value | 0x20);
-                char valueUc = (char)(value & ~0x20);
-                /*
-                 * Potential optimization possible here if there was a
-                 * PackedSpanHelpers.LastIndexOfAnyIgnoreCase(ref startChar, valueLc, count)
-                 * method, which would be complex to implement
-                 */
-                return SpanHelpers.LastIndexOfAnyChar(ref startChar, valueLc, valueUc, count);
+                ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
+
+                if (char.IsAsciiLetter(value))
+                {
+                    char valueLc = (char)(value | 0x20);
+                    char valueUc = (char)(value & ~0x20);
+                    /*
+                     * Potential optimization possible here if there was a
+                     * PackedSpanHelpers.LastIndexOfAnyIgnoreCase(ref startChar, valueLc, count)
+                     * method, which would be complex to implement
+                     */
+                    subIndex = SpanHelpers.LastIndexOfAnyChar(ref startChar, valueLc, valueUc, count);
+                }
+                else
+                {
+                    subIndex = SpanHelpers.LastIndexOfChar(ref startChar, value, count);
+                }
             }
 
-            return SpanHelpers.LastIndexOfChar(ref startChar, value, count);
+            return subIndex < 0 ? subIndex : startIndex + subIndex;
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
