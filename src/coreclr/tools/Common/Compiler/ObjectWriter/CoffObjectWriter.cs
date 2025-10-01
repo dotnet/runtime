@@ -486,6 +486,11 @@ namespace ILCompiler.ObjectWriter
                 0xAF, 0x20, 0xFA, 0xF6, 0x6A, 0xA4, 0xDC, 0xB8,
             ];
 
+            public static int TimeDateStampOffset(bool bigObj)
+            {
+                return bigObj ? 8 : 4;
+            }
+
             private const int RegularSize =
                 sizeof(ushort) + // Machine
                 sizeof(ushort) + // NumberOfSections

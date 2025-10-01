@@ -1063,6 +1063,10 @@ namespace ILCompiler.DependencyAnalysis
         public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             isHidden = false;
+            if (node == Header)
+            {
+                return "RTR_HEADER";
+            }
             return null;
         }
     }

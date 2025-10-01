@@ -199,7 +199,25 @@ namespace ILCompiler.DependencyAnalysis
 
                 Debug.Assert(format == ReadyToRunContainerFormat.PE);
 
-                PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _customPESectionAlignment, _outputInfoBuilder);
+                int? timeDateStamp;
+
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                {
+                    timeDateStamp = null;
+                }
+                else
+                {
+                    PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
+                    timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
+                }
+
+                PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, _objectFilePath, _customPESectionAlignment, timeDateStamp);
+
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                {
+                    objectWriter.AddExportedSymbol("RTR_HEADER");
+                }
+
                 using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
                 objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
 

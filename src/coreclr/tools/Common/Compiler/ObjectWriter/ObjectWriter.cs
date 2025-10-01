@@ -23,6 +23,7 @@ namespace ILCompiler.ObjectWriter
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
         private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
+        private protected sealed record ChecksumsToCalculate(int SectionIndex, long Offset, Relocation[] ChecksumRelocations);
 
         private protected readonly NodeFactory _nodeFactory;
         private protected readonly ObjectWritingOptions _options;
@@ -330,7 +331,7 @@ namespace ILCompiler.ObjectWriter
 
             List<ISymbolRangeNode> symbolRangeNodes = [];
             List<BlockToRelocate> blocksToRelocate = [];
-            List<BlockToRelocate> checksumRelocations = [];
+            List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
                 if (depNode is ISymbolRangeNode symbolRange)
@@ -536,7 +537,7 @@ namespace ILCompiler.ObjectWriter
                         HandleControlFlowForRelocation(relocTarget, relocSymbolName);
                     }
                 }
-                checksumRelocations.Add(blockToRelocate with { Relocations = checksumRelocationsBuilder.ToArray() });
+                checksumRelocations.Add(new ChecksumsToCalculate(blockToRelocate.SectionIndex, blockToRelocate.Offset, checksumRelocationsBuilder.ToArray()));
             }
             blocksToRelocate.Clear();
 
@@ -572,16 +573,20 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitChecksums(Stream outputFileStream, List<BlockToRelocate> checksumRelocations)
+        private void EmitChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
             MemoryStream originalOutputStream = new();
             outputFileStream.Seek(0, SeekOrigin.Begin);
             outputFileStream.CopyTo(originalOutputStream);
             byte[] originalOutput = originalOutputStream.ToArray();
+            EmitChecksumsForObject(outputFileStream, checksumRelocations, originalOutput);
+        }
 
+        private protected virtual void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
+        {
             foreach (var block in checksumRelocations)
             {
-                foreach (var reloc in block.Relocations)
+                foreach (var reloc in block.ChecksumRelocations)
                 {
                     IChecksumNode checksum = (IChecksumNode)reloc.Target;
 

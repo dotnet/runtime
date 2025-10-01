@@ -8,7 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Security.Cryptography;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
@@ -53,7 +55,9 @@ namespace ILCompiler.ObjectWriter
 
         private uint _peSectionAlignment;
         private uint _peFileAlignment;
+        private readonly string _outputPath;
         private readonly int _requestedSectionAlignment;
+        private readonly int? _coffTimestamp;
 
         // Relocations that we can resolve at emit time (ie not file-based relocations).
         private Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = [];
@@ -69,11 +73,14 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<string, SymbolDefinition> _definedSymbols = [];
 
         private HashSet<string> _exportedSymbolNames = new();
+        private long _coffHeaderOffset;
 
-        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, int sectionAlignment, OutputInfoBuilder outputInfoBuilder)
+        public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string outputPath, int sectionAlignment, int? coffTimestamp)
             : base(factory, options, outputInfoBuilder)
         {
+            _outputPath = outputPath;
             _requestedSectionAlignment = sectionAlignment;
+            _coffTimestamp = coffTimestamp;
         }
 
         public void AddExportedSymbol(string symbol)
@@ -499,7 +506,7 @@ namespace ILCompiler.ObjectWriter
             List<string> exports = [.._exportedSymbolNames];
 
             exports.Sort(StringComparer.Ordinal);
-            string moduleName = "UNKNOWN";
+            string moduleName = Path.GetFileName(_outputPath);
             const int minOrdinal = 1;
             int count = exports.Count;
             int maxOrdinal = minOrdinal + count - 1;
@@ -623,7 +630,6 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(DosHeader.Length == DosHeaderSize);
             outputFileStream.Write("PE\0\0"u8);
 
-
             bool isPE32Plus = _nodeFactory.Target.PointerSize == 8;
             ushort sizeOfOptionalHeader = (ushort)(isPE32Plus ? 0xF0 : 0xE0);
 
@@ -642,12 +648,14 @@ namespace ILCompiler.ObjectWriter
             {
                 Machine = machine,
                 NumberOfSections = (uint)numberOfSections,
-                TimeDateStamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), // TODO: Make deterministic
+                TimeDateStamp = (uint)(_coffTimestamp ?? 0),
                 PointerToSymbolTable = 0,
                 NumberOfSymbols = 0,
                 SizeOfOptionalHeader = sizeOfOptionalHeader,
                 Characteristics = characteristics,
             };
+
+            _coffHeaderOffset = outputFileStream.Position;
 
             coffHeader.Write(outputFileStream);
 
@@ -754,9 +762,19 @@ namespace ILCompiler.ObjectWriter
             // Align the output file size with the image (including trailing padding for section and file alignment).
             Debug.Assert(outputFileStream.Position <= sizeOfImage);
             outputFileStream.SetLength(sizeOfImage);
+        }
 
-            // TODO: calculate PE checksum
-            // TODO: calculate deterministic timestamp
+        private protected override void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
+        {
+            base.EmitChecksumsForObject(outputFileStream, checksumRelocations, originalOutput);
+
+            if (_coffTimestamp is null)
+            {
+                // If we were not provided a deterministic timestamp, generate one from a hash of the content.
+                outputFileStream.Seek(_coffHeaderOffset + CoffHeader.TimeDateStampOffset(bigObj: false), SeekOrigin.Begin);
+                using BinaryWriter writer = new(outputFileStream, Encoding.UTF8, leaveOpen: true);
+                writer.Write(BlobContentId.FromHash(SHA256.HashData(originalOutput)).Stamp);
+            }
         }
 
         private unsafe void ResolveNonImageBaseRelocations(int sectionIndex, List<SymbolicRelocation> symbolicRelocations, MemoryStream stream)
