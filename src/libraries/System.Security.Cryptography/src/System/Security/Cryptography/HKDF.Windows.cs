@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             Span<byte> prk)
         {
-            // Windows does not clearly have a way to perform just the Extact step from HKDF.
+            // Windows does not clearly have a way to perform just the Extact step from HKDF. So used managed, for now.
             HKDFManagedImplementation.Extract(hashAlgorithmName, ikm, salt, prk);
         }
 
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography
             Span<byte> output,
             ReadOnlySpan<byte> info)
         {
-            if (s_hasCngImplementation && !IsAlgorithmCngDoesNotSupport(hashAlgorithmName))
+            if (s_hasCngImplementation && !IsAlgorithmRequiringManagedFallback(hashAlgorithmName))
             {
                 CngDeriveKey(
                     hashAlgorithmName,
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             ReadOnlySpan<byte> info)
         {
-            if (s_hasCngImplementation && !IsAlgorithmCngDoesNotSupport(hashAlgorithmName))
+            if (s_hasCngImplementation && !IsAlgorithmRequiringManagedFallback(hashAlgorithmName))
             {
                 CngDeriveKey(
                     hashAlgorithmName,
@@ -81,20 +81,32 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static bool IsAlgorithmCngDoesNotSupport(HashAlgorithmName hashAlgorithmName)
+        private static bool IsAlgorithmRequiringManagedFallback(HashAlgorithmName hashAlgorithmName)
         {
             return hashAlgorithmName == HashAlgorithmName.MD5;
         }
 
+        private static void ThrowIfAlgorithmNotSupported(HashAlgorithmName hashAlgorithmName)
+        {
+            if ((hashAlgorithmName == HashAlgorithmName.SHA3_256 && !SHA3_256.IsSupported) ||
+                (hashAlgorithmName == HashAlgorithmName.SHA3_384 && !SHA3_384.IsSupported) ||
+                (hashAlgorithmName == HashAlgorithmName.SHA3_512 && !SHA3_512.IsSupported))
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         private static unsafe void CngDeriveKey(
-            HashAlgorithmName hashAlgorithm,
+            HashAlgorithmName hashAlgorithmName,
             ReadOnlySpan<byte> keyObject,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> salt,
             Span<byte> destination,
             bool keyObjectIsIkm)
         {
-            Debug.Assert(hashAlgorithm.Name is not null);
+            ThrowIfAlgorithmNotSupported(hashAlgorithmName);
+
+            Debug.Assert(hashAlgorithmName.Name is not null);
             byte[]? rented;
 
             ReadOnlySpan<byte> safeInfo;
@@ -132,7 +144,7 @@ namespace System.Security.Cryptography
                         throw Interop.BCrypt.CreateCryptographicException(status);
                     }
 
-                    Interop.BCrypt.BCryptSetSZProperty(keyHandle, BCRYPT_HKDF_HASH_ALGORITHM, hashAlgorithm.Name);
+                    Interop.BCrypt.BCryptSetSZProperty(keyHandle, BCRYPT_HKDF_HASH_ALGORITHM, hashAlgorithmName.Name);
 
                     if (keyObjectIsIkm)
                     {
