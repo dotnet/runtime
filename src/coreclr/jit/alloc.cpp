@@ -338,7 +338,9 @@ void* operator new(std::size_t size)
 
     void* result = malloc(size);
     if (result == nullptr)
+    {
         throw std::bad_alloc{};
+    }
 
     return result;
 }
@@ -353,7 +355,9 @@ void* operator new[](std::size_t size)
 
     void* result = malloc(size);
     if (result == nullptr)
+    {
         throw std::bad_alloc{};
+    }
 
     return result;
 }
