@@ -11,6 +11,8 @@ export function dotnetInitializeModule(internals) {
     dotnetNativeModuleLoaded = true;
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     dotnetInternals = internals;
-    const runtimeApi = internals[0] = internals[0/*InternalExchangeIndex.RuntimeAPI*/] || {};
-    return createDotnetRuntime(runtimeApi.Module || {});
+    const runtimeApi = internals[0/*InternalExchangeIndex.RuntimeAPI*/];
+    if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+    if (typeof runtimeApi.Module !== "object") throw new Error("Expected internals to have Module");
+    return createDotnetRuntime(runtimeApi.Module);
 }
