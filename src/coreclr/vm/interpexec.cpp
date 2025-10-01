@@ -2502,7 +2502,6 @@ CALL_INTERP_METHOD:
                             if (!pChildFrame)
                             {
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                                pChildFrame = new (pChildFrame) InterpMethodContextFrame();
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
                                 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
@@ -2674,7 +2673,7 @@ CALL_INTERP_METHOD:
                     int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    void* dest = LOCAL_VAR_ADDR(dreg, void);
+                    void** dest = LOCAL_VAR_ADDR(dreg, void*);
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3], &pILTargetMethod);
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
@@ -2682,10 +2681,8 @@ CALL_INTERP_METHOD:
 
                     if (pILTargetMethod != NULL)
                     {
-                        // Leave space for unboxed
-                        callArgsOffset = ALIGN_UP(pMethod->allocaSize + INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
-                        returnOffset = callArgsOffset - INTERP_STACK_SLOT_SIZE;
-                        void* unboxed = LOCAL_VAR_ADDR(returnOffset, void);
+                        callArgsOffset = pMethod->allocaSize;
+                        returnOffset = ip[1];
 
                         // Pass arguments to the target method
                         LOCAL_VAR(callArgsOffset, void*) = pMT;
@@ -2694,21 +2691,26 @@ CALL_INTERP_METHOD:
                         targetMethod = pILTargetMethod;
                         ip += 5;
 
-                        pFrame->delegateBeforeExit = [=]()
-                        {
-                            CopyValueClassUnchecked(dest, *(void**)unboxed, pMT);
-                        };
                         goto CALL_INTERP_METHOD;
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    void *unboxedData = helper(pMT, src);
-                    CopyValueClassUnchecked(dest, unboxedData, pMT);
+                    *dest = helper(pMT, src);
 
                     ip += 5;
                     break;
                 }
+                case INTOP_UNBOX_END:
+                {
+                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[2]];
+                    void *dest = LOCAL_VAR_ADDR(ip[1], void);
+                    void *src = LOCAL_VAR(ip[1], void*);
+                    NULL_CHECK(dest);
+                    CopyValueClassUnchecked(dest, src, pMT);
 
+                    ip += 3;
+                    break;
+                }
                 case INTOP_UNBOX_ANY_GENERIC:
                 {
                     int opcode = *ip;
@@ -3290,7 +3292,6 @@ do                                                                      \
                         if (!pChildFrame)
                         {
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                            pChildFrame = new (pChildFrame) InterpMethodContextFrame();
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
                             // Save the lowest SP in the current method so that we can identify it by that during stackwalk
@@ -3360,12 +3361,6 @@ do                                                                      \
     }
 
 EXIT_FRAME:
-
-    if (pFrame->delegateBeforeExit)
-    {
-        pFrame->delegateBeforeExit();
-        pFrame->delegateBeforeExit = nullptr;
-    }
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
     pThreadContext->frameDataAllocator.PopInfo(pFrame);

@@ -3438,6 +3438,10 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
 
         m_pLastNewIns->SetSVar(arg2);
         m_pLastNewIns->SetDVar(resultVar);
+
+        AddIns(INTOP_UNBOX_END);
+        m_pLastNewIns->data[1] = handleData.dataItemIndex;
+        m_pLastNewIns->SetDVar(resultVar);
     }
 }
 
