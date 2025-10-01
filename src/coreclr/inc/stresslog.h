@@ -227,7 +227,7 @@ public:
     CRITSEC_COOKIE lock;                    // lock
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
-    int64_t  startTime;                     // time the application started
+    uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)
     SIZE_T   moduleOffset;                  // Used to compute format strings.
     struct ModuleDesc
     {
