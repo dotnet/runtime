@@ -8611,18 +8611,18 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pObjMT->IsArray())
         {
+            if (pBaseMT->IsSharedByGenericInstantiations())
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
             // Does the array implicitly implement this interface?
             //
             isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
 
             if (!isArrayImplicitInterface)
             {
-                if (pBaseMT->IsSharedByGenericInstantiations())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                    return false;
-                }
-
                 // Ensure we can cast the array to the interface type
                 //
                 if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
@@ -8651,6 +8651,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 // The instantiation we want is based on the interface element type, not the
                 // array element type.
                 TypeHandle resultElemType = pBaseMT->GetInstantiation()[0];
+                // We should have ruled this out above.
                 _ASSERTE(!resultElemType.IsCanonicalSubtype());
                 pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, resultElemType);
             }
