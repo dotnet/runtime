@@ -472,7 +472,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > source.Length)
+            if (source.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -491,7 +491,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)source.Length)
+            if (source.Length < sizeof(T))
             {
                 value = default;
                 return false;
@@ -511,7 +511,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if ((uint)sizeof(T) > (uint)destination.Length)
+            if (destination.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -530,7 +530,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)destination.Length)
+            if (destination.Length < sizeof(T))
             {
                 return false;
             }
@@ -553,7 +553,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)span.Length)
+            if (span.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -575,7 +575,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             }
-            if (sizeof(T) > (uint)span.Length)
+            if (span.Length < sizeof(T))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }

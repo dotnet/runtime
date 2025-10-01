@@ -609,8 +609,8 @@ namespace System.Text
                 if (bytes >= byteEnd)
                 {
                     // didn't use this char, we'll throw or use buffer
-                    Debug.Assert(fallbackBuffer == null || fallbackHelper.bFallingBack == false, "[SBCSCodePageEncoding.GetBytes]Expected to NOT be falling back");
-                    if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
+                    Debug.Assert(fallbackBuffer == null || !fallbackHelper.bFallingBack, "[SBCSCodePageEncoding.GetBytes]Expected to NOT be falling back");
+                    if (fallbackBuffer == null || !fallbackHelper.bFallingBack)
                     {
                         Debug.Assert(chars > charStart, "[SBCSCodePageEncoding.GetBytes]Expected chars to have advanced (normal)");
                         chars--;                                        // don't use last char
@@ -811,8 +811,7 @@ namespace System.Text
                 }
 
                 // bytes & chars used are the same
-                if (decoder != null)
-                    decoder.m_bytesUsed = (int)(bytes - byteStart);
+                decoder?.m_bytesUsed = (int)(bytes - byteStart);
                 return (int)(chars - charStart);
             }
 
@@ -879,8 +878,7 @@ namespace System.Text
             }
 
             // Might have had decoder fallback stuff.
-            if (decoder != null)
-                decoder.m_bytesUsed = (int)(bytes - byteStart);
+            decoder?.m_bytesUsed = (int)(bytes - byteStart);
 
             // Expect Empty fallback buffer for GetChars
             Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
