@@ -10726,6 +10726,10 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     , m_numInlineTreeNodes(0)
     , m_richOffsetMappings(NULL)
     , m_numRichOffsetMappings(0)
+    , m_asyncInfo(NULL)
+    , m_asyncSuspensionPoints(NULL)
+    , m_asyncContinuationVars(NULL)
+    , m_numAsyncContinuationVars(0)
     , m_gphCache()
 {
     STANDARD_VM_CONTRACT;
@@ -11164,6 +11168,37 @@ void CEECodeGenInfo::reportRichMappings(
     {
         freeArrayInternal(inlineTreeNodes);
         freeArrayInternal(mappings);
+    }
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEECodeGenInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    if (((EECodeGenManager*)m_jitManager)->IsStoringRichDebugInfo())
+    {
+        m_asyncInfo = asyncInfo;
+        m_asyncSuspensionPoints = suspensionPoints;
+        m_asyncContinuationVars = vars;
+        m_numAsyncContinuationVars = numVars;
+    }
+    else
+    {
+        freeArrayInternal(asyncInfo);
+        freeArrayInternal(suspensionPoints);
+        freeArrayInternal(vars);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -15009,6 +15044,16 @@ void CEEInfo::reportRichMappings(
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

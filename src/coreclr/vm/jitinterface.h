@@ -531,11 +531,21 @@ public:
             freeArrayInternal(m_inlineTreeNodes);
         if (m_richOffsetMappings != NULL)
             freeArrayInternal(m_richOffsetMappings);
+        if (m_asyncInfo != NULL)
+            freeArrayInternal(m_asyncInfo);
+        if (m_asyncSuspensionPoints != NULL)
+            freeArrayInternal(m_asyncSuspensionPoints);
+        if (m_asyncContinuationVars != NULL)
+            freeArrayInternal(m_asyncContinuationVars);
 
         m_inlineTreeNodes = NULL;
         m_numInlineTreeNodes = 0;
         m_richOffsetMappings = NULL;
         m_numRichOffsetMappings = 0;
+        m_asyncInfo = NULL;
+        m_asyncSuspensionPoints = NULL;
+        m_asyncContinuationVars = NULL;
+        m_numAsyncContinuationVars = 0;
     }
 
     // ICorDebugInfo stuff.
@@ -561,6 +571,12 @@ public:
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings) override final;
+
+    void reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars) override final;
 
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
@@ -624,6 +640,11 @@ protected:
     ULONG32                           m_numInlineTreeNodes;
     ICorDebugInfo::RichOffsetMapping *m_richOffsetMappings;
     ULONG32                           m_numRichOffsetMappings;
+
+    ICorDebugInfo::AsyncInfo                *m_asyncInfo;
+    ICorDebugInfo::AsyncSuspensionPoint     *m_asyncSuspensionPoints;
+    ICorDebugInfo::AsyncContinuationVarInfo *m_asyncContinuationVars;
+    ULONG32                                  m_numAsyncContinuationVars;
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used

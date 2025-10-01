@@ -1057,6 +1057,19 @@ void MyICJI::reportRichMappings(
     freeArray(mappings);
 }
 
+void MyICJI::reportAsyncDebugInfo(
+    ICorDebugInfo::AsyncInfo*             asyncInfo,
+    ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+    ICorDebugInfo::AsyncContinuationVarInfo* vars,
+    uint32_t                              numVars)
+{
+    jitInstance->mc->cr->AddCall("reportAsyncDebugInfo");
+    // TODO: record async debug info
+    freeArray(asyncInfo);
+    freeArray(suspensionPoints);
+    freeArray(vars);
+}
+
 void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
 {
     jitInstance->mc->cr->AddCall("reportMetadata");
