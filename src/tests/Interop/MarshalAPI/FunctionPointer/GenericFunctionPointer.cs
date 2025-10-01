@@ -114,6 +114,7 @@ public partial class FunctionPtr
     }
 
     [ConditionalFact(nameof(CanRunInvalidGenericFunctionPointerTest))]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunInvalidGenericFunctionPointerTest()
     {
         Console.WriteLine($"Running {nameof(RunInvalidGenericFunctionPointerTest)}...");
