@@ -11,6 +11,7 @@ using Microsoft.Win32.SafeHandles;
 using BCryptAlgPseudoHandle = Interop.BCrypt.BCryptAlgPseudoHandle;
 using BCryptBuffer = Interop.BCrypt.BCryptBuffer;
 using BCryptBufferDesc = Interop.BCrypt.BCryptBufferDesc;
+using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using BCRYPT_KEY_DATA_BLOB_HEADER = Interop.BCrypt.BCRYPT_KEY_DATA_BLOB_HEADER;
 using CngBufferDescriptors = Interop.BCrypt.CngBufferDescriptors;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
@@ -19,7 +20,7 @@ namespace System.Security.Cryptography
 {
     public static partial class HKDF
     {
-        private static readonly bool s_hasCngImplementation = Interop.BCrypt.PseudoHandlesSupported;
+        private static readonly bool s_hasCngImplementation = IsCngSupported();
         private const string BCRYPT_HKDF_SALT_AND_FINALIZE = "HkdfSaltAndFinalize";
         private const string BCRYPT_HKDF_PRK_AND_FINALIZE = "HkdfPrkAndFinalize";
         private const string BCRYPT_HKDF_HASH_ALGORITHM = "HkdfHashAlgorithm";
@@ -96,6 +97,21 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static bool IsCngSupported()
+        {
+            NTSTATUS openStatus = Interop.BCrypt.BCryptOpenAlgorithmProvider(
+                out SafeBCryptAlgorithmHandle handle,
+                Internal.NativeCrypto.BCryptNative.AlgorithmName.HKDF,
+                null,
+                BCryptOpenAlgorithmProviderFlags.None);
+
+            handle.Dispose();
+
+            // HKDF was added in Windows 10 1803.
+            Debug.Assert(!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17134) || openStatus == NTSTATUS.STATUS_SUCCESS);
+            return openStatus == NTSTATUS.STATUS_SUCCESS;
+        }
+
         private static unsafe void CngDeriveKey(
             HashAlgorithmName hashAlgorithmName,
             ReadOnlySpan<byte> keyObject,
@@ -104,11 +120,12 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             bool keyObjectIsIkm)
         {
+            Debug.Assert(Interop.BCrypt.PseudoHandlesSupported);
+            Debug.Assert(hashAlgorithmName.Name is not null);
+
             ThrowIfAlgorithmNotSupported(hashAlgorithmName);
 
-            Debug.Assert(hashAlgorithmName.Name is not null);
             byte[]? rented;
-
             ReadOnlySpan<byte> safeInfo;
 
             if (destination.Overlaps(info))
@@ -161,7 +178,6 @@ namespace System.Security.Cryptography
                     else
                     {
                         Debug.Assert(salt.IsEmpty);
-
                         status = Interop.BCrypt.BCryptSetProperty(
                             keyHandle,
                             BCRYPT_HKDF_PRK_AND_FINALIZE,
