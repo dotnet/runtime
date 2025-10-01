@@ -41,7 +41,7 @@ public unsafe class Program
             TestPInvokeMarkedWithUnmanagedCallersOnly();
             TestUnmanagedCallersOnlyWithGeneric();
 
-            // Exception handling is only supported on CoreCLR Windows.
+            // Exception handling interop is only supported on CoreCLR Windows.
             if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsClrInterpreterActive)
             {
                 TestUnmanagedCallersOnlyValid_ThrowException();
