@@ -3695,7 +3695,6 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
-PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 inline int _stricmp(const char* a, const char* b)
 {

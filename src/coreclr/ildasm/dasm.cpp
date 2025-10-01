@@ -7167,11 +7167,11 @@ FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
 #ifdef HOST_WINDOWS
     FILE*   pfile = NULL;
-        if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
-        else _wfopen_s(&pfile,wzFileName,W("wt"));
+        if(g_uCodePage == 0xFFFFFFFF) u16_fopen_s(&pfile,wzFileName,W("wb"));
+        else u16_fopen_s(&pfile,wzFileName,W("wt"));
 #else
     FILE*   pfile = NULL;
-    _wfopen_s(&pfile,wzFileName,W("w"));
+    u16_fopen_s(&pfile,wzFileName,W("w"));
 #endif
 
     if(pfile)

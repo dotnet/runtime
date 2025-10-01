@@ -599,7 +599,6 @@ The wrappers below are simple implementations that may not be as robust as compl
 Remember to fix the errcode definition in safecrt.h.
 */
 
-#define _wfopen_s _wfopen_unsafe
 #define fopen_s _fopen_unsafe
 
 #define _vscprintf _vscprintf_unsafe
@@ -628,17 +627,6 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
             return ret;
 
         guess *= 2;
-    }
-}
-
-inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
-{
-    FILE *result = _wfopen(fileName, mode);
-    if(result == 0) {
-        return 1;
-    } else {
-        *ff = result;
-        return 0;
     }
 }
 

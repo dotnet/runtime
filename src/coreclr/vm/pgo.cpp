@@ -7,6 +7,7 @@
 #include "versionresilienthashcode.h"
 #include "typestring.h"
 #include "pgo_formatprocessing.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_PGO
 
@@ -205,9 +206,9 @@ void PgoManager::WritePgoData()
         return;
     }
 
-    FILE* const pgoDataFile = _wfopen(fileName, W("wb"));
+    FILE* pgoDataFile = NULL;
 
-    if (pgoDataFile == NULL)
+    if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
     {
         return;
     }
@@ -366,10 +367,10 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
+    
+    FILE* pgoDataFile = NULL;
 
-    FILE* const pgoDataFile = _wfopen(fileName, W("rb"));
-
-    if (pgoDataFile == NULL)
+    if (fopen_lp(&pgoDataFile, fileName,  W("wb")) != 0)
     {
         return;
     }
