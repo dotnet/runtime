@@ -8,11 +8,13 @@ import { } from "./cross-linked"; // ensure ambient symbols are declared
 import { runMain, runMainAndExit, registerDllBytes } from "./host";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         runMain,
         runMainAndExit,
     };
-    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI] = internals[InternalExchangeIndex.RuntimeAPI] || {} as RuntimeAPI;
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
+    if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
     Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({

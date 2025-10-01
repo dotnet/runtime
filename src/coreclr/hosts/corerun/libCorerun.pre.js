@@ -1,9 +1,9 @@
-var dotnetInternals = {
-    runtimeApi: {
+var dotnetInternals = [
+    {
         Module: Module,
     },
-    updates: [],
-};
+    [],
+];
 Module.preRun = () => {
     // copy all node/shell env variables to emscripten env
     if (globalThis.process && globalThis.process.env) {

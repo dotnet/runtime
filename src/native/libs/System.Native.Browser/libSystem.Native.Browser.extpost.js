@@ -8,8 +8,9 @@
 var fetch = fetch || undefined; var dotnetNativeModuleLoaded = false; var dotnetInternals = null;
 export function dotnetInitializeModule(internals) {
     if (dotnetNativeModuleLoaded) throw new Error("Native module already loaded");
-    dotnetInternals = internals;
     dotnetNativeModuleLoaded = true;
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
+    dotnetInternals = internals;
     const runtimeApi = internals[0] = internals[0/*InternalExchangeIndex.RuntimeAPI*/] || {};
     return createDotnetRuntime(runtimeApi.Module || {});
 }
