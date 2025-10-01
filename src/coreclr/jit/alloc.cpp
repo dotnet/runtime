@@ -327,3 +327,43 @@ void ArenaAllocator::dumpMaxMemStats(FILE* file)
     s_maxStats.Print(file);
 }
 #endif // MEASURE_MEM_ALLOC
+
+void* operator new(std::size_t size)
+{
+    assert(!"heap new called; use malloc directly if heap allocation was intended");
+    if (size == 0)
+    {
+        size++;
+    }
+
+    void* result = malloc(size);
+    if (result == nullptr)
+        throw std::bad_alloc{};
+
+    return result;
+}
+
+void* operator new[](std::size_t size)
+{
+    assert(!"heap new called; use malloc directly if heap allocation was intended");
+    if (size == 0)
+    {
+        size++;
+    }
+
+    void* result = malloc(size);
+    if (result == nullptr)
+        throw std::bad_alloc{};
+
+    return result;
+}
+
+void operator delete(void* ptr) noexcept
+{
+    free(ptr);
+}
+
+void operator delete[](void* ptr) noexcept
+{
+    free(ptr);
+}
