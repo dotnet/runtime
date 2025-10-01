@@ -668,11 +668,7 @@ namespace
         }
         else
         {
-            ConvertType retType = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
-            if (retType == ConvertType::NotConvertible)
-                return false;
-
-            keyBuffer[pos++] = GetTypeCode(retType);
+            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */));
         }
 
         if (sig.HasThis())
@@ -682,11 +678,15 @@ namespace
             argType != ELEMENT_TYPE_END;
             argType = sig.NextArg())
         {
-            _ASSERTE(pos < maxSize);
+            if(pos >= maxSize)
+                return false;
+
             keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
         }
 
-        _ASSERTE(pos < maxSize);
+        if(pos >= maxSize)
+            return false;
+
         keyBuffer[pos] = 0;
 
         return true;
@@ -726,7 +726,7 @@ namespace
         { "dd", (void*)&CallFunc_F64_RetF64 },
     };
 
-    class StringWasmThunkSHashTraits final : public MapSHashTraits<const char*, void*>
+    class StringWasmThunkSHashTraits : public MapSHashTraits<const char*, void*>
     {
     public:
         static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
