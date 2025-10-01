@@ -412,12 +412,16 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
+
+        // .NET Framework does not support IReadOnlySet<T>
+#if !NETFRAMEWORK
         [Fact]
         public static void ReadClassWithGenericIReadOnlySetT()
         {
             TestClassWithGenericIReadOnlySetT obj = JsonSerializer.Deserialize<TestClassWithGenericIReadOnlySetT>(TestClassWithGenericIReadOnlySetT.s_data);
             obj.Verify();
         }
+#endif
 
         [Fact]
         public static void ReadClassWithObjectIEnumerableConstructibleTypes()
