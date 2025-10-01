@@ -6,7 +6,6 @@
 
 #include <interpretershared.h>
 #include "interpframeallocator.h"
-#include <functional>
 
 #define INTERP_STACK_SIZE 1024*1024
 #define INTERP_STACK_FRAGMENT_SIZE 4096
