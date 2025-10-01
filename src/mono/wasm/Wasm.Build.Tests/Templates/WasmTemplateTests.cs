@@ -333,7 +333,7 @@ namespace Wasm.Build.Tests
             Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation when WasmEmitTypeScriptDefinitions is used");
 
             // Build to trigger the _EnsureDotnetTypeScriptDefinitions target on restore
-            BuildProject(info, config, new BuildOptions(WasmEmitTypeScriptDefinitions: true));
+            BuildProject(info, config, new BuildOptions());
 
             // Verify dotnet.d.ts is created in the project's wwwroot directory after build
             Assert.True(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions=true");
