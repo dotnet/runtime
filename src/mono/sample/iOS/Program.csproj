@@ -6,6 +6,7 @@
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <DefineConstants Condition="'$(UseMonoRuntime)' != 'true'">$(DefineConstants);CORECLR_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <SelfContained>true</SelfContained>
