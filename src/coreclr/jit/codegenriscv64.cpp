@@ -3179,6 +3179,13 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             isUnsigned = true;
         }
 
+        if (oper == GT_LE && op2->isContainedIntOrIImmed())
+        {
+            oper = GT_LT;
+            assert(op2->AsIntCon()->gtIconVal == 0);
+            op2->AsIntCon()->gtIconVal = 1;
+        }
+
         isReversed = (oper == GT_LE || oper == GT_GE);
         if (isReversed)
         {
