@@ -1226,7 +1226,10 @@ MAIN_LOOP:
 
                 case INTOP_SAFEPOINT:
                     if (g_TrapReturningThreads)
-                        JIT_PollGC();
+                    {
+                        // Transition into preemptive mode to allow the GC to suspend us
+                        GCX_PREEMP();
+                    }
                     ip++;
                     break;
 
