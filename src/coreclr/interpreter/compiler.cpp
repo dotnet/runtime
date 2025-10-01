@@ -3040,7 +3040,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         {
             // This NI is used in places where a method is not supported on the current platform. We
             // need to adjust the IL stack as if the method was actually called, so pop the arguments and push a return value.
-            int numArgsFromStack = sig.numArgs + (sig.hasThis() ? 1 : 0);
+            int numArgsFromStack = sig.totalILArgs();
             CHECK_STACK(numArgsFromStack);
             m_pStackPointer -= numArgsFromStack;
             if (sig.retType != CORINFO_TYPE_VOID)
