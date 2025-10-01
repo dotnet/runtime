@@ -129,21 +129,11 @@ typedef enum tagEFaultRepRetVal
 
 #define _WINNT_
 
-#ifndef offsetof
-#define offsetof(type, field) __builtin_offsetof(type, field)
-#endif
-
 #define CONTAINING_RECORD(address, type, field) \
     ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
-
-#if defined(HOST_64BIT)
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
-#else
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONG)
-#endif
 
 #define DECLARE_HANDLE(name) struct name##__ { int unused; }; typedef struct name##__ *name
 
@@ -319,11 +309,6 @@ typedef struct tagDEC {
 #define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
 
 #define DECIMAL_SETZERO(dec) {DECIMAL_LO32(dec) = 0; DECIMAL_MID32(dec) = 0; DECIMAL_HI32(dec) = 0; DECIMAL_SIGNSCALE(dec) = 0;}
-
-typedef struct tagBLOB {
-    ULONG cbSize;
-    BYTE *pBlobData;
-} BLOB, *LPBLOB;
 
 interface IStream;
 interface IRecordInfo;
@@ -646,17 +631,6 @@ inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const cha
 
 /******************* misc ***************************************/
 
-#ifdef __cplusplus
-namespace std
-{
-    typedef decltype(nullptr) nullptr_t;
-}
-
-extern "C++"
-template< class T >
-typename std::remove_reference<T>::type&& move( T&& t );
-#endif // __cplusplus
-
 #define __RPC__out
 #define __RPC__in
 #define __RPC__deref_out_opt
@@ -667,8 +641,6 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__in_xcount(x)
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
-
-typedef HANDLE HWND;
 
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;
@@ -1013,8 +985,6 @@ typedef struct _EXCEPTION_REGISTRATION_RECORD EXCEPTION_REGISTRATION_RECORD;
 typedef EXCEPTION_REGISTRATION_RECORD *PEXCEPTION_REGISTRATION_RECORD;
 
 typedef LPVOID HKEY;
-typedef LPVOID PACL;
-typedef LPVOID LPBC;
 typedef LPVOID PSECURITY_DESCRIPTOR;
 
 typedef struct _EXCEPTION_RECORD64 {
