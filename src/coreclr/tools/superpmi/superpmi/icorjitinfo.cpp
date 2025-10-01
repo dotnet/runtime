@@ -1052,7 +1052,7 @@ void MyICJI::reportRichMappings(
     uint32_t                          numMappings)
 {
     jitInstance->mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     freeArray(inlineTreeNodes);
     freeArray(mappings);
 }
@@ -1064,7 +1064,7 @@ void MyICJI::reportAsyncDebugInfo(
     uint32_t                              numVars)
 {
     jitInstance->mc->cr->AddCall("reportAsyncDebugInfo");
-    // TODO: record async debug info
+    // Compile output that we do not currently save
     freeArray(asyncInfo);
     freeArray(suspensionPoints);
     freeArray(vars);

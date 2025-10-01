@@ -1347,9 +1347,6 @@ namespace Internal.JitInterface
 
     public struct AsyncInfo
     {
-        // Offset in contiuation's data where state number is stored. UINT_MAX
-        // if no state number is stored (when NumSuspensionPoints == 1).
-        public uint StateOffset;
         // Number of suspension points in the method.
         public uint NumSuspensionPoints;
     }

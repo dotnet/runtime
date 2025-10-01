@@ -60,6 +60,23 @@ enum class BoundsType
     Uninstrumented, // Get the uninstrumented bounds
 };
 
+struct DebugInfoChunks
+{
+    PTR_BYTE pBounds;
+    ULONG32 cbBounds;
+    PTR_BYTE pVars;
+    ULONG32 cbVars;
+    PTR_BYTE pUninstrumentedBounds;
+    ULONG32 cbUninstrumentedBounds;
+    PTR_BYTE pPatchpointInfo;
+    ULONG32 cbPatchpointInfo;
+    PTR_BYTE pRichDebugInfo;
+    ULONG32 cbRichDebugInfo;
+    PTR_BYTE pAsyncInfo;
+    ULONG32 cbAsyncInfo;
+    PTR_BYTE pEnd;
+};
+
 //-----------------------------------------------------------------------------
 // Utility routines used for compression
 // Note that the compression is just an implementation detail of the stores,
@@ -87,20 +104,32 @@ class CompressDebugInfo
         IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
         IN OUT NibbleWriter*                 pWriter);
 
+    static void CompressAsyncDebugInfo(
+        IN ICorDebugInfo::AsyncInfo*                asyncInfo,
+        IN ICorDebugInfo::AsyncSuspensionPoint*     pSuspensionPoints,
+        IN ICorDebugInfo::AsyncContinuationVarInfo* pAsyncVars,
+        IN ULONG                                    iAsyncVars,
+        IN OUT NibbleWriter*                 pWriter);
+
+    static DebugInfoChunks Restore(IN PTR_BYTE pDebugInfo);
+
 public:
     // Stores the result in LoaderHeap
-    static PTR_BYTE CompressBoundariesAndVars(
-        IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
-        IN ULONG            iOffsetMapping,
-        const InstrumentedILOffsetMapping *  pInstrumentedILBounds,
-        IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
-        IN ULONG            iNativeVarInfo,
-        IN PatchpointInfo * patchpointInfo,
-        IN ICorDebugInfo::InlineTreeNode * pInlineTree,
-        IN ULONG            iInlineTree,
-        IN ICorDebugInfo::RichOffsetMapping * pRichOffsetMappings,
-        IN ULONG            iRichOffsetMappings,
-        IN BOOL             writeFlagByte,
+    static PTR_BYTE Compress(
+        IN ICorDebugInfo::OffsetMapping*            pOffsetMapping,
+        IN ULONG                                    iOffsetMapping,
+        const InstrumentedILOffsetMapping*          pInstrumentedILBounds,
+        IN ICorDebugInfo::NativeVarInfo*            pNativeVarInfo,
+        IN ULONG                                    iNativeVarInfo,
+        IN PatchpointInfo*                          patchpointInfo,
+        IN ICorDebugInfo::InlineTreeNode*           pInlineTree,
+        IN ULONG                                    iInlineTree,
+        IN ICorDebugInfo::RichOffsetMapping*        pRichOffsetMappings,
+        IN ULONG                                    iRichOffsetMappings,
+        IN ICorDebugInfo::AsyncInfo*                asyncInfo,
+        IN ICorDebugInfo::AsyncSuspensionPoint*     pSuspensionPoints,
+        IN ICorDebugInfo::AsyncContinuationVarInfo* pAsyncVars,
+        IN ULONG                                    iAsyncVars,
         IN LoaderHeap     * pLoaderHeap
     );
 
@@ -113,15 +142,13 @@ public:
         OUT ULONG32                       * pcMap, // number of entries in ppMap
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
         OUT ULONG32                         *pcVars,
-        OUT ICorDebugInfo::NativeVarInfo    **ppVars,
-        BOOL hasFlagByte
+        OUT ICorDebugInfo::NativeVarInfo    **ppVars
     );
 
     // Walk the ILOffsets without needing to allocate a buffer
     static size_t WalkILOffsets(
         IN PTR_BYTE                         pDebugInfo,
         BoundsType boundsType,
-        BOOL hasFlagByte,
         void* pContext,
         size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
     );
@@ -177,6 +204,6 @@ public:
 #endif
 };
 
-#define DebugInfoBoundsHasInstrumentedBounds 0xFFFFFFFF
+#define DebugInfoFat 0xFFFFFFFF
 
 #endif // __DebugInfoStore_H_

@@ -63,6 +63,10 @@ class AsyncTransformation
     BasicBlock*                   m_lastResumptionBB        = nullptr;
     BasicBlock*                   m_sharedReturnBB          = nullptr;
 
+    // Debug info
+    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo> m_dbgContinuationVars;
+    jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>     m_dbgSuspensionPoints;
+
     bool IsLive(unsigned lclNum);
     void Transform(BasicBlock*               block,
                    GenTreeCall*              call,
@@ -132,6 +136,9 @@ class AsyncTransformation
                                     GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
     GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType);
 
+    void CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCall, const ContinuationLayout& layout);
+    void ReportDebugInfo();
+
     unsigned GetDataArrayVar();
     unsigned GetGCDataArrayVar();
     unsigned GetResultBaseVar();
@@ -147,6 +154,8 @@ public:
         : m_comp(comp)
         , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
         , m_resumptionBBs(comp->getAllocator(CMK_Async))
+        , m_dbgContinuationVars(comp->getAllocator(CMK_Async))
+        , m_dbgSuspensionPoints(comp->getAllocator(CMK_Async))
     {
     }
 

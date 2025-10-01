@@ -442,27 +442,18 @@ public:
 
     struct AsyncSuspensionPoint
     {
-        // State number assigned to this suspension point. UINT_MAX if no state
-        // number is assigned (when AsyncInfo::NumSuspensionPoints == 1).
-        uint32_t StateNumber;
         // IL offset in the root method that resulted in the creation of this suspension point.
         uint32_t RootILOffset;
         // Index of inline tree node containing the IL offset (0 for root)
         uint32_t Inlinee;
         // IL offset that resulted in the creation of the suspension point.
         uint32_t ILOffset;
-        uint32_t NumVars;
-        // Count of AsyncContinuationVarInfo
+        // Count of AsyncContinuationVarInfo in array of locals
         uint32_t NumContinuationVars;
-        // Index into array of AsyncContinuationVarInfo of first variable
-        uint32_t ContinuationVarsIndex;
     };
 
     struct AsyncInfo
     {
-        // Offset in contiuation's data where state number is stored. UINT_MAX
-        // if no state number is stored (when NumSuspensionPoints == 1).
-        uint32_t StateOffset;
         // Number of suspension points in the method.
         uint32_t NumSuspensionPoints;
     };

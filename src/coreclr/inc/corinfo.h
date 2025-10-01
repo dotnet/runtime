@@ -2917,8 +2917,8 @@ public:
     // and ownership is transferred to the EE with this call.
     virtual void reportAsyncDebugInfo(
             ICorDebugInfo::AsyncInfo*             asyncInfo,         // [IN] Async method information
-            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Async suspension points
-            ICorDebugInfo::AsyncContinuationVarInfo* vars,          // [IN] Async continuation variable info
+            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Array of async suspension points, indexed by state number
+            ICorDebugInfo::AsyncContinuationVarInfo* vars,          // [IN] Array of async continuation variable info
             uint32_t                              numVars           // [IN] Number of continuation variables
             ) = 0;
 

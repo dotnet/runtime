@@ -760,6 +760,8 @@ PhaseStatus AsyncTransformation::Run()
 
     m_comp->fgInvalidateDfsTree();
 
+    ReportDebugInfo();
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -818,6 +820,8 @@ void AsyncTransformation::Transform(
     BasicBlock* resumeBB = CreateResumption(block, *remainder, call, callDefInfo, stateNum, layout);
 
     m_resumptionBBs.push_back(resumeBB);
+
+    CreateDebugInfoForSuspensionPoint(call, layout);
 }
 
 //------------------------------------------------------------------------
@@ -2200,6 +2204,76 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(GenTree* base, unsigned offs
     GenTree*         addr     = m_comp->gtNewOperNode(GT_ADD, addrType, base, cns);
     GenTreeStoreInd* store    = m_comp->gtNewStoreIndNode(storeType, addr, value, GTF_IND_NONFAULTING);
     return store;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateDebugInfoForSuspensionPoint:
+//   Create debug info for the specific suspension point we just created.
+//
+// Parameters:
+//   asyncCall - Call node resulting in the suspension point
+//   stateNum  - State number that was assigned to the suspension point
+//   layout    - Layout of continuation
+//
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCall, const ContinuationLayout& layout)
+{
+    if (!m_comp->opts.compDbgInfo)
+    {
+        return;
+    }
+
+    uint32_t numLocals = 0;
+    for (const LiveLocalInfo& local : layout.Locals)
+    {
+        unsigned ilVarNum = m_comp->compMap2ILvarNum(local.LclNum);
+        if (ilVarNum == ICorDebugInfo::UNKNOWN_ILNUM)
+        {
+            continue;
+        }
+
+        ICorDebugInfo::AsyncContinuationVarInfo varInf;
+        varInf.VarNumber = ilVarNum;
+        varInf.Offset    = local.DataOffset;
+        m_dbgContinuationVars.push_back(varInf);
+        numLocals++;
+    }
+
+    ICorDebugInfo::AsyncSuspensionPoint suspensionPoint;
+    const DebugInfo&                    di = asyncCall->GetAsyncInfo().DebugInfo;
+    suspensionPoint.RootILOffset           = di.GetRoot().GetLocation().GetOffset();
+    suspensionPoint.Inlinee                = di.GetInlineContext()->GetOrdinal();
+    suspensionPoint.ILOffset               = di.GetLocation().GetOffset();
+    suspensionPoint.NumContinuationVars    = numLocals;
+
+    m_dbgSuspensionPoints.push_back(suspensionPoint);
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ReportDebugInfo:
+//   Report debug info back to EE.
+//
+void AsyncTransformation::ReportDebugInfo()
+{
+    if (!m_comp->opts.compDbgInfo)
+    {
+        return;
+    }
+
+    ICorDebugInfo::AsyncInfo asyncInfo;
+    asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(m_dbgSuspensionPoints.size());
+
+    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints =
+        static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(m_comp->info.compCompHnd->allocateArray(
+            m_dbgSuspensionPoints.size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
+    std::copy(m_dbgSuspensionPoints.begin(), m_dbgSuspensionPoints.end(), hostSuspensionPoints);
+
+    ICorDebugInfo::AsyncContinuationVarInfo* hostVars =
+        static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(m_comp->info.compCompHnd->allocateArray(
+            m_dbgContinuationVars.size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
+    std::copy(m_dbgContinuationVars.begin(), m_dbgContinuationVars.end(), hostVars);
+
+    m_comp->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
+                                                   static_cast<uint32_t>(m_dbgContinuationVars.size()));
 }
 
 //------------------------------------------------------------------------
