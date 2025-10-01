@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             Span<byte> prk)
         {
-            // Windows does not clearly have a way to perform just the Extact step from HKDF. So used managed, for now.
+            // Windows does not clearly have a way to perform just the Extract step from HKDF. We'll use managed for now.
             HKDFManagedImplementation.Extract(hashAlgorithmName, ikm, salt, prk);
         }
 
