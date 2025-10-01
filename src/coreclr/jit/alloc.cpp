@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <new>
 #include "jitpch.h"
 
 #if defined(_MSC_VER)
@@ -328,7 +329,7 @@ void ArenaAllocator::dumpMaxMemStats(FILE* file)
 }
 #endif // MEASURE_MEM_ALLOC
 
-void* operator new(std::size_t size)
+void* __cdecl operator new(std::size_t size)
 {
     assert(!"heap new called; use malloc directly if heap allocation was intended");
     if (size == 0)
@@ -345,7 +346,7 @@ void* operator new(std::size_t size)
     return result;
 }
 
-void* operator new[](std::size_t size)
+void* __cdecl operator new[](std::size_t size)
 {
     assert(!"heap new called; use malloc directly if heap allocation was intended");
     if (size == 0)
@@ -362,12 +363,12 @@ void* operator new[](std::size_t size)
     return result;
 }
 
-void operator delete(void* ptr) noexcept
+void __cdecl operator delete(void* ptr) noexcept
 {
     free(ptr);
 }
 
-void operator delete[](void* ptr) noexcept
+void __cdecl operator delete[](void* ptr) noexcept
 {
     free(ptr);
 }
