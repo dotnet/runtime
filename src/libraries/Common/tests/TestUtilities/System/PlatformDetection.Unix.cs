@@ -46,6 +46,7 @@ namespace System
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
         public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
         public static bool IsNotAppSandbox => !IsAppSandbox;
+        public static bool IsApplePlatform26OrLater => IsOSXLike && Environment.OSVersion.Version.Major >= 26;
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
