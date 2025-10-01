@@ -40,7 +40,6 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <PropertyGroup>
-    <WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</WasmEmitTypeScriptDefinitions>
     <EnableDefaultContentItems Condition=" '$(EnableDefaultContentItems)' == '' ">true</EnableDefaultContentItems>
 
     <!-- Trimmer defaults that depend on user-definable settings.
@@ -192,6 +191,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
       <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
+      <WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</WasmEmitTypeScriptDefinitions>
 
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
