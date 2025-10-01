@@ -22,8 +22,8 @@
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    _ASSERTE("The function is not implemented on wasm");
-    return 0;
+    const unsigned stackSlotSize = sizeof(void*);
+    return ALIGN_UP(parmSize, stackSlotSize);
 }
 
 struct HijackArgs
@@ -74,12 +74,6 @@ class StubLinkerCPU : public StubLinker
 {
 public:
     static void Init() { /* no-op on wasm */ }
-    inline void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray) {
-        _ASSERTE("The EmitShuffleThunk is not implemented on wasm");
-    }
-    inline VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg) {
-        _ASSERTE("The EmitComputedInstantiatingMethodStub is not implemented on wasm");
-    }
 };
 
 //**********************************************************************

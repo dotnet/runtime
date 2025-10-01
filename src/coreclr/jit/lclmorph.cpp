@@ -2356,8 +2356,9 @@ private:
 };
 
 //------------------------------------------------------------------------
-// fgMarkAddressExposedLocals: Traverses the entire method and marks address
-//    exposed locals.
+// fgLocalMorph:
+//   Traverses the entire method and simplifies local accesses.
+//   Also marks locals that are address exposed.
 //
 // Returns:
 //    Suitable phase status
@@ -2367,7 +2368,7 @@ private:
 //    to just LCL_VAR, do not result in the involved local being marked
 //    address exposed.
 //
-PhaseStatus Compiler::fgMarkAddressExposedLocals()
+PhaseStatus Compiler::fgLocalMorph()
 {
     bool madeChanges = false;
 
