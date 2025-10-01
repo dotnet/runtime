@@ -60,7 +60,7 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    private enum CorTokenType: uint
+    private enum CorTokenType : uint
     {
         mdtTypeRef = 0x01000000,
         mdtTypeDef = 0x02000000,
@@ -635,12 +635,13 @@ internal sealed unsafe partial class SOSDacImpl
             if (ip == 0 || data == null)
                 throw new ArgumentException();
 
-            IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            IGCInfo gcInfo = _target.Contracts.GCInfo;
+
             TargetCodePointer targetCodePointer = ip.ToTargetCodePointer(_target);
-            CodeBlockHandle? codeBlockHandle = executionManager.GetCodeBlockHandle(targetCodePointer);
-            if (codeBlockHandle == null)
+            if (eman.GetCodeBlockHandle(targetCodePointer) is not CodeBlockHandle cbh)
             {
-                TargetPointer methodDesc = executionManager.NonVirtualEntry2MethodDesc(targetCodePointer);
+                TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(targetCodePointer);
                 if (methodDesc == TargetPointer.Null)
                     throw new ArgumentException();
                 data->MethodDescPtr = methodDesc.ToClrDataAddress(_target);
@@ -652,14 +653,22 @@ internal sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                data->MethodDescPtr = executionManager.GetMethodDesc(codeBlockHandle.Value).ToClrDataAddress(_target);
-                data->JITType = (JitTypes)executionManager.GetJITType(codeBlockHandle.Value);
-                executionManager.GetGCInfo(codeBlockHandle.Value, out TargetPointer gcInfo, out uint gcVersion);
-                data->GCInfo = gcInfo.ToClrDataAddress(_target);
-                data->MethodStart = executionManager.GetStartAddress(codeBlockHandle.Value).Value;
-                executionManager.GetMethodRegionInfo(codeBlockHandle.Value, out data->HotRegionSize, out TargetPointer coldRegionStart, out data->ColdRegionSize);
+                data->MethodDescPtr = eman.GetMethodDesc(cbh).ToClrDataAddress(_target);
+
+                data->JITType = (JitTypes)eman.GetJITType(cbh);
+
+                eman.GetGCInfo(cbh, out TargetPointer pGcInfo, out uint gcVersion);
+                data->GCInfo = pGcInfo.ToClrDataAddress(_target);
+
+                data->MethodStart = eman.GetStartAddress(cbh).Value;
+
+                IGCInfoHandle gcInfoHandle = gcInfo.DecodeGCInfo(pGcInfo, gcVersion);
+                data->MethodSize = gcInfo.GetCodeLength(gcInfoHandle);
+
+                eman.GetMethodRegionInfo(cbh, out uint hotRegionSize, out TargetPointer coldRegionStart, out uint coldRegionSize);
+                data->HotRegionSize = hotRegionSize;
+                data->ColdRegionSize = coldRegionSize;
                 data->ColdRegionStart = coldRegionStart.ToClrDataAddress(_target);
-                data->MethodSize = data->HotRegionSize + data->ColdRegionSize;
             }
         }
         catch (System.Exception ex)

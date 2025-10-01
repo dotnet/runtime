@@ -74,7 +74,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
 
         public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info);
-        public abstract void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
+        public abstract void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize);
         public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
@@ -220,7 +225,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
-            return;
+            throw new InvalidOperationException("Unable to get runtime function address");
 
         JitManager jitManager = GetJitManager(range.Data);
 

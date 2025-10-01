@@ -17,27 +17,20 @@ internal sealed class HotColdLookup
         _target = target;
     }
 
-    public bool TryGetHotColdStartEnd(
+    public bool TryGetColdFunctionIndex(
         uint numHotColdMap,
         TargetPointer hotColdMap,
         uint runtimeFunctionIndex,
         uint numRuntimeFunctions,
-        out uint hotIdx,
         out uint coldStart,
         out uint coldEnd)
     {
-        hotIdx = 0;
         coldStart = 0;
         coldEnd = 0;
 
-        if (numHotColdMap == 0)
-            return false;
         // The first entry in the HotColdMap is the runtime function index of the first cold part.
-
-        if (TryLookupHotColdMappingForMethod(numHotColdMap, hotColdMap, runtimeFunctionIndex, out uint hotIndex, out uint coldIndex))
+        if (TryLookupHotColdMappingForMethod(numHotColdMap, hotColdMap, runtimeFunctionIndex, out uint _, out uint coldIndex))
         {
-            hotIdx = _target.Read<uint>(hotColdMap + (ulong)hotIndex * sizeof(uint));
-
             coldStart = _target.Read<uint>(hotColdMap + (ulong)coldIndex * sizeof(uint));
             coldEnd = (coldIndex + 2) < numHotColdMap
                 ? _target.Read<uint>(hotColdMap + (ulong)(coldIndex + 2) * sizeof(uint)) - 1

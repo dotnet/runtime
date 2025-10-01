@@ -90,6 +90,7 @@ internal static class UnwindDataSize
                 throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}");
         }
     }
+
     private static uint AlignUp(int offset, int align)
         => (uint)((offset + align - 1) & ~(align - 1));
 }

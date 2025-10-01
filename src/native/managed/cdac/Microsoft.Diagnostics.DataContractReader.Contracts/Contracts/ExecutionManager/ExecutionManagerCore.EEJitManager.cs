@@ -44,35 +44,22 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
-        public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
         {
-            hotSize = 0;
+            // cold regions are not supported for JITted code
             coldStart = TargetPointer.Null;
             coldSize = 0;
 
-            if (rangeSection.IsRangeList)
-                return;
-            if (rangeSection.Data == null)
-                throw new ArgumentException(nameof(rangeSection));
-
-            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
-            if (codeStart == TargetPointer.Null)
-                return;
-            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
-
-            if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
-                return;
-
-            if (realCodeHeader.NumUnwindInfos == 0)
-            {
-                return;
-            }
-            // Sum up the lengths of all the runtime functions to get the hot size
-            for (uint i = 0; i < realCodeHeader.NumUnwindInfos; i++)
-            {
-                Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(realCodeHeader.UnwindInfos, i);
-                hotSize += _runtimeFunctions.GetFunctionLength(function);
-            }
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodeGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+            Debug.Assert(hotSize > 0);
         }
 
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

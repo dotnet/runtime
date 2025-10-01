@@ -14,5 +14,5 @@ internal sealed class PortableEntryPoint : IData<PortableEntryPoint>
 
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
     }
-    public TargetPointer MethodDesc { get; init; }
+    public TargetPointer MethodDesc { get; }
 }
