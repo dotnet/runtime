@@ -5011,15 +5011,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         if (isNumber)
                         {
                             // Build expression:  isNumber(minMax) ? minMax : op1
-                            unsigned tmpResult =
-                                lvaGrabTemp(true DEBUGARG("Temp for min/max result in Math.Min/MaxNumber"));
-                            impStoreToTemp(tmpResult, minMax, CHECK_SPILL_NONE);
-                            minMax = gtNewLclvNode(tmpResult, callType);
+                            GenTree* minMaxClone;
+                            minMax = impCloneExpr(minMax, &minMaxClone, CHECK_SPILL_NONE,
+                                                  nullptr DEBUGARG("Clone min/max result in Math.Min/MaxNumber"));
 
-                            GenTreeOp* isNumber = gtNewOperNode(GT_EQ, TYP_INT, minMax, gtCloneExpr(minMax));
+                            GenTreeOp* isNumber = gtNewOperNode(GT_EQ, TYP_INT, minMax, minMaxClone);
 
                             minMax = gtNewQmarkNode(callType, isNumber,
-                                                    gtNewColonNode(callType, gtCloneExpr(minMax), op1Clone));
+                                                    gtNewColonNode(callType, gtCloneExpr(minMaxClone), op1Clone));
                         }
                         else
                         {
