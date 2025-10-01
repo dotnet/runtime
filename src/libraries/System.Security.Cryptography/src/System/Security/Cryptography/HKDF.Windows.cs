@@ -50,7 +50,7 @@ namespace System.Security.Cryptography
                     info,
                     salt: default,
                     output,
-                    keyObjectIsIkm: false);
+                    secretIsIkm: false);
             }
             else
             {
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
                     info,
                     salt,
                     output,
-                    keyObjectIsIkm: true);
+                    secretIsIkm: true);
             }
             else
             {
@@ -114,11 +114,11 @@ namespace System.Security.Cryptography
 
         private static unsafe void CngDeriveKey(
             HashAlgorithmName hashAlgorithmName,
-            ReadOnlySpan<byte> keyObject,
+            ReadOnlySpan<byte> secret,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> salt,
             Span<byte> destination,
-            bool keyObjectIsIkm)
+            bool secretIsIkm)
         {
             Debug.Assert(Interop.BCrypt.PseudoHandlesSupported);
             Debug.Assert(hashAlgorithmName.Name is not null);
@@ -145,15 +145,15 @@ namespace System.Security.Cryptography
 
             try
             {
-                fixed (byte* pKeyObject = &Helpers.GetNonNullPinnableReference(keyObject))
+                fixed (byte* pSecret = &Helpers.GetNonNullPinnableReference(secret))
                 {
                     status = Interop.BCrypt.BCryptGenerateSymmetricKey(
                         (nuint)BCryptAlgPseudoHandle.BCRYPT_HKDF_ALG_HANDLE,
                         out keyHandle,
                         pbKeyObject: IntPtr.Zero,
                         cbKeyObject: 0,
-                        pKeyObject,
-                        keyObject.Length,
+                        pSecret,
+                        secret.Length,
                         dwFlags: 0);
 
                     if (status != NTSTATUS.STATUS_SUCCESS)
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography
 
                     Interop.BCrypt.BCryptSetSZProperty(keyHandle, BCRYPT_HKDF_HASH_ALGORITHM, hashAlgorithmName.Name);
 
-                    if (keyObjectIsIkm)
+                    if (secretIsIkm)
                     {
                         fixed (byte* pSalt = &Helpers.GetNonNullPinnableReference(salt))
                         {
