@@ -1011,6 +1011,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVX10v2:
+        case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVXVNNIINT:
         case InstructionSet_AVXVNNIINT_V512:
         {
@@ -3502,6 +3504,10 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512_X64_ConvertToInt64:
         case NI_AVX512_X64_ConvertToUInt64:
         case NI_AVX512_X64_ConvertToUInt64WithTruncation:
+        case NI_AVX10v2_ConvertToInt32WithTruncatedSaturation:
+        case NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation:
+        case NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation:
+        case NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation:
         {
             assert(baseType == TYP_DOUBLE || baseType == TYP_FLOAT);
             emitAttr attr = emitTypeSize(targetType);
@@ -3512,7 +3518,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         }
 
         case NI_AVX512_ConvertToVector128UInt32:
-        case NI_AVX512_ConvertToVector128UInt32WithSaturation:
         case NI_AVX512_ConvertToVector256Int32:
         case NI_AVX512_ConvertToVector256UInt32:
         {
@@ -3535,6 +3540,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512_ConvertToVector128SByteWithSaturation:
         case NI_AVX512_ConvertToVector128UInt16:
         case NI_AVX512_ConvertToVector128UInt16WithSaturation:
+        case NI_AVX512_ConvertToVector128UInt32WithSaturation:
         case NI_AVX512_ConvertToVector256Byte:
         case NI_AVX512_ConvertToVector256ByteWithSaturation:
         case NI_AVX512_ConvertToVector256Int16:
