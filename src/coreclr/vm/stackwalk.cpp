@@ -62,15 +62,6 @@ PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMa
             {
                 PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pFrame);
                 PTR_InterpMethodContextFrame pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
-                while (pTopInterpMethodContextFrame->pNext && pTopInterpMethodContextFrame->pNext->ip != 0)
-                {
-                    pTopInterpMethodContextFrame = pTopInterpMethodContextFrame->pNext;
-                }
-                while (pTopInterpMethodContextFrame->pParent && pTopInterpMethodContextFrame->ip == 0)
-                {
-                    pTopInterpMethodContextFrame = pTopInterpMethodContextFrame->pParent;
-                }
-
                 PTR_InterpMethodContextFrame pCurrent = pTopInterpMethodContextFrame;
                 do
                 {
