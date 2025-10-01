@@ -102,6 +102,12 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(IListOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
+            // ISet<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(ISet<>))) != null)
+            {
+                converterType = typeof(ISetOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
             // .NET Framework and .NET Standard do not support IReadOnlySet<T>
 #if !NETFRAMEWORK && !NETSTANDARD2_0
             // IReadOnlySet<>
@@ -111,12 +117,6 @@ namespace System.Text.Json.Serialization.Converters
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
 #endif
-            // ISet<>
-            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(ISet<>))) != null)
-            {
-                converterType = typeof(ISetOfTConverter<,>);
-                elementType = actualTypeToConvert.GetGenericArguments()[0];
-            }
             // ICollection<>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(ICollection<>))) != null)
             {
