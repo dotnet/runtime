@@ -25,6 +25,5 @@ public abstract record MSBuildOptions
     string?                          BootConfigFileName              = null,
     string                          NonDefaultFrameworkDir          = "",
     string                          ExtraMSBuildArgs                = "",
-    bool                            EnableDiagnostics               = false,
-    bool                            WasmEmitTypeScriptDefinitions   = false
+    bool                            EnableDiagnostics               = false
 );

@@ -579,7 +579,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         foreach (string expectedFilename in expected)
         {
             // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
-            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map" || expectedFilename == "dotnet.d.ts")
+            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];

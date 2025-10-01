@@ -40,6 +40,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <PropertyGroup>
+    <WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</WasmEmitTypeScriptDefinitions>
     <EnableDefaultContentItems Condition=" '$(EnableDefaultContentItems)' == '' ">true</EnableDefaultContentItems>
 
     <!-- Trimmer defaults that depend on user-definable settings.
@@ -272,7 +273,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
-      EmitTypeScriptDefinitions="$(WasmEmitTypeScriptDefinitions)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
     >
@@ -624,7 +624,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
-      EmitTypeScriptDefinitions="$(WasmEmitTypeScriptDefinitions)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
     >

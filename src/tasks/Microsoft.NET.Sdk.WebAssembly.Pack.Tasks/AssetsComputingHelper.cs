@@ -47,7 +47,6 @@ public class AssetsComputingHelper
         bool enableThreads,
         bool enableDiagnostics,
         bool emitSourceMap,
-        bool emitTypeScriptDefinitions,
         out string reason)
     {
         var extension = candidate.GetMetadata("Extension");
