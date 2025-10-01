@@ -721,7 +721,9 @@ bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT));
+#ifdef CONTEXT_XSTATE
     pDest->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+#endif
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
