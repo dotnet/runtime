@@ -1,10 +1,10 @@
 # WebAssembly Debugging Reference
 
-This document provides consolidated debugging instructions for WebAssembly applications.
+This document provides debugging instructions for WebAssembly.
 
 ## Debug with VS Code
 
-To debug WebAssembly applications with Visual Studio Code:
+To debug WebAssembly with Visual Studio Code:
 
 ### 1. Configuration
 

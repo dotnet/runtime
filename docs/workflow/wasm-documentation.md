@@ -47,7 +47,7 @@ This document serves as a comprehensive guide for contributors to the WebAssembl
 
 ### Common Debugging Scenarios
 
-For consolidated debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md).
+For debugging instructions including VS Code and Chrome DevTools setup, see the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md).
 
 ## Features and Configuration
 
