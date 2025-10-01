@@ -148,20 +148,35 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData('a', 'a', true)]
-        [InlineData('a', 'A', false)]
-        [InlineData('a', 'b', false)]
-        [InlineData('a', (int)'a', false)]
-        [InlineData('a', "a", false)]
-        [InlineData('a', null, false)]
-        public static void EqualsTest(char c, object? obj, bool expected)
+        [InlineData('a', 'a', StringComparison.Ordinal, true)]
+        [InlineData('a', 'A', StringComparison.Ordinal, false)]
+        [InlineData('a', 'b', StringComparison.Ordinal, false)]
+        [InlineData('a', (int)'a', StringComparison.Ordinal, false)]
+        [InlineData('a', "a", StringComparison.Ordinal, false)]
+        [InlineData('a', null, StringComparison.Ordinal, false)]
+        [InlineData('F', 'f', StringComparison.Ordinal, false)]
+        [InlineData('F', 'f', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData('F', 'f', StringComparison.CurrentCulture, false)]
+        [InlineData('F', 'f', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData('F', 'f', StringComparison.InvariantCulture, false)]
+        [InlineData('F', 'f', StringComparison.InvariantCultureIgnoreCase, true)]
+        public static void EqualsTest(char c, object? other, StringComparison comparisonType, bool expected)
         {
-            if (obj is char)
+            if (other is char otherChar)
             {
-                Assert.Equal(expected, c.Equals((char)obj));
-                Assert.Equal(expected, c.GetHashCode().Equals(obj.GetHashCode()));
+                if (comparisonType is StringComparison.Ordinal)
+                {
+                    Assert.Equal(expected, c.Equals(otherChar));
+                    Assert.Equal(expected, c.GetHashCode().Equals(other.GetHashCode()));
+                }
+
+                Assert.Equal(expected, c.Equals(otherChar, comparisonType));
             }
-            Assert.Equal(expected, c.Equals(obj));
+
+            if (comparisonType is StringComparison.Ordinal)
+            {
+                Assert.Equal(expected, c.Equals(other));
+            }
         }
 
         [Theory]

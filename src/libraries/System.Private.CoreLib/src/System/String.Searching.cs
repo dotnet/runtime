@@ -106,11 +106,7 @@ namespace System
 
             int subIndex;
 
-            if (!char.IsAscii(value))
-            {
-                subIndex = Ordinal.IndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
-            }
-            else
+            if (char.IsAscii(value))
             {
                 ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
 
@@ -126,6 +122,10 @@ namespace System
                 {
                     subIndex = SpanHelpers.IndexOfChar(ref startChar, value, count);
                 }
+            }
+            else
+            {
+                subIndex = Ordinal.IndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
             }
 
             return subIndex < 0 ? subIndex : startIndex + subIndex;
@@ -460,7 +460,7 @@ namespace System
         /// </returns>
         internal int LastIndexOf(char value, StringComparison comparisonType)
         {
-            return LastIndexOf(value, 0, comparisonType);
+            return LastIndexOf(value, Length - 1, comparisonType);
         }
 
         /// <summary>
@@ -510,17 +510,14 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfNegative(startIndex - (startIndex + 1));
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex + 1 - count);
 
             int subIndex;
 
-            if (!char.IsAscii(value))
+            if (char.IsAscii(value))
             {
-                subIndex = Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
-            }
-            else
-            {
-                ref char startChar = ref Unsafe.Add(ref _firstChar, startIndex);
+                int startSearchAt = startIndex + 1 - count;
+                ref char startChar = ref Unsafe.Add(ref _firstChar, startSearchAt);
 
                 if (char.IsAsciiLetter(value))
                 {
@@ -537,9 +534,15 @@ namespace System
                 {
                     subIndex = SpanHelpers.LastIndexOfChar(ref startChar, value, count);
                 }
-            }
 
-            return subIndex < 0 ? subIndex : startIndex + subIndex;
+                return subIndex < 0 ? subIndex : startSearchAt + subIndex;
+            }
+            else
+            {
+                subIndex = Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
+
+                return subIndex < 0 ? subIndex : startIndex + subIndex;
+            }
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
