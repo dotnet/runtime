@@ -47,7 +47,7 @@
     </MSBuild>
     <ItemGroup>
       <HostTestProject>
-        <Command>$([System.IO.Path]::GetFileName($(_TargetPath))) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
+        <Command>./$([System.IO.Path]::GetFileNameWithoutExtension($(_TargetPath))) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
     </ItemGroup>
