@@ -4389,9 +4389,16 @@ namespace System
 
             if (keys.Length > 1)
             {
-                #pragma warning disable CS8631
-                ArraySortHelperForTComparer<TKey, TValue, TComparer>.Sort(keys, items, comparer);
-                #pragma warning restore CS8631
+                if (typeof(TComparer).IsValueType)
+                {
+                    #pragma warning disable CS8631
+                    ArraySortHelperForTComparer<TKey, TValue, TComparer>.Sort(keys, items, comparer);
+                    #pragma warning restore CS8631
+                }
+                else
+                {
+                    ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer);
+                }
             }
         }
 
