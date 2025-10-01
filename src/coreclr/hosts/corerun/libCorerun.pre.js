@@ -11,4 +11,5 @@ Module.preRun = () => {
             ENV[key] = value;
         }
     }
+    ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
 };
