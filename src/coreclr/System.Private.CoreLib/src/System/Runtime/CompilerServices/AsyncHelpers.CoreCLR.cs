@@ -349,6 +349,29 @@ namespace System.Runtime.CompilerServices
 
                 while (true)
                 {
+                    const CorInfoContinuationFlags continueFlags =
+                        CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT |
+                        CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL |
+                        CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+
+                    // Make a note if have a context-neutral continuation. Such continuation indicates an async call that is not a result of
+                    // an await. So far such calls can only happen as a part of infrastructure helpers/thunks/stubs, as user code must await
+                    // into async code, can't simply call. The context-nutral continuation will run on the current context and will resume
+                    // the next continuation on this same context unconditionally. The idea is to pretend that infrastructure code does not
+                    // exist from the context propagation point of view and the notifier resumes the non-infrastructure code on whatever
+                    // context it wants.
+                    // Basically - we pass through to the notifier the context in which the suspend happened. The notifier needs to know that,
+                    // but may choose to ignore. One example is `IO.Pipelines.Pipe` that can be configured to resume everything on threadpool
+                    // regardless of the calling context.
+                    // It is ok if the leaf continuation runs on a context other that it asked for. It is also possible that non-infra
+                    // continuation gets posted to the original context, but then the context reschedules the action to the
+                    // threadpool (fairly common) or to another context (also possible, but uncommon).
+                    //
+                    // Either way the leaf continuation of the user code can only _ask_ for the context it wants to continue in,
+                    // but may end up running in what the notifier decided, and even then the context/scheduler may decide something else.
+                    // NB: if the leaf user continuation could re-decide and post or schedule itself to another context, the circle of
+                    // re-deciding could never end.
+                    bool isContexNeutralContinuation = (continuation.Flags & continueFlags) == 0;
                     try
                     {
                         Continuation? newContinuation = continuation.Resume(continuation);
@@ -366,7 +389,15 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
+                        Continuation? callerContinuation = continuation.Next;
                         Continuation nextContinuation = UnwindToPossibleHandler(continuation);
+
+                        if (nextContinuation != callerContinuation)
+                        {
+                            // If we were unwoud above immediate call into infra thunks, the continuation context takes over.
+                            isContexNeutralContinuation = false;
+                        }
+
                         if (nextContinuation.Resume == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
@@ -403,7 +434,8 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, continuation))
+                    if (!isContexNeutralContinuation &&
+                        QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, continuation))
                     {
                         contexts.Pop();
                         return;
@@ -432,6 +464,7 @@ namespace System.Runtime.CompilerServices
                     CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT |
                     CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL |
                     CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 TOps.SetContinuationState(task, headContinuation);
