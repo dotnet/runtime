@@ -797,14 +797,9 @@ namespace ILCompiler.ObjectWriter
                         fixed (byte* pData = GetRelocDataSpan(reloc))
                         {
                             long relocOffset = checked((uint)(_sections[definedSymbol.SectionIndex].Header.VirtualAddress + reloc.Offset));
-                            long adjustedAddend = reloc.Addend;
+                            long addend = Relocation.ReadValue(reloc.Type, pData);
 
-                            adjustedAddend -= 4;
-                            adjustedAddend += Relocation.ReadValue(reloc.Type, pData);
-
-                            adjustedAddend += symbolImageOffset - relocOffset;
-
-                            Relocation.WriteValue(reloc.Type, pData, adjustedAddend);
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - relocOffset + addend);
                             WriteRelocDataSpan(reloc, pData);
                         }
                         break;
