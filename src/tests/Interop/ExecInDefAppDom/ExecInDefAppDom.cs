@@ -81,7 +81,7 @@ public class Program
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "WrongReturnType", "None", COR_E_MISSINGMETHOD, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "Return0", "None", S_OK, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "Return1", "None", S_OK, 1);
-        // Interpreter-FIXME: This requires EH interop which is not currently supported by the interpreter
+        // This requires EH interop which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
         if (!TestLibrary.Utilities.IsClrInterpreterActive)
         {
             result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ThrowAnything", "None", COR_E_EXCEPTION, 0);
