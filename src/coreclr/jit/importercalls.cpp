@@ -5033,8 +5033,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                     gtNewColonNode(callType, minMax, gtCloneExpr(op1Clone)));
                         }
 
-                        // QMARK has to be a root node
-                        unsigned tmpTop = lvaGrabTemp(true DEBUGARG("Temp for qmark in Math.Min/Max"));
+                        // Top-level QMARK needs to be in a variable
+                        assert(minMax->OperIs(GT_QMARK));
+                        unsigned tmpTop = lvaGrabTemp(true DEBUGARG("Temp for top qmark in Math.Min/Max"));
                         impStoreToTemp(tmpTop, minMax, CHECK_SPILL_NONE);
                         minMax = gtNewLclvNode(tmpTop, callType);
                     }
