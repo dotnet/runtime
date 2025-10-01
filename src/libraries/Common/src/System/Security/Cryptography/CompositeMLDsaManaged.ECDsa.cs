@@ -71,28 +71,11 @@ namespace System.Security.Cryptography
                     {
                         ECPrivateKey ecPrivateKey = ECPrivateKey.Decode(manager.Memory, AsnEncodingRules.BER);
 
-                        if (ecPrivateKey.Version != 1)
+                        if (ecPrivateKey.Version != 1 ||
+                            ecPrivateKey.Parameters is not null ||
+                            ecPrivateKey.PublicKey is not null)
                         {
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
-
-                        // If domain parameters are present, validate that they match the composite ML-DSA algorithm.
-                        if (ecPrivateKey.Parameters is ECDomainParameters domainParameters)
-                        {
-                            if (domainParameters.Named is not string curveOid || curveOid != algorithm.CurveOidValue)
-                            {
-                                // The curve specified must be named and match the required curve for the composite ML-DSA algorithm.
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-                        }
-
-                        byte[]? x = null;
-                        byte[]? y = null;
-
-                        // If public key is present, add it to the parameters.
-                        if (ecPrivateKey.PublicKey is ReadOnlyMemory<byte> publicKey)
-                        {
-                            EccKeyFormatHelper.GetECPointFromUncompressedPublicKey(publicKey.Span, algorithm.KeySizeInBytes, out x, out y);
                         }
 
                         byte[] d = new byte[ecPrivateKey.PrivateKey.Length];
@@ -107,8 +90,8 @@ namespace System.Security.Cryptography
                                 Curve = algorithm.Curve,
                                 Q = new ECPoint
                                 {
-                                    X = x,
-                                    Y = y,
+                                    X = null,
+                                    Y = null,
                                 },
                                 D = d
                             };
@@ -121,14 +104,10 @@ namespace System.Security.Cryptography
 #error ECDsa.Create(ECParameters) is avaliable in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
 #endif
                             Debug.Assert(!string.IsNullOrEmpty(algorithm.CurveOid.FriendlyName));
-                            Debug.Assert(x is null == y is null);
 
-                            if (x is null)
-                            {
-                                byte[] zero = new byte[d.Length];
-                                x = zero;
-                                y = zero;
-                            }
+                            byte[] zero = new byte[d.Length];
+                            byte[] x = zero;
+                            byte[] y = zero;
 
                             if (!TryValidateNamedCurve(x, y, d))
                             {
@@ -223,12 +202,11 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 
-
                     AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
                     try
                     {
-                        WriteKey(ecParameters.D, ecParameters.Q.X, ecParameters.Q.Y, _algorithm.CurveOidValue, writer);
+                        WriteKey(ecParameters.D, writer);
                         return writer.TryEncode(destination, out bytesWritten);
                     }
                     finally
@@ -261,7 +239,7 @@ namespace System.Security.Cryptography
                                         throw new CryptographicException();
                                     }
 
-                                    WriteKey(d, x, y, _algorithm.CurveOidValue, writer);
+                                    WriteKey(d, writer);
                                     return true;
                                 });
                         });
@@ -274,7 +252,7 @@ namespace System.Security.Cryptography
                 }
 #endif
 
-                static void WriteKey(byte[] d, byte[]? x, byte[]? y, string curveOid, AsnWriter writer)
+                static void WriteKey(byte[] d, AsnWriter writer)
                 {
                     // ECPrivateKey
                     using (writer.PushSequence())
@@ -284,23 +262,6 @@ namespace System.Security.Cryptography
 
                         // privateKey
                         writer.WriteOctetString(d);
-
-                        // domainParameters
-                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
-                        {
-                            writer.WriteObjectIdentifier(curveOid);
-                        }
-
-                        // publicKey
-                        if (x != null)
-                        {
-                            Debug.Assert(y != null);
-
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true)))
-                            {
-                                EccKeyFormatHelper.WriteUncompressedPublicKey(x, y, writer);
-                            }
-                        }
                     }
                 }
             }

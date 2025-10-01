@@ -1135,7 +1135,6 @@ public:
 
     //****************************************************************************************
     LPCWSTR GetFriendlyName();
-    LPCWSTR GetFriendlyNameForDebugger();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(
@@ -1549,8 +1548,6 @@ public:
 
 #endif
 
-#if defined(FEATURE_TIERED_COMPILATION)
-
 public:
     TieredCompilationManager * GetTieredCompilationManager()
     {
@@ -1560,8 +1557,6 @@ public:
 
 private:
     TieredCompilationManager m_tieredCompilationManager;
-
-#endif
 
     friend struct cdac_data<AppDomain>;
 };  // class AppDomain

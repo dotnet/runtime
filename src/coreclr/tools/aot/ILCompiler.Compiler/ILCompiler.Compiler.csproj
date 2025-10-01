@@ -77,6 +77,9 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
@@ -347,6 +350,7 @@
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AddressTakenMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AnalysisCharacteristicNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AnalyzedExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AnalyzedProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />

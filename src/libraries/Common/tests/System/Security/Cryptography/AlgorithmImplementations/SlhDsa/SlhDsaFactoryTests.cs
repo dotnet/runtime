@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             static void AssertThrows(byte[] encodedBytes)
             {
-                SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => Assert.Throws<CryptographicException>(() => import(encodedBytes)),
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
 
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Valid BER but invalid DER - uses indefinite length encoding
             byte[] indefiniteLengthOctet = [0x04, 0x80, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00];
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 AssertThrowIfNotSupported(() =>
                     Assert.Throws<CryptographicException>(() => import(indefiniteLengthOctet))));
         }
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             algorithmIdentifier.Encode(writer);
             byte[] wrongAsnType = writer.Encode();
 
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
 
             SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Fact]
-        public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
+        public static void ImportSubjectPublicKeyInfo_AlgorithmErrorsInAsn()
         {
 #if !NETFRAMEWORK // Does not support exporting RSA SPKI
             if (!OperatingSystem.IsBrowser())
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 // RSA key
                 using RSA rsa = RSA.Create();
                 byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
-                SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
             }
 #endif
@@ -144,17 +144,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SubjectPublicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes]
             };
 
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             spki.Algorithm.Parameters = AsnUtils.DerNull;
 
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             // Sanity check
             spki.Algorithm.Parameters = null;
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
         }
 
         [Fact]

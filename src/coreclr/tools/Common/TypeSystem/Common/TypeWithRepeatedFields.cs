@@ -85,22 +85,25 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => MetadataType.HasCustomAttribute(attributeNamespace, attributeName);
         public override IEnumerable<MetadataType> GetNestedTypes() => (IEnumerable<MetadataType>)EmptyTypes;
         public override MetadataType GetNestedType(string name) => null;
-        public override int GetInlineArrayLength() => MetadataType.GetInlineArrayLength();
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
         public override int GetHashCode() => MetadataType.GetHashCode();
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask) => MetadataType.GetTypeFlags(mask);
 
-        public override string Namespace => MetadataType.Namespace;
+        public override ReadOnlySpan<byte> Namespace => MetadataType.Namespace;
 
-        public override string Name => MetadataType.Name;
+        public override ReadOnlySpan<byte> Name => MetadataType.Name;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
         public override bool IsExplicitLayout => MetadataType.IsExplicitLayout;
 
         public override bool IsSequentialLayout => MetadataType.IsSequentialLayout;
+
+        public override bool IsExtendedLayout => MetadataType.IsExtendedLayout;
+
+        public override bool IsAutoLayout => MetadataType.IsAutoLayout;
 
         public override bool IsBeforeFieldInit => MetadataType.IsBeforeFieldInit;
 

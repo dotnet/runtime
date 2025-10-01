@@ -22,8 +22,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">Runtime.ServerGC</FullRuntimeName>
     <BootstrapperName>bootstrapper</BootstrapperName>
     <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
-    <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
-    <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true'">Runtime.VxsortDisabled</VxSortSupportName>
+    <VxSortSupportName>Runtime.VxsortDisabled</VxSortSupportName>
+    <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Speed' or '$(IlcEnableVxsort)' == 'true'">Runtime.VxsortEnabled</VxSortSupportName>
     <StandaloneGCSupportName>standalonegc-disabled</StandaloneGCSupportName>
     <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">standalonegc-enabled</StandaloneGCSupportName>
     <EntryPointSymbol Condition="'$(EntryPointSymbol)' == ''">wmainCRTStartup</EntryPointSymbol>
@@ -42,7 +42,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
-      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
+      <NativeLibrary Condition="('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)aotminipal$(LibFileExt)" />

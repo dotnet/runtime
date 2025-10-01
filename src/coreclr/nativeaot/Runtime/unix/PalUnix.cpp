@@ -40,6 +40,7 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 
 #ifdef TARGET_LINUX
@@ -506,12 +507,12 @@ bool InitializeSignalHandling();
 // initialization and false on failure.
 bool PalInit()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
     ConfigureSignals();
 
@@ -609,7 +610,7 @@ void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
@@ -670,7 +671,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -765,7 +766,7 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
-    
+
     size_t stacksize = GetDefaultStackSizeSetting();
     if (stacksize != 0)
     {
@@ -1231,11 +1232,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-void PalFlushProcessWriteBuffers()
-{
-    GCToOSInterface::FlushProcessWriteBuffers();
 }
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;

@@ -24,6 +24,7 @@
     <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64'">true</Is64Bit>
     <UseMinimalGlobalizationData Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <FeatureCrossProcessMutex Condition="'$(IsMobileLike)' != 'true'">true</FeatureCrossProcessMutex>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(IsBigEndian)' == 'true'">$(DefineConstants);BIGENDIAN</DefineConstants>
@@ -48,6 +49,9 @@
     <DefineConstants Condition="'$(Targetsillumos)' == 'true'">$(DefineConstants);TARGET_ILLUMOS</DefineConstants>
     <DefineConstants Condition="'$(TargetsSolaris)' == 'true'">$(DefineConstants);TARGET_SOLARIS</DefineConstants>
     <DefineConstants Condition="'$(TargetsHaiku)' == 'true'">$(DefineConstants);TARGET_HAIKU</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureCrossProcessMutex)' == 'true'">$(DefineConstants);FEATURE_CROSS_PROCESS_MUTEX</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.xml" />
@@ -183,6 +187,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\BitArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\CompatibleComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\ConcurrentDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\ConcurrentQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\ConcurrentQueueSegment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\IProducerConsumerCollection.cs" />
@@ -853,6 +858,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DiscardableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ExtensionAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ExtensionMarkerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FixedAddressValueTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FormattableStringFactory.cs" />
@@ -980,6 +986,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DllImportSearchPath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ErrorWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExtendedLayoutAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExtendedLayoutKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GCHandle.cs" />
@@ -1204,10 +1212,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\NormalizationForm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Rune.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\RunePosition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanLineEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanRuneEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.Debug.cs" Condition="'$(Configuration)' == 'Debug'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilderRuneEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringRuneEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\TranscodingStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\TrimType.cs" />
@@ -1584,6 +1594,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingEventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingPollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Exceptions.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Exceptions.NativeSinks.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureNativeAot)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.cs" Condition="'$(FeaturePerfTracing)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'" />
@@ -2460,6 +2472,12 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MksTemps.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MMap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MUnmap.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MountPoints.cs</Link>
     </Compile>
@@ -2618,6 +2636,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetSid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetSid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
@@ -2840,6 +2861,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsUnix)' == 'true' and '$(FeatureCrossProcessMutex)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\SharedMemoryManager.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NamedMutex.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.LowLevelCrossProcessMutex.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />

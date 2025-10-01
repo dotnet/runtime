@@ -312,7 +312,7 @@ public:
     template<typename T>
     static void* ConvertArgument(T arg)
     {
-        C_ASSERT(sizeof(T) <= sizeof(void*));
+        static_assert(sizeof(T) <= sizeof(void*));
         return (void*)(size_t)arg;
     }
 

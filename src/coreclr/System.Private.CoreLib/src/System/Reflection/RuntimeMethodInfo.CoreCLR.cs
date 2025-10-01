@@ -105,7 +105,7 @@ namespace System.Reflection
 
         internal RuntimeMethodInfo? GetParentDefinition()
         {
-            if (!IsVirtual || m_declaringType.IsInterface)
+            if (!IsVirtual || m_declaringType.IsActualInterface)
                 return null;
 
             RuntimeType? parent = (RuntimeType?)m_declaringType.BaseType;
@@ -274,8 +274,7 @@ namespace System.Reflection
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null)
-                mb._methodBase = this;
+            mb?._methodBase = this;
             return mb;
         }
 
@@ -319,11 +318,22 @@ namespace System.Reflection
 
         public override ParameterInfo ReturnParameter => FetchReturnParameter();
 
-        public override bool IsCollectible => RuntimeMethodHandle.GetIsCollectible(new RuntimeMethodHandleInternal(m_handle)) != Interop.BOOL.FALSE;
+        public override bool IsCollectible
+        {
+            get
+            {
+                if (ReflectedTypeInternal.IsCollectible)
+                    return true;
+
+                bool isCollectible = RuntimeMethodHandle.IsCollectible(new RuntimeMethodHandleInternal(m_handle));
+                GC.KeepAlive(this); // We directly pass the native handle above - make sure this object stays alive for the call
+                return isCollectible;
+            }
+        }
 
         public override MethodInfo GetBaseDefinition()
         {
-            if (!IsVirtual || IsStatic || m_declaringType == null || m_declaringType.IsInterface)
+            if (!IsVirtual || IsStatic || m_declaringType == null || m_declaringType.IsActualInterface)
                 return this;
 
             int slot = RuntimeMethodHandle.GetSlot(this);
@@ -447,7 +457,7 @@ namespace System.Reflection
             RuntimeMethodHandle.GetMethodInstantiationInternal(this);
 
         public override Type[] GetGenericArguments() =>
-            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? Type.EmptyTypes;
+            RuntimeMethodHandle.GetMethodInstantiationPublic(this) ?? [];
 
         public override MethodInfo GetGenericMethodDefinition()
         {

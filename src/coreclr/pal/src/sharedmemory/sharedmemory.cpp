@@ -836,7 +836,7 @@ SharedMemoryId::SharedMemoryId(LPCSTR name, bool isUserScope)
     m_userScopeUid = isUserScope ? geteuid() : (uid_t)0;
 
     // The uid_t is converted to UINT32 to create a directory name, verify that it's valid
-    static_assert_no_msg(sizeof(uid_t) <= sizeof(UINT32));
+    static_assert(sizeof(uid_t) <= sizeof(UINT32));
     if ((uid_t)(UINT32)m_userScopeUid != m_userScopeUid)
     {
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));

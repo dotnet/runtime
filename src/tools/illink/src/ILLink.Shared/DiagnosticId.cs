@@ -101,7 +101,7 @@ namespace ILLink.Shared
         XmlInvalidValueForAttributeActionForResource = 2039,
         XmlCouldNotFindResourceToRemoveInAssembly = 2040,
         DynamicallyAccessedMembersIsNotAllowedOnMethods = 2041,
-        DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
+        unused_DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
         DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor = 2043,
         XmlCouldNotFindAnyTypeInNamespace = 2044,
         AttributeIsReferencedButTrimmerRemoveAllInstances = 2045,
@@ -190,6 +190,8 @@ namespace ILLink.Shared
         RequiresUnreferencedCodeOnEntryPoint = 2123,
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
         ReferenceNotMarkedIsTrimmable = 2125,
+        DataflowAnalysisDidNotConverge = 2126,
+        DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties = 2127,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.

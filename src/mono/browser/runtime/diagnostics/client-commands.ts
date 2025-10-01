@@ -21,7 +21,7 @@ export function advertise () {
     globalThis.crypto.getRandomValues(uuid);
     uuid[7] = (uuid[7] & 0xf) | 0x40;// version 4
 
-    const pid = runtimeHelpers.mono_wasm_process_current_pid();
+    const pid = runtimeHelpers.SystemJS_GetCurrentProcessId();
 
     return Uint8Array.from([
         ...advert1,
@@ -258,6 +258,7 @@ const enum Keywords {
     // Summary:
     //     This suppresses NGEN events on V4.0 (where you have NGEN PDBs), but not on V2.0
     //     (which does not know about this bit and also does not have NGEN PDBS).
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
     SupressNGen = 0x40000,
     //
     // Summary:

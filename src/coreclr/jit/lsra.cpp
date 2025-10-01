@@ -7665,25 +7665,18 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     if (tree != nullptr)
     {
         LIR::Use treeUse;
-        GenTree* useNode  = nullptr;
-        bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
-        useNode           = treeUse.User();
+        bool     foundUse;
+        GenTree* useNode = tree;
 
-#ifdef TARGET_ARM64
-        if (refPosition->needsConsecutive && useNode->OperIs(GT_FIELD_LIST))
+        // Get the use of the node. If the node is contained then the actual use is the containing node
+        // (which may be much later in the LIR). Repeatedly check until there is no contained node.
+        do
         {
-            // The tree node requiring consecutive registers are represented as GT_FIELD_LIST.
-            // When restoring the upper vector, make sure to restore it at the point where
-            // GT_FIELD_LIST is consumed instead where the individual field is consumed, which
-            // will always be at GT_FIELD_LIST creation time. That way, we will restore the
-            // upper vector just before the use of them in the intrinsic.
-            LIR::Use fieldListUse;
-            foundUse = blockRange.TryGetUse(useNode, &fieldListUse);
-            treeUse  = fieldListUse;
+            foundUse = blockRange.TryGetUse(useNode, &treeUse);
             useNode  = treeUse.User();
-        }
-#endif
-        assert(foundUse);
+            assert(foundUse);
+        } while (useNode->isContained());
+
         JITDUMP("before %d.%s:\n", useNode->gtTreeID, GenTree::OpName(useNode->gtOper));
 
         // We need to insert the restore prior to the use, not (necessarily) immediately after the lclVar.
@@ -9633,7 +9626,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // This indicates that the var originally in rax is now in its target register.
 
     regNumberSmall location[REG_COUNT];
-    C_ASSERT(sizeof(char) == sizeof(regNumberSmall)); // for memset to work
+    static_assert(sizeof(char) == sizeof(regNumberSmall)); // for memset to work
     memset(location, REG_NA, REG_COUNT);
     regNumberSmall source[REG_COUNT];
     memset(source, REG_NA, REG_COUNT);

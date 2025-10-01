@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="Version.Details.props" Condition="Exists('Version.Details.props')" />
   <PropertyGroup>
     <!-- The .NET product branding version -->
     <ProductVersion>10.0.0</ProductVersion>
@@ -33,20 +34,6 @@
   <ItemGroup>
     <WorkloadSdkBandVersions Include="$(SdkBandVersion)" SupportsMachineArch="true" />
   </ItemGroup>
-  <PropertyGroup>
-    <!-- dotnet/roslyn-analyzers dependencies -->
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>10.0.0-preview.25367.101</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <!-- dotnet/roslyn dependencies -->
-    <MicrosoftCodeAnalysisAnalyzersVersion>5.0.0-2.25367.101</MicrosoftCodeAnalysisAnalyzersVersion>
-    <!--
-      These versions should not be used by any project that contributes to the design-time experience in VS, such as an analyzer, code-fix, or generator assembly.
-      Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
-      they do not break the local dev experience.
-    -->
-    <MicrosoftCodeAnalysisCSharpVersion>5.0.0-2.25367.101</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>5.0.0-2.25367.101</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>5.0.0-2.25367.101</MicrosoftNetCompilersToolsetVersion>
-  </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
     We pin these versions as we need to match them exactly for any scenarios that run Roslyn on .NET Framework, like Visual Studio.
@@ -69,7 +56,7 @@
       Source-build builds the product with the most recent previously source-built release. Thankfully, these two requirements line up nicely
       such that any version that satisfies the VS version requirement will also satisfy the .NET SDK version requirement because of how we ship.
     -->
-    <MicrosoftCodeAnalysisVersion_LatestVS>4.8.0</MicrosoftCodeAnalysisVersion_LatestVS>
+    <MicrosoftCodeAnalysisVersion_LatestVS>4.14.0</MicrosoftCodeAnalysisVersion_LatestVS>
     <!-- Some of the analyzer dependencies used by ILLink project -->
     <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.5-beta1.23270.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>
   </PropertyGroup>
@@ -81,33 +68,10 @@
   </PropertyGroup>
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
-    <!-- SDK dependencies (also used in wasm build tests -->
-    <MicrosoftDotNetApiCompatTaskVersion>10.0.100-preview.7.25367.101</MicrosoftDotNetApiCompatTaskVersion>
-    <!-- Arcade dependencies -->
-    <MicrosoftDotNetBuildTasksFeedVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>10.0.0-beta.25367.101</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>10.0.0-beta.25367.101</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>10.0.0-beta.25367.101</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitAssertVersion>2.9.3-beta.25367.101</MicrosoftDotNetXUnitAssertVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>10.0.0-beta.25367.101</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.9.3-beta.25367.101</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
-    <MicrosoftDotNetBuildTasksTemplatingVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksTemplatingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>10.0.0-beta.25367.101</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>10.0.0-beta.25367.101</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetPackageTestingVersion>10.0.0-beta.25367.101</MicrosoftDotNetPackageTestingVersion>
-    <MicrosoftDotNetXliffTasksVersion>10.0.0-beta.25367.101</MicrosoftDotNetXliffTasksVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRefVersion>10.0.0-preview.7.25367.101</MicrosoftNETCoreAppRefVersion>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
-    <!-- ILAsm dependencies -->
-    <MicrosoftNETCoreILAsmVersion>10.0.0-preview.7.25367.101</MicrosoftNETCoreILAsmVersion>
-    <MicrosoftNETSdkILVersion>10.0.0-preview.7.25367.101</MicrosoftNETSdkILVersion>
     <!-- Maintenance-Packages dependencies -->
     <MicrosoftBclHashCodeVersion>6.0.0</MicrosoftBclHashCodeVersion>
     <SystemBuffersVersion>4.6.1</SystemBuffersVersion>
@@ -125,18 +89,15 @@
     <SystemDrawingCommonVersion>8.0.0</SystemDrawingCommonVersion>
     <SystemFormatsAsn1Version>8.0.1</SystemFormatsAsn1Version>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
-    <SystemReflectionMetadataVersion>10.0.0-preview.7.25367.101</SystemReflectionMetadataVersion>
-    <SystemReflectionMetadataLoadContextVersion>10.0.0-preview.7.25367.101</SystemReflectionMetadataLoadContextVersion>
     <SystemSecurityAccessControlVersion>6.0.0</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
-    <SystemTextJsonVersion>10.0.0-preview.7.25367.101</SystemTextJsonVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
-    <runtimenativeSystemIOPortsVersion>10.0.0-preview.7.25367.101</runtimenativeSystemIOPortsVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
     <MicrosoftBclAsyncInterfacesToolsetVersion>8.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
+    <MicrosoftIoRedistToolsetVersion>6.0.1</MicrosoftIoRedistToolsetVersion>
     <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
@@ -145,39 +106,9 @@
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
     <SystemTextEncodingsWebToolsetVersion>8.0.0</SystemTextEncodingsWebToolsetVersion>
     <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
-    <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.25310.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.25310.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>10.0.0-beta.25310.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>10.0.0-beta.25310.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>10.0.0-beta.25310.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>10.0.0-beta.25310.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>10.0.0-beta.25310.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>10.0.0-beta.25310.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.25310.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.25310.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.25310.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.25310.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.25310.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25310.1</MicrosoftDotNetCilStripSourcesVersion>
-    <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25310.1</MicrosoftNETHostModelTestDataVersion>
-    <!-- xharness dependencies -->
-    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25330.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25330.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25330.2</MicrosoftDotNetXHarnessCLIVersion>
-    <!-- hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25302.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
-    <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25363.1</optimizationwindows_ntx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25363.1</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.25363.1</optimizationwindows_ntarm64MIBCRuntimeVersion>
-    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.25363.1</optimizationlinuxx64MIBCRuntimeVersion>
-    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.25363.1</optimizationlinuxarm64MIBCRuntimeVersion>
-    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.25363.1</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
-    <SystemCommandLineVersion>2.0.0-beta7.25367.101</SystemCommandLineVersion>
     <TraceEventVersion>3.1.16</TraceEventVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
@@ -187,23 +118,18 @@
     <MicrosoftBuildTasksCoreVersion>17.8.3</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>17.8.3</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>17.8.3</MicrosoftBuildUtilitiesCoreVersion>
-    <NugetFrameworksVersion>6.2.4</NugetFrameworksVersion>
-    <NugetProjectModelVersion>6.2.4</NugetProjectModelVersion>
-    <NugetPackagingVersion>6.2.4</NugetPackagingVersion>
-    <NugetVersioningVersion>6.2.4</NugetVersioningVersion>
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.5.0</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
-    <CoverletCollectorVersion>6.0.0</CoverletCollectorVersion>
+    <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <JsonSchemaNetVersion>7.0.2</JsonSchemaNetVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
-    <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.18.4</MoqVersion>
     <AwesomeAssertionsVersion>8.0.2</AwesomeAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
@@ -221,63 +147,32 @@
     <CompilerPlatformTestingMicrosoftVisualBasicVersion>10.2.0</CompilerPlatformTestingMicrosoftVisualBasicVersion>
     <CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>17.0.46</CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>9.0.0-preview-20241010.1</MicrosoftPrivateIntellisenseVersion>
-    <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.5-alpha.25367.101</MicrosoftDotNetCecilVersion>
-    <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.6.25302.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20250912.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.8</MicrosoftNativeQuicMsQuicSchannelVersion>
-    <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
-    <!-- Mono LLVM -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>19.1.0-alpha.1.25167.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.1.0-alpha.1.25167.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.1.0-alpha.1.25167.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.15</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>10.0.100-preview.7.25367.101</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
-    <!-- JIT Tools -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>19.1.0-alpha.1.25167.1</runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
     <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskVersion)</SdkVersionForWorkloadTesting>
-    <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>10.0.0-alpha.1.25169.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <EmsdkPackageVersion>10.0.0-preview.7.25359.101</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
+    <!-- WiX 5+ dependencies for MSI generation -->
+    <MicrosoftWixVersion>5.0.2-dotnet.2737382</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2737382</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 </Project>
