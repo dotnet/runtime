@@ -2265,12 +2265,14 @@ void AsyncTransformation::ReportDebugInfo()
     ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints =
         static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(m_comp->info.compCompHnd->allocateArray(
             m_dbgSuspensionPoints.size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
-    std::copy(m_dbgSuspensionPoints.begin(), m_dbgSuspensionPoints.end(), hostSuspensionPoints);
+    for (size_t i = 0; i < m_dbgSuspensionPoints.size(); i++)
+        hostSuspensionPoints[i] = m_dbgSuspensionPoints[i];
 
     ICorDebugInfo::AsyncContinuationVarInfo* hostVars =
         static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(m_comp->info.compCompHnd->allocateArray(
             m_dbgContinuationVars.size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
-    std::copy(m_dbgContinuationVars.begin(), m_dbgContinuationVars.end(), hostVars);
+    for (size_t i = 0; i < m_dbgContinuationVars.size(); i++)
+        hostVars[i] = m_dbgContinuationVars[i];
 
     m_comp->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
                                                    static_cast<uint32_t>(m_dbgContinuationVars.size()));
