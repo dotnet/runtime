@@ -678,7 +678,7 @@ namespace
             argType != ELEMENT_TYPE_END;
             argType = sig.NextArg())
         {
-            if(pos >= maxSize)
+            if (pos >= maxSize)
                 return false;
 
             keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
