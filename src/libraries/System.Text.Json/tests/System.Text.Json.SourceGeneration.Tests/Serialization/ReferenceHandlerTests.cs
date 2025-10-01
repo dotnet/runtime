@@ -275,7 +275,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithGenericISetT))]
+
+        // .NET Framework does not support IReadOnlySet<T>
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringToPrimitiveDictionary))]
         [JsonSerializable(typeof(TestClassWithObjectIEnumerableConstructibleTypes))]
         [JsonSerializable(typeof(TestClassWithObjectImmutableTypes))]
