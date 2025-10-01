@@ -554,7 +554,7 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #endif
 
 #ifndef MAXULONGLONG
-#define MAXULONGLONG                     UI64(0xffffffffffffffff)
+#define MAXULONGLONG                     0xffffffffffffffffULL
 #endif
 
 //-----------------------------------------------------------------------------
