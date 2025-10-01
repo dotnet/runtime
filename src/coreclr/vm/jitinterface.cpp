@@ -11185,14 +11185,14 @@ void CEECodeGenInfo::reportAsyncDebugInfo(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     m_dbgAsyncInfo = *asyncInfo;
     m_dbgAsyncSuspensionPoints = suspensionPoints;
     m_dbgAsyncContinuationVars = vars;
     m_numAsyncContinuationVars = numVars;
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
 }
 
 void CEECodeGenInfo::reportMetadata(
