@@ -2489,7 +2489,6 @@ MAIN_LOOP:
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
                             targetMethod = targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
-                            // GetMethodDescOfVirtualizedCode will invalidate delegateObj as it is a method which may trigger a GC
                         }
                         else
                         {
