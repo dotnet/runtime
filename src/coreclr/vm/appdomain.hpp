@@ -1135,7 +1135,6 @@ public:
 
     //****************************************************************************************
     LPCWSTR GetFriendlyName();
-    LPCWSTR GetFriendlyNameForDebugger();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(

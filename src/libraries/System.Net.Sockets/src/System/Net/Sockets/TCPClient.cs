@@ -113,10 +113,7 @@ namespace System.Net.Sockets
             get { return Client?.ExclusiveAddressUse ?? false; }
             set
             {
-                if (_clientSocket != null)
-                {
-                    _clientSocket.ExclusiveAddressUse = value;
-                }
+                _clientSocket?.ExclusiveAddressUse = value;
             }
         }
 

@@ -17,7 +17,7 @@
 #ifdef HOST_64BIT
 // All stack offsets are INT32's, so this guarantees a disjoint range of
 // addresses for each register.
-#define ADDRESS_SPACING UI64(0x100000000)
+#define ADDRESS_SPACING 0x100000000ULL
 #elif defined(TARGET_ARM)
 #define ADDRESS_SPACING 0x100000
 #else
