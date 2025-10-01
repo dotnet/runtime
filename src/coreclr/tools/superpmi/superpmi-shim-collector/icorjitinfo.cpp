@@ -1229,7 +1229,7 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
                                           uint32_t                          numMappings)
 {
     mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
@@ -1239,7 +1239,7 @@ void interceptor_ICJI::reportAsyncDebugInfo(ICorDebugInfo::AsyncInfo*           
                                             uint32_t                              numVars)
 {
     mc->cr->AddCall("reportAsyncDebugInfo");
-    // TODO: record async debug info
+    // Compile output that we do not currently save
     original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
 }
 
