@@ -663,7 +663,9 @@ namespace
         uint32_t pos = 0;
 
         if (sig.IsReturnTypeVoid())
+        {
             keyBuffer[pos++] = 'v';
+        }
         else
         {
             ConvertType retType = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
@@ -724,7 +726,7 @@ namespace
         { "dd", (void*)&CallFunc_F64_RetF64 },
     };
 
-    class StringWasmThunkSHashTraits : public  MapSHashTraits<const char*, void*>
+    class StringWasmThunkSHashTraits final : public MapSHashTraits<const char*, void*>
     {
     public:
         static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
@@ -740,7 +742,7 @@ namespace
         if (table == nullptr)
         {
             StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-            for (const auto& thunk : wasmThunks)
+            for (const StringToWasmSigThunk& thunk : wasmThunks)
                 newTable->Add(thunk.key, thunk.value);
 
             if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
