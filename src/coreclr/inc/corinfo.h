@@ -2918,8 +2918,8 @@ public:
     virtual void reportAsyncDebugInfo(
             ICorDebugInfo::AsyncInfo*             asyncInfo,         // [IN] Async method information
             ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Array of async suspension points, indexed by state number
-            ICorDebugInfo::AsyncContinuationVarInfo* vars,          // [IN] Array of async continuation variable info
-            uint32_t                              numVars           // [IN] Number of continuation variables
+            ICorDebugInfo::AsyncContinuationVarInfo* vars,           // [IN] Array of async continuation variable info
+            uint32_t                              numVars            // [IN] Number of entries in the async vars array
             ) = 0;
 
     // Report back some metadata about the compilation to the EE -- for

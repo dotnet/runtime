@@ -448,7 +448,8 @@ public:
         uint32_t Inlinee;
         // IL offset that resulted in the creation of the suspension point.
         uint32_t ILOffset;
-        // Count of AsyncContinuationVarInfo in array of locals
+        // Count of AsyncContinuationVarInfo in array of locals starting where
+        // the previous suspension point's locals end.
         uint32_t NumContinuationVars;
     };
 
