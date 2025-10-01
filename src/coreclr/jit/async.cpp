@@ -2226,7 +2226,7 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCa
     for (const LiveLocalInfo& local : layout.Locals)
     {
         unsigned ilVarNum = m_comp->compMap2ILvarNum(local.LclNum);
-        if (ilVarNum == ICorDebugInfo::UNKNOWN_ILNUM)
+        if (ilVarNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
         {
             continue;
         }
