@@ -22,7 +22,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
         localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
     };
-    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI] = internals[InternalExchangeIndex.RuntimeAPI] || {} as RuntimeAPI;
+    Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.BrowserUtilsExportsTable] = browserUtilsExportsToTable({
         utf16ToString,

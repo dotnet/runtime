@@ -12,7 +12,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         runMain,
         runMainAndExit,
     };
-    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI] = internals[InternalExchangeIndex.RuntimeAPI] || {} as RuntimeAPI;
+    Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,

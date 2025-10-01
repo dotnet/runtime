@@ -11,7 +11,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getAssemblyExports,
         setModuleImports,
     };
-    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI] = internals[InternalExchangeIndex.RuntimeAPI] || {} as RuntimeAPI;
+    Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
     });
