@@ -213,7 +213,7 @@ namespace System.Security.Cryptography
             {
                 if (rented is not null)
                 {
-                    CryptoPool.Return(rented, clearSize: 0); // Info is not consider secret.
+                    CryptoPool.Return(rented, clearSize: 0); // Info is not considered secret.
                 }
 
                 keyHandle?.Dispose();
