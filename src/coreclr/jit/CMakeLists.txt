@@ -620,6 +620,8 @@ function(add_jit jitName)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
 
+    add_compile_definitions(JIT_STANDALONE_BUILD)
+
     # add the install targets
     install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
 endfunction()
