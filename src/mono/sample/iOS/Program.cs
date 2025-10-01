@@ -41,6 +41,7 @@ public static class Program
     public static int Main(string[] args)
     {
         Console.WriteLine("Done!");
+        Thread.Sleep(Timeout.Infinite);
         return 42;
     }
 #else
