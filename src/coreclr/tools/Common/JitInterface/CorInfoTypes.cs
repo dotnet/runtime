@@ -1329,9 +1329,6 @@ namespace Internal.JitInterface
 
     public struct AsyncSuspensionPoint
     {
-        // State number assigned to this suspension point. UINT_MAX if no state
-        // number is assigned (when AsyncInfo::NumSuspensionPoints == 1).
-        public uint StateNumber;
         // IL offset in the root method that resulted in the creation of this suspension point.
         public uint RootILOffset;
         // Index of inline tree node containing the IL offset (0 for root)
@@ -1341,8 +1338,6 @@ namespace Internal.JitInterface
         public uint NumVars;
         // Count of AsyncContinuationVarInfo
         public uint NumContinuationVars;
-        // Index into array of AsyncContinuationVarInfo of first variable
-        public uint ContinuationVarsIndex;
     }
 
     public struct AsyncInfo
