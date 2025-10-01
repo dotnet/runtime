@@ -345,7 +345,7 @@ if defined RunCrossGen2 (
 )
 
 if defined RunInterpreter (
-  SET "DOTNET_Interpreter=$(AssemblyName)^!*"
+  SET "DOTNET_InterpMode=3"
 )
 
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%

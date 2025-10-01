@@ -454,8 +454,41 @@ HRESULT EEConfig::sync()
 
     pReadyToRunExcludeList = NULL;
 
+#ifdef FEATURE_JIT
+    LPWSTR interpreterConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+    if (interpreterConfig == NULL)
+    {
+        if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0))
+        {
+            enableInterpreter = true;
+        }
+    }
+    else
+    {
+        enableInterpreter = true;
+    }
+#else
+    enableInterpreter = true;
+#endif
+
+    enableHWIntrinsic = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic);
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 3)
+    {
+        // R2R mode 3 disables all hw intrinsics
+        enableHWIntrinsic = 0;
+    }
+
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+#if defined(FEATURE_INTERPRETER)
+    if (fReadyToRun && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
+    {
+        // ReadyToRun and Interpreter modes 2 and 3 are mutually exclusive.
+        // If both are set, Interpreter wins.
+        fReadyToRun = false;
+    }
+#endif // defined(FEATURE_INTERPRETER)
 
     if (fReadyToRun)
     {
