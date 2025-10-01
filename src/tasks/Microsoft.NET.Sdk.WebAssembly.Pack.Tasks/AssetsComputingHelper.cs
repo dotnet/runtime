@@ -72,7 +72,7 @@ public class AssetsComputingHelper
             ".dat" when !string.IsNullOrEmpty(customIcuCandidateFilename) && fileName != customIcuCandidateFilename => "custom icu file either from absolute path or from runtime pack path will be used",
             ".dat" when IsDefaultIcuMode() && !(icuShardsFromRuntimePack.Any(f => f == fileName)) => "automatic icu shard selection, based on application culture, is enabled",
             ".json" when fromMonoPackage && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
-            ".ts" when fromMonoPackage && fileName == "dotnet.d" => emitTypeScriptDefinitions ? null : "dotnet type definitions are not enabled",
+            ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".map" when emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => null,
             ".map" when emitSourceMap && fromMonoPackage && enableDiagnostics && fileName == "dotnet.diagnostics.js" => null,
             ".map" when emitSourceMap && fromMonoPackage && !enableDiagnostics && fileName == "dotnet.diagnostics.js" => "perf tracing is not enabled",
