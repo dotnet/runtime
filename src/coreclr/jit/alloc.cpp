@@ -328,9 +328,12 @@ void ArenaAllocator::dumpMaxMemStats(FILE* file)
 }
 #endif // MEASURE_MEM_ALLOC
 
+#ifdef JIT_STANDALONE_BUILD
+
 void* __cdecl operator new(std::size_t size)
 {
-    assert(!"heap new called; use malloc directly if heap allocation was intended");
+    assert(!"Global new called; use HostAllocator if long-lived allocation was intended");
+
     if (size == 0)
     {
         size++;
@@ -347,7 +350,8 @@ void* __cdecl operator new(std::size_t size)
 
 void* __cdecl operator new[](std::size_t size)
 {
-    assert(!"heap new called; use malloc directly if heap allocation was intended");
+    assert(!"Global new called; use HostAllocator if long-lived allocation was intended");
+
     if (size == 0)
     {
         size++;
@@ -371,3 +375,5 @@ void __cdecl operator delete[](void* ptr) noexcept
 {
     free(ptr);
 }
+
+#endif
