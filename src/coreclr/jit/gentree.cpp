@@ -18178,10 +18178,18 @@ ssize_t GenTreeIndir::Offset()
     }
 }
 
-unsigned GenTreeIndir::Size() const
+// Compiler::gtGetSizeOfIndirection: Get the size associated with this indirection.
+//
+// Arguments:
+//    indir - Indirection to process
+//
+// Return Value:
+//    If the indirection is a block load or store, then it's the size of the block.
+//    Otherwise it's the size of the type of the indirection.
+//
+unsigned Compiler::gtGetSizeOfIndirection(GenTreeIndir* indir)
 {
-    assert(isIndir() || OperIsBlk());
-    return OperIsBlk() ? AsBlk()->Size() : genTypeSize(TypeGet());
+    return indir->OperIsBlk() ? indir->AsBlk()->Size() : getSizeOfType(indir->TypeGet());
 }
 
 //------------------------------------------------------------------------

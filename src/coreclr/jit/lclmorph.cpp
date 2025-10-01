@@ -1591,7 +1591,7 @@ private:
         unsigned   lclNum    = val.LclNum();
         unsigned   offset    = val.Offset();
         LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
-        unsigned   indirSize = node->AsIndir()->Size();
+        unsigned   indirSize = m_compiler->gtGetSizeOfIndirection(node->AsIndir());
         bool       isWide;
 
         // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
@@ -2062,7 +2062,7 @@ private:
             return false;
         }
 
-        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->Size());
+        unsigned fieldLclNum = MorphStructFieldAddress(addr, m_compiler->gtGetSizeOfIndirection(node));
         if (fieldLclNum == BAD_VAR_NUM)
         {
             return false;

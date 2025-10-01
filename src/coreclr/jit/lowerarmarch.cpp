@@ -2864,7 +2864,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         }
     }
     else if (addr->OperIs(GT_LCL_ADDR) && !indirNode->OperIs(GT_NULLCHECK) &&
-             IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+             IsContainableLclAddr(addr->AsLclFld(), comp->gtGetSizeOfIndirection(indirNode)))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.

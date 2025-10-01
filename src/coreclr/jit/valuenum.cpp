@@ -6277,7 +6277,7 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
 
     unsigned  elemSize = (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemType);
     var_types loadType = loadTree->TypeGet();
-    unsigned  loadSize = loadTree->AsIndir()->Size();
+    unsigned  loadSize = gtGetSizeOfIndirection(loadTree->AsIndir());
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
@@ -6406,9 +6406,10 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     ValueNum fieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
 
     // Finally, account for the struct fields and type mismatches.
-    var_types loadType    = loadTree->TypeGet();
-    unsigned  loadSize    = loadTree->OperIsBlk() ? loadTree->AsBlk()->Size() : genTypeSize(loadTree);
-    ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
+    var_types loadType = loadTree->TypeGet();
+    unsigned  loadSize = gtGetSizeOfIndirection(loadTree->AsIndir());
+
+    ValueNum loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
     loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
@@ -12119,7 +12120,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             GenTreeLclVarCommon* lclVarTree = nullptr;
             ssize_t              offset     = 0;
-            unsigned             storeSize  = store->AsIndir()->Size();
+            unsigned             storeSize  = gtGetSizeOfIndirection(store->AsIndir());
             GenTree*             baseAddr   = nullptr;
             FieldSeq*            fldSeq     = nullptr;
 
@@ -12402,7 +12403,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     ssize_t               byteOffset     = 0;
     FieldSeq*             fieldSeq       = nullptr;
     CORINFO_OBJECT_HANDLE obj            = nullptr;
-    int                   size           = (int)genTypeSize(tree->TypeGet());
+    int                   size           = (int)gtGetSizeOfIndirection(tree);
     const int             maxElementSize = sizeof(simd_t);
 
     if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
@@ -12768,7 +12769,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 var_types loadType = tree->TypeGet();
                 ssize_t   offset   = 0;
-                unsigned  loadSize = tree->AsIndir()->Size();
+                unsigned  loadSize = gtGetSizeOfIndirection(tree->AsIndir());
                 VNFuncApp funcApp{VNF_COUNT};
 
                 if (fgValueNumberConstLoad(tree->AsIndir()))

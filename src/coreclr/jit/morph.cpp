@@ -8546,7 +8546,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
 
     if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR))
     {
-        unsigned size    = indir->Size();
+        unsigned size    = gtGetSizeOfIndirection(indir);
         unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
         unsigned extent  = offset + size;
         unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());

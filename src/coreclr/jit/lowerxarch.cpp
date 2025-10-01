@@ -7278,7 +7278,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), comp->gtGetSizeOfIndirection(node)))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -8239,7 +8239,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
         if (indirCandidateChild->OperIs(GT_LCL_ADDR) &&
-            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->Size()))
+            IsContainableLclAddr(indirCandidateChild->AsLclFld(), comp->gtGetSizeOfIndirection(storeInd)))
         {
             indirDst->SetContained();
         }

@@ -5710,7 +5710,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
+            if (genTypeSize(nativeReturnType) > comp->gtGetSizeOfIndirection(retVal->AsIndir()))
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
@@ -10837,23 +10837,25 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 target_ssize_t storeOffs = 0;
                 comp->gtPeelOffsets(&storeAddr, &storeOffs);
 
-                bool distinct = (storeOffs + (target_ssize_t)store->Size() <= offs) ||
-                                (offs + (target_ssize_t)indir->Size() <= storeOffs);
+                unsigned storeSize = comp->gtGetSizeOfIndirection(store);
+                unsigned indirSize = comp->gtGetSizeOfIndirection(indir);
+                bool     distinct =
+                    (storeOffs + (target_ssize_t)storeSize <= offs) || (offs + (target_ssize_t)indirSize <= storeOffs);
 
                 if (checkLocal && GenTree::Compare(indirAddr, storeAddr) && distinct)
                 {
                     JITDUMP("Cannot interfere with [%06u] since they are off the same local V%02u and indir range "
                             "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
                             Compiler::dspTreeID(node), indirAddr->AsLclVarCommon()->GetLclNum(), (unsigned)offs,
-                            (unsigned)offs + indir->Size(), (unsigned)storeOffs, (unsigned)storeOffs + store->Size());
+                            (unsigned)offs + indirSize, (unsigned)storeOffs, (unsigned)storeOffs + storeSize);
                 }
                 // Two indirs off of TYP_REFs cannot overlap if their offset ranges are distinct.
                 else if (indirAddr->TypeIs(TYP_REF) && storeAddr->TypeIs(TYP_REF) && distinct)
                 {
                     JITDUMP("Cannot interfere with [%06u] since they are both off TYP_REF bases and indir range "
                             "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
-                            Compiler::dspTreeID(node), (unsigned)offs, (unsigned)offs + indir->Size(),
-                            (unsigned)storeOffs, (unsigned)storeOffs + store->Size());
+                            Compiler::dspTreeID(node), (unsigned)offs, (unsigned)offs + indirSize, (unsigned)storeOffs,
+                            (unsigned)storeOffs + storeSize);
                 }
                 else
                 {
