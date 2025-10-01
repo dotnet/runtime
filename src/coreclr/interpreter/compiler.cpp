@@ -6234,6 +6234,12 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
+            case CEE_JMP:
+                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, true /* tailcall*/, false /*newObj*/, false /*isCalli*/);
+                pConstrainedToken = NULL;
+                readonly = false;
+                tailcall = false;
+                break;
             case CEE_CALLVIRT:
             case CEE_CALL:
                 EmitCall(pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
