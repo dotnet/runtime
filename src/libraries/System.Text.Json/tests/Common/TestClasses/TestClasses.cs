@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
         public double Two { get; set; }
     }
 
-    public struct SimpleStructWithSimpleClass: ITestClass
+    public struct SimpleStructWithSimpleClass : ITestClass
     {
         public short MyInt32 { get; set; }
         public SimpleTestClass MySimpleClass { get; set; }
@@ -166,7 +166,8 @@ namespace System.Text.Json.Serialization.Tests
                 ["key"] = "value"
             }
         };
-        public Dictionary<string, List<object>>? MyListDictionary { get; set; } = new Dictionary<string, List<object>> {
+        public Dictionary<string, List<object>>? MyListDictionary { get; set; } = new Dictionary<string, List<object>>
+        {
             ["key"] = new List<object> { "value" }
         };
         public Dictionary<string, Dictionary<string, object>>? MyObjectDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, object>>
@@ -685,6 +686,40 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class TestClassWithObjectIReadOnlySetT : ITestClass
+    {
+        public IReadOnlySet<SimpleTestClass> MyData { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            @"{" +
+                @"""MyData"":[" +
+                    SimpleTestClass.s_json + "," +
+                    SimpleTestClass.s_json +
+                @"]" +
+            @"}");
+
+        public void Initialize()
+        {
+            SimpleTestClass obj1 = new SimpleTestClass();
+            obj1.Initialize();
+
+            SimpleTestClass obj2 = new SimpleTestClass();
+            obj2.Initialize();
+
+            MyData = new HashSet<SimpleTestClass> { obj1, obj2 };
+        }
+
+        public void Verify()
+        {
+            Assert.Equal(2, MyData.Count);
+
+            foreach (SimpleTestClass obj in MyData)
+            {
+                obj.Verify();
+            }
+        }
+    }
+
     public class TestClassWithInitializedArray
     {
         public int[] Values { get; set; }
@@ -1075,6 +1110,51 @@ namespace System.Text.Json.Serialization.Tests
     public class TestClassWithGenericISetT : ITestClass
     {
         public ISet<string> MyData { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            @"{" +
+                @"""MyData"":[" +
+                    @"""Hello""," +
+                    @"""World""" +
+                @"]" +
+            @"}");
+
+        public void Initialize()
+        {
+            MyData = new HashSet<string>
+            {
+                "Hello",
+                "World"
+            };
+            Assert.Equal(2, MyData.Count);
+        }
+
+        public void Verify()
+        {
+            Assert.Equal(2, MyData.Count);
+
+            bool helloSeen = false;
+            bool worldSeen = false;
+
+            foreach (string data in MyData)
+            {
+                if (data == "Hello")
+                {
+                    helloSeen = true;
+                }
+                else if (data == "World")
+                {
+                    worldSeen = true;
+                }
+            }
+
+            Assert.True(helloSeen && worldSeen);
+        }
+    }
+
+    public class TestClassWithGenericIReadOnlySetT : ITestClass
+    {
+        public IReadOnlySet<string> MyData { get; set; }
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
             @"{" +

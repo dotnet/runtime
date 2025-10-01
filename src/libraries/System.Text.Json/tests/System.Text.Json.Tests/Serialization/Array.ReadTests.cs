@@ -413,6 +413,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadClassWithGenericIReadOnlySetT()
+        {
+            TestClassWithGenericIReadOnlySetT obj = JsonSerializer.Deserialize<TestClassWithGenericIReadOnlySetT>(TestClassWithGenericIReadOnlySetT.s_data);
+            obj.Verify();
+        }
+
+        [Fact]
         public static void ReadClassWithObjectIEnumerableConstructibleTypes()
         {
             TestClassWithObjectIEnumerableConstructibleTypes obj = JsonSerializer.Deserialize<TestClassWithObjectIEnumerableConstructibleTypes>(TestClassWithObjectIEnumerableConstructibleTypes.s_data);
