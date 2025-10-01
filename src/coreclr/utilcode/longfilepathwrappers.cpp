@@ -351,12 +351,20 @@ int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode)
     }
     CONTRACTL_END;
 
-    LongPathString path(LongPathString::Literal, filename);
-
-    if (SUCCEEDED(LongFile::NormalizePath(path)))
+    EX_TRY
     {
-        return u16_fopen_s(stream, path.GetUnicode(), mode);
+        LongPathString path(LongPathString::Literal, filename);
+
+        if (SUCCEEDED(LongFile::NormalizePath(path)))
+        {
+            return u16_fopen_s(stream, path.GetUnicode(), mode);
+        }
     }
+    EX_CATCH
+    {
+        return -1;
+    }
+    EX_END_CATCH
 
     return -1;
 }
