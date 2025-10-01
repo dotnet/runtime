@@ -684,7 +684,7 @@ namespace
             keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
         }
 
-        if(pos >= maxSize)
+        if (pos >= maxSize)
             return false;
 
         keyBuffer[pos] = 0;
