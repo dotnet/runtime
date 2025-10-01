@@ -1992,8 +1992,8 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 var_types hfaType = compiler->GetHfaType(pFieldInfo->fldSIMDTypeHnd);
                 if (varTypeIsValidHfaType(hfaType))
                 {
-                    fieldVarDsc->lvIsMultiRegArg =
-                        (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvExactSize() > genTypeSize(hfaType));
+                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) &&
+                                                   (compiler->lvaLclExactSize(fieldVarDsc) > genTypeSize(hfaType));
                 }
             }
         }
@@ -2764,7 +2764,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
         // There are other cases where the caller has allocated space for the
         // parameter, like windows-x64 with shadow space for register
         // parameters, but in those cases this rounding is fine.
-        return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
+        return roundUp(lvaLclExactSize(varDsc), TARGET_POINTER_SIZE);
     }
 
 #if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
@@ -2778,7 +2778,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
     }
 #endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
 
-    return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
+    return roundUp(lvaLclExactSize(varDsc), TARGET_POINTER_SIZE);
 }
 
 //
@@ -2788,7 +2788,19 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 unsigned Compiler::lvaLclExactSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
-    return lvaGetDesc(varNum)->lvExactSize();
+    return lvaLclExactSize(lvaGetDesc(varNum));
+}
+
+//------------------------------------------------------------------------
+// lvaLclExactSize: Get the exact size of the type of this local.
+//
+// Return Value:
+//    Size in bytes. Always non-zero, but not necessarily a multiple of the
+//    stack slot size.
+//
+unsigned Compiler::lvaLclExactSize(const LclVarDsc* desc)
+{
+    return (desc->lvType == TYP_STRUCT) ? desc->GetLayout()->GetSize() : getSizeOfType(desc->lvType);
 }
 
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
@@ -3216,18 +3228,6 @@ void Compiler::lvaSortByRefCount()
 #ifdef DEBUG
     VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeFull(this));
 #endif
-}
-
-//------------------------------------------------------------------------
-// lvExactSize: Get the exact size of the type of this local.
-//
-// Return Value:
-//    Size in bytes. Always non-zero, but not necessarily a multiple of the
-//    stack slot size.
-//
-unsigned LclVarDsc::lvExactSize() const
-{
-    return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
 }
 
 //------------------------------------------------------------------------

@@ -6896,7 +6896,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*  tree,
 
                 if (varTypeIsArithmetic(elementType) && ((fieldOffset % elementSize) == 0))
                 {
-                    *simdSizeOut = varDsc->lvExactSize();
+                    *simdSizeOut = lvaLclExactSize(varDsc);
                     *indexOut    = fieldOffset / elementSize;
 
                     return objRef;

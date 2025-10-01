@@ -10884,3 +10884,35 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS
+
+// Get the size of a JIT internal type.
+//
+// This function will resolve the size of types that aren't necessarily determinable
+// from a static context, for example ARM64 scalable vector types. For primitive types
+// and types that are obviously fixed size, use genTypeSize instead.
+unsigned Compiler::getSizeOfType(var_types type)
+{
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(type))
+    {
+        return getSizeOfSIMDType(type);
+    }
+#endif
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+    if (type == TYP_MASK)
+    {
+        // A predicate register has a bit for each byte in the vector register.
+        // We need to overallocate for 128-bit VL because the JIT makes assumptions
+        // about types being larger than an integer at the moment.
+        return roundUp((size_t)(getVectorTByteLength() / 8), sizeof(int));
+    }
+#endif
+
+    return genTypeSize(type);
+}
+
+unsigned Compiler::getSizeOfType(GenTree* tree)
+{
+    return getSizeOfType(tree->TypeGet());
+}

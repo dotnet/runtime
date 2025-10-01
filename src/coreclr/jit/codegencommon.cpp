@@ -3827,7 +3827,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                          compiler->opts.compDbgCode);
 
             if (varDsc->TypeIs(TYP_STRUCT) && !compiler->info.compInitMem &&
-                (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
+                (compiler->lvaLclExactSize(varDsc) >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
                 const unsigned slots  = (unsigned)compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;

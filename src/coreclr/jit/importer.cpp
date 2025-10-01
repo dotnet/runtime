@@ -3709,7 +3709,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
     // for our call to CORINFO_HELP_NEW_MDARR.
-    if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
+    if (dimensionsSize > lvaLclExactSize(&lvaTable[lvaNewObjArrayArgs]))
     {
         lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
     }

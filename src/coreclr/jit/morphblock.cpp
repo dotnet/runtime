@@ -355,7 +355,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    if (destLclVar->lvExactSize() != blockSize)
+    if (m_comp->lvaLclExactSize(destLclVar) != blockSize)
     {
         JITDUMP(" dest size mismatch.\n");
         return;
@@ -711,7 +711,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_dstVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_dstVarDsc->lvExactSize())
+            if (m_blockSize == m_comp->lvaLclExactSize(m_dstVarDsc))
             {
                 JITDUMP(" (m_dstDoFldStore=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -731,7 +731,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_srcVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_srcVarDsc->lvExactSize())
+            if (m_blockSize == m_comp->lvaLclExactSize(m_srcVarDsc))
             {
                 JITDUMP(" (m_srcDoFldStore=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -1310,7 +1310,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         assert(destType != TYP_STRUCT);
                         unsigned destSize = genTypeSize(destType);
                         m_srcVarDsc       = m_comp->lvaGetDesc(m_srcLclNum);
-                        unsigned srcSize  = m_srcVarDsc->lvExactSize();
+                        unsigned srcSize  = m_comp->lvaLclExactSize(m_srcVarDsc);
                         if (destSize == srcSize)
                         {
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);

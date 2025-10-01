@@ -8609,7 +8609,7 @@ void Lowering::MapParameterRegisterLocals()
                     continue;
                 }
 
-                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                if (fieldDsc->lvFldOffset + comp->lvaLclExactSize(fieldDsc) <= segment.Offset)
                 {
                     // This register does not map to this field (starts after the field ends)
                     continue;

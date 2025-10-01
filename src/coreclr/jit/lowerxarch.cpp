@@ -5076,7 +5076,8 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             uint32_t             lclOffs = lclVar->GetLclOffs() + (imm8 * elemSize);
             LclVarDsc*           lclDsc  = comp->lvaGetDesc(lclVar);
 
-            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
+            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) &&
+                ((lclOffs + elemSize) <= comp->lvaLclExactSize(lclDsc)))
             {
                 GenTree* lclFld = comp->gtNewLclFldNode(lclVar->GetLclNum(), JITtype2varType(simdBaseJitType),
                                                         static_cast<uint16_t>(lclOffs));
@@ -6307,7 +6308,8 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
             uint32_t             lclOffs = lclVar->GetLclOffs() + (0 * elemSize);
             LclVarDsc*           lclDsc  = comp->lvaGetDesc(lclVar);
 
-            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
+            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) &&
+                ((lclOffs + elemSize) <= comp->lvaLclExactSize(lclDsc)))
             {
                 GenTree* lclFld =
                     comp->gtNewLclFldNode(lclVar->GetLclNum(), JITtype2varType(simdBaseJitType), lclVar->GetLclOffs());

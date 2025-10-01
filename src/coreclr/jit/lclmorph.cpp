@@ -1504,8 +1504,8 @@ private:
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
 
-                if ((val.Offset() != 0) ||
-                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                if ((val.Offset() != 0) || (m_compiler->lvaLclExactSize(varDsc) !=
+                                            m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
@@ -1521,7 +1521,7 @@ private:
                 escapeAddr = false;
                 defFlag    = GTF_VAR_DEF;
 
-                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
+                if ((val.Offset() != 0) || (m_compiler->lvaLclExactSize(varDsc) != 1))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }

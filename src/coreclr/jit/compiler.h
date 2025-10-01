@@ -980,8 +980,6 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize() const;
-
     unsigned lvSlotNum; // original slot # (if remapped)
 
     // class handle for the local or null if not known or not a class
@@ -4180,6 +4178,7 @@ public:
 
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
+    unsigned lvaLclExactSize(const LclVarDsc* varDsc);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -9429,6 +9428,9 @@ public:
 #endif
         return result;
     }
+
+    unsigned getSizeOfType(var_types type);
+    unsigned getSizeOfType(GenTree* tree);
 
     enum UnrollKind
     {

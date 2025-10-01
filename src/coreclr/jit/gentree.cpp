@@ -17866,7 +17866,7 @@ bool GenTree::IsLclVarAddr() const
 bool GenTree::IsPartialLclFld(Compiler* comp)
 {
     return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) &&
-           (comp->lvaGetDesc(AsLclFld())->lvExactSize() != AsLclFld()->GetSize());
+           (comp->lvaLclExactSize(comp->lvaGetDesc(AsLclFld())) != AsLclFld()->GetSize());
 }
 
 //------------------------------------------------------------------------
@@ -28041,7 +28041,7 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
 {
     unsigned   lclNum    = op->AsLclVar()->GetLclNum();
     LclVarDsc* opVarDsc  = lvaGetDesc(lclNum);
-    unsigned   fieldSize = opVarDsc->lvExactSize() / fieldCount;
+    unsigned   fieldSize = lvaLclExactSize(opVarDsc) / fieldCount;
     var_types  fieldType = Compiler::getSIMDTypeForSize(fieldSize);
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
@@ -28072,7 +28072,7 @@ GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned fi
 {
     unsigned             lclNum    = op->AsLclVar()->GetLclNum();
     LclVarDsc*           opVarDsc  = lvaGetDesc(lclNum);
-    unsigned             fieldSize = opVarDsc->lvExactSize() / fieldCount;
+    unsigned             fieldSize = lvaLclExactSize(opVarDsc) / fieldCount;
     GenTreeFieldList*    fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int                  offset    = 0;
     CORINFO_CLASS_HANDLE structType;
