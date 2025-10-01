@@ -505,17 +505,6 @@ static void DoAsyncVars(
     }
 }
 
-enum EXTRA_DEBUG_INFO_FLAGS
-{
-    // Debug info contains patchpoint information
-    EXTRA_DEBUG_INFO_PATCHPOINT = 1,
-    // Debug info contains rich information
-    EXTRA_DEBUG_INFO_RICH = 2,
-    // Debug info contains async information
-    EXTRA_DEBUG_INFO_ASYNC = 4,
-    EXTRA_DEBUG_INFO_UNINSTRUMENTED_BOUNDS = 8,
-};
-
 #ifndef DACCESS_COMPILE
 
 BYTE* DecompressNew(void*, size_t cBytes)
