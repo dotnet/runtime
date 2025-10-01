@@ -991,7 +991,7 @@ PTR_BYTE CompressDebugInfo::Compress(
 
     if (isFat)
     {
-        w.WriteEncodedU32(DebugInfoFat);
+        w.WriteEncodedU32(DebugInfoFat);// 0xFFFFFFFF is used to indicate that this is a fat header
         w.WriteEncodedU32(cbBounds);
         w.WriteEncodedU32(cbVars);
         w.WriteEncodedU32(cbUninstrumentedBounds);
