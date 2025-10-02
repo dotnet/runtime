@@ -132,19 +132,19 @@ namespace System
         /// <summary>
         /// Returns a value that indicates whether the current instance and a specified character are equal using the specified comparison option.
         /// </summary>
-        /// <param name="right">The character to compare with the current instance.</param>
+        /// <param name="other">The character to compare with the current instance.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns><see langword="true"/> if the current instance and <paramref name="right"/> are equal; otherwise, <see langword="false"/>.</returns>
-        public bool Equals(char right, StringComparison comparisonType)
+        /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
+        public bool Equals(char other, StringComparison comparisonType)
         {
             switch (comparisonType)
             {
                 case StringComparison.Ordinal:
-                    return Equals(right);
+                    return Equals(other);
                 default:
-                    ReadOnlySpan<char> leftCharsSlice = [this];
-                    ReadOnlySpan<char> rightCharsSlice = [right];
-                    return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+                    ReadOnlySpan<char> thisCharsSlice = [this];
+                    ReadOnlySpan<char> otherCharsSlice = [other];
+                    return thisCharsSlice.Equals(otherCharsSlice, comparisonType);
             }
         }
 
