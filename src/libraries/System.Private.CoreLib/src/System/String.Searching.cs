@@ -507,16 +507,17 @@ namespace System
 
         private int LastIndexOfCharOrdinalIgnoreCase(char value, int startIndex, int count)
         {
+            int startSearchAt = startIndex + 1 - count;
+
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(startIndex, Length);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfNegative(startIndex + 1 - count);
+            ArgumentOutOfRangeException.ThrowIfNegative(startSearchAt);
 
             int subIndex;
 
             if (char.IsAscii(value))
             {
-                int startSearchAt = startIndex + 1 - count;
                 ref char startChar = ref Unsafe.Add(ref _firstChar, startSearchAt);
 
                 if (char.IsAsciiLetter(value))
@@ -539,9 +540,9 @@ namespace System
             }
             else
             {
-                subIndex = Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startIndex, count), new ReadOnlySpan<char>(in value));
+                subIndex = Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startSearchAt, count), new ReadOnlySpan<char>(in value));
 
-                return subIndex < 0 ? subIndex : startIndex + subIndex;
+                return subIndex < 0 ? subIndex : startSearchAt + subIndex;
             }
         }
 
