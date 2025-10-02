@@ -90,7 +90,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that character is found, or -1 if it is not.
+        /// if that character is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(char value, int startIndex, StringComparison comparisonType)
         {
@@ -108,7 +108,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that character is found, or -1 if it is not.
+        /// if that character is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(char value, int startIndex, int count, StringComparison comparisonType)
         {
@@ -341,7 +341,7 @@ namespace System
         /// <param name="value">The rune to seek.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(Rune value)
         {
@@ -356,7 +356,7 @@ namespace System
         /// <param name="startIndex">The search starting position.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(Rune value, int startIndex)
         {
@@ -373,7 +373,7 @@ namespace System
         /// <param name="count">The number of character positions to examine.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(Rune value, int startIndex, int count)
         {
@@ -388,7 +388,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(Rune value, StringComparison comparisonType)
         {
@@ -405,7 +405,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
@@ -423,7 +423,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the start of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
@@ -481,7 +481,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that character is found, or -1 if it is not.
+        /// if that character is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(char value, StringComparison comparisonType)
         {
@@ -498,7 +498,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that character is found, or -1 if it is not.
+        /// if that character is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(char value, int startIndex, StringComparison comparisonType)
         {
@@ -516,7 +516,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that character is found, or -1 if it is not.
+        /// if that character is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(char value, int startIndex, int count, StringComparison comparisonType)
         {
@@ -667,7 +667,7 @@ namespace System
         /// <param name="value">The rune to seek.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(Rune value)
         {
@@ -682,7 +682,7 @@ namespace System
         /// <param name="startIndex">The search starting position. The search proceeds from <paramref name="startIndex"/> toward the beginning of this instance.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(Rune value, int startIndex)
         {
@@ -699,7 +699,7 @@ namespace System
         /// <param name="count">The number of character positions to examine.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(Rune value, int startIndex, int count)
         {
@@ -714,7 +714,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(Rune value, StringComparison comparisonType)
         {
@@ -731,7 +731,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
         {
@@ -749,7 +749,7 @@ namespace System
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
         /// <returns>
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
-        /// if that rune is found, or -1 if it is not.
+        /// if that rune is found, or a negative value (e.g. -1) if it is not.
         /// </returns>
         public int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
