@@ -263,14 +263,14 @@ internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTra
         _interruptibleRanges = new List<InterruptibleRange>((int)_numInterruptibleRanges);
         for (uint i = 0; i < _numInterruptibleRanges; i++)
         {
-            uint normStartDelta = _reader.DecodeVarLengthUnsigned(TTraits.INTERRUPTIBLE_RANGE_DELTA1_ENCBACE, ref bitOffset);
-            uint normStopDelta = _reader.DecodeVarLengthUnsigned(TTraits.INTERRUPTIBLE_RANGE_DELTA2_ENCBACE, ref bitOffset) + 1;
+            uint normStartDelta = _reader.DecodeVarLengthUnsigned(TTraits.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, ref bitOffset);
+            uint normStopDelta = _reader.DecodeVarLengthUnsigned(TTraits.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset) + 1;
 
             uint rangeStartOffsetNormalized = lastInterruptibleRangeStopOffsetNormalized + normStartDelta;
             uint rangeStopOffsetNormalized = rangeStartOffsetNormalized + normStopDelta;
 
-            uint rangeStartOffset = TTraits.DenormalizeCodeOffset(normStartDelta);
-            uint rangeStopOffset = TTraits.DenormalizeCodeOffset(normStopDelta);
+            uint rangeStartOffset = TTraits.DenormalizeCodeOffset(rangeStartOffsetNormalized);
+            uint rangeStopOffset = TTraits.DenormalizeCodeOffset(rangeStopOffsetNormalized);
 
             Debug.Assert(rangeStartOffset < rangeStopOffset);
             Debug.Assert(rangeStartOffset >= prevEndOffset);

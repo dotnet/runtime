@@ -36,8 +36,8 @@ internal interface IGCInfoTraits
     static abstract int NUM_UNTRACKED_SLOTS_ENCBASE { get; }
     static abstract int NORM_PROLOG_SIZE_ENCBASE { get; }
     static abstract int NORM_EPILOG_SIZE_ENCBASE { get; }
-    static abstract int INTERRUPTIBLE_RANGE_DELTA1_ENCBACE { get; }
-    static abstract int INTERRUPTIBLE_RANGE_DELTA2_ENCBACE { get; }
+    static abstract int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE { get; }
+    static abstract int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE { get; }
     static abstract int REGISTER_ENCBASE { get; }
     static abstract int REGISTER_DELTA_ENCBASE { get; }
     static abstract int STACK_SLOT_ENCBASE { get; }

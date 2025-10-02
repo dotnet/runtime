@@ -29,8 +29,8 @@ internal class ARMGCInfoTraits : IGCInfoTraits
     public static int NUM_UNTRACKED_SLOTS_ENCBASE => 3;
     public static int NORM_PROLOG_SIZE_ENCBASE => 5;
     public static int NORM_EPILOG_SIZE_ENCBASE => 3;
-    public static int INTERRUPTIBLE_RANGE_DELTA1_ENCBACE => 4;
-    public static int INTERRUPTIBLE_RANGE_DELTA2_ENCBACE => 6;
+    public static int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE => 4;
+    public static int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE => 6;
     public static int REGISTER_ENCBASE => 2;
     public static int REGISTER_DELTA_ENCBASE => 1;
     public static int STACK_SLOT_ENCBASE => 6;
