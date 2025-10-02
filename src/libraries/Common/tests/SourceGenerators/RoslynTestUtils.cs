@@ -308,26 +308,104 @@ namespace SourceGenerators.Tests
 
         public static bool CompareLines(string[] expectedLines, SourceText sourceText, out string message)
         {
-            if (expectedLines.Length != sourceText.Lines.Count)
+            // Account for conditional pragma warning differences between debug and release builds
+            string[] actualLines = sourceText.Lines.Select(line => line.ToString()).ToArray();
+            string[] normalizedExpected = NormalizePragmaWarnings(expectedLines);
+            string[] normalizedActual = NormalizePragmaWarnings(actualLines);
+
+            if (normalizedExpected.Length != normalizedActual.Length)
             {
                 message = string.Format("Line numbers do not match. Expected: {0} lines, but generated {1}",
-                    expectedLines.Length, sourceText.Lines.Count);
+                    normalizedExpected.Length, normalizedActual.Length);
                 return false;
             }
-            int index = 0;
-            foreach (TextLine textLine in sourceText.Lines)
+
+            for (int index = 0; index < normalizedExpected.Length; index++)
             {
-                string expectedLine = expectedLines[index];
-                if (!expectedLine.Equals(textLine.ToString(), StringComparison.Ordinal))
+                string expectedLine = normalizedExpected[index];
+                string actualLine = normalizedActual[index];
+                if (!expectedLine.Equals(actualLine, StringComparison.Ordinal))
                 {
                     message = string.Format("Line {0} does not match.{1}Expected Line:{1}{2}{1}Actual Line:{1}{3}",
-                        textLine.LineNumber + 1, Environment.NewLine, expectedLine, textLine);
+                        index + 1, Environment.NewLine, expectedLine, actualLine);
                     return false;
                 }
-                index++;
             }
             message = string.Empty;
             return true;
+        }
+
+        private static string[] NormalizePragmaWarnings(string[] lines)
+        {
+            // Normalize the conditional pragma warning patterns to make baselines work in both debug and release
+            // Debug pattern:
+            //   #nullable enable annotations
+            //   #nullable disable warnings
+            //   
+            //   // Suppress warnings about [Obsolete] member usage in generated code.
+            //   #pragma warning disable CS0612, CS0618
+            //
+            // Release pattern:
+            //   #nullable enable annotations
+            //   #pragma warning disable
+            //
+            // We normalize both to the release pattern for comparison
+            List<string> normalized = new List<string>();
+            bool inPragmaSection = false;
+            
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                string trimmed = line.Trim();
+                
+                // Start of pragma warning section detection
+                if (trimmed == "#nullable enable annotations")
+                {
+                    normalized.Add(line);
+                    inPragmaSection = true;
+                    continue;
+                }
+                
+                if (inPragmaSection)
+                {
+                    // Skip debug-specific pragma lines and replace with release pattern
+                    if (trimmed == "#nullable disable warnings" ||
+                        trimmed.StartsWith("// Suppress warnings about") ||
+                        trimmed == "#pragma warning disable CS0612, CS0618" ||
+                        (trimmed == "" && i + 1 < lines.Length && lines[i + 1].Trim().StartsWith("// Suppress warnings")))
+                    {
+                        // Skip this line, but add the normalized release pattern if we haven't yet
+                        if (trimmed == "#pragma warning disable CS0612, CS0618")
+                        {
+                            // Replace with release pattern
+                            normalized.Add("#pragma warning disable");
+                            inPragmaSection = false;
+                        }
+                        continue;
+                    }
+                    else if (trimmed == "#pragma warning disable")
+                    {
+                        // This is already the release pattern
+                        normalized.Add(line);
+                        inPragmaSection = false;
+                        continue;
+                    }
+                    else if (trimmed != "")
+                    {
+                        // End of pragma section, add this line normally
+                        normalized.Add(line);
+                        inPragmaSection = false;
+                        continue;
+                    }
+                    // Skip empty lines in pragma section
+                    continue;
+                }
+                
+                // Add all other lines normally
+                normalized.Add(line);
+            }
+            
+            return normalized.ToArray();
         }
 
         private static async Task<Project> RecreateProjectDocumentsAsync(Project project)
