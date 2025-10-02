@@ -98,6 +98,6 @@ public long GetMOWReferenceCount(TargetPointer mow)
 public bool IsComWrappersRCW(TargetPointer rcw)
 {
     // get method table from rcw using Object contract GetMethodTableAddress
-    // and ensure it matches the MT of NativeObjectWrapperClass in the CoreLibBinder with RuntimeTypeSystem.GetBinderType 
+    // and ensure it matches the MT of NativeObjectWrapperClass in the CoreLibBinder with RuntimeTypeSystem.GetPrimitiveType 
 }
 ```

@@ -1878,6 +1878,7 @@ struct cdac_data<SystemDomain>
 {
     static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
     static constexpr size_t GlobalLoaderAllocator = offsetof(SystemDomain, m_GlobalAllocator);
+    static constexpr size_t SystemAssembly = offsetof(SystemDomain, m_pSystemAssembly);
 };
 #endif // DACCESS_COMPILE
 

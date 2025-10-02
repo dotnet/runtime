@@ -504,6 +504,13 @@ internal readonly struct Loader_1 : ILoader
         return systemDomain.GlobalLoaderAllocator;
     }
 
+    TargetPointer ILoader.GetSystemAssembly()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.SystemAssembly;
+    }
+
     TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);

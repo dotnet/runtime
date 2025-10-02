@@ -72,7 +72,18 @@ internal readonly struct ComWrappers_1 : IComWrappers
     {
         TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
         ushort typeCode = _target.ReadGlobal<ushort>(Constants.Globals.NativeObjectWrapperClass);
-        TargetPointer typeHandlePtr = _target.Contracts.RuntimeTypeSystem.GetBinderType(typeCode).Address;
+
+        // get name and namespace from corelibbinder
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        rts.GetNameSpaceAndNameFromBinder(typeCode, out string nameSpace, out string name);
+
+        // get system module
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+
+        // lookup by name
+        TargetPointer typeHandlePtr = rts.GetTypeByNameAndModule(name, nameSpace, moduleHandle).Address;
         return mt == typeHandlePtr;
     }
 }

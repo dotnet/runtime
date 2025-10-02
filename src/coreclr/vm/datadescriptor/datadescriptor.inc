@@ -269,6 +269,7 @@ CDAC_TYPE_END(AppDomain)
 CDAC_TYPE_BEGIN(SystemDomain)
 CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
+CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
 CDAC_TYPE_BEGIN(ArrayListBase)
@@ -932,7 +933,14 @@ CDAC_TYPE_END(InstMethodHashTable)
 CDAC_TYPE_BEGIN(CoreLibBinder)
 CDAC_TYPE_INDETERMINATE(CoreLibBinder)
 CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, Classes, cdac_data<CoreLibBinder>::Classes)
+CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, ClassDescriptions, cdac_data<CoreLibBinder>::ClassDescriptions)
 CDAC_TYPE_END(CoreLibBinder)
+
+CDAC_TYPE_BEGIN(CoreLibClassDescription)
+CDAC_TYPE_SIZE(sizeof(CoreLibClassDescription))
+CDAC_TYPE_FIELD(CoreLibClassDescription, /*pointer*/, NameSpace, offsetof(CoreLibClassDescription, nameSpace))
+CDAC_TYPE_FIELD(CoreLibClassDescription, /*pointer*/, Name, offsetof(CoreLibClassDescription, name))
+CDAC_TYPE_END(CoreLibClassDescription)
 
 // this is an SHash type
 CDAC_TYPE_BEGIN(DynamicILBlobTable)

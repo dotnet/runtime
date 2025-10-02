@@ -793,7 +793,7 @@ internal sealed unsafe partial class SOSDacImpl
                 // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
                 if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
-                    data->MTOfType = rtsContract.GetBinderType((ushort)CorElementType.U).Address.ToClrDataAddress(_target);
+                    data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
                 // array MTs
                 else if (rtsContract.IsArray(foundTypeHandle, out _))
                     data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);

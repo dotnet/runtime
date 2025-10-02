@@ -34,7 +34,7 @@ The cDAC implements the ISignatureTypeProvider<TType,TGenericContext> with TType
 
 A cDAC SignatureTypeProvider is instantiated over a Module which is used to lookup types.
 
-The following ISignatureTypeProvider APIs are trivially implemented using RuntimeTypeSystem.GetBinderType and RuntimeTypeSystem.GetConstructedType:
+The following ISignatureTypeProvider APIs are trivially implemented using RuntimeTypeSystem.GetPrimitiveType and RuntimeTypeSystem.GetConstructedType:
 
 * GetArrayType - GetConstructedType
 * GetByReferenceType - GetConstructedType
