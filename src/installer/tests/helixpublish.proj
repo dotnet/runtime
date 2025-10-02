@@ -45,9 +45,13 @@
     <MSBuild Projects="%(HostTestProject.Identity)" Targets="GetTargetPath">
       <Output TaskParameter="TargetOutputs" PropertyName="_TargetPath" />
     </MSBuild>
+    <PropertyGroup>
+      <_TestExePath>$([System.IO.Path]::GetFileNameWithoutExtension($(_TargetPath)))</_TestExePath>
+    </PropertyGroup>
     <ItemGroup>
+      <_HelixPreCommands Include="chmod +x $(_TestExePath)" Condition="'$(TargetOS)' != 'windows'" />
       <HostTestProject>
-        <Command>./$([System.IO.Path]::GetFileNameWithoutExtension($(_TargetPath))) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
+        <Command>./$(_TestExePath) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
     </ItemGroup>
