@@ -187,10 +187,13 @@ namespace System.Tests
                     if (comparisonType is StringComparison.Ordinal)
                     {
                         Assert.Equal(expected, c.Equals(otherChar));
+                        Assert.Equal(expected, c.ToString().Equals(otherChar.ToString()));
+
                         Assert.Equal(expected, c.GetHashCode().Equals(other.GetHashCode()));
                     }
 
                     Assert.Equal(expected, c.Equals(otherChar, comparisonType));
+                    Assert.Equal(expected, c.ToString().Equals(otherChar.ToString(), comparisonType));
                 }
 
                 if (comparisonType is StringComparison.Ordinal)
