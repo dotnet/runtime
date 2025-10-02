@@ -80,11 +80,36 @@ namespace System
             return IndexOf(value, 0, comparisonType);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified character in the current String object.
+        /// Parameters specify the starting search position in the current string and the type of search to use for
+        /// the specified character.
+        /// </summary>
+        /// <param name="value">The character to seek.</param>
+        /// <param name="startIndex">The search starting position.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that character is found, or -1 if it is not.
+        /// </returns>
         public int IndexOf(char value, int startIndex, StringComparison comparisonType)
         {
             return IndexOf(value, startIndex, Length - startIndex, comparisonType);
         }
 
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of the specified character in the current String object.
+        /// Parameters specify the starting search position in the current string, the number of characters in the
+        /// current string to search, and the type of search to use for the specified character.
+        /// </summary>
+        /// <param name="value">The character to seek.</param>
+        /// <param name="startIndex">The search starting position.</param>
+        /// <param name="count">The number of character positions to examine.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules for the search.</param>
+        /// <returns>
+        /// The zero-based index position of <paramref name="value"/> from the start of the current instance
+        /// if that character is found, or -1 if it is not.
+        /// </returns>
         public int IndexOf(char value, int startIndex, int count, StringComparison comparisonType)
         {
             return comparisonType switch
