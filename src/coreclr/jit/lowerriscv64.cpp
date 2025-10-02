@@ -160,8 +160,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     }
 
     // Comparisons fused with branches don't have immediates, re-evaluate containment for 'zero' register
-    jcmp->gtOp2->ClearContained();
-    ContainCheckCompare(jcmp);
+    if (!CheckImmedAndMakeContained(jcmp, jcmp->gtOp2))
+        jcmp->gtOp2->ClearContained();
 
     return jcmp->gtNext;
 }
@@ -1216,6 +1216,9 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
+    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp))
+        MakeSrcContained(cmp, cmp->gtOp1); // use 'zero' register
+
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 

@@ -3252,16 +3252,15 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     GenTree* op2 = tree->gtGetOp2();
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
-    assert(!op1->isContainedIntOrIImmed());
+    assert(!op1->isContainedIntOrIImmed() || op1->IsIntegralConst(0));
     assert(!op2->isContainedIntOrIImmed() || op2->IsIntegralConst(0));
 
     GenCondition cond = tree->gtCondition;
     genConsumeOperands(tree);
-    regNumber reg1 = op1->GetRegNum();
+    regNumber reg1 = op1->isContainedIntOrIImmed() ? REG_ZERO : op1->GetRegNum();
     regNumber reg2 = op2->isContainedIntOrIImmed() ? REG_ZERO : op2->GetRegNum();
     if (cond.Is(GenCondition::SGT, GenCondition::UGT, GenCondition::SLE, GenCondition::ULE))
     {
-        // ">" and "<=" are achieved by swapping inputs for "<" and ">="
         cond = GenCondition::Swap(cond);
         std::swap(reg1, reg2);
     }
