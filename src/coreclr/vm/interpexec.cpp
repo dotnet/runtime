@@ -2842,13 +2842,13 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_UNBOX_END:
                 {
-                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[2]];
+                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     void *dest = LOCAL_VAR_ADDR(ip[1], void);
-                    void *src = LOCAL_VAR(ip[1], void*);
+                    void *src = LOCAL_VAR(ip[2], void*);
                     NULL_CHECK(dest);
                     CopyValueClassUnchecked(dest, src, pMT);
 
-                    ip += 3;
+                    ip += 4;
                     break;
                 }
                 case INTOP_UNBOX_ANY_GENERIC:

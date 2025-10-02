@@ -3437,15 +3437,21 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     }
     else
     {
+        PushStackType(StackTypeI, NULL);
+        int32_t intermediateVar = m_pStackPointer[-1].var;
+        m_pStackPointer--;
+
         AddIns(INTOP_UNBOX_ANY);
         m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_UNBOX);
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVar(arg2);
-        m_pLastNewIns->SetDVar(resultVar);
+        m_pLastNewIns->SetDVar(intermediateVar);
 
         AddIns(INTOP_UNBOX_END);
-        m_pLastNewIns->data[1] = handleData.dataItemIndex;
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVar(intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
 }
