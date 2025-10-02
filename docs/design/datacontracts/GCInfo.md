@@ -104,10 +104,8 @@ Following the header, the GCInfo body contains several data sections in the foll
 1. **Call Sites Offsets** - Encoded offsets of call sites/safe points (if PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
 2. **Interruptible Ranges** - Ranges where the method can be interrupted for GC
 3. **Slot Table** - Information about GC-tracked slots (registers and stack locations)
-4. **GC State at Call Sites** - GC liveness information at each call site (if PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-5. **GC State at Try Clauses** - GC liveness information for exception handling (if PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-6. **Chunk Pointers** - Pointers to transition data chunks
-7. **Chunk Encodings** - Encoded state transitions for GC slots
+
+The rest of the GCInfo body is not yet decoded in the cDAC.
 
 #### Interruptible Ranges
 
@@ -123,7 +121,7 @@ The ranges are encoded using delta compression, where each range's start offset 
 The slot table describes all GC-tracked locations (registers and stack slots) used by the method. It consists of three sections:
 
 1. **Register Slots** - GC-tracked CPU registers
-2. **Stack Slots** - GC-tracked stack locations  
+2. **Stack Slots** - GC-tracked stack locations
 3. **Untracked Slots** - Stack locations that are not GC-tracked
 
 Each slot entry contains:
