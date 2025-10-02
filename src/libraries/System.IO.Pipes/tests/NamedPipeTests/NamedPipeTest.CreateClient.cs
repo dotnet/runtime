@@ -99,7 +99,9 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void NullHandle_Throws_ArgumentNullException(PipeDirection direction)
         {
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
             AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, null));
+#pragma warning restore SYSLIB0063
         }
 
         [Theory]
@@ -109,7 +111,9 @@ namespace System.IO.Pipes.Tests
         public static void InvalidHandle_Throws_ArgumentException(PipeDirection direction)
         {
             using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
             AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, pipeHandle));
+#pragma warning restore SYSLIB0063
         }
 
         [Theory]
@@ -129,7 +133,9 @@ namespace System.IO.Pipes.Tests
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
                     SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, ownsHandle: false);
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
                     Assert.Throws<IOException>(() => new NamedPipeClientStream(direction, false, true, fakePipeHandle));
+#pragma warning restore SYSLIB0063
                 }
                 finally
                 {
@@ -144,6 +150,52 @@ namespace System.IO.Pipes.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.None - 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.Inheritable + 1));
+        }
+
+        [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.InOut)]
+        [InlineData(PipeDirection.Out)]
+        public static void NewConstructor_NullHandle_Throws_ArgumentNullException(PipeDirection direction)
+        {
+            AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, null));
+        }
+
+        [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.InOut)]
+        [InlineData(PipeDirection.Out)]
+        public static void NewConstructor_InvalidHandle_Throws_ArgumentException(PipeDirection direction)
+        {
+            using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+            AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, pipeHandle));
+        }
+
+        [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.InOut)]
+        [InlineData(PipeDirection.Out)]
+        public static void NewConstructor_BadHandleKind_Throws_IOException(PipeDirection direction)
+        {
+            using (FileStream fs = new FileStream(Path.Combine(Path.GetTempPath(), "_NewConstructor_BadHandleKind_Throws_IOException_" + Path.GetRandomFileName()), FileMode.Create, FileAccess.Write, FileShare.None, 8, FileOptions.DeleteOnClose))
+            {
+                SafeFileHandle safeHandle = fs.SafeFileHandle;
+
+                bool gotRef = false;
+                try
+                {
+                    safeHandle.DangerousAddRef(ref gotRef);
+                    IntPtr handle = safeHandle.DangerousGetHandle();
+
+                    SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, ownsHandle: false);
+                    Assert.Throws<IOException>(() => new NamedPipeClientStream(direction, false, fakePipeHandle));
+                }
+                finally
+                {
+                    if (gotRef)
+                        safeHandle.DangerousRelease();
+                }
+            }
         }
     }
 }

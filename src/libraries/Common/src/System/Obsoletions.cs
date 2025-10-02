@@ -198,6 +198,9 @@ namespace System
         internal const string XsltSettingsEnableScriptMessage = "XSLT Script blocks are not supported.";
         internal const string XsltSettingsEnableScriptDiagId = "SYSLIB0062";
 
+        internal const string NamedPipeClientStreamIsConnectedMessage = "This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead.";
+        internal const string NamedPipeClientStreamIsConnectedDiagId = "SYSLIB0063";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

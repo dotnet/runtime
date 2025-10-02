@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Security;
 using System.Security.Principal;
@@ -89,6 +90,8 @@ namespace System.IO.Pipes
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
+        [Obsolete(Obsoletions.NamedPipeClientStreamIsConnectedMessage, DiagnosticId = Obsoletions.NamedPipeClientStreamIsConnectedDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
@@ -105,6 +108,22 @@ namespace System.IO.Pipes
             {
                 State = PipeState.Connected;
             }
+        }
+
+        // Create a NamedPipeClientStream from an existing server pipe handle.
+        public NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle)
+            : base(direction, 0)
+        {
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
+            if (safePipeHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
+            }
+            ValidateHandleIsPipe(safePipeHandle);
+
+            InitializeHandle(safePipeHandle, true, isAsync);
+            State = PipeState.Connected;
         }
 
         ~NamedPipeClientStream()
