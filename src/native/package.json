@@ -14,7 +14,7 @@
     "rollup:cmake": "rollup -c --environment ",
     "rollup:release": "rollup -c --environment Configuration:Release,ProductVersion:10.0.0-dev,ContinuousIntegrationBuild:false",
     "rollup:debug": "rollup -c --environment Configuration:Debug,ProductVersion:10.0.0-dev,ContinuousIntegrationBuild:false",
-    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./*.js\"",
+    "lint": "eslint --no-color --max-warnings=0 \"./**/*.ts\" \"./**/*.js\"",
     "format": "eslint --fix \"./**/*.ts\" \"./*.js\""
   },
   "keywords": [

@@ -19,6 +19,7 @@ It is **Emscripten application** statically linked from libraries.
 - `host/index.ts` -> compiled -> `libBrowserHost.js` linked -> `dotnet.native.js`
 - `libBrowserHost.footer.js` -> compiled -> `libBrowserHost.js` linked -> `dotnet.native.js`
 - `libSystem.Native.Browser.js` linked -> `dotnet.native.js`
+- `libSystem.Browser.Utils.js` linked -> `dotnet.native.js`
 - `libSystem.Runtime.InteropServices.JavaScript.Native.js` linked -> `dotnet.native.js`
 - `browserhost.cpp` compiled + linked -> `dotnet.native.wasm`
 - `libSystem.Native.Browser.a` linked -> `dotnet.native.wasm`
