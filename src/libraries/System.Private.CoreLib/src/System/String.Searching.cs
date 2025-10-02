@@ -458,7 +458,7 @@ namespace System
         /// The zero-based index position of <paramref name="value"/> from the end of the current instance
         /// if that character is found, or -1 if it is not.
         /// </returns>
-        internal int LastIndexOf(char value, StringComparison comparisonType)
+        public int LastIndexOf(char value, StringComparison comparisonType)
         {
             return LastIndexOf(value, Length - 1, comparisonType);
         }

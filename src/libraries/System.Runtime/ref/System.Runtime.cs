@@ -5747,6 +5747,7 @@ namespace System
         public int LastIndexOf(char value) { throw null; }
         public int LastIndexOf(char value, int startIndex) { throw null; }
         public int LastIndexOf(char value, int startIndex, int count) { throw null; }
+        public int LastIndexOf(char value, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(string value) { throw null; }
