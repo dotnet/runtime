@@ -58,4 +58,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Startup.cs" />
   </ItemGroup>
+
+  <Target Name="GetCurrentProjectBuildStaticWebAssetItems" />
+  <Target Name="ComputeReferencedStaticWebAssetsPublishManifest" />
+  <Target Name="GetCurrentProjectPublishStaticWebAssetItems" />
 </Project>
