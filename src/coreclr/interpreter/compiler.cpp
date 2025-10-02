@@ -2403,7 +2403,7 @@ void InterpCompiler::EmitStoreVar(int32_t var)
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */);
+        EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */, false /* enableImplicitArgConversionRules */);
         return;
     }
 
@@ -3848,10 +3848,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     {
 #ifdef TARGET_64BIT
                     case CORINFO_TYPE_NATIVEINT:
-                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_I8_I4);
-                        break;
                     case CORINFO_TYPE_NATIVEUINT:
-                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_U8_U4);
+                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_I8_I4);
                         break;
 #endif // TARGET_64BIT
                     case CORINFO_TYPE_BYTE:
@@ -4306,11 +4304,11 @@ void InterpCompiler::EmitLdind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
-void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder)
+void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder, bool enableImplicitArgConversionRules)
 {
     int stackIndexValue;
     int stackIndexAddress;
-    if (reverseSVarOrder)
+    if (!reverseSVarOrder)
     {
         stackIndexAddress = -2;
         stackIndexValue = -1;
@@ -4328,6 +4326,10 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     else if (interpType == InterpTypeR8 && m_pStackPointer[stackIndexValue].type == StackTypeR4)
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR8, INTOP_CONV_R8_R4);
+    }
+    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].type == StackTypeI4)
+    {
+        EmitConv(m_pStackPointer + stackIndexValue, StackTypeI8, INTOP_CONV_I8_I4);
     }
 
     // stack contains address and then the value to be stored
@@ -4352,7 +4354,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
     m_pLastNewIns->data[0] = offset;
 
-    m_pLastNewIns->SetSVars2(m_pStackPointer[stackIndexValue].var, m_pStackPointer[stackIndexAddress].var);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[stackIndexAddress].var, m_pStackPointer[stackIndexValue].var);
     m_pStackPointer -= 2;
 }
 
@@ -4525,7 +4527,7 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
             if (isLoad)
                 EmitLdind(interpFieldType, pFieldInfo->structType, 0);
             else
-                EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+                EmitStind(interpFieldType, pFieldInfo->structType, 0, true, true /* enableImplicitArgConversionRules */);
             break;
     }
 }
@@ -5065,7 +5067,7 @@ retry_emit:
                 }
                 else
                 {
-                    EmitStind(interpType, resolvedToken.hClass, 0, false);
+                    EmitStind(interpType, resolvedToken.hClass, 0, false, false /* enableImplicitArgConversionRules */);
                 }
                 m_ip += 5;
                 break;
@@ -5078,7 +5080,7 @@ retry_emit:
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
                 InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
                 EmitLdind(interpType, resolvedToken.hClass, 0);
-                EmitStind(interpType, resolvedToken.hClass, 0, false);
+                EmitStind(interpType, resolvedToken.hClass, 0, false, false /* enableImplicitArgConversionRules */);
                 m_ip += 5;
                 break;
             }
@@ -6366,7 +6368,7 @@ retry_emit:
                 else
                 {
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
-                    EmitStind(interpFieldType, fieldInfo.structType, fieldInfo.offset, false);
+                    EmitStind(interpFieldType, fieldInfo.structType, fieldInfo.offset, false, true /* enableImplicitArgConversionRules */);
                 }
                 m_ip += 5;
 
@@ -6534,7 +6536,7 @@ retry_emit:
                     AddIns(INTOP_MEMBAR);
                     volatile_ = false;
                 }
-                EmitStind(interpType, NULL, 0, false);
+                EmitStind(interpType, NULL, 0, false, false /* enableImplicitArgConversionRules */);
                 m_ip++;
                 break;
             }
