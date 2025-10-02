@@ -198,44 +198,26 @@ internal static partial class ZipHelper
         encoding ??= GetEncoding(text);
         isUTF8 = encoding.CodePage == 65001;
 
-        if (maxBytes == 0) // No truncation
+        if (maxBytes == 0)
         {
             return encoding.GetBytes(text);
         }
 
-        byte[] bytes;
-        if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
+        byte[] bytes = encoding.GetBytes(text);
+
+        if (maxBytes < bytes.Length)
         {
-            int totalCodePoints = 0;
-            int charIndex = 0;
-            foreach (Rune rune in text.EnumerateRunes())
+            if (isUTF8)
             {
-                if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                while ((bytes[maxBytes] & 0xC0) == 0x80)
                 {
-                    break;
+                    maxBytes--;
                 }
-                totalCodePoints += rune.Utf8SequenceLength;
-                charIndex += rune.Utf16SequenceLength;
             }
 
-            byte[] rentedArray = ArrayPool<byte>.Shared.Rent(encoding.GetMaxByteCount(text.Length));
-            try
-            {
-                int actualByteCount = encoding.GetBytes(text, 0, charIndex, rentedArray, 0);
-
-                Debug.Assert(totalCodePoints == actualByteCount);
-
-                bytes = new byte[actualByteCount];
-                Array.Copy(rentedArray, 0, bytes, 0, actualByteCount);
-                return bytes;
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rentedArray, clearArray: true);
-            }
+            bytes = bytes[0..maxBytes];
         }
 
-        bytes = encoding.GetBytes(text);
-        return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
+        return bytes;
     }
 }
