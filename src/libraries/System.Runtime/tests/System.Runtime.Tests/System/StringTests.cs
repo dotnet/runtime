@@ -1627,8 +1627,7 @@ namespace System.Tests
 
             if (startIndex == 0 && count == s.Length)
             {
-                // TODO: currently internal due to issue with https://github.com/dotnet/runtime/issues/120015
-                //Assert.Equal(expected, s.LastIndexOf(target, stringComparison));
+                Assert.Equal(expected, s.LastIndexOf(target, stringComparison));
             }
             if (startIndex + 1 == count)
             {
