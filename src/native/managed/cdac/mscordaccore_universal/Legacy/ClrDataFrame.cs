@@ -48,6 +48,7 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
         int hr = HResults.S_OK;
         try
         {
+            *numArgs = 0;
             IStackWalk stackWalk = _target.Contracts.StackWalk;
             TargetPointer methodDesc = stackWalk.GetMethodDescPtr(_dataFrame);
             if (methodDesc == TargetPointer.Null)
@@ -56,10 +57,10 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
             // get module and token
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
-            ILoader loader = _target.Contracts.Loader;
             TargetPointer mtAddr = rts.GetMethodTable(mdh);
             TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
             TargetPointer modulePtr = rts.GetModule(typeHandle);
+            ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
             uint token = rts.GetMethodToken(mdh);
 
