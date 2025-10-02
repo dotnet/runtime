@@ -638,7 +638,7 @@ is_direct_pinvoke_enabled (const MonoAotCompile *acfg)
 
 /* Wrappers around the image writer functions */
 
-#define MAX_SYMBOL_SIZE 256
+#define MAX_SYMBOL_SIZE 1024
 
 #if defined(TARGET_WIN32) && defined(TARGET_X86)
 static const char *
