@@ -10,7 +10,7 @@
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
-    <DotNetCliRuntime>$(TargetOS)-$(TargetArchitecture)</DotNetCliRuntime>
+    <DotNetCliRuntime>$(TargetRid)</DotNetCliRuntime>
   </PropertyGroup>
 
   <ItemGroup>
