@@ -2461,10 +2461,17 @@ static int init_mparams(void) {
       unsigned char buf[sizeof(size_t)];
       /* Try to use /dev/urandom, else fall back on using time */
       while (-1 == (fd = open("/dev/urandom", O_RDONLY)) && errno == EINTR);
-      if (fd >= 0 &&
-          read(fd, buf, sizeof(buf)) == sizeof(buf)) {
+      size_t readSoFar = 0;
+      while (fd >= 0 && readSoFar < sizeof(buf))
+      {
+        ssize_t numRead;
+        while (-1 == (numRead = read(fd, buf + numRead, sizeof(buf) - numRead)) && errno == EINTR);
+        if (numRead <= 0) break;
+        readSoFar += numRead;
+      }
+      if (fd >= 0) close(fd);
+      if (readSoFar == sizeof(buf)) {
         s = *((size_t *) buf);
-        close(fd);
       }
       else
 #endif /* USE_DEV_RANDOM */

@@ -823,12 +823,23 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
             return true;
         }
         uint64_t value;
-        size_t readResult = read(m_fdPagemap, (void*)&value, sizeof(value));
-        if (readResult == (size_t) -1)
+        size_t readSoFar = 0;
+        while (readSoFar < sizeof(value))
         {
-            int readErrno = errno;
-            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
-            return true;
+            size_t readResult;
+            while (-1 == (readResult = read(m_fdPagemap, (unsigned char*)&value + readSoFar, sizeof(value) - readSoFar) && errno == EINTR));
+            if (readResult == (size_t) -1)
+            {
+                int readErrno = errno;
+                TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+                return true;
+            }
+            if (readResult == 0)
+            {
+                TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, Read Was Incomplete\n", start, pagemapOffset, sizeof(value));
+                return true;
+            }
+            readSoFar += readResult;
         }
 
         bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;

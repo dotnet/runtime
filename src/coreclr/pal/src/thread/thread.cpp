@@ -1390,11 +1390,17 @@ CorUnix::GetThreadTimesInternal(
     }
 
     lwpstatus_t status;
-    do
+    size_t readSoFar = 0;
+    while (readSoFar < sizeof(status))
     {
-        readResult = read(fd, &status, sizeof(status));
+        do
+        {
+            readResult = read(fd, (unsigned char*)&status + readSoFar, sizeof(status) - readSoFar);
+        }
+        while ((readResult == -1) && (errno == EINTR));
+        if (readResult <= 0) break;
+        readSoFar += readResult;
     }
-    while ((readResult == -1) && (errno == EINTR));
 
     close(fd);
 

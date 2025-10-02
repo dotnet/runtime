@@ -117,8 +117,10 @@ int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
     int bytesRead;
     int cb = bufferSize;
 
-    while ((bytesRead = (int)read(m_inboundPipe, buffer, cb)) > 0)
+    while (true)
     {
+        while (-1 == (bytesRead = (int)read(m_inboundPipe, buffer, cb)) && errno == EINTR);
+        if (bytesRead <= 0) break;
         totalBytesRead += bytesRead;
         _ASSERTE(totalBytesRead <= (int)bufferSize);
         if (totalBytesRead >= (int)bufferSize)

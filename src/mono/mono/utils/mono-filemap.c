@@ -105,8 +105,14 @@ mono_file_map_fileio (size_t length, int flags, int fd, guint64 offset, void **r
 		(*release_fn) (ptr);
 		return NULL;
 	}
-	bytes_read = read (fd, ptr, length);
-	if (bytes_read != length)
+	size_t readSoFar = 0;
+	while (readSoFar < length)
+	{
+		while (-1 == (bytes_read = read (fd, ptr + readSoFar, length - readSoFar)) && errno == EINTR);
+		if (bytes_read <= 0) break;
+		readSoFar += bytes_read;
+	}
+	if (readSoFar != length)
 		return NULL;
 	while (-1 == lseek (fd, cur_offset, SEEK_SET) && errno == EINTR);
 	*ret_handle = NULL;

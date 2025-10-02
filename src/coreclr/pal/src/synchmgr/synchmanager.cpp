@@ -1937,7 +1937,7 @@ namespace CorUnix
                 }
 #endif // HAVE_KQUEUE
 
-                iRet = read(m_iProcessPipeRead, pPos, iBytes - iBytesRead);
+                while (-1 == (iRet = read(m_iProcessPipeRead, pPos, iBytes - iBytesRead)) && errno == EINTR);
 
                 if (0 == iRet)
                 {

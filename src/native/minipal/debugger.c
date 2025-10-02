@@ -70,13 +70,25 @@ bool minipal_is_native_debugger_present(void)
     {
         return false;
     }
-    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
-    if (num_read > 0)
+    ssize_t readSoFar = 0;
+    while (readSoFar < sizeof(buf) - 1)
+    {
+        ssize_t num_read;
+        while (-1 == (num_read = read(status_fd, buf + readSoFar, sizeof(buf) - 1 - readSoFar)) && errno == EINTR);
+        if (num_read == 0) break;
+        if (num_read < 0)
+        {
+            readSoFar = -1;
+            break;
+        }
+        readSoFar += num_read;
+    }
+    if (readSoFar > 0)
     {
         static const char TracerPid[] = "TracerPid:";
         char *tracer_pid;
 
-        buf[num_read] = '\0';
+        buf[readSoFar] = '\0';
         tracer_pid = strstr(buf, TracerPid);
         if (tracer_pid)
         {
@@ -133,11 +145,17 @@ bool minipal_is_native_debugger_present(void)
     }
 
     pstatus_t status;
-    ssize_t readResult;
-    do
+    size_t readSoFar = 0;
+    while (readSoFar < sizeof(status))
     {
-        readResult = read(fd, &status, sizeof(status));
-    } while (readResult == -1 && errno == EINTR);
+        ssize_t readResult;
+        do
+        {
+            readResult = read(fd, &status + readSoFar, sizeof(status) - readSoFar);
+        } while (readResult == -1 && errno == EINTR);
+        if (readResult <= 0) break;
+        readSoFar += readResult;
+    }
 
     close(fd);
     return status.pr_flttrace.word[0] != 0;
