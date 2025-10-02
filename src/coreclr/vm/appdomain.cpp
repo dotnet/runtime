@@ -1296,10 +1296,30 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
 struct CallersDataWithStackMark
 {
-    StackCrawlMark* stackMark;
-    BOOL foundMe;
-    MethodDesc* pFoundMethod;
-    MethodDesc* pPrevMethod;
+    CallersDataWithStackMark(StackCrawlMark* mark, PTR_Thread thread) :
+        stackMark(mark)
+#ifdef FEATURE_INTERPRETER
+        // Since the interpreter has its own stack, we need to get a pointer which can be compared on the real
+        // stack so that IsInCalleesFrames can work correctly.
+        , stackMarkOnOSStack(ConvertStackMarkToPointerOnOSStack(thread, mark))
+#endif
+    {
+    }
+    StackCrawlMark* const stackMark;
+#ifdef FEATURE_INTERPRETER
+    PTR_VOID const stackMarkOnOSStack;
+#endif
+    PTR_VOID GetStackMarkPointerToCheckAgainstStack()
+    {
+#ifdef FEATURE_INTERPRETER
+        return stackMarkOnOSStack;
+#else
+        return (PTR_VOID)stackMark;
+#endif
+    }
+    BOOL foundMe = FALSE;
+    MethodDesc* pFoundMethod = NULL;
+    MethodDesc* pPrevMethod = NULL;
 };
 
 /*static*/
@@ -1320,11 +1340,10 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
 
     GCX_COOP();
 
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
+    PTR_Thread pThread = GetThread();
+    CallersDataWithStackMark cdata(stackMark, pThread);
 
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
+    pThread->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
         return cdata.pFoundMethod->GetModule();
@@ -1369,7 +1388,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     CallersDataWithStackMark* pCaller = (CallersDataWithStackMark*) data;
     if (pCaller->stackMark)
     {
-        if (!pCf->IsInCalleesFrames(pCaller->stackMark))
+        if (!pCf->IsInCalleesFrames(pCaller->GetStackMarkPointerToCheckAgainstStack()))
         {
             // save the current in case it is the one we want
             pCaller->pPrevMethod = pFunc;
@@ -1425,7 +1444,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 
     // If we got here, we must already be in the frame containing the stack mark and we are not looking for "me".
     _ASSERTE(pCaller->stackMark &&
-             pCf->IsInCalleesFrames(pCaller->stackMark) &&
+             pCf->IsInCalleesFrames(pCaller->GetStackMarkPointerToCheckAgainstStack()) &&
              *(pCaller->stackMark) != LookForMe);
 
     // When looking for caller's caller, we delay returning results for another
@@ -2778,7 +2797,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
     CONTRACTL
     {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // for NameChangeEvent
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -2827,48 +2846,6 @@ LPCWSTR AppDomain::GetFriendlyName()
 
     RETURN (LPCWSTR)m_friendlyName;
 }
-
-#ifndef DACCESS_COMPILE
-
-LPCWSTR AppDomain::GetFriendlyNameForDebugger()
-{
-    CONTRACT (LPCWSTR)
-    {
-        NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-
-    if (m_friendlyName == NULL)
-    {
-        BOOL fSuccess = FALSE;
-
-        EX_TRY
-        {
-            SetFriendlyName(NULL);
-
-            fSuccess = TRUE;
-        }
-        EX_CATCH
-        {
-            // Gobble all exceptions.
-        }
-        EX_END_CATCH
-
-        if (!fSuccess)
-        {
-            RETURN W("");
-        }
-    }
-
-    RETURN m_friendlyName;
-}
-
-
-#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 

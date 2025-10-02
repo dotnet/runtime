@@ -68,16 +68,16 @@ namespace System.Security.Cryptography.Tests
                 SubjectPublicKey = publicKey,
             };
 
-            AssertImportSubjectKeyPublicInfo(import => testEmbeddedCall(() => import(spki.Encode())));
+            AssertImportSubjectPublicKeyInfo(import => testEmbeddedCall(() => import(spki.Encode())));
         }
 
-        internal delegate CompositeMLDsa ImportSubjectKeyPublicInfoCallback(byte[] spki);
-        internal static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
-            AssertImportSubjectKeyPublicInfo(test, test);
+        internal delegate CompositeMLDsa ImportSubjectPublicKeyInfoCallback(byte[] spki);
+        internal static void AssertImportSubjectPublicKeyInfo(Action<ImportSubjectPublicKeyInfoCallback> test) =>
+            AssertImportSubjectPublicKeyInfo(test, test);
 
-        internal static void AssertImportSubjectKeyPublicInfo(
-            Action<ImportSubjectKeyPublicInfoCallback> testDirectCall,
-            Action<ImportSubjectKeyPublicInfoCallback> testEmbeddedCall)
+        internal static void AssertImportSubjectPublicKeyInfo(
+            Action<ImportSubjectPublicKeyInfoCallback> testDirectCall,
+            Action<ImportSubjectPublicKeyInfoCallback> testEmbeddedCall)
         {
             testDirectCall(spki => CompositeMLDsa.ImportSubjectPublicKeyInfo(spki));
             testDirectCall(spki => CompositeMLDsa.ImportSubjectPublicKeyInfo(spki.AsSpan()));
@@ -468,7 +468,7 @@ namespace System.Security.Cryptography.Tests
                 ExecuteComponentFunc(
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8,
-                    ecdsa => (ecdsa.KeySizeInBits + 7) / 8,
+                    ecdsa => ((ecdsa.KeySizeInBits + 7) / 8) + 7, // Overhead for ECPrivateKey
                     eddsa => eddsa.KeySizeInBits / 8);
         }
 
@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.Tests
                 ExecuteComponentFunc(
                     algorithm,
                     rsa => (rsa.KeySizeInBits / 8) * 9 / 2 + 101, // Add max ASN.1 overhead
-                    ecdsa => 3 * ((ecdsa.KeySizeInBits + 7) / 8) + 47, // Add max ASN.1 overhead
+                    ecdsa => ((ecdsa.KeySizeInBits + 7) / 8) + 7, // Overhead for ECPrivateKey
                     eddsa => eddsa.KeySizeInBits / 8);
         }
 
@@ -636,24 +636,24 @@ namespace System.Security.Cryptography.Tests
         {
             return algorithm?.Name switch
             {
-                "MLDSA44-RSA2048-PSS-SHA256" => "2.16.840.1.114027.80.9.1.0",
-                "MLDSA44-RSA2048-PKCS15-SHA256" => "2.16.840.1.114027.80.9.1.1",
-                "MLDSA44-Ed25519-SHA512" => "2.16.840.1.114027.80.9.1.2",
-                "MLDSA44-ECDSA-P256-SHA256" => "2.16.840.1.114027.80.9.1.3",
-                "MLDSA65-RSA3072-PSS-SHA512" => "2.16.840.1.114027.80.9.1.4",
-                "MLDSA65-RSA3072-PKCS15-SHA512" => "2.16.840.1.114027.80.9.1.5",
-                "MLDSA65-RSA4096-PSS-SHA512" => "2.16.840.1.114027.80.9.1.6",
-                "MLDSA65-RSA4096-PKCS15-SHA512" => "2.16.840.1.114027.80.9.1.7",
-                "MLDSA65-ECDSA-P256-SHA512" => "2.16.840.1.114027.80.9.1.8",
-                "MLDSA65-ECDSA-P384-SHA512" => "2.16.840.1.114027.80.9.1.9",
-                "MLDSA65-ECDSA-brainpoolP256r1-SHA512" => "2.16.840.1.114027.80.9.1.10",
-                "MLDSA65-Ed25519-SHA512" => "2.16.840.1.114027.80.9.1.11",
-                "MLDSA87-ECDSA-P384-SHA512" => "2.16.840.1.114027.80.9.1.12",
-                "MLDSA87-ECDSA-brainpoolP384r1-SHA512" => "2.16.840.1.114027.80.9.1.13",
-                "MLDSA87-Ed448-SHAKE256" => "2.16.840.1.114027.80.9.1.14",
-                "MLDSA87-RSA3072-PSS-SHA512" => "2.16.840.1.114027.80.9.1.15",
-                "MLDSA87-RSA4096-PSS-SHA512" => "2.16.840.1.114027.80.9.1.16",
-                "MLDSA87-ECDSA-P521-SHA512" => "2.16.840.1.114027.80.9.1.17",
+                "MLDSA44-RSA2048-PSS-SHA256" => "2.16.840.1.114027.80.9.1.20",
+                "MLDSA44-RSA2048-PKCS15-SHA256" => "2.16.840.1.114027.80.9.1.21",
+                "MLDSA44-Ed25519-SHA512" => "2.16.840.1.114027.80.9.1.22",
+                "MLDSA44-ECDSA-P256-SHA256" => "2.16.840.1.114027.80.9.1.23",
+                "MLDSA65-RSA3072-PSS-SHA512" => "2.16.840.1.114027.80.9.1.24",
+                "MLDSA65-RSA3072-PKCS15-SHA512" => "2.16.840.1.114027.80.9.1.25",
+                "MLDSA65-RSA4096-PSS-SHA512" => "2.16.840.1.114027.80.9.1.26",
+                "MLDSA65-RSA4096-PKCS15-SHA512" => "2.16.840.1.114027.80.9.1.27",
+                "MLDSA65-ECDSA-P256-SHA512" => "2.16.840.1.114027.80.9.1.28",
+                "MLDSA65-ECDSA-P384-SHA512" => "2.16.840.1.114027.80.9.1.29",
+                "MLDSA65-ECDSA-brainpoolP256r1-SHA512" => "2.16.840.1.114027.80.9.1.30",
+                "MLDSA65-Ed25519-SHA512" => "2.16.840.1.114027.80.9.1.31",
+                "MLDSA87-ECDSA-P384-SHA512" => "2.16.840.1.114027.80.9.1.32",
+                "MLDSA87-ECDSA-brainpoolP384r1-SHA512" => "2.16.840.1.114027.80.9.1.33",
+                "MLDSA87-Ed448-SHAKE256" => "2.16.840.1.114027.80.9.1.34",
+                "MLDSA87-RSA3072-PSS-SHA512" => "2.16.840.1.114027.80.9.1.35",
+                "MLDSA87-RSA4096-PSS-SHA512" => "2.16.840.1.114027.80.9.1.36",
+                "MLDSA87-ECDSA-P521-SHA512" => "2.16.840.1.114027.80.9.1.37",
 
                 _ => throw new XunitException("Unknown algorithm."),
             };
