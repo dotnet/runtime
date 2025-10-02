@@ -111,7 +111,7 @@ class CompressDebugInfo
         IN ULONG                                    iAsyncVars,
         IN OUT NibbleWriter*                 pWriter);
 
-    static DebugInfoChunks Restore(IN PTR_BYTE pDebugInfo);
+    static DebugInfoChunks DecodeChunks(IN PTR_BYTE pDebugInfo);
 
 public:
     // Stores the result in LoaderHeap
@@ -204,6 +204,6 @@ public:
 #endif
 };
 
-#define DebugInfoFat 0xFFFFFFFF
+#define DebugInfoFat 0
 
 #endif // __DebugInfoStore_H_

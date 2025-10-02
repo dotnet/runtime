@@ -984,6 +984,7 @@ PTR_BYTE CompressDebugInfo::Compress(
     NibbleWriter w;
 
     bool isFat =
+        (cbBounds == DebugInfoFat) ||
         (cbPatchpointInfo > 0) ||
         (cbRichDebugInfo > 0) ||
         (cbAsyncInfo > 0) ||
@@ -991,7 +992,7 @@ PTR_BYTE CompressDebugInfo::Compress(
 
     if (isFat)
     {
-        w.WriteEncodedU32(DebugInfoFat);// 0xFFFFFFFF is used to indicate that this is a fat header
+        w.WriteEncodedU32(DebugInfoFat); // Indicator that this is a fat header
         w.WriteEncodedU32(cbBounds);
         w.WriteEncodedU32(cbVars);
         w.WriteEncodedU32(cbUninstrumentedBounds);
@@ -1150,7 +1151,7 @@ static void DoBounds(PTR_BYTE addrBounds, uint32_t cbBounds, TNumBounds countHan
 // Uncompression (restore) routines
 //-----------------------------------------------------------------------------
 
-DebugInfoChunks CompressDebugInfo::Restore(IN PTR_BYTE pDebugInfo)
+DebugInfoChunks CompressDebugInfo::DecodeChunks(IN PTR_BYTE pDebugInfo)
 {
     CONTRACTL
     {
@@ -1223,7 +1224,7 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if (pcVars != NULL) *pcVars = 0;
     if (ppVars != NULL) *ppVars = NULL;
 
-    DebugInfoChunks chunks = Restore(pDebugInfo);
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
     PTR_BYTE addrBounds = chunks.pBounds;
     unsigned cbBounds = chunks.cbBounds;
@@ -1309,7 +1310,7 @@ size_t CompressDebugInfo::WalkILOffsets(
     }
     CONTRACTL_END;
 
-    DebugInfoChunks chunks = Restore(pDebugInfo);
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
     PTR_BYTE addrBounds = chunks.pBounds;
     unsigned cbBounds = chunks.cbBounds;
@@ -1358,14 +1359,14 @@ PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
-    DebugInfoChunks chunks = Restore(pDebugInfo);
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
     if (chunks.cbPatchpointInfo == 0)
         return NULL;
@@ -1392,7 +1393,7 @@ void CompressDebugInfo::RestoreRichDebugInfo(
     }
     CONTRACTL_END;
 
-    DebugInfoChunks chunks = Restore(pDebugInfo);
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
     NibbleReader r(chunks.pRichDebugInfo, chunks.cbRichDebugInfo);
 
@@ -1427,7 +1428,7 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
 
     PTR_BYTE pStart = pDebugInfo;
 
-    DebugInfoChunks chunks = Restore(pDebugInfo);
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
     // NibbleReader reads in units of sizeof(NibbleChunkType)
     // So we need to account for any partial chunk at the end.
