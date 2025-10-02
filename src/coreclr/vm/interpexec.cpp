@@ -2813,11 +2813,11 @@ CALL_INTERP_METHOD:
                     int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    MethodDesc *pILTargetMethod = NULL;
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3], &pILTargetMethod);
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     Object *src = LOCAL_VAR(sreg, Object*);
 
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3], &pILTargetMethod);
                     if (pILTargetMethod != NULL)
                     {
                         callArgsOffset = pMethod->allocaSize;
