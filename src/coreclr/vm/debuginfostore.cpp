@@ -1416,7 +1416,7 @@ void CompressDebugInfo::RestoreRichDebugInfo(
 }
 
 #ifdef DACCESS_COMPILE
-void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte)
+void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo)
 {
     CONTRACTL
     {

@@ -169,7 +169,7 @@ public:
         OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
-    static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte);
+    static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo);
 #endif
 };
 
