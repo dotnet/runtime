@@ -2,7 +2,7 @@
 
 This directory contains a build configuration for WASI support, plus a basic sample. This is not intended for production use, nor is it currently supported. This is a step towards possible future support.
 
-For comprehensive WebAssembly documentation, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+For WebAssembly documentation, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
 
 ## Try it out
 

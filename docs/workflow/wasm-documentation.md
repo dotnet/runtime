@@ -1,6 +1,6 @@
 # WebAssembly Documentation
 
-This document serves as a comprehensive guide for contributors to the WebAssembly implementation in the dotnet/runtime repository. It provides links and references to technical documentation, workflows, and resources relevant to developing and maintaining WebAssembly support within this codebase.
+This document serves as a guide for contributors to the WebAssembly implementation in the dotnet/runtime repository. It provides links and references to technical documentation, workflows, and resources relevant to developing and maintaining WebAssembly support within this codebase.
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@ This document serves as a comprehensive guide for contributors to the WebAssembl
 
 ### Core Runtime Building
 - **[Building CoreCLR for WebAssembly](building/coreclr/wasm.md)** - Build the CoreCLR runtime for WebAssembly targets
-- **[Building Mono for Browser](../../src/mono/browser/README.md)** - Comprehensive browser build guide with samples and troubleshooting
+- **[Building Mono for Browser](../../src/mono/browser/README.md)** - Browser build guide with samples and troubleshooting
 
 ### Libraries Building
 - **[Building Libraries for WebAssembly](building/libraries/webassembly-instructions.md)** - Build .NET libraries for WebAssembly targets
@@ -89,7 +89,7 @@ See the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md#commo
 
 ### How do I build for different WebAssembly targets?
 
-See the [Building for WebAssembly](#building-for-webassembly) section above for comprehensive build instructions for different targets.
+See the [Building for WebAssembly](#building-for-webassembly) section above for build instructions for different targets.
 
 ### How do I test Wasm changes end to end?
 

@@ -1,6 +1,6 @@
 # Threaded runtime
 
-For comprehensive WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
 
 ## Building the runtime
 
