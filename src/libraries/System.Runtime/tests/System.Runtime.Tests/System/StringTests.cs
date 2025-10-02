@@ -1347,57 +1347,80 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("Hello", 'l', 0, int.MaxValue, StringComparison.Ordinal, 2)]
-        [InlineData("Hello", 'x', 0, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("Hello", 'h', 0, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("Hello", 'o', 0, int.MaxValue, StringComparison.Ordinal, 4)]
-        [InlineData("Hello", 'h', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0)]
-        [InlineData("HelLo", 'L', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 2)]
-        [InlineData("HelLo", 'L', 0, int.MaxValue, StringComparison.Ordinal, 3)]
-        [InlineData("HelLo", '\0', 0, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("!@#$%", '%', 0, int.MaxValue, StringComparison.Ordinal, 4)]
-        [InlineData("!@#$", '!', 0, int.MaxValue, StringComparison.Ordinal, 0)]
-        [InlineData("!@#$", '@', 0, int.MaxValue, StringComparison.Ordinal, 1)]
-        [InlineData("!@#$%", '%', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 4)]
-        [InlineData("!@#$", '!', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0)]
-        [InlineData("!@#$", '@', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 1)]
-        [InlineData("_____________\u807f", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("_____________\u807f__", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("_____________\u807f\u007f_", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, 14)]
-        [InlineData("__\u807f_______________", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("__\u807f___\u007f___________", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, 6)]
-        [InlineData("_____________\u807f", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, -1)]
-        [InlineData("_____________\u807f__", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, -1)]
-        [InlineData("_____________\u807f\u007f_", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 14)]
-        [InlineData("__\u807f_______________", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, -1)]
-        [InlineData("__\u807f___\u007f___________", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 6)]
-        [InlineData("hello", 'e', 3, int.MaxValue, StringComparison.Ordinal, -1)]
-        [InlineData("hello", 'o', 3, int.MaxValue, StringComparison.Ordinal, 4)]
-        [InlineData("hello", 'o', 3, 0, StringComparison.Ordinal, -1)]
-        [InlineData("hello", 'o', 3, 2, StringComparison.Ordinal, 4)]
-        [InlineData("HELLO", 'o', 3, 2, StringComparison.OrdinalIgnoreCase, 4)]
-        [InlineData("abacus", 'a', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0)]
-        public static void IndexOf_SingleLetter_StringComparison(string s, char target, int startIndex, int count, StringComparison stringComparison, int expected)
+        [InlineData("Hello", 'l', 0, int.MaxValue, StringComparison.Ordinal, null, 2)]
+        [InlineData("Hello", 'x', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("Hello", 'h', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("Hello", 'o', 0, int.MaxValue, StringComparison.Ordinal, null, 4)]
+        [InlineData("Hello", 'h', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0)]
+        [InlineData("HelLo", 'L', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 2)]
+        [InlineData("HelLo", 'L', 0, int.MaxValue, StringComparison.Ordinal, null, 3)]
+        [InlineData("HelLo", '\0', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("!@#$%", '%', 0, int.MaxValue, StringComparison.Ordinal, null, 4)]
+        [InlineData("!@#$", '!', 0, int.MaxValue, StringComparison.Ordinal, null, 0)]
+        [InlineData("!@#$", '@', 0, int.MaxValue, StringComparison.Ordinal, null, 1)]
+        [InlineData("!@#$%", '%', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 4)]
+        [InlineData("!@#$", '!', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0)]
+        [InlineData("!@#$", '@', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 1)]
+        [InlineData("_____________\u807f", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("_____________\u807f__", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("_____________\u807f\u007f_", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, 14)]
+        [InlineData("__\u807f_______________", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("__\u807f___\u007f___________", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, 6)]
+        [InlineData("_____________\u807f", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1)]
+        [InlineData("_____________\u807f__", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1)]
+        [InlineData("_____________\u807f\u007f_", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 14)]
+        [InlineData("__\u807f_______________", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1)]
+        [InlineData("__\u807f___\u007f___________", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 6)]
+        [InlineData("hello", 'e', 3, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("hello", 'o', 3, int.MaxValue, StringComparison.Ordinal, null, 4)]
+        [InlineData("hello", 'o', 3, 0, StringComparison.Ordinal, null, -1)]
+        [InlineData("hello", 'o', 3, 2, StringComparison.Ordinal, null, 4)]
+        [InlineData("HELLO", 'o', 3, 2, StringComparison.OrdinalIgnoreCase, null, 4)]
+        [InlineData("abacus", 'a', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0)]
+        [InlineData("ü", 'Ü', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("ü", 'Ü', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0)]
+        [InlineData("ü", 'Ü', 0, int.MaxValue, StringComparison.CurrentCulture, null, -1)]
+        [InlineData("ü", 'Ü', 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, 0)]
+        [InlineData("ü", 'Ü', 0, int.MaxValue, StringComparison.InvariantCulture, null, -1)]
+        [InlineData("ü", 'Ü', 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, 0)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.CurrentCulture, null, -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.InvariantCulture, null, -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.Ordinal, "tr-TR", -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, "tr-TR", -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.CurrentCulture, "tr-TR", -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, "tr-TR", 0)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.InvariantCulture, "tr-TR", -1)]
+        [InlineData("ı", 'I', 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, "tr-TR", -1)]
+        [InlineData("", 'm', 0, int.MaxValue, StringComparison.Ordinal, null, -1)]
+        [InlineData("", 'm', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1)]
+        public static void IndexOf_SingleLetter_StringComparison(string s, char target, int startIndex, int count, StringComparison stringComparison, string? cultureName, int expected)
         {
-            if (count == int.MaxValue)
+            using (new ThreadCultureChange(cultureName))
             {
-                count = s.Length - startIndex;
-            }
+                if (count == int.MaxValue)
+                {
+                    count = s.Length - startIndex;
+                }
 
-            if (startIndex == 0 && count == s.Length)
-            {
-                Assert.Equal(expected, s.IndexOf(target, stringComparison));
-            }
-            if (s.Length - startIndex == count)
-            {
-                Assert.Equal(expected, s.IndexOf(target, startIndex, stringComparison));
-            }
+                if (startIndex == 0 && count == s.Length)
+                {
+                    Assert.Equal(expected, s.IndexOf(target, stringComparison));
+                }
+                if (s.Length - startIndex == count)
+                {
+                    Assert.Equal(expected, s.IndexOf(target, startIndex, stringComparison));
+                }
 
-            Assert.Equal(expected, s.IndexOf(target, startIndex, count, stringComparison));
+                Assert.Equal(expected, s.IndexOf(target, startIndex, count, stringComparison));
 
-            ReadOnlySpan<char> targetSpan = [target];
-            int subIndex = s.AsSpan(startIndex, count).IndexOf(targetSpan, stringComparison);
-            Assert.Equal(expected, subIndex < 0 ? subIndex : startIndex + subIndex);
+                ReadOnlySpan<char> targetSpan = [target];
+                int subIndex = s.AsSpan(startIndex, count).IndexOf(targetSpan, stringComparison);
+                Assert.Equal(expected, subIndex < 0 ? subIndex : startIndex + subIndex);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -1549,27 +1572,52 @@ namespace System.Tests
             yield return new object[] { "HELLO", new Rune('o'), 3, 2, StringComparison.OrdinalIgnoreCase, 4 };
             yield return new object[] { "hello\uD801\uDC28", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.Ordinal, 5 };
             yield return new object[] { "HELLO\uD801\uDC00", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.OrdinalIgnoreCase, 5 };
+
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.CurrentCulture, null, -1 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, 0 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.InvariantCulture, null, -1 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, 0 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCulture, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCulture, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.Ordinal, "tr-TR", -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, "tr-TR", -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCulture, "tr-TR", -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, "tr-TR", 0 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCulture, "tr-TR", -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, "tr-TR", -1 };
+
+            yield return new object[] { "", new Rune('m'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "", new Rune('m'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(IndexOf_Rune_StringComparison_TestData))]
-        public static void IndexOf_Rune_StringComparison(string source, Rune target, int startIndex, int count, StringComparison stringComparison, int expected)
+        public static void IndexOf_Rune_StringComparison(string source, Rune target, int startIndex, int count, StringComparison stringComparison, string? cultureName, int expected)
         {
-            if (count == int.MaxValue)
+            using (new ThreadCultureChange(cultureName))
             {
-                count = source.Length - startIndex;
-            }
+                if (count == int.MaxValue)
+                {
+                    count = source.Length - startIndex;
+                }
 
-            if (startIndex == 0 && count == source.Length)
-            {
-                Assert.Equal(expected, source.IndexOf(target, stringComparison));
-            }
-            if (source.Length - startIndex == count)
-            {
-                Assert.Equal(expected, source.IndexOf(target, startIndex, stringComparison));
-            }
+                if (startIndex == 0 && count == source.Length)
+                {
+                    Assert.Equal(expected, source.IndexOf(target, stringComparison));
+                }
+                if (source.Length - startIndex == count)
+                {
+                    Assert.Equal(expected, source.IndexOf(target, startIndex, stringComparison));
+                }
 
-            Assert.Equal(expected, source.IndexOf(target, startIndex, count, stringComparison));
+                Assert.Equal(expected, source.IndexOf(target, startIndex, count, stringComparison));
+            }
         }
 
         public static IEnumerable<object[]> IndexOf_String_StringComparison_TestData()
