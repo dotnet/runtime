@@ -3849,7 +3849,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #ifdef TARGET_64BIT
                     case CORINFO_TYPE_NATIVEINT:
                     case CORINFO_TYPE_NATIVEUINT:
-                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_I8_I4);
+                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_I8_I4); // This subtly differs from the published ECMA spec, and is what is defined in the Ecma-335-Augments.md document
                         break;
 #endif // TARGET_64BIT
                     case CORINFO_TYPE_BYTE:
@@ -4327,7 +4327,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR8, INTOP_CONV_R8_R4);
     }
-    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].type == StackTypeI4)
+    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].type == StackTypeI4) // This subtly differs from the published ECMA spec for section III.1.6, and is what is defined in the Ecma-335-Augments.md document
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeI8, INTOP_CONV_I8_I4);
     }
