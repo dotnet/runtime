@@ -90,8 +90,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 byte[] vars = method.DebugVarInfos;
 
                 NibbleWriter nibbleWriter = new NibbleWriter();
-                nibbleWriter.WriteUInt((uint)(bounds?.Length ?? 0));
-                nibbleWriter.WriteUInt((uint)(vars?.Length ?? 0));
+                uint boundsLength = (uint)(bounds?.Length ?? 0);
+                bool isFatHeader = boundsLength == DebugInfoFat;
+
+                if (isFatHeader)
+                {
+                    nibbleWriter.WriteUInt(DebugInfoFat);
+                    nibbleWriter.WriteUInt(boundsLength);
+                    nibbleWriter.WriteUInt((uint)(vars?.Length ?? 0));
+                    nibbleWriter.WriteUInt(0); // cbUninstrumentedBounds
+                    nibbleWriter.WriteUInt(0); // cbPatchpointInfo
+                    nibbleWriter.WriteUInt(0); // cbRichDebugInfo
+                    nibbleWriter.WriteUInt(0); // cbAsyncInfo
+                }
+                else
+                {
+                    nibbleWriter.WriteUInt(boundsLength);
+                    nibbleWriter.WriteUInt((uint)(vars?.Length ?? 0));
+                }
 
                 byte[] header = nibbleWriter.ToArray();
                 methodDebugBlob.Write(header, 0, header.Length);
@@ -307,5 +323,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return writer.ToArray();
         }
+
+        private const int DebugInfoFat = 0;
     }
 }
