@@ -560,15 +560,13 @@ namespace System
                 {
                     subIndex = SpanHelpers.LastIndexOfChar(ref startChar, value, count);
                 }
-
-                return subIndex < 0 ? subIndex : startSearchAt + subIndex;
             }
             else
             {
                 subIndex = Ordinal.LastIndexOfOrdinalIgnoreCase(this.AsSpan(startSearchAt, count), new ReadOnlySpan<char>(in value));
-
-                return subIndex < 0 ? subIndex : startSearchAt + subIndex;
             }
+
+            return subIndex < 0 ? subIndex : startSearchAt + subIndex;
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
