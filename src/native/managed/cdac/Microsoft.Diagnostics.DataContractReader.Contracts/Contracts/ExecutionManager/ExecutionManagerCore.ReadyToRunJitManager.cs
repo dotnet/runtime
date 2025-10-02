@@ -236,25 +236,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return index;
         }
 
-        private uint AdjustRuntimeFunctionToMethodEnd(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint index)
-        {
-            TargetPointer methodDesc;
-            do
-            {
-                // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
-                // The funclet's address (and index) will be greater than that of the corresponding function, so
-                // we increment the index to find the actual function / method desc for the funclet.
-                index++;
-                if (index >= r2rInfo.NumRuntimeFunctions)
-                {
-                    break;
-                }
-                methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
-            } while (methodDesc == TargetPointer.Null);
-
-            return index - 1;
-        }
-
         private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
         {
             if (r2rInfo.DelayLoadMethodCallThunks == TargetPointer.Null)
