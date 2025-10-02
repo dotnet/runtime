@@ -19,6 +19,8 @@ struct CnsVal
     bool    cnsReloc;
 };
 
+bool isRedundantSignExtend(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);
+
 #ifdef DEBUG
 
 /************************************************************************/
@@ -61,6 +63,7 @@ private:
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+bool emitInsIsSignExtend(instruction ins);
 
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);

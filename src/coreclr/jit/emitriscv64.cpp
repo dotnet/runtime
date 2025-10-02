@@ -640,6 +640,101 @@ void emitter::emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, boo
     }
 }
 
+//------------------------------------------------------------------------
+// emitInsIsSignExtend: Determines whether a given instruction sign extends
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+bool emitter::emitInsIsSignExtend(instruction ins)
+{
+    switch(ins)
+    {
+        case INS_sext_w: // R_R
+        case INS_lui: // R_I
+
+        // R_R_I
+        case INS_lb:
+        case INS_lh:
+        case INS_lw:
+
+        // R_R_I
+        case INS_addiw:
+        case INS_slliw:
+        case INS_srliw:
+        case INS_sraiw:
+
+        // R_R_R
+        case INS_addw:
+        case INS_subw:
+        case INS_sllw:
+        case INS_srlw:
+        case INS_sraw:
+
+        // R_R_R
+        case INS_mulw:
+        case INS_divw:
+        case INS_divuw:
+        case INS_remw:
+        case INS_remuw:
+        {
+            return true;
+        }
+        // TODO: Add more sign-extension instructions
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// isRedundantSignExtend:
+//    Check if the current 'sext.w' instruction is redundant and can be omitted.
+//
+//    A 'sext.w' instruction is redundant if the previous instruction sign extends
+//    the source register of current instruction.
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    dst       -- The destination register
+//    src       -- The source register
+//
+bool emitter::isRedundantSignExtend(instruction ins, emitAttr size, regNumber dst, regNumber src)
+{
+    assert(ins == INS_sext_w);
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    const bool canOptimize = emitCanPeepholeLastIns();
+
+    if (!canOptimize)
+    {
+        return false;
+    }
+
+    regNumber prevDst = emitLastIns->idReg1();
+    regNumber prevSrc = emitLastIns->idReg2();
+    emitAttr  prevSize = emitLastIns->idOpSize();
+
+    bool isPrevInsSignExtend = emitInsIsSignExtend(emitLastIns->idIns());
+
+    if (isPrevInsSignExtend && (prevDst == src))
+    {
+        JITDUMP("\n -- suppressing 'sext.w reg%u, reg%u' as previous instruction already sign-extended " 
+                "the register reg%u.\n",
+                dst, src, prevDst);
+
+        return true;
+    }
+
+    return false;
+}
+
 /*****************************************************************************
  *
  *  Add an instruction referencing two registers

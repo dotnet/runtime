@@ -3188,7 +3188,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     regOp1 = tmpRegOp1;
                 }
             }
-
+ 
             if (tree->OperIs(GT_EQ, GT_NE))
             {
                 if ((imm != 0) || (cmpSize == EA_4BYTE))
@@ -3353,8 +3353,14 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     regNumber tmpRegOp1 = rsGetRsvdReg();
                     assert(regOp1 != tmpRegOp1);
                     imm = static_cast<int32_t>(imm);
-                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                    regOp1 = tmpRegOp1;
+
+                    // It might be possible to watch the type of op1 to decide the redundancy.
+                    // But due to the safety reason, only a peephole optimization is done now.
+                    if (!(emit->isRedundantSignExtend(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1)))
+                    {
+                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+                        regOp1 = tmpRegOp1;
+                    }
                     break;
                 }
                 case EA_8BYTE:
@@ -3389,8 +3395,14 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             {
                 regNumber tmpRegOp1 = rsGetRsvdReg();
                 assert(regOp1 != tmpRegOp1);
-                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                regOp1 = tmpRegOp1;
+
+                // It might be possible to watch the type of op1 to decide the redundancy.
+                // But due to the safety reason, only a peephole optimization is done now.
+                if (!(emit->isRedundantSignExtend(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1)))
+                {
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+                    regOp1 = tmpRegOp1;
+                }
             }
         }
 
@@ -3438,10 +3450,23 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             regNumber tmpRegOp2 = rsGetRsvdReg();
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
-            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
-            regOp1 = tmpRegOp1;
-            regOp2 = tmpRegOp2;
+
+            // It might be possible to watch the type of op1 to decide the redundancy.
+            // But due to the safety reason, only a peephole optimization is done now.
+            bool signExtOp1 = !(emit->isRedundantSignExtend(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1));
+            bool signExtOp2 = !(emit->isRedundantSignExtend(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2));
+            
+            if (signExtOp1)
+            {
+                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+                regOp1 = tmpRegOp1;
+            }
+            
+            if (signExtOp2)
+            {
+                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
+                regOp2 = tmpRegOp2;
+            }
         }
 
         switch (cond.GetCode())
