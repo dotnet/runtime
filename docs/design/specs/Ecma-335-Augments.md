@@ -25,7 +25,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
 - [Extended layout](#extended-layout)
-- [Implict argument conversion rules](#implicit-arg-coercion)
+- [Implicit argument conversion rules](#implicit-arg-coercion)
 
 ## Signatures
 
