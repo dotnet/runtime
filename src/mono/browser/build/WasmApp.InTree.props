@@ -3,9 +3,14 @@
   <PropertyGroup>
     <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
     <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
+
+    <_WebAssemblyPropsFile>$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile>$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
+    <_WebAssemblySdkToolsDirectory>$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\</_WebAssemblySdkToolsDirectory>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true'" />
+  
   <PropertyGroup>
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>
