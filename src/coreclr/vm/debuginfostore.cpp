@@ -1395,6 +1395,15 @@ void CompressDebugInfo::RestoreRichDebugInfo(
 
     DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
 
+    if (chunks.cbRichDebugInfo == 0)
+    {
+        *ppInlineTree = NULL;
+        *pNumInlineTree = 0;
+        *ppRichMappings = NULL;
+        *pNumRichMappings = 0;
+        return;
+    }
+
     NibbleReader r(chunks.pRichDebugInfo, chunks.cbRichDebugInfo);
 
     *pNumInlineTree = r.ReadEncodedU32();
@@ -1413,6 +1422,53 @@ void CompressDebugInfo::RestoreRichDebugInfo(
     TransferReader t(r);
     DoInlineTreeNodes(t, *pNumInlineTree, *ppInlineTree);
     DoRichOffsetMappings(t, *pNumRichMappings, *ppRichMappings);
+}
+
+void CompressDebugInfo::RestoreAsyncDebugInfo(
+    IN FP_IDS_NEW                          fpNew,
+    IN void*                               pNewData,
+    IN PTR_BYTE                            pDebugInfo,
+    OUT ICorDebugInfo::AsyncInfo*                pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint**    ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32*                                  pNumAsyncVars)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    DebugInfoChunks chunks = DecodeChunks(pDebugInfo);
+
+    if (chunks.cbAsyncInfo == 0)
+    {
+        *pAsyncInfo = {};
+        *ppSuspensionPoints = NULL;
+        *ppAsyncVars = NULL;
+        *pNumAsyncVars = 0;
+        return;
+    }
+
+    NibbleReader r(chunks.pAsyncInfo, chunks.cbAsyncInfo);
+    pAsyncInfo->NumSuspensionPoints = r.ReadEncodedU32();
+    *pNumAsyncVars = r.ReadEncodedU32();
+
+    UINT32 cbSuspPoints = pAsyncInfo->NumSuspensionPoints * sizeof(ICorDebugInfo::AsyncSuspensionPoint);
+    *ppSuspensionPoints = reinterpret_cast<ICorDebugInfo::AsyncSuspensionPoint*>(fpNew(pNewData, cbSuspPoints));
+    if (*ppSuspensionPoints == NULL)
+        ThrowOutOfMemory();
+
+    UINT32 cbAsyncVars = *pNumAsyncVars * sizeof(ICorDebugInfo::AsyncContinuationVarInfo);
+    *ppAsyncVars = reinterpret_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(fpNew(pNewData, cbAsyncVars));
+    if (*ppAsyncVars == NULL)
+        ThrowOutOfMemory();
+
+    TransferReader t(r);
+    DoAsyncSuspensionPoints(t, pAsyncInfo->NumSuspensionPoints, *ppSuspensionPoints);
+    DoAsyncVars(t, *pNumAsyncVars, *ppAsyncVars);
 }
 
 #ifdef DACCESS_COMPILE
@@ -1511,6 +1567,31 @@ BOOL DebugInfoManager::GetRichDebugInfo(
     }
 
     return pJitMan->GetRichDebugInfo(request, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
+}
+
+BOOL DebugInfoManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL
+    {
+        THROWS;
+        WRAPPER(GC_TRIGGERS); // depends on fpNew
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    IJitManager* pJitMan = ExecutionManager::FindJitMan(request.GetStartAddress());
+    if (pJitMan == NULL)
+    {
+        return FALSE; // no info available.
+    }
+
+    return pJitMan->GetAsyncDebugInfo(request, fpNew, pNewData, pAsyncInfo, ppSuspensionPoints, ppAsyncVars, pcAsyncVars);
 }
 
 #ifdef DACCESS_COMPILE

@@ -168,6 +168,15 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32*                           pNumRichMappings);
 
+    static void RestoreAsyncDebugInfo(
+        IN FP_IDS_NEW                                 fpNew,
+        IN void*                                      pNewData,
+        IN PTR_BYTE                                   pDebugInfo,
+        OUT ICorDebugInfo::AsyncInfo*                 pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint**     ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32*                                  pNumAsyncVars);
+
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo);
 #endif
@@ -198,6 +207,14 @@ public:
         OUT ULONG32*                           pNumInlineTree,
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32*                           pNumRichMappings);
+
+    static BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);

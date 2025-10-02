@@ -4099,6 +4099,56 @@ BOOL EEJitManager::GetRichDebugInfo(
     return GetRichDebugInfoWorker(pDebugInfo, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
 
+BOOL EECodeGenManager::GetAsyncDebugInfoWorker(
+    PTR_BYTE pDebugInfo,
+    IN FP_IDS_NEW fpNew, IN void* pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    // No header created, which means no jit information is available.
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreAsyncDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        pAsyncInfo,
+        ppSuspensionPoints,
+        ppAsyncVars, pcAsyncVars);
+
+    return TRUE;
+}
+
+BOOL EEJitManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<CodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetAsyncDebugInfoWorker(pDebugInfo, fpNew, pNewData, pAsyncInfo, ppSuspensionPoints, ppAsyncVars, pcAsyncVars);
+}
+
 #ifdef FEATURE_INTERPRETER
 BOOL InterpreterJitManager::GetBoundariesAndVars(
     const DebugInfoRequest & request,
@@ -4182,6 +4232,29 @@ BOOL InterpreterJitManager::GetRichDebugInfo(
 
     return GetRichDebugInfoWorker(pDebugInfo, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
+
+BOOL InterpreterJitManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    InterpreterCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<InterpreterCodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetAsyncDebugInfoWorker(pDebugInfo, fpNew, pNewData, pAsyncInfo, ppSuspensionPoints, ppAsyncVars, pcAsyncVars);
+}
+
 #endif // FEATURE_INTERPRETER
 
 #ifdef DACCESS_COMPILE
@@ -6455,7 +6528,65 @@ BOOL ReadyToRunJitManager::GetRichDebugInfo(
     OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
     OUT ULONG32* pNumRichMappings)
 {
-    return FALSE;
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(request.GetStartAddress());
+    if (!codeInfo.IsValid())
+        return FALSE;
+
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+
+    PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreRichDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        ppInlineTree, pNumInlineTree,
+        ppRichMappings, pNumRichMappings);
+
+    return TRUE;
+}
+
+BOOL ReadyToRunJitManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(request.GetStartAddress());
+    if (!codeInfo.IsValid())
+        return FALSE;
+
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+
+    PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreAsyncDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        pAsyncInfo,
+        ppSuspensionPoints,
+        ppAsyncVars, pcAsyncVars);
+
+    return TRUE;
 }
 
 #ifdef DACCESS_COMPILE
