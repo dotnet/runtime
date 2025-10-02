@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -65,6 +66,30 @@ public class Runtime_120270
             {
             }
         }
+    }
+
+    [Fact]
+    public static int TestEntryPoint3()
+    {
+        for (int i = 0; i < 100_000; i++)
+        {
+            Derived[] d = [new Derived()];
+            IEnumerable<Base> e = d;
+            IEnumerator<Base> en = e.GetEnumerator();
+            string s = en.GetType().ToString();
+
+            if (i == 0)
+            {
+                Console.WriteLine($"Enumerator type: {s}");
+            }
+
+            if (!s.Equals("System.SZGenericArrayEnumerator`1[Base]"))
+            {
+                Console.WriteLine($"Enumerator type changed at {i} to {s}");
+                return -1;
+            }
+        }
+        return 100;
     }
 }
 
