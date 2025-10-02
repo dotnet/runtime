@@ -490,19 +490,26 @@ static void DoAsyncSuspensionPoints(
 template<typename T>
 static void DoAsyncVars(
     T trans,
+    ULONG32 cSuspensionPoints,
+    ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
     ULONG32 cVars,
     ICorDebugInfo::AsyncContinuationVarInfo* vars)
 {
-    uint32_t lastOffset = 0;
-    for (uint32_t i = 0; i < cVars; i++)
+    uint32_t varIndex = 0;
+    for (uint32_t i = 0; i < cSuspensionPoints; i++)
     {
-        ICorDebugInfo::AsyncContinuationVarInfo* var = &vars[i];
-
-        trans.DoEncodedAdjustedU32(var->VarNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
-
-        trans.DoEncodedDeltaU32(var->Offset, lastOffset);
-        lastOffset = var->Offset;
+        uint32_t lastOffset = 0;
+        uint32_t numVars = suspensionPoints[i].NumContinuationVars;
+        for (uint32_t j = 0; j < numVars; j++)
+        {
+            ICorDebugInfo::AsyncContinuationVarInfo* var = &vars[varIndex++];
+            trans.DoEncodedAdjustedU32(var->VarNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
+            trans.DoEncodedDeltaU32(var->Offset, lastOffset);
+            lastOffset = var->Offset;
+        }
     }
+
+    _ASSERTE(varIndex == cVars);
 }
 
 #ifndef DACCESS_COMPILE
@@ -760,7 +767,7 @@ void CompressDebugInfo::CompressAsyncDebugInfo(
 
     TransferWriter t(*pWriter);
     DoAsyncSuspensionPoints(t, asyncInfo->NumSuspensionPoints, pSuspensionPoints);
-    DoAsyncVars(t, iAsyncVars, pAsyncVars);
+    DoAsyncVars(t, asyncInfo->NumSuspensionPoints, pSuspensionPoints, iAsyncVars, pAsyncVars);
 
     pWriter->Flush();
 
@@ -1468,7 +1475,7 @@ void CompressDebugInfo::RestoreAsyncDebugInfo(
 
     TransferReader t(r);
     DoAsyncSuspensionPoints(t, pAsyncInfo->NumSuspensionPoints, *ppSuspensionPoints);
-    DoAsyncVars(t, *pNumAsyncVars, *ppAsyncVars);
+    DoAsyncVars(t, pAsyncInfo->NumSuspensionPoints, *ppSuspensionPoints, *pNumAsyncVars, *ppAsyncVars);
 }
 
 #ifdef DACCESS_COMPILE
