@@ -485,6 +485,11 @@ namespace System
         /// </returns>
         public int LastIndexOf(char value, StringComparison comparisonType)
         {
+            if (Length == 0)
+            {
+                return -1;
+            }
+
             return LastIndexOf(value, Length - 1, comparisonType);
         }
 
@@ -716,6 +721,11 @@ namespace System
         /// </returns>
         public int LastIndexOf(Rune value, StringComparison comparisonType)
         {
+            if (Length == 0)
+            {
+                return -1;
+            }
+
             return LastIndexOf(value, Length - 1, comparisonType);
         }
 
@@ -754,7 +764,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex - count + 1, 0);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length - 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(startIndex, Length);
 
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
