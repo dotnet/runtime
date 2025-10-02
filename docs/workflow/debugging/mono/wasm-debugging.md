@@ -1,9 +1,8 @@
-# WebAssembly Debugging Reference
+# WebAssembly Debugging
 
 This document provides debugging instructions for WebAssembly.
 
 ## Debug with VS Code
-
 To debug WebAssembly with Visual Studio Code:
 
 ### 1. Configuration
@@ -28,7 +27,7 @@ Add the appropriate configuration to your `.vscode/launch.json` depending on you
     "type": "mono",
     "request": "attach",
     "address": "localhost",
-    "port": 64000
+    "port": <PROXY_PORT>
 }
 ```
 
