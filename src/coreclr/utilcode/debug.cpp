@@ -11,6 +11,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "corexcep.h"
+#include <time.h>
 
 #include <minipal/debugger.h>
 
@@ -158,11 +159,14 @@ VOID LogAssert(
     // may not be a string literal (particularly for formatt-able asserts).
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
-    SYSTEMTIME st;
-#ifndef TARGET_UNIX
-    GetLocalTime(&st);
+    struct timespec ts;
+    int ret = timespec_get(&ts, TIME_UTC);
+
+    struct tm local;
+#ifdef HOST_WINDOWS
+    localtime_s(&local, &ts.tv_sec);
 #else
-    GetSystemTime(&st);
+    localtime_r(&ts.tv_sec, &local);
 #endif
 
     SString exename;
@@ -170,18 +174,18 @@ VOID LogAssert(
 
     LOG((LF_ASSERT,
          LL_FATALERROR,
-         "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%lu/%lu/%lu: %02lu:%02lu:%02lu %s): File: %s, Line %d : %s\n",
+         "FAILED ASSERT(PID %d [0x%08x], Thread: %d [0x%x]) (%d/%d/%d: %02d:%02d:%02d %s): File: %s, Line %d : %s\n",
          GetCurrentProcessId(),
          GetCurrentProcessId(),
          GetCurrentThreadId(),
          GetCurrentThreadId(),
-         (ULONG)st.wMonth,
-         (ULONG)st.wDay,
-         (ULONG)st.wYear,
-         1 + (( (ULONG)st.wHour + 11 ) % 12),
-         (ULONG)st.wMinute,
-         (ULONG)st.wSecond,
-         (st.wHour < 12) ? "am" : "pm",
+         local.tm_mon,
+         local.tm_mday,
+         local.tm_year,
+         1 + (( local.tm_hour + 11 ) % 12),
+         local.tm_min,
+         local.tm_sec,
+         (local.tm_hour < 12) ? "am" : "pm",
          szFile,
          iLine,
          szExpr));

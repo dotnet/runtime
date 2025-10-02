@@ -206,9 +206,9 @@ class InterpDumpScope
         if (t_interpDump)           \
             printf(__VA_ARGS__);    \
     }
-#else
+#else // !DEBUG
 #define INTERP_DUMP(...)
-#endif
+#endif // DEBUG
 
 struct InterpInst;
 struct InterpBasicBlock;
@@ -467,9 +467,6 @@ class InterpCompiler
     friend class InterpGcSlotAllocator;
 
 private:
-#ifdef DEBUG
-    InterpDumpScope m_dumpScope;
-#endif
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
@@ -509,24 +506,6 @@ private:
     }
 
     CORINFO_CLASS_HANDLE m_classHnd;
-#ifdef DEBUG
-    TArray<char, MallocAllocator> m_methodName;
-
-    const char* PointerIsClassHandle = (const char*)0x1;
-    const char* PointerIsMethodHandle = (const char*)0x2;
-    const char* PointerIsStringLiteral = (const char*)0x3;
-
-    dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
-    bool PointerInNameMap(void* ptr)
-    {
-        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
-    }
-    void AddPointerToNameMap(void* ptr, const char* name)
-    {
-        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
-    }
-    void PrintNameInPointerMap(void* ptr);
-#endif // DEBUG
 
     dn_simdhash_ptr_ptr_holder m_stackmapsByClass;
     InterpreterStackMap* GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle);
@@ -718,9 +697,11 @@ private:
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
-    int32_t m_totalVarsStackSize, m_globalVarsWithRefsStackTop;
+    int32_t m_totalVarsStackSize;
+    int32_t m_globalVarsWithRefsStackTop;
     int32_t m_paramAreaOffset = 0;
-    int32_t m_ILLocalsOffset, m_ILLocalsSize;
+    int32_t m_ILLocalsOffset;
+    int32_t m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);
     int32_t AllocVarOffset(int var, int32_t *pPos);
     int32_t GetLiveStartOffset(int var);
@@ -812,6 +793,25 @@ private:
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
+#ifdef DEBUG
+    InterpDumpScope m_dumpScope;
+    TArray<char, MallocAllocator> m_methodName;
+
+    const char* PointerIsClassHandle = (const char*)0x1;
+    const char* PointerIsMethodHandle = (const char*)0x2;
+    const char* PointerIsStringLiteral = (const char*)0x3;
+
+    dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
+    bool PointerInNameMap(void* ptr)
+    {
+        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
+    }
+    void AddPointerToNameMap(void* ptr, const char* name)
+    {
+        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
+    }
+    void PrintNameInPointerMap(void* ptr);
+#endif // DEBUG
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
