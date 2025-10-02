@@ -1,7 +1,8 @@
 <Project>
   <PropertyGroup>
     <!-- OutDir is not set early enough to set this property in .props file. -->
-    <BundleDir Condition="'$(BundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <BundleDir Condition="'$(BundleDir)' == '' and '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <BundleDir Condition="'$(BundleDir)' == '' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'wwwroot'))</BundleDir>
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' != 'true'">$(AppBundleRoot)tests\$(AssemblyName)</PublishDir>
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
@@ -120,6 +121,7 @@
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
+          BeforeTargets="_ResolveWasmOutputs"
           AfterTargets="ComputeResolvedFilesToPublishList"
           Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
@@ -136,6 +138,17 @@
       <_runnerFilesToPublishToFileName Remove="@(_resolvedFilesToPublishToFileName)" />
 
       <ResolvedFileToPublish Include="@(_runnerFilesToPublishToFileName -> '%(OriginalIdentity)')" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+      <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
+      <_ReferenceCopyLocalPathsFileName Include="@(ReferenceCopyLocalPaths -> '%(FileName)%(Extension)')" />
+
+      <_runnerReferenceCopyLocalPathsFileName Include="@(_runnerFilesToPublish -> '%(FileName)%(Extension)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_runnerReferenceCopyLocalPathsFileName>
+      <_runnerReferenceCopyLocalPathsFileName Remove="@(_ReferenceCopyLocalPathsFileName)" />
+      <ReferenceCopyLocalPaths Include="@(_runnerReferenceCopyLocalPathsFileName -> '%(OriginalIdentity)')" />
     </ItemGroup>
   </Target>
 

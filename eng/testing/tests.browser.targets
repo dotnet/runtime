@@ -7,6 +7,8 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>
+    <WasmEnableHotReload>false</WasmEnableHotReload>
+    <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
@@ -35,6 +37,11 @@
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(MonoProjectRoot)\browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MonoProjectRoot)\browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
   <!-- by default we make their icu small by sharding. -->
@@ -134,7 +141,7 @@
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.props"
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />

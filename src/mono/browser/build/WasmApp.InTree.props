@@ -3,6 +3,7 @@
   <PropertyGroup>
     <UsingMicrosoftNETSdkWebAssembly>true</UsingMicrosoftNETSdkWebAssembly>
     <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload>
+    <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
 
     <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
     <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
@@ -15,7 +16,7 @@
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true'" />
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(_WasmInTreeDefaults)' != 'false'">
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
