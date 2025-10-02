@@ -1968,9 +1968,36 @@ MAPmmapAndRecord(
         // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
         // read the data in and finally remove the forced PROT_WRITE. On Intel we can still switch the
         // protection later with mprotect.
-        if ((mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1) ||
-            (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
-            (mprotect(pvBaseAddress, len + adjust, prot) == -1))
+        bool failCondition = mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1;
+        if (!failCondition)
+        {
+            unsigned char* buf = pvBaseAddress;
+            size_t nbyte = len + adjust;
+            size_t offset2 = offset - adjust;
+            while (nbyte > 0)
+            {
+                ssize_t result;
+                while (-1 == result = pread(fd, buf, nbyte, offset2) && errno == EINTR);
+                if (result == -1)
+                {
+                    failCondition = true;
+                    break;
+                }
+                buf += result;
+                nbyte -= result;
+                offset2 += result;
+                if (result == 0)
+                {
+                    if (nbyte > 0)
+                    {
+                        failCondition = true;
+                        errno = EIO; // set to a generic IO error, to indicate that we couldn't read the whole requested region
+                    }
+                    break;
+                }
+            }
+        }
+        if (failCondition || (mprotect(pvBaseAddress, len + adjust, prot) == -1))
         {
             palError = FILEGetLastErrorFromErrno();
         }
@@ -2080,16 +2107,54 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //Step 1: Read the PE headers and reserve enough space for the whole image somewhere.
     IMAGE_DOS_HEADER dosHeader;
     IMAGE_NT_HEADERS ntHeader;
-    if (sizeof(dosHeader) != pread(fd, &dosHeader, sizeof(dosHeader), offset))
+    unsigned char* preadBuf = &dosHeader;
+    size_t nbyte = sizeof(dosHeader);
+    size_t preadOffset = offset;
+    while (nbyte > 0)
     {
-        palError = FILEGetLastErrorFromErrno();
-        ERROR_(LOADER)( "reading dos header failed\n" );
-        goto done;
+        ssize_t result;
+        while (-1 == result = pread(fd, preadBuf, nbyte, preadOffset) && errno == EINTR);
+        if (result == 0)
+        {
+            if (nbyte > 0)
+            {
+                errno = EIO; // set to a generic IO error, to indicate that we couldn't read the whole requested region
+                result = -1;
+            }
+        }
+        if (result == -1)
+        {
+            palError = FILEGetLastErrorFromErrno();
+            ERROR_(LOADER)( "reading dos header failed\n" );
+            goto done;
+        }
+        preadBuf += result;
+        nbyte -= result;
+        preadOffset += result;
     }
-    if (sizeof(ntHeader) != pread(fd, &ntHeader, sizeof(ntHeader), offset + dosHeader.e_lfanew))
+    unsigned char* preadBuf = &ntHeader;
+    size_t nbyte = sizeof(ntHeader);
+    size_t preadOffset = offset + dosHeader.e_lfanew;
+    while (nbyte > 0)
     {
-        palError = FILEGetLastErrorFromErrno();
-        goto done;
+        ssize_t result;
+        while (-1 == result = pread(fd, preadBuf, nbyte, preadOffset) && errno == EINTR);
+        if (result == 0)
+        {
+            if (nbyte > 0)
+            {
+                errno = EIO; // set to a generic IO error, to indicate that we couldn't read the whole requested region
+                result = -1;
+            }
+        }
+        if (result == -1)
+        {
+            palError = FILEGetLastErrorFromErrno();
+            goto done;
+        }
+        preadBuf += result;
+        nbyte -= result;
+        preadOffset += result;
     }
 
     if ((VAL16(IMAGE_DOS_SIGNATURE) != VAL16(dosHeader.e_magic))

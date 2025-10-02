@@ -543,7 +543,7 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
         assert(m_fdMem != -1);
-        *read = pread(m_fdMem, buffer, size, (off_t)address);
+        while (-1 == (ssize_t)(*read = pread(m_fdMem, buffer, size, (off_t)address)) && errno == EINTR);
     }
 
     if (*read == (size_t)-1)
