@@ -1610,13 +1610,16 @@ namespace System.Tests
                 if (startIndex == 0 && count == source.Length)
                 {
                     Assert.Equal(expected, source.IndexOf(target, stringComparison));
+                    Assert.Equal(expected, source.IndexOf(target.ToString(), stringComparison));
                 }
                 if (source.Length - startIndex == count)
                 {
                     Assert.Equal(expected, source.IndexOf(target, startIndex, stringComparison));
+                    Assert.Equal(expected, source.IndexOf(target.ToString(), startIndex, stringComparison));
                 }
 
                 Assert.Equal(expected, source.IndexOf(target, startIndex, count, stringComparison));
+                Assert.Equal(expected, source.IndexOf(target.ToString(), startIndex, count, stringComparison));
             }
         }
 
@@ -1676,13 +1679,16 @@ namespace System.Tests
             if (startIndex == 0 && count == s.Length)
             {
                 Assert.Equal(expected, s.LastIndexOf(target, stringComparison));
+                Assert.Equal(expected, s.LastIndexOf(target.ToString(), stringComparison));
             }
             if (startIndex + 1 == count)
             {
                 Assert.Equal(expected, s.LastIndexOf(target, startIndex, stringComparison));
+                Assert.Equal(expected, s.LastIndexOf(target.ToString(), startIndex, stringComparison));
             }
 
             Assert.Equal(expected, s.LastIndexOf(target, startIndex, count, stringComparison));
+            Assert.Equal(expected, s.LastIndexOf(target.ToString(), startIndex, count, stringComparison));
 
             ReadOnlySpan<char> targetSpan = [target];
             int startIndexFromZero = startIndex - count + 1;
@@ -1722,13 +1728,16 @@ namespace System.Tests
             if (startIndex == 0 && count == source.Length)
             {
                 Assert.Equal(expected, source.LastIndexOf(target, stringComparison));
+                Assert.Equal(expected, source.LastIndexOf(target.ToString(), stringComparison));
             }
             if (startIndex + 1 == count)
             {
                 Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
+                Assert.Equal(expected, source.LastIndexOf(target.ToString(), startIndex, stringComparison));
             }
 
             Assert.Equal(expected, source.LastIndexOf(target, startIndex, count, stringComparison));
+            Assert.Equal(expected, source.LastIndexOf(target.ToString(), startIndex, count, stringComparison));
         }
 
         public static IEnumerable<object[]> LastIndexOf_String_StringComparison_TestData()
