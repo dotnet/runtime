@@ -84,7 +84,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 Data.RuntimeFunction coldStartFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx);
                 Data.RuntimeFunction coldEndFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldEndIdx);
                 uint coldBeginOffset = coldStartFunc.BeginAddress;
-                uint coldEndOffset = coldEndFunc.BeginAddress + _runtimeFunctions.GetFunctionLength(coldEndFunc);
+                uint coldEndOffset = coldEndFunc.BeginAddress + _runtimeFunctions.GetFunctionLength(imageBase, coldEndFunc);
                 coldSize = coldEndOffset - coldBeginOffset;
                 coldStart = imageBase + coldBeginOffset;
 
@@ -152,7 +152,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
-            uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, imageBase, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
+            uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }

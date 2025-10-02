@@ -7,39 +7,36 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal class ARM64GCInfoTraits : IGCInfoTraits
 {
-    public static uint DenormalizeStackBaseRegister(uint reg) => throw new NotImplementedException();
-    public static uint DenormalizeCodeLength(uint len) => throw new NotImplementedException();
-    public static uint NormalizeCodeLength(uint len) => throw new NotImplementedException();
-    public static uint DenormalizeCodeOffset(uint offset) => throw new NotImplementedException();
-    public static uint NormalizeCodeOffset(uint offset) => throw new NotImplementedException();
-    public static int DenormalizeStackSlot(int x) => throw new NotImplementedException();
+    public static uint DenormalizeStackBaseRegister(uint reg) => reg ^ 0x29u;
+    public static uint DenormalizeCodeLength(uint len) => len >> 2;
+    public static uint NormalizeCodeLength(uint len) => len << 2;
+    public static uint DenormalizeCodeOffset(uint offset) => offset >> 2;
+    public static uint NormalizeCodeOffset(uint offset) => offset << 2;
+    public static int DenormalizeStackSlot(int x) => x << 3;
+    public static uint DenormalizeSizeOfStackArea(uint size) => size << 3;
 
-    public static int CODE_LENGTH_ENCBASE => throw new NotImplementedException();
-    public static int NORM_PROLOG_SIZE_ENCBASE => throw new NotImplementedException();
-    public static int NORM_EPILOG_SIZE_ENCBASE => throw new NotImplementedException();
-    public static int GS_COOKIE_STACK_SLOT_ENCBASE => throw new NotImplementedException();
-    public static int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE => throw new NotImplementedException();
-    public static int STACK_BASE_REGISTER_ENCBASE => throw new NotImplementedException();
-    public static int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE => throw new NotImplementedException();
-    public static int REVERSE_PINVOKE_FRAME_ENCBASE => throw new NotImplementedException();
-    public static int NUM_SAFE_POINTS_ENCBASE => throw new NotImplementedException();
-    public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => throw new NotImplementedException();
+    public static int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE => 6;
 
-    public static int INTERRUPTIBLE_RANGE_DELTA1_ENCBACE => throw new NotImplementedException();
+    public static int GS_COOKIE_STACK_SLOT_ENCBASE => 6;
+    public static int CODE_LENGTH_ENCBASE => 8;
 
-    public static int INTERRUPTIBLE_RANGE_DELTA2_ENCBACE => throw new NotImplementedException();
+    public static int STACK_BASE_REGISTER_ENCBASE => 2;
+    public static int SIZE_OF_STACK_AREA_ENCBASE => 3;
+    public static int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE => 4;
+    public static int REVERSE_PINVOKE_FRAME_ENCBASE => 6;
+    public static int NUM_REGISTERS_ENCBASE => 3;
+    public static int NUM_STACK_SLOTS_ENCBASE => 2;
+    public static int NUM_UNTRACKED_SLOTS_ENCBASE => 1;
+    public static int NORM_PROLOG_SIZE_ENCBASE => 5;
+    public static int NORM_EPILOG_SIZE_ENCBASE => 3;
+    public static int INTERRUPTIBLE_RANGE_DELTA1_ENCBACE => 6;
+    public static int INTERRUPTIBLE_RANGE_DELTA2_ENCBACE => 6;
+    public static int REGISTER_ENCBASE => 3;
+    public static int REGISTER_DELTA_ENCBASE => 2;
+    public static int STACK_SLOT_ENCBASE => 6;
+    public static int STACK_SLOT_DELTA_ENCBASE => 4;
+    public static int NUM_SAFE_POINTS_ENCBASE => 3;
+    public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
-    public static int NUM_REGISTERS_ENCBASE => throw new NotImplementedException();
-
-    public static int NUM_STACK_SLOTS_ENCBASE => throw new NotImplementedException();
-
-    public static int NUM_UNTRACKED_SLOTS_ENCBASE => throw new NotImplementedException();
-
-    public static int REGISTER_ENCBASE => throw new NotImplementedException();
-
-    public static int REGISTER_DELTA_ENCBASE => throw new NotImplementedException();
-
-    public static int STACK_SLOT_ENCBASE => throw new NotImplementedException();
-
-    public static int STACK_SLOT_DELTA_ENCBASE => throw new NotImplementedException();
+    public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
 }

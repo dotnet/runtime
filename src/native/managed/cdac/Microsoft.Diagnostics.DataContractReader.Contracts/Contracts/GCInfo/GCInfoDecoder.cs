@@ -101,6 +101,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTra
     private int _genericsInstContextStackSlot;
     private uint _sizeOfEnCPreservedArea;
     private int _reversePInvokeFrameStackSlot;
+    private uint _fixedStackParameterScratchArea;
 
     /* Fields */
 
@@ -326,7 +327,9 @@ internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTra
         _reversePInvokeFrameStackSlot = TTraits.NO_REVERSE_PINVOKE_FRAME;
 
         // on ARM64 there is an extra ENC FixedStackFrame field
-        // ignoring sizeOfStackOutgoingAndScratchArea for now
+
+        if (TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+            _fixedStackParameterScratchArea = 0;
     }
 
     private void DecodeFatHeader(ref int bitOffset)
@@ -384,6 +387,12 @@ internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTra
         _reversePInvokeFrameStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_REVERSE_PINVOKE_FRAME) ?
             TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset)) :
             TTraits.NO_REVERSE_PINVOKE_FRAME;
+
+        if (TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+        {
+            _fixedStackParameterScratchArea =
+                TTraits.DenormalizeSizeOfStackArea(_reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_STACK_AREA_ENCBASE, ref bitOffset));
+        }
     }
 
     #endregion

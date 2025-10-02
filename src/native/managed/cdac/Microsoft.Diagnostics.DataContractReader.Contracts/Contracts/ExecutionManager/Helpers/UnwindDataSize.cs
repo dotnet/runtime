@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 internal static class UnwindDataSize
 {
-    public static uint GetUnwindDataSize(Target target, TargetPointer unwindInfo, TargetPointer moduleBase, RuntimeInfoArchitecture arch)
+    public static uint GetUnwindDataSize(Target target, TargetPointer unwindInfo, RuntimeInfoArchitecture arch)
     {
         switch (arch)
         {
