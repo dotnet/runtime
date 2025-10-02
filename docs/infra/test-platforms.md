@@ -7,7 +7,7 @@
 
 ## Policy
 
-We want to mix and match platform versions and .NET versions to produce good platform coverage without too much a cost. This means we want to catch breaks on each platform as quickly as possible, and prioritize catching the type of platform breaks that are most likely to affect the specific version being tested.
+We want to mix and match platform versions and .NET versions to produce good platform coverage without too much cost. This means we want to catch breaks on each platform as quickly as possible, and prioritize catching the type of platform breaks that are most likely to affect the specific version being tested.
 
 * `main` - PRs run on the *latest supported* platform.
 * `servicing` - PRs run on the *oldest supported* platform.
