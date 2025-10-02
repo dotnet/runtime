@@ -126,18 +126,18 @@ namespace System.Security.Cryptography
             ThrowIfAlgorithmNotSupported(hashAlgorithmName);
 
             byte[]? rented;
-            ReadOnlySpan<byte> safeInfo;
+            ReadOnlySpan<byte> infoBlob;
 
             if (destination.Overlaps(info))
             {
                 rented = CryptoPool.Rent(info.Length);
                 info.CopyTo(rented);
-                safeInfo = rented.AsSpan(0, info.Length);
+                infoBlob = rented.AsSpan(0, info.Length);
             }
             else
             {
                 rented = null;
-                safeInfo = info;
+                infoBlob = info;
             }
 
             SafeBCryptKeyHandle? keyHandle = null;
@@ -193,12 +193,12 @@ namespace System.Security.Cryptography
                 }
 
                 fixed (byte* pDestination = destination)
-                fixed (byte* pSafeInfo = &Helpers.GetNonNullPinnableReference(safeInfo))
+                fixed (byte* pInfoBlob = &Helpers.GetNonNullPinnableReference(infoBlob))
                 {
                     BCryptBuffer infoBuffer = default;
-                    infoBuffer.cbBuffer = safeInfo.Length;
+                    infoBuffer.cbBuffer = infoBlob.Length;
                     infoBuffer.BufferType = CngBufferDescriptors.KDF_HKDF_INFO;
-                    infoBuffer.pvBuffer = (IntPtr)pSafeInfo;
+                    infoBuffer.pvBuffer = (IntPtr)pInfoBlob;
 
                     BCryptBufferDesc bufferDesc = default;
                     bufferDesc.ulVersion = Interop.BCrypt.BCRYPTBUFFER_VERSION;
