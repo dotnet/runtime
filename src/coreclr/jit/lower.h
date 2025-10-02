@@ -160,8 +160,8 @@ private:
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
 #ifdef TARGET_RISCV64
-    void LowerIntegerCompare(GenTree* cmp);
-    void SignExtendIfNecessary(GenTree** arg);
+    GenTree* LowerSavedIntegerCompare(GenTree* cmp);
+    void     SignExtendIfNecessary(GenTree** arg);
 #endif
     GenTree*   LowerSelect(GenTreeConditional* cond);
     bool       TryLowerConditionToFlagsNode(GenTree*      parent,

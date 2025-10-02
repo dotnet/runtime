@@ -4512,16 +4512,14 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #elif defined(TARGET_RISCV64)
-    // Branches will be lowered in LowerJTrue
-    LIR::Use cmpUse;
-    if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
-        return cmp->gtNext;
-
-    if (!varTypeIsFloating(cmp->gtGetOp1()))
+    if (varTypeUsesIntReg(cmp->gtGetOp1()))
     {
-        LowerIntegerCompare(cmp);
-        if (!cmp->OperIsCmpCompare()) // comparison was optimized out to some other node
-            return cmp->gtNext;
+        if (GenTree* next = LowerSavedIntegerCompare(cmp); next != cmp)
+            return next;
+
+        // Integer comparisons are full-register only.
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp1);
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp2);
     }
 #endif // TARGET_RISCV64
 

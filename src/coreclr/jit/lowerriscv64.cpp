@@ -159,62 +159,51 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         BlockRange().InsertBefore(jcmp, jcmp->gtOp2);
     }
 
-    SignExtendIfNecessary(&jcmp->gtOp1);
-    SignExtendIfNecessary(&jcmp->gtOp2);
-    CheckImmedAndMakeContained(jcmp, jcmp->gtOp2);
+    // Comparisons fused with branches don't have immediates, re-evaluate containment for 'zero' register
+    jcmp->gtOp2->ClearContained();
+    ContainCheckCompare(jcmp);
 
     return jcmp->gtNext;
 }
 
 //------------------------------------------------------------------------
-// LowerIntegerCompare: lowers an integer comparison so that it matches the available instructions better
+// LowerSavedIntegerCompare: lowers a integer comparison saved to a register so that it matches the available
+// instructions better
 //
 // Arguments:
 //    cmp - the integer comparison to lower
 //
-void Lowering::LowerIntegerCompare(GenTree* cmp)
+// Return Value:
+//    The original compare node if lowering should proceed as usual or the next node to lower if the compare node was
+//    changed in such a way that lowering is no longer needed.
+//
+GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
 {
+    // Branches have a full range of comparisons, these transformations would be counter-productive
+    if (LIR::Use cmpUse; !BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
+        return cmp;
+
     GenTree*& left  = cmp->AsOp()->gtOp1;
     GenTree*& right = cmp->AsOp()->gtOp2;
     assert(cmp->OperIsCmpCompare() && varTypeUsesIntReg(left));
 
-    if (cmp->OperIs(GT_EQ, GT_NE))
+    if (cmp->OperIs(GT_EQ, GT_NE) && !right->IsIntegralConst(0))
     {
-        if (!right->IsIntegralConst(0))
-        {
-            // a == b  --->  (a - b) == 0
-            var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
-            genTreeOps oper = GT_SUB;
-            if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
-            {
-                INT64 value  = right->AsIntConCommon()->IntegralValue();
-                INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
-
-                const INT64 min12BitImm = -2048;
-                if (value == min12BitImm)
-                {
-                    // (a - C) == 0 ---> (a ^ C) == 0
-                    oper = GT_XOR;
-                }
-                else if (value != minVal)
-                {
-                    // a - C  --->  a + (-C)
-                    oper = GT_ADD;
-                    right->AsIntConCommon()->SetIntegralValue(-value);
-                }
-            }
-            left  = comp->gtNewOperNode(oper, type, left, right);
-            right = comp->gtNewZeroConNode(type);
-            BlockRange().InsertBefore(cmp, left, right);
-            ContainCheckBinary(left->AsOp());
-        }
+        // Only equality with zero is supported
+        // a == b  --->  (a - b) == 0
+        var_types type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
+        left           = comp->gtNewOperNode(GT_SUB, type, left, right);
+        right          = comp->gtNewZeroConNode(type);
+        BlockRange().InsertBefore(cmp, left, right);
+        LowerNode(left);
     }
 
-    if (cmp->OperIs(GT_LE, GT_GE))
+    if (right->IsIntegralConst() && !right->AsIntConCommon()->ImmedValNeedsReloc(comp))
     {
-        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (cmp->OperIs(GT_LE, GT_GE))
         {
             // a <= C  --->  a < C+1
+            // a >= C  --->  a > C-1
             INT64 value = right->AsIntConCommon()->IntegralValue();
 
             bool isOverflow;
@@ -230,31 +219,24 @@ void Lowering::LowerIntegerCompare(GenTree* cmp)
                                  ? CheckedOps::SubOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
                                  : CheckedOps::SubOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
             }
-            if (isOverflow)
+            if (!isOverflow)
             {
-                BlockRange().Remove(left);
-                BlockRange().Remove(right);
-                cmp->BashToConst(1);
-                return;
+                right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
+                cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
             }
-            right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
-            cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
+        }
+
+        if (cmp->OperIs(GT_LT) && right->IsIntegralConst(0) && !cmp->IsUnsigned())
+        {
+            // a < 0 (signed)  --->  shift the sign bit into the lowest bit
+            cmp->SetOperRaw(GT_RSZ);
+            cmp->ChangeType(genActualType(left));
+            right->AsIntConCommon()->SetIntegralValue(genTypeSize(cmp) * BITS_PER_BYTE - 1);
+            right->SetContained();
+            return cmp->gtNext;
         }
     }
-
-    if (cmp->OperIs(GT_LT) && right->IsIntegralConst(0) && !right->AsIntCon()->ImmedValNeedsReloc(comp) &&
-        !cmp->IsUnsigned())
-    {
-        // a < 0 (signed)  --->  shift the sign bit into the lowest bit
-        cmp->SetOperRaw(GT_RSZ);
-        cmp->ChangeType(genActualType(left));
-        right->AsIntConCommon()->SetIntegralValue(genTypeSize(cmp) * BITS_PER_BYTE - 1);
-        right->SetContained();
-        return;
-    }
-
-    SignExtendIfNecessary(&left);
-    SignExtendIfNecessary(&right);
+    return cmp;
 }
 
 //------------------------------------------------------------------------
@@ -1234,9 +1216,6 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp))
-        MakeSrcContained(cmp, cmp->gtOp1);
-
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
