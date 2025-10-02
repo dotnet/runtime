@@ -2381,7 +2381,7 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	if (!assembly_update_supported (image_base, error)) {
 		return;
 	}
-	if (dmeta_bytes == 0 && dil_bytes_orig == 0) //we may receive empty updates
+	if (dmeta_bytes == 0 && dil_bytes_orig == 0) // we may receive empty updates
 	{
 		return;
 	}
