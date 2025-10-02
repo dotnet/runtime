@@ -1,4 +1,4 @@
-# WebAssembly (WASM) Documentation
+# WebAssembly Documentation
 
 This document serves as a comprehensive guide for contributors to the WebAssembly implementation in the dotnet/runtime repository. It provides links and references to technical documentation, workflows, and resources relevant to developing and maintaining WebAssembly support within this codebase.
 
@@ -56,7 +56,7 @@ For debugging instructions including VS Code and Chrome DevTools setup, see the 
 - **[Threading Support](../../src/mono/wasm/threads.md)** - Multi-threading support and limitations
 
 ### JavaScript Interop
-- **[JSInterop in WASM](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop/wasm-browser-app)** - JavaScript interoperability for WebAssembly applications
+- **[JSInterop in Wasm](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop/wasm-browser-app)** - JavaScript interoperability for WebAssembly applications
 
 ### Globalization and ICU
 - **[ICU for WebAssembly](../../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
@@ -91,7 +91,7 @@ See the [WebAssembly Debugging Reference](debugging/mono/wasm-debugging.md#commo
 
 See the [Building for WebAssembly](#building-for-webassembly) section above for comprehensive build instructions for different targets.
 
-### How do I test WASM changes end to end?
+### How do I test Wasm changes end to end?
 
 Use Wasm.Build.Tests or Wasi.Build.Tests. See the [Wasm.Build.Tests README](../../src/mono/wasm/Wasm.Build.Tests/README.md) for detailed instructions.
 

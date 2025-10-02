@@ -17,7 +17,7 @@
 
 The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. That said, the builds can target a wider range of platforms beyond the ones mentioned earlier. You can see it as there are always two platforms at play whenever you are working with builds in the runtime repo:
 
-For WebAssembly-specific development workflows, see [WebAssembly (WASM) Documentation](wasm-documentation.md).
+For WebAssembly-specific development workflows, see [WebAssembly Documentation](wasm-documentation.md).
 
 - **The Build Platform:** This is the platform of the machine where you cloned the runtime repo and therefore where all your build tools are running on. The following table shows the OS and architecture combinations that we currently support, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
 
