@@ -1,6 +1,8 @@
 <Project>
   <!-- This depends on the root Directory.Build.props imported this file -->
   <PropertyGroup>
+    <UsingMicrosoftNETSdkWebAssembly>true</UsingMicrosoftNETSdkWebAssembly>
+    
     <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
     <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
 
@@ -10,7 +12,8 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true'" />
-  
+  <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
+
   <PropertyGroup>
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>

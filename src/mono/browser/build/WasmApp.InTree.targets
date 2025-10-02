@@ -5,7 +5,7 @@
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
-  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.targets" Condition="'$(UsingNativeAOT)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.InTree.CI.targets" Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
 
@@ -20,6 +20,7 @@
         <HostConfig Include="browser" Host="browser" html-path="index.html" />
     </ItemGroup>
   </Target>
+  <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
