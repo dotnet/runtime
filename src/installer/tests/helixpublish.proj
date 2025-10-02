@@ -51,7 +51,7 @@
     <ItemGroup>
       <_HelixPreCommands Include="chmod +x $(_TestExePath)" Condition="'$(TargetOS)' != 'windows'" />
       <HostTestProject>
-        <Command>./$(_TestExePath) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
+        <Command>./$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
     </ItemGroup>
