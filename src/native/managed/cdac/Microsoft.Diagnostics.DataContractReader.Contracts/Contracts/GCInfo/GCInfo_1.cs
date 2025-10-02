@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 

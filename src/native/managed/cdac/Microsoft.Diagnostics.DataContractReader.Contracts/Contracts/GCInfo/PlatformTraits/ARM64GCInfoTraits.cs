@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal class ARM64GCInfoTraits : IGCInfoTraits
 {

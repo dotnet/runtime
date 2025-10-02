@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -14,6 +15,7 @@ public sealed class GCInfoFactory : IContractFactory<IGCInfo>
         {
             (1, RuntimeInfoArchitecture.X64) => new GCInfo_1<AMD64GCInfoTraits>(target),
             (1, RuntimeInfoArchitecture.Arm64) => new GCInfo_1<ARM64GCInfoTraits>(target),
+            (1, RuntimeInfoArchitecture.Arm) => new GCInfo_1<ARMGCInfoTraits>(target),
             _ => default(GCInfo),
         };
     }

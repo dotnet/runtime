@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTraits
 {
