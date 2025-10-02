@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <TargetOS>browser</TargetOS>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <WasmGenerateAppBundleTarget>_WasmGenerateAppBundle</WasmGenerateAppBundleTarget>
