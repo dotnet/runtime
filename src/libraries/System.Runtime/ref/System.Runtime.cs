@@ -1089,7 +1089,7 @@ namespace System
         public static int ConvertToUtf32(char highSurrogate, char lowSurrogate) { throw null; }
         public static int ConvertToUtf32(string s, int index) { throw null; }
         public bool Equals(char obj) { throw null; }
-        public bool Equals(char right, System.StringComparison comparisonType) { throw null; }
+        public bool Equals(char other, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static double GetNumericValue(char c) { throw null; }
