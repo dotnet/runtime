@@ -6670,14 +6670,7 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
                 SetIP(pctx, 0);
 #ifdef TARGET_X86
                 SetRegdisplayPCTAddr(pRD, (TADDR)&(pctx->Eip));
-#elif defined(TARGET_AMD64)
-                // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#elif defined(TARGET_ARM)
-                // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#else
-                PORTABILITY_ASSERT("NYI for platform Thread::InitRegDisplay");
 #endif
-
                 return false;
             }
 #endif // DACCESS_COMPILE

@@ -1295,6 +1295,11 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     gcInfoEncoder->SetStackBaseRegister(0);
     gcInfoEncoder->DefineInterruptibleRange(0, ConvertOffset(m_methodCodeSize));
 
+    if (pInterpMethod->unmanagedCallersOnly)
+    {
+        gcInfoEncoder->SetReversePInvokeFrameSlot(0);
+    }
+
     GENERIC_CONTEXTPARAM_TYPE paramType;
 
     switch (m_methodInfo->options & CORINFO_GENERICS_CTXT_MASK)
@@ -1980,13 +1985,13 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
         }
 
         // Only try regions in which the leave instruction is located are considered.
-        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset > (clause.TryOffset + clause.TryLength))
+        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset >= (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
 
         // If the leave target is inside the try region, we don't need to create a finally call island block.
-        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset <= (clause.TryOffset + clause.TryLength))
+        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
@@ -4107,7 +4112,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 if (isDelegateInvoke)
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
-                    opcode = INTOP_CALLDELEGATE;
+                    if (tailcall)
+                        opcode = INTOP_CALLDELEGATE_TAIL;
+                    else
+                        opcode = INTOP_CALLDELEGATE;
                 }
                 else if (tailcall)
                 {
