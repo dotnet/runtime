@@ -1139,6 +1139,11 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
         varNum--;
     }
 
+    if (lvaAsyncContinuationArg != BAD_VAR_NUM && varNum > lvaAsyncContinuationArg)
+    {
+        varNum--;
+    }
+
     /* Is there a hidden argument for the return buffer.
        Note that this code works because if the RetBuffArg is not present,
        compRetBuffArg will be BAD_VAR_NUM */
