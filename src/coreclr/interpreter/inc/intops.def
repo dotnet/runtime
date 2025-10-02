@@ -236,7 +236,8 @@ OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpHelperFtn) // [class handle
 OPDEF(INTOP_UNBOX_ANY_GENERIC, "unbox.any.generic", 6, 1, 2, InterpOpGenericHelperFtn) // [class handle data item] [helper data item]
 // Unary operations end
 
-OPDEF(INTOP_UNBOX_END, "unbox.end", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_UNBOX_END, "unbox.end", 4, 1, 1, InterpOpLdPtr)
+OPDEF(INTOP_UNBOX_END_GENERIC, "unbox.end.generic", 5, 1, 2, InterpOpGenericLookup)
 
 OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_ADD_I8_IMM, "add.i8.imm", 4, 1, 1, InterpOpInt)

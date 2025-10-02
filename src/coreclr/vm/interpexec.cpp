@@ -2813,7 +2813,6 @@ CALL_INTERP_METHOD:
                     int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    void** dest = LOCAL_VAR_ADDR(dreg, void*);
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[3], &pILTargetMethod);
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
@@ -2835,7 +2834,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    *dest = helper(pMT, src);
+                    LOCAL_VAR(dreg, void*) = helper(pMT, src);
 
                     ip += 5;
                     break;
@@ -2858,15 +2857,42 @@ CALL_INTERP_METHOD:
                     int sreg = ip[3];
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     MethodTable *pMTBoxedObj = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
+                    Object *src = LOCAL_VAR(sreg, Object*);
 
-                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[4]);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod, ip[4], &pILTargetMethod);
+
+                    if (pILTargetMethod != NULL)
+                    {
+                        callArgsOffset = pMethod->allocaSize;
+                        returnOffset = ip[1];
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = pMTBoxedObj;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = src;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 6;
+
+                        goto CALL_INTERP_METHOD;
+                    }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    Object *src = LOCAL_VAR(sreg, Object*);
-                    void *unboxedData = helper(pMTBoxedObj, src);
-                    CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMTBoxedObj->IsNullable() ? pMTBoxedObj->GetInstantiation()[0].AsMethodTable() : pMTBoxedObj);
+                    LOCAL_VAR(dreg, void*) = helper(pMTBoxedObj, src);
 
                     ip += 6;
+                    break;
+                }
+                case INTOP_UNBOX_END_GENERIC:
+                {
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
+                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[2]];
+                    void *dest = LOCAL_VAR_ADDR(ip[1], void);
+                    void *src = LOCAL_VAR(ip[3], void*);
+                    NULL_CHECK(dest);
+                    CopyValueClassUnchecked(dest, src, pMT->IsNullable() ? pMT->GetInstantiation()[0].AsMethodTable() : pMT);
+
+                    ip += 5;
                     break;
                 }
                 case INTOP_NEWARR:
