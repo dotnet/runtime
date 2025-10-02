@@ -1109,14 +1109,14 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
     // Is this a varargs function?
-    if (info.compIsVarArgs && varNum == lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum == lvaVarargsHandleArg))
     {
         return (unsigned)ICorDebugInfo::VARARGS_HND_ILNUM;
     }
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum == info.compTypeCtxtArg))
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1129,25 +1129,25 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 #endif // FEATURE_FIXED_OUT_ARGS
 
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum > info.compTypeCtxtArg))
     {
         varNum--;
     }
 
-    if (info.compIsVarArgs && varNum > lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum > lvaVarargsHandleArg))
     {
         varNum--;
     }
 
-    if (lvaAsyncContinuationArg != BAD_VAR_NUM && varNum > lvaAsyncContinuationArg)
+    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (varNum > lvaAsyncContinuationArg))
     {
         varNum--;
     }
 
-    /* Is there a hidden argument for the return buffer.
-       Note that this code works because if the RetBuffArg is not present,
-       compRetBuffArg will be BAD_VAR_NUM */
-    if (info.compRetBuffArg != BAD_VAR_NUM && varNum > info.compRetBuffArg)
+    // Is there a hidden argument for the return buffer. Note that this code
+    // works because if the RetBuffArg is not present, compRetBuffArg will be
+    // BAD_VAR_NUM
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && (varNum > info.compRetBuffArg))
     {
         varNum--;
     }
