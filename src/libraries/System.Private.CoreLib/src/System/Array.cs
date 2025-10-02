@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1539,24 +1540,54 @@ namespace System
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
         {
             if (array == null)
-            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            }
 
             if (match == null)
-            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
-            }
 
-            List<T> list = new List<T>();
+            if (array.Length == 0)
+                return array;
+
+            ArrayPool<T>? sharedArrayPool = null;
+            T[]? matchArray = null; // only rent/allocate if needed
+
+            nuint matchesFound = 0;
             for (int i = 0; i < array.Length; i++)
             {
                 if (match(array[i]))
                 {
-                    list.Add(array[i]);
+                    // Just assume the rest is matches, it is cheaper than to always allocate an empty List,
+                    // that might need to grow the internal array & copy the values, and is expensive to do, both copy & allocations+GC.
+                    // Large arrays are rented, cheaper than to grow a List multiple times & no GC, only release
+                    matchArray ??= GetMatchArray(array.Length - i);
+                    matchArray[matchesFound++] = array[i];
                 }
             }
-            return list.ToArray();
+
+            if (matchArray == null)
+                return EmptyArray<T>.Value;
+
+            // If all were matches, we could have returned the existing array,
+            // but the old code always made a new array, so it would be a breaking change
+            T[] result = new T[matchesFound];
+            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(result), ref MemoryMarshal.GetArrayDataReference(matchArray), matchesFound);
+            sharedArrayPool?.Return(matchArray);
+
+            return result;
+
+            T[] GetMatchArray(int size)
+            {
+                // This is about where execution time breaks even for:
+                // Windows 11 (10.0.26100.6584/24H2/2024Update/HudsonValley)
+                // .NET 10.0.0 (10.0.0-rc.1.25451.107, 10.0.25.45207), X64 RyuJIT x86-64-v3
+                if (size >= 48)
+                {
+                    sharedArrayPool = ArrayPool<T>.Shared;
+                    return sharedArrayPool.Rent(size);
+                }
+
+                return new T[size];
+            }
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)
