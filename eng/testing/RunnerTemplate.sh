@@ -14,7 +14,7 @@ EXECUTION_DIR=$(dirname "$0")
 RUNTIME_PATH=''
 RSP_FILE=''
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     --help|-h)
@@ -80,7 +80,7 @@ function invoke_xunitlogchecker {
 
   total_dumps=$(find $dump_folder -name "*.dmp" | wc -l)
 
-  if [[ $total_dumps > 0 ]]; then
+  if [[ $total_dumps -gt 0 ]]; then
     echo "Total dumps found in $dump_folder: $total_dumps"
     xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker"
 
