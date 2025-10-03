@@ -3644,6 +3644,11 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
         if (m_compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -4000,6 +4005,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             noway_assert(varDsc->lvOnFrame);
+
+            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            {
+                // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
+                continue;
+            }
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
             // or when compInitMem is true
@@ -5064,6 +5075,11 @@ void CodeGen::genFnProlog()
         if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
             noway_assert(varDsc->lvRefCnt() == 0);
+            continue;
+        }
+
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
             continue;
         }
 

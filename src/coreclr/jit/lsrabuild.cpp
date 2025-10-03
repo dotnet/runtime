@@ -2466,6 +2466,14 @@ void LinearScan::buildIntervals()
             currentLoc += 2;
         }
 
+#ifdef TARGET_ARM64
+        if (m_compiler->compUsesUnknownSizeFrame)
+        {
+            addKillForRegs(RBM_UNKBASE, currentLoc + 1);
+            currentLoc += 2;
+        }
+#endif
+
         // For frame poisoning we generate code into scratch BB right after prolog since
         // otherwise the prolog might become too large. In this case we will put the poison immediate
         // into the scratch register, so it will be killed here.

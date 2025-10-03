@@ -8119,6 +8119,17 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             isSimple = false;
             scale    = 0;
 
+            if (varx >= 0 && m_compiler->lvaIsUnknownSizeLocal(varx))
+            {
+                assert(offs == 0);
+                assert(!FPbased);
+                // We shouldn't be materializing the address of a mask.
+                assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
+                // addvl reg1, x19, #imm
+                emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                return;
+            }
+
             if (disp >= 0)
             {
                 ins = INS_add;
@@ -8153,43 +8164,34 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_ldr:
         {
+            assert(isPredicateRegister(reg1) || isVectorRegister(reg1));
+
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            if (isPredicateRegister(reg1))
+            fmt      = isPredicateRegister(reg1) ? IF_SVE_ID_2A : IF_SVE_IE_2A;
+
+            if (FPbased)
             {
-                assert(offs == 0);
-                // For predicate, generate based off rsGetRsvdReg()
+                // This is loading a field of a struct on the stack. The immediate will be an absolute
+                // offset to the field, not scaled by VL.
+                reg2 = REG_FP;
+
+                useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
 
-                // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
-                // str p0, [rsvd, #0, mul vl]
-                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
-
-                return;
-            }
-
-            assert(isVectorRegister(reg1));
-            fmt = IF_SVE_IE_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
+                reg2 = rsvdReg;
+                imm  = 0;
             }
             else
             {
-                useRegForImm      = true;
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
-                reg2 = rsvdReg;
-                imm  = 0;
+                // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
+                // The base address of these locals should be REG_UNKBASE (x19).
+                assert(offs == 0);
+                // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
+                assert(isValidSimm<9>(imm));
+                reg2 = REG_UNKBASE;
             }
         }
         break;
@@ -8424,45 +8426,33 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_str:
         {
+            assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
+            fmt      = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
 
-            if (isPredicateRegister(reg1))
+            if (FPbased)
             {
-                assert(offs == 0);
+                // This is storing to a field of a struct on the stack. The immediate will be an absolute
+                // offset to the field, not scaled by VL.
+                reg2 = REG_FP;
 
-                // For predicate, generate based off rsGetRsvdReg()
+                useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
 
-                // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
-                // str p0, [rsvd, #0, mul vl]
-                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
-
-                return;
-            }
-
-            assert(isVectorRegister(reg1));
-            fmt = IF_SVE_JH_2A;
-
-            // TODO-SVE: Don't assume 128bit vectors
-            // Predicate size is vector length / 8
-            scale        = NaturalScale_helper(isVectorRegister(reg1) ? EA_16BYTE : EA_2BYTE);
-            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
+                reg2 = rsvdReg;
+                imm  = 0;
             }
             else
             {
-                useRegForImm      = true;
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
-                reg2 = rsvdReg;
-                imm  = 0;
+                // SVE locals are TYP_SIMD or TYP_MASK, both should be placed on the UnknownSizeFrame.
+                // The base address of these locals should be REG_UNKBASE (x19).
+                assert(offs == 0);
+                // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
+                assert(isValidSimm<9>(imm));
+                reg2 = REG_UNKBASE;
             }
         }
         break;

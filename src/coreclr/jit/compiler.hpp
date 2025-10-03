@@ -2744,7 +2744,7 @@ inline
 #endif // !TARGET_AMD64
         }
 
-        FPbased = varDsc->lvFramePointerBased;
+        FPbased = varDsc->lvFramePointerBased && !lvaIsUnknownSizeLocal(varNum);
 
 #ifdef DEBUG
 #if FEATURE_FIXED_OUT_ARGS
@@ -2765,7 +2765,17 @@ inline
         }
 #endif // DEBUG
 
-        varOffset = varDsc->GetStackOffset();
+#ifdef TARGET_ARM64
+        if (lvaIsUnknownSizeLocal(varNum) && !varDsc->lvIsStructField)
+        {
+            assert(!FPbased);
+            varOffset = unkSizeFrame.GetOffset(varDsc->GetStackOffset(), varDsc->TypeIs(TYP_MASK));
+        }
+        else
+#endif
+        {
+            varOffset = varDsc->GetStackOffset();
+        }
     }
     else // Its a spill-temp
     {
