@@ -15,6 +15,7 @@
 #ifdef JITDUMP_SUPPORTED
 
 #include <fcntl.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -365,7 +366,7 @@ exit:
 
             result = close(fd);
 
-            if (result == -1)
+            if (result == -1 && errno != EINTR)
                 return FatalError();
 
             fd = -1;

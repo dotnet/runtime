@@ -14,6 +14,7 @@
 
 #include "finalizerthread.h"
 #include "dbginterface.h"
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -802,7 +803,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     else
     {
         MethodDesc *pMD = pCf->GetFunction();
-        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsNDirect() || pMD->IsCLRToCOMCall()))
+        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsPInvoke() || pMD->IsCLRToCOMCall()))
         {
             // This may be interop method of an interesting interop call - latch it.
             frameAction = LatchCurrentFrame;
@@ -1189,7 +1190,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     CONTRACTL
     {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // For GetXxxException
     }
     CONTRACTL_END;
 
@@ -2303,11 +2304,7 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-#ifdef FEATURE_EH_FUNCLETS
-        DispatchManagedException(exceptObj);
-#else // FEATURE_EH_FUNCLETS
         RaiseTheExceptionInternalOnly(exceptObj, FALSE);
-#endif // FEATURE_EH_FUNCLETS
     }
 
     ::SetLastError(lastError);
@@ -2716,6 +2713,11 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         GCX_PREEMP_NO_DTOR_END();
     }
 
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+    // Make sure that this is cleared to enable redirects again
+    pThread->ResetThreadState(Thread::TS_GCSuspendRedirected);
+#endif
+
     // Once we get here the suspension is over!
     // We will restore the state as it was at the point of redirection
     // and continue normal execution.
@@ -2726,7 +2728,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
 
         // we never return to the caller.
-        __UNREACHABLE();
+        UNREACHABLE();
     }
 #endif // TARGET_X86
 
@@ -2772,7 +2774,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 #endif
 
     // we never return to the caller.
-    __UNREACHABLE();
+    UNREACHABLE();
 }
 
 //****************************************************************************************
@@ -3314,7 +3316,7 @@ void ThreadSuspend::SuspendAllThreads()
     // - we get a reliable reading of the threads' m_fPreemptiveGCDisabled state
     // - other threads see that g_TrapReturningThreads is set
     // See VSW 475315 and 488918 for details.
-    ::FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 
     int prevRemaining = INT32_MAX;
     bool observeOnly = true;
@@ -3385,7 +3387,7 @@ void ThreadSuspend::SuspendAllThreads()
     // This is needed to synchronize threads that were running in preemptive mode thus were
     // left alone by suspension to flush their writes that they made before they switched to
     // preemptive mode.
-    ::FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64
 
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::SuspendAllThreads() - Success\n");
@@ -3588,7 +3590,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -3610,7 +3612,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
         // This is needed to synchronize threads that were running in preemptive mode while
         // the runtime was suspended and that will return to cooperative mode after the runtime
         // is restarted.
-        ::FlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64
 
     //
@@ -4519,16 +4521,24 @@ void Thread::WaitSuspendEvents()
 // State of execution when we suspend a thread
 struct ExecutionState
 {
-    BOOL            m_FirstPass;
-    BOOL            m_IsJIT;            // are we executing JITted code?
+#ifdef TARGET_X86
+    bool            m_FirstPass;
+#endif
+    bool            m_IsJIT;            // are we executing JITted code?
+    bool            m_IsInterruptible;  // is this code interruptible?
     MethodDesc     *m_pFD;              // current function/method we're executing
     VOID          **m_ppvRetAddrPtr;    // pointer to return address in frame
     DWORD           m_RelOffset;        // relative offset at which we're currently executing in this fcn
     IJitManager    *m_pJitManager;
     METHODTOKEN     m_MethodToken;
-    BOOL            m_IsInterruptible;  // is this code interruptible?
 
-    ExecutionState() : m_FirstPass(TRUE) {LIMITED_METHOD_CONTRACT;  }
+    ExecutionState()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef TARGET_X86
+        m_FirstPass = true;
+#endif
+    }
 };
 
 // Client is responsible for suspending the thread before calling
@@ -4649,168 +4659,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     ExecutionState  *pES = (ExecutionState *) pData;
     StackWalkAction  action = SWA_ABORT;
 
-    if (pES->m_FirstPass)
-    {
-        // This will help factor out some repeated code.
-        bool notJittedCase = false;
-
-        // If we're jitted code at the top of the stack, grab everything
-        if (pCF->IsFrameless() && pCF->IsActiveFunc())
-        {
-            pES->m_IsJIT = TRUE;
-            pES->m_pFD = pCF->GetFunction();
-            pES->m_MethodToken = pCF->GetMethodToken();
-            pES->m_ppvRetAddrPtr = 0;
-            pES->m_IsInterruptible = pCF->IsGcSafe();
-            pES->m_RelOffset = pCF->GetRelOffset();
-            pES->m_pJitManager = pCF->GetJitManager();
-
-            STRESS_LOG3(LF_SYNC, LL_INFO1000, "Stopped in Jitted code at pc = %p sp = %p fullyInt=%d\n",
-                GetControlPC(pCF->GetRegisterSet()), GetRegdisplaySP(pCF->GetRegisterSet()), pES->m_IsInterruptible);
-
-#if defined(FEATURE_CONSERVATIVE_GC) && !defined(USE_GC_INFO_DECODER)
-            if (g_pConfig->GetGCConservative())
-            {
-                // Conservative GC enabled; behave as if HIJACK_NONINTERRUPTIBLE_THREADS had not been
-                // set above:
-                //
-                notJittedCase = true;
-            }
-            else
-#endif // FEATURE_CONSERVATIVE_GC
-            {
-#ifndef HIJACK_NONINTERRUPTIBLE_THREADS
-                if (!pES->m_IsInterruptible)
-                {
-                    notJittedCase = true;
-                }
-#else // HIJACK_NONINTERRUPTIBLE_THREADS
-                // if we're not interruptible right here, we need to determine the
-                // return address for hijacking.
-                if (!pES->m_IsInterruptible)
-                {
-#ifdef FEATURE_EH_FUNCLETS
-                    PREGDISPLAY pRDT = pCF->GetRegisterSet();
-                    _ASSERTE(pRDT != NULL);
-
-                    // For simplicity, don't hijack in funclets
-                    bool fIsFunclet = pCF->IsFunclet();
-                    if (fIsFunclet)
-                    {
-                        notJittedCase = true;
-                    }
-                    else
-                    {
-                         // We already have the caller context available at this point
-                        _ASSERTE(pRDT->IsCallerContextValid);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-                        // Why do we use CallerContextPointers below?
-                        //
-                        // Assume the following callstack, growing from left->right:
-                        //
-                        // C -> B -> A
-                        //
-                        // Assuming A is non-interruptible function and pushes LR on stack,
-                        // when we get the stackwalk callback for A, the CallerContext would
-                        // contain non-volatile register state for B and CallerContextPtrs would
-                        // contain the location where the caller's (B's) non-volatiles where restored
-                        // from. This would be the stack location in A where they were pushed. Thus,
-                        // CallerContextPtrs->Lr would contain the stack location in A where LR (representing an address in B)
-                        // was pushed and thus, contains the return address in B.
-
-                        // Note that the JIT always pushes LR even for leaf methods to make hijacking
-                        // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
-
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                        if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
-#else
-                        if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
-#endif
-                        {
-                            // This is the case when we are either:
-                            //
-                            // 1) In a leaf method that does not push LR on stack, OR
-                            // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
-                            //    or has LR already popped off.
-                            //
-                            // The remaining case of non-leaf method is that of IP being in the body of the
-                            // function. In such a case, LR would be have been pushed on the stack and thus,
-                            // we wouldnt be here but in the "else" clause below.
-                            //
-                            // For (1) we can use CallerContext->ControlPC to be used as the return address
-                            // since we know that leaf frames will return back to their caller.
-                            // For this, we may need JIT support to do so.
-                            notJittedCase = true;
-                        }
-                        else if (pCF->HasTailCalls())
-                        {
-                            // Do not hijack functions that have tail calls, since there are two problems:
-                            // 1. When a function that tail calls another one is hijacked, the LR may be
-                            //    stored at a different location in the stack frame of the tail call target.
-                            //    So just by performing tail call, the hijacked location becomes invalid and
-                            //    unhijacking would corrupt stack by writing to that location.
-                            // 2. There is a small window after the caller pops LR from the stack in its
-                            //    epilog and before the tail called function pushes LR in its prolog when
-                            //    the hijacked return address would not be not on the stack and so we would
-                            //    not be able to unhijack.
-                            notJittedCase = true;
-                        }
-                        else
-                        {
-                            // This is the case of IP being inside the method body and LR is
-                            // pushed on the stack. We get it to determine the return address
-                            // in the caller of the current non-interruptible frame.
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                            pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
-#else
-                            pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
-#endif
-                        }
-#elif defined(TARGET_X86)
-                        // peel off the next frame to expose the return address on the stack
-                        pES->m_FirstPass = FALSE;
-                        action = SWA_CONTINUE;
-#elif defined(TARGET_AMD64)
-                        pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
-#else // TARGET_X86 || TARGET_AMD64
-                        PORTABILITY_ASSERT("Platform NYI");
-#endif // _TARGET_???_
-                    }
-#else // FEATURE_EH_FUNCLETS
-                    // peel off the next frame to expose the return address on the stack
-                    pES->m_FirstPass = FALSE;
-                    action = SWA_CONTINUE;
-#endif // !FEATURE_EH_FUNCLETS
-                }
-#endif // HIJACK_NONINTERRUPTIBLE_THREADS
-            }
-            // else we are successfully out of here with SWA_ABORT
-        }
-        else
-        {
 #ifdef TARGET_X86
-            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
-#else
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));
-#endif
-            notJittedCase = true;
-        }
-
-        // Cases above may have set "notJITtedCase", which we handle as follows:
-        if (notJittedCase)
-        {
-            pES->m_IsJIT = FALSE;
-#ifdef _DEBUG
-            pES->m_pFD = (MethodDesc *)POISONC;
-            pES->m_ppvRetAddrPtr = (void **)POISONC;
-            pES->m_IsInterruptible = FALSE;
-#endif
-        }
-    }
-    else
+    if (!pES->m_FirstPass)
     {
-#ifdef TARGET_X86
         // Second pass, looking for the address of the return address so we can
         // hijack:
 
@@ -4824,8 +4675,164 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 
             STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = 0x%x val = 0x%x\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
         }
+        return action;
+    }
+#endif // TARGET_X86
+
+    // This will help factor out some repeated code.
+    bool notJittedCase = false;
+
+    // If we're jitted code at the top of the stack, grab everything
+    if (pCF->IsFrameless() && pCF->IsActiveFunc())
+    {
+        pES->m_IsJIT = true;
+        pES->m_pFD = pCF->GetFunction();
+        pES->m_MethodToken = pCF->GetMethodToken();
+        pES->m_ppvRetAddrPtr = 0;
+        pES->m_IsInterruptible = pCF->IsGcSafe();
+        pES->m_RelOffset = pCF->GetRelOffset();
+        pES->m_pJitManager = pCF->GetJitManager();
+
+        STRESS_LOG3(LF_SYNC, LL_INFO1000, "Stopped in Jitted code at pc = %p sp = %p fullyInt=%d\n",
+            GetControlPC(pCF->GetRegisterSet()), GetRegdisplaySP(pCF->GetRegisterSet()), pES->m_IsInterruptible);
+
+#if defined(FEATURE_CONSERVATIVE_GC) && !defined(USE_GC_INFO_DECODER)
+        if (g_pConfig->GetGCConservative())
+        {
+            // Conservative GC enabled; behave as if HIJACK_NONINTERRUPTIBLE_THREADS had not been
+            // set above:
+            //
+            notJittedCase = true;
+        }
+        else
+#endif // FEATURE_CONSERVATIVE_GC
+        {
+#ifndef HIJACK_NONINTERRUPTIBLE_THREADS
+            if (!pES->m_IsInterruptible)
+            {
+                notJittedCase = true;
+            }
+#else // HIJACK_NONINTERRUPTIBLE_THREADS
+            // if we're not interruptible right here, we need to determine the
+            // return address for hijacking.
+            if (!pES->m_IsInterruptible)
+            {
+#ifdef FEATURE_EH_FUNCLETS
+                PREGDISPLAY pRDT = pCF->GetRegisterSet();
+                _ASSERTE(pRDT != NULL);
+
+                // For simplicity, don't hijack in funclets
+                bool fIsFunclet = pCF->IsFunclet();
+                if (fIsFunclet)
+                {
+                    notJittedCase = true;
+                }
+                else
+                {
+                        // We already have the caller context available at this point
+                    _ASSERTE(pRDT->IsCallerContextValid);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+                    // Why do we use CallerContextPointers below?
+                    //
+                    // Assume the following callstack, growing from left->right:
+                    //
+                    // C -> B -> A
+                    //
+                    // Assuming A is non-interruptible function and pushes LR on stack,
+                    // when we get the stackwalk callback for A, the CallerContext would
+                    // contain non-volatile register state for B and CallerContextPtrs would
+                    // contain the location where the caller's (B's) non-volatiles where restored
+                    // from. This would be the stack location in A where they were pushed. Thus,
+                    // CallerContextPtrs->Lr would contain the stack location in A where LR (representing an address in B)
+                    // was pushed and thus, contains the return address in B.
+
+                    // Note that the JIT always pushes LR even for leaf methods to make hijacking
+                    // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
+
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
 #else
-        PORTABILITY_ASSERT("Platform NYI");
+                    if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+#endif
+                    {
+                        // This is the case when we are either:
+                        //
+                        // 1) In a leaf method that does not push LR on stack, OR
+                        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
+                        //    or has LR already popped off.
+                        //
+                        // The remaining case of non-leaf method is that of IP being in the body of the
+                        // function. In such a case, LR would be have been pushed on the stack and thus,
+                        // we wouldnt be here but in the "else" clause below.
+                        //
+                        // For (1) we can use CallerContext->ControlPC to be used as the return address
+                        // since we know that leaf frames will return back to their caller.
+                        // For this, we may need JIT support to do so.
+                        notJittedCase = true;
+                    }
+                    else if (pCF->HasTailCalls())
+                    {
+                        // Do not hijack functions that have tail calls, since there are two problems:
+                        // 1. When a function that tail calls another one is hijacked, the LR may be
+                        //    stored at a different location in the stack frame of the tail call target.
+                        //    So just by performing tail call, the hijacked location becomes invalid and
+                        //    unhijacking would corrupt stack by writing to that location.
+                        // 2. There is a small window after the caller pops LR from the stack in its
+                        //    epilog and before the tail called function pushes LR in its prolog when
+                        //    the hijacked return address would not be not on the stack and so we would
+                        //    not be able to unhijack.
+                        notJittedCase = true;
+                    }
+                    else
+                    {
+                        // This is the case of IP being inside the method body and LR is
+                        // pushed on the stack. We get it to determine the return address
+                        // in the caller of the current non-interruptible frame.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+#else
+                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+#endif
+                    }
+#elif defined(TARGET_X86)
+                    // peel off the next frame to expose the return address on the stack
+                    pES->m_FirstPass = FALSE;
+                    action = SWA_CONTINUE;
+#elif defined(TARGET_AMD64)
+                    pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
+#else // TARGET_X86 || TARGET_AMD64
+                    PORTABILITY_ASSERT("Platform NYI");
+#endif // _TARGET_???_
+                }
+#else // FEATURE_EH_FUNCLETS
+                // peel off the next frame to expose the return address on the stack
+                pES->m_FirstPass = FALSE;
+                action = SWA_CONTINUE;
+#endif // !FEATURE_EH_FUNCLETS
+            }
+#endif // HIJACK_NONINTERRUPTIBLE_THREADS
+        }
+        // else we are successfully out of here with SWA_ABORT
+    }
+    else
+    {
+#ifdef TARGET_X86
+        STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
+#else
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));
+#endif
+        notJittedCase = true;
+    }
+
+    // Cases above may have set "notJITtedCase", which we handle as follows:
+    if (notJittedCase)
+    {
+        pES->m_IsJIT = false;
+#ifdef _DEBUG
+        pES->m_pFD = (MethodDesc *)POISONC;
+        pES->m_ppvRetAddrPtr = (void **)POISONC;
+        pES->m_IsInterruptible = false;
 #endif
     }
 
@@ -5392,7 +5399,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
     // This is needed to synchronize threads that were running in preemptive mode while
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
-    ::FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64
 
     //

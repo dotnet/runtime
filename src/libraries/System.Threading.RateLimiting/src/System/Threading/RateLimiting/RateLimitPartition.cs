@@ -69,7 +69,7 @@ namespace System.Threading.RateLimiting
             {
                 TokenBucketRateLimiterOptions options = factory(key);
                 // We don't want individual TokenBucketRateLimiters to have timers. We will instead have our own internal Timer handling all of them
-                if (options.AutoReplenishment is true)
+                if (options.AutoReplenishment)
                 {
                     options = new TokenBucketRateLimiterOptions
                     {
@@ -103,7 +103,7 @@ namespace System.Threading.RateLimiting
             {
                 SlidingWindowRateLimiterOptions options = factory(key);
                 // We don't want individual SlidingWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
-                if (options.AutoReplenishment is true)
+                if (options.AutoReplenishment)
                 {
                     options = new SlidingWindowRateLimiterOptions
                     {
@@ -137,7 +137,7 @@ namespace System.Threading.RateLimiting
             {
                 FixedWindowRateLimiterOptions options = factory(key);
                 // We don't want individual FixedWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
-                if (options.AutoReplenishment is true)
+                if (options.AutoReplenishment)
                 {
                     options = new FixedWindowRateLimiterOptions
                     {

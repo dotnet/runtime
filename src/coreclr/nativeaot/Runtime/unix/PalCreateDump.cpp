@@ -213,9 +213,13 @@ CreateCrashDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-    int pipe_descs[2];
-    int pipe_result;
+    int pipe_descs[4];
+    int pipe_result = 0;
     while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+    if (pipe_result != -1)
+    {
+        while (-1 == (pipe_result = pipe(pipe_descs + 2)) && errno == EINTR);
+    }
     if (pipe_result == -1)
     {
         if (errorMessageBuffer != nullptr)
@@ -224,9 +228,12 @@ CreateCrashDump(
         }
         return false;
     }
-    // [0] is read end, [1] is write end
-    int parent_pipe = pipe_descs[0];
-    int child_pipe = pipe_descs[1];
+    // from parent (write) to child (read), used to signal prctl(PR_SET_PTRACER, childpid) is done
+    int child_read_pipe = pipe_descs[0];
+    int parent_write_pipe = pipe_descs[1];
+    // from child (write) to parent (read), used to capture createdump's stderr
+    int parent_read_pipe = pipe_descs[2];
+    int child_write_pipe = pipe_descs[3];
 
     // Fork the core dump child process.
     pid_t childpid = fork();
@@ -238,19 +245,34 @@ CreateCrashDump(
         {
             snprintf(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
-        close(pipe_descs[0]);
-        close(pipe_descs[1]);
+        for (int i = 0; i < 4; i++)
+        {
+            close(pipe_descs[i]);
+        }
         return false;
     }
     else if (childpid == 0)
     {
-        // Close the read end of the pipe, the child doesn't need it
-        close(parent_pipe);
+        close(parent_read_pipe);
+        close(parent_write_pipe);
+
+        // Wait for prctl(PR_SET_PTRACER, childpid) in parent
+        char buffer;
+        int bytesRead;
+        while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
+        close(child_read_pipe);
+
+        if (bytesRead != 1)
+        {
+            fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
+            close(child_write_pipe);
+            exit(-1);
+        }
 
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            while (-1 == dup2(child_pipe, STDERR_FILENO) && errno == EINTR);
+            while (-1 == dup2(child_write_pipe, STDERR_FILENO) && errno == EINTR);
         }
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)
@@ -261,6 +283,8 @@ CreateCrashDump(
     }
     else
     {
+        close(child_read_pipe);
+        close(child_write_pipe);
 #if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Gives the child process permission to use /proc/<pid>/mem and ptrace
         if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
@@ -272,7 +296,21 @@ CreateCrashDump(
 #endif
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-        close(child_pipe);
+        // Signal child that prctl(PR_SET_PTRACER, childpid) is done
+        int bytesWritten;
+        while((bytesWritten = write(parent_write_pipe, "S", 1)) < 0 && errno == EINTR);
+        close(parent_write_pipe);
+
+        if (bytesWritten != 1)
+        {
+            fprintf(stderr, "Problem writing to createdump parent_write_pipe: %s (%d)\n", strerror(errno), errno);
+            close(parent_read_pipe);
+            if (errorMessageBuffer != nullptr)
+            {
+                errorMessageBuffer[0] = 0;
+            }
+            return false;
+        }
 
         // Read createdump's stderr messages (if any)
         if (errorMessageBuffer != nullptr)
@@ -282,7 +320,7 @@ CreateCrashDump(
             int count = 0;
             while (true)
             {
-                while (-1 == (count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) && errno == EINTR);
+                while (-1 == (count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) && errno == EINTR);
                 if (count <= 0) break;
                 bytesRead += count;
             }
@@ -292,7 +330,7 @@ CreateCrashDump(
                 fputs(errorMessageBuffer, stderr);
             }
         }
-        close(parent_pipe);
+        close(parent_read_pipe);
 
         // Parent waits until the child process is done
         int wstatus = 0;

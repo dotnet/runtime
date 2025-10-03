@@ -344,12 +344,14 @@ DEFINE_CLASS(THREAD_START_EXCEPTION,Threading,              ThreadStartException
 DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,                      IM_Exception_RetVoid)
 
 DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
+DEFINE_METHOD(VALUETASK_1, GET_AWAITER, GetAwaiter, NoSig)
 
 DEFINE_CLASS(VALUETASK, Tasks, ValueTask)
 DEFINE_METHOD(VALUETASK, FROM_EXCEPTION, FromException, SM_Exception_RetValueTask)
 DEFINE_METHOD(VALUETASK, FROM_EXCEPTION_1, FromException, GM_Exception_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, FROM_RESULT_T, FromResult, GM_T_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetValueTask)
+DEFINE_METHOD(VALUETASK, GET_AWAITER, GetAwaiter, NoSig)
 
 DEFINE_CLASS(TASK_1, Tasks, Task`1)
 DEFINE_METHOD(TASK_1, GET_AWAITER, GetAwaiter, NoSig)
@@ -368,6 +370,14 @@ DEFINE_METHOD(TASK_AWAITER_1, GET_RESULT, GetResult, NoSig)
 DEFINE_CLASS(TASK_AWAITER, CompilerServices, TaskAwaiter)
 DEFINE_METHOD(TASK_AWAITER, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(TASK_AWAITER, GET_RESULT, GetResult, NoSig)
+
+DEFINE_CLASS(VALUETASK_AWAITER_1, CompilerServices, ValueTaskAwaiter`1)
+DEFINE_METHOD(VALUETASK_AWAITER_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
+DEFINE_METHOD(VALUETASK_AWAITER_1, GET_RESULT, GetResult, NoSig)
+
+DEFINE_CLASS(VALUETASK_AWAITER, CompilerServices, ValueTaskAwaiter)
+DEFINE_METHOD(VALUETASK_AWAITER, GET_ISCOMPLETED, get_IsCompleted, NoSig)
+DEFINE_METHOD(VALUETASK_AWAITER, GET_RESULT, GetResult, NoSig)
 
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
@@ -709,7 +719,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,        
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
+DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 #ifdef FEATURE_IJW
@@ -728,6 +738,9 @@ DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, Finalize
 DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_EXECUTION_CONTEXT, RestoreExecutionContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuationContext, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS, CaptureContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS, RestoreContexts, NoSig)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -1038,7 +1051,7 @@ DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBar
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_Obj_RetException)
+DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_IntPtr_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
@@ -1344,7 +1357,6 @@ DEFINE_CLASS(EH, Runtime, EH)
 DEFINE_METHOD(EH, RH_THROW_EX, RhThrowEx, SM_Obj_RefExInfo_RetVoid)
 DEFINE_METHOD(EH, RH_THROWHW_EX, RhThrowHwEx, SM_UInt_RefExInfo_RetVoid)
 DEFINE_METHOD(EH, RH_RETHROW, RhRethrow, SM_RefExInfo_RefExInfo_RetVoid)
-DEFINE_METHOD(EH, UNWIND_AND_INTERCEPT, RhUnwindAndIntercept, SM_RefExInfo_UIntPtr_RetVoid)
 DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 #endif // FEATURE_EH_FUNCLETS

@@ -9,7 +9,9 @@
 #include "ep-config.h"
 #include "ep-event.h"
 #include "ep-file.h"
+#include "ep-ipc-stream.h"
 #include "ep-session.h"
+#include "ep-stream.h"
 #include "ep-event-payload.h"
 #include "ep-rt.h"
 
@@ -76,6 +78,10 @@ session_tracepoint_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
+static
+bool
+session_is_stream_connection_closed (IpcStream *stream);
+
 /*
  * EventPipeSession.
  */
@@ -91,7 +97,7 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	ep_rt_thread_params_t *thread_params = (ep_rt_thread_params_t *)data;
 
 	EventPipeSession *const session = (EventPipeSession *)thread_params->thread_params;
-	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		return 1;
 
 	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
@@ -100,28 +106,44 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	session->streaming_thread = thread_params->thread;
 
 	bool success = true;
-	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
 	EP_GCX_PREEMP_ENTER
-		while (ep_session_get_streaming_enabled (session)) {
-			bool events_written = false;
-			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
-				success = false;
-				break;
-			}
+		if (ep_session_type_uses_buffer_manager (session->session_type)) {
+			ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
+			while (ep_session_get_streaming_enabled (session)) {
+				bool events_written = false;
+				if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
+					success = false;
+					break;
+				}
 
-			if (!events_written) {
-				// No events were available, sleep until more are available
-				ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
-			}
+				if (!events_written) {
+					// No events were available, sleep until more are available
+					ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
+				}
 
-			// Wait until it's time to sample again.
-			const uint32_t timeout_ns = 100000000; // 100 msec.
-			ep_rt_thread_sleep (timeout_ns);
+				// Wait until it's time to sample again.
+				const uint32_t timeout_ns = 100000000; // 100 msec.
+				ep_rt_thread_sleep (timeout_ns);
+			}
+		} else if (session->session_type == EP_SESSION_TYPE_USEREVENTS) {
+			// In a user events session we only monitor the stream to stop the session if it closes.
+			while (ep_session_get_streaming_enabled (session)) {
+				EP_ASSERT (session->stream != NULL);
+				if (session_is_stream_connection_closed (session->stream)) {
+					success = false;
+					break;
+				}
+
+				// Wait until it's time to poll again.
+				const uint32_t timeout_ns = 100000000; // 100 msec.
+				ep_rt_thread_sleep (timeout_ns);
+			}
+		} else {
+			EP_UNREACHABLE ("Unsupported session type for streaming thread.");
 		}
-
 		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	EP_GCX_PREEMP_EXIT
@@ -159,19 +181,19 @@ void
 session_create_streaming_thread (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM);
+	EP_ASSERT (ep_session_type_uses_streaming_thread (session->session_type));
 
 	ep_requires_lock_held ();
 
 	ep_session_set_streaming_enabled (session, true);
 	ep_rt_wait_event_alloc (&session->rt_thread_shutdown_event, true, false);
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
-		EP_UNREACHABLE ("Unable to create stream flushing thread shutdown event.");
+		EP_UNREACHABLE ("Unable to create streaming thread shutdown event.");
 
 #ifndef PERFTRACING_DISABLE_THREADS
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
-		EP_UNREACHABLE ("Unable to create stream flushing thread.");
+		EP_UNREACHABLE ("Unable to create streaming thread.");
 #else
 	ep_session_inc_ref (session);
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
@@ -183,23 +205,33 @@ static
 void
 session_disable_streaming_thread (EventPipeSession *session)
 {
-	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM);
+	EP_ASSERT (ep_session_type_uses_streaming_thread (session->session_type));
 	EP_ASSERT (ep_session_get_streaming_enabled (session));
 
 	EP_ASSERT (!ep_rt_process_detach ());
-	EP_ASSERT (session->buffer_manager != NULL);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (session->session_type) || session->buffer_manager != NULL);
 
 	// The streaming thread will watch this value and exit
 	// when profiling is disabled.
 	ep_session_set_streaming_enabled (session, false);
 
 	// Thread could be waiting on the event that there is new data to read.
-	ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
+	if (ep_session_type_uses_buffer_manager (session->session_type))
+		ep_rt_wait_event_set (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
 
 	// Wait for the streaming thread to clean itself up.
 	ep_rt_wait_event_handle_t *rt_thread_shutdown_event = &session->rt_thread_shutdown_event;
 	ep_rt_wait_event_wait (rt_thread_shutdown_event, EP_INFINITE_WAIT, false /* bAlertable */);
 	ep_rt_wait_event_free (rt_thread_shutdown_event);
+}
+
+static
+bool
+session_is_stream_connection_closed (IpcStream *stream)
+{
+	EP_ASSERT (stream != NULL);
+	IpcPollEvents poll_event = ep_ipc_stream_poll_vcall (stream, IPC_TIMEOUT_INFINITE);
+	return poll_event == IPC_POLL_EVENTS_HANGUP || poll_event == IPC_POLL_EVENTS_ERR;
 }
 
 /*
@@ -282,6 +314,8 @@ ep_session_alloc (
 	instance->rundown_keyword = rundown_keyword;
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
+	instance->user_events_data_fd = -1;
+	instance->stream = NULL;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.
@@ -320,6 +354,7 @@ ep_session_alloc (
 	case EP_SESSION_TYPE_USEREVENTS:
 		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
 		ep_raise_error_if_nok (session_user_events_tracepoints_init (instance, user_events_data_fd));
+		instance->stream = stream;
 		break;
 
 	default:
@@ -550,7 +585,7 @@ ep_session_start_streaming (EventPipeSession *session)
 	if (session->file != NULL)
 		ep_file_initialize_file (session->file);
 
-	if (session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM)
+	if (ep_session_type_uses_streaming_thread (session->session_type))
 		session_create_streaming_thread (session);
 
 	if (session->session_type == EP_SESSION_TYPE_SYNCHRONOUS) {
@@ -558,7 +593,7 @@ ep_session_start_streaming (EventPipeSession *session)
 		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 	}
 
-	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		ep_rt_volatile_store_uint32_t_without_barrier (&session->started, 1);
 
 	ep_requires_lock_held ();
@@ -590,7 +625,7 @@ ep_session_disable (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	if ((session->session_type == EP_SESSION_TYPE_IPCSTREAM || session->session_type == EP_SESSION_TYPE_FILESTREAM) && ep_session_get_streaming_enabled (session))
+	if ((ep_session_type_uses_streaming_thread (session->session_type)) && ep_session_get_streaming_enabled (session))
 		session_disable_streaming_thread (session);
 
 	if (session->session_type == EP_SESSION_TYPE_USEREVENTS)
@@ -730,10 +765,11 @@ session_tracepoint_write_event (
 		return false;
 
 	// Setup iovec array
-	const int max_non_parameter_iov = 8;
+	const int max_non_parameter_iov = 9;
 	const int max_static_io_capacity = 30; // Should account for most events that use EventData structs
 	struct iovec static_io[max_static_io_capacity];
 	struct iovec *io = static_io;
+	ssize_t io_bytes_to_write = 0;
 
 	uint8_t *ep_event_data = ep_event_payload_get_data (ep_event_payload);
 	uint32_t ep_event_data_len = ep_event_payload_get_event_data_len (ep_event_payload);
@@ -752,12 +788,14 @@ session_tracepoint_write_event (
 	io[io_index].iov_base = (void *)&write_index;
 	io[io_index].iov_len = sizeof(write_index);
 	io_index++;
+	io_bytes_to_write += sizeof(write_index);
 
 	// Version
 	uint8_t version = 0x01; // Format V1
 	io[io_index].iov_base = &version;
 	io[io_index].iov_len = sizeof(version);
 	io_index++;
+	io_bytes_to_write += sizeof(version);
 
 	// Truncated event id
 	// For parity with EventSource, there shouldn't be any that need more than 16 bits.
@@ -765,35 +803,55 @@ session_tracepoint_write_event (
 	io[io_index].iov_base = &truncated_event_id;
 	io[io_index].iov_len = sizeof(truncated_event_id);
 	io_index++;
+	io_bytes_to_write += sizeof(truncated_event_id);
 
 	// Extension and payload relative locations (to be fixed up later)
 	uint32_t extension_rel_loc = 0;
 	io[io_index].iov_base = &extension_rel_loc;
 	io[io_index].iov_len = sizeof(extension_rel_loc);
 	io_index++;
+	io_bytes_to_write += sizeof(extension_rel_loc);
 
 	uint32_t payload_rel_loc = 0;
 	io[io_index].iov_base = &payload_rel_loc;
 	io[io_index].iov_len = sizeof(payload_rel_loc);
 	io_index++;
+	io_bytes_to_write += sizeof(payload_rel_loc);
 
 	// Extension
 	uint32_t extension_len = 0;
 
-	// Extension Event Metadata
-	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
-	uint8_t extension_metadata[1 + sizeof(uint32_t)];
-	extension_metadata[0] = 0x01; // label
-	*(uint32_t*)&extension_metadata[1] = metadata_len;
-	io[io_index].iov_base = extension_metadata;
-	io[io_index].iov_len = sizeof(extension_metadata);
-	io_index++;
-	extension_len += sizeof(extension_metadata);
+	uint64_t session_mask = ep_session_get_mask (session);
+	bool should_write_metadata = !ep_event_was_metadata_written (ep_event, session_mask);
+	uint8_t extension_metadata[1 + sizeof(uint32_t)] = {0};
+	if (should_write_metadata) {
+		EventPipeProvider *event_provider = ep_event_get_provider (ep_event);
+		const ep_char16_t *provider_name_utf16 = ep_provider_get_provider_name_utf16 (event_provider);
+		uint32_t provider_name_len = (uint32_t)ep_rt_utf16_string_len (provider_name_utf16);
+		uint32_t provider_name_size_bytes = (provider_name_len + 1) * sizeof (ep_char16_t);
+		uint32_t event_metadata_len = ep_event_get_metadata_len (ep_event);
+		uint32_t complete_metadata_len = provider_name_size_bytes + event_metadata_len;
 
-	io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
-	io[io_index].iov_len = metadata_len;
-	io_index++;
-	extension_len += metadata_len;
+		extension_metadata[0] = 0x01; // label
+		*(uint32_t*)&extension_metadata[1] = complete_metadata_len;
+		io[io_index].iov_base = extension_metadata;
+		io[io_index].iov_len = sizeof(extension_metadata);
+		io_index++;
+		extension_len += sizeof(extension_metadata);
+		io_bytes_to_write += sizeof(extension_metadata);
+
+		io[io_index].iov_base = (void *)provider_name_utf16;
+		io[io_index].iov_len = provider_name_size_bytes;
+		io_index++;
+		extension_len += provider_name_size_bytes;
+		io_bytes_to_write += provider_name_size_bytes;
+
+		io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
+		io[io_index].iov_len = event_metadata_len;
+		io_index++;
+		extension_len += event_metadata_len;
+		io_bytes_to_write += event_metadata_len;
+	}
 
 	// Extension Activity IDs
 	const int extension_activity_ids_max_len = 2 * (1 + EP_ACTIVITY_ID_SIZE);
@@ -804,6 +862,7 @@ session_tracepoint_write_event (
 	io[io_index].iov_len = extension_activity_ids_len;
 	io_index++;
 	extension_len += extension_activity_ids_len;
+	io_bytes_to_write += extension_activity_ids_len;
 
 	EP_ASSERT (io_index <= max_non_parameter_iov);
 
@@ -815,6 +874,7 @@ session_tracepoint_write_event (
 		io[io_index].iov_len = ep_event_payload_size;
 		io_index++;
 		ep_event_payload_total_size += ep_event_payload_size;
+		io_bytes_to_write += ep_event_payload_size;
 	} else {
 		const EventData *event_data = ep_event_payload_get_event_data (ep_event_payload);
 		for (uint32_t i = 0; i < ep_event_data_len; ++i) {
@@ -823,6 +883,7 @@ session_tracepoint_write_event (
 			io[io_index].iov_len = ep_event_data_size;
 			io_index++;
 			ep_event_payload_total_size += ep_event_data_size;
+			io_bytes_to_write += ep_event_data_size;
 		}
 	}
 
@@ -966,8 +1027,8 @@ ep_session_get_next_event (EventPipeSession *session)
 	EP_ASSERT (session != NULL);
 	ep_requires_lock_not_held ();
 
-	if (!session->buffer_manager) {
-		EP_ASSERT (!"Shouldn't call get_next_event on a synchronous session.");
+	if (!ep_session_type_uses_buffer_manager (session->session_type)) {
+		EP_ASSERT (!"Shouldn't call get_next_event on a session that doesn't use the buffer manager.");
 		return NULL;
 	}
 
@@ -979,8 +1040,8 @@ ep_session_get_wait_event (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	if (!session->buffer_manager) {
-		EP_ASSERT (!"Shouldn't call get_wait_event on a synchronous session.");
+	if (!ep_session_type_uses_buffer_manager (session->session_type)) {
+		EP_ASSERT (!"Shouldn't call get_wait_event on a session that doesn't use the buffer manager.");
 		return NULL;
 	}
 
@@ -1051,6 +1112,12 @@ bool
 ep_session_type_uses_buffer_manager (EventPipeSessionType session_type)
 {
 	return (session_type != EP_SESSION_TYPE_SYNCHRONOUS && session_type != EP_SESSION_TYPE_USEREVENTS);
+}
+
+bool
+ep_session_type_uses_streaming_thread (EventPipeSessionType session_type)
+{
+	return (session_type == EP_SESSION_TYPE_IPCSTREAM || session_type == EP_SESSION_TYPE_FILESTREAM || session_type == EP_SESSION_TYPE_USEREVENTS);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

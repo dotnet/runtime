@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
 
             Assert.Equal(PerformanceCounterCategoryType.MultiInstance, Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.CategoryType));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
 
             Assert.Equal(PerformanceCounterCategoryType.SingleInstance, Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.CategoryType));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
 #pragma warning disable 0618 // obsolete warning
@@ -112,10 +112,13 @@ namespace System.Diagnostics.Tests
 
             Helpers.DeleteCategory(categoryName);
 
-            PerformanceCounterCategory.Create(categoryName, "category help", counterName, "counter help");
+            RetryHelper.Execute(() =>
+            {
+                PerformanceCounterCategory.Create(categoryName, "category help", counterName, "counter help");
+            }, maxAttempts: 10, retryWhen: Helpers.IsRetriableException);
 
             Assert.True(PerformanceCounterCategory.Exists(categoryName));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
@@ -129,10 +132,13 @@ namespace System.Diagnostics.Tests
 
             Helpers.DeleteCategory(categoryName);
 
-            PerformanceCounterCategory.Create(categoryName, "category help", ccdc);
+            RetryHelper.Execute(() =>
+            {
+                PerformanceCounterCategory.Create(categoryName, "category help", ccdc);
+            }, maxAttempts: 10, retryWhen: Helpers.IsRetriableException);
 
             Assert.True(PerformanceCounterCategory.Exists(categoryName));
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 #pragma warning restore 0618
 
@@ -209,7 +215,7 @@ namespace System.Diagnostics.Tests
             string categoryName = nameof(PerformanceCounterCategory_DeleteCategory) + "_Category";
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
 
             Assert.False(PerformanceCounterCategory.Exists(categoryName));
         }
@@ -232,7 +238,7 @@ namespace System.Diagnostics.Tests
             PerformanceCounter[] counters = pcc.GetCounters();
 
             Assert.True(counters.Length > 0);
-            PerformanceCounterCategory.Delete(categoryName);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [Fact]

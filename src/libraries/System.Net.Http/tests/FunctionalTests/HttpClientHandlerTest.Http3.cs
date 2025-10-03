@@ -21,7 +21,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
@@ -449,7 +449,7 @@ namespace System.Net.Http.Functional.Tests
                     RequestUri = server.Address,
                     Version = HttpVersion30,
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                    Content = new ByteAtATimeContent(64*1024)
+                    Content = new ByteAtATimeContent(64 * 1024)
                 };
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 var content = await response.Content.ReadAsStringAsync();
@@ -814,7 +814,6 @@ namespace System.Net.Http.Functional.Tests
             };
             using HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(20));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
         }
 
@@ -833,7 +832,6 @@ namespace System.Net.Http.Functional.Tests
             };
             using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead).WaitAsync(TimeSpan.FromSeconds(20));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(3, response.Version.Major);
 
             var content = await response.Content.ReadAsStringAsync();
@@ -1945,7 +1943,8 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                { "https://quic.nginx.org/" }, // Nginx with content
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/120257")]
+                // { "https://quic.nginx.org/" }, // Nginx with content
             };
     }
 

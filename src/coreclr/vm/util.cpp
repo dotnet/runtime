@@ -166,6 +166,7 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     switch(varLoc1.vlType)
     {
     case ICorDebugInfo::VLT_REG:
+    case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_REG_BYREF:
         return varLoc1.vlReg.vlrReg == varLoc2.vlReg.vlrReg;
 
@@ -194,6 +195,9 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
 
     case ICorDebugInfo::VLT_FPSTK:
         return varLoc1.vlFPstk.vlfReg == varLoc2.vlFPstk.vlfReg;
+
+    case ICorDebugInfo::VLT_FIXED_VA:
+        return varLoc1.vlFixedVarArg.vlfvOffset == varLoc2.vlFixedVarArg.vlfvOffset;
 
     default:
         _ASSERTE(!"Bad vlType"); return false;
@@ -1012,6 +1016,33 @@ BOOL CLRFreeLibrary(HMODULE hModule)
 
 
 #endif // #ifndef DACCESS_COMPILE
+namespace GcNotifications
+{
+    VOID SetNotification(GcEvtArgs ev)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (ev.typ == GC_MARK_END)
+        {
+            if (ev.condemnedGeneration == 0)
+                g_gcNotificationFlags = 0;
+            else
+                g_gcNotificationFlags = (DWORD)(g_gcNotificationFlags | ev.condemnedGeneration);
+        }
+    }
+    BOOL GetNotification(GcEvtArgs ev)
+    {
+        LIMITED_METHOD_CONTRACT;
+        // check to see if we have a notification for this generation
+        if (ev.typ == GC_MARK_END && (ev.condemnedGeneration == 0 || (g_gcNotificationFlags & ev.condemnedGeneration) != 0))
+        {
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+};
 
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
@@ -1316,155 +1347,10 @@ BOOL JITNotifications::UpdateOutOfProcTable()
 }
 #endif // DACCESS_COMPILE
 
-GPTR_IMPL(GcNotification, g_pGcNotificationTable);
-
-GcNotifications::GcNotifications(GcNotification *gcTable)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (gcTable)
-    {
-        // Bookkeeping info is held in the first slot
-        m_gcTable = gcTable + 1;
-    }
-    else
-    {
-        m_gcTable = NULL;
-    }
-}
-
-BOOL GcNotifications::FindItem(GcEvtArgs ev_, UINT *indexOut)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (m_gcTable == NULL)
-    {
-        return FALSE;
-    }
-
-    if (indexOut == NULL)
-    {
-        return FALSE;
-    }
-
-    UINT length = Length();
-    for (UINT i = 0; i < length; i++)
-    {
-        if (m_gcTable[i].IsMatch(ev_))
-        {
-            *indexOut = i;
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-
-BOOL GcNotifications::SetNotification(GcEvtArgs ev)
-{
-    if (!IsActive())
-    {
-        return FALSE;
-    }
-
-    if (ev.typ < 0 || ev.typ >= GC_EVENT_TYPE_MAX)
-    {
-        return FALSE;
-    }
-
-    // build the "match" event
-    GcEvtArgs evStar = { ev.typ };
-    switch (ev.typ)
-    {
-        case GC_MARK_END:
-            // specify mark event matching all generations
-            evStar.condemnedGeneration = -1;
-            break;
-        default:
-            break;
-    }
-
-    // look for the entry that matches the evStar argument
-    UINT idx;
-    if (!FindItem(evStar, &idx))
-    {
-        // Find first free item
-        UINT iFirstFree = Length();
-        for (UINT i = 0; i < iFirstFree; i++)
-        {
-            GcNotification *pCurrent = m_gcTable + i;
-            if (pCurrent->IsFree())
-            {
-                iFirstFree = i;
-                break;
-            }
-        }
-
-        if (iFirstFree == Length() &&
-            iFirstFree == GetTableSize())
-    {
-            // No more room
-        return FALSE;
-    }
-
-        // guarantee the free cell is zeroed out
-        m_gcTable[iFirstFree].SetFree();
-        idx = iFirstFree;
-    }
-
-    // Now update the state
-    m_gcTable[idx].ev.typ = ev.typ;
-    switch (ev.typ)
-    {
-        case GC_MARK_END:
-            if (ev.condemnedGeneration == 0)
-            {
-                m_gcTable[idx].SetFree();
-            }
-            else
-            {
-                m_gcTable[idx].ev.condemnedGeneration |= ev.condemnedGeneration;
-            }
-            break;
-        default:
-            break;
-    }
-
-    // and if needed, update the array's length
-    if (idx == Length())
-    {
-        IncrementLength();
-    }
-
-    return TRUE;
-}
 
 GARY_IMPL(size_t, g_clrNotificationArguments, MAX_CLR_NOTIFICATION_ARGS);
 
-#ifdef DACCESS_COMPILE
-
-GcNotification *GcNotifications::InitializeNotificationTable(UINT TableSize)
-{
-    // We use the first entry in the table for recordkeeping info.
-
-    GcNotification *retTable = new (nothrow) GcNotification[TableSize+1];
-    if (retTable)
-    {
-        // Set the length
-        UINT *pUint = (UINT *) &(retTable[0].ev.typ);
-        *pUint = 0;
-        // Set the table size
-        ++pUint;
-        *pUint = TableSize;
-    }
-    return retTable;
-}
-
-BOOL GcNotifications::UpdateOutOfProcTable()
-{
-    return ::UpdateOutOfProcTable<GcNotification>(g_pGcNotificationTable, m_gcTable - 1, GetTableSize() + 1);
-}
-
-#else // DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
 
 static CrstStatic g_clrNotificationCrst;
 

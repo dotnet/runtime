@@ -64,8 +64,13 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
         .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
@@ -204,9 +209,9 @@ C_FUNC(\Name\()_End):
 
         __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
 
-        .if (__PWTB_SaveFPArgs == 1)
-            __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
-        .endif
+        // Always reserve space for the FP arg regs, even if they are not saved in the PROLOG_WITH_TRANSITION_BLOCK
+        // Some code using this macro saves them optionally
+        __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
         __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 104

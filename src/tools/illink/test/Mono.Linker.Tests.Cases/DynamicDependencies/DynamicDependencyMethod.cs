@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
             B.Broken();
             B.Conditional();
 #if NATIVEAOT
-			ReferenceViaReflection.Test ();
+            ReferenceViaReflection.Test();
 #endif
         }
 
@@ -182,42 +182,42 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
         }
     }
 #if NATIVEAOT
-	abstract class ReferenceViaReflection
-	{
-		[Kept]
-		[DynamicDependency (nameof (TargetMethodViaReflection))]
-		public static void SourceMethodViaReflection () { }
+    abstract class ReferenceViaReflection
+    {
+        [Kept]
+        [DynamicDependency(nameof(TargetMethodViaReflection))]
+        public static void SourceMethodViaReflection() { }
 
-		[Kept]
-		private static void TargetMethodViaReflection () { }
+        [Kept]
+        private static void TargetMethodViaReflection() { }
 
 
-		[Kept]
-		public static void Test ()
-		{
-			var i = new Impl (); // Avoid removal of non-implemented abstract methods
+        [Kept]
+        public static void Test()
+        {
+            var i = new Impl(); // Avoid removal of non-implemented abstract methods
 
-			typeof (ReferenceViaReflection).RequiresPublicMethods ();
-			typeof (AbstractMethods).RequiresPublicMethods ();
-		}
+            typeof(ReferenceViaReflection).RequiresPublicMethods();
+            typeof(AbstractMethods).RequiresPublicMethods();
+        }
 
-		[KeptMember (".ctor()")]
-		private abstract class AbstractMethods
-		{
-			[Kept]
-			[DynamicDependency (nameof (TargetMethod))]
-			public abstract void SourceAbstractViaReflection ();
+        [KeptMember(".ctor()")]
+        private abstract class AbstractMethods
+        {
+            [Kept]
+            [DynamicDependency(nameof(TargetMethod))]
+            public abstract void SourceAbstractViaReflection();
 
-			[Kept]
-			private static void TargetMethod () { }
-		}
+            [Kept]
+            private static void TargetMethod() { }
+        }
 
-		[KeptMember (".ctor()")]
-		private class Impl : AbstractMethods
-		{
-			[Kept]
-			public override void SourceAbstractViaReflection () { }
-		}
-	}
+        [KeptMember(".ctor()")]
+        private class Impl : AbstractMethods
+        {
+            [Kept]
+            public override void SourceAbstractViaReflection() { }
+        }
+    }
 #endif
 }

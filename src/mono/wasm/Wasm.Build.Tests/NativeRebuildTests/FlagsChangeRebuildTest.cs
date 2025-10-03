@@ -4,6 +4,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,14 +30,17 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
-        public async void ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
+        public async Task ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
-            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0;
+            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0 && extraCFlags.Length == 0;
             if (!dotnetNativeFilesUnchanged)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
+
+            if (extraCFlags.Length != 0)
+                pathsDict.UpdateTo(unchanged: false, "driver.o", "runtime.o", "corebindings.o", "pinvoke.o");
 
             var originalStat = StatFiles(pathsDict);
 
@@ -51,10 +55,10 @@ namespace Wasm.Build.NativeRebuild.Tests
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
-            
-            // ldflags: link step args change, so it should trigger relink
-            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
-            
+
+            // ldflags or cflags: link step args change, so it should trigger relink
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);
+
             if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files

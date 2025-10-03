@@ -37,6 +37,7 @@ INST(nop,           "nop",            0,    0x00000013)
 //// R_R
 INST(mov,           "mv",             0,    0x00000013)
 INST(sext_w,        "sext.w",         0,    0x0000001b)
+INST(not,           "not",            0,    0xFFF04013)
 
 ////R_I
 INST(lui,           "lui",            0,    0x00000037)
@@ -306,6 +307,16 @@ INST(sh1add_uw,     "sh1add_uw",      0,   0x2000203b)
 INST(sh2add_uw,     "sh2add_uw",      0,   0x2000403b)
 INST(sh3add_uw,     "sh3add_uw",      0,   0x2000603b)
 INST(slli_uw,       "slli_uw",        0,   0x0800101b)
+
+// RVC
+INST(c_mv,          "c.mv",          0,   0x00008002)
+INST(c_add,         "c.add",         0,   0x00009002)
+INST(c_and,         "c.and",         0,   0x00008c61)
+INST(c_or,          "c.or",          0,   0x00008c41)
+INST(c_xor,         "c.xor",         0,   0x00008c21)
+INST(c_sub,         "c.sub",         0,   0x00008c01)
+INST(c_addw,        "c.addw",        0,   0x00009c21)
+INST(c_subw,        "c.subw",        0,   0x00009c01)
 
 // clang-format on
 /*****************************************************************************/

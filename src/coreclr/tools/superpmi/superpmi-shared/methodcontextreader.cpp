@@ -96,7 +96,7 @@ MethodContextReader::MethodContextReader(
     , Offset(offset)
     , Increment(increment)
 {
-    this->mutex = CreateMutexW(NULL, FALSE, nullptr);
+    minipal_mutex_init(&this->mutex);
 
     std::string tocFileName, mchFileName;
 
@@ -142,20 +142,19 @@ MethodContextReader::~MethodContextReader()
         CloseHandle(this->fileHandle);
     }
 
-    CloseHandle(this->mutex);
-
+    minipal_mutex_destroy(&this->mutex);
     CleanExcludedMethods();
 }
 
 bool MethodContextReader::AcquireLock()
 {
-    DWORD res = WaitForSingleObject(this->mutex, INFINITE);
-    return (res == WAIT_OBJECT_0);
+    minipal_mutex_enter(&this->mutex);
+    return true;
 }
 
 void MethodContextReader::ReleaseLock()
 {
-    ReleaseMutex(this->mutex);
+    minipal_mutex_leave(&this->mutex);
 }
 
 bool MethodContextReader::atEof()
@@ -420,7 +419,7 @@ bool MethodContextReader::hasTOC()
 
 bool MethodContextReader::isValid()
 {
-    return this->fileHandle != INVALID_HANDLE_VALUE && this->mutex != INVALID_HANDLE_VALUE;
+    return this->fileHandle != INVALID_HANDLE_VALUE;
 }
 
 // Return a measure of "progress" through the method contexts, as follows:
@@ -642,7 +641,7 @@ void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
     int64_t pos    = 0;
     BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
     assert(result);
-    
+
     Indexes     = newIndexes;
     IndexCount  = newIndexCount;
     curIndexPos = 0;

@@ -318,14 +318,14 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     SAVE_ARGUMENT_REGISTERS  sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0x60
 
     addi  a0, t2, 0
-    call C_FUNC(NDirectImportWorker)
+    call C_FUNC(PInvokeImportWorker)
     addi  t4, a0, 0
 
     // pop the stack and restore original register state
@@ -334,10 +334,10 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     //EPILOG_RESTORE_REG  gp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 // ThePreStubPatch()
@@ -568,7 +568,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // a0 = throwable
     // a1 = PC to invoke
-    // a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -586,20 +586,20 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     sd  sp, 0(a3)
 
-    ld  gp, (-40)(a2)  // offset of tp in PCONTEXT relative to S0.
-    ld  tp, (-32)(a2)  // offset of tp in PCONTEXT relative to S0.
-    ld  fp, 0(a2)  // offset of fp in PCONTEXT relative to S0.
-    ld  s1, 8(a2)
-    ld  s2, 80(a2)
-    ld  s3, 88(a2)
-    ld  s4, 96(a2)
-    ld  s5, 104(a2)
-    ld  s6, 112(a2)
-    ld  s7, 120(a2)
-    ld  s8, 128(a2)
-    ld  s9, 136(a2)
-    ld  s10, 144(a2)
-    ld  s11, 152(a2)
+    ld  gp, OFFSETOF__CONTEXT__Gp(a2)
+    ld  tp, OFFSETOF__CONTEXT__Tp(a2)
+    ld  fp, OFFSETOF__CONTEXT__Fp(a2)
+    ld  s1, OFFSETOF__CONTEXT__S1(a2)
+    ld  s2, OFFSETOF__CONTEXT__S2(a2)
+    ld  s3, OFFSETOF__CONTEXT__S2+8(a2)
+    ld  s4, OFFSETOF__CONTEXT__S2+16(a2)
+    ld  s5, OFFSETOF__CONTEXT__S2+24(a2)
+    ld  s6, OFFSETOF__CONTEXT__S2+32(a2)
+    ld  s7, OFFSETOF__CONTEXT__S2+40(a2)
+    ld  s8, OFFSETOF__CONTEXT__S2+48(a2)
+    ld  s9, OFFSETOF__CONTEXT__S2+56(a2)
+    ld  s10, OFFSETOF__CONTEXT__S2+64(a2)
+    ld  s11, OFFSETOF__CONTEXT__S2+72(a2)
 
     // Invoke the funclet
     jalr a1
@@ -822,6 +822,10 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -838,7 +842,7 @@ LEAF_ENTRY JIT_PatchpointForced, _TEXT
     j C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()

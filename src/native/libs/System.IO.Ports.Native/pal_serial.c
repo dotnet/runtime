@@ -46,7 +46,9 @@ int SystemIoPortsNative_SerialPortClose(intptr_t handle)
 
     // ignoring the error - best effort
     while (-1 == ioctl(fd, TIOCNXCL) && errno == EINTR);
-    return close(fd);
+    int result = close(fd);
+    if (result < 0 && errno == EINTR) result = 0; // on all supported platforms, close(2) returning EINTR still means it was released
+    return result;
 }
 
 int32_t SystemIoPortsNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)

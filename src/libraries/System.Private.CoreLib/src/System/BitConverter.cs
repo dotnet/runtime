@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -623,7 +624,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 64-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// Returns a 64-bit unsigned integer converted from eight bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
@@ -653,7 +654,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 128-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// Returns a 128-bit unsigned integer converted from sixteen bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
@@ -746,7 +747,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a double-precision floating point number converted from four bytes at a specified position in a byte array.
+        /// Returns a double-precision floating point number converted from eight bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
@@ -947,6 +948,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half Int16BitsToHalf(short value) => new Half((ushort)(value));
 
+        internal static short BFloat16BitsToInt16(BFloat16 value) => (short)value._value;
+
+        internal static BFloat16 Int16BitsToBFloat16(short value) => new BFloat16((ushort)(value));
+
         /// <summary>
         /// Converts the specified double-precision floating point number to a 64-bit unsigned integer.
         /// </summary>
@@ -1000,5 +1005,9 @@ namespace System
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half UInt16BitsToHalf(ushort value) => new Half(value);
+
+        internal static ushort BFloat16BitsToUInt16(BFloat16 value) => value._value;
+
+        internal static BFloat16 UInt16BitsToBFloat16(ushort value) => new BFloat16(value);
     }
 }

@@ -3,5 +3,8 @@
   <PropertyGroup>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser;wasi</UnsupportedOSPlatforms>
+    <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
+    <IsTrimmable>false</IsTrimmable>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>

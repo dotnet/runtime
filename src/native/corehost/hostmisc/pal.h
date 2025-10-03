@@ -17,6 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include <cassert>
+#include <functional>
 
 #if defined(_WIN32)
 
@@ -159,6 +160,12 @@ namespace pal
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
+    template <typename... Args>
+    int str_printf(char_t* buffer, size_t count, const char_t* format, Args&&... args) { return ::_snwprintf_s(buffer, count, _TRUNCATE, format, std::forward<Args>(args)...); }
+
+    template <typename... Args>
+    inline int strlen_printf(const char_t* format, Args&&... args) { return ::_scwprintf(format, std::forward<Args>(args)...); }
+
     inline const string_t strerror(int errnum)
     {
         // Windows does not provide strerrorlen to get the actual error length.
@@ -229,6 +236,12 @@ namespace pal
     inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
+
+    template <typename... Args>
+    int str_printf(char_t* buffer, size_t size, const char_t* format, Args&&... args) { return ::snprintf(buffer, size, format, std::forward<Args>(args)...); }
+
+    template <typename... Args>
+    inline int strlen_printf(const char_t* format, Args&&... args) { return ::snprintf(nullptr, 0, format, std::forward<Args>(args)...); }
 
     inline const string_t strerror(int errnum) { return ::strerror(errnum); }
 
@@ -325,6 +338,7 @@ namespace pal
     bool get_module_path(dll_t mod, string_t* recv);
     bool get_current_module(dll_t* mod);
     bool getenv(const char_t* name, string_t* recv);
+    void enumerate_environment_variables(const std::function<void(const char_t*, const char_t*)> callback);
     bool get_default_servicing_directory(string_t* recv);
 
     enum class architecture
@@ -338,6 +352,7 @@ namespace pal
         s390X,
         x64,
         x86,
+        wasm,
 
         __last // Sentinel value
     };

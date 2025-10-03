@@ -942,7 +942,7 @@ namespace System.Reflection.Metadata.Tests
                 }
             }
 
-#if NET8_0_OR_GREATER
+#if NET
             [RequiresUnreferencedCode("The type might be removed")]
             [RequiresDynamicCode("Required by MakeArrayType")]
 #else

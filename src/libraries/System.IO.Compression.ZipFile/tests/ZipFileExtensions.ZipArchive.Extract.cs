@@ -24,7 +24,6 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72951", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task ExtractToDirectoryExtension_Unicode(bool async)

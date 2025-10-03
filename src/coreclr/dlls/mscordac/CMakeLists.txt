@@ -157,6 +157,12 @@ set(COREDAC_LIBRARIES
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
 
+if(CLR_CMAKE_HOST_UNIX)
+    list(APPEND COREDAC_LIBRARIES
+        coreclrpal_dac
+    )
+endif(CLR_CMAKE_HOST_UNIX)
+
 if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)
@@ -204,12 +210,6 @@ if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
         libunwind_xdac
     )
 endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
-
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND COREDAC_LIBRARIES
-        coreclrpal_dac
-    )
-endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 

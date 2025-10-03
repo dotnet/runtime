@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -24,13 +25,15 @@ namespace ILCompiler
         private readonly SubstitutionProvider _substitutionProvider;
         private readonly DevirtualizationManager _devirtualizationManager;
         private readonly MetadataManager _metadataManager;
+        private readonly HashSet<string> _characteristics;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null, IEnumerable<string> characteristics = null)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
             _devirtualizationManager = devirtualizationManager;
             _metadataManager = metadataManager;
+            _characteristics = characteristics != null ? new HashSet<string>(characteristics) : null;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -39,6 +42,13 @@ namespace ILCompiler
             if (substitution != null)
             {
                 return substitution.EmitIL(method);
+            }
+
+            if (TryGetCharacteristicValue(method, out bool characteristicEnabled))
+            {
+                return new ILStubMethodIL(method,
+                    [characteristicEnabled ? (byte)ILOpCode.Ldc_i4_1 : (byte)ILOpCode.Ldc_i4_0, (byte)ILOpCode.Ret],
+                    [], []);
             }
 
             // BEGIN TEMPORARY WORKAROUND
@@ -404,10 +414,10 @@ namespace ILCompiler
                     {
                         var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
                         if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
-                            && calleeType.Name == InlineableStringsResourceNode.ResourceAccessorTypeName
-                            && calleeType.Namespace == InlineableStringsResourceNode.ResourceAccessorTypeNamespace
+                            && calleeType.Name.SequenceEqual(InlineableStringsResourceNode.ResourceAccessorTypeName)
+                            && calleeType.Namespace.SequenceEqual(InlineableStringsResourceNode.ResourceAccessorTypeNamespace)
                             && callee.Signature is { Length: 0, IsStatic: true }
-                            && callee.Name.StartsWith("get_", StringComparison.Ordinal))
+                            && callee.Name.StartsWith("get_"u8))
                         {
                             flags[offset] |= OpcodeFlags.GetResourceStringCall;
                             hasGetResourceStringCall = true;
@@ -812,11 +822,16 @@ namespace ILCompiler
                         {
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
+                        else if (method.IsIntrinsic && (method.Name.SequenceEqual("get_IsValueType"u8) || method.Name.SequenceEqual("get_IsEnum"u8))
                             && method.OwningType is MetadataType mdt
-                            && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
+                            && mdt.Name.SequenceEqual("Type"u8) && mdt.Namespace.SequenceEqual("System"u8) && mdt.Module == mdt.Context.SystemModule
+                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.GetName(), out constant))
                         {
+                            return true;
+                        }
+                        else if (TryGetCharacteristicValue(method, out bool characteristic))
+                        {
+                            constant = characteristic ? 1 : 0;
                             return true;
                         }
                         else
@@ -1087,6 +1102,10 @@ namespace ILCompiler
             if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation()))
                 return false;
 
+            // Above check took care of most variant scenarios but we still need to worry about array variance
+            if (((CompilerTypeSystemContext)type.Context).IsArrayVariantCastable(type))
+                return false;
+
             constant = 0;
 
             return true;
@@ -1114,13 +1133,26 @@ namespace ILCompiler
 
             MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
 
-            if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
+            if (!method.IsIntrinsic || !method.Name.SequenceEqual("GetTypeFromHandle"u8))
                 return false;
 
             if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
                 return false;
 
             return true;
+        }
+
+        private bool TryGetCharacteristicValue(MethodDesc maybeCharacteristicMethod, out bool value)
+        {
+            if (maybeCharacteristicMethod.IsIntrinsic
+                && maybeCharacteristicMethod.HasCustomAttribute("System.Runtime.CompilerServices", "AnalysisCharacteristicAttribute"))
+            {
+                value = _characteristics == null || _characteristics.Contains(maybeCharacteristicMethod.GetName());
+                return true;
+            }
+
+            value = false;
+            return false;
         }
 
         private sealed class SubstitutedMethodIL : MethodIL

@@ -219,6 +219,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             return FALSE;
         }
 
+#ifndef TARGET_WASM
         // create a guard page for the alternate stack
         int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
         if (st != 0)
@@ -226,6 +227,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
             return FALSE;
         }
+#endif // TARGET_WASM
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS
@@ -917,7 +919,7 @@ Parameters :
 __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
-    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_InvokeActivationHandlerReturnAddress = _ReturnAddress();
     g_activationFunction(pWinContext);
 }
 

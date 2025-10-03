@@ -172,8 +172,7 @@ close_binary_protocol_file (void)
 #if defined(HOST_WIN32)
 	CloseHandle (binary_protocol_file);
 #elif defined(HAVE_UNISTD_H)
-	while (close (binary_protocol_file) == -1 && errno == EINTR)
-		;
+	close (binary_protocol_file);
 #endif
 	binary_protocol_file = invalid_file_value;
 }

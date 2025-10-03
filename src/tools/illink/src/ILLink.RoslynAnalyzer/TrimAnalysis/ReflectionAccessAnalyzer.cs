@@ -12,15 +12,22 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-    internal readonly struct ReflectionAccessAnalyzer
+    readonly struct ReflectionAccessAnalyzer
     {
-        private readonly Action<Diagnostic>? _reportDiagnostic;
-        private readonly INamedTypeSymbol? _typeHierarchyType;
+        readonly Action<Diagnostic>? _reportDiagnostic;
 
-        public ReflectionAccessAnalyzer(Action<Diagnostic>? reportDiagnostic, INamedTypeSymbol? typeHierarchyType)
+        readonly INamedTypeSymbol? _typeHierarchyType;
+
+        readonly TypeNameResolver _typeNameResolver;
+
+        public ReflectionAccessAnalyzer(
+            Action<Diagnostic>? reportDiagnostic,
+            TypeNameResolver typeNameResolver,
+            INamedTypeSymbol? typeHierarchyType)
         {
             _reportDiagnostic = reportDiagnostic;
             _typeHierarchyType = typeHierarchyType;
+            _typeNameResolver = typeNameResolver;
         }
 
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
@@ -42,10 +49,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                         break;
                     /* Skip Type and InterfaceImplementation marking since doesnt seem relevant for diagnostic generation
                     case ITypeSymbol nestedType:
-                        MarkType (location, nestedType);
+                        MarkType(location, nestedType);
                         break;
                     case InterfaceImplementation interfaceImplementation:
-                        MarkInterfaceImplementation (location, interfaceImplementation, dependencyKind);
+                        MarkInterfaceImplementation(location, interfaceImplementation, dependencyKind);
                         break;
                     */
                     case IEventSymbol @event:
@@ -211,6 +218,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic);
                 diagnosticContext.AddDiagnostic(DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName());
             }
+        }
+
+        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen(true)] out ITypeSymbol? type)
+        {
+            return _typeNameResolver.TryResolveTypeName(typeName, diagnosticContext, out type, needsAssemblyName);
         }
     }
 }

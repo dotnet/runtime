@@ -452,7 +452,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
  * ------------------------------------------------------------------------- */
 extern void* GetClrModuleBase();
 
-// Do any initialization necessary for both CorPublish and CorDebug
+// Do any initialization necessary for CorDebug
 // This includes enabling logging and adding the SEDebug priv.
 void CordbCommonBase::InitializeCommon()
 {
@@ -1646,7 +1646,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                 break;
 
             default:
-                __assume(0);
+                UNREACHABLE();
         }
 
     #endif // FEATURE_INTEROP_DEBUGGING

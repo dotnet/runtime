@@ -304,6 +304,7 @@ set( JIT_HEADERS
   compilerbitsettraits.hpp
   compmemkind.h
   compphases.h
+  handlekinds.h
   dataflow.h
   debuginfo.h
   decomposelongs.h
@@ -618,6 +619,8 @@ function(add_jit jitName)
     if (CLR_CMAKE_HOST_WIN32)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
+
+    target_compile_definitions(${jitName} PRIVATE JIT_STANDALONE_BUILD)
 
     # add the install targets
     install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -29,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             IEnumerable<MetadataReference>? additionalReferences = null,
             IEnumerable<SyntaxTree>? additionalSources = null,
             IEnumerable<AdditionalText>? additionalFiles = null)
-            => CreateCompilation(CSharpSyntaxTree.ParseText(src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
 
         public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
             SyntaxTree src,
@@ -43,11 +44,31 @@ namespace ILLink.RoslynAnalyzer.Tests
             additionalReferences ??= Array.Empty<MetadataReference>();
             var sources = new List<SyntaxTree>() { src };
             sources.AddRange(additionalSources ?? Array.Empty<SyntaxTree>());
+            TestCaseUtils.GetDirectoryPaths(out string rootSourceDirectory);
+            var testDir = Path.GetDirectoryName(rootSourceDirectory)!;
+            var srcDir = Path.Combine(Path.GetDirectoryName(testDir)!, "src");
+            var sharedDir = Path.Combine(srcDir, "ILLink.Shared");
+            var commonSourcePaths = new List<string>()
+            {
+                Path.Combine(testDir,
+                    "Mono.Linker.Tests.Cases.Expectations",
+                    "Support",
+                    "DynamicallyAccessedMembersAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresUnreferencedCodeAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresDynamicCodeAttribute.cs"),
+            };
+
+            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), new CSharpParseOptions(languageVersion: LanguageVersion.Preview), path: p)));
             var comp = CSharpCompilation.Create(
-                assemblyName: Guid.NewGuid().ToString("N"),
+                assemblyName: "test",
                 syntaxTrees: sources,
                 references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
-                new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
+                new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
+                    specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
+                    {
+                        // Allow the polyfilled DynamicallyAccessedMembersAttribute to take precedence over the one in corelib.
+                        { "CS0436", ReportDiagnostic.Suppress }
+                    }));
             var analyzerOptions = new AnalyzerOptions(
                 additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,
                 new SimpleAnalyzerOptions(globalAnalyzerOptions));

@@ -21,7 +21,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null, "", "")]
         [InlineData("DistinguishedName", "AttributeName", "value")]
-        public void Ctor_DistinguishedName_AttributeName_StringValue(string distinguishedName, string attributeName, string value)
+        public void Ctor_DistinguishedName_AttributeName_StringValue(string? distinguishedName, string attributeName, string value)
         {
             var request = new CompareRequest(distinguishedName, attributeName, value);
             Assert.Equal(attributeName, request.Assertion.Name);
@@ -35,7 +35,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null, "", new byte[0])]
         [InlineData("DistinguishedName", "AttributeName", new byte[] { 1, 2, 3 })]
-        public void Ctor_DistinguishedName_AttributeName_ByteArrayValue(string distinguishedName, string attributeName, byte[] value)
+        public void Ctor_DistinguishedName_AttributeName_ByteArrayValue(string? distinguishedName, string attributeName, byte[] value)
         {
             var request = new CompareRequest(distinguishedName, attributeName, value);
             Assert.Equal(attributeName, request.Assertion.Name);

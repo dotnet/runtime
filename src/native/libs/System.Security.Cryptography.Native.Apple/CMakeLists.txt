@@ -21,6 +21,7 @@ set(NATIVECRYPTO_SOURCES
     pal_x509.c
     pal_x509chain.c
     pal_swiftbindings.o
+    pal_networkframework.m
 )
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)

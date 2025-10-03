@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
             [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
 #else
-			// In release mode, the compiler optimizes away the unused Action (and reference to MethodWithRequires)
+            // In release mode, the compiler optimizes away the unused Action (and reference to MethodWithRequires)
 #endif
             [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
             [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]

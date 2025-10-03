@@ -22,7 +22,6 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 
 #include "pal/palinternal.h"
 #include "pal/file.h"
-#include "pal/filetime.h"
 #include "pal/utils.h"
 
 #include <time.h>

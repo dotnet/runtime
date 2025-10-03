@@ -184,6 +184,16 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     public CompilerFeatureRequiredAttribute(string featureName) { }
                 }
             }
+
+            namespace System.Diagnostics.CodeAnalysis
+            {
+                internal sealed class ExperimentalAttribute : Attribute
+                {
+                    public ExperimentalAttribute(string diagnosticId) => DiagnosticId = diagnosticId;
+                    public string DiagnosticId { get; }
+                    public string UrlFormat { get; set; }
+                }
+            }
             """;
 #endif
 
@@ -829,7 +839,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
         internal static void AssertMaxSeverity(this IEnumerable<Diagnostic> diagnostics, DiagnosticSeverity maxSeverity)
         {
-            Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity > maxSeverity));
+            Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity > maxSeverity);
         }
     }
 
