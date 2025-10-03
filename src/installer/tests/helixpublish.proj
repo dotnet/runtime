@@ -53,7 +53,8 @@
 
     <ItemGroup>
       <HostTestProject>
-        <Command>./$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
+        <Command>$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
+        <Command Condition="'$(TargetOS)' != 'windows'">./%(Command)</Command>
         <PreCommands Condition="'$(TargetOS)' != 'windows'">chmod +x $(_TestExePath)</PreCommands>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
