@@ -828,6 +828,10 @@ public:
     // About the signature.
 
     BOOL IsVarArg();
+#ifdef DACCESS_COMPILE
+    HRESULT IsVarArgDAC(BOOL *isVarArg);
+#endif // DACCESS_COMPILE
+
     BOOL IsVoid();
     BOOL HasRetBuffArg();
 
@@ -918,7 +922,9 @@ public:
     // Convenience methods for common signature wrapper types.
     SigPointer GetSigPointer();
     Signature GetSignature();
-
+#ifdef DACCESS_COMPILE
+    HRESULT GetSignatureDAC(Signature *pSignature);
+#endif // DACCESS_COMPILE
 
     void GetSigFromMetadata(IMDInternalImport * importer,
                             PCCOR_SIGNATURE   * ppSig,
