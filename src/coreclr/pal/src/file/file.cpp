@@ -1124,7 +1124,7 @@ CorUnix::InternalWriteFile(
     }
 #endif
 
-    while (-1 == (res = write( ifd, lpBuffer, nNumberOfBytesToWrite )) && errno == EINTR);
+    while (-1 == (res = write( ifd, lpBuffer, nNumberOfBytesToWrite )) && errno == EINTR) { }
     TRACE("write() returns %d\n", res);
 
     if ( res >= 0 )
