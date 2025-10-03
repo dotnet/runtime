@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <AssemblyName>HostActivation.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->

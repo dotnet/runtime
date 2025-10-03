@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <AssemblyName>Microsoft.NET.HostModel.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->

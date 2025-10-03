@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>Apphost Bundle Tests</Description>
     <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>AppHost.Bundle.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
