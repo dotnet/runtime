@@ -333,7 +333,7 @@ namespace System.Net
 
             private static unsafe void SetField(ref MessageField field, int length, int offset)
             {
-                if (length > short.MaxValue || length < short.MaxValue)
+                if (length > short.MaxValue || length < short.MinValue)
                 {
                     throw new Win32Exception(NTE_FAIL);
                 }
