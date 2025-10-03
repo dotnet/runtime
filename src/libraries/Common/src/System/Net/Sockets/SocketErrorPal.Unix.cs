@@ -73,7 +73,7 @@ namespace System.Net.Sockets
             // but it's the best we can do given the mismatch between Interop.Error and SocketError.
 
             SocketError.AccessDenied => Interop.Error.EACCES, // could also have been EPERM
-            SocketError.AddressAlreadyInUse => Interop.Error.EADDRINUSE ,
+            SocketError.AddressAlreadyInUse => Interop.Error.EADDRINUSE,
             SocketError.AddressNotAvailable => Interop.Error.EADDRNOTAVAIL,
             SocketError.AddressFamilyNotSupported => Interop.Error.EAFNOSUPPORT,
             SocketError.AlreadyInProgress => Interop.Error.EALREADY,
