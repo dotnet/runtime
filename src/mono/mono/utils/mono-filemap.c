@@ -108,7 +108,7 @@ mono_file_map_fileio (size_t length, int flags, int fd, guint64 offset, void **r
 	size_t readSoFar = 0;
 	while (readSoFar < length)
 	{
-		while (-1 == (bytes_read = read (fd, ptr + readSoFar, length - readSoFar)) && errno == EINTR);
+		while (-1 == (bytes_read = read (fd, (unsigned char*)ptr + readSoFar, length - readSoFar)) && errno == EINTR);
 		if (bytes_read <= 0) break;
 		readSoFar += bytes_read;
 	}
