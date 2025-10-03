@@ -191,14 +191,33 @@ GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
     {
         // Only equality with zero is supported
         // a == b  --->  (a - b) == 0
-        var_types type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
-        left           = comp->gtNewOperNode(GT_SUB, type, left, right);
-        right          = comp->gtNewZeroConNode(type);
+        var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
+        genTreeOps oper = GT_SUB;
+        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            INT64 value  = right->AsIntConCommon()->IntegralValue();
+            INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
+
+            const INT64 min12BitImm = -2048;
+            if (value == min12BitImm)
+            {
+                // (a - C) == 0 ---> (a ^ C) == 0
+                oper = GT_XOR;
+            }
+            else if (!right->TypeIs(TYP_BYREF) && value != minVal)
+            {
+                // a - C  --->  a + (-C)
+                oper = GT_ADD;
+                right->AsIntConCommon()->SetIntegralValue(-value);
+            }
+        }
+        left  = comp->gtNewOperNode(oper, type, left, right);
+        right = comp->gtNewZeroConNode(type);
         BlockRange().InsertBefore(cmp, left, right);
-        LowerNode(left);
+        ContainCheckBinary(left->AsOp());
     }
 
-    if (right->IsIntegralConst() && !right->AsIntConCommon()->ImmedValNeedsReloc(comp))
+    if (!right->TypeIs(TYP_BYREF) && right->IsIntegralConst() && !right->AsIntConCommon()->ImmedValNeedsReloc(comp))
     {
         if (cmp->OperIs(GT_LE, GT_GE))
         {
