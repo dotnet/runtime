@@ -39,6 +39,31 @@ namespace Test.Cryptography
             return true;
         });
 
+        private static readonly Lazy<bool> s_lazyIsRSA384Supported = new Lazy<bool>(() =>
+        {
+            // Linux and Apple are known to support RSA-384, so return true without checking.
+            if (PlatformDetection.IsLinux || PlatformDetection.IsApplePlatform)
+            {
+                return true;
+            }
+
+            RSA rsa = RSA.Create();
+
+            try
+            {
+                rsa.ImportParameters(System.Security.Cryptography.Rsa.Tests.TestData.RSA384Parameters);
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+            finally
+            {
+                rsa.Dispose();
+            }
+        });
+
         private static bool PlatformCryptoProviderFunctional(CngAlgorithm algorithm)
         {
             // Use a full lock around a non-concurrent dictionary. We do not want the value factory for
@@ -142,6 +167,8 @@ namespace Test.Cryptography
 
         internal static bool IsDSASupported => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
         internal static bool IsDSANotSupported => !IsDSASupported;
+
+        internal static bool IsRSA384Supported => s_lazyIsRSA384Supported.Value;
 
 #if NET
         internal static readonly bool IsAndroidVersionAtLeast31 = OperatingSystem.IsAndroidVersionAtLeast(31);
