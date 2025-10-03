@@ -3276,6 +3276,9 @@ AGAIN:
 #endif // TARGET_XARCH
 
                     case TYP_SIMD16:
+#ifdef TARGET_ARM64
+                    case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[3]);
                         FALLTHROUGH;
@@ -4532,6 +4535,12 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 
     unsigned naturalMul = 0;
 #ifdef TARGET_ARM64
+    if (type == TYP_SIMDSV)
+    {
+        // TODO-SVE: Investigate separately if it's worth using addressing modes
+        // for scalable types.
+        return false;
+    }
     // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
     //
     //   *(ulong*)(data + index * 8); - can be optimized
@@ -7986,7 +7995,8 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
 GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
 {
     GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
-    memcpy(&vecCon->gtSimdVal, data, genTypeSize(type));
+    // TODO-SVE: Implement scalable vector constant
+    memcpy(&vecCon->gtSimdVal, data, getSizeOfType(type));
     return vecCon;
 }
 #endif // FEATURE_SIMD
@@ -8089,7 +8099,7 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
     {
         GenTreeVecCon* one = gtNewVconNode(type);
 
-        unsigned simdSize   = genTypeSize(type);
+        unsigned simdSize   = max(getSizeOfType(type), (unsigned)sizeof(simd_t));
         uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
         switch (simdBaseType)
@@ -8326,6 +8336,8 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
+#elif defined(TARGET_ARM64)
+        case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
 #endif // TARGET_XARCH
         {
             GenTreeVecCon* node = gtNewVconNode(type);
@@ -12276,6 +12288,9 @@ void Compiler::gtDispConst(GenTree* tree)
                 }
 
                 case TYP_SIMD16:
+#ifdef TARGET_ARM64
+                case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
                 {
                     printf("<0x%08x, 0x%08x, 0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1],
                            vecCon->gtSimdVal.u32[2], vecCon->gtSimdVal.u32[3]);
@@ -17866,7 +17881,7 @@ bool GenTree::IsLclVarAddr() const
 bool GenTree::IsPartialLclFld(Compiler* comp)
 {
     return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) &&
-           (comp->lvaLclExactSize(comp->lvaGetDesc(AsLclFld())) != AsLclFld()->GetSize());
+           (comp->lvaLclExactSize(comp->lvaGetDesc(AsLclFld())) != AsLclFld()->GetSize(comp));
 }
 
 //------------------------------------------------------------------------
@@ -18397,6 +18412,9 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t result = {};
             EvaluateUnarySimd<simd16_t>(oper, scalar, baseType, &result, gtSimd16Val);
@@ -18459,6 +18477,9 @@ void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_type
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
         {
             simd16_t result = {};
             EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, gtSimd16Val, other->gtSimd16Val);
@@ -18601,7 +18622,11 @@ bool GenTreeVecCon::IsBroadcast(var_types simdBaseType) const
     assert(varTypeIsSIMD(gtType));
     assert(varTypeIsArithmetic(simdBaseType));
 
+#ifdef TARGET_ARM64
+    int elementCount = ElementCount(genTypeSize(gtType == TYP_SIMDSV ? TYP_SIMD16 : gtType), simdBaseType);
+#else
     int elementCount = ElementCount(genTypeSize(gtType), simdBaseType);
+#endif
 
     switch (simdBaseType)
     {
@@ -18650,7 +18675,11 @@ bool GenTreeVecCon::IsBroadcast(var_types simdBaseType) const
 bool GenTreeVecCon::IsNaN(var_types simdBaseType) const
 {
     assert(varTypeIsFloating(simdBaseType));
+#ifdef TARGET_ARM64
+    uint32_t elementCount = ElementCount(genTypeSize(gtType == TYP_SIMDSV ? TYP_SIMD16 : gtType), simdBaseType);
+#else
     uint32_t elementCount = ElementCount(genTypeSize(gtType), simdBaseType);
+#endif
 
     for (uint32_t i = 0; i < elementCount; i++)
     {
@@ -18677,7 +18706,11 @@ bool GenTreeVecCon::IsNaN(var_types simdBaseType) const
 bool GenTreeVecCon::IsNegativeZero(var_types simdBaseType) const
 {
     assert(varTypeIsFloating(simdBaseType));
+#ifdef TARGET_ARM64
+    uint32_t elementCount = ElementCount(genTypeSize(gtType == TYP_SIMDSV ? TYP_SIMD16 : gtType), simdBaseType);
+#else
     uint32_t elementCount = ElementCount(genTypeSize(gtType), simdBaseType);
+#endif
 
     for (uint32_t i = 0; i < elementCount; i++)
     {
@@ -18861,7 +18894,7 @@ bool Compiler::gtStoreDefinesField(
     LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize)
 {
     ssize_t  fieldOffset = fieldVarDsc->lvFldOffset;
-    unsigned fieldSize   = genTypeSize(fieldVarDsc); // No TYP_STRUCT field locals.
+    unsigned fieldSize   = getSizeOfType(fieldVarDsc->TypeGet()); // No TYP_STRUCT field locals.
 
     ssize_t storeEndOffset = offset + static_cast<ssize_t>(size);
     ssize_t fieldEndOffset = fieldOffset + static_cast<ssize_t>(fieldSize);
@@ -19614,7 +19647,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     }
 
     unsigned elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
-                                                        : genTypeSize(GetElemType());
+                                                        : comp->getSizeOfType(GetElemType());
 
     assert(FitsIn<target_ssize_t>(elemSizeUn));
     target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
@@ -27748,6 +27781,12 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
         tmp1 = gtNewSimdGetLowerNode(TYP_SIMD8, tmp1, simdBaseJitType, 16);
     }
 
+    if (type == TYP_SIMDSV)
+    {
+        // TODO-SVE: Implement SVE widen for Vector<T>
+        tmp1 = gtNewCastNode(type, tmp1, false, tmp1->TypeGet());
+    }
+
     return tmp1;
 #else
 #error Unsupported platform
@@ -30001,6 +30040,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 id = NI_X86Base_MultiplyLow;
             }
 #elif defined(TARGET_ARM64)
+            // TODO-SVE: When SVE is enabled for Vector<T>, use SVE intrinsic instead.
             if ((simdSize == 8) && (isScalar || (simdBaseType == TYP_DOUBLE)))
             {
                 id = NI_AdvSimd_MultiplyScalar;
@@ -30865,7 +30905,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(varTypeIsValidHfaType(hfaType));
 
             // Note that the retail build issues a warning about a potential divsion by zero without this "max",
-            unsigned elemSize = max(1u, genTypeSize(hfaType));
+            unsigned elemSize = max(1u, comp->getSizeOfType(hfaType));
 
             // The size of this struct should be evenly divisible by elemSize
             assert((structSize % elemSize) == 0);
@@ -31070,6 +31110,7 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
     }
 }
 
+#ifndef TARGET_ARM64
 //-------------------------------------------------------------------
 // GetReturnFieldOffset:
 //   For the N'th returned register, identified by "index", returns the
@@ -31092,6 +31133,28 @@ unsigned ReturnTypeDesc::GetReturnFieldOffset(unsigned index) const
         offset += genTypeSize(m_regType[i]);
     return offset;
 #endif
+}
+#endif
+
+//-------------------------------------------------------------------
+// GetReturnFieldOffset:
+//   For the N'th returned register, identified by "index", returns the
+//   starting offset in the struct return type of the data being returned.
+//
+// Arguments:
+//     retDesc - The return type descriptor
+//     index - The register whose offset to get
+//
+// Return Value:
+//     Starting offset of data returned in that register.
+//
+unsigned Compiler::GetReturnFieldOffset(const ReturnTypeDesc& retDesc, unsigned index)
+{
+    assert(retDesc.GetReturnRegType(index) != TYP_UNKNOWN);
+    unsigned offset = 0;
+    for (unsigned i = 0; i < index; i++)
+        offset += getSizeOfType(retDesc.GetReturnRegType(i));
+    return offset;
 }
 
 //-------------------------------------------------------------------
@@ -31589,9 +31652,9 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-unsigned GenTreeLclFld::GetSize() const
+unsigned GenTreeLclFld::GetSize(Compiler* comp) const
 {
-    return TypeIs(TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(TypeGet());
+    return TypeIs(TYP_STRUCT) ? GetLayout()->GetSize() : comp->getSizeOfType(TypeGet());
 }
 
 #ifdef TARGET_ARM
@@ -33608,8 +33671,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 if (op2->IsCnsVec() && op3->IsCnsVec())
                 {
                     assert(ni == NI_Sve_ConditionalSelect);
-                    assert(op2->gtType == TYP_SIMD16);
-                    assert(op3->gtType == TYP_SIMD16);
+                    // TODO-SVE: Implement scalable vector constant
+                    assert(op2->gtType == TYP_SIMD16 || op2->gtType == TYP_SIMDSV);
+                    assert(op3->gtType == TYP_SIMD16 || op3->gtType == TYP_SIMDSV);
 
                     simd16_t op1SimdVal = {};
                     EvaluateSimdCvtMaskToVector<simd16_t>(simdBaseType, &op1SimdVal, op1->AsMskCon()->gtSimdMaskVal);
@@ -33814,6 +33878,9 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
         {
             EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
             break;

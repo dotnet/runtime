@@ -1142,6 +1142,11 @@ extern const BYTE genTypeSizes[TYP_COUNT];
 template <class T>
 inline unsigned genTypeSize(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    noway_assert(TypeGet(value) != TYP_SIMDSV);
+    noway_assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeSizes));
 
     return genTypeSizes[TypeGet(value)];
@@ -1158,6 +1163,11 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    noway_assert(TypeGet(value) != TYP_SIMDSV);
+    noway_assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
@@ -1704,7 +1714,7 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   unsigned             lengthOffset)
 {
     unsigned elemSize =
-        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
+        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : getSizeOfType(elemType);
 
 #ifdef DEBUG
     bool boundsCheck = JitConfig.JitSkipArrayBoundCheck() != 1;
@@ -4699,7 +4709,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     if (OperIs(GT_STORE_LCL_FLD))
     {
         GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize(comp)));
     }
     if (OperIs(GT_CALL))
     {

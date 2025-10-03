@@ -609,29 +609,30 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     // Start by determining if we have an HFA/HVA with a single element.
     if (GlobalJitOptions::compFeatureHfa)
     {
-        switch (structSize)
-        {
-            case 4:
-            case 8:
+        if (structSize == 4 ||
+            structSize == 8
 #ifdef TARGET_ARM64
-            case 16:
-#endif // TARGET_ARM64
+            // Can pass in V register if structSize == 16, and Z registers for structs with sizes in
+            // multiples of 16-bytes, depending on hardware availability.
+            || structSize == 16 || ((structSize % 16 == 0) && (structSize == getSizeOfType(TYP_SIMDSV)))
+#endif
+        )
+        {
+            var_types hfaType = GetHfaType(clsHnd);
+            // We're only interested in the case where the struct size is equal to the size of the hfaType.
+            if (varTypeIsValidHfaType(hfaType))
             {
-                var_types hfaType = GetHfaType(clsHnd);
-                // We're only interested in the case where the struct size is equal to the size of the hfaType.
-                if (varTypeIsValidHfaType(hfaType))
+                if (getSizeOfType(hfaType) == structSize)
                 {
-                    if (genTypeSize(hfaType) == structSize)
-                    {
-                        useType = hfaType;
-                    }
-                    else
-                    {
-                        return TYP_UNKNOWN;
-                    }
+                    useType = hfaType;
+                }
+                else
+                {
+                    return TYP_UNKNOWN;
                 }
             }
         }
+
         if (useType != TYP_UNKNOWN)
         {
             return useType;
@@ -861,7 +862,15 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+    //
+    // On ARM64 we can pass structures in scalable vector registers
+    // which may allow larger structures on some hardware.
+#ifdef TARGET_ARM64
+    unsigned maxStructSize = max((unsigned)MAX_PASS_SINGLEREG_BYTES, getVectorTByteLength());
+#else
+    unsigned maxStructSize = MAX_PASS_SINGLEREG_BYTES;
+#endif
+    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= maxStructSize))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -872,7 +881,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
         if (useType != TYP_UNKNOWN)
         {
-            if (structSize == genTypeSize(useType))
+            if (structSize == getSizeOfType(useType))
             {
                 // Currently: 1, 2, 4, or 8 byte structs
                 howToReturnStruct = SPK_PrimitiveType;

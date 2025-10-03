@@ -2471,7 +2471,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
     CallArg* valArg = call->gtArgs.GetUserArgByIndex(2);
 
     var_types valType     = valArg->GetSignatureType();
-    unsigned  lengthScale = genTypeSize(valType);
+    unsigned  lengthScale = getSizeOfType(valType);
 
     if (lengthScale == 1)
     {

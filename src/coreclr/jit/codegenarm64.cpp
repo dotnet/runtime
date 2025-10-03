@@ -362,6 +362,15 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
+        case INS_sve_ldr:
+        case INS_sve_str:
+        {
+            assert(size == EA_SCALABLE);
+            ssize_t count = imm / compiler->getSizeOfType(TYP_SIMDSV);
+            immFitsInIns  = (-256 <= count && count < 256);
+        }
+        break;
+
         default:
             assert(!"Unexpected instruction in genInstrWithConstant");
             break;
@@ -2075,9 +2084,13 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
     // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
 
-    if (imm < 4096)
+    if (0 <= imm && imm < 4096)
     {
         GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
+    }
+    else if (-4095 <= imm < 0)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, dstReg, baseReg, -imm);
     }
     else
     {
@@ -2274,6 +2287,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             switch (tree->TypeGet())
             {
+                case TYP_SIMDSV:
+                    attr = EA_16BYTE; // TODO-SVE: Implement scalable vector constant
+                    FALLTHROUGH;
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
@@ -2991,7 +3007,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
                 var_types op1Type = genActualType(op1->TypeGet());
                 var_types lclType = genActualType(varDsc->TypeGet());
 
-                if (genTypeSize(op1Type) < genTypeSize(lclType))
+                if (compiler->getSizeOfType(op1Type) < compiler->getSizeOfType(lclType))
                 {
                     movRequired = true;
                 }
@@ -2999,7 +3015,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
     }
     emitAttr attr = emitActualTypeSize(targetType);
-    GetEmitter()->emitIns_Mov(INS_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired);
+    inst_Mov(targetType, retReg, op1->GetRegNum(), !movRequired, attr);
 }
 
 /***********************************************************************************************
@@ -5306,7 +5322,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+    assert(varDsc->TypeIs(TYP_STRUCT, TYP_SIMD12, TYP_SIMD16, TYP_SIMDSV)); // TODO-SVE: Handle AAPCS for Z registers
 
     regNumber tgtReg = node->GetRegNum();
     assert(tgtReg != REG_NA);
@@ -5362,7 +5378,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+    assert(varDsc->TypeIs(TYP_STRUCT, TYP_SIMD12, TYP_SIMD16, TYP_SIMDSV)); // TODO-SVE: Handle AAPCS for Z registers
 
     regNumber srcReg = node->GetRegNum();
     assert(srcReg != REG_NA);

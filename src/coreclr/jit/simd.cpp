@@ -66,9 +66,9 @@ int Compiler::getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
 //
 int Compiler::getSIMDTypeAlignment(var_types simdType)
 {
+#ifdef TARGET_XARCH
     unsigned size = genTypeSize(simdType);
 
-#ifdef TARGET_XARCH
     // Fixed length vectors have the following alignment preference
     // Vector2   = 8 byte alignment
     // Vector3/4 = 16-byte alignment
@@ -93,9 +93,8 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         return 64;
     }
 #elif defined(TARGET_ARM64)
-    // preferred alignment for 64-bit vectors is 8-bytes.
-    // For everything else, 16-bytes.
-    return (size == 8) ? 8 : 16;
+    assert(varTypeIsSIMD(simdType));
+    return genTypeAlignments[simdType];
 #else
     assert(!"getSIMDTypeAlignment() unimplemented on target arch");
     unreached();
@@ -120,7 +119,7 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
         lvaSIMDInitTempVarNum                  = lvaGrabTempWithImplicitUse(false DEBUGARG("SIMDInitTempVar"));
         lvaTable[lvaSIMDInitTempVarNum].lvType = simdType;
     }
-    else if (genTypeSize(lvaTable[lvaSIMDInitTempVarNum].lvType) < genTypeSize(simdType))
+    else if (getSizeOfType(lvaTable[lvaSIMDInitTempVarNum].lvType) < getSizeOfType(simdType))
     {
         // We want the largest required type size for the temp.
         JITDUMP("Increasing SIMDInitTempVar type size from %s to %s\n",
@@ -308,7 +307,11 @@ var_types Compiler::getSIMDType(CORINFO_CLASS_HANDLE typeHnd, CorInfoType* baseT
                             return TYP_UNDEF;
                         }
 
+#ifdef TARGET_ARM64
+                        type = JitConfig.JitUseScalableVectorT() ? TYP_SIMDSV : getSIMDTypeForSize(vectlen);
+#else
                         type = getSIMDTypeForSize(vectlen);
+#endif
                         break;
                     }
 
@@ -466,6 +469,12 @@ unsigned Compiler::getSizeOfSIMDType(var_types simdType)
 #endif
             size = genTypeSize(simdType);
             break;
+
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+            size = getVectorTByteLength();
+            break;
+#endif
 
         default:
             unreached();
@@ -785,7 +794,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
     assert(index->IsCnsIntOrI());
 
     unsigned indexVal = (unsigned)index->AsIntCon()->gtIconVal;
-    unsigned offset   = indexVal * genTypeSize(tree->TypeGet());
+    unsigned offset   = indexVal * getSizeOfType(tree->TypeGet());
 
     // Generate the boundary check exception.
     // The length for boundary check should be the maximum index number which should be

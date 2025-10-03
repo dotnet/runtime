@@ -102,8 +102,8 @@ void Compiler::lvaInitTypeRef()
                varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "");
         for (unsigned i = 0; i < returnRegCount; i++)
         {
-            unsigned offset = compRetTypeDesc.GetReturnFieldOffset(i);
-            unsigned size   = genTypeSize(compRetTypeDesc.GetReturnRegType(i));
+            unsigned offset = GetReturnFieldOffset(compRetTypeDesc, i);
+            unsigned size   = getSizeOfType(compRetTypeDesc.GetReturnRegType(i));
             printf("  [%02u..%02u) reg %s\n", offset, offset + size,
                    getRegName(compRetTypeDesc.GetABIReturnReg(i, info.compCallConv)));
         }
@@ -1992,8 +1992,9 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 var_types hfaType = compiler->GetHfaType(pFieldInfo->fldSIMDTypeHnd);
                 if (varTypeIsValidHfaType(hfaType))
                 {
-                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) &&
-                                                   (compiler->lvaLclExactSize(fieldVarDsc) > genTypeSize(hfaType));
+                    fieldVarDsc->lvIsMultiRegArg =
+                        (varDsc->lvIsMultiRegArg != 0) &&
+                        (compiler->lvaLclExactSize(fieldVarDsc) > compiler->getSizeOfType(hfaType));
                 }
             }
         }
@@ -2736,6 +2737,13 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
     LclVarDsc* varDsc  = lvaGetDesc(varNum);
     var_types  varType = varDsc->TypeGet();
 
+#ifdef TARGET_ARM64
+    if (varType == TYP_SIMDSV)
+    {
+        return getSizeOfSIMDType(varType);
+    }
+#endif
+
     if (!varTypeIsStruct(varType))
     {
 #ifdef TARGET_64BIT
@@ -3147,6 +3155,9 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD32:
                 case TYP_SIMD64:
 #endif // TARGET_XARCH
+#ifdef TARGET_ARM64
+                case TYP_SIMDSV:
+#endif
 #ifdef FEATURE_MASKED_HW_INTRINSICS
                 case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -6327,7 +6338,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
                refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true));
 
         printf(" %7s ", varTypeName(type));
-        if (genTypeSize(type) == 0)
+        if (getSizeOfType(type) == 0)
         {
             printf("(%2d) ", lvaLclStackHomeSize(lclNum));
         }
@@ -7005,7 +7016,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
 
-        if (genTypeSize(varType) != genTypeSize(genActualType(varType)))
+        if (pComp->getSizeOfType(varType) != pComp->getSizeOfType(genActualType(varType)))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;

@@ -11755,7 +11755,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         }
     }
 
-    unsigned arrayElemSize = (elemType == TYP_STRUCT) ? elemLayout->GetSize() : genTypeSize(elemType);
+    unsigned arrayElemSize = (elemType == TYP_STRUCT) ? elemLayout->GetSize() : getSizeOfType(elemType);
 
     if (!FitsIn<unsigned char>(arrayElemSize))
     {

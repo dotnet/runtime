@@ -5805,7 +5805,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
                     oldStoreValue =
                         vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), store->TypeGet(),
-                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetSize());
+                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetSize(this));
                 }
 
                 GenTree* data = store->AsLclVarCommon()->Data();

@@ -809,8 +809,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 #endif // TARGET_ARM64
             {
                 emitAttr storeAttr = emitTypeSize(source->TypeGet());
-                emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
+                emit->emitIns_S_R(ins_Store(source->TypeGet()), storeAttr, srcReg, varNumOut, argOffsetOut);
+#ifdef TARGET_ARM64
+                argOffsetOut +=
+                    storeAttr == EA_SCALABLE ? compiler->getVectorTByteLength() : EA_SIZE_IN_BYTES(storeAttr);
+#else
                 argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+#endif
             }
             assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
             return;

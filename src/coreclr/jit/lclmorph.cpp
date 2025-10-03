@@ -1733,8 +1733,9 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        hwiNode =
+                            m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, CORINFO_TYPE_FLOAT,
+                                                                m_compiler->getSizeOfType(varDsc->TypeGet()));
                         break;
                     }
 
@@ -1791,9 +1792,9 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode =
-                            m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
-                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                        hwiNode = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
+                                                                       elementNode, CORINFO_TYPE_FLOAT,
+                                                                       m_compiler->getSizeOfType(varDsc->TypeGet()));
                         break;
                     }
 
@@ -2019,8 +2020,11 @@ private:
                     return IndirTransform::NarrowCast;
                 }
 
-                if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
-                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) && !varDsc->lvPromoted)
+                unsigned indirTypeSize = m_compiler->getSizeOfType(indir->TypeGet());
+
+                if ((indirTypeSize == m_compiler->getSizeOfType(varDsc->TypeGet())) &&
+                    (indirTypeSize <= TARGET_POINTER_SIZE) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) &&
+                    !varDsc->lvPromoted)
                 {
                     return IndirTransform::BitCast;
                 }
@@ -2143,7 +2147,7 @@ private:
 
                 // Retargeting the indirection to reference the promoted field would make it "wide", exposing
                 // the whole parent struct (with all of its fields).
-                if (accessSize > genTypeSize(fieldVarDsc))
+                if (accessSize > m_compiler->getSizeOfType(fieldVarDsc->TypeGet()))
                 {
                     return BAD_VAR_NUM;
                 }

@@ -612,9 +612,9 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
                     unreached();
             }
 
-            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, genTypeSize(simdType));
+            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, getSizeOfType(simdType));
             return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, fallbackIntrinsic, simdBaseJitType,
-                                            genTypeSize(simdType));
+                                            getSizeOfType(simdType));
         }
 
         default:
@@ -800,13 +800,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(!sig->hasThis());
             assert(numArgs == 1);
 
-            // We fold away the cast here, as it only exists to satisfy
-            // the type system. It is safe to do this here since the retNode type
-            // and the signature return type are both the same TYP_SIMD.
-
             retNode = impSIMDPopStack();
             SetOpLclRelatedToSIMDIntrinsic(retNode);
-            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+            if (intrinsic == NI_Vector128_AsVector && JitConfig.JitUseScalableVectorT())
+            {
+                // A cast node is required to convert from TYP_SIMD16 to TYP_SIMDSV.
+                assert(retNode->TypeGet() == TYP_SIMD16);
+                retNode = gtNewCastNode(TYP_SIMDSV, retNode, false, retNode->TypeGet());
+            }
+            else
+            {
+                // We fold away the cast here, as it only exists to satisfy
+                // the type system. It is safe to do this here since the retNode type
+                // and the signature return type are both the same TYP_SIMD.
+                assert(retNode->gtType == getSIMDType(sig->retTypeSigClass));
+            }
             break;
         }
 
@@ -901,7 +910,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     retNode = impSIMDPopStack();
                     SetOpLclRelatedToSIMDIntrinsic(retNode);
-                    assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+                    if (retNode->TypeGet() == TYP_SIMDSV)
+                    {
+                        // Truncate TYP_SIMDSV to TYP_SIMD16. This is a no-op and just keeps
+                        // the type system consistent.
+                        retNode = gtNewCastNode(TYP_SIMD16, retNode, false, retNode->TypeGet());
+                    }
+                    else
+                    {
+                        // We fold away the cast here, as it only exists to satisfy
+                        // the type system. It is safe to do this here since the retNode type
+                        // and the signature return type are both the same TYP_SIMD.
+                    }
+                    assert(retNode->gtType == getSIMDType(sig->retTypeSigClass));
                     break;
                 }
 
@@ -3499,6 +3521,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseJitType, simdSize, isMax, isMagnitude, isNumber);
         }
+    }
+
+    if (retNode != nullptr && retType == TYP_SIMDSV)
+    {
+        // If we've been asked to return a scalable Vector we should either see
+        // a scalable vector type or a mask type come out of this function.
+        assert(retNode->TypeIs(TYP_SIMDSV, TYP_MASK));
     }
 
     assert(!isScalar || isValidScalarIntrinsic);

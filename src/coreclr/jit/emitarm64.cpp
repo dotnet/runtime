@@ -4266,6 +4266,13 @@ void emitter::emitIns_Mov(
         {
             assert(insOptsNone(opt));
 
+            if (attr == EA_SCALABLE)
+            {
+                // NEON mov is acceptable for scalable vectors when the vector byte length is 128-bit.
+                // TODO-SVE: This should not be permitted once Vector<T> has been migrated to SVE.
+                assert(codeGen->compiler->getVectorTByteLength() == 16);
+            }
+
             if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
             {
                 // These instructions have no side effect and can be skipped
@@ -4340,6 +4347,7 @@ void emitter::emitIns_Mov(
         case INS_fmov:
         {
             assert(isValidVectorElemsizeFloat(size));
+            assert(attr != EA_SCALABLE);
 
             if (canSkip && (dstReg == srcReg))
             {
@@ -4387,41 +4395,33 @@ void emitter::emitIns_Mov(
 
         case INS_sve_mov:
         {
+            assert(attr == EA_SCALABLE);
             if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
             {
                 assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
-                opt  = INS_OPTS_SCALABLE_B;
-                attr = EA_SCALABLE;
-
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
+                opt = INS_OPTS_SCALABLE_B;
                 fmt = IF_SVE_CZ_4A_L;
             }
             else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
             {
-                assert(insOptsScalable(opt));
-
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
+                assert(insOptsScalable(opt) || insOptsNone(opt));
+                opt = INS_OPTS_SCALABLE_D;
                 fmt = IF_SVE_AU_3A;
             }
             else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
             {
                 assert(insOptsScalable(opt));
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
                 srcReg = encodingSPtoZR(srcReg);
                 fmt    = IF_SVE_CB_2A;
             }
             else
             {
                 unreached();
+            }
+
+            if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+            {
+                return;
             }
 
             break;

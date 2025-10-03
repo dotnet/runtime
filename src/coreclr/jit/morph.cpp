@@ -288,7 +288,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     GenTree*  oper    = tree->CastOp();
     var_types srcType = genActualType(oper);
     var_types dstType = tree->CastToType();
-    unsigned  dstSize = genTypeSize(dstType);
+    unsigned  dstSize = getSizeOfType(dstType);
 
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
@@ -10856,7 +10856,7 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
     if (fgGlobalMorph && varTypeIsStruct(lclFld) && !lvaIsImplicitByRefLocal(lclNum))
     {
         LclVarDsc* varDsc     = lvaGetDesc(lclNum);
-        unsigned   indSize    = lclFld->GetSize();
+        unsigned   indSize    = lclFld->GetSize(this);
         unsigned   lclVarSize = lvaLclExactSize(lclNum);
 
         // TODO: change conditions in `canFold` to `indSize <= lclVarSize`, but currently do not support `BITCAST

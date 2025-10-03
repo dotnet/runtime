@@ -64,6 +64,7 @@ struct ArgLocDesc
         case CORINFO_HFA_ELEM_DOUBLE: return 8;
         case CORINFO_HFA_ELEM_VECTOR64: return 8;
         case CORINFO_HFA_ELEM_VECTOR128: return 16;
+        case CORINFO_HFA_ELEM_VECTORT: return ExecutionManager::GetEEJitManager()->GetSizeOfVectorT();
         default: _ASSERTE(!"Invalid HFA Type"); return 0;
         }
     }

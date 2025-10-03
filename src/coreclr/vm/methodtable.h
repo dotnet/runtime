@@ -2001,8 +2001,8 @@ public:
     bool IsHFA();
 #endif // FEATURE_HFA
 
-    // Returns the size in bytes of this type if it is a HW vector type; 0 otherwise.
-    int GetVectorSize();
+    // Returns the HFA type if it is a HW vector type.
+    CorInfoHFAElemType GetVectorHFA();
 
     // Get the HFA type. This is supported both with FEATURE_HFA, in which case it
     // depends on the cached bit on the class, or without, in which case it is recomputed

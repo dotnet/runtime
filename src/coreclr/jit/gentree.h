@@ -3959,7 +3959,7 @@ public:
         m_layout = layout;
     }
 
-    unsigned GetSize() const;
+    unsigned GetSize(Compiler* comp) const;
 
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;
@@ -4574,7 +4574,9 @@ public:
 #endif
     }
 
+#ifndef TARGET_ARM64
     unsigned GetReturnFieldOffset(unsigned index) const;
+#endif
 
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
@@ -7020,7 +7022,11 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
+                // TODO-SVE: Implement scalable vector constant
                 simd16_t result = {};
                 BroadcastConstantToSimd<simd16_t, TBase>(&result, scalar);
                 gtSimd16Val = result;
@@ -7076,6 +7082,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 simd16_t result = {};
                 EvaluateWithElementFloating<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
@@ -7129,6 +7138,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 simd16_t result = {};
                 EvaluateWithElementIntegral<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
@@ -7176,6 +7188,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return gtSimd16Val.IsAllBitsSet();
             }
@@ -7224,6 +7239,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
             {
                 return left->gtSimd16Val == right->gtSimd16Val;
             }
@@ -7267,6 +7285,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return gtSimd16Val.IsZero();
             }
@@ -7306,6 +7327,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return EvaluateGetElementFloating<simd16_t>(simdBaseType, gtSimd16Val, index);
             }
@@ -7344,6 +7368,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return EvaluateGetElementIntegral<simd16_t>(simdBaseType, gtSimd16Val, index);
             }
@@ -7933,8 +7960,6 @@ struct GenTreeIndir : public GenTreeOp
     GenTree* Index();
     unsigned Scale();
     ssize_t  Offset();
-
-    unsigned Size() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
         : GenTreeOp(oper, type, addr, data)

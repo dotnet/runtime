@@ -1689,6 +1689,8 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
+#elif defined(TARGET_ARM64)
+        case TYP_SIMDSV:
 #endif // TARGET_XARCH
 #ifdef FEATURE_MASKED_HW_INTRINSICS
         case TYP_MASK:

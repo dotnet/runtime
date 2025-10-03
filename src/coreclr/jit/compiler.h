@@ -157,6 +157,10 @@ inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
             return TYP_SIMD8;
         case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
+#ifdef TARGET_ARM64
+        case CORINFO_HFA_ELEM_VECTORT:
+            return TYP_SIMDSV;
+#endif
 #endif
         case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
@@ -178,6 +182,10 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
             return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
             return CORINFO_HFA_ELEM_VECTOR128;
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+            return CORINFO_HFA_ELEM_VECTORT;
+#endif
 #endif
         case TYP_UNDEF:
             return CORINFO_HFA_ELEM_NONE;
@@ -8213,7 +8221,7 @@ public:
         assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
+        return ((type == TYP_SIMDSV) || (type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
@@ -10650,6 +10658,8 @@ public:
         return false;
     }
 #endif // !DEBUG
+
+    unsigned GetReturnFieldOffset(const ReturnTypeDesc& retDesc, unsigned index);
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 

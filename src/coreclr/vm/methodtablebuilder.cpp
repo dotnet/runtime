@@ -1169,7 +1169,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (!bmtProp->fIsIntrinsicType)
         return false;
 
@@ -1185,24 +1185,15 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
-    uint32_t     numInstanceFieldBytes = 16;
+    uint32_t vectorTSize = ExecutionManager::GetEEJitManager()->GetSizeOfVectorT();
 
-    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
+    if (vectorTSize > 0 && vectorTSize != 16)
     {
-        numInstanceFieldBytes = 64;
-    }
-    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
-    {
-        numInstanceFieldBytes = 32;
-    }
-
-    if (numInstanceFieldBytes != 16)
-    {
-        bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
+        bmtFP->NumInstanceFieldBytes = vectorTSize;
         return true;
     }
-#endif // TARGET_X86 || TARGET_AMD64
+
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
     return false;
 }

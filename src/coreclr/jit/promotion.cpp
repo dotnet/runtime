@@ -121,14 +121,14 @@ struct Access
     {
     }
 
-    unsigned GetAccessSize() const
+    unsigned GetAccessSize(Compiler* comp) const
     {
-        return AccessType == TYP_STRUCT ? Layout->GetSize() : genTypeSize(AccessType);
+        return AccessType == TYP_STRUCT ? Layout->GetSize() : comp->getSizeOfType(AccessType);
     }
 
-    bool Overlaps(unsigned otherStart, unsigned otherSize) const
+    bool Overlaps(Compiler* comp, unsigned otherStart, unsigned otherSize) const
     {
-        unsigned end = Offset + GetAccessSize();
+        unsigned end = Offset + GetAccessSize(comp);
         if (end <= otherStart)
         {
             return false;
@@ -196,10 +196,8 @@ inline AccessKindFlags& operator&=(AccessKindFlags& a, AccessKindFlags b)
 // Returns:
 //   True if any replacement overlaps; otherwise false.
 //
-bool AggregateInfo::OverlappingReplacements(unsigned      offset,
-                                            unsigned      size,
-                                            Replacement** firstReplacement,
-                                            Replacement** endReplacement)
+bool AggregateInfo::OverlappingReplacements(
+    Compiler* comp, unsigned offset, unsigned size, Replacement** firstReplacement, Replacement** endReplacement)
 {
     size_t firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(Replacements, offset);
     if ((ssize_t)firstIndex < 0)
@@ -208,7 +206,7 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
         if (firstIndex > 0)
         {
             Replacement& lastRepBefore = Replacements[firstIndex - 1];
-            if ((lastRepBefore.Offset + genTypeSize(lastRepBefore.AccessType)) > offset)
+            if ((lastRepBefore.Offset + comp->getSizeOfType(lastRepBefore.AccessType)) > offset)
             {
                 // Overlap with last entry starting before offs.
                 firstIndex--;
@@ -228,7 +226,7 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
         }
     }
 
-    assert((firstIndex < Replacements.size()) && Replacements[firstIndex].Overlaps(offset, size));
+    assert((firstIndex < Replacements.size()) && Replacements[firstIndex].Overlaps(comp, offset, size));
     *firstReplacement = &Replacements[firstIndex];
 
     if (endReplacement != nullptr)
@@ -577,12 +575,13 @@ public:
                     continue;
                 }
 
-                if (inducedAccess.Offset + genTypeSize(inducedAccess.AccessType) <= otherInducedAccess.Offset)
+                if (inducedAccess.Offset + comp->getSizeOfType(inducedAccess.AccessType) <= otherInducedAccess.Offset)
                 {
                     break;
                 }
 
-                if (otherInducedAccess.Offset + genTypeSize(otherInducedAccess.AccessType) <= inducedAccess.Offset)
+                if (otherInducedAccess.Offset + comp->getSizeOfType(otherInducedAccess.AccessType) <=
+                    inducedAccess.Offset)
                 {
                     continue;
                 }
@@ -625,8 +624,9 @@ public:
             {
 #ifdef DEBUG
                 Replacement* overlapRep;
-                assert(!agg->OverlappingReplacements(inducedAccess.Offset, genTypeSize(inducedAccess.AccessType),
-                                                     &overlapRep, nullptr));
+                assert(!agg->OverlappingReplacements(comp, inducedAccess.Offset,
+                                                     comp->getSizeOfType(inducedAccess.AccessType), &overlapRep,
+                                                     nullptr));
 #endif
 
                 insertionIndex =
@@ -685,7 +685,7 @@ public:
 
         LclVarDsc*   lcl    = comp->lvaGetDesc(lclNum);
         ClassLayout* layout = lcl->GetLayout();
-        if (layout->IntersectsGCPtr(access.Offset, genTypeSize(access.AccessType)))
+        if (layout->IntersectsGCPtr(access.Offset, comp->getSizeOfType(access.AccessType)))
         {
             if (((access.Offset % TARGET_POINTER_SIZE) != 0) ||
                 (layout->GetGCPtrType(access.Offset / TARGET_POINTER_SIZE) != access.AccessType))
@@ -715,7 +715,7 @@ public:
                 continue;
             }
 
-            if (!otherAccess.Overlaps(access.Offset, genTypeSize(access.AccessType)))
+            if (!otherAccess.Overlaps(comp, access.Offset, comp->getSizeOfType(access.AccessType)))
             {
                 continue;
             }
@@ -1302,7 +1302,7 @@ public:
             {
 #ifdef DEBUG
                 rep.Description = m_compiler->printfAlloc("V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
-                                                          rep.Offset + genTypeSize(rep.AccessType));
+                                                          rep.Offset + m_compiler->getSizeOfType(rep.AccessType));
 #endif
 
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
@@ -1321,15 +1321,17 @@ public:
             JITDUMP("V%02u promoted with %d replacements\n", agg->LclNum, (int)reps.size());
             for (const Replacement& rep : reps)
             {
-                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                        varTypeName(rep.AccessType), rep.LclNum);
+                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset,
+                        rep.Offset + m_compiler->getSizeOfType(rep.AccessType), varTypeName(rep.AccessType),
+                        rep.LclNum);
             }
 #endif
 
             agg->Unpromoted = m_compiler->lvaGetDesc(agg->LclNum)->GetLayout()->GetNonPadding(m_compiler);
             for (Replacement& rep : reps)
             {
-                agg->Unpromoted.Subtract(SegmentList::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(
+                    SegmentList::Segment(rep.Offset, rep.Offset + m_compiler->getSizeOfType(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
@@ -1400,7 +1402,7 @@ private:
         {
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(fieldLcl);
             if ((fieldDsc->lvFldOffset >= regPromOffs) &&
-                (fieldDsc->lvFldOffset + genTypeSize(fieldDsc->lvType) <= (regPromOffs + size)))
+                (fieldDsc->lvFldOffset + m_compiler->getSizeOfType(fieldDsc->lvType) <= (regPromOffs + size)))
             {
                 InduceAccess(aggregates, candidateLcl->GetLclNum(),
                              candidateLcl->GetLclOffs() + (fieldDsc->lvFldOffset - regPromOffs), fieldDsc->lvType,
@@ -1435,12 +1437,12 @@ private:
         {
             Replacement* firstRep;
             Replacement* endRep;
-            if (inducerAgg->OverlappingReplacements(inducerOffs, size, &firstRep, &endRep))
+            if (inducerAgg->OverlappingReplacements(m_compiler, inducerOffs, size, &firstRep, &endRep))
             {
                 for (Replacement* rep = firstRep; rep < endRep; rep++)
                 {
                     if ((rep->Offset >= inducerOffs) &&
-                        (rep->Offset + genTypeSize(rep->AccessType) <= (inducerOffs + size)))
+                        (rep->Offset + m_compiler->getSizeOfType(rep->AccessType) <= (inducerOffs + size)))
                     {
                         InduceAccess(aggregates, candidate->GetLclNum(), candOffs + (rep->Offset - inducerOffs),
                                      rep->AccessType, block);
@@ -1468,7 +1470,7 @@ private:
         if (agg != nullptr)
         {
             Replacement* overlapRep;
-            if (agg->OverlappingReplacements(offset, genTypeSize(type), &overlapRep, nullptr))
+            if (agg->OverlappingReplacements(m_compiler, offset, m_compiler->getSizeOfType(type), &overlapRep, nullptr))
             {
                 return;
             }
@@ -1556,15 +1558,16 @@ private:
 //   Check if this replacement overlaps the specified range.
 //
 // Parameters:
+//   comp - The compiler
 //   otherStart - Start of the other range.
 //   otherSize  - Size of the other range.
 //
 // Returns:
 //    True if they overlap.
 //
-bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
+bool Replacement::Overlaps(Compiler* comp, unsigned otherStart, unsigned otherSize) const
 {
-    unsigned end = Offset + genTypeSize(AccessType);
+    unsigned end = Offset + comp->getSizeOfType(AccessType);
     if (end <= otherStart)
     {
         return false;
@@ -1751,7 +1754,7 @@ void ReplaceVisitor::EndBlock()
                 if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
                 {
                     JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
-                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                            agg->LclNum, rep.Offset, rep.Offset + m_compiler->getSizeOfType(rep.AccessType), rep.LclNum,
                             m_currentBlock->bbNum);
 
                     GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
@@ -1778,7 +1781,7 @@ void ReplaceVisitor::EndBlock()
 
                     JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
                             "\n",
-                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                            agg->LclNum, rep.Offset, rep.Offset + m_compiler->getSizeOfType(rep.AccessType), rep.LclNum,
                             m_currentBlock->bbNum);
                 }
 
@@ -2004,7 +2007,8 @@ void ReplaceVisitor::InsertPreStatementReadBackIfNecessary(unsigned aggLclNum, R
     }
 
     JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", aggLclNum, rep.Offset,
-            rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, Compiler::dspTreeID(m_currentStmt->GetRootNode()));
+            rep.Offset + m_compiler->getSizeOfType(rep.AccessType), rep.LclNum,
+            Compiler::dspTreeID(m_currentStmt->GetRootNode()));
 
     GenTree*   readBack = Promotion::CreateReadBack(m_compiler, aggLclNum, rep);
     Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
@@ -2041,7 +2045,7 @@ bool ReplaceVisitor::VisitOverlappingReplacements(unsigned lcl, unsigned offs, u
     if ((ssize_t)index < 0)
     {
         index = ~index;
-        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+        if ((index > 0) && replacements[index - 1].Overlaps(m_compiler, offs, size))
         {
             index--;
         }
@@ -2183,7 +2187,7 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
             }
 
             JITDUMP("  V%02u.[%03u..%03u) -> V%02u\n", agg->LclNum, rep.Offset,
-                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum);
+                    rep.Offset + m_compiler->getSizeOfType(rep.AccessType), rep.LclNum);
 
             ClearNeedsReadBack(rep);
             GenTree* readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
@@ -2313,8 +2317,8 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
     }
 
     auto checkPartialOverlap = [=](Replacement& rep) {
-        bool contained =
-            (rep.Offset >= startOffset) && (rep.Offset + genTypeSize(rep.AccessType) <= startOffset + returnValueSize);
+        bool contained = (rep.Offset >= startOffset) &&
+                         (rep.Offset + m_compiler->getSizeOfType(rep.AccessType) <= startOffset + returnValueSize);
 
         if (contained)
         {
@@ -2620,10 +2624,10 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     }
 
 #ifdef DEBUG
-    unsigned accessSize = genTypeSize(accessType);
+    unsigned accessSize = m_compiler->getSizeOfType(accessType);
     for (const Replacement& rep : replacements)
     {
-        assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
+        assert(!rep.Overlaps(m_compiler, offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
     }
 
     JITDUMP("Processing primitive use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
@@ -2817,7 +2821,7 @@ void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEB
     if ((ssize_t)index < 0)
     {
         index = ~index;
-        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+        if ((index > 0) && replacements[index - 1].Overlaps(m_compiler, offs, size))
         {
             index--;
         }
@@ -2837,7 +2841,7 @@ void ReplaceVisitor::MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEB
     do
     {
         Replacement& rep = replacements[index];
-        assert(rep.Overlaps(offs, size));
+        assert(rep.Overlaps(m_compiler, offs, size));
 
         if (deaths.IsReplacementDying((unsigned)index))
         {
@@ -3054,7 +3058,7 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
     for (const ABIPassingSegment& seg : abiInfo.Segments())
     {
         // This code corresponds to code in Lower::FindInducedParameterRegisterLocals
-        if ((offset < seg.Offset) || (offset + genTypeSize(accessType) > seg.Offset + seg.Size))
+        if ((offset < seg.Offset) || (offset + comp->getSizeOfType(accessType) > seg.Offset + seg.Size))
         {
             continue;
         }

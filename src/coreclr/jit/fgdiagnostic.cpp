@@ -4299,8 +4299,8 @@ public:
                     {
                         ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
 
-                        if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset,
-                                                              fieldStoreSize))
+                        if (!ValueNumStore::LoadStoreIsEntire(m_compiler->getSizeOfType(fieldVarDsc->TypeGet()),
+                                                              fieldStoreOffset, fieldStoreSize))
                         {
                             assert(isUse);
                             unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();

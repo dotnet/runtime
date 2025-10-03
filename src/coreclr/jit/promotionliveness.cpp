@@ -206,7 +206,7 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
             if ((ssize_t)index < 0)
             {
                 index = ~index;
-                if ((index > 0) && reps[index - 1].Overlaps(offs, size))
+                if ((index > 0) && reps[index - 1].Overlaps(m_compiler, offs, size))
                 {
                     index--;
                 }
@@ -214,9 +214,9 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
 
             while ((index < reps.size()) && (reps[index].Offset < offs + size))
             {
-                Replacement& rep = reps[index];
-                bool         isFullFieldDef =
-                    isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
+                Replacement& rep            = reps[index];
+                bool         isFullFieldDef = isDef && (offs <= rep.Offset) &&
+                                      (offs + size >= rep.Offset + m_compiler->getSizeOfType(rep.AccessType));
                 MarkIndex(baseIndex + 1 + (unsigned)index, isUse, isFullFieldDef, useSet, defSet);
                 index++;
             }
@@ -232,7 +232,7 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
         size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
         if ((ssize_t)index < 0)
         {
-            unsigned size             = genTypeSize(accessType);
+            unsigned size             = m_compiler->getSizeOfType(accessType);
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
             MarkIndex(baseIndex, isUse, isFullDefOfRemainder, useSet, defSet);
         }
@@ -521,7 +521,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
             if ((ssize_t)index < 0)
             {
                 index = ~index;
-                if ((index > 0) && agg->Replacements[index - 1].Overlaps(offs, size))
+                if ((index > 0) && agg->Replacements[index - 1].Overlaps(m_compiler, offs, size))
                 {
                     index--;
                 }
@@ -534,8 +534,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
                 Replacement& rep      = agg->Replacements[index];
                 if (BitVecOps::IsMember(m_bvTraits, life, varIndex))
                 {
-                    bool isFullFieldDef =
-                        isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
+                    bool isFullFieldDef = isDef && (offs <= rep.Offset) &&
+                                          (offs + size >= rep.Offset + m_compiler->getSizeOfType(rep.AccessType));
                     if (isFullFieldDef && !BitVecOps::IsMember(m_bvTraits, volatileVars, varIndex))
                     {
                         BitVecOps::RemoveElemD(m_bvTraits, life, varIndex);
@@ -584,7 +584,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
         if ((ssize_t)index < 0)
         {
             // No replacement found, this is a use of the remainder.
-            unsigned size = genTypeSize(accessType);
+            unsigned size = m_compiler->getSizeOfType(accessType);
             if (BitVecOps::IsMember(m_bvTraits, life, baseIndex))
             {
                 lcl->gtFlags &= ~GTF_VAR_DEATH;
@@ -758,7 +758,7 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
                 {
                     const Replacement& rep = agg->Replacements[j - 1];
                     printf("%sV%02u.[%03u..%03u)", sep, agg->LclNum, rep.Offset,
-                           rep.Offset + genTypeSize(rep.AccessType));
+                           rep.Offset + m_compiler->getSizeOfType(rep.AccessType));
                 }
                 sep = " ";
             }

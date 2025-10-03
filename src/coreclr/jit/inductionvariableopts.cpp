@@ -2332,7 +2332,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     unsigned arrElemSize = arrAddr->GetElemType() == TYP_STRUCT
                                ? m_comp->typGetObjLayout(arrAddr->GetElemClassHandle())->GetSize()
-                               : genTypeSize(arrAddr->GetElemType());
+                               : m_comp->getSizeOfType(arrAddr->GetElemType());
 
     int64_t stepCns;
     if (!addRec->Step->GetConstantValue(m_comp, &stepCns) || ((unsigned)stepCns > arrElemSize))

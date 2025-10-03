@@ -618,7 +618,7 @@ var_types RegSet::tmpNormalizeType(var_types type)
 TempDsc* RegSet::tmpGetTemp(var_types type)
 {
     type          = tmpNormalizeType(type);
-    unsigned size = genTypeSize(type);
+    unsigned size = m_rsCompiler->getSizeOfType(type);
 
     // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
     noway_assert(size >= sizeof(int));
@@ -680,7 +680,7 @@ TempDsc* RegSet::tmpGetTemp(var_types type)
 void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
 {
     assert(type == tmpNormalizeType(type));
-    unsigned size = genTypeSize(type);
+    unsigned size = m_rsCompiler->getSizeOfType(type);
 
     // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
     noway_assert(size >= sizeof(int));

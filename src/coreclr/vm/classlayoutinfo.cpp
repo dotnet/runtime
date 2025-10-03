@@ -1186,6 +1186,10 @@ CorInfoHFAElemType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
 #ifdef TARGET_ARM64
     case CORINFO_HFA_ELEM_VECTOR64: elemSize = 8; break;
     case CORINFO_HFA_ELEM_VECTOR128: elemSize = 16; break;
+    case CORINFO_HFA_ELEM_VECTORT:
+        elemSize = ExecutionManager::GetEEJitManager()->GetSizeOfVectorT();
+        _ASSERTE(elemSize != 0);
+        break;
 #endif
     default: _ASSERTE(!"Invalid HFA Type");
     }

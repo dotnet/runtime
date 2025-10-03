@@ -194,7 +194,7 @@ void MorphInitBlockHelper::PrepareDst()
     }
     else
     {
-        m_blockSize = genTypeSize(m_store);
+        m_blockSize = m_comp->getSizeOfType(m_store->TypeGet());
     }
 
     assert(m_blockSize != 0);
@@ -995,7 +995,7 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
     // Can we use the LHS local directly?
     if (m_store->OperIs(GT_STORE_LCL_FLD))
     {
-        if (m_blockSize == genTypeSize(m_dstVarDsc))
+        if (m_blockSize == m_comp->getSizeOfType(m_dstVarDsc->TypeGet()))
         {
             storeType = m_dstVarDsc->TypeGet();
         }
@@ -1308,7 +1308,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         noway_assert(m_srcLclNode != nullptr);
                         assert(destType != TYP_STRUCT);
-                        unsigned destSize = genTypeSize(destType);
+                        unsigned destSize = m_comp->getSizeOfType(destType);
                         m_srcVarDsc       = m_comp->lvaGetDesc(m_srcLclNum);
                         unsigned srcSize  = m_comp->lvaLclExactSize(m_srcVarDsc);
                         if (destSize == srcSize)

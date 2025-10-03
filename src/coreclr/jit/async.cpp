@@ -1058,7 +1058,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
             assert(!dsc->TypeIs(TYP_BYREF));
 
             inf.Alignment = genTypeAlignments[dsc->TypeGet()];
-            inf.Size      = genTypeSize(dsc);
+            inf.Size      = m_comp->getSizeOfType(dsc->TypeGet());
         }
     }
 
@@ -1090,7 +1090,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     }
     else
     {
-        layout.ReturnSize      = genTypeSize(call->gtReturnType);
+        layout.ReturnSize      = m_comp->getSizeOfType(call->gtReturnType);
         layout.ReturnAlignment = layout.ReturnSize;
     }
 

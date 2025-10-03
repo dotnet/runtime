@@ -1684,45 +1684,60 @@ bool MethodTable::IsHFA()
 #endif // !FEATURE_HFA
 
 //*******************************************************************************
-int MethodTable::GetVectorSize()
+CorInfoHFAElemType MethodTable::GetVectorHFA()
 {
     // This is supported for finding HVA types for Arm64. In order to support the altjit,
     // we support this on 64-bit platforms (i.e. Arm64 and X64).
+    CorInfoHFAElemType hfaType = CORINFO_HFA_ELEM_NONE;
 #ifdef TARGET_64BIT
     if (IsIntrinsicType())
     {
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
-        int vectorSize = 0;
 
         if (strcmp(className, "Vector`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
-            vectorSize = GetNumInstanceFieldBytes();
+#ifdef TARGET_ARM64
+            hfaType = ExecutionManager::GetEEJitManager()->UseScalableVectorT() ? CORINFO_HFA_ELEM_VECTORT : CORINFO_HFA_ELEM_VECTOR128;
+#else
+            switch (GetNumInstanceFieldBytes())
+            {
+                case 8:
+                    hfaType = CORINFO_HFA_ELEM_VECTOR64;
+                    break;
+                case 16:
+                    hfaType = CORINFO_HFA_ELEM_VECTOR128;
+                    break;
+                default:
+                    _ASSERTE(false);
+                    break;
+            }
+#endif
         }
         else if (strcmp(className, "Vector128`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-            vectorSize = 16;
+            hfaType = CORINFO_HFA_ELEM_VECTOR128;
         }
         else if (strcmp(className, "Vector64`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-            vectorSize = 8;
+            hfaType = CORINFO_HFA_ELEM_VECTOR64;
         }
-        if (vectorSize != 0)
+        if (hfaType != CORINFO_HFA_ELEM_NONE)
         {
             // We need to verify that T (the element or "base" type) is a primitive type.
             TypeHandle typeArg = GetInstantiation()[0];
             CorElementType corType = typeArg.GetSignatureCorElementType();
-            if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
+            if (!(((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U)))
             {
-                return vectorSize;
+                return CORINFO_HFA_ELEM_NONE;
             }
         }
     }
 #endif // TARGET_64BIT
-    return 0;
+    return hfaType;
 }
 
 //*******************************************************************************
@@ -1744,10 +1759,11 @@ CorInfoHFAElemType MethodTable::GetHFAType()
         _ASSERTE(pMT->IsValueType());
         _ASSERTE(pMT->GetNumInstanceFields() > 0);
 
-        int vectorSize = pMT->GetVectorSize();
-        if (vectorSize != 0)
+        CorInfoHFAElemType hfaType = pMT->GetVectorHFA();
+
+        if (hfaType != CORINFO_HFA_ELEM_NONE)
         {
-            return (vectorSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
+            return hfaType;
         }
 
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
@@ -1816,7 +1832,7 @@ EEClass::CheckForHFA()
 
     // The opaque Vector types appear to have multiple fields, but need to be treated
     // as an opaque type of a single vector.
-    if (GetMethodTable()->GetVectorSize() != 0)
+    if (GetMethodTable()->GetVectorHFA() != CORINFO_HFA_ELEM_NONE)
     {
 #if defined(FEATURE_HFA)
         GetMethodTable()->SetIsHFA();
@@ -1842,27 +1858,13 @@ EEClass::CheckForHFA()
         {
         case ELEMENT_TYPE_VALUETYPE:
             {
-#ifdef TARGET_ARM64
                 MethodTable* pMT;
 #if defined(FEATURE_HFA)
                 pMT = pByValueClassCache[i];
 #else
                 pMT = pFD->LookupApproxFieldTypeHandle().AsMethodTable();
 #endif
-                int thisElemSize = pMT->GetVectorSize();
-                if (thisElemSize != 0)
-                {
-                    fieldHFAType = (thisElemSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
-                }
-                else
-#endif // TARGET_ARM64
-                {
-#if defined(FEATURE_HFA)
-                    fieldHFAType = pByValueClassCache[i]->GetHFAType();
-#else
-                    fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
-#endif
-                }
+                fieldHFAType = pMT->GetHFAType();
 
                 int requiredAlignment;
                 switch (fieldHFAType)
@@ -1875,6 +1877,7 @@ EEClass::CheckForHFA()
                     requiredAlignment = 8;
                     break;
                 case CORINFO_HFA_ELEM_VECTOR128:
+                case CORINFO_HFA_ELEM_VECTORT:
                     requiredAlignment = 16;
                     break;
                 default:
@@ -1945,6 +1948,10 @@ EEClass::CheckForHFA()
 #ifdef TARGET_ARM64
     case CORINFO_HFA_ELEM_VECTOR128:
         elemSize = 16;
+        break;
+    case CORINFO_HFA_ELEM_VECTORT:
+        elemSize = ExecutionManager::GetEEJitManager()->GetSizeOfVectorT();
+        _ASSERTE(elemSize != 0);
         break;
 #endif
     default:
