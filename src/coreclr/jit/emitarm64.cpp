@@ -8274,36 +8274,68 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             imm             = m_compiler->unkSizeFrame.GetAddressingOffset(tmpDsc);
             localType       = tmpDsc->tdTempType();
         }
+        assert(varTypeIsSIMDOrMask(localType));
 
         switch (ins)
         {
             case INS_lea:
-                // TODO-SVE: Support materializing address of a mask local / temp.
-                assert(localType != TYP_MASK);
-                if (isValidSimm<6>(imm))
+                if (localType == TYP_SIMD)
                 {
-                    // addvl reg1, x19, #imm
-                    emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulVl(EA_8BYTE, reg1, REG_UNKBASE, imm);
+                }
+                else if (localType == TYP_MASK)
+                {
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulPl(EA_8BYTE, reg1, REG_UNKBASE, imm);
                 }
                 else
                 {
-                    // Cannot encode immediate, generate `addr = fp + imm * VL`.
-                    //
-                    // set reg1 = imm
-                    // rdvl rsvd, #1
-                    // madd reg1, reg1, rsvd, x19
-                    regNumber rsvd = codeGen->rsGetRsvdReg();
-                    codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, reg1, imm);
-                    emitIns_R_I(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
-                    emitIns_R_R_R_R(INS_madd, EA_8BYTE, reg1, reg1, rsvd, REG_UNKBASE);
+                    unreached();
                 }
                 return;
 
             case INS_sve_ldr:
-                // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
-                assert(isValidSimm<9>(imm));
                 fmt = isPredicateRegister(reg1) ? IF_SVE_ID_2A : IF_SVE_IE_2A;
+                if (!isValidSimm<9>(imm))
+                {
+                    regNumber addrReg = codeGen->rsGetRsvdReg();
+
+                    if (localType == TYP_MASK)
+                    {
+                        codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulPl(EA_PTRSIZE, addrReg, REG_UNKBASE, imm);
+                    }
+                    else
+                    {
+                        codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulVl(EA_PTRSIZE, addrReg, REG_UNKBASE, imm);
+                    }
+
+                    reg2 = addrReg;
+                    imm  = 0;
+                }
                 break;
+
+            case INS_ldr:
+            case INS_ldrb:
+            case INS_ldrh:
+            case INS_ldrsb:
+            case INS_ldrsh:
+            case INS_ldrsw:
+            case INS_str:
+            case INS_strb:
+            case INS_strh:
+            {
+                regNumber addrReg = codeGen->rsGetRsvdReg();
+
+                if (localType == TYP_MASK)
+                {
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulPl(EA_PTRSIZE, addrReg, REG_UNKBASE, imm);
+                }
+                else
+                {
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulVl(EA_PTRSIZE, addrReg, REG_UNKBASE, imm);
+                }
+                emitIns_R_R(ins, attr, reg1, addrReg);
+                return;
+            }
 
             default:
                 NYI("emitIns_R_S");
@@ -8606,17 +8638,38 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         fmt      = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
         isSimple = false;
 
+        var_types localType;
         if (varx >= 0)
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(varx);
+            imm               = m_compiler->unkSizeFrame.GetAddressingOffset(varDsc);
+            localType         = varDsc->TypeGet();
         }
         else
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varx);
+            imm             = m_compiler->unkSizeFrame.GetAddressingOffset(tmpDsc);
+            localType       = tmpDsc->tdTempType();
         }
 
-        // TODO-SVE: Handle generation of base address for large immediate scaled by VL/PL.
-        assert(isValidSimm<9>(imm));
+        assert(varTypeIsSIMDOrMask(localType));
+
+        if (!isValidSimm<9>(imm))
+        {
+            regNumber addrReg = codeGen->rsGetRsvdReg();
+
+            if (localType == TYP_MASK)
+            {
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulPl(EA_PTRSIZE, addrReg, REG_UNKBASE, imm);
+            }
+            else
+            {
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm_MulVl(EA_PTRSIZE, addrReg, REG_UNKBASE, imm);
+            }
+
+            reg2 = addrReg;
+            imm  = 0;
+        }
     }
     else
     {
@@ -15140,7 +15193,13 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
                 unsigned             offset  = varNode->GetLclOffs();
-                if (emitInsIsStore(ins))
+                if (m_compiler->lvaIsUnknownSizeLocal(lclNum) && indir->ValueSize().IsExact())
+                {
+                    regNumber addrReg = codeGen->rsGetRsvdReg();
+                    emitIns_R_S(INS_lea, EA_PTRSIZE, addrReg, lclNum, offset);
+                    emitIns_R_R(ins, attr, dataReg, addrReg);
+                }
+                else if (emitInsIsStore(ins))
                 {
                     emitIns_S_R(ins, attr, dataReg, lclNum, offset);
                 }
