@@ -37,6 +37,8 @@ namespace System.IO.Compression
             if (buffer.IsEmpty)
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(buffer));
 
+            // TODO: make this data being referenced by the native dict structures
+            // and avoid them having their own copies
             byte[] dictionaryData = buffer.ToArray();
 
             unsafe
@@ -48,14 +50,14 @@ namespace System.IO.Compression
                     // Create both compression and decompression dictionaries
                     SafeZstdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict(dictData, (nuint)dictionaryData.Length, quality);
                     if (compressionDict.IsInvalid)
-                        throw new InvalidOperationException(SR.ZstandardDictionary_CreateCompressionFailed);
+                        throw new IOException(SR.ZstandardDictionary_CreateCompressionFailed);
                     compressionDict.Quality = quality;
 
                     SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict(dictData, (nuint)dictionaryData.Length);
                     if (decompressionDict.IsInvalid)
                     {
                         compressionDict.Dispose();
-                        throw new InvalidOperationException(SR.ZstandardDictionary_CreateDecompressionFailed);
+                        throw new IOException(SR.ZstandardDictionary_CreateDecompressionFailed);
                     }
 
                     return new ZstandardDictionary(compressionDict, decompressionDict, dictionaryData);

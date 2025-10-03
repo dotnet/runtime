@@ -100,6 +100,6 @@
     <value>Failed to create Zstandard decompression dictionary.</value>
   </data>
   <data name="Zstd_NativeError" xml:space="preserve">
-    <value>Zstd API returned '{0}'.</value>
+    <value>An internal error has occured. Native zstd API returned '{0}'.</value>
   </data>
 </root>

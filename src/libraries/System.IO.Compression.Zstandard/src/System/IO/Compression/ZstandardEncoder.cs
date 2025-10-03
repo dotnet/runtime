@@ -52,12 +52,12 @@ namespace System.IO.Compression
 
             try
             {
-                SetWindow(window);
                 _context!.SetDictionary(dictionary.CompressionDictionary);
+                SetWindow(window);
             }
             catch
             {
-                _context!.DangerousRelease();
+                _context!.Dispose();
                 throw;
             }
         }
@@ -78,9 +78,6 @@ namespace System.IO.Compression
             {
                 if (options.Dictionary is not null)
                 {
-                    if (options.Dictionary.CompressionDictionary is null)
-                        throw new ArgumentException(SR.ZstandardEncoder_InvalidDictionary);
-
                     _context!.SetDictionary(options.Dictionary.CompressionDictionary);
                 }
                 else
@@ -95,12 +92,12 @@ namespace System.IO.Compression
 
                 if (options.AppendChecksum)
                 {
-                    SetFlag(Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag);
+                    SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag, 1);
                 }
 
                 if (options.EnableLongDistanceMatching)
                 {
-                    SetFlag(Interop.Zstd.ZstdCParameter.ZSTD_c_enableLongDistanceMatching);
+                    SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_enableLongDistanceMatching, 1);
                 }
             }
             catch
@@ -119,7 +116,7 @@ namespace System.IO.Compression
 
             _context = Interop.Zstd.ZSTD_createCCtx();
             if (_context.IsInvalid)
-                throw new Interop.Zstd.ZstdNativeException(SR.ZstandardEncoder_Create);
+                throw new IOException(SR.ZstandardEncoder_Create);
         }
 
         internal void EnsureInitialized()
@@ -192,7 +189,7 @@ namespace System.IO.Compression
                     };
 
                     nuint result = Interop.Zstd.ZSTD_compressStream2(_context!, ref output, ref input, endDirective);
-                    Interop.Zstd.ZstdNativeException.ThrowIfError(result, SR.ZstandardEncoder_CompressError);
+                    ZstandardUtils.ThrowIfError(result, SR.ZstandardEncoder_CompressError);
 
                     bytesConsumed = (int)input.pos;
                     bytesWritten = (int)output.pos;
@@ -332,47 +329,29 @@ namespace System.IO.Compression
 
         internal void SetQuality(int quality)
         {
-            EnsureNotDisposed();
             if (quality < ZstandardUtils.Quality_Min || quality > ZstandardUtils.Quality_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), string.Format(SR.ZstandardEncoder_InvalidQuality, ZstandardUtils.Quality_Min, ZstandardUtils.Quality_Max));
             }
-            if (_context == null || _context.IsInvalid || _context.IsClosed)
-            {
-                InitializeEncoder();
-            }
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
-            }
+
+            SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
         }
 
         internal void SetWindow(int window)
         {
-            EnsureNotDisposed();
             if (window < ZstandardUtils.WindowBits_Min || window > ZstandardUtils.WindowBits_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(window), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
             }
-            if (_context == null || _context.IsInvalid || _context.IsClosed)
-            {
-                InitializeEncoder();
-            }
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
-            }
+
+            SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);
         }
 
-        internal void SetFlag(Interop.Zstd.ZstdCParameter parameter)
+        internal void SetParameter(Interop.Zstd.ZstdCParameter parameter, int value)
         {
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, parameter, 1);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
-            }
+            EnsureInitialized();
+            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, parameter, value);
+            ZstandardUtils.ThrowIfError(result);
         }
     }
 }
