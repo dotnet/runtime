@@ -460,10 +460,6 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
     _ASSERTE(!pAsyncOtherVariant->IsVoid());
 
-    // The thunk is roughly the same as "AsyncHelpers.Await(other(arg))", but without any
-    // synchronization preferences. In a case of resumption the thunk will run on whatever the
-    // thread/context was used by the awaiter to call us on completion.
-    // 
     // Implement IL that is effectively the following:
     /*
     {
