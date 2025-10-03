@@ -4,20 +4,16 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
-
-    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsBrowser)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
-    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)native.props" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
-
+  
   <Target Name="BuildRuntime"
           DependsOnTargets="GetPgoDataPackagePath"
           BeforeTargets="Build">
@@ -54,8 +50,6 @@
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
-      <_CoreClrBuildArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
-      <_CoreClrBuildArg Condition="'$(_TzdDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_TZD_DIR=$(_TzdDir)&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
     </ItemGroup>
 
@@ -112,7 +106,7 @@
     <PropertyGroup>
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
-      <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ')</_CoreClrBuildCommand>
+      <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ') @(_NativeCMakeArg, ' ')</_CoreClrBuildCommand>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->

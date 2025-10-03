@@ -1,0 +1,21 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsBrowser)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <_NativeCMakeArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
+      <_NativeCMakeArg Condition="'$(_TzdDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_TZD_DIR=$(_TzdDir)&quot;" />
+      <_NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_NET_CORE_APP_CURRENT_VERSION=$(NetCoreAppCurrentVersion)&quot;" />
+      <_NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_PRODUCT_VERSION=$(ProductVersion)&quot;" />
+      <_NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_CONTINUOUS_INTEGRATION_BUILD=$(ContinuousIntegrationBuild)&quot;" />
+      <_NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
+  </ItemGroup>
+
+</Project>
