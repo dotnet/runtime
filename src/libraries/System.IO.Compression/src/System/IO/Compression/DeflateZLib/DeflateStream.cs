@@ -24,6 +24,13 @@ namespace System.IO.Compression
         private volatile bool _activeAsyncOperation;
         private bool _wroteBytes;
 
+        // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
+        // This round-trips and we should be ok with this, but our legacy managed deflater
+        // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
+        // took dependencies on it. Thus, if we are opened from ZipArchiveEntry, we make
+        // sure to only "flush" when we actually had some input.
+        private bool _noFlushOnEmpty;
+
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
         }
@@ -46,6 +53,12 @@ namespace System.IO.Compression
         {
         }
 
+        // internal constructor to use from ZipArchiveEntry
+        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, bool noFlushOnEmpty) : this(stream, compressionLevel, leaveOpen)
+        {
+            _noFlushOnEmpty = noFlushOnEmpty;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DeflateStream"/> class by using the specified stream, compression options, and optionally leaves the stream open.
         /// </summary>
@@ -62,7 +75,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen,  windowBits);
+            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }
 
         /// <summary>
@@ -623,12 +636,7 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input:
-            if (_wroteBytes)
+            if (_wroteBytes || !_noFlushOnEmpty)
             {
                 // Compress any bytes left
                 WriteDeflaterOutput();
@@ -670,12 +678,7 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input.
-            if (_wroteBytes)
+            if (_wroteBytes || !_noFlushOnEmpty)
             {
                 // Compress any bytes left
                 await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
