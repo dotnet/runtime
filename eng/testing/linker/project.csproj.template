@@ -41,6 +41,9 @@
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
+    <_WebAssemblyPropsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
+    <_WebAssemblySdkToolsDirectory>{WasmSdkPackTasksPath}</_WebAssemblySdkToolsDirectory>
 
     <!-- Needed for targetingpacks.targets -->
     <ProductVersion>{ProductVersion}</ProductVersion>
