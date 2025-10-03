@@ -1125,6 +1125,8 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     }
     CONTRACTL_END;
 
+    m_osStackLocation = this;
+
 #ifdef USE_CHECKED_OBJECTREFS
     if (!maybeInterior) {
         UINT i;
@@ -1216,7 +1218,7 @@ void GCFrame::Push(Thread* pThread)
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
     _ASSERTE(((m_Next == GCFRAME_TOP) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+              (PBYTE(m_Next->GetOSStackLocation()) + (2 * GetOsPageSize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);
