@@ -426,6 +426,19 @@ namespace System.Net
                 return resultOnFailure;
             }
 
+            if (hostName.Equals("invalid", StringComparison.OrdinalIgnoreCase) ||
+                hostName.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new SocketException((int)SocketError.HostNotFound);
+            }
+
+            if (hostName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                hostName.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                IPAddress[] loopbacks = new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback };
+                return justAddresses ? (object)loopbacks : new IPHostEntry { AddressList = loopbacks, HostName = hostName, Aliases = Array.Empty<string>() };
+            }
+
             // NameResolutionActivity may have already been set if we're being called from RunAsync.
             NameResolutionActivity activity = activityOrDefault ?? NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
