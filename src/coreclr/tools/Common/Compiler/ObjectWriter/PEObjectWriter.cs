@@ -465,17 +465,12 @@ namespace ILCompiler.ObjectWriter
         {
             foreach (var reloc in relocationList)
             {
-                RelocType fileRelocType = Relocation.GetFileRelocationType(reloc.Type);
-
-                if (fileRelocType != reloc.Type)
+                if (!_resolvableRelocations.TryGetValue(sectionIndex, out List<SymbolicRelocation> resolvable))
                 {
-                    if (!_resolvableRelocations.TryGetValue(sectionIndex, out List<SymbolicRelocation> resolvable))
-                    {
-                        _resolvableRelocations[sectionIndex] = resolvable = [];
-                    }
-                    resolvable.Add(reloc);
+                    _resolvableRelocations[sectionIndex] = resolvable = [];
                 }
-                else
+                resolvable.Add(reloc);
+                if (Relocation.GetFileRelocationType(reloc.Type) == reloc.Type)
                 {
                     // Gather file-level relocations that need to go into the .reloc
                     // section. We collect entries grouped by 4KB page (page RVA ->
@@ -483,7 +478,7 @@ namespace ILCompiler.ObjectWriter
                     uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)reloc.Offset;
                     uint pageRva = targetRva & ~(PEHeaderConstants.SectionAlignment - 1);
                     ushort offsetInPage = (ushort)(targetRva & ~(PEHeaderConstants.SectionAlignment - 1));
-                    ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
+                    ushort entry = (ushort)(((ushort)reloc.Type << 12) | offsetInPage);
 
                     if (!_baseRelocMap.TryGetValue(pageRva, out var list))
                     {
@@ -745,7 +740,7 @@ namespace ILCompiler.ObjectWriter
                         MemoryStream stream = new((int)section.Stream.Length);
                         section.Stream.Position = 0;
                         section.Stream.CopyTo(stream);
-                        ResolveNonImageBaseRelocations(i, relocationsToResolve, stream);
+                        ResolveRelocations(i, relocationsToResolve, (long)peOptional.ImageBase, stream);
                         stream.Position = 0;
                         stream.CopyTo(outputFileStream);
                     }
@@ -775,42 +770,87 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private unsafe void ResolveNonImageBaseRelocations(int sectionIndex, List<SymbolicRelocation> symbolicRelocations, MemoryStream stream)
+        private unsafe void ResolveRelocations(int sectionIndex, List<SymbolicRelocation> symbolicRelocations, long imageBase, MemoryStream stream)
         {
             foreach (SymbolicRelocation reloc in symbolicRelocations)
             {
                 SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
+                uint relocOffset = checked((uint)(_sections[definedSymbol.SectionIndex].Header.VirtualAddress + reloc.Offset));
                 uint symbolImageOffset = checked((uint)(_sections[definedSymbol.SectionIndex].Header.VirtualAddress + definedSymbol.Value));
-                switch (reloc.Type)
-                {
-                    case RelocType.IMAGE_REL_BASED_ADDR32NB:
-                        fixed (byte* pData = GetRelocDataSpan(reloc))
-                        {
-                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset);
-                            WriteRelocDataSpan(reloc, pData);
-                        }
-                        break;
-                    case RelocType.IMAGE_REL_BASED_REL32:
-                    case RelocType.IMAGE_REL_BASED_RELPTR32:
-                        fixed (byte* pData = GetRelocDataSpan(reloc))
-                        {
-                            long relocOffset = checked((uint)(_sections[definedSymbol.SectionIndex].Header.VirtualAddress + reloc.Offset));
-                            long addend = Relocation.ReadValue(reloc.Type, pData);
 
+                fixed (byte* pData = GetRelocDataSpan(reloc))
+                {
+                    long addend = Relocation.ReadValue(reloc.Type, pData);
+                    switch (reloc.Type)
+                    {
+                        case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                            // No action required
+                            break;
+
+                        case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                        case RelocType.IMAGE_REL_BASED_DIR64:
+                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                            // Write the ImageBase-relative value to be relocated at load time.
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset + imageBase + addend);
+                        break;
+                        case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_REL32:
+                        case RelocType.IMAGE_REL_BASED_RELPTR32:
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - relocOffset + addend);
-                            WriteRelocDataSpan(reloc, pData);
-                        }
-                        break;
-                    case RelocType.IMAGE_REL_FILE_ABSOLUTE:
-                        fixed (byte* pData = GetRelocDataSpan(reloc))
+                            break;
+                        case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                            long fileOffset = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;
+                            Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
+                            const uint offsetCorrection = 12;
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - (relocOffset + offsetCorrection) + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                         {
-                            long rva = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;
-                            Relocation.WriteValue(reloc.Type, pData, rva);
-                            WriteRelocDataSpan(reloc, pData);
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            int sourcePageRVA = (int)(relocOffset & ~0xFFF);
+                            long delta = (symbolImageOffset - sourcePageRVA >> 12) & 0x1f_ffff;
+                            Relocation.WriteValue(reloc.Type, pData, delta);
+                            break;
                         }
-                        break;
-                    default:
-                        throw new NotSupportedException($"Unsupported relocation: {reloc.Type}");
+                        case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset & 0xfff);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                        {
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            long delta = (symbolImageOffset - (relocOffset & ~0xfff) + ((symbolImageOffset & 0x800) << 1));
+                            Relocation.WriteValue(reloc.Type, pData, delta);
+                            break;
+                        }
+                        case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_PC:
+                        {
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            long delta = symbolImageOffset - relocOffset;
+                            Relocation.WriteValue(reloc.Type, pData, delta);
+                            break;
+                        }
+                        default:
+                            throw new NotSupportedException($"Unsupported relocation: {reloc.Type}");
+                    }
+                    WriteRelocDataSpan(reloc, pData);
                 }
 
                 Span<byte> GetRelocDataSpan(SymbolicRelocation reloc)
