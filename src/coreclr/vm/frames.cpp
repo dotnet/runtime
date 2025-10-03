@@ -1125,7 +1125,9 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
     m_osStackLocation = this;
+#endif
 
 #ifdef USE_CHECKED_OBJECTREFS
     if (!maybeInterior) {
