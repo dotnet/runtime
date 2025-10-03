@@ -25,6 +25,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_Parameter1>IsTrimmable</_Parameter1>
       <_Parameter2>True</_Parameter2>
     </AssemblyAttribute>
+    <AssemblyAttribute Condition="'$(IsAotCompatible)' == 'true'" Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>IsAotCompatible</_Parameter1>
+      <_Parameter2>True</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <!-- We disable features for trimmed apps here so that the feature
@@ -49,6 +53,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_EnableConsumingManagedCodeFromNativeHosting Condition="'$(_EnableConsumingManagedCodeFromNativeHosting)' == ''">false</_EnableConsumingManagedCodeFromNativeHosting>
     <VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability>
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">false</JsonSerializerIsReflectionEnabledByDefault>
+    <Http3Support Condition="'$(Http3Support)' == ''">false</Http3Support>
     <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
     <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
@@ -127,7 +132,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     if the output semaphore file is out of date with respect to the inputs.
     ============================================================
     -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_RunILLink"
           DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
           Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
@@ -312,7 +317,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Compute the set of inputs to ILLink.
     ============================================================
     -->
-  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
 
     <!-- NB: There should not be non-managed assemblies in this list, but we still give the ILLink a chance to

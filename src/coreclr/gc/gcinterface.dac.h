@@ -78,6 +78,9 @@ public:
     uint8_t** m_FillPointers[NUMBERGENERATIONS + ExtraSegCount];
 };
 
+// _TableSegmentHeader has byte alignment
+#pragma pack(push,1)
+
 class dac_handle_table_segment {
 public:
     uint8_t rgGeneration[HANDLE_BLOCKS_PER_SEGMENT * sizeof(uint32_t) / sizeof(uint8_t)];
@@ -92,6 +95,7 @@ public:
     DPTR(dac_handle_table_segment) pNextSegment;
  };
 
+#pragma pack(pop)
 
 class dac_handle_table {
 public:
@@ -205,6 +209,10 @@ struct unused_generation
 {
     uint8_t unused;
 };
+
+#define build_variant_use_region 1
+#define build_variant_background_gc 2
+#define build_variant_dynamic_heap_count 4
 
 // The DAC links against six symbols that build as part of the VM DACCESS_COMPILE
 // build. These symbols are considered to be GC-private functions, but the DAC needs

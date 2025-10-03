@@ -139,7 +139,7 @@ namespace System.Collections.Frozen
             }
         }
 
-        public static unsafe int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> s)
+        public static int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> s)
         {
 #if NET
             return string.GetHashCode(s, StringComparison.OrdinalIgnoreCase);

@@ -36,24 +36,41 @@ REGALIAS(RDI, EDI)
 
 #else // !defined(TARGET_X86)
 
+#define GPRMASK(x) (1ULL << (x))
 /*
 REGDEF(name, rnum,   mask, sname) */
-REGDEF(RAX,     0, 0x0001, "rax"   )
-REGDEF(RCX,     1, 0x0002, "rcx"   )
-REGDEF(RDX,     2, 0x0004, "rdx"   )
-REGDEF(RBX,     3, 0x0008, "rbx"   )
-REGDEF(RSP,     4, 0x0010, "rsp"   )
-REGDEF(RBP,     5, 0x0020, "rbp"   )
-REGDEF(RSI,     6, 0x0040, "rsi"   )
-REGDEF(RDI,     7, 0x0080, "rdi"   )
-REGDEF(R8,      8, 0x0100, "r8"    )
-REGDEF(R9,      9, 0x0200, "r9"    )
-REGDEF(R10,    10, 0x0400, "r10"   )
-REGDEF(R11,    11, 0x0800, "r11"   )
-REGDEF(R12,    12, 0x1000, "r12"   )
-REGDEF(R13,    13, 0x2000, "r13"   )
-REGDEF(R14,    14, 0x4000, "r14"   )
-REGDEF(R15,    15, 0x8000, "r15"   )
+REGDEF(RAX,     0, GPRMASK(0), "rax"   )
+REGDEF(RCX,     1, GPRMASK(1), "rcx"   )
+REGDEF(RDX,     2, GPRMASK(2), "rdx"   )
+REGDEF(RBX,     3, GPRMASK(3), "rbx"   )
+REGDEF(RSP,     4, GPRMASK(4), "rsp"   )
+REGDEF(RBP,     5, GPRMASK(5), "rbp"   )
+REGDEF(RSI,     6, GPRMASK(6), "rsi"   )
+REGDEF(RDI,     7, GPRMASK(7), "rdi"   )
+REGDEF(R8,      8, GPRMASK(8), "r8"    )
+REGDEF(R9,      9, GPRMASK(9), "r9"    )
+REGDEF(R10,    10, GPRMASK(10), "r10"   )
+REGDEF(R11,    11, GPRMASK(11), "r11"   )
+REGDEF(R12,    12, GPRMASK(12), "r12"   )
+REGDEF(R13,    13, GPRMASK(13), "r13"   )
+REGDEF(R14,    14, GPRMASK(14), "r14"   )
+REGDEF(R15,    15, GPRMASK(15), "r15"   )
+REGDEF(R16,    16, GPRMASK(16), "r16"   )
+REGDEF(R17,    17, GPRMASK(17), "r17"   )
+REGDEF(R18,    18, GPRMASK(18), "r18"   )
+REGDEF(R19,    19, GPRMASK(19), "r19"   )
+REGDEF(R20,    20, GPRMASK(20), "r20"   )
+REGDEF(R21,    21, GPRMASK(21), "r21"   )
+REGDEF(R22,    22, GPRMASK(22), "r22"   )
+REGDEF(R23,    23, GPRMASK(23), "r23"   )
+REGDEF(R24,    24, GPRMASK(24), "r24"   )
+REGDEF(R25,    25, GPRMASK(25), "r25"   )
+REGDEF(R26,    26, GPRMASK(26), "r26"   )
+REGDEF(R27,    27, GPRMASK(27), "r27"   )
+REGDEF(R28,    28, GPRMASK(28), "r28"   )
+REGDEF(R29,    29, GPRMASK(29), "r29"   )
+REGDEF(R30,    30, GPRMASK(30), "r30"   )
+REGDEF(R31,    31, GPRMASK(31), "r31"   )
 
 REGALIAS(EAX, RAX)
 REGALIAS(ECX, RCX)
@@ -67,11 +84,11 @@ REGALIAS(EDI, RDI)
 #endif // !defined(TARGET_X86)
 
 #ifdef TARGET_AMD64
-#define XMMBASE 16
-#define XMMMASK(x) ((int64_t)(1) << ((x)+XMMBASE))
+#define XMMBASE 32
+#define XMMMASK(x) (1ULL << ((x)+XMMBASE))
 
-#define KBASE 48
-#define KMASK(x) ((int64_t)(1) << ((x)+KBASE))
+#define KBASE 64
+#define KMASK(x) (1ULL << ((x)))
 
 #else // !TARGET_AMD64
 #define XMMBASE 8
@@ -200,6 +217,38 @@ REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 #define REG_R14 JITREG_R14
 #undef REG_R15
 #define REG_R15 JITREG_R15
+#undef REG_R16
+#define REG_R16 JITREG_R16
+#undef REG_R17
+#define REG_R17 JITREG_R17
+#undef REG_R18
+#define REG_R18 JITREG_R18
+#undef REG_R19
+#define REG_R19 JITREG_R19
+#undef REG_R20
+#define REG_R20 JITREG_R20
+#undef REG_R21
+#define REG_R21 JITREG_R21
+#undef REG_R22
+#define REG_R22 JITREG_R22
+#undef REG_R23
+#define REG_R23 JITREG_R23
+#undef REG_R24
+#define REG_R24 JITREG_R24
+#undef REG_R25
+#define REG_R25 JITREG_R25
+#undef REG_R26
+#define REG_R26 JITREG_R26
+#undef REG_R27
+#define REG_R27 JITREG_R27
+#undef REG_R28
+#define REG_R28 JITREG_R28
+#undef REG_R29
+#define REG_R29 JITREG_R29
+#undef REG_R30
+#define REG_R30 JITREG_R30
+#undef REG_R31
+#define REG_R31 JITREG_R31
 #undef REG_EAX
 #define REG_EAX JITREG_EAX
 #undef REG_ECX

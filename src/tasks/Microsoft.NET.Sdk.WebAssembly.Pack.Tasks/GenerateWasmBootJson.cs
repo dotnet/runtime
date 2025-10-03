@@ -56,9 +56,13 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public ITaskItem[] EnvVariables { get; set; }
+
     public ITaskItem[] Extensions { get; set; }
 
-    public string StartupMemoryCache { get; set; }
+    public string[]? Profilers { get; set; }
+
+    public string? RuntimeConfigJsonPath { get; set; }
 
     public string Jiterpreter { get; set; }
 
@@ -84,14 +88,19 @@ public class GenerateWasmBootJson : Task
 
     public bool FingerprintAssets { get; set; }
 
+    public string ApplicationEnvironment { get; set; }
+
+    public string MergeWith { get; set; }
+
+    public bool BundlerFriendly { get; set; }
+
     public override bool Execute()
     {
-        using var fileStream = File.Create(OutputPath);
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
 
         try
         {
-            WriteBootJson(fileStream, entryAssemblyName);
+            WriteBootConfig(entryAssemblyName);
         }
         catch (Exception ex)
         {
@@ -101,24 +110,30 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    // Internal for tests
-    public void WriteBootJson(Stream output, string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName)
     {
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
         };
+
+        if (IsTargeting100OrLater())
+        {
+            result.applicationEnvironment = ApplicationEnvironment;
+        }
 
         if (IsTargeting80OrLater())
         {
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
-            if (CacheBootResources)
-                result.cacheBootResources = CacheBootResources;
+            if (!IsTargeting100OrLater())
+            {
+                if (CacheBootResources)
+                    result.cacheBootResources = CacheBootResources;
+            }
 
             if (LinkerEnabled)
                 result.linkerEnabled = LinkerEnabled;
@@ -170,6 +185,7 @@ public class GenerateWasmBootJson : Task
         // - runtime:
         //   - UriPath (e.g., "dotnet.js")
         //     - ContentHash (e.g., "3448f339acf512448")
+        ResourcesData resourceData = (ResourcesData)result.resources;
         if (Resources != null)
         {
             var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
@@ -184,7 +200,6 @@ public class GenerateWasmBootJson : Task
             });
 
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
-            var resourceData = result.resources;
 
             if (FingerprintAssets)
                 resourceData.fingerprinting = new();
@@ -373,7 +388,7 @@ public class GenerateWasmBootJson : Task
                     endLineNumber: 0,
                     endColumnNumber: 0,
                     message: message,
-                    string.Join(";", LazyLoadedAssemblies.Select(a => a.ItemSpec)));
+                    string.Join(";", remainingLazyLoadAssemblies.Select(a => a.ItemSpec)));
 
                 return;
             }
@@ -381,7 +396,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = helper.GetDebugLevel(result.resources?.pdb?.Count > 0);
+            result.debugLevel = helper.GetDebugLevel(resourceData.pdb?.Count > 0);
         }
 
         if (ConfigurationFiles != null)
@@ -403,13 +418,16 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        var jsonOptions = new JsonSerializerOptions()
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            WriteIndented = true
-        };
 
+        if (EnvVariables != null && EnvVariables.Length > 0)
+        {
+            result.environmentVariables = new Dictionary<string, string>();
+            foreach (var env in EnvVariables)
+            {
+                string name = env.ItemSpec;
+                result.environmentVariables[name] = env.GetMetadata("Value");
+            }
+        }
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();
@@ -417,13 +435,33 @@ public class GenerateWasmBootJson : Task
             {
                 var key = configExtension.GetMetadata("key");
                 using var fs = File.OpenRead(configExtension.ItemSpec);
-                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, jsonOptions);
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, BootJsonBuilderHelper.JsonOptions);
                 result.extensions[key] = config;
             }
         }
 
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            result.runtimeConfig = runtimeConfig;
+        }
+
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            result.environmentVariables ??= new();
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
+        }
+
         helper.ComputeResourcesHash(result);
-        JsonSerializer.Serialize(output, result, jsonOptions);
+
+        string? imports = null;
+        if (IsTargeting100OrLater())
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly);
+
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {
@@ -480,12 +518,16 @@ public class GenerateWasmBootJson : Task
     private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
+    private static readonly Version version100 = new Version(10, 0);
 
     private bool IsTargeting80OrLater()
         => IsTargetingVersionOrLater(version80);
 
     private bool IsTargeting90OrLater()
         => IsTargetingVersionOrLater(version90);
+
+    private bool IsTargeting100OrLater()
+        => IsTargetingVersionOrLater(version100);
 
     private bool IsTargetingVersionOrLater(Version version)
     {

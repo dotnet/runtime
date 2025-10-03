@@ -15,6 +15,7 @@ parameters:
   condition: true
   displayNameArgs: ''
   runInUnloadableContext: false
+  runInterpreter: false
   tieringTest: false
   runtimeVariant: ''
   variables: {}
@@ -190,7 +191,7 @@ jobs:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -308,6 +309,7 @@ jobs:
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        runInterpreter: ${{ parameters.runInterpreter }}
         tieringTest: ${{ parameters.tieringTest }}
         hotColdSplitting: ${{ parameters.hotColdSplitting }}
 
@@ -357,79 +359,36 @@ jobs:
           - jitstress_random_2
         ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
           scenarios:
-          - jitstress_isas_incompletehwintrinsic
           - jitstress_isas_nohwintrinsic
-          - jitstress_isas_nohwintrinsic_nosimd
-          - jitstress_isas_nosimd
         ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
           scenarios:
-          - jitstress_isas_incompletehwintrinsic
           - jitstress_isas_nohwintrinsic
-          - jitstress_isas_nohwintrinsic_nosimd
-          - jitstress_isas_nosimd
           - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noaes
           - jitstress_isas_x86_noavx
           - jitstress_isas_x86_noavx2
           - jitstress_isas_x86_noavx512
-          - jitstress_isas_x86_nobmi1
-          - jitstress_isas_x86_nobmi2
-          - jitstress_isas_x86_nofma
-          - jitstress_isas_x86_nohwintrinsic
-          - jitstress_isas_x86_nolzcnt
-          - jitstress_isas_x86_nopclmulqdq
-          - jitstress_isas_x86_nopopcnt
-          - jitstress_isas_x86_nosse
-          - jitstress_isas_x86_nosse2
-          - jitstress_isas_x86_nosse3
-          - jitstress_isas_x86_nosse3_4
-          - jitstress_isas_x86_nosse41
-          - jitstress_isas_x86_nosse42
-          - jitstress_isas_x86_nossse3
-          - jitstress_isas_1_x86_noaes
+          - jitstress_isas_x86_vectort128
+          - jitstress_isas_x86_vectort512
+          - jitstress_isas_x86_noavx512_vectort128
+          - jitstress_isas_1_x86_evex
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
           - jitstress_isas_1_x86_noavx512
-          - jitstress_isas_1_x86_nobmi1
-          - jitstress_isas_1_x86_nobmi2
-          - jitstress_isas_1_x86_nofma
-          - jitstress_isas_1_x86_nohwintrinsic
-          - jitstress_isas_1_x86_nolzcnt
-          - jitstress_isas_1_x86_nopclmulqdq
-          - jitstress_isas_1_x86_nopopcnt
-          - jitstress_isas_1_x86_nosse
-          - jitstress_isas_1_x86_nosse2
-          - jitstress_isas_1_x86_nosse3
-          - jitstress_isas_1_x86_nosse3_4
-          - jitstress_isas_1_x86_nosse41
-          - jitstress_isas_1_x86_nosse42
-          - jitstress_isas_1_x86_nossse3
-          - jitstress_isas_2_x86_noaes
+          - jitstress_isas_1_x86_vectort128
+          - jitstress_isas_1_x86_vectort512
+          - jitstress_isas_1_x86_noavx512_vectort128
+          - jitstress_isas_2_x86_evex
           - jitstress_isas_2_x86_noavx
           - jitstress_isas_2_x86_noavx2
           - jitstress_isas_2_x86_noavx512
-          - jitstress_isas_2_x86_nobmi1
-          - jitstress_isas_2_x86_nobmi2
-          - jitstress_isas_2_x86_nofma
-          - jitstress_isas_2_x86_nohwintrinsic
-          - jitstress_isas_2_x86_nolzcnt
-          - jitstress_isas_2_x86_nopclmulqdq
-          - jitstress_isas_2_x86_nopopcnt
-          - jitstress_isas_2_x86_nosse
-          - jitstress_isas_2_x86_nosse2
-          - jitstress_isas_2_x86_nosse3
-          - jitstress_isas_2_x86_nosse3_4
-          - jitstress_isas_2_x86_nosse41
-          - jitstress_isas_2_x86_nosse42
-          - jitstress_isas_2_x86_nossse3
+          - jitstress_isas_2_x86_vectort128
+          - jitstress_isas_2_x86_vectort512
+          - jitstress_isas_2_x86_noavx512_vectort128
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
           - jitstress_isas_x86_evex
           - jitstress_isas_x86_noavx512
           - jitstressregs0x2000
-        ${{ if in(parameters.testGroup, 'jitstress-isas-sve') }}:
-          scenarios:
-          - jitstress_isas_arm64_sve
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -515,6 +474,7 @@ jobs:
             - fullpgo_methodprofiling_always_optimized
             - syntheticpgo
             - syntheticpgo_blend
+            - instrument_if_optimizing
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -540,7 +500,6 @@ jobs:
             - jitpartialcompilation_pgo
             - jitpartialcompilation_pgo_stress_random
             - jitoptrepeat
-            - jitoldlayout
           ${{ else }}:
             scenarios:
             - jitosr_stress
@@ -554,7 +513,6 @@ jobs:
             - jitphysicalpromotion_full
             - jitrlcse
             - jitoptrepeat
-            - jitoldlayout
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg

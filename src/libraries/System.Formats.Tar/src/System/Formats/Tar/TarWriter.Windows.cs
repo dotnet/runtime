@@ -51,8 +51,11 @@ namespace System.Formats.Tar
             FileSystemInfo info = (attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
             entry._header._mTime = info.LastWriteTimeUtc;
-            entry._header._aTime = info.LastAccessTimeUtc;
-            entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
+            // We do not set atime and ctime by default because many external tools are unable to read GNU entries
+            // that have these fields set to non-zero values. This is because the GNU format writes atime and ctime in the same
+            // location where other formats expect the prefix field to be written.
+            // If the user wants to set atime and ctime, they can do so by constructing the entry manually from the file and
+            // then setting the values.
 
             entry.Mode = DefaultWindowsMode;
 

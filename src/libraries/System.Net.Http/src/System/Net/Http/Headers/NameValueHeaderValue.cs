@@ -371,7 +371,7 @@ namespace System.Net.Http.Headers
                     ThrowFormatException(value);
                 }
             }
-            else if (HttpRuleParser.ContainsNewLine(value))
+            else if (HttpRuleParser.ContainsNewLineOrNull(value))
             {
                 ThrowFormatException(value);
             }

@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -8,11 +10,12 @@ namespace System.IO.Compression.Tests;
 
 public class ZipFile_Open : ZipFileTestBase
 {
-    [Fact]
-    public void InvalidConstructors()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public Task InvalidConstructors(bool async)
     {
         //out of range enum values
-        Assert.Throws<ArgumentOutOfRangeException>(() => ZipFile.Open("bad file", (ZipArchiveMode)(10)));
+        return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => CallZipFileOpen(async, "bad file", (ZipArchiveMode)(10)));
     }
 
     [Fact]
@@ -93,81 +96,171 @@ public class ZipFile_Open : ZipFileTestBase
     }
 
     [Fact]
-    public void InvalidInstanceMethods()
+    public async Task InvalidFilesAsync()
     {
-        using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
-        using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("EOCDmissing.zip"), default));
+        using (TempFile testArchive = CreateTempCopyFile(bad("EOCDmissing.zip"), GetTestFilePath()))
         {
-            //non-existent entry
-            Assert.True(null == archive.GetEntry("nonExistentEntry"));
-            //null/empty string
-            Assert.Throws<ArgumentNullException>(() => archive.GetEntry(null));
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
+        }
 
-            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("CDoffsetOutOfBounds.zip"), default));
+        using (TempFile testArchive = CreateTempCopyFile(bad("CDoffsetOutOfBounds.zip"), GetTestFilePath()))
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
+        }
 
-            //null/empty string
-            AssertExtensions.Throws<ArgumentException>("entryName", () => archive.CreateEntry(""));
-            Assert.Throws<ArgumentNullException>(() => archive.CreateEntry(null));
+        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default))
+        {
+            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
+        }
+
+        using (TempFile testArchive = CreateTempCopyFile(bad("CDoffsetInBoundsWrong.zip"), GetTestFilePath()))
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
+        }
+
+        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default))
+        {
+            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
+        }
+        using (TempFile testArchive = CreateTempCopyFile(bad("numberOfEntriesDifferent.zip"), GetTestFilePath()))
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
+        }
+
+        //read mode on empty file
+        await using (var memoryStream = new MemoryStream())
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipArchive.CreateAsync(memoryStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null));
+        }
+
+        //offset out of bounds
+        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("localFileOffsetOutOfBounds.zip"), default))
+        {
+            ZipArchiveEntry e = archive.Entries[0];
+            await Assert.ThrowsAsync<InvalidDataException>(() => e.OpenAsync(default));
+        }
+
+        using (TempFile testArchive = CreateTempCopyFile(bad("localFileOffsetOutOfBounds.zip"), GetTestFilePath()))
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
+        }
+
+        //compressed data offset + compressed size out of bounds
+        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("compressedSizeOutOfBounds.zip"), default))
+        {
+            ZipArchiveEntry e = archive.Entries[0];
+            await Assert.ThrowsAsync<InvalidDataException>(() => e.OpenAsync(default));
+        }
+
+        using (TempFile testArchive = CreateTempCopyFile(bad("compressedSizeOutOfBounds.zip"), GetTestFilePath()))
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
+        }
+
+        //signature wrong
+        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("localFileHeaderSignatureWrong.zip"), default))
+        {
+            ZipArchiveEntry e = archive.Entries[0];
+            await Assert.ThrowsAsync<InvalidDataException>(() => e.OpenAsync(default));
+        }
+
+        using (TempFile testArchive = CreateTempCopyFile(bad("localFileHeaderSignatureWrong.zip"), GetTestFilePath()))
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
     }
 
     [Theory]
-    [InlineData("LZMA.zip", true)]
-    [InlineData("invalidDeflate.zip", false)]
-    public void UnsupportedCompressionRoutine(string zipName, bool throwsOnOpen)
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task InvalidInstanceMethods(bool async)
+    {
+        using TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath());
+
+        ZipArchive archive = await CallZipFileOpen(async, testArchive.Path, ZipArchiveMode.Update);
+
+        //non-existent entry
+        Assert.True(null == archive.GetEntry("nonExistentEntry"));
+        //null/empty string
+        Assert.Throws<ArgumentNullException>(() => archive.GetEntry(null));
+
+        ZipArchiveEntry entry = archive.GetEntry("first.txt");
+
+        //null/empty string
+        AssertExtensions.Throws<ArgumentException>("entryName", () => archive.CreateEntry(""));
+        Assert.Throws<ArgumentNullException>(() => archive.CreateEntry(null));
+
+        await DisposeZipArchive(async, archive);
+    }
+
+    public static IEnumerable<object[]> Get_UnsupportedCompressionRoutine_Data()
+    {
+        foreach (bool b in _bools)
+        {
+            yield return new object[] { "LZMA.zip", true, b};
+            yield return new object[] { "invalidDeflate.zip", false, b};
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Get_UnsupportedCompressionRoutine_Data))]
+    public async Task UnsupportedCompressionRoutine(string zipName, bool throwsOnOpen, bool async)
     {
         string filename = bad(zipName);
-        using (ZipArchive archive = ZipFile.OpenRead(filename))
+        ZipArchive archive = await CallZipFileOpenRead(async, filename);
+
+        ZipArchiveEntry e = archive.Entries[0];
+        if (throwsOnOpen)
         {
-            ZipArchiveEntry e = archive.Entries[0];
-            if (throwsOnOpen)
-            {
-                Assert.Throws<InvalidDataException>(() => e.Open());
-            }
-            else
-            {
-                using (Stream s = e.Open())
-                {
-                    Assert.Throws<InvalidDataException>(() => s.ReadByte());
-                }
-            }
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, e));
         }
+        else
+        {
+            Stream s = await OpenEntryStream(async, e);
+            Assert.Throws<InvalidDataException>(() => s.ReadByte());
+            await DisposeStream(async, s);
+        }
+
+        await DisposeZipArchive(async, archive);
 
         using (TempFile updatedCopy = CreateTempCopyFile(filename, GetTestFilePath()))
         {
             string name;
             long length, compressedLength;
             DateTimeOffset lastWriteTime;
-            using (ZipArchive archive = ZipFile.Open(updatedCopy.Path, ZipArchiveMode.Update))
-            {
-                ZipArchiveEntry e = archive.Entries[0];
-                name = e.FullName;
-                lastWriteTime = e.LastWriteTime;
-                length = e.Length;
-                compressedLength = e.CompressedLength;
-                Assert.Throws<InvalidDataException>(() => e.Open());
-            }
+            archive = await CallZipFileOpen(async, updatedCopy.Path, ZipArchiveMode.Update);
+
+            e = archive.Entries[0];
+            name = e.FullName;
+            lastWriteTime = e.LastWriteTime;
+            length = e.Length;
+            compressedLength = e.CompressedLength;
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, e));
+
+            await DisposeZipArchive(async, archive);
 
             //make sure that update mode preserves that unreadable file
-            using (ZipArchive archive = ZipFile.Open(updatedCopy.Path, ZipArchiveMode.Update))
-            {
-                ZipArchiveEntry e = archive.Entries[0];
-                Assert.Equal(name, e.FullName);
-                Assert.Equal(lastWriteTime, e.LastWriteTime);
-                Assert.Equal(length, e.Length);
-                Assert.Equal(compressedLength, e.CompressedLength);
-                Assert.Throws<InvalidDataException>(() => e.Open());
-            }
+            archive = await CallZipFileOpen(async, updatedCopy.Path, ZipArchiveMode.Update);
+
+            e = archive.Entries[0];
+            Assert.Equal(name, e.FullName);
+            Assert.Equal(lastWriteTime, e.LastWriteTime);
+            Assert.Equal(length, e.Length);
+            Assert.Equal(compressedLength, e.CompressedLength);
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, e));
+
+            await DisposeZipArchive(async, archive);
         }
     }
 
-    [Fact]
-    public void InvalidDates()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task InvalidDates(bool async)
     {
-        using (ZipArchive archive = ZipFile.OpenRead(bad("invaliddate.zip")))
-        {
-            Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
-        }
+        ZipArchive archive = await CallZipFileOpenRead(async, bad("invaliddate.zip"));
+        Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+        await DisposeZipArchive(async, archive);
 
         // Browser VFS does not support saving file attributes, so skip
         if (!PlatformDetection.IsBrowser)
@@ -177,94 +270,124 @@ public class ZipFile_Open : ZipFileTestBase
             fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
             string archivePath = GetTestFilePath();
             using (FileStream output = File.Open(archivePath, FileMode.Create))
-            using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
             {
+                archive = await CreateZipArchive(async, output, ZipArchiveMode.Create, leaveOpen: false, entryNameEncoding: null);
                 archive.CreateEntryFromFile(fileWithBadDate.FullName, "SomeEntryName");
+                await DisposeZipArchive(async, archive);
             }
-            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
-            {
-                Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
-            }
+
+            archive = await CallZipFileOpenRead(async, archivePath);
+            Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+            await DisposeZipArchive(async, archive);
         }
     }
 
-    [Fact]
-    public void ReadStreamOps()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task ReadStreamOps(bool async)
     {
-        using (ZipArchive archive = ZipFile.OpenRead(zfile("normal.zip")))
+        using (ZipArchive archive = await CallZipFileOpenRead(async, zfile("normal.zip")))
         {
             foreach (ZipArchiveEntry e in archive.Entries)
             {
-                using (Stream s = e.Open())
+                Stream s = await OpenEntryStream(async, e);
+                Assert.True(s.CanRead, "Can read to read archive");
+                Assert.False(s.CanWrite, "Can't write to read archive");
+                
+                if (s.CanSeek)
                 {
-                    Assert.True(s.CanRead, "Can read to read archive");
-                    Assert.False(s.CanWrite, "Can't write to read archive");
-                    Assert.False(s.CanSeek, "Can't seek on archive");
-                    Assert.Equal(LengthOfUnseekableStream(s), e.Length);
+                    // If the stream is seekable, verify that seeking works correctly
+                    // Test seeking to beginning
+                    long beginResult = s.Seek(0, SeekOrigin.Begin);
+                    Assert.Equal(0, beginResult);
+                    Assert.Equal(0, s.Position);
+                    
+                    // Test seeking to end
+                    long endResult = s.Seek(0, SeekOrigin.End);
+                    Assert.Equal(e.Length, endResult);
+                    Assert.Equal(e.Length, s.Position);
+                    
+                    // Test Position setter
+                    s.Position = 0;
+                    Assert.Equal(0, s.Position);
+                    
+                    // Reset to beginning for length check
+                    s.Seek(0, SeekOrigin.Begin);
                 }
+                else
+                {
+                    // If the stream is not seekable, verify that seeking throws
+                    Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin));
+                    Assert.Throws<NotSupportedException>(() => s.Position = 0);
+                }
+                
+                Assert.Equal(await LengthOfUnseekableStream(s), e.Length);
+                await DisposeStream(async, s);
             }
         }
     }
 
-    [Fact]
-    public void UpdateReadTwice()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task UpdateReadTwice(bool async)
     {
-        using (TempFile testArchive = CreateTempCopyFile(zfile("small.zip"), GetTestFilePath()))
-        using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+        using TempFile testArchive = CreateTempCopyFile(zfile("small.zip"), GetTestFilePath());
+
+        ZipArchive archive = await CallZipFileOpen(async, testArchive.Path, ZipArchiveMode.Update);
+
+        ZipArchiveEntry entry = archive.Entries[0];
+        string contents1, contents2;
+        using (StreamReader s = new StreamReader(await OpenEntryStream(async, entry)))
         {
-            ZipArchiveEntry entry = archive.Entries[0];
-            string contents1, contents2;
-            using (StreamReader s = new StreamReader(entry.Open()))
-            {
-                contents1 = s.ReadToEnd();
-            }
-            using (StreamReader s = new StreamReader(entry.Open()))
-            {
-                contents2 = s.ReadToEnd();
-            }
-            Assert.Equal(contents1, contents2);
+            contents1 = await s.ReadToEndAsync();
         }
+        using (StreamReader s = new StreamReader(await OpenEntryStream(async, entry)))
+        {
+            contents2 = await s.ReadToEndAsync();
+        }
+        Assert.Equal(contents1, contents2);
+
+        await DisposeZipArchive(async, archive);
     }
 
-    [Fact]
-    public async Task UpdateAddFile()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task UpdateAddFile(bool async)
     {
         //add file
         using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
         {
-            using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
-            {
-                await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
-            }
-            await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
+            ZipArchive archive = await CallZipFileOpen(async, testArchive.Path, ZipArchiveMode.Update);
+            await UpdateArchive(async, archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+            await DisposeZipArchive(async, archive);
+
+            await IsZipSameAsDir(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, async);
         }
 
         //add file and read entries before
         using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
         {
-            using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
-            {
-                var x = archive.Entries;
+            ZipArchive archive = await CallZipFileOpen(async, testArchive.Path, ZipArchiveMode.Update);
+            var x = archive.Entries;
+            await UpdateArchive(async, archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+            await DisposeZipArchive(async, archive);
 
-                await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
-            }
-            await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
+            await IsZipSameAsDir(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, async);
         }
 
         //add file and read entries after
         using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
         {
-            using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
-            {
-                await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+            ZipArchive archive = await CallZipFileOpen(async, testArchive.Path, ZipArchiveMode.Update);
+            await UpdateArchive(async, archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+            var x = archive.Entries;
+            await DisposeZipArchive(async, archive);
 
-                var x = archive.Entries;
-            }
-            await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
+            await IsZipSameAsDir(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read, async);
         }
     }
 
-    private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)
+    private static async Task UpdateArchive(bool async, ZipArchive archive, string installFile, string entryName)
     {
         string fileName = installFile;
         ZipArchiveEntry e = archive.CreateEntry(entryName);
@@ -274,11 +397,17 @@ public class ZipFile_Open : ZipFileTestBase
 
         using (var stream = await StreamHelpers.CreateTempCopyStream(fileName))
         {
-            using (Stream es = e.Open())
+            Stream es = await OpenEntryStream(async, e);
+            es.SetLength(0);
+            if (async)
             {
-                es.SetLength(0);
+                await stream.CopyToAsync(es);
+            }
+            else
+            {
                 stream.CopyTo(es);
             }
+            await DisposeStream(async, es);
         }
     }
 }

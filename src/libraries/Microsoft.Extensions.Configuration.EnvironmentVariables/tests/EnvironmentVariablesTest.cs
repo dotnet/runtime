@@ -296,8 +296,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             configurationBuilder.AddEnvironmentVariables();
             var config = configurationBuilder.Build();
 
-            MyOptions options = null;
-
             using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
             {
                 void ReloadLoop()
@@ -310,20 +308,79 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
                 _ = Task.Run(ReloadLoop);
 
-                while (!cts.IsCancellationRequested)
+                MyOptions options;
+
+                do
                 {
                     options = config.Get<MyOptions>();
                 }
-            }
+                while (!cts.IsCancellationRequested);
 
-            Assert.Equal(-2, options.Number);
-            Assert.Equal("Foo", options.Text);
+                Assert.Equal(-2, options.Number);
+                Assert.Equal("Foo", options.Text);
+            }
         }
 
         private sealed class MyOptions
         {
             public int Number { get; set; }
             public string Text { get; set; }
+        }
+
+        [Fact]
+        public void LoadsPostgreSqlConnectionStrings()
+        {
+            var dic = new Hashtable()
+            {
+                {"POSTGRESQLCONNSTR_db1", "Host=server1;Database=db1;Username=root;Password=password;"},
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(null);
+
+            envConfigSrc.Load(dic);
+
+            Assert.Equal("Host=server1;Database=db1;Username=root;Password=password;", envConfigSrc.Get("ConnectionStrings:db1"));
+            Assert.Equal("Npgsql", envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
+        }
+
+        [Fact]
+        public void LoadsAzureServiceConnectionStrings()
+        {
+            var dic = new Hashtable()
+            {
+                {"APIHUBCONNSTR_api1", "Endpoint=https://api1.azure.com;ApiKey=key1;"},
+                {"DOCDBCONNSTR_docdb1", "AccountEndpoint=https://docdb1.documents.azure.com;AccountKey=key1;"},
+                {"EVENTHUBCONNSTR_eventhub1", "Endpoint=sb://eventhub1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;"},
+                {"NOTIFICATIONHUBCONNSTR_notification1", "Endpoint=sb://notification1.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=key1;"},
+                {"REDISCACHECONNSTR_redis1", "redis1.redis.cache.windows.net:6380,password=key1,ssl=True,abortConnect=False"},
+                {"SERVICEBUSCONNSTR_servicebus1", "Endpoint=sb://servicebus1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;"},
+            };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider(null);
+
+            envConfigSrc.Load(dic);
+
+            // API Hub
+            Assert.Equal("Endpoint=https://api1.azure.com;ApiKey=key1;", envConfigSrc.Get("ConnectionStrings:api1"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:api1_ProviderName"));
+
+            // DocDB (Cosmos DB)
+            Assert.Equal("AccountEndpoint=https://docdb1.documents.azure.com;AccountKey=key1;", envConfigSrc.Get("ConnectionStrings:docdb1"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:docdb1_ProviderName"));
+
+            // Event Hub
+            Assert.Equal("Endpoint=sb://eventhub1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:eventhub1"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:eventhub1_ProviderName"));
+
+            // Notification Hub
+            Assert.Equal("Endpoint=sb://notification1.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:notification1"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:notification1_ProviderName"));
+
+            // Redis Cache
+            Assert.Equal("redis1.redis.cache.windows.net:6380,password=key1,ssl=True,abortConnect=False", envConfigSrc.Get("ConnectionStrings:redis1"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:redis1_ProviderName"));
+
+            // Service Bus
+            Assert.Equal("Endpoint=sb://servicebus1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:servicebus1"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:servicebus1_ProviderName"));
         }
     }
 }

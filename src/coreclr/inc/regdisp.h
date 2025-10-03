@@ -132,12 +132,24 @@ inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
+    return &display->pCurrentContext->Ebp;
+#else
     return (LPVOID)display->GetEbpLocation();
+#endif
+}
+
+inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)
+{
+    return display->PCTAddr;
 }
 
 inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 {
     display->PCTAddr = addr;
+#ifdef FEATURE_EH_FUNCLETS
+    display->pCurrentContext->Eip = *PTR_PCODE(addr);
+#endif
     display->ControlPC = *PTR_PCODE(addr);
 }
 
@@ -145,22 +157,12 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    return stackPointer < ((LPVOID)(display->SP));
-#else
-    return (TADDR)stackPointer < display->PCTAddr;
-#endif
+    return (TADDR)stackPointer < GetRegdisplayPCTAddr(display);
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
-    _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
-    return GetRegdisplaySP(display);
-#else
-    return display->PCTAddr;
-#endif
+    return GetRegdisplayPCTAddr(display);
 }
 
 #elif defined(TARGET_64BIT)
@@ -345,11 +347,26 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     return GetSP(display->pCallerContext);
 }
 
+#elif defined(TARGET_WASM)
+struct REGDISPLAY : public REGDISPLAY_BASE {
+    REGDISPLAY()
+    {
+        // Initialize
+        memset(this, 0, sizeof(REGDISPLAY));
+    }
+};
+
+// This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
+inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
+    _ASSERTE("IsInCalleesFrames is not implemented on wasm");
+    return FALSE;
+}
+
 #else // none of the above processors
 #error "RegDisplay functions are not implemented on this platform."
 #endif
 
-#if defined(TARGET_64BIT) || defined(TARGET_ARM) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#ifdef FEATURE_EH_FUNCLETS
 // This needs to be implemented for platforms that have funclets.
 inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 {
@@ -377,24 +394,14 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_64BIT)
-    pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (INT_PTR)GetIP(pRD->pCurrentContext);
-#elif defined(TARGET_ARM)
-    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#elif defined(TARGET_X86)
-    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#else // TARGET_X86
-    PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
-#endif
+    pRD->SP         = GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = GetIP(pRD->pCurrentContext);
 
 #ifdef DEBUG_REGDISPLAY
     CheckRegDisplaySP(pRD);
 #endif // DEBUG_REGDISPLAY
 }
-#endif // TARGET_64BIT || TARGET_ARM || (TARGET_X86 && FEATURE_EH_FUNCLETS)
+#endif // FEATURE_EH_FUNCLETS
 
 typedef REGDISPLAY *PREGDISPLAY;
 
@@ -421,7 +428,6 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->S6) = &pCtx->S6;
     *(&pCtxPtrs->S7) = &pCtx->S7;
     *(&pCtxPtrs->S8) = &pCtx->S8;
-    *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
 #elif defined(TARGET_ARM) // TARGET_LOONGARCH64
@@ -451,7 +457,9 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
-#else // TARGET_RISCV64
+#elif defined(TARGET_WASM)
+    // Wasm doesn't have registers
+#else // TARGET_WASM
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }
@@ -513,6 +521,10 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     // This will setup the PC and SP
     SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef TARGET_X86
+    pRD->PCTAddr = (UINT_PTR)&(pctx->Eip);
+#endif
 
 #if !defined(DACCESS_COMPILE)
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)

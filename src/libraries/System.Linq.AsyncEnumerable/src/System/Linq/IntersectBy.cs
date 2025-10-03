@@ -34,11 +34,13 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(first, second, keySelector, comparer, default);
+            return
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -48,10 +50,9 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 HashSet<TKey> set;
-                IAsyncEnumerator<TKey> e = second.GetAsyncEnumerator(cancellationToken);
-                try
+                await using (IAsyncEnumerator<TKey> e = second.GetAsyncEnumerator(cancellationToken))
                 {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
+                    if (!await e.MoveNextAsync())
                     {
                         yield break;
                     }
@@ -61,14 +62,10 @@ namespace System.Linq
                     {
                         set.Add(e.Current);
                     }
-                    while (await e.MoveNextAsync().ConfigureAwait(false));
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in first.WithCancellation(cancellationToken))
                 {
                     if (set.Remove(keySelector(element)))
                     {
@@ -102,11 +99,13 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(first, second, keySelector, comparer, default);
+            return
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -116,10 +115,9 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 HashSet<TKey> set;
-                IAsyncEnumerator<TKey> e = second.GetAsyncEnumerator(cancellationToken);
-                try
+                await using (IAsyncEnumerator<TKey> e = second.GetAsyncEnumerator(cancellationToken))
                 {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
+                    if (!await e.MoveNextAsync())
                     {
                         yield break;
                     }
@@ -129,16 +127,12 @@ namespace System.Linq
                     {
                         set.Add(e.Current);
                     }
-                    while (await e.MoveNextAsync().ConfigureAwait(false));
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in first.WithCancellation(cancellationToken))
                 {
-                    if (set.Remove(await keySelector(element, cancellationToken).ConfigureAwait(false)))
+                    if (set.Remove(await keySelector(element, cancellationToken)))
                     {
                         yield return element;
                     }

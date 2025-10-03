@@ -16,14 +16,14 @@ namespace ILCompiler
         private MethodDesc _objectEqualsMethod;
         private MetadataType _iAsyncStateMachineType;
 
-        private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
+        private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<MetadataType, MethodDesc>
         {
-            protected override int GetKeyHashCode(DefType key) => key.GetHashCode();
+            protected override int GetKeyHashCode(MetadataType key) => key.GetHashCode();
             protected override int GetValueHashCode(MethodDesc value) => value.OwningType.GetHashCode();
-            protected override bool CompareKeyToValue(DefType key, MethodDesc value) => key == value.OwningType;
+            protected override bool CompareKeyToValue(MetadataType key, MethodDesc value) => key == value.OwningType;
             protected override bool CompareValueToValue(MethodDesc v1, MethodDesc v2) => v1.OwningType == v2.OwningType;
 
-            protected override MethodDesc CreateValueFromKey(DefType key)
+            protected override MethodDesc CreateValueFromKey(MetadataType key)
             {
                 return new ValueTypeGetFieldHelperMethodOverride(key);
             }
@@ -37,7 +37,7 @@ namespace ILCompiler
 
             if (RequiresValueTypeGetFieldHelperMethod((MetadataType)valueTypeDefinition))
             {
-                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)valueTypeDefinition);
+                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((MetadataType)valueTypeDefinition);
 
                 if (valueType != valueTypeDefinition)
                 {
@@ -60,7 +60,7 @@ namespace ILCompiler
 
             if (RequiresAttributeGetFieldHelperMethod(attributeTypeDefinition))
             {
-                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)attributeTypeDefinition);
+                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((MetadataType)attributeTypeDefinition);
 
                 if (attributeType != attributeTypeDefinition)
                 {
@@ -79,7 +79,7 @@ namespace ILCompiler
 
         private bool RequiresValueTypeGetFieldHelperMethod(MetadataType valueType)
         {
-            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)
@@ -102,20 +102,24 @@ namespace ILCompiler
             if (IsAsyncStateMachineType(valueType))
                 return false;
 
+            // ValueTuples override Equals/GetHashCode and don't have a `base.GetHashCode` call. So avoid the infrastructure.
+            if (valueType.Module == SystemModule && valueType.Name.StartsWith("ValueTuple`"u8) && valueType.Namespace.SequenceEqual("System"u8))
+                return false;
+
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
         }
 
         public bool IsAsyncStateMachineType(MetadataType type)
         {
             Debug.Assert(type.IsValueType);
-            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
+            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices"u8, "IAsyncStateMachine"u8, throwIfNotFound: false);
             return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
                 && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
         }
 
         private bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
         {
-            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)

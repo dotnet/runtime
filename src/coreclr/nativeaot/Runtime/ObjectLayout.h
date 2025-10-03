@@ -6,8 +6,7 @@
 //
 
 // Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
-// positions as the mainline runtime but we can change this below when it becomes apparent how Redhawk will
-// handle sync blocks).
+// positions as the mainline runtime).
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 
@@ -53,9 +52,8 @@ public:
 #endif
     ObjHeader * GetHeader() { return dac_cast<DPTR(ObjHeader)>(dac_cast<TADDR>(this) - SYNC_BLOCK_SKEW); }
 #ifndef DACCESS_COMPILE
-    void set_EEType(MethodTable * pEEType)
+    void SetMethodTable(MethodTable * pEEType)
         { m_pEEType = pEEType; }
-    void InitEEType(MethodTable * pEEType);
 
     size_t GetSize();
 #endif
@@ -86,16 +84,16 @@ static uintptr_t const REFERENCE_SIZE   = sizeof(Object *);
 //-------------------------------------------------------------------------------------------------
 class Array : public Object
 {
-    friend class ArrayBase;
     friend class AsmOffsets;
 
+protected:
     uint32_t       m_Length;
 #if defined(HOST_64BIT)
     uint32_t       m_uAlignpad;
 #endif // HOST_64BIT
 public:
     uint32_t GetArrayLength();
-    void InitArrayLength(uint32_t length);
+    void SetNumComponents(uint32_t length);
     void* GetArrayData();
 };
 typedef DPTR(Array) PTR_Array;
@@ -124,6 +122,9 @@ static uintptr_t const STRING_COMPONENT_SIZE = StringConstants::ComponentSize;
 
 //-------------------------------------------------------------------------------------------------
 static uintptr_t const STRING_BASE_SIZE = StringConstants::BaseSize;
+
+//-------------------------------------------------------------------------------------------------
+static uintptr_t const SZARRAY_BASE_SIZE = MIN_OBJECT_SIZE;
 
 //-------------------------------------------------------------------------------------------------
 static uintptr_t const MAX_STRING_LENGTH = 0x3FFFFFDF;

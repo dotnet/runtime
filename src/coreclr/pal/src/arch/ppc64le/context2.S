@@ -137,7 +137,7 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
 	lfd %f31, CONTEXT_F31(%r3)
 
 	// Restore all general purpose registers
-	ld %r0, CONTEXT_R0(%R3)
+	ld %r0, CONTEXT_R0(%r3)
 	ld %r1, CONTEXT_R1(%r3)
 	ld %r2, CONTEXT_R2(%r3)
 	ld %r4, CONTEXT_R4(%r3)

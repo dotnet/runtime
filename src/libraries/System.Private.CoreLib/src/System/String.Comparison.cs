@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Unicode;
 
 namespace System
@@ -27,9 +28,9 @@ namespace System
             Debug.Assert(strA.Length == strB.Length);
 
             return SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
-                    ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
-                    ((uint)strA.Length) * sizeof(char));
+                ref strA.GetRawStringDataAsUInt8(),
+                ref strB.GetRawStringDataAsUInt8(),
+                ((uint)strA.Length) * sizeof(char));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,26 +45,6 @@ namespace System
             return SpanHelpers.SequenceCompareTo(
                 ref Unsafe.Add(ref strA.GetRawStringData(), (nint)(uint)indexA /* force zero-extension */), countA,
                 ref Unsafe.Add(ref strB.GetRawStringData(), (nint)(uint)indexB /* force zero-extension */), countB);
-        }
-
-        internal static bool EqualsOrdinalIgnoreCase(string? strA, string? strB)
-        {
-            if (ReferenceEquals(strA, strB))
-            {
-                return true;
-            }
-
-            if (strA is null || strB is null)
-            {
-                return false;
-            }
-
-            if (strA.Length != strB.Length)
-            {
-                return false;
-            }
-
-            return EqualsOrdinalIgnoreCaseNoLengthCheck(strA, strB);
         }
 
         private static bool EqualsOrdinalIgnoreCaseNoLengthCheck(string strA, string strB)
@@ -539,7 +520,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -580,7 +561,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -607,6 +588,44 @@ namespace System
 
             int lastPos = Length - 1;
             return ((uint)lastPos < (uint)Length) && this[lastPos] == value;
+        }
+
+        /// <summary>
+        /// Determines whether the end of this string instance matches the specified character.
+        /// </summary>
+        /// <param name="value">The character to compare to the character at the end of this instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
+        public bool EndsWith(char value, StringComparison comparisonType)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = [value];
+
+            return this.EndsWith(valueChars, comparisonType);
+        }
+
+        /// <summary>
+        /// Determines whether the end of this string instance matches the specified rune using an ordinal comparison.
+        /// </summary>
+        /// <param name="value">The character to compare to the character at the end of this instance.</param>
+        /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
+        public bool EndsWith(Rune value)
+        {
+            return EndsWith(value, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Determines whether the end of this string instance matches the specified rune when compared using the specified comparison option.
+        /// </summary>
+        /// <param name="value">The character to compare to the character at the end of this instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if <paramref name="value"/> matches the end of this instance; otherwise, <see langword="false"/>.</returns>
+        public bool EndsWith(Rune value, StringComparison comparisonType)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            return this.EndsWith(valueChars, comparisonType);
         }
 
         // Determines whether two strings match.
@@ -1108,7 +1127,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -1138,8 +1157,8 @@ namespace System
                     return (value.Length == 1) ?
                             true :                 // First char is the same and thats all there is to compare
                             SpanHelpers.SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
-                                ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
+                                ref this.GetRawStringDataAsUInt8(),
+                                ref value.GetRawStringDataAsUInt8(),
                                 ((nuint)value.Length) * 2);
 
                 case StringComparison.OrdinalIgnoreCase:
@@ -1158,7 +1177,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -1180,6 +1199,44 @@ namespace System
             }
 
             return Length != 0 && _firstChar == value;
+        }
+
+        /// <summary>
+        /// Determines whether the beginning of this string instance matches the specified character when compared using the specified comparison option.
+        /// </summary>
+        /// <param name="value">The character to compare.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how this string and <paramref name="value"/> are compared.</param>
+        /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
+        public bool StartsWith(char value, StringComparison comparisonType)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = [value];
+
+            return this.StartsWith(valueChars, comparisonType);
+        }
+
+        /// <summary>
+        /// Determines whether the beginning of this string instance matches the specified rune using an ordinal comparison.
+        /// </summary>
+        /// <param name="value">The rune to compare.</param>
+        /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
+        public bool StartsWith(Rune value)
+        {
+            return StartsWith(value, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Determines whether the beginning of this string instance matches the specified rune when compared using the specified comparison option.
+        /// </summary>
+        /// <param name="value">The rune to compare.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how this string and <paramref name="value"/> are compared.</param>
+        /// <returns><see langword="true"/> if value matches the beginning of this string; otherwise, <see langword="false"/>.</returns>
+        public bool StartsWith(Rune value, StringComparison comparisonType)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            return this.StartsWith(valueChars, comparisonType);
         }
 
         internal static void CheckStringComparison(StringComparison comparisonType)

@@ -2,51 +2,51 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
-	class InterfaceNeededOnUnrelatedInterfaceList
-	{
-		[Kept]
-		static Foo s_foo;
+    class InterfaceNeededOnUnrelatedInterfaceList
+    {
+        [Kept]
+        static Foo s_foo;
 
-		static void Main ()
-		{
-			object ob = new Bar ();
-			((IBar) ob).Frob ();
-			s_foo = null;
-		}
+        static void Main()
+        {
+            object ob = new Bar();
+            ((IBar)ob).Frob();
+            s_foo = null;
+        }
 
-		[Kept]
-		interface IFoo
-		{
-			[Kept]
-			void Frob ();
-		}
+        [Kept]
+        interface IFoo
+        {
+            [Kept]
+            void Frob();
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IFoo))]
-		interface IBar : IFoo
-		{
-		}
+        [Kept]
+        [KeptInterface(typeof(IFoo))]
+        interface IBar : IFoo
+        {
+        }
 
-		[Kept]
-		class Foo : IBar
-		{
-			void IFoo.Frob ()
-			{
-			}
-		}
+        [Kept]
+        class Foo : IBar
+        {
+            void IFoo.Frob()
+            {
+            }
+        }
 
-		[Kept]
-		[KeptInterface (typeof (IBar))]
-		[KeptInterface (typeof (IFoo))]
-		class Bar : IBar
-		{
-			[Kept]
-			public Bar () { }
+        [Kept]
+        [KeptInterface(typeof(IBar))]
+        [KeptInterface(typeof(IFoo))]
+        class Bar : IBar
+        {
+            [Kept]
+            public Bar() { }
 
-			[Kept]
-			void IFoo.Frob ()
-			{
-			}
-		}
-	}
+            [Kept]
+            void IFoo.Frob()
+            {
+            }
+        }
+    }
 }

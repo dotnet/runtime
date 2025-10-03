@@ -24,7 +24,7 @@ namespace System.Speech.Recognition
             : this(semanticResultKey)
         {
             Helpers.ThrowIfEmptyOrNull(semanticResultKey, nameof(semanticResultKey));
-            Helpers.ThrowIfNull(phrases, nameof(phrases));
+            ArgumentNullException.ThrowIfNull(phrases);
 
             // Build a grammar builder with all the phrases
             foreach (string phrase in phrases)
@@ -37,7 +37,7 @@ namespace System.Speech.Recognition
             : this(semanticResultKey)
         {
             Helpers.ThrowIfEmptyOrNull(semanticResultKey, nameof(semanticResultKey));
-            Helpers.ThrowIfNull(builders, "phrases");
+            ArgumentNullException.ThrowIfNull(builders, "phrases");
 
             // Build a grammar builder with all the grammar builders
             foreach (GrammarBuilder builder in builders)

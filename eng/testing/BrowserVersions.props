@@ -1,13 +1,13 @@
 <Project>
   <PropertyGroup>
-    <linux_ChromeVersion>132.0.6834.83</linux_ChromeVersion>
-    <linux_ChromeRevision>1381561</linux_ChromeRevision>
-    <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1381561</linux_ChromeBaseSnapshotUrl>
-    <linux_V8Version>13.2.152</linux_V8Version>
-    <win_ChromeVersion>132.0.6834.84</win_ChromeVersion>
-    <win_ChromeRevision>1381561</win_ChromeRevision>
-    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1381570</win_ChromeBaseSnapshotUrl>
-    <win_V8Version>13.2.152</win_V8Version>
+    <linux_ChromeVersion>140.0.7339.80</linux_ChromeVersion>
+    <linux_ChromeRevision>1496484</linux_ChromeRevision>
+    <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1496495</linux_ChromeBaseSnapshotUrl>
+    <linux_V8Version>14.0.365</linux_V8Version>
+    <win_ChromeVersion>141.0.7390.37</win_ChromeVersion>
+    <win_ChromeRevision>1509326</win_ChromeRevision>
+    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1509328</win_ChromeBaseSnapshotUrl>
+    <win_V8Version>14.1.146</win_V8Version>
     <linux_FirefoxRevision>125.0.1</linux_FirefoxRevision>
     <linux_GeckoDriverRevision>0.34.0</linux_GeckoDriverRevision>
     <win_FirefoxRevision>125.0.1</win_FirefoxRevision>

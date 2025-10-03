@@ -83,7 +83,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                     continue;
                 }}
             }}
-            catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
+            catch (CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
             {{
                 Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
                 continue;
@@ -130,7 +130,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
         File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        
+
         UpdateBrowserMainJs();
         return info;
     }
@@ -160,7 +160,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
             RunResult runOutput = await RunForPublishWithWebServer(runOptions);
             return $"{buildOutput}\n{runOutput.TestOutput}";
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Exception: {ex}; _testOutput={_testOutput}");
             throw;

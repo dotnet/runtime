@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _methodNode.CompareToImpl(((AddressTakenMethodNode)other)._methodNode, comparer);
+            return comparer.Compare(_methodNode, ((AddressTakenMethodNode)other)._methodNode);
         }
 
         public ISymbolNode NodeForLinkage(NodeFactory factory)

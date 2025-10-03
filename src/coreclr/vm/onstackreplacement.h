@@ -51,7 +51,7 @@ struct PerPatchpointInfo
 };
 
 typedef DPTR(PerPatchpointInfo) PTR_PerPatchpointInfo;
-typedef EEPtrHashTable JitPatchpointTable;
+typedef EEPtrPlusIntHashTable JitPatchpointTable;
 
 // OnStackReplacementManager keeps track of mapping from patchpoint id to 
 // per patchpoint info.
@@ -72,7 +72,7 @@ public:
     OnStackReplacementManager(LoaderAllocator * loaderHeaAllocator);
 
 public:
-    PerPatchpointInfo* GetPerPatchpointInfo(PCODE ip);
+    PerPatchpointInfo* GetPerPatchpointInfo(PCODE funcStart, int ilOffset);
 #endif // DACCESS_COMPILE
 
 private:

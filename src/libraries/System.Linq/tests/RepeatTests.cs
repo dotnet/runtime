@@ -234,7 +234,7 @@ namespace System.Linq.Tests
             Assert.Equal(42, Enumerable.Repeat("Test", 42).Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void ICollectionImplementationIsValid()
         {
             Validate(Enumerable.Repeat(42, 10), [42, 42, 42, 42, 42, 42, 42, 42, 42, 42]);

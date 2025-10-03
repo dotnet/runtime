@@ -23,7 +23,7 @@
     - Flag:     isVarArg,
                 unused (was hasSecurityObject),
                 hasGSCookie,
-                hasPSPSymStackSlot,
+                unused (was hasPSPSymStackSlot),
                 hasGenericsInstContextStackSlot,
                 hasStackBaseregister,
                 wantsReportOnlyLeaf (AMD64 use only),
@@ -34,9 +34,9 @@
     - CodeLength
     - Prolog (if hasGenericsInstContextStackSlot || hasGSCookie)
     - Epilog (if hasGSCookie)
-    - SecurityObjectStackSlot (if any)
+    - SecurityObjectStackSlot (if any; no longer used)
     - GSCookieStackSlot (if any)
-    - PSPSymStackSlot (if any)
+    - PSPSymStackSlot (if any; no longer used)
     - GenericsInstContextStackSlot (if any)
     - StackBaseRegister (if any)
     - SizeOfEditAndContinuePreservedArea (if any)
@@ -128,7 +128,6 @@ struct GcInfoSize
     size_t ProEpilogSize;
     size_t SecObjSize;
     size_t GsCookieSize;
-    size_t PspSymSize;
     size_t GenericsCtxSize;
     size_t StackBaseSize;
     size_t ReversePInvokeFrameSize;
@@ -290,19 +289,7 @@ private:
         *m_pCurrentSlot |= data;
     }
 
-    inline void AllocMemoryBlock()
-    {
-        _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
-        MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
-
-        m_pCurrentSlot = pMemBlock->Contents;
-        m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
-
-#ifdef _DEBUG
-           m_MemoryBlocksCount++;
-#endif
-
-    }
+    inline void AllocMemoryBlock();
 
     inline void InitCurrentSlot()
     {
@@ -315,16 +302,6 @@ private:
 typedef UINT32 GcSlotId;
 
 
-inline UINT32 GetNormCodeOffsetChunk(UINT32 normCodeOffset)
-{
-    return normCodeOffset / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-}
-
-inline UINT32 GetCodeOffsetChunk(UINT32 codeOffset)
-{
-    return (NORMALIZE_CODE_OFFSET(codeOffset)) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-}
-
 enum GENERIC_CONTEXTPARAM_TYPE
 {
     GENERIC_CONTEXTPARAM_NONE = 0,
@@ -335,18 +312,8 @@ enum GENERIC_CONTEXTPARAM_TYPE
 
 extern void DECLSPEC_NORETURN ThrowOutOfMemory();
 
-class GcInfoEncoder
+namespace GcInfoEncoderExt
 {
-public:
-    typedef void (*NoMemoryFunction)(void);
-
-    GcInfoEncoder(
-            ICorJitInfo*                pCorJitInfo,
-            CORINFO_METHOD_INFO*        pMethodInfo,
-            IAllocator*                 pJitAllocator,
-            NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
-            );
-
     struct LifetimeTransition
     {
         UINT32 CodeOffset;
@@ -354,7 +321,20 @@ public:
         BYTE BecomesLive;
         BYTE IsDeleted;
     };
+}
 
+template <typename GcInfoEncoding>
+class TGcInfoEncoder
+{
+public:
+    typedef void (*NoMemoryFunction)(void);
+
+    TGcInfoEncoder(
+            ICorJitInfo*                pCorJitInfo,
+            CORINFO_METHOD_INFO*        pMethodInfo,
+            IAllocator*                 pJitAllocator,
+            NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
+            );
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     void DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UINT32 numCallSites);
@@ -415,7 +395,6 @@ public:
 
     void SetPrologSize( UINT32 prologSize );
     void SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd );
-    void SetPSPSymStackSlot( INT32 spOffsetPSPSym );
     void SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type);
     void SetReversePInvokeFrameSlot(INT32 spOffset);
     void SetIsVarArg();
@@ -439,10 +418,7 @@ public:
     void SetHasTailCalls();
 #endif // TARGET_AMD64
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     void SetSizeOfStackOutgoingAndScratchArea( UINT32 size );
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 
     //------------------------------------------------------------------------
     // Encoding
@@ -488,7 +464,7 @@ private:
     BitStreamWriter     m_Info2;    // Used for chunk encodings
 
     GcInfoArrayList<InterruptibleRange, 8> m_InterruptibleRanges;
-    GcInfoArrayList<LifetimeTransition, 64> m_LifetimeTransitions;
+    GcInfoArrayList<GcInfoEncoderExt::LifetimeTransition, 64> m_LifetimeTransitions;
 
     bool   m_IsVarArg;
 #if defined(TARGET_AMD64)
@@ -499,7 +475,6 @@ private:
     INT32  m_GSCookieStackSlot;
     UINT32 m_GSCookieValidRangeStart;
     UINT32 m_GSCookieValidRangeEnd;
-    INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
     UINT32 m_CodeLength;
@@ -511,9 +486,18 @@ private:
     INT32  m_ReversePInvokeFrameSlot;
     InterruptibleRange* m_pLastInterruptibleRange;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T> 
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = -1;
 
     void * eeAllocGCInfo (size_t        blockSize);
 
@@ -542,19 +526,20 @@ private:
     void SizeofSlotStateVarLengthVector(const BitArray& vector, UINT32 baseSkip, UINT32 baseRun, UINT32 * pSizeofSimple, UINT32 * pSizeofRLE, UINT32 * pSizeofRLENeg);
     UINT32 WriteSlotStateVarLengthVector(BitStreamWriter &writer, const BitArray& vector, UINT32 baseSkip, UINT32 baseRun);
 
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    bool DoNotTrackInPartiallyInterruptible(GcSlotDesc &slot);
-#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
     // Assumes that "*ppTransitions" is has size "numTransitions", is sorted by CodeOffset then by SlotId,
     // and that "*ppEndTransitions" points one beyond the end of the array.  If "*ppTransitions" contains
     // any dead/live transitions pairs for the same CodeOffset and SlotID, removes those, by allocating a
     // new array, and copying the non-removed elements into it.  If it does this, sets "*ppTransitions" to
     // point to the new array, "*pNumTransitions" to its shorted length, and "*ppEndTransitions" to
     // point one beyond the used portion of this array.
-    void EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTransitions,
+    void EliminateRedundantLiveDeadPairs(GcInfoEncoderExt::LifetimeTransition** ppTransitions,
                                          size_t* pNumTransitions,
-                                         LifetimeTransition** ppEndTransitions);
+                                         GcInfoEncoderExt::LifetimeTransition** ppEndTransitions);
+
+    static inline UINT32 GetNormCodeOffsetChunk(UINT32 normCodeOffset)
+    {
+        return normCodeOffset / GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+    }
 
 #ifdef _DEBUG
     bool m_IsSlotTableFrozen;
@@ -564,5 +549,11 @@ private:
     GcInfoSize m_CurrentMethodSize;
 #endif
 };
+
+typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
+
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoEncoder<InterpreterGcInfoEncoding> InterpreterGcInfoEncoder;
+#endif // FEATURE_INTERPRETER
 
 #endif // !__GCINFOENCODER_H__

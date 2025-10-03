@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
         <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
-        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
+        <target state="translated">Metoda nebo vlastnost GeneratedRegexAttribute musí být částečná, bez parametrů, neobecná, neabstraktní a návratová metoda Regex. Pokud jde o vlastnost, musí být také get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

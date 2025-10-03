@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -489,7 +491,7 @@ namespace System.PrivateUri.Tests
         [InlineData("1.2.3.4", UriHostNameType.IPv4)]
         [InlineData(null, UriHostNameType.Unknown)]
         [InlineData("!@*(@#&*#$&*#", UriHostNameType.Unknown)]
-        public static void TestCheckHostName(string hostName, UriHostNameType expected)
+        public static void TestCheckHostName(string? hostName, UriHostNameType expected)
         {
             Assert.Equal(expected, Uri.CheckHostName(hostName));
         }
@@ -498,7 +500,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", true)]
         [InlineData(null, false)]
         [InlineData("!", false)]
-        public static void TestCheckSchemeName(string scheme, bool expected)
+        public static void TestCheckSchemeName(string? scheme, bool expected)
         {
             Assert.Equal(expected, Uri.CheckSchemeName(scheme));
         }
@@ -729,6 +731,25 @@ namespace System.PrivateUri.Tests
             Assert.Equal(Combined, new Uri(baseUri, RelativeUriString).AbsoluteUri);
         }
 
+        [Theory]
+        [InlineData("http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "bar")]
+        [InlineData(@"\\nas\Testue\testImage.jpg", "file://nas/Testue/testImage.jpg", "file://nas/Testue/testImage.jpg", "nas")]
+        // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
+        [InlineData("http://bar/Test\u00fc/testImage.jpg", "http://bar/Test\u00fc/testImage.jpg", "http://bar/Test%C3%BC/testImage.jpg", "bar")]
+        [InlineData("\\\\nas\\Test\u00fc\\testImage.jpg", "file://nas/Test\u00fc/testImage.jpg", "file://nas/Test%C3%BC/testImage.jpg", "nas")]
+        public static void Uri_CombineWithAbsoluteUriResultInAbsoluteSchemaIgnoringOriginalBase(string relativeUri, string expectedUri, string expectedAbsoluteUri, string expectedHost)
+        {
+            string baseUriString = "combine-scheme://foo";
+
+            var baseUri = new Uri(baseUriString, UriKind.Absolute);
+            var uri = new Uri(relativeUri);
+            var resultUri = new Uri(baseUri, uri);
+
+            Assert.Equal(expectedUri, resultUri.ToString());
+            Assert.Equal(expectedAbsoluteUri, resultUri.AbsoluteUri);
+            Assert.Equal(expectedHost, resultUri.Host);
+        }
+
         [Fact]
         public static void Uri_CachesIdnHost()
         {
@@ -793,9 +814,10 @@ namespace System.PrivateUri.Tests
                 // Unix absolute file path
                 yield return new object[] { "/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
                 yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+                yield return new object[] { "\t/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             }
 
-            // Absolute fie path
+            // Absolute file path
             yield return new object[] { "file:///\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             yield return new object[] { "file:///a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
 
@@ -803,6 +825,7 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "file://C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "file:///C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "\tC:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
 
             // UNC
             yield return new object[] { "\\\\\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
@@ -949,6 +972,33 @@ namespace System.PrivateUri.Tests
                         }
                     }
                 }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("Manual only. This test takes a few minutes to execute.")]
+        public static async Task VeryLongInputs_ThrowOOM()
+        {
+            // This string will expand 6x when escaped (12 = 6x growth * 2 chars in the string)
+            string longString = string.Concat(Enumerable.Repeat("\uD83C\uDF49", int.MaxValue / 12));
+
+            Task userInfo = Task.Run(() => Test($"http://{longString}@host/path"));
+            Task path = Task.Run(() => Test($"http://host/{longString}"));
+            Task query = Task.Run(() => Test($"http://host/path?{longString}"));
+            Task fragment = Task.Run(() => Test($"http://host/path?foo=bar#{longString}"));
+
+            await userInfo;
+            await path;
+            await query;
+            await fragment;
+
+            static void Test(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
+
+                Assert.True(Uri.TryCreate(uriString, UriKind.Absolute, out uri));
+                Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
             }
         }
     }

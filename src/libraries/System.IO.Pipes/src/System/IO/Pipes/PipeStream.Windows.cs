@@ -255,9 +255,25 @@ namespace System.IO.Pipes
             if (source is ReadWriteValueTaskSource readWriteSource)
             {
                 ref ReadWriteValueTaskSource? field = ref readWriteSource._isWrite ? ref _reusableWriteValueTaskSource : ref _reusableReadValueTaskSource;
+
+                // Try to return the instance. If there's already something in the field, then there had been concurrent
+                // operations and someone else already returned their instance, so just dispose of this one (the "pool" has
+                // a size of 1). If there's not something there and we're successful in storing our instance, the 99% case is
+                // this is normal operation, there wasn't a concurrent operation, and we just successfully returned the rented
+                // instance. However, it could also be because the stream has been disposed, in which case the disposal process
+                // would have nulled out the field, and since this instance wasn't present when disposal happened, it won't have
+                // been disposed. Further, disposal won't happen again, so just leaving the instance there will result in its
+                // resources being leaked. Instead, _after_ returning the instance we then check whether the stream is now
+                // disposed, and if it is, we then try to re-rent the instance and dispose of it. It's fine if the disposal happens
+                // after we've stored the instance back and before we check the stream's state, as then this code will be racing
+                // with disposal and only one of the two will succeed in exchanging out the instance.
                 if (Interlocked.CompareExchange(ref field, readWriteSource, null) is not null)
                 {
-                    source._preallocatedOverlapped.Dispose();
+                    source.Dispose();
+                }
+                else if (State == PipeState.Closed)
+                {
+                    Interlocked.Exchange(ref field, null)?.Dispose();
                 }
             }
         }

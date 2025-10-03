@@ -13,6 +13,9 @@ namespace ILCompiler.DependencyAnalysis
     public abstract partial class SortableDependencyNode : DependencyNodeCore<NodeFactory>, ISortableNode
     {
 #if !SUPPORT_JIT
+        // Custom sort order. Used to override the default sorting mechanics.
+        public int CustomSort = int.MaxValue;
+
         /// <summary>
         /// Allows grouping of <see cref="ObjectNode"/> instances such that all nodes in a lower phase
         /// will be ordered before nodes in a later phase.
@@ -92,6 +95,8 @@ namespace ILCompiler.DependencyAnalysis
             StaticsInfoHashtableNode,
             ReflectionVirtualInvokeMapNode,
             ArrayOfEmbeddedPointersNode,
+            ExternalTypeMapObjectNode,
+            ProxyTypeMapObjectNode,
             ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
@@ -148,8 +153,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        static partial void ApplyCustomSort(SortableDependencyNode x, SortableDependencyNode y, ref int result);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CompareImpl(SortableDependencyNode x, SortableDependencyNode y, CompilerComparer comparer)
         {
@@ -158,8 +161,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (phaseX == phaseY)
             {
-                int customSort = 0;
-                ApplyCustomSort(x, y, ref customSort);
+                int customSort = x.CustomSort.CompareTo(y.CustomSort);
                 if (customSort != 0)
                     return customSort;
 

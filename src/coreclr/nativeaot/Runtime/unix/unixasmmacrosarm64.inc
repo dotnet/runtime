@@ -226,6 +226,31 @@ C_FUNC(\Name):
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 .endm
 
+// Target cannot be x0.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+    .ifc \target, x0
+        .error "target cannot be x0"
+    .endif
+
+#ifdef FEATURE_EMULATED_TLS
+    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+    PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+
+    bl C_FUNC(RhpGetThread)
+    mov         \target, x0
+
+    .ifc \target, x1
+    EPILOG_RESTORE_REG_PAIR           x0, xzr, 0x10
+    .else
+    EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
+    .endif
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+#else
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+#endif
+.endm
+
+
 // Do not use these ETLS macros in functions that already create a stack frame.
 // Creating two stack frames in one function can confuse the unwinder/debugger
 
@@ -306,7 +331,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_X0            0x00000800
 #define PTFF_SAVE_X1            0x00001000
 #define PTFF_SAVE_ALL_PRESERVED 0x000003FF  // NOTE: x19-x28
-#define PTFF_THREAD_HIJACK_HI   0x00000002  // upper 32 bits of the PTFF_THREAD_HIJACK
+#define PTFF_THREAD_HIJACK_HI   0x00000001  // upper 32 bits of the PTFF_THREAD_HIJACK
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
@@ -345,9 +370,6 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x80
 .endm
 
-// Bit position for the flags above, to be used with tbz / tbnz instructions
-#define PTFF_THREAD_ABORT_BIT 32
-
 //
 // CONSTANTS -- INTEGER
 //
@@ -357,10 +379,8 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-#define TrapThreadsFlags_AbortInProgress_Bit 0
-#define TrapThreadsFlags_TrapThreads_Bit     1
+#define TrapThreadsFlags_TrapThreads_Bit     0
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1

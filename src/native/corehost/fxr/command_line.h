@@ -8,6 +8,8 @@
 #include <host_startup_info.h>
 #include <pal.h>
 
+#include "sdk_resolver.h"
+
 enum class known_options
 {
     additional_probing_path,
@@ -59,7 +61,7 @@ namespace command_line
 
     // skip_sdk_info_output indicates whether or not to skip any information that the SDK would have
     // already printed. Related: https://github.com/dotnet/sdk/issues/33697
-    void print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path, bool skip_sdk_info_output);
+    void print_muxer_info(const pal::string_t &dotnet_root, const sdk_resolver::global_file_info& global_json, bool skip_sdk_info_output);
     void print_muxer_usage(bool is_sdk_present);
 };
 

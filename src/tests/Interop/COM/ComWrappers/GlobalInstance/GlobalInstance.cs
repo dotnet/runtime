@@ -49,6 +49,7 @@ namespace ComWrappersTests.GlobalInstance
 
         private const string ManagedServerTypeName = "ConsumeNETServerTesting";
 
+        private const string IID_IUNKNOWN = "00000000-0000-0000-C000-000000000046";
         private const string IID_IDISPATCH = "00020400-0000-0000-C000-000000000046";
         private const string IID_IINSPECTABLE = "AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90";
         class TestEx : Test
@@ -278,7 +279,7 @@ namespace ComWrappersTests.GlobalInstance
             var testObj = new Test();
             IntPtr comWrapper1 = Marshal.GetIUnknownForObject(testObj);
             Assert.NotEqual(IntPtr.Zero, comWrapper1);
-            Assert.Equal(testObj, registeredWrapper.LastComputeVtablesObject);
+            Assert.Same(testObj, registeredWrapper.LastComputeVtablesObject);
 
             IntPtr comWrapper2 = Marshal.GetIUnknownForObject(testObj);
             Assert.Equal(comWrapper1, comWrapper2);
@@ -295,7 +296,7 @@ namespace ComWrappersTests.GlobalInstance
                 var dispatchObj = new TestEx(IID_IDISPATCH);
                 IntPtr dispatchWrapper = Marshal.GetIDispatchForObject(dispatchObj);
                 Assert.NotEqual(IntPtr.Zero, dispatchWrapper);
-                Assert.Equal(dispatchObj, registeredWrapper.LastComputeVtablesObject);
+                Assert.Same(dispatchObj, registeredWrapper.LastComputeVtablesObject);
 
                 Console.WriteLine($" -- Validate Marshal.GetIDispatchForObject != Marshal.GetIUnknownForObject...");
                 IntPtr unknownWrapper = Marshal.GetIUnknownForObject(dispatchObj);
@@ -309,7 +310,7 @@ namespace ComWrappersTests.GlobalInstance
             object objWrapper1 = Marshal.GetObjectForIUnknown(trackerObjRaw);
             Assert.Equal(validateUseRegistered, objWrapper1 is FakeWrapper);
             object objWrapper2 = Marshal.GetObjectForIUnknown(trackerObjRaw);
-            Assert.Equal(objWrapper1, objWrapper2);
+            Assert.Same(objWrapper1, objWrapper2);
 
             Console.WriteLine($" -- Validate Marshal.GetUniqueObjectForIUnknown...");
 
@@ -319,6 +320,29 @@ namespace ComWrappersTests.GlobalInstance
             Assert.NotEqual(objWrapper1, objWrapper3);
 
             Marshal.Release(trackerObjRaw);
+
+            if (validateUseRegistered)
+            {
+                Console.WriteLine($" -- Validate Marshal.GetObjectForIUnknown and Marshal.GetIUnknownForObject unwrapping...");
+                // Validate that the object returned by Marshal.GetObjectForIUnknown is the same as the original object passed to
+                // Marshal.GetIUnknownForObject.
+                IntPtr comWrapper3 = Marshal.GetIUnknownForObject(testObj);
+                object unwrappedObj = Marshal.GetObjectForIUnknown(comWrapper3);
+                Assert.Same(testObj, unwrappedObj);
+
+                // Validate that the pointer returned by Marshal.GetIUnknownForObject is the same one that was passed into
+                // Marshal.GetObjectForIUnknown.
+                IntPtr trackerObj2 = MockReferenceTrackerRuntime.CreateTrackerObject();
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(trackerObj2, Guid.Parse(IID_IUNKNOWN), out IntPtr trackerObj2Identity));
+                Marshal.Release(trackerObj2);
+
+                object trackerObjectWrapper = Marshal.GetObjectForIUnknown(trackerObj2);
+                IntPtr trackerObjUnwrapped = Marshal.GetIUnknownForObject(trackerObjectWrapper);
+                Assert.Equal(trackerObj2Identity, trackerObjUnwrapped);
+
+                Marshal.Release(trackerObj2Identity);
+                Marshal.Release(trackerObjUnwrapped);
+            }
         }
 
         private static void ValidatePInvokes(bool validateUseRegistered)
@@ -362,12 +386,12 @@ namespace ComWrappersTests.GlobalInstance
 
             T retObj;
             int hr = func(testObj as T, value, out retObj);
-            Assert.Equal(testObj, GlobalComWrappers.Instance.LastComputeVtablesObject);
+            Assert.Same(testObj, GlobalComWrappers.Instance.LastComputeVtablesObject);
             if (shouldSucceed)
             {
                 Assert.True(retObj is Test);
                 Assert.Equal(value, testObj.GetValue());
-                Assert.Equal<object>(testObj, retObj);
+                Assert.Same(testObj, retObj);
             }
             else
             {

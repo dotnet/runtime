@@ -262,6 +262,37 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(0.0f, actual), "Vector4f.Dot did not return the expected value.");
         }
 
+        [Fact]
+        public void Vector4CrossTest()
+        {
+            Vector3 a3 = new Vector3(1.0f, 0.0f, 0.0f);
+            Vector3 b3 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 e3 = Vector3.Cross(a3, b3);
+
+            Vector4 a4 = new Vector4(a3, 2.0f);
+            Vector4 b4 = new Vector4(b3, 3.0f);
+            Vector4 e4 = new Vector4(e3, a4.W * b4.W);
+
+            Vector4 actual = Vector4.Cross(a4, b4);
+            Assert.True(MathHelper.Equal(e4, actual), "Vector4f.Cross did not return the expected value.");
+        }
+
+        [Fact]
+        public void Vector4CrossTest1()
+        {
+            // Cross test of the same vector
+            Vector3 a3 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 b3 = new Vector3(0.0f, 1.0f, 0.0f);
+            Vector3 e3 = Vector3.Cross(a3, b3);
+
+            Vector4 a4 = new Vector4(a3, 3.0f);
+            Vector4 b4 = new Vector4(b3, 3.0f);
+            Vector4 e4 = new Vector4(e3, a4.W * b4.W);
+
+            Vector4 actual = Vector4.Cross(a4, b4);
+            Assert.True(MathHelper.Equal(e4, actual), "Vector4f.Cross did not return the expected value.");
+        }
+
         // A test for Length ()
         [Fact]
         public void Vector4LengthTest()
@@ -2263,6 +2294,34 @@ namespace System.Numerics.Tests
             Assert.Equal(y, vector.Y);
             Assert.Equal(z, vector.Z);
             Assert.Equal(w, vector.W);
+        }
+
+        [Fact]
+        public void CreateScalarTest()
+        {
+            var vector = Vector4.CreateScalar(float.Pi);
+
+            Assert.Equal(float.Pi, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+            Assert.Equal(0, vector.W);
+
+            vector = Vector4.CreateScalar(float.E);
+
+            Assert.Equal(float.E, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+            Assert.Equal(0, vector.W);
+        }
+
+        [Fact]
+        public void CreateScalarUnsafeTest()
+        {
+            var vector = Vector4.CreateScalarUnsafe(float.Pi);
+            Assert.Equal(float.Pi, vector.X);
+
+            vector = Vector4.CreateScalarUnsafe(float.E);
+            Assert.Equal(float.E, vector.X);
         }
     }
 }

@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Encoding.UTF7 and UTF7Encoding are obsolete, but we're the unit test project for it, so suppress warnings -->
     <NoWarn>$(NoWarn),SYSLIB0001</NoWarn>
     <EnableUnsafeUTF7Encoding>true</EnableUnsafeUTF7Encoding>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Ascii\CaseConversionTests.cs" />
     <Compile Include="Ascii\EqualsTests.cs" />
@@ -92,11 +94,13 @@
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
+
 </Project>

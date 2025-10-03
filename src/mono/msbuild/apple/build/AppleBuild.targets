@@ -7,6 +7,7 @@
     <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
     <UseSystemZlib Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'android' or '$(TargetArchitecture)' == 'armv6'">true</UseSystemZlib>
+    <UseMonoRuntime Condition="'$(RuntimeFlavor)' == 'mono'">true</UseMonoRuntime>
   </PropertyGroup>
 
   <UsingTask Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -54,10 +55,14 @@
       <AppleBundleDir Condition="'$(AppleBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AppleBundleDir>
 
       <BundleDir>$(AppleBundleDir)</BundleDir>
-      <_MonoHeaderPath Condition="'$(UseMonoRuntime)' != 'false' and '$(UseNativeAOTRuntime)' != 'true'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
+
+    <ItemGroup>
+      <RuntimeHeaders Include="$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))"
+                      Condition="'$(UseMonoRuntime)' != 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(AppleAppBuilderRuntime)' == 'MonoVM'">
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)"/>
@@ -79,6 +84,7 @@
       <_CommonLinkerArgs Include="-lswiftCore" />
       <_CommonLinkerArgs Include="-lswiftFoundation" />
       <_CommonLinkerArgs Include="-framework Foundation" />
+      <_CommonLinkerArgs Include="-framework Network" />
       <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework CryptoKit" />
       <_CommonLinkerArgs Include="-framework UIKit" />
@@ -93,6 +99,11 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
+
+    <!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)libcoreclr_static.a"
+          DestinationFiles="$(AppleBuildDir)libcoreclr_static.a"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(CoreCLRArtifactsPath)libcoreclr_static.a')" />
   </Target>
 
   <Target Name="_AppleResolveReferences">
@@ -298,7 +309,7 @@
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
     </ItemGroup>
- 
+
     <PropertyGroup>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">NativeAOT</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">CoreCLR</AppleAppBuilderRuntime>
@@ -316,6 +327,7 @@
       EnableAppSandbox="$(EnableAppSandbox)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+      EnvironmentVariables="@(EnvironmentVariables)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
@@ -324,7 +336,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       IsLibraryMode="$(_IsLibraryMode)"
       MainLibraryFileName="$(MainLibraryFileName)"
-      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      MonoRuntimeHeaders="@(RuntimeHeaders)"
       NativeMainSource="$(NativeMainSource)"
       NativeDependencies="@(NativeDependencies)"
       Optimized="$(Optimized)"

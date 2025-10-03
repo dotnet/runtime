@@ -3,7 +3,7 @@
 
 namespace Mono.Linker.Tests.Cases.Extensibility.Dependencies
 {
-	public class InterfaceImplementationInOtherAssembly : InterfaceType
-	{
-	}
+    public class InterfaceImplementationInOtherAssembly : InterfaceType
+    {
+    }
 }

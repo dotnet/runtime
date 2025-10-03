@@ -6,6 +6,9 @@
 
 #include "rhassert.h"
 #include <minipal/utils.h>
+#ifdef PROFILE_STARTUP
+#include <minipal/time.h>
+#endif
 
 #define EXTERN_C extern "C"
 
@@ -34,33 +37,7 @@
 
 #endif // _MSC_VER
 
-#ifndef offsetof
-#define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
-#endif // offsetof
-
-#ifdef __GNUC__
-#ifdef HOST_64BIT
-#define __int64     long
-#else // HOST_64BIT
-#define __int64     long long
-#endif // HOST_64BIT
-#endif // __GNUC__
-
-#ifndef FORCEINLINE
-#define FORCEINLINE __forceinline
-#endif
-
-#ifdef __GNUC__
-#define __forceinline __attribute__((always_inline)) inline
-#endif // __GNUC__
-
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#else
-#define NOINLINE __attribute__((noinline))
-#endif
-#endif
+#include <stddef.h>
 
 #ifndef __GCENV_BASE_INCLUDED__
 
@@ -94,39 +71,17 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 //-------------------------------------------------------------------------------------------------
 // Platform-specific defines
 
-#if defined(HOST_AMD64)
+#ifdef HOST_64BIT
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
-#elif defined(HOST_X86)
+#else // HOST_64BIT
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(HOST_ARM)
-
-#define LOG2_PTRSIZE 2
-#define POINTER_SIZE 4
-
-#elif defined(HOST_ARM64)
-
-#define LOG2_PTRSIZE 3
-#define POINTER_SIZE 8
-
-#elif defined (HOST_WASM)
-
-#define LOG2_PTRSIZE 2
-#define POINTER_SIZE 4
-
-#elif defined(HOST_LOONGARCH64) || defined (HOST_RISCV64)
-
-#define LOG2_PTRSIZE 3
-#define POINTER_SIZE 8
-
-#else
-#error Unsupported target architecture
-#endif
+#endif // HOST_64BIT
 
 #ifndef __GCENV_BASE_INCLUDED__
 
@@ -207,6 +162,7 @@ typedef uint8_t CODE_LOCATION;
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (b, a) \
     {
+#define FCIMPL2_LL FCIMPL2_DD
 #define FCIMPL2_FI(_rettype, _method, a, b) \
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b) \
@@ -249,6 +205,7 @@ typedef uint8_t CODE_LOCATION;
 #define FCIMPL2_DD(_rettype, _method, a, b) \
     EXTERN_C _rettype F_CALL_CONV _method (a, b) \
     {
+#define FCIMPL2_LL FCIMPL2_DD
 #define FCIMPL2_FI(_rettype, _method, a, b) \
     EXTERN_C _rettype F_CALL_CONV _method (a, b) \
     {
@@ -321,64 +278,9 @@ enum STARTUP_TIMELINE_EVENT_ID
 
 #ifdef PROFILE_STARTUP
 extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
+#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = (uint64_t)minipal_hires_ticks();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP
-
-#ifndef C_ASSERT
-#define C_ASSERT(e) static_assert(e, #e)
-#endif // C_ASSERT
-
-#ifdef _MSC_VER
-#define DECLSPEC_THREAD __declspec(thread)
-#else // _MSC_VER
-#define DECLSPEC_THREAD __thread
-#endif // !_MSC_VER
-
-#ifndef __GCENV_BASE_INCLUDED__
-#if !defined(_INC_WINDOWS)
-#ifdef _WIN32
-// this must exactly match the typedef used by windows.h
-typedef long HRESULT;
-#else
-typedef int32_t HRESULT;
-#endif
-
-#define S_OK  0x0
-#define E_FAIL 0x80004005
-
-#define UNREFERENCED_PARAMETER(P)          (void)(P)
-#endif // !defined(_INC_WINDOWS)
-#endif // __GCENV_BASE_INCLUDED__
-
-// PAL Numbers
-// Used to ensure cross-compiler compatibility when declaring large
-// integer constants. 64-bit integer constants should be wrapped in the
-// declarations listed here.
-//
-// Each of the #defines here is wrapped to avoid conflicts with pal.h.
-
-#if defined(_MSC_VER)
-
-// MSVC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#ifndef I64
-#define I64_HELPER(x) x ## i64
-#define I64(x)        I64_HELPER(x)
-#endif
-
-#else
-
-// GCC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#ifndef I64
-#define I64_HELPER(x) x ## LL
-#define I64(x)        I64_HELPER(x)
-#endif
-
-#endif
 
 #endif // __COMMONMACROS_H__

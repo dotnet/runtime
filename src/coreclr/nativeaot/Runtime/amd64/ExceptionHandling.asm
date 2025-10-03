@@ -130,6 +130,10 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -226,6 +230,10 @@ NESTED_ENTRY RhpRethrow, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -363,12 +371,11 @@ endm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
-        FUNCLET_CALL_PROLOGUE 3, 0
+        FUNCLET_CALL_PROLOGUE 2, 1
 
         ;; locals
         rsp_offsetof_thread = rsp_offsetof_locals
         rsp_offsetof_resume_ip = rsp_offsetof_locals + 8;
-        rsp_offsetof_is_handling_thread_abort = rsp_offsetof_locals + 16;
 
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
@@ -377,9 +384,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
         INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
         mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
-
-        cmp     rcx, [rax + OFFSETOF__Thread__m_threadAbortException]
-        setz    byte ptr [rsp + rsp_offsetof_is_handling_thread_abort]
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
@@ -401,27 +405,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
 
-if 0 ;; _DEBUG  ;; @TODO: temporarily removed because trashing RBP breaks the debugger
-        ;; trash the values at the old homes to make sure nobody uses them
-        mov     r9, 0baaddeedh
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], r9
-endif
-
         movdqa  xmm6, [r8 + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
         movdqa  xmm7, [r8 + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
         movdqa  xmm8, [r8 + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
@@ -434,8 +417,7 @@ endif
         movdqa  xmm14,[r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
-        mov     rdx, [rsp + rsp_offsetof_arguments + 0h]            ;; rdx <- exception object
+        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 
 ALTERNATE_ENTRY RhpCallCatchFunclet2
@@ -522,20 +504,8 @@ endif
         xor     r9, r9                                              ;; r9 <- 0
    endif
 
-        test    [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
-        jz      @f
-
-        ;; test if the exception handled by the catch was the ThreadAbortException
-        cmp     byte ptr [rsp + rsp_offsetof_is_handling_thread_abort], 0
-        je      @f
-
-        ;; It was the ThreadAbortException, so rethrow it
-        mov     rcx, STATUS_REDHAWK_THREAD_ABORT
-        mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
-        lea     rax, [RhpThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
-
         ;; reset RSP and jump to RAX
-   @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
+        mov     rsp, r8                                             ;; reset the SP to resume SP value
 
         ;; if have shadow stack, then we need to reconcile it with the rsp change we have just made. (r11 must contain target SSP)
         rdsspq  r9                                                  ;; NB, r9 == 0 prior to this
@@ -618,62 +588,9 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
         movdqa  xmm14,[rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-if 0 ;; _DEBUG ;; @TODO: temporarily removed because trashing RBP breaks the debugger
-        ;; trash the values at the old homes to make sure nobody uses them
-        mov     r9, 0baaddeedh
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], r9
-endif
-
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__SP]               ;; rcx <- establisher frame
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
-
-        mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
-
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax]                            , rbx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax]                            , rbp
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax]                            , rsi
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax]                            , rdi
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax]                            , r12
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax]                            , r13
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax]                            , r14
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax]                            , r15
-
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 0*10h], xmm6
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 1*10h], xmm7
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 2*10h], xmm8
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 3*10h], xmm9
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 4*10h], xmm10
-
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 5*10h], xmm11
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 6*10h], xmm12
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h], xmm13
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h], xmm14
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h], xmm15
 
         mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
@@ -702,10 +619,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
         mov     rbp, [rax]
 
-        mov     rax, rdx                                            ;; rax <- handler funclet address
-        mov     rdx, rcx                                            ;; rdx <- exception object
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
-        call    rax
+        call    rdx
 
 ALTERNATE_ENTRY RhpCallFilterFunclet2
 

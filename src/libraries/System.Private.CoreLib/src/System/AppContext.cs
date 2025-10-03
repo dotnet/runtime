@@ -82,6 +82,30 @@ namespace System
         internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("OnUnhandledException")]
+#endif
+        internal static void OnUnhandledException(object e)
+        {
+#if NATIVEAOT
+            RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
+#endif
+            if (UnhandledException is UnhandledExceptionEventHandler handlers)
+            {
+                UnhandledExceptionEventArgs args = new(e, isTerminating: true);
+                foreach (UnhandledExceptionEventHandler handler in Delegate.EnumerateInvocationList(handlers))
+                {
+                    try
+                    {
+                        handler(/* AppDomain */ null!, args);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
         internal static void OnProcessExit()
         {
             AssemblyLoadContext.OnProcessExit();

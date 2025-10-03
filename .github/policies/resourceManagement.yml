@@ -19,6 +19,12 @@ configuration:
       - isOpen
       - isNotLabeledWith:
           label: backlog-cleanup-candidate
+      - isNotLabeledWith:
+          label: area-codegen-coreclr
+      - isNotLabeledWith:
+          label: area-iltools-coreclr
+      - isNotLabeledWith:
+          label: area-tools-ilverification
       actions:
       - addReply:
           reply: >-
@@ -124,6 +130,8 @@ configuration:
             label: area-CodeGen-coreclr
         - labelAdded:
             label: area-Codegen-Interpreter-mono
+        - labelAdded:
+            label: area-CodeGen-Interpreter-coreclr
         - labelAdded:
             label: area-Codegen-JIT-Mono
         - labelAdded:
@@ -378,6 +386,20 @@ configuration:
             assignMentionees: False
       - if:
         - hasLabel:
+            label: area-CodeGen-Interpreter-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - brzvlad
+            - janvorli
+            - kg
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
             label: area-Codegen-JIT-Mono
         then:
         - mentionUsers:
@@ -447,6 +469,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - thaystg
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -470,7 +493,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -703,6 +727,7 @@ configuration:
             mentionees:
             - akoeplinger
             - matouskozak
+            - simonrozsival
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -911,7 +936,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -924,7 +949,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -937,7 +962,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -951,6 +976,7 @@ configuration:
             mentionees:
             - cheenamalhotra
             - david-engel
+            - roji
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -962,7 +988,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1036,6 +1063,7 @@ configuration:
             mentionees:
             - tarekgh
             - tommcdon
+            - steveisok
             - pjanotti
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1565,7 +1593,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1650,11 +1678,26 @@ configuration:
       description: Add breaking change doc label to PR
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: src/coreclr/inc/jiteeversionguid.h
+          matchAny: true
+      - isPullRequest
+      - isOpen
+      - isAction:
+          action: Opened
+      then:
+      - mentionUsers:
+          mentionees:
+          - dotnet/jit-contrib
+          replyTemplate: >-
+            Tagging @dotnet/jit-contrib for JIT-EE GUID update
+          assignMentionees: False
+      description: '@Mention for JIT-EE GUID update'
+    - if:
+      - payloadType: Pull_Request
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1666,11 +1709,9 @@ configuration:
       description: '[Linkable-framework workgroup] Add linkable-framework label to new Prs that touch files with *ILLink* that not have it already'
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1731,6 +1772,7 @@ configuration:
       - mentionUsers:
           mentionees:
           - lewing
+          - pavelsavara
           replyTemplate: >-
             Tagging subscribers to 'arch-wasm': ${mentionees}
 
@@ -1748,7 +1790,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1787,7 +1828,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1807,7 +1847,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-

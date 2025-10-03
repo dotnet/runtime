@@ -54,6 +54,8 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EnableThreads { get; set; }
 
+    public bool EnableDiagnostics { get; set; }
+
     public bool EmitSourceMap { get; set; }
 
     public bool IsWebCilEnabled { get; set; }
@@ -220,6 +222,8 @@ public class ComputeWasmPublishAssets : Task
                     baseName = "dotnet.native";
                 else if (baseName.StartsWith("dotnet.runtime"))
                     baseName = "dotnet.runtime";
+                else if (baseName.StartsWith("dotnet.diagnostics"))
+                    baseName = "dotnet.diagnostics";
                 else if (baseName.StartsWith("dotnet"))
                     baseName = "dotnet";
 
@@ -320,9 +324,9 @@ public class ComputeWasmPublishAssets : Task
 
         static bool IsDotNetWasm(string key)
         {
-            var name = Path.GetFileName(key);
-            return string.Equals("dotnet.native.wasm", name, StringComparison.Ordinal)
-                || string.Equals("dotnet.wasm", name, StringComparison.Ordinal);
+            var fileName = Path.GetFileName(key);
+            return (fileName.StartsWith("dotnet.native", StringComparison.Ordinal) && fileName.EndsWith(".wasm", StringComparison.Ordinal))
+                || string.Equals("dotnet.wasm", fileName, StringComparison.Ordinal);
         }
     }
 
@@ -340,7 +344,6 @@ public class ComputeWasmPublishAssets : Task
             if (newAssetFingerprintedFileName != assetFileNameToFingerprint)
             {
                 newAssetItemSpec = $"{assetDirectory}/{newAssetFingerprintedFileName}";
-                newAssetRelativePath = newAssetRelativePath.Replace(assetFileNameToFingerprint, newAssetFingerprintedFileName);
             }
         }
 
@@ -660,7 +663,7 @@ public class ComputeWasmPublishAssets : Task
         foreach (var candidate in resolvedFilesToPublish)
         {
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. Dictionary.TryAdd() not available in .Net framework.
-            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
+            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EnableDiagnostics, EmitSourceMap, out var reason))
             {
                 Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                 if (!resolvedFilesToPublishToRemove.ContainsKey(candidate.ItemSpec))

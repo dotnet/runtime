@@ -40,6 +40,13 @@ namespace System.Diagnostics.Metrics
     ///   - MaxHistograms - An integer that sets an upper bound on the number of histograms
     ///   this event source will track. This allows setting a tighter bound on histograms
     ///   than time series in general given that histograms use considerably more memory.
+    ///   - Base2ExponentialHistogram - Set the default aggregation configuration for histograms to base2 exponential.
+    ///    If this is not specified, the default is to use the 'default' aggregation which is the exponential aggregation with the quantiles.
+    ///    The value is a semicolon separated list of histogram aggregation specifications.
+    ///       o scale - Maximum scale factor for Base2Exponential aggregation type. The default value is 20.
+    ///       o maxBuckets - The maximum number of buckets for Base2Exponential aggregation type in each of the positive ranges,
+    ///         not counting the special zero bucket. The default value is 160.
+    ///       o reportDeltas - If true, the histogram will report deltas instead of whole accumulated values. The default value is false.
     /// </summary>
     [EventSource(Name = "System.Diagnostics.Metrics")]
     internal sealed class MetricsEventSource : EventSource
@@ -101,7 +108,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(2, Keywords = Keywords.TimeSeriesValues)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -111,7 +118,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(3, Keywords = Keywords.TimeSeriesValues)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -121,7 +128,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -131,7 +138,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(5, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -141,7 +148,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -153,8 +160,8 @@ namespace System.Diagnostics.Metrics
         // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
-        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 3)]
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -169,16 +176,17 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl ?? "");
         }
 
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
-        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 3)]
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -193,10 +201,11 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl ?? "");
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
@@ -211,8 +220,8 @@ namespace System.Diagnostics.Metrics
             WriteEvent(10, sessionId);
         }
 
-        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 2)]
-#if !NET8_0_OR_GREATER
+        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 3)]
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -227,10 +236,11 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl ?? "");
         }
 
         [Event(12, Keywords = Keywords.TimeSeriesValues)]
@@ -258,7 +268,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -268,7 +278,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -284,6 +294,20 @@ namespace System.Diagnostics.Metrics
         public void Version(int Major, int Minor, int Patch)
         {
             WriteEvent(18, Major, Minor, Patch);
+        }
+
+        /// <summary>
+        /// Used to send the value of a base 2 exponential histogram.
+        /// </summary>
+        [Event(19, Keywords = Keywords.TimeSeriesValues, Version = 1)]
+#if !NET
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                                      Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+#endif
+        public void Base2ExponentialHistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, int instrumentId, string? unit, string tags, int scale, double sum,
+                                                            long count, long zeroCount, double minimum, double maximum, string buckets)
+        {
+            WriteEvent(19, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentId, unit ?? "", tags, scale, sum, count, zeroCount, minimum, maximum, buckets);
         }
 
         /// <summary>
@@ -335,16 +359,16 @@ namespace System.Diagnostics.Metrics
             {
                 try
                 {
-#if OS_ISBROWSER_SUPPORT
-                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+#if OS_ISWASI_SUPPORT
+                    if (OperatingSystem.IsWasi())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
-                        // and browser doesn't support Thread.Start()
+                        // and wasi doesn't support Thread.Start()
                         //
-                        // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
+                        // This limitation shouldn't really matter because wasi also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
-                        // modified to have some other fallback path that works for browser.
-                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser and wasi");
+                        // modified to have some other fallback path that works for wasi.
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on wasi");
                         return;
                     }
 #endif
@@ -393,6 +417,11 @@ namespace System.Diagnostics.Metrics
                                     {
                                         ParseSpecs(metricsSpecs);
                                         _aggregationManager.Update();
+                                    }
+
+                                    if (ParseBase2ExponentialHistogramSpecs(command.Arguments!, out string? base2ExponentialHistogramSpec))
+                                    {
+                                        ParseBase2ExponentialHistogram(base2ExponentialHistogramSpec);
                                     }
 
                                     return;
@@ -463,11 +492,11 @@ namespace System.Diagnostics.Metrics
                             beginCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
                             endCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
                             beginInstrumentMeasurements: (i, state) => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID, i.Meter.TelemetrySchemaUrl),
                             endInstrumentMeasurements: (i, state) => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID, i.Meter.TelemetrySchemaUrl),
                             instrumentPublished: (i, state) => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID, i.Meter.TelemetrySchemaUrl),
                             initialInstrumentEnumerationComplete: () => Parent.InitialInstrumentEnumerationComplete(sessionId),
                             collectionError: e => Parent.Error(sessionId, e.ToString()),
                             timeSeriesLimitReached: () => Parent.TimeSeriesLimitReached(sessionId),
@@ -479,6 +508,11 @@ namespace System.Diagnostics.Metrics
                         if (ParseMetrics(command.Arguments!, out string? metricsSpecs))
                         {
                             ParseSpecs(metricsSpecs);
+                        }
+
+                        if (ParseBase2ExponentialHistogramSpecs(command.Arguments!, out string? base2ExponentialHistogramSpec))
+                        {
+                            ParseBase2ExponentialHistogram(base2ExponentialHistogramSpec);
                         }
 
                         _aggregationManager.Start();
@@ -506,6 +540,18 @@ namespace System.Diagnostics.Metrics
                 }
 
                 Parent.Message("No Metrics argument received");
+                return false;
+            }
+
+            private bool ParseBase2ExponentialHistogramSpecs(IDictionary<string, string> arguments, out string? base2ExponentialHistogramSpec)
+            {
+                if (arguments.TryGetValue("Base2ExponentialHistogram", out base2ExponentialHistogramSpec))
+                {
+                    Parent.Message($"Histogram Aggregation argument received: {base2ExponentialHistogramSpec}");
+                    return true;
+                }
+
+                Parent.Message("No Histogram Aggregation argument received");
                 return false;
             }
 
@@ -658,7 +704,9 @@ namespace System.Diagnostics.Metrics
 
             private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
-            [UnsupportedOSPlatform("browser")]
+            private readonly char[] Base2ExponentialHistogramSpecSeparators = [';'];
+            private const char HistogramPartSeparator = '=';
+
             private void ParseSpecs(string? metricsSpecs)
             {
                 if (metricsSpecs == null)
@@ -695,6 +743,91 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
+            private void ParseBase2ExponentialHistogram(string? base2ExponentialHistogramSpec)
+            {
+                if (base2ExponentialHistogramSpec == null)
+                {
+                    return;
+                }
+
+                string[] specStrings = base2ExponentialHistogramSpec.Split(Base2ExponentialHistogramSpecSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+                if (specStrings.Length == 0)
+                {
+                    Parent.Message("No histogram aggregation spec is provided");
+                    return;
+                }
+
+                // Default values for Base 2 exponential histogram
+                int scale = 20;
+                int maxBuckets = 160;
+                bool reportDeltas = false;
+
+                foreach (string specString in specStrings)
+                {
+                    int index = specString.IndexOf(HistogramPartSeparator);
+                    if (index < 0)
+                    {
+                        Parent.Message($"Invalid histogram aggregation spec: {specString}");
+                        continue;
+                    }
+
+                    ReadOnlySpan<char> spec = specString.AsSpan(0, index).Trim();
+                    ReadOnlySpan<char> value = specString.AsSpan(index + 1).Trim();
+
+                    if (spec.Equals("scale", StringComparison.OrdinalIgnoreCase))
+                    {
+#if NET
+                        if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
+#else
+                        if (!int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
+#endif // NET
+                        {
+                            Parent.Message($"Invalid scale value: {specString}");
+                            continue;
+                        }
+                        else
+                        {
+                            scale = s;
+                        }
+                    }
+                    else if (spec.Equals("maxBuckets", StringComparison.OrdinalIgnoreCase))
+                    {
+#if NET
+                        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
+#else
+                        if (!int.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
+#endif // NET
+                        {
+                            Parent.Message($"Invalid maxBuckets value: {specString}");
+                            continue;
+                        }
+                        else
+                        {
+                            maxBuckets = m;
+                        }
+                    }
+                    else if (spec.Equals("reportDeltas", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (value.Equals("true", StringComparison.OrdinalIgnoreCase))
+                        {
+                            reportDeltas = true;
+                        }
+                        else if (value.Equals("false", StringComparison.OrdinalIgnoreCase))
+                        {
+                            reportDeltas = false;
+                        }
+                        else
+                        {
+                            Parent.Message($"Invalid reportDeltas value: {specString}");
+                            continue;
+                        }
+                    }
+                }
+
+                _aggregationManager!.SetHistogramAggregation(() => new Base2ExponentialHistogramAggregator(maxBuckets, scale, reportDeltas));
+            }
+
             private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId, InstrumentState? instrumentState)
             {
                 int instrumentId = instrumentState?.ID ?? 0;
@@ -726,6 +859,41 @@ namespace System.Diagnostics.Metrics
                     Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles),
                         histogramStats.Count, histogramStats.Sum, instrumentId);
                 }
+                else if (stats.AggregationStatistics is Base2ExponentialHistogramStatistics base2ExponentialHistogramStats)
+                {
+                    Log.Base2ExponentialHistogramValuePublished(
+                        sessionId,
+                        instrument.Meter.Name,
+                        instrument.Meter.Version,
+                        instrument.Name,
+                        instrumentId,
+                        instrument.Unit,
+                        Helpers.FormatTags(stats.Labels),
+                        base2ExponentialHistogramStats.Scale,
+                        base2ExponentialHistogramStats.Sum,
+                        base2ExponentialHistogramStats.Count,
+                        base2ExponentialHistogramStats.ZeroCount,
+                        base2ExponentialHistogramStats.Minimum,
+                        base2ExponentialHistogramStats.Maximum,
+                        FormatBuckets(base2ExponentialHistogramStats.PositiveBuckets));
+                }
+            }
+
+            private static string FormatBuckets(long[] buckets)
+            {
+                ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[512]);
+
+                if (buckets.Length > 0)
+                {
+                    sb.Append($"{buckets[0]}");
+                }
+
+                for (int i = 1; i < buckets.Length; i++)
+                {
+                    sb.Append($", {buckets[i]}");
+                }
+
+                return sb.ToString();
             }
 
             private static string FormatQuantiles(QuantileValue[] quantiles)

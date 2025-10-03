@@ -26,7 +26,7 @@ namespace System.IO.Compression.Tests
             return newfile;
         }
 
-        public static long LengthOfUnseekableStream(Stream s)
+        public static async Task<long> LengthOfUnseekableStream(Stream s)
         {
             long totalBytes = 0;
             const int bufSize = 4096;
@@ -35,7 +35,7 @@ namespace System.IO.Compression.Tests
 
             do
             {
-                bytesRead = s.Read(buf, 0, bufSize);
+                bytesRead = await s.ReadAsync(buf, 0, bufSize);
                 totalBytes += bytesRead;
             } while (bytesRead > 0);
 
@@ -43,7 +43,7 @@ namespace System.IO.Compression.Tests
         }
 
         // reads exactly bytesToRead out of stream, unless it is out of bytes
-        public static void ReadBytes(Stream stream, byte[] buffer, long bytesToRead)
+        public static async Task ReadBytes(Stream stream, byte[] buffer, long bytesToRead, bool async)
         {
             int bytesLeftToRead;
             if (bytesToRead > int.MaxValue)
@@ -58,13 +58,17 @@ namespace System.IO.Compression.Tests
 
             while (bytesLeftToRead > 0)
             {
-                int bytesRead = stream.Read(buffer, totalBytesRead, bytesLeftToRead);
+                int bytesRead = async ?
+                    await stream.ReadAsync(buffer, totalBytesRead, bytesLeftToRead) :
+                   stream.Read(buffer, totalBytesRead, bytesLeftToRead);
+
                 if (bytesRead == 0) throw new IOException("Unexpected end of stream");
 
                 totalBytesRead += bytesRead;
                 bytesLeftToRead -= bytesRead;
             }
         }
+
         public static async Task<int> ReadAllBytesAsync(Stream stream, byte[] buffer, int offset, int count)
         {
             int bytesRead;
@@ -109,11 +113,6 @@ namespace System.IO.Compression.Tests
         public static void StreamsEqual(Stream ast, Stream bst)
         {
             StreamsEqual(ast, bst, -1);
-        }
-
-        public static async Task StreamsEqualAsync(Stream ast, Stream bst)
-        {
-            await StreamsEqualAsync(ast, bst, -1);
         }
 
         public static void StreamsEqual(Stream ast, Stream bst, int blocksToRead)
@@ -188,15 +187,13 @@ namespace System.IO.Compression.Tests
             } while (ac == bufSize);
         }
 
-        public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode)
-        {
-            await IsZipSameAsDirAsync(archiveFile, directory, mode, requireExplicit: false, checkTimes: false);
-        }
+        public static async Task IsZipSameAsDir(string archiveFile, string directory, ZipArchiveMode mode, bool async) =>
+            await IsZipSameAsDir(archiveFile, directory, mode, requireExplicit: false, checkTimes: false, async);
 
-        public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes)
+        public static async Task IsZipSameAsDir(string archiveFile, string directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes, bool async)
         {
             var s = await StreamHelpers.CreateTempCopyStream(archiveFile);
-            IsZipSameAsDir(s, directory, mode, requireExplicit, checkTimes);
+            await IsZipSameAsDir(s, directory, mode, requireExplicit, checkTimes, async);
         }
 
         public static byte[] NormalizeLineEndings(byte[] str)
@@ -207,104 +204,110 @@ namespace System.IO.Compression.Tests
             return Text.Encoding.Default.GetBytes(rep);
         }
 
-        public static void IsZipSameAsDir(Stream archiveFile, string directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes)
+        public static async Task IsZipSameAsDir(Stream archiveFile, string directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes, bool async)
         {
+            ZipArchive archive = await CreateZipArchive(async, archiveFile, mode);
+
+            List<FileData> files = FileData.InPath(directory);
+
             int count = 0;
-
-            using (ZipArchive archive = new ZipArchive(archiveFile, mode))
+            foreach (FileData file in files)
             {
-                List<FileData> files = FileData.InPath(directory);
-                Assert.All<FileData>(files, (file) => {
-                    count++;
-                    string entryName = file.FullName;
-                    if (file.IsFolder)
-                        entryName += Path.DirectorySeparatorChar;
-                    ZipArchiveEntry entry = archive.GetEntry(entryName);
-                    if (entry == null)
-                    {
-                        entryName = FlipSlashes(entryName);
-                        entry = archive.GetEntry(entryName);
-                    }
-                    if (file.IsFile)
-                    {
-                        Assert.NotNull(entry);
-                        long givenLength = entry.Length;
+                count++;
+                string entryName = file.FullName;
+                if (file.IsFolder)
+                    entryName += Path.DirectorySeparatorChar;
+                ZipArchiveEntry entry = archive.GetEntry(entryName);
+                if (entry == null)
+                {
+                    entryName = FlipSlashes(entryName);
+                    entry = archive.GetEntry(entryName);
+                }
+                if (file.IsFile)
+                {
+                    Assert.NotNull(entry);
 
-                        var buffer = new byte[entry.Length];
-                        using (Stream entrystream = entry.Open())
-                        {
-                            ReadAllBytes(entrystream, buffer, 0, buffer.Length);
+                    // IMPORTANT: Call Length before opening the entry in Update mode
+                    long givenLength = entry.Length;
+                    var buffer = new byte[entry.Length];
+
+                    Stream entryStream = await OpenEntryStream(async, entry);
+
+                    ReadAllBytes(entryStream, buffer, 0, buffer.Length);
 #if NET
-                            uint zipcrc = entry.Crc32;
-                            Assert.Equal(CRC.CalculateCRC(buffer), zipcrc);
+                    uint zipcrc = entry.Crc32;
+                    Assert.Equal(CRC.CalculateCRC(buffer), zipcrc);
 #endif
 
-                            if (file.Length != givenLength)
-                            {
-                                buffer = NormalizeLineEndings(buffer);
-                            }
-
-                            Assert.Equal(file.Length, buffer.Length);
-                            ulong crc = CRC.CalculateCRC(buffer);
-                            Assert.Equal(file.CRC, crc.ToString());
-                        }
-
-                        if (checkTimes)
-                        {
-                            const int zipTimestampResolution = 2; // Zip follows the FAT timestamp resolution of two seconds for file records
-                            DateTime lower = file.LastModifiedDate.AddSeconds(-zipTimestampResolution);
-                            DateTime upper = file.LastModifiedDate.AddSeconds(zipTimestampResolution);
-                            Assert.InRange(entry.LastWriteTime.Ticks, lower.Ticks, upper.Ticks);
-                        }
-
-                        Assert.Equal(file.Name, entry.Name);
-                        Assert.Equal(entryName, entry.FullName);
-                        Assert.Equal(entryName, entry.ToString());
-                        Assert.Equal(archive, entry.Archive);
-                    }
-                    else if (file.IsFolder)
+                    if (file.Length != givenLength)
                     {
-                        if (entry == null) //entry not found
-                        {
-                            string entryNameOtherSlash = FlipSlashes(entryName);
-                            bool isEmpty = !files.Any(
-                                f => f.IsFile &&
-                                     (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
-                                      f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if (requireExplicit || isEmpty)
-                            {
-                                Assert.Contains("emptydir", entryName);
-                            }
-
-                            if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
-                                count--; //discount this entry
-                        }
-                        else
-                        {
-                            using (Stream es = entry.Open())
-                            {
-                                try
-                                {
-                                    Assert.Equal(0, es.Length);
-                                }
-                                catch (NotSupportedException)
-                                {
-                                    try
-                                    {
-                                        Assert.Equal(-1, es.ReadByte());
-                                    }
-                                    catch (Exception)
-                                    {
-                                        Console.WriteLine("Didn't return EOF");
-                                        throw;
-                                    }
-                                }
-                            }
-                        }
+                        buffer = NormalizeLineEndings(buffer);
                     }
-                });
-                Assert.Equal(count, archive.Entries.Count);
+
+                    Assert.Equal(file.Length, buffer.Length);
+                    ulong crc = CRC.CalculateCRC(buffer);
+                    Assert.Equal(file.CRC, crc.ToString());
+
+                    await DisposeStream(async, entryStream);
+
+                    if (checkTimes)
+                    {
+                        const int zipTimestampResolution = 2; // Zip follows the FAT timestamp resolution of two seconds for file records
+                        DateTime lower = file.LastModifiedDate.AddSeconds(-zipTimestampResolution);
+                        DateTime upper = file.LastModifiedDate.AddSeconds(zipTimestampResolution);
+                        Assert.InRange(entry.LastWriteTime.Ticks, lower.Ticks, upper.Ticks);
+                    }
+
+                    Assert.Equal(file.Name, entry.Name);
+                    Assert.Equal(entryName, entry.FullName);
+                    Assert.Equal(entryName, entry.ToString());
+                    Assert.Equal(archive, entry.Archive);
+                }
+                else if (file.IsFolder)
+                {
+                    if (entry == null) //entry not found
+                    {
+                        string entryNameOtherSlash = FlipSlashes(entryName);
+                        bool isEmpty = !files.Any(
+                            f => f.IsFile &&
+                                    (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
+                                    f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
+                        if (requireExplicit || isEmpty)
+                        {
+                            Assert.Contains("emptydir", entryName);
+                        }
+
+                        if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
+                            count--; //discount this entry
+                    }
+                    else
+                    {
+                        Stream es = await OpenEntryStream(async, entry);
+
+                        try
+                        {
+                            Assert.Equal(0, es.Length);
+                        }
+                        catch (NotSupportedException)
+                        {
+                            try
+                            {
+                                Assert.Equal(-1, es.ReadByte());
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine("Didn't return EOF");
+                                throw;
+                            }
+                        }
+
+                        await DisposeStream(async, es);
+                    }
+                }
             }
+            Assert.Equal(count, archive.Entries.Count);
+
+            await DisposeZipArchive(async, archive);
         }
 
         private static string FlipSlashes(string name)
@@ -316,7 +319,10 @@ namespace System.IO.Compression.Tests
                 name;
         }
 
-        public static void DirsEqual(string actual, string expected)
+        public static FileStream CreateFileStreamRead(bool async, string fileName) =>
+            new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: async);
+
+        public static async Task DirsEqual(string actual, string expected)
         {
             var expectedList = FileData.InPath(expected);
             var actualList = Directory.GetFiles(actual, "*.*", SearchOption.AllDirectories);
@@ -324,18 +330,31 @@ namespace System.IO.Compression.Tests
             var actualCount = actualList.Length + actualFolders.Length;
             Assert.Equal(expectedList.Count, actualCount);
 
-            ItemEqual(actualList, expectedList, isFile: true);
-            ItemEqual(actualFolders, expectedList, isFile: false);
+            await ItemEqual(actualList, expectedList, isFile: true);
+            await ItemEqual(actualFolders, expectedList, isFile: false);
         }
 
         public static void DirFileNamesEqual(string actual, string expected)
         {
-            IOrderedEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Order();
-            IOrderedEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Order();
-            AssertExtensions.SequenceEqual(expectedEntries.Select(Path.GetFileName).ToArray(), actualEntries.Select(Path.GetFileName).ToArray());
+            IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Select(Path.GetFileName);
+            IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Select(Path.GetFileName);
+
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // iOS/tvOS filesystems use NFD by default for non-ASCII characters, so we normalize to NFC for cross-platform comparison
+                actualEntries = actualEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+                expectedEntries = expectedEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+            }
+            else
+            {
+                actualEntries = actualEntries.Order();
+                expectedEntries = expectedEntries.Order();
+            }
+
+            AssertExtensions.SequenceEqual(actualEntries.ToArray(), expectedEntries.ToArray());
         }
 
-        private static void ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)
+        private static async Task ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)
         {
             for (int i = 0; i < actualList.Length; i++)
             {
@@ -356,109 +375,151 @@ namespace System.IO.Compression.Tests
                 //contents same
                 if (isFile)
                 {
-                    Stream sa = StreamHelpers.CreateTempCopyStream(aEntry).Result;
-                    Stream sb = StreamHelpers.CreateTempCopyStream(bEntry).Result;
-                    StreamsEqual(sa, sb);
+                    Stream sa = await StreamHelpers.CreateTempCopyStream(aEntry);
+                    Stream sb = await StreamHelpers.CreateTempCopyStream(bEntry);
+                    StreamsEqual(sa, sb); // Not testing zip features, can always be async
                 }
             }
         }
 
-        /// <param name="useSpansForWriting">Tests the Span overloads of Write</param>
+        /// <param name="useSpansForWriting">Tests the Span and Memory overloads of Write and WriteAsync.</param>
         /// <param name="writeInChunks">Writes in chunks of 5 to test Write with a nonzero offset</param>
-        public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode, bool useSpansForWriting = false, bool writeInChunks = false)
+        public static async Task CreateFromDir(string directory, Stream archiveStream, bool async, ZipArchiveMode mode, bool useSpansForWriting = false, bool writeInChunks = false)
         {
             var files = FileData.InPath(directory);
-            using (ZipArchive archive = new ZipArchive(archiveStream, mode, true))
+
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, mode, leaveOpen: true);
+
+            foreach (var i in files)
             {
-                foreach (var i in files)
+                if (i.IsFolder)
                 {
-                    if (i.IsFolder)
-                    {
-                        string entryName = i.FullName;
+                    string entryName = i.FullName;
 
-                        ZipArchiveEntry e = archive.CreateEntry(entryName.Replace('\\', '/') + "/");
-                        e.LastWriteTime = i.LastModifiedDate;
-                    }
+                    ZipArchiveEntry e = archive.CreateEntry(entryName.Replace('\\', '/') + "/");
+                    e.LastWriteTime = i.LastModifiedDate;
                 }
+            }
 
-                foreach (var i in files)
+            foreach (var i in files)
+            {
+                if (i.IsFile)
                 {
-                    if (i.IsFile)
+                    string entryName = i.FullName;
+
+                    MemoryStream installStream = await StreamHelpers.CreateTempCopyStream(Path.Combine(i.OrigFolder, i.FullName));
+
+                    if (installStream != null)
                     {
-                        string entryName = i.FullName;
+                        ZipArchiveEntry e = archive.CreateEntry(entryName.Replace('\\', '/'));
+                        e.LastWriteTime = i.LastModifiedDate;
 
-                        var installStream = await StreamHelpers.CreateTempCopyStream(Path.Combine(i.OrigFolder, i.FullName));
+                        Stream entryStream = await OpenEntryStream(async, e);
 
-                        if (installStream != null)
+                        int bytesRead;
+                        var buffer = new byte[1024];
+                        if (useSpansForWriting)
                         {
-                            ZipArchiveEntry e = archive.CreateEntry(entryName.Replace('\\', '/'));
-                            e.LastWriteTime = i.LastModifiedDate;
-                            using (Stream entryStream = e.Open())
+                            while ((bytesRead = await installStream.ReadAsync(buffer)) != 0)
                             {
-                                int bytesRead;
-                                var buffer = new byte[1024];
-                                if (useSpansForWriting)
+                                if (async)
                                 {
-                                    while ((bytesRead = installStream.Read(new Span<byte>(buffer))) != 0)
-                                    {
-                                        entryStream.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
-                                    }
-                                }
-                                else if (writeInChunks)
-                                {
-                                    while ((bytesRead = installStream.Read(buffer, 0, buffer.Length)) != 0)
-                                    {
-                                        for (int k = 0; k < bytesRead; k += 5)
-                                            entryStream.Write(buffer, k, Math.Min(5, bytesRead - k));
-                                    }
+                                    await entryStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                                 }
                                 else
                                 {
-                                    while ((bytesRead = installStream.Read(buffer, 0, buffer.Length)) != 0)
+                                    entryStream.Write(buffer.AsSpan(0, bytesRead));
+                                }
+                            }
+                        }
+                        else if (writeInChunks)
+                        {
+                            while ((bytesRead = await installStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                for (int k = 0; k < bytesRead; k += 5)
+                                {
+                                    int count = Math.Min(5, bytesRead - k);
+                                    if (async)
                                     {
-                                        entryStream.Write(buffer, 0, bytesRead);
+                                        await entryStream.WriteAsync(buffer, k, count);
+                                    }
+                                    else
+                                    {
+                                        entryStream.Write(buffer, k, count);
                                     }
                                 }
                             }
                         }
+                        else
+                        {
+                            while ((bytesRead = await installStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                if (async)
+                                {
+                                    await entryStream.WriteAsync(buffer, 0, bytesRead);
+                                }
+                                else
+                                {
+                                    entryStream.Write(buffer, 0, bytesRead);
+                                }
+                            }
+                        }
+
+                        await DisposeStream(async, entryStream);
                     }
                 }
             }
+
+            await DisposeZipArchive(async, archive);
         }
 
-        internal static void AddEntry(ZipArchive archive, string name, string contents, DateTimeOffset lastWrite)
+        internal static async Task AddEntry(ZipArchive archive, string name, string contents, DateTimeOffset lastWrite, bool async)
         {
             ZipArchiveEntry e = archive.CreateEntry(name);
             e.LastWriteTime = lastWrite;
-            using (StreamWriter w = new StreamWriter(e.Open()))
-            {
-                w.WriteLine(contents);
-            }
+
+            Stream entryStream = await OpenEntryStream(async, e);
+
+            // Leave the streamopen so we can test the entry stream's disposing
+            StreamWriter w = new StreamWriter(entryStream, encoding: null, bufferSize: 2048, leaveOpen: true);
+            await w.WriteLineAsync(contents);
+
+            await DisposeStream(async, entryStream);
         }
 
-        public static byte[] CreateZipFile(int entryCount, byte[] entryContents)
+        public static async Task<byte[]> CreateZipFile(int entryCount, byte[] entryContents, bool async)
         {
-            using (MemoryStream ms = new())
+            MemoryStream ms = new();
+
+            ZipArchive createdArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            for (int i = 0; i < entryCount; i++)
             {
-                using (ZipArchive createdArchive = new(ms, ZipArchiveMode.Create, true))
+                string fileName = $"dummydata/{i}.bin";
+                ZipArchiveEntry newEntry = createdArchive.CreateEntry(fileName);
+
+                newEntry.LastWriteTime = DateTimeOffset.Now.AddHours(-1.0);
+
+                Stream entryWriteStream = await OpenEntryStream(async, newEntry);
+                if (async)
                 {
-                    for (int i = 0; i < entryCount; i++)
-                    {
-                        string fileName = $"dummydata/{i}.bin";
-                        ZipArchiveEntry newEntry = createdArchive.CreateEntry(fileName);
-
-                        newEntry.LastWriteTime = DateTimeOffset.Now.AddHours(-1.0);
-                        using (Stream entryWriteStream = newEntry.Open())
-                        {
-                            entryWriteStream.Write(entryContents);
-                            entryWriteStream.WriteByte((byte)(i % byte.MaxValue));
-                        }
-                    }
+                    await entryWriteStream.WriteAsync(entryContents);
                 }
-                ms.Flush();
+                else
+                {
+                    entryWriteStream.Write(entryContents);
+                }
+                entryWriteStream.WriteByte((byte)(i % byte.MaxValue));
 
-                return ms.ToArray();
+                await DisposeStream(async, entryWriteStream);
             }
+
+            await DisposeZipArchive(async, createdArchive);
+
+            await ms.FlushAsync();
+            await ms.DisposeAsync();
+
+            return ms.ToArray();
         }
 
         protected const string Utf8SmileyEmoji = "\ud83d\ude04";
@@ -475,14 +536,56 @@ namespace System.IO.Compression.Tests
         protected static readonly string ALettersUShortMaxValueMinusOneAndCopyRightChar = ALettersUShortMaxValueMinusOne + Utf8CopyrightChar;
         protected static readonly string ALettersUShortMaxValueMinusOneAndTwoCopyRightChars = ALettersUShortMaxValueMinusOneAndCopyRightChar + Utf8CopyrightChar;
 
+        protected static readonly bool[] _bools = [false, true];
+
+        public static async Task<ZipArchive> CreateZipArchive(bool async, Stream stream, ZipArchiveMode mode, bool leaveOpen = false, Encoding entryNameEncoding = null)
+        {
+            return async ?
+                await ZipArchive.CreateAsync(stream, mode, leaveOpen, entryNameEncoding) :
+                new ZipArchive(stream, mode, leaveOpen, entryNameEncoding);
+        }
+
+        public static async Task DisposeZipArchive(bool async, ZipArchive archive)
+        {
+            if (async)
+            {
+                await archive.DisposeAsync();
+            }
+            else
+            {
+                archive.Dispose();
+            }
+        }
+
+        public static async Task<Stream> OpenEntryStream(bool async, ZipArchiveEntry entry)
+        {
+            return async ? await entry.OpenAsync() : entry.Open();
+        }
+
+        public static async Task DisposeStream(bool async, Stream stream)
+        {
+            if (async)
+            {
+                await stream.DisposeAsync();
+            }
+            else
+            {
+                stream.Dispose();
+            }
+        }
+        public static IEnumerable<object[]> Get_Booleans_Data() => _bools.Select(b => new object[] { b });
+
         // Returns pairs that are returned the same way by Utf8 and Latin1
         // Returns: originalComment, expectedComment
         private static IEnumerable<object[]> SharedComment_Data()
         {
-            yield return new object[] { null, string.Empty };
-            yield return new object[] { string.Empty, string.Empty };
-            yield return new object[] { "a", "a" };
-            yield return new object[] { Utf8LowerCaseOUmlautChar, Utf8LowerCaseOUmlautChar };
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { null, string.Empty, async };
+                yield return new object[] { string.Empty, string.Empty, async };
+                yield return new object[] { "a", "a", async };
+                yield return new object[] { Utf8LowerCaseOUmlautChar, Utf8LowerCaseOUmlautChar, async };
+            }
         }
 
         // Returns pairs as expected by Utf8
@@ -499,9 +602,12 @@ namespace System.IO.Compression.Tests
             // so it should not be truncated if it's the last character and the total length is not over the limit.
             string utf8OriginalALettersAndOneEmojiFits = "aaaaa" + Utf8SmileyEmoji;
 
-            yield return new object[] { asciiOriginalOverMaxLength, ALettersUShortMaxValue };
-            yield return new object[] { utf8OriginalALettersAndOneEmojiDoesNotFit, ALettersUShortMaxValueMinusOne };
-            yield return new object[] { utf8OriginalALettersAndOneEmojiFits, utf8OriginalALettersAndOneEmojiFits };
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { asciiOriginalOverMaxLength, ALettersUShortMaxValue, async };
+                yield return new object[] { utf8OriginalALettersAndOneEmojiDoesNotFit, ALettersUShortMaxValueMinusOne, async };
+                yield return new object[] { utf8OriginalALettersAndOneEmojiFits, utf8OriginalALettersAndOneEmojiFits, async };
+            }
 
             foreach (object[] e in SharedComment_Data())
             {
@@ -518,7 +624,10 @@ namespace System.IO.Compression.Tests
             string latin1ExpectedALettersAndOneOUmlaut = ALettersUShortMaxValueMinusOne + Utf8LowerCaseOUmlautChar;
             string latin1OriginalALettersAndTwoOUmlauts = latin1ExpectedALettersAndOneOUmlaut + Utf8LowerCaseOUmlautChar;
 
-            yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut };
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut, async };
+            }
 
             foreach (object[] e in SharedComment_Data())
             {
@@ -530,11 +639,14 @@ namespace System.IO.Compression.Tests
         // Returns: originalComment, expectedComment, transcoded expectedComment
         public static IEnumerable<object[]> MismatchingEncodingComment_Data()
         {
-            foreach (object[] e in Latin1Comment_Data())
+            foreach (bool async in _bools)
             {
-                byte[] expectedBytes = Encoding.Latin1.GetBytes(e[1] as string);
-                
-                yield return new object[] { e[0], e[1], Encoding.UTF8.GetString(expectedBytes) };
+                foreach (object[] e in Latin1Comment_Data())
+                {
+                    byte[] expectedBytes = Encoding.Latin1.GetBytes(e[1] as string);
+
+                    yield return new object[] { e[0], e[1], Encoding.UTF8.GetString(expectedBytes), async };
+                }
             }
         }
     }

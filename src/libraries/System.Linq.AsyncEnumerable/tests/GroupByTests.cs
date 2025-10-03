@@ -43,6 +43,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<IGrouping<string, string>>(), AsyncEnumerable.Empty<string>().GroupBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<IGrouping<string, string>>(), AsyncEnumerable.Empty<string>().GroupBy(async (i, ct) => i));
+
+            Assert.Same(AsyncEnumerable.Empty<IGrouping<string, int>>(), AsyncEnumerable.Empty<string>().GroupBy(i => i, i => i.Length));
+            Assert.Same(AsyncEnumerable.Empty<IGrouping<string, int>>(), AsyncEnumerable.Empty<string>().GroupBy(async (i, ct) => i, async (i, ct) => i.Length));
+
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<string>().GroupBy(i => i, (i, elements) => i.Length));
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<string>().GroupBy(async (i, ct) => i, async (i, elements, ct) => i.Length));
+
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<string>().GroupBy(i => i, i => i.Length, (i, elements) => i.Length));
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<string>().GroupBy(async (i, ct) => i, async (i, ct) => i.Length, async (i, elements, ct) => i.Length));
+        }
+
+        [Fact]
         public async Task VariousValues_MatchesEnumerable_String()
         {
             Random rand = new(42);

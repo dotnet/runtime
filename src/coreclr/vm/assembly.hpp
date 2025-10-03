@@ -352,7 +352,10 @@ public:
 
     //****************************************************************************************
 
+private:
     Assembly();
+
+public:
     ~Assembly();
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
@@ -546,6 +549,11 @@ struct cdac_data<Assembly>
 #ifdef FEATURE_COLLECTIBLE_TYPES
     static constexpr size_t IsCollectible = offsetof(Assembly, m_isCollectible);
 #endif
+    static constexpr size_t IsDynamic = offsetof(Assembly, m_isDynamic);
+    static constexpr size_t Module = offsetof(Assembly, m_pModule);
+    static constexpr size_t Error = offsetof(Assembly, m_pError);
+    static constexpr size_t NotifyFlags = offsetof(Assembly, m_notifyFlags);
+    static constexpr size_t Level = offsetof(Assembly, m_level);
 };
 
 #ifndef DACCESS_COMPILE

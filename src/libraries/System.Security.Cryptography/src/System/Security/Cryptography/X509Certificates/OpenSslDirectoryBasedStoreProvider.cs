@@ -23,6 +23,10 @@ namespace System.Security.Cryptography.X509Certificates
         private const string PfxOrdinalWildcard = "." + PfxWildcard;
 
         private static string? s_userStoreRoot;
+        private static readonly PbeParameters s_storePbeParameters = new PbeParameters(
+            PbeEncryptionAlgorithm.Aes256Cbc,
+            HashAlgorithmName.SHA256,
+            iterationCount: 1);
 
         private readonly string _storePath;
 
@@ -212,7 +216,7 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException(SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name));
                     }
 
-                    byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12)!;
+                    byte[] pkcs12 = copy.ExportPkcs12(s_storePbeParameters, null);
                     stream.Write(pkcs12, 0, pkcs12.Length);
                 }
             }

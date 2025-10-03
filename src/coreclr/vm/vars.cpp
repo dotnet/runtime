@@ -93,13 +93,15 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
+GVAL_IMPL_INIT(DWORD, g_offsetOfCurrentThreadInfo, 0);
+GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
+
 
 MethodTable* g_pCastHelpers;
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
-GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
@@ -152,9 +154,6 @@ GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
 #endif // DEBUGGING_SUPPORTED
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
-// Profiling support
-HINSTANCE           g_pDebuggerDll = NULL;
-
 GVAL_IMPL(ProfControlBlock, g_profControlBlock);
 #endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
 
@@ -184,7 +183,11 @@ GVAL_IMPL(bool, g_fProcessDetach);
 GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
 #endif
 
-GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
+#ifdef DACCESS_COMPILE
+GVAL_IMPL(DWORD, g_fEEShutDown);
+#else
+GVAL_IMPL(Volatile<DWORD>, g_fEEShutDown);
+#endif
 
 #ifndef TARGET_UNIX
 GVAL_IMPL(SIZE_T, g_runtimeLoadedBaseAddress);
@@ -199,12 +202,6 @@ bool g_fManagedAttach = false;
 // Do we own the lifetime of the process, ie. is it an EXE?
 //
 bool g_fWeControlLifetime = false;
-
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-bool dbg_fDrasticShutdown = false;
-#endif
-bool g_fInControlC = false;
 
 #endif // #ifndef DACCESS_COMPILE
 

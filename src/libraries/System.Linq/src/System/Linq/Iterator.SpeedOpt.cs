@@ -66,6 +66,8 @@ namespace System.Linq
             /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
             /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TSource"/>.</returns>
             public virtual TSource? TryGetLast(out bool found) => TryGetLastNonIterator(this, out found);
+
+            public virtual bool Contains(TSource value) => ContainsIterate(this, value, null);
         }
     }
 }

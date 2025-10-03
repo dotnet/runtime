@@ -17,6 +17,9 @@ namespace System.Threading
     {
         // Extra bits used in _threadState
         private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
+#if TARGET_WINDOWS
+        private const ThreadState Interrupted = (ThreadState)0x2000;
+#endif
 
         // Bits of _threadState that are returned by the ThreadState property
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
@@ -379,7 +382,7 @@ namespace System.Threading
                 }
 
                 bool waitingForThreadStart = false;
-                GCHandle threadHandle = GCHandle.Alloc(this);
+                GCHandle<Thread> threadHandle = new GCHandle<Thread>(this);
 
                 try
                 {
@@ -404,7 +407,7 @@ namespace System.Threading
                     Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
                     if (!waitingForThreadStart)
                     {
-                        threadHandle.Free();
+                        threadHandle.Dispose();
                     }
                 }
 
@@ -422,8 +425,7 @@ namespace System.Threading
 
         private static void StartThread(IntPtr parameter)
         {
-            GCHandle threadHandle = (GCHandle)parameter;
-            Thread thread = (Thread)threadHandle.Target!;
+            Thread thread = GCHandle<Thread>.FromIntPtr(parameter).Target;
 
             try
             {

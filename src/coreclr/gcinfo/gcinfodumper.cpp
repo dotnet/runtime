@@ -4,6 +4,8 @@
 #ifndef SOS_INCLUDE
 #include "common.h"
 #endif
+
+#include "gcinfohelpers.h"
 #include "gcinfodumper.h"
 #include "gcinfodecoder.h"
 
@@ -15,7 +17,7 @@
 #ifdef HOST_64BIT
 // All stack offsets are INT32's, so this guarantees a disjoint range of
 // addresses for each register.
-#define ADDRESS_SPACING UI64(0x100000000)
+#define ADDRESS_SPACING 0x100000000ULL
 #elif defined(TARGET_ARM)
 #define ADDRESS_SPACING 0x100000
 #else
@@ -194,7 +196,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
 #define vREG(reg, field) { offsetof(LoongArch64VolatileContextPointer, field) }
         vREG(zero, R0),
         REG(ra, Ra),
-        REG(tp, Tp),
         { offsetof(T_CONTEXT, Sp) },
         vREG(a0, A0),
         vREG(a1, A1),
@@ -360,7 +361,11 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 break;
             }
 #elif defined(TARGET_LOONGARCH64)
-            bool isVolatile = (iReg == 0 || (iReg >= 4 && iReg <= 21));
+            if (iEncodedReg > 1)
+            {
+                iEncodedReg++; // We have to compensate for not tracking tp
+            }
+            bool isVolatile = (iReg == 0 || (iReg >= 3 && iReg <= 20));
             if (ctx == 0)
             {
                 if (!isVolatile)
@@ -727,11 +732,9 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
         *(ppCallerReg  + iReg) = &regdisp.pCallerContext->S0 + iReg;
     }
 
-    // Set Ra, Tp, Fp
+    // Set Ra, Fp
     regdisp.pCurrentContextPointers->Ra = &regdisp.pCurrentContext->Ra;
     regdisp.pCallerContextPointers->Ra  = &regdisp.pCallerContext->Ra;
-    regdisp.pCurrentContextPointers->Tp = &regdisp.pCurrentContext->Tp;
-    regdisp.pCallerContextPointers->Tp  = &regdisp.pCallerContext->Tp;
     regdisp.pCurrentContextPointers->Fp = &regdisp.pCurrentContext->Fp;
     regdisp.pCallerContextPointers->Fp  = &regdisp.pCallerContext->Fp;
 

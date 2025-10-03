@@ -21,6 +21,7 @@ set(NATIVECRYPTO_SOURCES
     pal_x509.c
     pal_x509chain.c
     pal_swiftbindings.o
+    pal_networkframework.m
 )
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
@@ -77,9 +78,14 @@ if (NOT SWIFT_COMPILER_TARGET)
     endif()
 endif()
 
+set(SWIFT_SDK_FLAG "")
+if (CMAKE_OSX_SYSROOT)
+    set(SWIFT_SDK_FLAG -sdk ${CMAKE_OSX_SYSROOT})
+endif()
+
 add_custom_command(
     OUTPUT pal_swiftbindings.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution -g ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution -g ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
     COMMENT "Compiling Swift file pal_swiftbindings.swift"
 )

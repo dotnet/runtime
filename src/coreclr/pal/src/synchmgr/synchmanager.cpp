@@ -44,18 +44,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 
 const int CorUnix::CThreadSynchronizationInfo::PendingSignalingsArraySize;
 
-// We use the synchronization manager's worker thread to handle
-// process termination requests. It does so by calling the
-// registered handler function.
-PTERMINATION_REQUEST_HANDLER g_terminationRequestHandler = NULL;
-
-// Set the handler for process termination requests.
-VOID PALAPI PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationHandler)
-{
-    g_terminationRequestHandler = terminationHandler;
-}
-
 namespace CorUnix
 {
     /////////////////////////////////
@@ -153,8 +141,8 @@ namespace CorUnix
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csSynchProcessLock;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csMonitoredProcessesLock;
+    minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
+    minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),
@@ -1162,25 +1150,6 @@ namespace CorUnix
 
     /*++
     Method:
-        CPalSynchronizationManager::SendTerminationRequestToWorkerThread
-
-    Send a request to the worker thread to initiate process termination.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::SendTerminationRequestToWorkerThread()
-    {
-        PAL_ERROR palErr = GetInstance()->WakeUpLocalWorkerThread(SynchWorkerCmdTerminationRequest);
-        if (palErr != NO_ERROR)
-        {
-            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n",
-                  errno, strerror(errno));
-            palErr = ERROR_INTERNAL_ERROR;
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
       CPalSynchronizationManager::AreAPCsPending
 
     Returns 'true' if there are APCs currently pending for the target
@@ -1329,8 +1298,8 @@ namespace CorUnix
             goto I_exit;
         }
 
-        InternalInitializeCriticalSection(&s_csSynchProcessLock);
-        InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);
+        minipal_mutex_init(&s_csSynchProcessLock);
+        minipal_mutex_init(&s_csMonitoredProcessesLock);
 
         pSynchManager = new(std::nothrow) CPalSynchronizationManager();
         if (NULL == pSynchManager)
@@ -1340,13 +1309,14 @@ namespace CorUnix
             goto I_exit;
         }
 
+#ifndef __wasm__
         if (!pSynchManager->CreateProcessPipe())
         {
             ERROR("Unable to create process pipe \n");
             palErr = ERROR_OPEN_FAILED;
             goto I_exit;
         }
-
+#endif
         s_pObjSynchMgr = pSynchManager;
 
         // Initialization was successful
@@ -1557,22 +1527,6 @@ namespace CorUnix
         return palErr;
     }
 
-    // Entry point routine for the thread that initiates process termination.
-    DWORD PALAPI TerminationRequestHandlingRoutine(LPVOID pArg)
-    {
-        // Call the termination request handler if one is registered.
-        if (g_terminationRequestHandler != NULL)
-        {
-            // The process will terminate normally by calling exit.
-            // We use an exit code of '128 + signo'. This is a convention used in popular
-            // shells to calculate an exit code when the process was terminated by a signal.
-            // This is also used by the Process.ExitCode implementation.
-            g_terminationRequestHandler(128 + SIGTERM);
-        }
-
-        return 0;
-    }
-
     /*++
     Method:
       CPalSynchronizationManager::WorkerThread
@@ -1611,31 +1565,6 @@ namespace CorUnix
             }
             switch (swcCmd)
             {
-                case SynchWorkerCmdTerminationRequest:
-                    // This worker thread is being asked to initiate process termination
-
-                    HANDLE hTerminationRequestHandlingThread;
-                    palErr = InternalCreateThread(pthrWorker,
-                                      NULL,
-                                      0,
-                                      &TerminationRequestHandlingRoutine,
-                                      NULL,
-                                      0,
-                                      PalWorkerThread,
-                                      NULL,
-                                      &hTerminationRequestHandlingThread);
-
-                    if (NO_ERROR != palErr)
-                    {
-                        ERROR("Unable to create worker thread\n");
-                    }
-
-                    if (hTerminationRequestHandlingThread != NULL)
-                    {
-                        CloseHandle(hTerminationRequestHandlingThread);
-                    }
-
-                    break;
                 case SynchWorkerCmdNop:
                     TRACE("Synch Worker: received SynchWorkerCmdNop\n");
                     if (fShuttingDown)
@@ -1775,8 +1704,7 @@ namespace CorUnix
             }
 
             _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd ||
-                        SynchWorkerCmdShutdown == swcWorkerCmd ||
-                        SynchWorkerCmdTerminationRequest == swcWorkerCmd,
+                        SynchWorkerCmdShutdown == swcWorkerCmd,
                         "Unknown worker command code %u\n", swcWorkerCmd);
 
             TRACE("Got cmd %u from process pipe\n", swcWorkerCmd);
@@ -1834,9 +1762,9 @@ namespace CorUnix
                 }
                 else
                 {
-                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) *
-                        tccMillieSecondsToMicroSeconds;
-                    tv.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                    tv.tv_usec = (iTimeout % tccSecondsToMilliSeconds) *
+                        tccMilliSecondsToMicroSeconds;
+                    tv.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                     ptv = &tv;
                 }
 
@@ -1865,9 +1793,9 @@ namespace CorUnix
                     }
                     else
                     {
-                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) *
-                            tccMillieSecondsToNanoSeconds;
-                        ts.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                        ts.tv_nsec = (iTimeout % tccSecondsToMilliSeconds) *
+                            tccMilliSecondsToNanoSeconds;
+                        ts.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                         pts = &ts;
                     }
 
@@ -2215,9 +2143,8 @@ namespace CorUnix
                     "Value too big for swcWorkerCmd\n");
 
         _ASSERT_MSG((SynchWorkerCmdNop == swcWorkerCmd) ||
-                    (SynchWorkerCmdShutdown == swcWorkerCmd) ||
-                    (SynchWorkerCmdTerminationRequest == swcWorkerCmd),
-                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop, SynchWorkerCmdShutdown, and SynchWorkerCmdTerminationRequest."
+                    (SynchWorkerCmdShutdown == swcWorkerCmd),
+                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop and SynchWorkerCmdShutdown."
                     "[received cmd=%d]\n", swcWorkerCmd);
 
         BYTE byCmd = (BYTE)(swcWorkerCmd & 0xFF);
@@ -2416,7 +2343,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         fMonitoredProcessesLock = true;
 
@@ -2465,7 +2392,7 @@ namespace CorUnix
         }
 
         // Unlock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (fWakeUpWorker)
@@ -2485,8 +2412,7 @@ namespace CorUnix
     RPFM_exit:
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent,
-                                         &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         return palErr;
@@ -2511,7 +2437,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         pmpln = m_pmplnMonitoredProcesses;
         while (pmpln)
@@ -2550,7 +2476,7 @@ namespace CorUnix
             palErr = ERROR_NOT_FOUND;
         }
 
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         return palErr;
     }
 
@@ -2609,7 +2535,7 @@ namespace CorUnix
         //       lock is needed in order to support object promotion.
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
         lInitialNodeCount = m_lMonitoredProcessesCount;
@@ -2654,7 +2580,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (lRemovingCount > 0)
@@ -2664,7 +2590,7 @@ namespace CorUnix
             fLocalSynchLock = true;
 
             // Acquire the monitored processes lock
-            InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_enter(&s_csMonitoredProcessesLock);
             fMonitoredProcessesLock = true;
 
             // Start from the beginning of the exited processes list
@@ -2724,7 +2650,7 @@ namespace CorUnix
 
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         if (fLocalSynchLock)
@@ -2750,7 +2676,7 @@ namespace CorUnix
         MonitoredProcessesListNode * pNode;
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         while (m_pmplnMonitoredProcesses)
         {
@@ -2762,7 +2688,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
     }
 
     /*++
@@ -3652,8 +3578,8 @@ namespace CorUnix
 #endif
         if (0 == iRet)
         {
-            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMillieSeconds;
-            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMillieSeconds) * tccMillieSecondsToNanoSeconds;
+            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMilliSeconds;
+            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
             while (ptsAbsTmo->tv_nsec >= tccSecondsToNanoSeconds)
             {
                 ptsAbsTmo->tv_sec  += 1;

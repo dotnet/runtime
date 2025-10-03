@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                     // Run from the pre-built bin/{config}/{tfm} directory.
                     Version version = Environment.Version;
                     var targetFramework = DeploymentParameters.TargetFramework
-                        ?? (DeploymentParameters.RuntimeFlavor == RuntimeFlavor.Clr ? "net462" : $"net{version.Major}.{version.Minor}");
+                        ?? (DeploymentParameters.RuntimeFlavor == RuntimeFlavor.Clr ? "net481" : $"net{version.Major}.{version.Minor}");
                     workingDirectory = Path.Combine(DeploymentParameters.ApplicationPath, "bin", DeploymentParameters.Configuration, targetFramework);
                     // CurrentDirectory will point to bin/{config}/{tfm}, but the config and static files aren't copied, point to the app base instead.
                     DeploymentParameters.EnvironmentVariables["DOTNET_CONTENTROOT"] = DeploymentParameters.ApplicationPath;

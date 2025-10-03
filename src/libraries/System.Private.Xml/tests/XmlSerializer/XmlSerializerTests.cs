@@ -159,6 +159,27 @@ public static partial class XmlSerializerTests
         Assert.Equal(x.F2, y.F2);
         Utils.Equal<SimpleType>(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
         Assert.Equal(x.P2, y.P2);
+
+        // Do it again with null and empty arrays
+        x = new TypeWithGetSetArrayMembers
+        {
+            F1 = null,
+            F2 = new int[] { },
+            P1 = new SimpleType[] { },
+            P2 = null
+        };
+        y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x,
+@"<?xml version=""1.0""?>
+<TypeWithGetSetArrayMembers xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <F2 />
+  <P1 />
+</TypeWithGetSetArrayMembers>");
+
+        Assert.NotNull(y);
+        Assert.Null(y.F1);  // Arrays stay null
+        Assert.Empty(y.F2);
+        Assert.Empty(y.P1);
+        Assert.Null(y.P2);  // Arrays stay null
     }
 
     [Fact]
@@ -170,13 +191,55 @@ public static partial class XmlSerializerTests
         x.P2[0] = -1;
         x.P2[1] = 3;
 
-        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x,
-@"<?xml version=""1.0""?>
-<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
+        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, WithXmlHeader(@"<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />"));
 
         Assert.NotNull(y);
         // XmlSerializer seems not complain about missing public setter of Array property
         // However, it does not serialize the property. So for this test case, I'll use it to verify there are no complaints about missing public setter
+    }
+
+    [Fact]
+    public static void Xml_ArraylikeMembers()
+    {
+        var assertEqual = (TypeWithArraylikeMembers a, TypeWithArraylikeMembers b) => {
+            Assert.Equal(a.IntAField, b.IntAField);
+            Assert.Equal(a.NIntAField, b.NIntAField);
+            Assert.Equal(a.IntLField, b.IntLField);
+            Assert.Equal(a.NIntLField, b.NIntLField);
+            Assert.Equal(a.IntAProp, b.IntAProp);
+            Assert.Equal(a.NIntAProp, b.NIntAProp);
+            Assert.Equal(a.IntLProp, b.IntLProp);
+            Assert.Equal(a.NIntLProp, b.NIntLProp);
+        };
+
+        // Populated array-like members
+        var x = TypeWithArraylikeMembers.CreateWithPopulatedMembers();
+        var y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, null /* Just checking the input and output objects is good enough here */, null, true);
+        Assert.NotNull(y);
+        assertEqual(x, y);
+
+        // Empty array-like members
+        x = TypeWithArraylikeMembers.CreateWithEmptyMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, WithXmlHeader("<TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntAField />\r\n  <NIntAField />\r\n  <IntLField />\r\n  <NIntLField />\r\n  <IntAProp />\r\n  <NIntAProp />\r\n  <IntLProp />\r\n  <NIntLProp />\r\n</TypeWithArraylikeMembers>"));
+        Assert.NotNull(y);
+        assertEqual(x, y);
+        Assert.Empty(y.IntAField);  // Check on a couple fields to be sure they are empty and not null.
+        Assert.Empty(y.NIntLProp);
+
+        // Null array-like members
+        // Null arrays and collections are omitted from xml output (or set to 'nil'). But they differ in deserialization.
+        // Null arrays are deserialized as null as expected. Null collections are unintuitively deserialized as empty collections. This behavior is preserved for compatibility with NetFx.
+        x = TypeWithArraylikeMembers.CreateWithNullMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, WithXmlHeader("<TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <NIntLField xsi:nil=\"true\" />\r\n  <NIntAProp xsi:nil=\"true\" />\r\n</TypeWithArraylikeMembers>"));
+        Assert.NotNull(y);
+        Assert.Null(y.IntAField);
+        Assert.Null(y.NIntAField);
+        Assert.Empty(y.IntLField);
+        Assert.Empty(y.NIntLField);
+        Assert.Null(y.IntAProp);
+        Assert.Null(y.NIntAProp);
+        Assert.Empty(y.IntLProp);
+        Assert.Empty(y.NIntLProp);
     }
 
     [Fact]
@@ -196,13 +259,12 @@ public static partial class XmlSerializerTests
         Assert.Equal((string)x[1], (string)y[1]);
     }
 
-// ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
-// pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
-// but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
-// horizon that it's not worth the trouble.
+    // ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
+    // pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
+    // but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
+    // horizon that it's not worth the trouble.
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
     public static void Xml_ReadOnlyCollection()
     {
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
@@ -224,7 +286,6 @@ public static partial class XmlSerializerTests
 
     [Theory]
     [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
     public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
     {
         XmlSerializer serializer;
@@ -453,6 +514,31 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+        actual = SerializeAndDeserialize<DerivedClassWithSameProperty>(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
+</DerivedClassWithSameProperty>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
     }
 
     [Fact]
@@ -957,6 +1043,266 @@ public static partial class XmlSerializerTests
         }
     }
 
+    [Theory]
+    [InlineData("0001-01-01")]
+    [InlineData("2002-06-17")]
+    [InlineData("2345-12-1")]
+    public static void Xml_DateOnlyAsRoot(string dateString)
+    {
+        var doObj = DateOnly.Parse(dateString);
+        var result = SerializeAndDeserialize<DateOnly>(doObj, WithXmlHeader($"""
+            <dateOnly>{FormatDateString(doObj)}</dateOnly>
+            """));
+        Assert.StrictEqual(doObj, result);
+    }
+
+    [Theory]
+    [InlineData("1-1-1")]
+    [InlineData("0079-08-24+02:00")]    // Vesuvius
+    [InlineData("1912-04-15Z")]         // Titanic - 11/14 11:40 ships time
+    [InlineData("1917-12-6")]           // Halifax
+    [InlineData("1937-5-06")]           // Hindenburg
+    [InlineData("98-01-01")]            // Rose Bowl
+    public static void Xml_DateOnlyParseErrors(string badDateString)
+    {
+        var badXml = WithXmlHeader($"""
+            <dateOnly>{badDateString}</dateOnly>
+            """);
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<DateOnly>(badXml));
+    }
+
+    [Theory]
+    [InlineData("20:17:40")]  // The Eagle has landed
+    [InlineData("10:35 AM")]  // First in flight
+    [InlineData("10:45 PM")]  // Tear down this wall
+    public static void Xml_TimeOnlyAsRoot(string timeString)
+    {
+        var toObj = TimeOnly.Parse(timeString);
+        var result = SerializeAndDeserialize<TimeOnly>(toObj, WithXmlHeader($"""
+            <timeOnly>{FormatTimeString(toObj)}</timeOnly>
+            """));
+        Assert.StrictEqual(toObj, result);
+    }
+
+    [Theory]
+    [InlineData("07:25:13.45-04:00", true, "07:25:13.45")]  // Oh the humanity
+    [InlineData("02:38:23.40Z", true, "02:38:23.4")]        // My heart will go on
+    [InlineData("7:48:07", false)]        // Will live in infamy
+    [InlineData("08:32 AM", false)]       // Helen errupts
+    public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
+    {
+        // Try straight up
+        var xml = WithXmlHeader($"<timeOnly>{timeString}</timeOnly>");
+        TimeOnly result = default;
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<TimeOnly>(xml));
+
+        // Try with compat-influencing 'timeWithoutOffset' data type
+        var xmlWrapper = WithXmlHeader($"<TimeOnlyAsXsdTimeWrapper><TestValue>{timeString}</TestValue></TimeOnlyAsXsdTimeWrapper>");
+        var wrapperResult = default(TimeOnlyAsXsdTimeWrapper);
+        var ex = Record.Exception(() =>
+        {
+            wrapperResult = DeserializeFromXmlString<TimeOnlyAsXsdTimeWrapper>(xmlWrapper);
+        });
+        if (succeedsWithCompat)
+        {
+            Assert.Null(ex);
+            Assert.Equal(expected, FormatTimeString(wrapperResult.TestValue));
+        }
+        else
+        {
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
+        }
+
+        // Finally, try with the AppCompat switch
+        using (var timeWithOffsetLoss = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", true))
+        {
+            result = default;
+            ex = Record.Exception(() =>
+            {
+                result = DeserializeFromXmlString<TimeOnly>(xml);
+            });
+            if (succeedsWithCompat)
+            {
+                Assert.Null(ex);
+                Assert.Equal(expected, FormatTimeString(result));
+            }
+            else
+            {
+                Assert.NotNull(ex);
+                Assert.IsType<InvalidOperationException>(ex);
+            }
+        }
+    }
+
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    public static void Xml_TypeWithDateOnlyAndTimeOnly()
+    {
+        var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
+        DateOnly defaultDateOnly = DateOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultDateString);
+        TimeOnly defaultTimeOnly = TimeOnly.Parse(TypeWithDateAndTimeOnlyProperties.DefaultTimeString);
+
+        DateTime now = DateTime.Now;
+        DateTime localNow = now.ToLocalTime();
+        DateTime utcNow = now.ToUniversalTime();
+        var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
+
+        var doObj = new TypeWithDateAndTimeOnlyProperties()
+        {
+            Today = DateOnly.FromDateTime(now),
+            CustomDate = DateOnly.FromDateTime(utcNow),
+            // DefaultDate = defaultDateOnly,
+            // NullableDate = null,
+            NullableDateWithValue = DateOnly.FromDateTime(localNow),
+            // NullableDefaultDate = null,
+
+            Now = TimeOnly.FromDateTime(now),
+            CustomTime = TimeOnly.FromDateTime(utcNow),
+            // DefaultTime = defaultTimeOnly,
+            // NullableTime = null,
+            NullableTimeWithValue = TimeOnly.FromDateTime(localNow),
+            // NullableDefaultTime = null,
+        };
+
+        // Verify serialization
+        var doResult = SerializeAndDeserialize(doObj, WithXmlHeader($"""
+            <DateAndTime xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Today>{FormatDateString(doObj.Today)}</Today>
+              <MyDate>{FormatDateString(doObj.CustomDate)}</MyDate>
+              <NullableDate xsi:nil="true" />
+              <NullableDateWithValue>{FormatDateString(doObj.NullableDateWithValue!.Value)}</NullableDateWithValue>
+              <NullableDefaultDate xsi:nil="true" />
+              <Now>{FormatTimeString(doObj.Now)}</Now>
+              <MyTime>{FormatTimeString(doObj.CustomTime)}</MyTime>
+              <NullableTime xsi:nil="true" />
+              <NullableTimeWithValue>{FormatTimeString(doObj.NullableTimeWithValue!.Value)}</NullableTimeWithValue>
+              <NullableDefaultTime xsi:nil="true" />
+            </DateAndTime>
+            """), () => doSerializer);
+
+        // Verify round trip
+        Assert.StrictEqual(doObj.Today, doResult.Today);
+        Assert.StrictEqual(doObj.CustomDate, doResult.CustomDate);
+        Assert.StrictEqual(defaultDateOnly, doResult.DefaultDate);
+        Assert.Null(doResult.NullableDate);
+        Assert.StrictEqual(doObj.NullableDateWithValue, doResult.NullableDateWithValue);
+        Assert.Null(doResult.NullableDefaultDate);
+        Assert.StrictEqual(doObj.Now, doResult.Now);
+        Assert.StrictEqual(doObj.CustomTime, doResult.CustomTime);
+        Assert.StrictEqual(defaultTimeOnly, doResult.DefaultTime);
+        Assert.Null(doResult.NullableTime);
+        Assert.StrictEqual(doObj.NullableTimeWithValue, doResult.NullableTimeWithValue);
+        Assert.Null(doResult.NullableDefaultTime);
+    }
+
+    [Fact]
+    public static void Xml_XsdDate_With_DateOnly_And_DateTime()
+    {
+        var doSerializer = new XmlSerializer(typeof(DateOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var dtdSerializer = new XmlSerializer(typeof(DateTimeDateWrapper), new XmlRootAttribute("DateAndTimeTest"));
+
+        // xsd:date technically allows offset information. But XmlSerializer does not include offsets when
+        // serializing a DateTime as xsd:date. So there is no relevant compat switch for round-tripping between
+        // DateTime as xsd:date and DateOnly. It should just work.
+
+        DateTime localNow = DateTime.Now;
+        Assert.Equal(DateTimeKind.Local, localNow.Kind);
+        DateTime now = DateTime.SpecifyKind(localNow, DateTimeKind.Unspecified);
+        Assert.Equal(DateTimeKind.Unspecified, now.Kind);
+        Assert.Equal(localNow.Hour, now.Hour);
+        DateTime utcNow = DateTime.SpecifyKind(localNow, DateTimeKind.Utc);
+        Assert.Equal(DateTimeKind.Utc, utcNow.Kind);
+        Assert.Equal(localNow.Hour, utcNow.Hour);
+
+        // Verify DateOnly -> DateTime
+        var doObj = new DateOnlyWrapper() { TestValue = DateOnly.FromDateTime(now) };
+        var xml = Serialize(doObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(doObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => doSerializer);
+        var dtdObj = (DateTimeDateWrapper)Deserialize(dtdSerializer, xml);
+        Assert.StrictEqual(now.Date, dtdObj.TestValue);
+        Assert.Equal(DateTimeKind.Unspecified, dtdObj.TestValue.Kind);
+
+        // Verify DateTime (Unspecified) -> DateOnly
+        dtdObj = new DateTimeDateWrapper() { TestValue = now };
+        xml = Serialize(dtdObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(dtdObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dtdSerializer);
+        doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
+        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* now */), doObj.TestValue);
+
+        // Verify DateTime (Local) -> DateOnly
+        dtdObj = new DateTimeDateWrapper() { TestValue = localNow };
+        xml = Serialize(dtdObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(dtdObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dtdSerializer);
+        doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
+        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* localNow */), doObj.TestValue);
+
+        // Verify DateTime (Utc) -> DateOnly
+        dtdObj = new DateTimeDateWrapper() { TestValue = utcNow };
+        xml = Serialize(dtdObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatDateString(dtdObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dtdSerializer);
+        doObj = (DateOnlyWrapper)Deserialize(doSerializer, xml);
+        Assert.StrictEqual(DateOnly.FromDateTime(dtdObj.TestValue /* utcNow */), doObj.TestValue);
+    }
+
+    [Theory]
+    // We want fractional times that don't fill all 7 digits, so don't rely on 'Now' like we did for the Date test
+    [InlineData("12:34:56.789", DateTimeKind.Unspecified)]      // Obviously fake
+    [InlineData("02:38:23.40"/*Z*/, DateTimeKind.Utc)]          // My heart will go on
+    [InlineData("08:32:00"/*-07:00*/, DateTimeKind.Local)]      // Helen errupts
+    public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
+    {
+        var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var toaxtSerializer = new XmlSerializer(typeof(TimeOnlyAsXsdTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
+        var dttSerializer = new XmlSerializer(typeof(DateTimeTimeWrapper), new XmlRootAttribute("DateAndTimeTest"));
+
+        // DateTime fields can be used with 'DataType="time"' attributes to produce xsd:time conforming output.
+        // These xsd:time fields can logically fit into TimeOnly structs - if optional timezone/offset info is
+        // discarded. By default, XmlSerializer doesn't emit any offset details for xsd:date, but it does for xsd:time.
+        // There is an appCompat switch to allow discarding offset details when reading an xsd:time into TimeOnly.
+        // 'Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss'. The 'TimeOnly' field can also be decorated
+        // with a 'DataType="timeWithoutOffset"' attribute to indicate that offset information should be ignored.
+        // Use the latter approach here.
+
+        var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
+        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind); 
+        Assert.Equal(kind, testTime.Kind);
+
+        // Verify TimeOnly -> DateTime
+        var toObj = new TimeOnlyWrapper() { TestValue = TimeOnly.FromDateTime(testTime) };
+        var xml = Serialize(toObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatTimeString(toObj.TestValue)}</TestValue>
+            </DateAndTimeTest>
+            """), () => toSerializer);
+        var dttObj = (DateTimeTimeWrapper)Deserialize(dttSerializer, xml);
+        Assert.StrictEqual(testTime.TimeOfDay, dttObj.TestValue.TimeOfDay);
+        Assert.Equal(DateTimeKind.Unspecified, dttObj.TestValue.Kind);
+        Assert.Equal(DateTime.MinValue.Date, dttObj.TestValue.Date);
+
+        // Verify DateTime -> TimeOnly
+        // Use an Unspecified kind explicitly; DateTime.Now is Local.
+        dttObj = new DateTimeTimeWrapper() { TestValue = testTime };
+        xml = Serialize(dttObj, WithXmlHeader($"""
+            <DateAndTimeTest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <TestValue>{FormatTimeString(dttObj.TestValue, ignoreUtc)}</TestValue>
+            </DateAndTimeTest>
+            """), () => dttSerializer);
+        var toaxtObj = (TimeOnlyAsXsdTimeWrapper)Deserialize(toaxtSerializer, xml);
+        Assert.StrictEqual(TimeOnly.FromDateTime(dttObj.TestValue /* now */), toaxtObj.TestValue);
+    }
+
     [Fact]
     public static void Xml_TypeWithByteProperty()
     {
@@ -1094,7 +1440,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             ms.Position = 0;
             string nl = Environment.NewLine;
             string actualFormatting = new StreamReader(ms).ReadToEnd();
-            string expectedFormatting = WithXmlHeader($"<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{ nl}</SimpleType>");
+            string expectedFormatting = WithXmlHeader($"<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{nl}</SimpleType>");
             Assert.Equal(expectedFormatting, actualFormatting);
         }
     }
@@ -1122,6 +1468,53 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        DerivedClassWithSameProperty castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
+
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+
+        actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001Z</DateTimeProperty>
+</DerivedClassWithSameProperty2>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
     }
 
     [Fact]
@@ -1388,6 +1781,30 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.NotNull(actual.ManyChoices);
         Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
         Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
+
+        // Try again with a null array
+        value = new TypeWithArrayPropertyHavingChoice() { ManyChoices = null, ChoiceArray = itemChoices };
+        actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayPropertyHavingChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+        Assert.NotNull(actual);
+        Assert.Null(actual.ManyChoices);   // Arrays keep null-ness
+    }
+
+    [Fact]
+    public static void Xml_TypeWithArrayPropertyHavingComplexChoice()
+    {
+        object[] choices = new object[] { new ComplexChoiceB { Name = "Beef" }, 5 };
+
+        // For each item in the choices array, add an enumeration value.
+        MoreChoices[] itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+
+        var value = new TypeWithPropertyHavingComplexChoice() { ManyChoices = choices, ChoiceArray = itemChoices };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithPropertyHavingComplexChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Item xsi:type=\"ComplexChoiceB\">\r\n    <Name>Beef</Name>\r\n  </Item>\r\n  <Amount>5</Amount>\r\n</TypeWithPropertyHavingComplexChoice>"));
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.ManyChoices);
+        Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
+        Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
     }
 
     [Fact]
@@ -1588,6 +2005,54 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Null(actual.value);
         Assert.Null(((DerivedClass)actual).Value);
         Assert.Equal(value.value, ((DerivedClass)actual).value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInCollection()
+    {
+        var value = new MyList() {
+            new BaseClass() { Value = "base class" },
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<MyList>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <anyType xsi:type=""BaseClass"">
+    <Value>base class</Value>
+  </anyType>
+  <anyType xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </anyType>
+</ArrayOfAnyType>",
+() => { return new XmlSerializer(typeof(MyList), new Type[] { typeof(BaseClass) }); });
+
+        Assert.NotNull(actual);
+        Assert.Equal(2, actual.Count);
+        Assert.IsType<BaseClass>(actual[0]);
+        Assert.Equal("base class", ((BaseClass)actual[0]).Value);
+        Assert.IsType<DerivedClass>(actual[1]);
+        Assert.Equal("derived class", ((DerivedClass)actual[1]).Value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInCollectionSingle()
+    {
+        var value = new MyList() {
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<MyList>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <anyType xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </anyType>
+</ArrayOfAnyType>",
+() => { return new XmlSerializer(typeof(MyList), new Type[] { typeof(BaseClass) }); });
+
+        Assert.NotNull(actual);
+        Assert.Single(actual);
+        Assert.IsType<DerivedClass>(actual[0]);
+        Assert.Equal("derived class", ((DerivedClass)actual[0]).Value);
     }
 
     [Fact]
@@ -2075,7 +2540,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
                 overrides.Add(typeof(Parameter<string>), parametersXmlAttribute);
 
                 var serializer = new XmlSerializer(typeof(RootClass), overrides);
-                var result=(RootClass)serializer.Deserialize(xmlReader);
+                var result = (RootClass)serializer.Deserialize(xmlReader);
 
                 Assert.Equal("SomeName", result.Parameters[0].Name);
                 Assert.Equal(string.Empty, ((Parameter<string>)result.Parameters[0]).Value);
@@ -2096,14 +2561,13 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal(x.Name, y.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
 #if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
-    [ActiveIssue("34072", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/96799", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
@@ -2160,6 +2624,112 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal("Root", retarray.xelements[0].Name);
         Assert.Equal("Member", retarray.xelements[1].Name);
     }
+
+#if !XMLSERIALIZERGENERATORTESTS
+    [Fact]
+    public static void ObsoleteAttribute_DoesNotAffectSerialization()
+    {
+        // Test that properties marked with [Obsolete(IsError=false)] are still serialized (not ignored like [XmlIgnore])
+        var testObject = new TypeWithObsoleteProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+            ObsoleteProperty = "obsolete",
+#pragma warning restore CS0618 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
+
+        var result = SerializeAndDeserialize(testObject, $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <NormalProperty>normal</NormalProperty>
+              <ObsoleteProperty>obsolete</ObsoleteProperty>
+            </TypeWithObsoleteProperty>
+            """);
+
+        // Verify that the obsolete property was correctly roundtripped
+        Assert.Equal("normal", result.NormalProperty);
+#pragma warning disable CS0618 // Type or member is obsolete
+        Assert.Equal("obsolete", result.ObsoleteProperty);
+#pragma warning restore CS0618 // Type or member is obsolete
+        // IgnoredProperty should remain null as it has [XmlIgnore]
+        Assert.Null(result.IgnoredProperty);
+    }
+
+    [Fact]
+    public static void ObsoleteAttribute_IsError_ThrowsException()
+    {
+        // Test that properties marked with [Obsolete(IsError=true)] throw an exception during serializer creation
+        var testObject = new TypeWithObsoleteErrorProperty
+        {
+            NormalProperty = "normal",
+#pragma warning disable CS0618, CS0619 // Type or member is obsolete
+            ObsoleteProperty = "obsolete",
+            // This line would cause a compile-time error due to IsError=true. So we set this in the class definition instead.
+            // ObsoletePropertyWithError = "error",
+#pragma warning restore CS0618, CS0619 // Type or member is obsolete
+            IgnoredProperty = "ignored"
+        };
+
+        // We need to create a type with just the error property to test the exception
+        // Using reflection to create an XmlSerializer for a type with ObsoletePropertyWithError
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            var serializer = new XmlSerializer(typeof(TypeWithObsoleteErrorProperty));
+            var xml = Serialize(testObject, null, () => serializer, true);
+        });
+    }
+
+    [Fact]
+    public static void ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers()
+    {
+        // Enable compat switch
+        using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.IgnoreObsoleteMembers", true))
+        {
+            Assert.True(compatSwitch.CurrentValue);
+
+            // Even if we just flipped the appContext switch, previous tests might have already created a serializer
+            // for this type. To avoid using a cached serializer, use a different namespace.
+            var cacheBustingNamespace = "http://tempuri.org/DoNotUseCachedSerializer";
+            var expectedXml = $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <TypeWithObsoleteProperty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"  xmlns="{cacheBustingNamespace}">
+                  <NormalProperty>normal</NormalProperty>
+                </TypeWithObsoleteProperty>
+                """;
+
+            // Test that when the switch is enabled, obsolete members are ignored (old behavior)
+            var testObject = new TypeWithObsoleteProperty
+            {
+                NormalProperty = "normal",
+#pragma warning disable CS0618 // Type or member is obsolete
+                ObsoleteProperty = "obsolete",
+#pragma warning restore CS0618 // Type or member is obsolete
+                IgnoredProperty = "ignored"
+            };
+
+            // With the switch enabled, obsolete properties should be ignored
+            var serializerFactory = () => new XmlSerializer(typeof(TypeWithObsoleteProperty), cacheBustingNamespace);
+            var result = SerializeAndDeserialize(testObject, expectedXml, serializerFactory);
+
+            // Try with the type that has Obsolete(IsError=true) property. It should still get ignored without throwing.
+            var testObjectWithError = new TypeWithObsoleteErrorProperty
+            {
+                NormalProperty = "normal",
+#pragma warning disable CS0618, CS0619 // Type or member is obsolete
+                ObsoleteProperty = "obsolete",
+                // This line would cause a compile-time error due to IsError=true. So we set this in the class definition instead.
+                // ObsoletePropertyWithError = "error",
+#pragma warning restore CS0618, CS0619 // Type or member is obsolete
+                IgnoredProperty = "ignored"
+            };
+
+            serializerFactory = () => new XmlSerializer(typeof(TypeWithObsoleteErrorProperty), cacheBustingNamespace);
+            var resultWithError = SerializeAndDeserialize(testObjectWithError,
+                expectedXml.Replace("TypeWithObsoleteProperty", "TypeWithObsoleteErrorProperty"), serializerFactory);
+        }
+    }
+#endif
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
@@ -2385,6 +2955,32 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         }
     }
 
+    private static Exception AssertTypeAndUnwrap<T>(object exception, string? message = null) where T : Exception
+    {
+        Assert.IsType<T>(exception);
+        var ex = exception as Exception;
+        if (message != null)
+            Assert.Contains(message, ex.Message);
+        Assert.NotNull(ex.InnerException);
+        return ex.InnerException;
+    }
+
+    private static void AssertXmlMappingException(Exception exception, string typeName, string fieldName, string msg = null)
+    {
+        var ex = exception;
+#if ReflectionOnly
+        // The ILGen Serializer does XmlMapping during serializer ctor and lets the exception out cleanly.
+        // The Reflection Serializer does XmlMapping in the Serialize() call and wraps the resulting exception
+        //      inside a catch-all IOE in Serialize().
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "There was an error generating the XML document");
+#endif
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting type '{typeName}'");
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting field '{fieldName}'");
+        Assert.IsType<InvalidOperationException>(ex);
+        if (msg != null)
+            Assert.Contains(msg, ex.Message);
+    }
+
     private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
     bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
@@ -2434,5 +3030,64 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         ms.Position = 0;
 
         return ms;
+    }
+
+    private static string FormatDateString(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string FormatDateString(DateTime date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string FormatTimeString(TimeOnly time) => time.ToString($"HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture);
+    private static string FormatTimeString(DateTime time, bool ignoreUtc)
+        => time.ToString($"HH:mm:ss.fffffff{(!ignoreUtc && time.Kind == DateTimeKind.Utc ? "Z" : "zzzzzz")}", CultureInfo.InvariantCulture);
+}
+
+internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
+{
+    private readonly string _name;
+    private readonly string _cachedName;
+    private readonly bool _hadValue;
+    private readonly bool _originalValue;
+
+    public bool OriginalValue => _originalValue;
+    public bool CurrentValue => AppContext.TryGetSwitch(_name, out bool value) && value;
+
+    public XmlSerializerAppContextSwitchScope(string name, bool value, string cachedName = null)
+    {
+        _name = name;
+        _cachedName = cachedName ?? GuessCachedName(name);
+        _hadValue = AppContext.TryGetSwitch(name, out _originalValue);
+        AppContext.SetSwitch(name, value);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    public void Dispose()
+    {
+        if (_hadValue)
+            AppContext.SetSwitch(_name, _originalValue);
+        else
+            // There's no "unset", so pick a default or false
+            AppContext.SetSwitch(_name, false);
+        ClearCachedSwitch(_cachedName);
+    }
+
+    private static void ClearCachedSwitch(string name)
+    {
+        Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+        Assert.NotNull(t);
+
+        FieldInfo fi = t.GetField(name, BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(fi);
+        fi.SetValue(null, 0);
+    }
+    
+    private static string GuessCachedName(string name)
+    {
+        // Switch names are typically of the form "Switch.System.Xml.SomeFeature"
+        // The cached field is typically "s_someFeature"
+        int idx = name.LastIndexOf('.');
+        if (idx > 0 && idx < name.Length - 1)
+        {
+            string feature = name.Substring(idx + 1);
+            return "s_" + char.ToLowerInvariant(feature[0]) + feature.Substring(1);
+        }
+        throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
     }
 }

@@ -45,7 +45,11 @@ else(CLR_CMAKE_HOST_WIN32)
         # Generate DAC export file with the DAC_ prefix
         generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
 
-        set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.ps1)
+        else()
+            set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
+        endif()
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
             set(JUMP_INSTRUCTION b)
@@ -57,23 +61,46 @@ else(CLR_CMAKE_HOST_WIN32)
 
         # Generate the palredefines.inc file to map from the imported prefixed APIs (foo to DAC_foo)
         set(PAL_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/palredefines.inc)
-        add_custom_command(
-            OUTPUT ${PAL_REDEFINES_INC}
-            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
-            COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
-            VERBATIM
-        )
+
+        # Win32 may be false when cross compiling
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            add_custom_command(
+                OUTPUT ${PAL_REDEFINES_INC}
+                COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${REDEFINES_FILE_SCRIPT}\" -filename \"${DEF_SOURCES}\" -jump ${JUMP_INSTRUCTION} -prefix1 \"\" -prefix2 \"DAC_\" > ${PAL_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${PAL_REDEFINES_INC}
+                COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+                VERBATIM
+            )
+        endif()
         add_custom_target(pal_redefines_file DEPENDS ${PAL_REDEFINES_INC})
 
         # Generate the libredefines.inc file for the DAC to export the prefixed APIs (DAC_foo to foo)
         set(LIB_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/libredefines.inc)
-        add_custom_command(
-            OUTPUT ${LIB_REDEFINES_INC}
-            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
-            COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
-        )
+
+        # Win32 may be false when cross compiling
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            add_custom_command(
+                OUTPUT ${LIB_REDEFINES_INC}
+                COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${REDEFINES_FILE_SCRIPT}\" -filename \"${DEF_SOURCES}\" -jump ${JUMP_INSTRUCTION} -prefix1 \"DAC_\" > ${LIB_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${LIB_REDEFINES_INC}
+                COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+                VERBATIM
+            )
+        endif()
         add_custom_target(lib_redefines_inc DEPENDS ${LIB_REDEFINES_INC})
 
         # Add lib redefines file to DAC
@@ -89,10 +116,6 @@ else(CLR_CMAKE_HOST_WIN32)
         # ensure proper resolving of circular references between a subset of the libraries.
         set(START_LIBRARY_GROUP -Wl,--start-group)
         set(END_LIBRARY_GROUP -Wl,--end-group)
-
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -123,10 +146,8 @@ set(COREDAC_LIBRARIES
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cee_dac
     cordbee_dac
-    ${START_WHOLE_ARCHIVE} # force all exports to be available
     corguids
     daccess
-    ${END_WHOLE_ARCHIVE}
     dbgutil
     mdcompiler_dac
     mdruntime_dac
@@ -135,6 +156,12 @@ set(COREDAC_LIBRARIES
     unwinder_dac
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
+
+if(CLR_CMAKE_HOST_UNIX)
+    list(APPEND COREDAC_LIBRARIES
+        coreclrpal_dac
+    )
+endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
@@ -173,10 +200,8 @@ if(CLR_CMAKE_HOST_WIN32)
 else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         coreclrminipal
-        ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
@@ -186,13 +211,9 @@ if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
     )
 endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
 
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND COREDAC_LIBRARIES
-        coreclrpal_dac
-    )
-endif(CLR_CMAKE_HOST_UNIX)
-
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
+
+esrp_sign(mscordaccore)
 
 # add the install targets
 install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT debug)

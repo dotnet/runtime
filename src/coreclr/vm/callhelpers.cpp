@@ -20,7 +20,7 @@
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
-    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
+    MethodDesc* pMethod = NonVirtualEntry2MethodDesc(pTarget);
 
     Module * pModule = pMethod->GetModule();
 
@@ -93,12 +93,11 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     curThread = GetThread();
 
-    static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
+    static_assert(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
-    // If the current thread owns spinlock or unbreakable lock, it cannot call managed code.
-    _ASSERTE(!curThread->HasUnbreakableLock() &&
-             (curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
+    // If the current thread owns spinlock it cannot call managed code.
+    _ASSERTE((curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
 #ifdef TARGET_ARM
     _ASSERTE(IsThumbCode(pCallDescrData->pTarget));
@@ -181,11 +180,11 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 // Helper for VM->managed calls with simple signatures.
-void * DispatchCallSimple(
-                    SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy,
-                    PCODE pTargetAddress,
-                    DWORD dwDispatchCallSimpleFlags)
+void* DispatchCallSimple(
+    SIZE_T *pSrc,
+    DWORD numStackSlotsToCopy,
+    PCODE pTargetAddress,
+    DWORD dwDispatchCallSimpleFlags)
 {
     CONTRACTL
     {
@@ -224,6 +223,17 @@ void * DispatchCallSimple(
 #endif
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
+
+#ifdef TARGET_WASM
+    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
+    LPVOID pOrigSrc = callDescrData.pSrc;
+    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
+    for (int i = 0; i < numStackSlotsToCopy; i++)
+    {
+        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
+    }
+#endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -327,7 +337,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT));
-        _ASSERTE(!(m_methodSig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE));
+        _ASSERTE(!m_methodSig.HasGenericContextArg());
 
 #ifdef DEBUGGING_SUPPORTED
         if (CORDebuggerTraceCall())
@@ -532,6 +542,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
+#ifdef TARGET_WASM
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);
 
@@ -582,7 +595,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     MethodTable *pMT = ref->GetMethodTable();
 
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     if (!pMT->HasDefaultConstructor())
     {

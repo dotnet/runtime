@@ -32,6 +32,7 @@ namespace System.Text
 #pragma warning disable SA1001 // Commas should be spaced correctly
         , ISpanFormattable
         , IUtf8SpanFormattable
+        , IUtf8SpanParsable<Rune>
 #pragma warning restore SA1001
 #endif
     {
@@ -292,6 +293,13 @@ namespace System.Text
 #endif
 
         public int CompareTo(Rune other) => this.Value - other.Value; // values don't span entire 32-bit domain; won't integer overflow
+
+        internal ReadOnlySpan<char> AsSpan(Span<char> buffer)
+        {
+            Debug.Assert(buffer.Length >= MaxUtf16CharsPerRune);
+            int charsWritten = EncodeToUtf16(buffer);
+            return buffer.Slice(0, charsWritten);
+        }
 
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
@@ -779,8 +787,32 @@ namespace System.Text
 
         public bool Equals(Rune other) => this == other;
 
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified rune are equal using the specified comparison option.
+        /// </summary>
+        /// <param name="other">The rune to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
+        public bool Equals(Rune other, StringComparison comparisonType)
+        {
+            if (comparisonType is StringComparison.Ordinal)
+            {
+                return this == other;
+            }
+
+            // Convert this to span
+            ReadOnlySpan<char> thisChars = AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
+
+            // Convert other to span
+            ReadOnlySpan<char> otherChars = other.AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
+
+            // Compare span equality
+            return thisChars.Equals(otherChars, comparisonType);
+        }
+
         public override int GetHashCode() => Value;
 
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Gets the <see cref="Rune"/> which begins at index <paramref name="index"/> in
         /// string <paramref name="input"/>.
@@ -799,6 +831,7 @@ namespace System.Text
 
             return UnsafeCreate((uint)runeValue);
         }
+#endif
 
         /// <summary>
         /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode scalar
@@ -850,6 +883,7 @@ namespace System.Text
             return (int)returnValue;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         // returns a negative number on failure
         private static int ReadRuneFromString(string input, int index)
         {
@@ -897,6 +931,7 @@ namespace System.Text
 
             return (int)returnValue;
         }
+#endif
 
         /// <summary>
         /// Returns a <see cref="string"/> representation of this <see cref="Rune"/> instance.
@@ -933,6 +968,33 @@ namespace System.Text
 
         bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryEncodeToUtf8(utf8Destination, out bytesWritten);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        static bool IUtf8SpanParsable<Rune>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Rune result)
+        {
+            if (DecodeFromUtf8(utf8Text, out result, out int bytesConsumed) == OperationStatus.Done)
+            {
+                if (bytesConsumed == utf8Text.Length)
+                {
+                    return true;
+                }
+
+                result = ReplacementChar;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        static Rune IUtf8SpanParsable<Rune>.Parse(ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider)
+        {
+            if (DecodeFromUtf8(utf8Text, out Rune result, out int bytesConsumed) != OperationStatus.Done || bytesConsumed != utf8Text.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+
+            return result;
+        }
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 #endif
@@ -1128,6 +1190,7 @@ namespace System.Text
             return false;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Attempts to get the <see cref="Rune"/> which begins at index <paramref name="index"/> in
         /// string <paramref name="input"/>.
@@ -1151,6 +1214,7 @@ namespace System.Text
                 return false;
             }
         }
+#endif
 
         // Allows constructing a Unicode scalar value from an arbitrary 32-bit integer without
         // validation. It is the caller's responsibility to have performed manual validation
@@ -1490,7 +1554,11 @@ namespace System.Text
                 return this.CompareTo(other);
             }
 
+#if SYSTEM_PRIVATE_CORLIB
             throw new ArgumentException(SR.Arg_MustBeRune);
+#else
+            throw new ArgumentException();
+#endif
         }
     }
 }

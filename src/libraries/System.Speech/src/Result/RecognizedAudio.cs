@@ -45,7 +45,7 @@ namespace System.Speech.Recognition
         // Different ways to store the audio, either as a binary data stream or as a wave file.
         public void WriteToWaveStream(Stream outputStream)
         {
-            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
+            ArgumentNullException.ThrowIfNull(outputStream);
 
             using (StreamMarshaler sm = new(outputStream))
             {
@@ -61,7 +61,7 @@ namespace System.Speech.Recognition
         // Different ways to store the audio, either as a binary data stream or as a wave file.
         public void WriteToAudioStream(Stream outputStream)
         {
-            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
+            ArgumentNullException.ThrowIfNull(outputStream);
 
             // now write the raw data
             outputStream.Write(_rawAudioData, 0, _rawAudioData.Length);

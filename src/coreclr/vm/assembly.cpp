@@ -37,7 +37,6 @@
 
 #include "peimagelayout.inl"
 
-
 // Define these macro's to do strict validation for jit lock and class init entry leaks.
 // This defines determine if the asserts that verify for these leaks are defined or not.
 // These asserts can sometimes go off even if no entries have been leaked so this defines
@@ -77,10 +76,7 @@ namespace
         SafeComHolder<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
-        MetaDataGetDispenser(
-            CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx,
-            (void**)&pDispenser);
+        CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
         if (pDispenser == NULL)
         {
             ThrowOutOfMemory();
@@ -333,7 +329,10 @@ Assembly * Assembly::Create(
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
+
+    // Validate the assembly about to be created is suitable for execution.
+    pPEAssembly->ValidateForExecution();
 
     NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
 
@@ -435,10 +434,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         IfFailThrow(pAssemblyEmit->DefineAssembly(pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, hashAlgorithm,
                                                    pAssemblyNameParts->_pName, &assemData, pAssemblyNameParts->_flags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pAssemblyEmit);
-
-        // Set it as the fallback load context binder for the dynamic assembly being created
-        pPEAssembly->SetFallbackBinder(pBinder);
+        pPEAssembly = PEAssembly::Create(pAssemblyEmit, pBinder);
     }
 
     AppDomain* pDomain = ::GetAppDomain();
@@ -547,21 +543,16 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-
-
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
     GetModule()->SetDomainAssembly(pDomainAssembly);
-
 } // Assembly::SetDomainAssembly
 
 #endif // #ifndef DACCESS_COMPILE
@@ -649,7 +640,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
                     pAssembly = GetModule()->LoadAssembly(mdLinkRef);
-                    PREFIX_ASSUME(pAssembly != NULL);
+                    _ASSERTE(pAssembly != NULL);
                     break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
@@ -1105,7 +1096,7 @@ void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
     {
         szUTFMethodName = "Invalid MethodDef record";
     }
-    PREFIX_ASSUME(szUTFMethodName!=NULL);
+    _ASSERTE(szUTFMethodName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szMethodName, szUTFMethodName);
     COMPlusThrowHR(COR_E_METHODACCESS, resID, szClassName, szMethodName);
 }
@@ -1226,10 +1217,7 @@ static void RunMainInternal(Param* pParam)
 
     GCPROTECT_END();
 
-    //<TODO>
-    // When we get mainCRTStartup from the C++ then this should be able to go away.</TODO>
-    fflush(stdout);
-    fflush(stderr);
+    minipal_log_flush_all();
 }
 
 /* static */
@@ -1513,7 +1501,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // This code needs a class init frame, because without it, the
         // debugger will assume any code that results from searching for a
         // type handle (ie, loading an assembly) is the first line of a program.
-        FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
+        DebuggerClassInitMarkFrame __dcimf;
 
         MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
@@ -2372,7 +2360,7 @@ void Assembly::DeliverSyncEvents()
         SetShouldNotifyDebugger();
 
         // Still work to do even if no debugger is attached.
-        NotifyDebuggerLoad(ATTACH_ASSEMBLY_LOAD, FALSE);
+        NotifyDebuggerLoad(ATTACH_MODULE_LOAD, FALSE);
 
     }
 #endif // DEBUGGING_SUPPORTED
@@ -2395,7 +2383,7 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
-    return 0;
+    return DACF_NONE;
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2495,16 +2483,7 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     }
 
     // There is still work we need to do even when no debugger is attached.
-    if (flags & ATTACH_ASSEMBLY_LOAD)
-    {
-        if (ShouldNotifyDebugger())
-        {
-            g_pDebugInterface->LoadAssembly(GetDomainAssembly());
-        }
-        result = TRUE;
-    }
-
-    if(this->ShouldNotifyDebugger())
+    if(this->ShouldNotifyDebugger() && !(flags & ATTACH_MODULE_LOAD))
     {
         result = result ||
             this->GetModule()->NotifyDebuggerLoad(GetDomainAssembly(), flags, attaching);

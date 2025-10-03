@@ -3,13 +3,25 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" /> 
+  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
 
   <PropertyGroup>
     <AndroidBuildDependsOn>PrepareForAndroidBuild;$(AndroidBuildDependsOn);_CopyTestArchive</AndroidBuildDependsOn>
     <BundleTestAndroidAppDependsOn>AndroidBuild</BundleTestAndroidAppDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(IsFunctionalTest)' != 'true'">
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
+    <Compile Include="$(RepoTasksDir)AndroidAppBuilder\Templates\monodroid-nativeaot.cs" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <_UseNativeLibPrefix>true</_UseNativeLibPrefix>
   </PropertyGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
@@ -21,10 +33,10 @@
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
     <PropertyGroup>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
-    
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestNativeAOT)' != 'true'">AndroidTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestNativeAOT)' == 'true'">lib$(TargetName).so</MainLibraryFileName>
+
       <AndroidBuildDir>$(PublishDir)</AndroidBuildDir>
-      <AndroidBundleDir>$(BundleDir)</AndroidBundleDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -44,7 +56,7 @@
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AndroidAssembliesToBundle>
-      
+
       <_PublishAssemblies Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\**\*.resources.dll" />
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 

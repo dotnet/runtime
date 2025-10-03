@@ -299,17 +299,26 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
         private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
-        internal static object InternalAllocNoChecks(RuntimeType type)
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static object InternalAllocNoChecks(MethodTable* pMT)
         {
-            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
-            object? result = null;
-            InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref result));
-            GC.KeepAlive(type);
-            return result!;
+            return InternalAllocNoChecks_FastPath(pMT) ?? InternalAllocNoChecksWorker(pMT);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object InternalAllocNoChecksWorker(MethodTable* pMT)
+            {
+                object? result = null;
+                InternalAllocNoChecks(pMT, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAllocNoChecks")]
         private static unsafe partial void InternalAllocNoChecks(MethodTable* pMT, ObjectHandleOnStack result);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object? InternalAllocNoChecks_FastPath(MethodTable* pMT);
 
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli
@@ -569,14 +578,14 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints")]
         private static partial void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);
 
-        internal Type[] GetConstraints()
+        internal Type[]? GetConstraints()
         {
             Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
 
             GetConstraints(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types));
 
-            return types!;
+            return types;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "QCall_GetGCHandleForTypeHandle")]
@@ -735,12 +744,12 @@ namespace System
             return types!;
         }
 
-        internal Type[] GetInstantiationPublic()
+        internal Type[]? GetInstantiationPublic()
         {
             Type[]? types = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             GetInstantiation(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
-            return types!;
+            return types;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_Instantiate")]
@@ -814,9 +823,6 @@ namespace System
             MakePointer(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref type));
             return type!;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
-        internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
         internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
@@ -1039,13 +1045,13 @@ namespace System
 
         public IntPtr GetFunctionPointer()
         {
-            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value!).Value);
+            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value).Value);
             GC.KeepAlive(m_value);
             return ptr;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetIsCollectible")]
-        internal static partial Interop.BOOL GetIsCollectible(RuntimeMethodHandleInternal handle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsCollectible(RuntimeMethodHandleInternal method);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_IsCAVisibleFromDecoratedType")]
         internal static partial Interop.BOOL IsCAVisibleFromDecoratedType(
@@ -1220,12 +1226,12 @@ namespace System
             return types!;
         }
 
-        internal static Type[] GetMethodInstantiationPublic(IRuntimeMethodInfo method)
+        internal static Type[]? GetMethodInstantiationPublic(IRuntimeMethodInfo method)
         {
-            RuntimeType[]? types = null;
+            Type[]? types = null;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, ObjectHandleOnStack.Create(ref types), Interop.BOOL.FALSE);
             GC.KeepAlive(method);
-            return types!;
+            return types;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

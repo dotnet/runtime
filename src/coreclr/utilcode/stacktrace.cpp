@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
 
 #include "stdafx.h"
 
@@ -30,7 +27,6 @@ HINSTANCE LoadImageHlp()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
 
     return WszLoadLibrary(W("imagehlp.dll"), NULL, 0);
 }
@@ -39,7 +35,6 @@ HINSTANCE LoadDbgHelp()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
 
     return WszLoadLibrary(W("dbghelp.dll"), NULL, 0);
 }
@@ -276,7 +271,6 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 {
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
 
 #ifndef DACCESS_COMPILE
     // not allowed to do allocation if current thread suspends EE.
@@ -361,7 +355,7 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
+
     LPSTR retval = NULL;
     HRESULT hr = S_OK;
 
@@ -895,36 +889,6 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
     LOCAL_ASSERT(strlen(pszString) <= cchMaxAssertStackLevelStringLen * cfrTotal);
 }
 #endif // !defined(DACCESS_COMPILE)
-
-/****************************************************************************
-* GetStringFromAddr *
-*-------------------*
-*   Description:
-*       Returns a string from an address.
-****************************************************************************/
-void GetStringFromAddr
-(
-DWORD_PTR dwAddr,
-_Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
-                // Buffer must hold at least cchMaxAssertStackLevelStringLen.
-)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    LOCAL_ASSERT(szString);
-
-    SYM_INFO si;
-    FillSymbolInfo(&si, dwAddr);
-
-    sprintf_s(szString,
-              cchMaxAssertStackLevelStringLen,
-              "%s! %s + 0x%p (0x%p)",
-              (si.achModule[0]) ? si.achModule : "<no module>",
-              (si.achSymbol[0]) ? si.achSymbol : "<no symbol>",
-              (void*)si.dwOffset,
-              (void*)dwAddr);
-}
 
 /****************************************************************************
 * MagicDeinit *

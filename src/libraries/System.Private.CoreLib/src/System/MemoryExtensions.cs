@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -1260,7 +1261,7 @@ namespace System
         /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
-        public static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
         {
             switch (values.Length)
             {
@@ -1840,7 +1841,7 @@ namespace System
         /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
-        public static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
         {
             switch (values.Length)
             {
@@ -3363,7 +3364,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
-        public static unsafe int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
         {
             switch (values.Length)
             {
@@ -3526,7 +3527,7 @@ namespace System
         /// <summary>
         /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
-        public static unsafe int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IComparer<T>? comparer = null)
+        public static int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IComparer<T>? comparer = null)
         {
             int minLength = Math.Min(span.Length, other.Length);
             comparer ??= Comparer<T>.Default;
@@ -3579,7 +3580,7 @@ namespace System
         /// <param name="value">The sequence to compare to the start of <paramref name="span"/>.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
             value.Length <= span.Length &&
             SequenceEqual(span.Slice(0, value.Length), value, comparer);
 
@@ -3624,7 +3625,7 @@ namespace System
         /// <param name="value">The sequence to compare to the end of <paramref name="span"/>.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
             value.Length <= span.Length &&
             SequenceEqual(span.Slice(span.Length - value.Length), value, comparer);
 
@@ -4419,7 +4420,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)span.Length;
+            uint length = (uint)span.Length;
 
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -4578,7 +4579,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;
@@ -4662,7 +4663,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue, IEqualityComparer<T>? comparer = null)
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;
@@ -4751,6 +4752,105 @@ namespace System
                         destination[i] = comparer.Equals(source[i], oldValue) ? newValue : source[i];
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, replacing all occurrences of any of the
+        /// elements in <paramref name="values"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="source">The span to copy.</param>
+        /// <param name="destination">The span into which the copied and replaced values should be written.</param>
+        /// <param name="values">The values to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any of the elements in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentException">The <paramref name="destination"/> span was shorter than the <paramref name="source"/> span.</exception>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="source"/> and <paramref name="destination"/> were overlapping but not referring to the same starting location.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAny<T>(this ReadOnlySpan<T> source, Span<T> destination, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            if (source.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            if (!Unsafe.AreSame(ref source._reference, ref destination._reference) &&
+                source.Overlaps(destination))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            source.CopyTo(destination);
+            ReplaceAny(destination.Slice(0, source.Length), values, newValue);
+        }
+
+        /// <summary>
+        /// Replaces in <paramref name="span"/> all occurrences of any of the
+        /// elements in <paramref name="values"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The span to edit.</param>
+        /// <param name="values">The values to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any of the elements in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAny<T>(this Span<T> span, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            int pos;
+            while ((pos = span.IndexOfAny(values)) >= 0)
+            {
+                span[pos] = newValue;
+                span = span.Slice(pos + 1);
+            }
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, replacing all occurrences of any of the
+        /// elements other than those in <paramref name="values"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="source">The span to copy.</param>
+        /// <param name="destination">The span into which the copied and replaced values should be written.</param>
+        /// <param name="values">The values to be excluded from replacement with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any elements other than those in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentException">The <paramref name="destination"/> span was shorter than the <paramref name="source"/> span.</exception>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="source"/> and <paramref name="destination"/> were overlapping but not referring to the same starting location.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAnyExcept<T>(this ReadOnlySpan<T> source, Span<T> destination, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            if (source.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            if (!Unsafe.AreSame(ref source._reference, ref destination._reference) &&
+                source.Overlaps(destination))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            source.CopyTo(destination);
+            ReplaceAnyExcept(destination.Slice(0, source.Length), values, newValue);
+        }
+
+        /// <summary>
+        /// Replaces in <paramref name="span"/> all elements, other than those in <paramref name="values"/>, with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The span to edit.</param>
+        /// <param name="values">The values to be excluded from replacement with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any elements other than those in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAnyExcept<T>(this Span<T> span, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            int pos;
+            while ((pos = span.IndexOfAnyExcept(values)) >= 0)
+            {
+                span[pos] = newValue;
+                span = span.Slice(pos + 1);
             }
         }
 
@@ -5459,6 +5559,72 @@ namespace System
             }
         }
 
+        /// <summary>Counts the number of times any of the specified <paramref name="values"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values for which to search.</param>
+        /// <returns>The number of times any of the <typeparamref name="T"/> elements in <paramref name="values"/> was found in the <paramref name="span"/>.</returns>
+        /// <remarks>If <paramref name="values"/> is empty, 0 is returned.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static int CountAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
+        {
+            int count = 0;
+
+            int pos;
+            while ((pos = span.IndexOfAny(values)) >= 0)
+            {
+                count++;
+                span = span.Slice(pos + 1);
+            }
+
+            return count;
+        }
+
+        /// <summary>Counts the number of times any of the specified <paramref name="values"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values for which to search.</param>
+        /// <returns>The number of times any of the <typeparamref name="T"/> elements in <paramref name="values"/> was found in the <paramref name="span"/>.</returns>
+        /// <remarks>If <paramref name="values"/> is empty, 0 is returned.</remarks>
+        public static int CountAny<T>(this ReadOnlySpan<T> span, params ReadOnlySpan<T> values) where T : IEquatable<T>?
+        {
+            int count = 0;
+
+            int pos;
+            while ((pos = span.IndexOfAny(values)) >= 0)
+            {
+                count++;
+                span = span.Slice(pos + 1);
+            }
+
+            return count;
+        }
+
+        /// <summary>Counts the number of times any of the specified <paramref name="values"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values for which to search.</param>
+        /// <param name="comparer">
+        /// The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the
+        /// default <see cref="IEqualityComparer{T}"/> for the type of an element.
+        /// </param>
+        /// <returns>The number of times any of the <typeparamref name="T"/> elements in <paramref name="values"/> was found in the <paramref name="span"/>.</returns>
+        /// <remarks>If <paramref name="values"/> is empty, 0 is returned.</remarks>
+        public static int CountAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        {
+            int count = 0;
+
+            int pos;
+            while ((pos = span.IndexOfAny(values, comparer)) >= 0)
+            {
+                count++;
+                span = span.Slice(pos + 1);
+            }
+
+            return count;
+        }
+
+
         /// <summary>Writes the specified interpolated string to the character span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="handler">The interpolated string.</param>
@@ -5654,10 +5820,10 @@ namespace System
         /// Enables enumerating each split within a <see cref="ReadOnlySpan{T}"/> that has been divided using one or more separators.
         /// </summary>
         /// <typeparam name="T">The type of items in the <see cref="SpanSplitEnumerator{T}"/>.</typeparam>
-        public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
+        public ref struct SpanSplitEnumerator<T> : IEnumerator<Range> where T : IEquatable<T>
         {
             /// <summary>The input span being split.</summary>
-            private readonly ReadOnlySpan<T> _span;
+            private readonly ReadOnlySpan<T> _source;
 
             /// <summary>A single separator to use when <see cref="_splitMode"/> is <see cref="SpanSplitEnumeratorMode.SingleElement"/>.</summary>
             private readonly T _separator = default!;
@@ -5671,25 +5837,29 @@ namespace System
 
             /// <summary>Mode that dictates how the instance was configured and how its fields should be used in <see cref="MoveNext"/>.</summary>
             private SpanSplitEnumeratorMode _splitMode;
-            /// <summary>The inclusive starting index in <see cref="_span"/> of the current range.</summary>
+            /// <summary>The inclusive starting index in <see cref="_source"/> of the current range.</summary>
             private int _startCurrent = 0;
-            /// <summary>The exclusive ending index in <see cref="_span"/> of the current range.</summary>
+            /// <summary>The exclusive ending index in <see cref="_source"/> of the current range.</summary>
             private int _endCurrent = 0;
-            /// <summary>The index in <see cref="_span"/> from which the next separator search should start.</summary>
+            /// <summary>The index in <see cref="_source"/> from which the next separator search should start.</summary>
             private int _startNext = 0;
 
             /// <summary>Gets an enumerator that allows for iteration over the split span.</summary>
             /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/> that can be used to iterate over the split span.</returns>
             public SpanSplitEnumerator<T> GetEnumerator() => this;
 
+            /// <summary>Gets the source span being enumerated.</summary>
+            /// <returns>Returns the <see cref="ReadOnlySpan{T}"/> that was provided when creating this enumerator.</returns>
+            public readonly ReadOnlySpan<T> Source => _source;
+
             /// <summary>Gets the current element of the enumeration.</summary>
-            /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element withing the source span.</returns>
+            /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element within the source span.</returns>
             public Range Current => new Range(_startCurrent, _endCurrent);
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SearchValues"/>.</summary>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, SearchValues<T> searchValues)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, SearchValues<T> searchValues)
             {
-                _span = span;
+                _source = source;
                 _splitMode = SpanSplitEnumeratorMode.SearchValues;
                 _searchValues = searchValues;
             }
@@ -5700,9 +5870,9 @@ namespace System
             /// it will instead use <see cref="SpanSplitEnumeratorMode.SearchValues"/> with a cached <see cref="SearchValues{Char}"/>
             /// for all whitespace characters.
             /// </remarks>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, ReadOnlySpan<T> separators)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, ReadOnlySpan<T> separators)
             {
-                _span = span;
+                _source = source;
                 if (typeof(T) == typeof(char) && separators.Length == 0)
                 {
                     _searchValues = Unsafe.As<SearchValues<T>>(string.SearchValuesStorage.WhiteSpaceChars);
@@ -5717,11 +5887,11 @@ namespace System
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.Sequence"/> (or <see cref="SpanSplitEnumeratorMode.EmptySequence"/> if the separator is empty).</summary>
             /// <remarks><paramref name="treatAsSingleSeparator"/> must be true.</remarks>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, ReadOnlySpan<T> separator, bool treatAsSingleSeparator)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, ReadOnlySpan<T> separator, bool treatAsSingleSeparator)
             {
                 Debug.Assert(treatAsSingleSeparator, "Should only ever be called as true; exists to differentiate from separators overload");
 
-                _span = span;
+                _source = source;
                 _separatorBuffer = separator;
                 _splitMode = separator.Length == 0 ?
                     SpanSplitEnumeratorMode.EmptySequence :
@@ -5729,9 +5899,9 @@ namespace System
             }
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SingleElement"/>.</summary>
-            internal SpanSplitEnumerator(ReadOnlySpan<T> span, T separator)
+            internal SpanSplitEnumerator(ReadOnlySpan<T> source, T separator)
             {
-                _span = span;
+                _source = source;
                 _separator = separator;
                 _splitMode = SpanSplitEnumeratorMode.SingleElement;
             }
@@ -5750,17 +5920,17 @@ namespace System
                         return false;
 
                     case SpanSplitEnumeratorMode.SingleElement:
-                        separatorIndex = _span.Slice(_startNext).IndexOf(_separator);
+                        separatorIndex = _source.Slice(_startNext).IndexOf(_separator);
                         separatorLength = 1;
                         break;
 
                     case SpanSplitEnumeratorMode.Any:
-                        separatorIndex = _span.Slice(_startNext).IndexOfAny(_separatorBuffer);
+                        separatorIndex = _source.Slice(_startNext).IndexOfAny(_separatorBuffer);
                         separatorLength = 1;
                         break;
 
                     case SpanSplitEnumeratorMode.Sequence:
-                        separatorIndex = _span.Slice(_startNext).IndexOf(_separatorBuffer);
+                        separatorIndex = _source.Slice(_startNext).IndexOf(_separatorBuffer);
                         separatorLength = _separatorBuffer.Length;
                         break;
 
@@ -5771,7 +5941,7 @@ namespace System
 
                     default:
                         Debug.Assert(_splitMode == SpanSplitEnumeratorMode.SearchValues, $"Unknown split mode: {_splitMode}");
-                        separatorIndex = _span.Slice(_startNext).IndexOfAny(_searchValues);
+                        separatorIndex = _source.Slice(_startNext).IndexOfAny(_searchValues);
                         separatorLength = 1;
                         break;
                 }
@@ -5784,7 +5954,7 @@ namespace System
                 }
                 else
                 {
-                    _startNext = _endCurrent = _span.Length;
+                    _startNext = _endCurrent = _source.Length;
 
                     // Set _splitMode to None so that subsequent MoveNext calls will return false.
                     _splitMode = SpanSplitEnumeratorMode.None;
@@ -5792,6 +5962,15 @@ namespace System
 
                 return true;
             }
+
+            /// <inheritdoc />
+            object IEnumerator.Current => Current;
+
+            /// <inheritdoc />
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            void IDisposable.Dispose() { }
         }
 
         /// <summary>Indicates in which mode <see cref="SpanSplitEnumerator{T}"/> is operating, with regards to how it should interpret its state.</summary>
@@ -5913,6 +6092,11 @@ namespace System
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                if (value is null)
+                {
+                    return true;
+                }
+
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                 // derives from the former.  For value types, it won't matter as the type checks devolve into
                 // JIT-time constants.  For reference types, they're more likely to implement IFormattable
@@ -5951,7 +6135,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);
@@ -5967,6 +6151,11 @@ namespace System
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                if (value is null)
+                {
+                    return true;
                 }
 
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
@@ -6007,7 +6196,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);

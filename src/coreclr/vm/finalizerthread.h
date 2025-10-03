@@ -10,7 +10,7 @@ class FinalizerThread
     static BOOL fQuitFinalizer;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-    static ULONGLONG LastHeapDumpTime;
+    static int64_t LastHeapDumpTime;
 #endif
 
     static CLREvent *hEventFinalizer;
@@ -42,28 +42,20 @@ public:
         return g_pFinalizerThread;
     }
 
-    static BOOL IsCurrentThreadFinalizer();
+    static bool IsCurrentThreadFinalizer();
 
     static void EnableFinalization();
 
-    static BOOL HaveExtraWorkForFinalizer();
+    static void DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD);
+
+    // returns if there is some extra work for the finalizer thread.
+    static bool HaveExtraWorkForFinalizer();
 
     static OBJECTREF GetNextFinalizableObject();
 
-    static void RaiseShutdownEvents()
-    {
-        WRAPPER_NO_CONTRACT;
-        fQuitFinalizer = TRUE;
-        EnableFinalization();
+    static void RaiseShutdownEvents();
 
-        // Do not wait for FinalizerThread if the current one is FinalizerThread.
-        if (GetThreadNULLOk() != GetFinalizerThread())
-        {
-            // This wait must be alertable to handle cases where the current
-            // thread's context is needed (i.e. RCW cleanup)
-            hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
-        }
-    }
+    static void WaitForFinalizerThreadStart();
 
     static void FinalizerThreadWait();
 

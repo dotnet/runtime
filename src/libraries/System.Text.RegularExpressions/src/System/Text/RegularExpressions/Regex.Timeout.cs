@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
         private const long InfiniteMatchTimeoutTicks = -10_000; // InfiniteMatchTimeout.Ticks
 
         // Historical note:
-        // Regex.InifiniteMatchTimeout was created instead of Timeout.InfiniteTimeSpan because of:
+        // Regex.InfiniteMatchTimeout was created instead of Timeout.InfiniteTimeSpan because of:
         // 1) Concerns about a connection between Regex and multi-threading.
         // 2) Concerns around requiring an extra contract assembly reference to access Timeout.
         // Neither of these would motivate such an addition now, but the API exists.

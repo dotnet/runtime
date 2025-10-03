@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -693,6 +692,64 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(dynamicILInfo);
             Assert.Equal(dynamicILInfo, method.GetDynamicILInfo());
             Assert.Equal(method, dynamicILInfo.DynamicMethod);
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113789", TestRuntimes.Mono)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public unsafe void InstanceBasedFunctionPointer(bool useExplicitThis)
+        {
+            Func<object, IntPtr, Guid> generatedMethodToCall = GenerateDynamicMethod(useExplicitThis);
+
+            // Call the property getter through the dynamic method.
+            IntPtr fn = typeof(MyClassWithGuidProperty).GetProperty(nameof(MyClassWithGuidProperty.MyGuid))!.GetGetMethod().MethodHandle.GetFunctionPointer();
+            Guid guid = Guid.NewGuid();
+            MyClassWithGuidProperty obj = new(guid);
+            Assert.Equal(guid, generatedMethodToCall(obj, fn));
+
+            static Func<object, IntPtr, Guid> GenerateDynamicMethod(bool useExplicitThis)
+            {
+                DynamicMethod dynamicMethod = new DynamicMethod(
+                    "GetGuid",
+                    returnType: typeof(Guid),
+
+                    // In this test, we use typeof(object) for the "this" pointer to ensure the IL could be re-used for other
+                    // reference types, but normally this would be the appropriate type such as typeof(MyClassWithGuidProperty).
+                    parameterTypes: [typeof(object), typeof(IntPtr)],
+
+                    typeof(object).Module,
+                    skipVisibility: false);
+
+                ILGenerator il = dynamicMethod.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0); // this
+                il.Emit(OpCodes.Ldarg_1); // fn
+
+                if (useExplicitThis)
+                {
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis | CallingConventions.ExplicitThis,
+                        returnType: typeof(Guid), parameterTypes: [typeof(object)], null);
+                }
+                else
+                {
+                    il.EmitCalli(OpCodes.Calli, CallingConventions.HasThis,
+                        returnType: typeof(Guid), parameterTypes: null, null);
+                }
+
+                il.Emit(OpCodes.Ret);
+
+                return dynamicMethod.CreateDelegate<Func<object, IntPtr, Guid>>();
+            }
+        }
+
+        private class MyClassWithGuidProperty
+        {
+            public MyClassWithGuidProperty(Guid guid)
+            {
+                MyGuid = guid;
+            }
+
+            public Guid MyGuid { get; init; }
         }
 
         private DynamicMethod GetDynamicMethod(bool skipVisibility)

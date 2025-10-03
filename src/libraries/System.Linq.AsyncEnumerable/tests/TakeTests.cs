@@ -18,8 +18,10 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void TakeNothing_ReturnsEmpty()
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
         {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().TakeLast(42));
+
             Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Take(new int[] { 1, 2, 3 }.ToAsyncEnumerable(), 0));
             Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Take(new int[] { 1, 2, 3 }.ToAsyncEnumerable(), -1));
             Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Take(new int[] { 1, 2, 3 }.ToAsyncEnumerable(), new Range(new(0), new(0))));

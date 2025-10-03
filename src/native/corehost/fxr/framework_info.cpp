@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include "framework_info.h"
+#include "fx_resolver.h"
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
@@ -33,16 +34,18 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
 }
 
 /*static*/ void framework_info::get_all_framework_infos(
-    const pal::string_t& own_dir,
+    const pal::string_t& dotnet_dir,
     const pal::char_t* fx_name,
     bool disable_multilevel_lookup,
+    bool include_disabled_versions,
     std::vector<framework_info>* framework_infos)
 {
     std::vector<pal::string_t> hive_dir;
-    get_framework_and_sdk_locations(own_dir, disable_multilevel_lookup, &hive_dir);
+    get_framework_locations(dotnet_dir, disable_multilevel_lookup, &hive_dir);
+
+    std::vector<pal::string_t> disabled_versions = fx_resolver_t::get_disabled_versions();
 
     int32_t hive_depth = 0;
-
     for (const pal::string_t& dir : hive_dir)
     {
         auto fx_shared_dir = dir;
@@ -92,9 +95,16 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
                     continue;
                 }
 
+                bool is_disabled = std::find(disabled_versions.begin(), disabled_versions.end(), ver) != disabled_versions.end();
+                if (is_disabled && !include_disabled_versions)
+                {
+                    trace::verbose(_X("Ignoring disabled version [%s]"), ver.c_str());
+                    continue;
+                }
+
                 trace::verbose(_X("Found FX version [%s]"), ver.c_str());
 
-                framework_info info(fx_name_local, fx_dir, parsed, hive_depth);
+                framework_info info(fx_name_local, fx_dir, parsed, hive_depth, is_disabled);
                 framework_infos->push_back(info);
             }
         }
@@ -105,13 +115,15 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
     std::sort(framework_infos->begin(), framework_infos->end(), compare_by_name_and_version);
 }
 
-/*static*/ bool framework_info::print_all_frameworks(const pal::string_t& own_dir, const pal::string_t& leading_whitespace)
+/*static*/ bool framework_info::print_all_frameworks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace)
 {
+    assert(leading_whitespace != nullptr);
+
     std::vector<framework_info> framework_infos;
-    get_all_framework_infos(own_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
+    get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, /*include_disabled_versions*/ false, &framework_infos);
     for (framework_info info : framework_infos)
     {
-        trace::println(_X("%s%s %s [%s]"), leading_whitespace.c_str(), info.name.c_str(), info.version.as_str().c_str(), info.path.c_str());
+        trace::println(_X("%s%s %s [%s]"), leading_whitespace, info.name.c_str(), info.version.as_str().c_str(), info.path.c_str());
     }
 
     return framework_infos.size() > 0;
