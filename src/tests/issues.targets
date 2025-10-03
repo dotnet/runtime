@@ -60,7 +60,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/rvastatics/RVAOrderingTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/55966</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Interpreter/InterpreterTester/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/interpreter/InterpreterTester/*">
             <Issue>Disabled for .NET 10 due to a backported fix that would require backporting another PR to make the interpreter test work with it.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
