@@ -42,7 +42,7 @@ namespace System.Speech.Internal
         /// Return an array of unicode characters each of which represents an IPA phoneme if the SAPI phonemes are valid.
         /// Otherwise, return null.
         /// </returns>
-        internal char[] SapiToIpa(char[] phonemes)
+        internal char[]? SapiToIpa(char[] phonemes)
         {
             return Convert(phonemes, true);
         }
@@ -52,7 +52,7 @@ namespace System.Speech.Internal
         /// </summary>
         /// Return an array of unicode characters each of which represents a SAPI phoneme if the IPA phonemes are valid.
         /// Otherwise, return null.
-        internal char[] IpaToSapi(char[] phonemes)
+        internal char[]? IpaToSapi(char[] phonemes)
         {
             return Convert(phonemes, false);
         }
@@ -123,7 +123,7 @@ namespace System.Speech.Internal
 
         #region Private Methods
 
-        private char[] Convert(char[] phonemes, bool isSapi)
+        private char[]? Convert(char[] phonemes, bool isSapi)
         {
             // If the phoneset of the selected language is UPS anyway, that is phone mapping is unnecessary,
             // we return the same phoneme string. But we still need to make a copy.
@@ -144,9 +144,9 @@ namespace System.Speech.Internal
             int startIndex; // Starting index of a substring being considered
             int endIndex;   // The ending index of the last convertible substring
             string token;           // Holds a substring of phonemes that are directly convertible from the mapping table.
-            string lastConvert;     // Holds last convertible substring, starting from startIndex.
+            string? lastConvert;     // Holds last convertible substring, starting from startIndex.
 
-            string tempConvert;
+            string? tempConvert;
             string source = new(phonemes);
             int i;
 
@@ -200,8 +200,8 @@ namespace System.Speech.Internal
 
         private PhoneMapData CreateMap(string resourceName)
         {
-            Assembly assembly = Assembly.GetAssembly(GetType());
-            Stream stream = assembly.GetManifestResourceStream(resourceName);
+            Assembly assembly = Assembly.GetAssembly(GetType())!;
+            Stream? stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
                 throw new FileLoadException(SR.Get(SRID.CannotLoadResourceFromManifest, resourceName, assembly.FullName));
@@ -214,7 +214,7 @@ namespace System.Speech.Internal
         #region Private Fields
 
         private int _currentLangId;
-        private PhoneMapData _phoneMap;
+        private PhoneMapData? _phoneMap;
 
         private static readonly int[] s_langIds = new int[] { 0x804, 0x404, 0x407, 0x409, 0x40A, 0x40C, 0x411 };
         private static readonly string[] s_resourceNames =
@@ -235,6 +235,12 @@ namespace System.Speech.Internal
                 public string sapi;
                 public string ups;
                 public bool isDefault;
+                public ConversionUnit(string sapi, string ups, bool isDefault)
+                {
+                    this.sapi = sapi;
+                    this.ups = ups;
+                    this.isDefault = isDefault;
+                }
             }
 
             internal PhoneMapData(Stream input)
@@ -247,11 +253,11 @@ namespace System.Speech.Internal
                     for (i = 0; i < size; i++)
                     {
                         _convertTable[i] = new ConversionUnit
-                        {
-                            sapi = ReadPhoneString(reader),
-                            ups = ReadPhoneString(reader),
-                            isDefault = reader.ReadInt32() != 0 ? true : false
-                        };
+                        (
+                            sapi: ReadPhoneString(reader),
+                            ups: ReadPhoneString(reader),
+                            isDefault: reader.ReadInt32() != 0 ? true : false
+                        );
                     }
 
                     _prefixSapiTable = InitializePrefix(true);
@@ -271,16 +277,16 @@ namespace System.Speech.Internal
                 }
             }
 
-            internal string ConvertPhoneme(string phoneme, bool isSapi)
+            internal string? ConvertPhoneme(string phoneme, bool isSapi)
             {
-                ConversionUnit unit;
+                ConversionUnit? unit;
                 if (isSapi)
                 {
-                    unit = (ConversionUnit)_prefixSapiTable[phoneme];
+                    unit = (ConversionUnit?)_prefixSapiTable[phoneme];
                 }
                 else
                 {
-                    unit = (ConversionUnit)_prefixUpsTable[phoneme];
+                    unit = (ConversionUnit?)_prefixUpsTable[phoneme];
                 }
                 if (unit == null)
                 {
