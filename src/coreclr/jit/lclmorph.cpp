@@ -1526,8 +1526,9 @@ private:
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
 
-                if ((val.Offset() != 0) ||
-                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                unsigned storeSize = m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize();
+
+                if (!m_compiler->IsEntireAccess(lclNum, val.Offset(), ValueSize(storeSize)))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
