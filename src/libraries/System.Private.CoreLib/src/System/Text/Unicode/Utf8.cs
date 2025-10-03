@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace System.Text.Unicode
 {
     /// <summary>
-    /// Provides static methods that convert chunked data between UTF-8 and UTF-16 encodings, and methods that validates UTF-8 sequences.
+    /// Provides static methods that convert chunked data between UTF-8 and UTF-16 encodings, and methods that validate UTF-8 sequences.
     /// </summary>
     public static class Utf8
     {

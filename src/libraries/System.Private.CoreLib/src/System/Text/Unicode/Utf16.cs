@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace System.Text.Unicode
 {
     /// <summary>
-    /// Provides static methods that validates UTF-16 strings.
+    /// Provides static methods that validate UTF-16 strings.
     /// </summary>
     public static class Utf16
     {
