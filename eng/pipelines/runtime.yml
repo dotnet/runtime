@@ -118,7 +118,7 @@ extends:
                 parameters:
                   librariesConfigurationArg: /p:LibrariesConfiguration=Release
                   runtimeFlavorArgs: /p:RuntimeFlavor=CoreCLR
-                  testBuildArgs: test src/tests/JIT/interpreter/Interpreter.csproj
+                  testBuildArgs: test JIT/interpreter/Interpreter.csproj
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),
