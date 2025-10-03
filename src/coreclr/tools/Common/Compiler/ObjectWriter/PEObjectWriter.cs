@@ -508,8 +508,6 @@ namespace ILCompiler.ObjectWriter
             exports.Sort(StringComparer.Ordinal);
             string moduleName = Path.GetFileName(_outputPath);
             const int minOrdinal = 1;
-            int count = exports.Count;
-            int maxOrdinal = minOrdinal + count - 1;
 
             StringTableBuilder exportsStringTable = new();
 

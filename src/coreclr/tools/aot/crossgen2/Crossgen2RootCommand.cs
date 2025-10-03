@@ -410,7 +410,7 @@ namespace ILCompiler
         private static ReadyToRunContainerFormat MakeOutputFormat(ArgumentResult result)
         {
             if (result.Tokens.Count == 0)
-                return ReadyToRunContainerFormat.LegacyPE;
+                return ReadyToRunContainerFormat.PE;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
