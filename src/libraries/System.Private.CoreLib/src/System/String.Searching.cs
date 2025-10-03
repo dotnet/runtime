@@ -485,7 +485,7 @@ namespace System
         /// </returns>
         public int LastIndexOf(char value, StringComparison comparisonType)
         {
-            return LastIndexOf(value, Math.Max(0, Length - 1), comparisonType);
+            return LastIndexOf(value, Length - 1, comparisonType);
         }
 
         /// <summary>
@@ -716,7 +716,7 @@ namespace System
         /// </returns>
         public int LastIndexOf(Rune value, StringComparison comparisonType)
         {
-            return LastIndexOf(value, Math.Max(0, Length - 1), comparisonType);
+            return LastIndexOf(value, Length - 1, comparisonType);
         }
 
         /// <summary>
