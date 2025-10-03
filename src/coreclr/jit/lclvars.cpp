@@ -2802,6 +2802,15 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     return lvaGetDesc(varNum)->lvExactSize();
 }
 
+// Return the size of the local variable, allowing the possibility for the local
+// to have an unknown size. Returns the size of the local variable in bytes, or
+// SIZE_UNKNOWN.
+unsigned Compiler::lvaLclSymbolicSize(unsigned varNum)
+{
+    assert(varNum < lvaCount);
+    return lvaGetDesc(varNum)->lvSymbolicSize();
+}
+
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
 class LclVarDsc_SmallCode_Less
 {
@@ -3237,6 +3246,21 @@ void Compiler::lvaSortByRefCount()
 //    stack slot size.
 //
 unsigned LclVarDsc::lvExactSize() const
+{
+    assert(!varTypeHasUnknownSize(lvType));
+    unsigned size = lvSymbolicSize();
+    assert(size != SIZE_UNKNOWN);
+    return size;
+}
+
+//------------------------------------------------------------------------
+// lvSymbolicSize: Get the symbolic size of the type of this local.
+//
+// Return Value:
+//    Size in bytes, or SIZE_UNKNOWN. Always non-zero, but not necessarily
+//    a multiple of the stack slot size.
+//
+unsigned LclVarDsc::lvSymbolicSize() const
 {
     return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
 }
