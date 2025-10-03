@@ -2886,7 +2886,7 @@ CALL_INTERP_METHOD:
                 case INTOP_UNBOX_END_GENERIC:
                 {
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
-                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[2]];
+                    MethodTable *pMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     void *dest = LOCAL_VAR_ADDR(ip[1], void);
                     void *src = LOCAL_VAR(ip[3], void*);
                     NULL_CHECK(dest);
