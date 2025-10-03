@@ -75,7 +75,7 @@ namespace System.Net.Sockets
             SocketError.AccessDenied => Interop.Error.EACCES, // could also have been EPERM
             SocketError.AddressAlreadyInUse => Interop.Error.EADDRINUSE ,
             SocketError.AddressNotAvailable => Interop.Error.EADDRNOTAVAIL,
-            SocketError.AddressFamilyNotSupported => Interop.Error.EAFNOSUPPORT ,
+            SocketError.AddressFamilyNotSupported => Interop.Error.EAFNOSUPPORT,
             SocketError.AlreadyInProgress => Interop.Error.EALREADY,
             SocketError.ConnectionAborted => Interop.Error.ECONNABORTED,
             SocketError.ConnectionRefused => Interop.Error.ECONNREFUSED,
