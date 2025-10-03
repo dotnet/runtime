@@ -5,7 +5,6 @@
 
 parameters:
   isExtraPlatformsBuild: false
-  isAndroidEmulatorOnlyBuild: false
   isRollingBuild: false
 
 jobs:
@@ -19,7 +18,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
     platforms:
     - android_x64
     variables:
@@ -58,7 +56,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
     platforms:
       - android_x64
     variables:
@@ -161,7 +158,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
     platforms:
     - android_x64
     variables:

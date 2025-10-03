@@ -34,8 +34,6 @@ variables:
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslikesimulator') }}
 - name: isAndroidOnlyBuild
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-android') }}
-- name: isAndroidEmulatorOnlyBuild
-  value: ${{ in(variables['Build.DefinitionName'], 'runtime-androidemulator') }}
 - name: isMacCatalystOnlyBuild
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-maccatalyst') }}
 - name: isLinuxBionicOnlyBuild
