@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
@@ -44,7 +45,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
+                fixed (byte* pSymmetricKeyMaterial = &MemoryMarshal.GetReference(symmetricKeyMaterial))
                 {
                     _keyHandle = CreateSymmetricKey(pSymmetricKeyMaterial, symmetricKeyMaterialLength);
                 }
@@ -88,7 +89,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
+                fixed (byte* pSymmetricKeyMaterial = &MemoryMarshal.GetReference(symmetricKeyMaterial))
                 {
                     _keyHandle = CreateSymmetricKey(pSymmetricKeyMaterial, symmetricKeyMaterialLength);
                 }
