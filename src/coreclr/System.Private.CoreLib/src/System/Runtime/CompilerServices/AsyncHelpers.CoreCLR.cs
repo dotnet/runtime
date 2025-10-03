@@ -573,6 +573,10 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // We come here when a Task-returning thunk called into async method and did not see a normal return.
+        // The result will be:
+        // * continuation => return an incomplete Task that represents the continuation chain.
+        // * exception    => return a Faulted or Canceled task, accordingly.
         private static Task FinalizeTaskReturningThunk(Continuation continuation, Exception ex)
         {
             if (continuation is not null)
@@ -603,8 +607,8 @@ namespace System.Runtime.CompilerServices
 
         private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation, Exception ex)
         {
-            // We only come to these methods in the expensive case (already
-            // suspended), so ValueTask optimization here is not relevant.
+            // We only come to these methods to handle abnormal cases (suspended, faulted, canceled),
+            // so ValueTask optimization here is not relevant.
             return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation, ex));
         }
 
