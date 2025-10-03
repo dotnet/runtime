@@ -4,12 +4,8 @@
 project(browserhost)
 set(DOTNET_PROJECT_NAME "browserhost")
 
-configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
-
-set(SOURCES
-    ./browserhost.cpp
-    native.rc
+set(BROWSERHOST_SOURCES
+    empty.c
 )
 set(HEADERS
 )
@@ -18,47 +14,44 @@ add_compile_definitions(FEATURE_APPHOST)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 
-add_executable(browserhost ${SOURCES})
+add_executable(browserhost ${BROWSERHOST_SOURCES})
 set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
-add_dependencies(browserhost System.Native.Browser-Rollup)
-add_dependencies(browserhost System.Native.Browser-Static)
-add_dependencies(browserhost System.Runtime.InteropServices.JavaScript.Native-Static)
 
-install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
+add_subdirectory(lib-browserhost)
+add_dependencies(browserhost BrowserHost-Static)
 
-include(configure.cmake)
+set(STATIC_LIB_DESTINATION
+    ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_TYPE}-wasm/)
+set(STATIC_CLR_DESTINATION
+    ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/)
 
+# these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
-    coreclr_static
-    System.Native.Browser-Static
-    System.Runtime.InteropServices.JavaScript.Native-Static
-    System.Native-Static
-    System.Globalization.Native-Static
-    System.IO.Compression.Native-Static
-    nativeresourcestring
-    gcinfo
+    ${STATIC_CLR_DESTINATION}/libcoreclr_static.a
+    ${STATIC_CLR_DESTINATION}/libclrinterpreter.a
+    ${STATIC_CLR_DESTINATION}/lib/libnativeresourcestring.a
+    ${STATIC_CLR_DESTINATION}/gcinfo/libgcinfo_unix_wasm.a
+    ${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.a
+    ${STATIC_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.a
+    ${STATIC_LIB_DESTINATION}/libSystem.Native.a
+    ${STATIC_LIB_DESTINATION}/libSystem.Globalization.Native.a
+    ${STATIC_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
     # WASM-TODO respect  $(InvariantTimezone)
-    # System.Native.TimeZoneData.Invariant
-    System.Native.TimeZoneData
+    # libSystem.Native.TimeZoneData.Invariant.a
+    ${STATIC_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a
 )
 
-# WASM-TODO set(RUNTIMEINFO_LIB runtimeinfo)
-
-target_compile_options(browserhost PRIVATE 
-        -fwasm-exceptions
-        -msimd128
-    )
-
+set(NATIVE_JAVASCRIPT_BIN
+    ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_TYPE}-wasm/)
 set(JS_SYSTEM_NATIVE_BROWSER
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+    "${NATIVE_JAVASCRIPT_BIN}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+    "${NATIVE_JAVASCRIPT_BIN}/libSystem.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js")
+    "${NATIVE_JAVASCRIPT_BIN}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
-    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js")
+    "${NATIVE_JAVASCRIPT_BIN}/libBrowserHost.js")
 set(JS_SYSTEM_NATIVE_BROWSER_EXPOST
     "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js")
 
@@ -66,6 +59,11 @@ set_target_properties(browserhost PROPERTIES
     LINK_DEPENDS "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST};"
     LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE} --js-library ${JS_BROWSER_HOST} --extern-post-js ${JS_SYSTEM_NATIVE_BROWSER_EXPOST}"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+target_compile_options(browserhost PRIVATE
+        -fwasm-exceptions
+        -msimd128
+    )
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     target_link_options(browserhost PRIVATE
@@ -98,16 +96,19 @@ target_link_options(browserhost PRIVATE
     -Wno-unused-command-line-argument
     -Wl,-error-limit=0)
 
-target_link_libraries(
-    browserhost
-    PRIVATE
-    hostmisc
-    clrinterpreter
-    ${NATIVE_LIBS}
-
-    ${START_WHOLE_ARCHIVE}
-    ${RUNTIMEINFO_LIB}
-    ${END_WHOLE_ARCHIVE}
+target_link_libraries(browserhost PUBLIC
+    BrowserHost-Static
 )
+target_link_libraries(browserhost PRIVATE
+    ${NATIVE_LIBS}
+)
+
+install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
+
+# this is for liveBuilds.targets
+install(TARGETS browserhost DESTINATION ${STATIC_LIB_DESTINATION})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION ${STATIC_LIB_DESTINATION})
+install(FILES ${CLR_SRC_NATIVE_DIR}/package.json DESTINATION ${STATIC_LIB_DESTINATION})
 
 add_subdirectory(sample)
