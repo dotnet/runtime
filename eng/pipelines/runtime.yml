@@ -113,6 +113,10 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                parameters:
+                  testBuildArgs: wasm browser release test JIT\interpreter\Interpreter.csproj
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),
