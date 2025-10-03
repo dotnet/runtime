@@ -860,7 +860,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
   <Target Name="_EnsureDotnetTypeScriptDefinitions" 
-          AfterTargets="Restore" 
+          AfterTargets="_ResolveWasmConfiguration" 
           Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
