@@ -532,8 +532,10 @@ namespace System.Runtime.CompilerServices
 
         // Change return type to ThunkTask<T?> -- no benefit since this is used for Task returning thunks only
 #pragma warning disable CA1859
-        // When a Task-returning thunk gets a continuation result
-        // it calls here to make a Task that awaits on the current async state.
+        // We come here when a Task-returning thunk called into async method and did not see a normal return.
+        // The result will be:
+        // * continuation => return an incomplete Task that represents the continuation chain.
+        // * exception    => return a Faulted or Canceled task, accordingly.
         private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation, Exception ex)
         {
             if (continuation is not null)
