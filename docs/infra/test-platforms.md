@@ -12,7 +12,7 @@
 
 Each of the above combinations is considered a single "platform". New versions are not considered new platforms, but different versions of the same platform. Only if a new version modifies one of the above elements would it be considered a new platform.
 
-Testing all platforms all the time is too expensive. This document defines the testing policy for each branch of the product.
+Testing all versions of all platforms all the time is too expensive. This document defines the testing policy for each branch of the product.
 
 ## Policy
 
