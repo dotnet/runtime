@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.X509Certificates
             char* PKCS12_PBES2_ALG_AES256_SHA256 = stackalloc char[] { 'A', 'E', 'S', '2', '5', '6', '-', 'S', 'H', 'A', '2', '5', '6', '\0' };
             Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS specifiedParams = new()
             {
-                dwSize = (uint)Marshal.SizeOf<Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS>(),
+                dwSize = (uint)sizeof(Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS),
                 hNcryptDescriptor = 0,
                 pwszPbes2Alg = PKCS12_PBES2_ALG_AES256_SHA256,
             };
