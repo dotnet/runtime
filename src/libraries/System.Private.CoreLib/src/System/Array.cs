@@ -1540,13 +1540,19 @@ namespace System
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
         {
             if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            }
 
             if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            }
 
             if (array.Length == 0)
+            {
                 return array;
+            }
 
             ArrayPool<T>? sharedArrayPool = null;
             T[]? matchArray = null; // only rent/allocate if needed
@@ -1565,10 +1571,14 @@ namespace System
             }
 
             if (matchArray == null)
+            {
                 return EmptyArray<T>.Value;
+            }
 
             if (matchArray.Length == matchesFound && sharedArrayPool == null)
+            {
                 return matchArray; // If we have matched all allocated and not rented the array, we can just return it, brilliant suggestion from lechu445
+            }
 
             // If all were matches, we could have returned the existing array,
             // but the old code always made a new array, so it would be a breaking change
