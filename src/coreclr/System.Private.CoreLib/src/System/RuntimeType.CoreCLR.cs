@@ -968,7 +968,7 @@ namespace System
 
                             if (MetadataUpdater.IsSupported &&
                                 RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(tkField)))
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkField))
                             {
                                 continue;
                             }
@@ -1203,7 +1203,7 @@ namespace System
 
                         if (MetadataUpdater.IsSupported &&
                             RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(tkEvent)))
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkEvent))
                         {
                             continue;
                         }
@@ -1323,7 +1323,7 @@ namespace System
                         // Filter out deleted property before updating usedSlots, so that a deleted override in a subclass does not hide override in an ancestor.
                         if (MetadataUpdater.IsSupported &&
                             RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
-                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, RuntimeFieldHandle.GetToken(tkProperty)))
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkProperty))
                         {
                             continue;
                         }
