@@ -163,7 +163,7 @@ VOID LogAssert(
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     struct timespec ts;
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
     // timespec_get is only available on iOS 13.0+, use gettimeofday instead
     struct timeval tv;
     gettimeofday(&tv, nullptr);
