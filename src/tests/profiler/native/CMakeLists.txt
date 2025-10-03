@@ -49,7 +49,7 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 # add the executable
-add_library(Profiler SHARED ${SOURCES})
+add_library(Profiler ${TEST_LIB_TYPE} ${SOURCES})
 
 if(WIN32)
 	set(DEPENDENCIES Advapi32.lib oleaut32.lib Ole32.lib)

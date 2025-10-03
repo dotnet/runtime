@@ -42,6 +42,7 @@ if (CLR_CMAKE_HOST_WIN32)
 endif()
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    set(TEST_LIB_TYPE SHARED)
     MACRO(SUBDIRLIST result curdir)
     FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
     SET(dirlist "")
@@ -65,7 +66,7 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     ENDMACRO()
     ADDSUBDIR_REC("${CMAKE_CURRENT_SOURCE_DIR}")
 else()
-    set(STATIC_LIBS_ONLY 1)
+    set(TEST_LIB_TYPE STATIC)
 
     add_compile_options(
       -fwasm-exceptions 

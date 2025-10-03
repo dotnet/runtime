@@ -5,7 +5,7 @@ set(SOURCES
     PInvokePassingByOutNative.cpp
 )
 # add the executable
-add_library (PInvokePassingByOutNative SHARED ${SOURCES})
+add_library (PInvokePassingByOutNative ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(PInvokePassingByOutNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets
 install (TARGETS PInvokePassingByOutNative DESTINATION bin)

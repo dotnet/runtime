@@ -6,7 +6,7 @@ include_directories(${INC_PLATFORM_DIR})
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/public public_api)
 
 # add the library
-add_library (mono-embedding-api-test SHARED mono-embedding-api-test.c api-types.h api-functions.h)
+add_library (mono-embedding-api-test ${TEST_LIB_TYPE} mono-embedding-api-test.c api-types.h api-functions.h)
 set_target_properties(mono-embedding-api-test PROPERTIES MSVC_WARNING_LEVEL 3)
 target_link_libraries(mono-embedding-api-test PRIVATE monoapi ${LINK_LIBRARIES_ADDITIONAL})
 
