@@ -59,10 +59,12 @@ bool IsInterpDumpActive()
 
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 {
+#ifdef DEBUG
     fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
                 (int32_t)(offset),
                 CEEOpName(CEEDecodeOpcode(&ip)));
-    assert(!"opcode not implemented");
+#endif // DEBUG
+    BADCODE("opcode not implemented");
 }
 
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
@@ -4464,8 +4466,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             break;
         }
         default:
-            // TODO
-            assert(!"Unsupported (yet) static field accessor");
+            BADCODE("Unsupported static field accessor");
             break;
     }
 
