@@ -508,12 +508,13 @@ CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, c
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
 CDAC_TYPE_END(MethodDescVersioningState)
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
 CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
 #ifdef HAS_PINVOKE_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
-#endif
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
@@ -541,13 +542,17 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, DynamicHelperPrecodeType, o
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, UMEntryPrecodeType, offsetof(PrecodeMachineDescriptor, UMEntryPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 CDAC_TYPE_BEGIN(PlatformMetadata)
 CDAC_TYPE_INDETERMINATE(PlatformMetadata)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, /*uint8*/, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
 CDAC_TYPE_END(PlatformMetadata)
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
 CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, SecretParam, offsetof(StubPrecodeData, SecretParam))
@@ -565,6 +570,7 @@ CDAC_TYPE_BEGIN(FixupPrecodeData)
 CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
 CDAC_TYPE_FIELD(FixupPrecodeData, /*pointer*/, MethodDesc, offsetof(FixupPrecodeData, MethodDesc))
 CDAC_TYPE_END(FixupPrecodeData)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 CDAC_TYPE_BEGIN(ReadyToRunInfo)
 CDAC_TYPE_INDETERMINATE(ReadyToRunInfo)
@@ -957,6 +963,8 @@ CDAC_GLOBAL_STRING(Architecture, arm64)
 CDAC_GLOBAL_STRING(Architecture, loongarch64)
 #elif defined(TARGET_RISCV64)
 CDAC_GLOBAL_STRING(Architecture, riscv64)
+#elif defined(TARGET_WASM)
+CDAC_GLOBAL_STRING(Architecture, wasm)
 #else
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
@@ -1025,6 +1033,7 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
+CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
@@ -1060,6 +1069,7 @@ CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
 CDAC_GLOBAL_CONTRACT(Loader, 1)
+CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)

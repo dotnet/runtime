@@ -324,9 +324,9 @@ public class ComputeWasmPublishAssets : Task
 
         static bool IsDotNetWasm(string key)
         {
-            var name = Path.GetFileName(key);
-            return string.Equals("dotnet.native.wasm", name, StringComparison.Ordinal)
-                || string.Equals("dotnet.wasm", name, StringComparison.Ordinal);
+            var fileName = Path.GetFileName(key);
+            return (fileName.StartsWith("dotnet.native", StringComparison.Ordinal) && fileName.EndsWith(".wasm", StringComparison.Ordinal))
+                || string.Equals("dotnet.wasm", fileName, StringComparison.Ordinal);
         }
     }
 
