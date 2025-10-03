@@ -368,14 +368,6 @@ internal static partial class Interop
         internal sealed class ZstdNativeException : Exception
         {
             public ZstdNativeException(string message) : base(message) { }
-
-            public static void ThrowIfError(nuint result, string message)
-            {
-                if (ZstandardUtils.IsError(result))
-                {
-                    throw new ZstdNativeException(SR.Format(message, ZstandardUtils.GetErrorMessage(result)));
-                }
-            }
         }
     }
 }

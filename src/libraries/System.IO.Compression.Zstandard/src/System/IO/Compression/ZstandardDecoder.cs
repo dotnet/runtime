@@ -18,6 +18,7 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified maximum window size.</summary>
         /// <param name="maxWindow">The maximum window size to use for decompression.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindow"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
         public ZstandardDecoder(int maxWindow)
         {
             if (maxWindow <= 0)
@@ -56,6 +57,7 @@ namespace System.IO.Compression
         /// <param name="maxWindow">The maximum window size to use for decompression.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindow"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
         public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindow)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -80,7 +82,7 @@ namespace System.IO.Compression
         {
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
-                throw new Interop.Zstd.ZstdNativeException(SR.ZstandardDecoder_Create);
+                throw new IOException(SR.ZstandardDecoder_Create);
         }
 
         internal void EnsureInitialized()
@@ -256,12 +258,7 @@ namespace System.IO.Compression
             if (_context is null)
                 return;
 
-            nuint result = Interop.Zstd.ZSTD_DCtx_reset(_context, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only);
-            if (Interop.Zstd.ZSTD_isError(result) != 0)
-            {
-                throw new IOException(string.Format(SR.ZstandardDecoder_DecompressError, ZstandardUtils.GetErrorMessage(result)));
-            }
-
+            _context.Reset();
             _finished = false;
         }
 
@@ -304,10 +301,7 @@ namespace System.IO.Compression
                 InitializeDecoder();
             }
             nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindow);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new IOException(string.Format(SR.ZstandardEncoder_CompressError, ZstandardUtils.GetErrorMessage(result)));
-            }
+            ZstandardUtils.ThrowIfError(result);
         }
     }
 }

@@ -28,6 +28,14 @@ namespace System.IO.Compression
             return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? "Unknown error";
         }
 
+        internal static void ThrowIfError(nuint result, string? message = null)
+        {
+            if (IsError(result))
+            {
+                throw new Interop.Zstd.ZstdNativeException(SR.Format(message ?? SR.Zstd_NativeError, GetErrorMessage(result)));
+            }
+        }
+
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
             compressionLevel switch
             {
