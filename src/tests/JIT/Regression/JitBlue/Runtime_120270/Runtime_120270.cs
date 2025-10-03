@@ -71,21 +71,23 @@ public class Runtime_120270
     [Fact]
     public static int TestEntryPoint3()
     {
+        Type enumeratorType = null;
         for (int i = 0; i < 100_000; i++)
         {
             Derived[] d = [new Derived()];
             IEnumerable<Base> e = d;
             IEnumerator<Base> en = e.GetEnumerator();
-            string s = en.GetType().ToString();
+            Type currentEnumeratorType = en.GetType();
 
             if (i == 0)
             {
-                Console.WriteLine($"Enumerator type: {s}");
+                Console.WriteLine($"Enumerator type: {currentEnumeratorType.ToString()}");
+                enumeratorType = currentEnumeratorType;
             }
 
-            if (!s.Equals("System.SZGenericArrayEnumerator`1[Base]"))
+            if (enumeratorType != currentEnumeratorType)
             {
-                Console.WriteLine($"Enumerator type changed at {i} to {s}");
+                Console.WriteLine($"Enumerator type changed at {i} from {enumeratorType.ToString()} to {currentEnumeratorType.ToString()}");
                 return -1;
             }
         }
