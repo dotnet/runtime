@@ -60,7 +60,7 @@ internal static partial class Interop
         internal static partial nuint ZSTD_decompress_usingDDict(SafeZstdDecompressHandle dctx, IntPtr dst, nuint dstCapacity, IntPtr src, nuint srcSize, SafeZstdDDictHandle ddict);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial ulong ZSTD_getFrameContentSize(IntPtr src, nuint srcSize);
+        internal static partial ulong ZSTD_decompressBound(IntPtr src, nuint srcSize);
 
         // Streaming decompression
         [LibraryImport(Libraries.CompressionNative)]

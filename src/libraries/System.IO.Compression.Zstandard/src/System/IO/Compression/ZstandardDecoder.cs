@@ -158,24 +158,32 @@ namespace System.IO.Compression
 
         /// <summary>Gets the maximum decompressed length for the specified compressed data.</summary>
         /// <param name="data">The compressed data.</param>
-        /// <returns>The maximum decompressed length in bytes.</returns>
-        public static int GetMaxDecompressedLength(ReadOnlySpan<byte> data)
+        /// <param name="maxLength">The maximum decompressed length.</param>
+        /// <returns>True if the maximum decompressed length was successfully determined; otherwise, false.</returns>
+        public static bool TryGetMaxDecompressedLength(ReadOnlySpan<byte> data, out int maxLength)
         {
             if (data.IsEmpty)
-                return 0;
+            {
+                maxLength = 0;
+                return true;
+            }
 
             unsafe
             {
                 fixed (byte* dataPtr = &MemoryMarshal.GetReference(data))
                 {
-                    ulong frameContentSize = Interop.Zstd.ZSTD_getFrameContentSize((IntPtr)dataPtr, (nuint)data.Length);
+                    ulong frameContentSize = Interop.Zstd.ZSTD_decompressBound((IntPtr)dataPtr, (nuint)data.Length);
 
-                    // ZSTD_CONTENTSIZE_UNKNOWN = (0ULL - 1)
-                    // ZSTD_CONTENTSIZE_ERROR = (0ULL - 2)
-                    if (frameContentSize == ulong.MaxValue || frameContentSize == (ulong.MaxValue - 1))
-                        return -1;
+                    const ulong ZSTD_CONTENTSIZE_UNKNOWN = unchecked(0UL - 1);
+                    const ulong ZSTD_CONTENTSIZE_ERROR = unchecked(0UL - 2);
+                    if (frameContentSize == ZSTD_CONTENTSIZE_UNKNOWN || frameContentSize == ZSTD_CONTENTSIZE_ERROR || frameContentSize > int.MaxValue)
+                    {
+                        maxLength = 0;
+                        return false;
+                    }
 
-                    return frameContentSize > int.MaxValue ? int.MaxValue : (int)frameContentSize;
+                    maxLength = (int)frameContentSize;
+                    return true;
                 }
             }
         }

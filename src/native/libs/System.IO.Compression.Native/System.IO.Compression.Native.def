@@ -32,7 +32,7 @@ EXPORTS
     ZSTD_decompress
     ZSTD_decompressDCtx
     ZSTD_decompress_usingDDict
-    ZSTD_getFrameContentSize
+    ZSTD_decompressBound
     ZSTD_decompressStream
     ZSTD_DCtx_reset
     ZSTD_DCtx_refDDict
