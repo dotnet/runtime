@@ -167,7 +167,7 @@ namespace System.Data.Common
                     builder.Append(keyValue);
                 }
                 // string.Contains(char) is .NetCore2.1+ specific
-                else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
+                else if (keyValue.Contains('\"') && !keyValue.Contains('\''))
                 {
                     // <val"ue> -> <'val"ue'>
                     builder.Append('\'');
@@ -450,7 +450,7 @@ namespace System.Data.Common
             {
                 throw ADP.InvalidKeyname(keyword);
             }
-            if ((null != value) && value.IndexOf('\0') >= 0)
+            if ((null != value) && value.Contains('\0'))
             {
                 throw ADP.InvalidValue(keyword);
             }
