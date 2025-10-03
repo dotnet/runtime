@@ -2193,7 +2193,6 @@ CorUnix::InternalCreatePipe(
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreatePipeExit;
     }
-    int fcntl_result;
     while (-1 == (fcntl_result = fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC)) && errno == EINTR);
     if(-1 == fcntl_result)
     {
