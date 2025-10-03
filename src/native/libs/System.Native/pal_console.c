@@ -55,14 +55,14 @@ static void WriteKeypadXmit(void)
     // write it out to the terminal to enter the mode.
     if (g_keypadXmit != NULL)
     {
-        ssize_t ret;
+        ssize_t ret = 0;
         char* message = g_keypadXmit;
         size_t messageSize = (size_t)(sizeof(char) * strlen(g_keypadXmit));
         while (messageSize > 0)
         {
             while (CheckInterrupted(ret = write(g_keypadXmitFd, message, messageSize)));
             if (ret <= 0) break;
-            messageSize -= ret;
+            messageSize -= (size_t)ret;
             message += ret;
         }
         assert(ret >= 0 || (errno == EBADF && g_keypadXmitFd == 0)); // failure to change the mode should not prevent app from continuing

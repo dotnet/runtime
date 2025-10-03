@@ -5,7 +5,7 @@
 
 #include "../Common/pal_safecrt.h"
 #include <assert.h>
-#include <cstddef>
+#include <errno.h>
 #include <dirent.h>
 #include <stdbool.h>
 #include <string.h>
