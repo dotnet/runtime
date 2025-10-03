@@ -111,7 +111,7 @@ namespace System.Net.Sockets
             SocketError.TimedOut => Interop.Error.ETIMEDOUT,
             SocketError.TooManyOpenSockets => Interop.Error.ENFILE, // could also have been EMFILE
             SocketError.TryAgain => Interop.Error.EAGAIN, // not a perfect mapping, but better than nothing
-            SocketError.WouldBlock => Interop.Error.EAGAIN ,
+            SocketError.WouldBlock => Interop.Error.EAGAIN,
             SocketError.SocketError => Interop.Error.ESOCKETERROR,
             _ => Interop.Error.SUCCESS, // default for unknown mappings
         };
