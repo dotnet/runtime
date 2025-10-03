@@ -1539,10 +1539,14 @@ namespace System
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
         {
             if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            }
 
             if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            }
 
             List<T>? heapMatches = null; // only allocate if needed
             InlineArray16<T> stackAllocatedMatches = default;
@@ -1566,11 +1570,15 @@ namespace System
             }
 
             if (stackAllocatedMatchesFound == 0)
+            {
                 return EmptyArray<T>.Value;
+            }
 
             int resultLength = stackAllocatedMatchesFound;
             if (heapMatches != null)
+            {
                 resultLength += heapMatches.Count;
+            }
 
             T[] result = new T[resultLength];
 
@@ -1579,7 +1587,9 @@ namespace System
             {
                 result[index++] = stackAllocatedMatch;
                 if (index >= stackAllocatedMatchesFound)
+                {
                     break;
+                }
             }
 
             heapMatches?.CopyTo(result.AsSpan(start: InlineArrayLength));
