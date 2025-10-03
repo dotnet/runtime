@@ -81,9 +81,9 @@ namespace System.IO.Compression
         {
             ReadOnlySpan<byte> emptyData = ReadOnlySpan<byte>.Empty;
 
-            int result = ZstandardDecoder.GetMaxDecompressedLength(emptyData);
-
-            Assert.Equal(0, result);
+            bool result = ZstandardDecoder.TryGetMaxDecompressedLength(emptyData, out int maxLength);
+            Assert.True(result);
+            Assert.Equal(0, maxLength);
         }
 
         [Theory]

@@ -30,7 +30,7 @@ namespace System.IO.Compression
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindow) { throw null; }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
-        public static int GetMaxDecompressedLength(System.ReadOnlySpan<byte> data) { throw null; }
+        public static bool TryGetMaxDecompressedLength(System.ReadOnlySpan<byte> data, out int maxLength) { throw null; }
         public void ReferencePrefix(System.ReadOnlyMemory<byte> prefix) { }
         public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.IO.Compression.ZstandardDictionary dictionary, System.Span<byte> destination, out int bytesWritten) { throw null; }

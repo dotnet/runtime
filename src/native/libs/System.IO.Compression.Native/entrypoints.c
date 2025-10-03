@@ -50,7 +50,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_decompress)
     DllImportEntry(ZSTD_decompressDCtx)
     DllImportEntry(ZSTD_decompress_usingDDict)
-    DllImportEntry(ZSTD_getFrameContentSize)
+    DllImportEntry(ZSTD_decompressBound)
     DllImportEntry(ZSTD_decompressStream)
     DllImportEntry(ZSTD_DCtx_reset)
     DllImportEntry(ZSTD_DCtx_refDDict)
