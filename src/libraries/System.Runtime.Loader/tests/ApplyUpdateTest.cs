@@ -130,7 +130,7 @@ namespace System.Reflection.Metadata
             });
 
             static IEnumerable<string> Inspect(Type type)
-                => type.GetMembers().Select(m => m is ConstructorInfo ctor ? $"{ctor.Name}({ctor.GetParameters().Length}) : {m.DeclaringType!.Name}" : m.Name);
+                => type.GetMembers().Select(m => (m is ConstructorInfo ctor ? $"{ctor.Name}({ctor.GetParameters().Length})" : m.Name) + " : " + m.DeclaringType!.Name);
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
