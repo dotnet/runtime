@@ -20,6 +20,7 @@
 #define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__linux__)
 #include <stdio.h>
+#include <errno.h>
 #define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>

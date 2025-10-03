@@ -727,7 +727,7 @@ done:
         }
         if (bFileCreated)
         {
-            int ulink_result;
+            int unlink_result;
             while (-1 == (unlink_result = unlink(lpUnixPath)) && errno == EINTR);
             if (-1 == unlink_result)
             {
