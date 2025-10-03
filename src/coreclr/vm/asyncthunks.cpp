@@ -485,7 +485,6 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
         mdCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
         mdCompletedTaskResult = FindOrCreateAssociatedMethodDesc(mdCompletedTaskResult, mdCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-
     }
 
     DWORD localArg = 0;
@@ -576,7 +575,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
     }
     else
     {
-        int getResultToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, mdCompletedTaskResult);
+        int getResultToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, mdCompletedTaskResult);
         pCode->EmitCALL(getResultToken, 1, 1);
     }
 
