@@ -17,17 +17,19 @@ internal static class UnwindDataSize
                 return sizeof(uint);
             case RuntimeInfoArchitecture.X64:
                 // see https://learn.microsoft.com/cpp/build/exception-handling-x64
-                uint sizeOfUnwindCode = 2; // from spec
-                uint unwindCodeOffset = 4; // from spec
-                Data.UnwindInfo unwind = target.ProcessedData.GetOrAdd<Data.UnwindInfo>(unwindInfo);
-                return AlignUp((int)(sizeof(uint) +
-                (unwind.CountOfUnwindCodes * sizeOfUnwindCode)
-                + unwindCodeOffset), sizeof(uint));
+                int sizeOfUnwindCode = 2; // from spec
+                int unwindCodeOffset = 4; // from spec
+                int countOfUnwindCodes = target.Read<byte>(unwindInfo + 2); // from spec
+                return AlignUp(
+                    unwindCodeOffset +
+                    (countOfUnwindCodes * sizeOfUnwindCode) +
+                    sizeof(uint) /* personality routine is always present */,
+                    sizeof(uint));
             case RuntimeInfoArchitecture.Arm:
             case RuntimeInfoArchitecture.Arm64:
                 TargetPointer xdata = unwindInfo;
                 uint xdata0 = target.Read<uint>(xdata);
-                uint size = 4;                     // initial header
+                uint size = 4; // initial header
                 uint unwindWords;
                 uint epilogScopes;
                 if (arch == RuntimeInfoArchitecture.Arm)
@@ -84,7 +86,7 @@ internal static class UnwindDataSize
 
                 size += 4 * unwindWords;
 
-                size += 4;                      // exception handler RVA
+                size += 4; // exception handler RVA
                 return size;
             default:
                 throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}");
