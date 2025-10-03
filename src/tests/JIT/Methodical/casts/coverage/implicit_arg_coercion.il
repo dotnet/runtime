@@ -49,6 +49,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+          string('Handling of implicit arg coercion rules III.1.6 differs between Mono and CoreCLR, and this tests the CoreCLR behavior, and what we've put in the augments')
+          int32(0xFFFFFFFF) // Any
+      }
+
       .entrypoint
       // Code size       36 (0x24)
       .maxstack  2
