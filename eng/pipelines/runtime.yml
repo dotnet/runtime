@@ -116,9 +116,6 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
-                  buildConfig: release
-                  priorityArg: ''
-                  runtimeVariantArg: ''
                   librariesConfigurationArg: /p:LibrariesConfiguration=Release
                   runtimeFlavorArgs: /p:RuntimeFlavor=CoreCLR
                   testBuildArgs: test src/tests/JIT/interpreter/Interpreter.csproj
