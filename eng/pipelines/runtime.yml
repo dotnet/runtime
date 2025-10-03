@@ -111,7 +111,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr.runtime+libs -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr+libs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
