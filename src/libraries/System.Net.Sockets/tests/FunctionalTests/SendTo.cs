@@ -95,7 +95,6 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114450", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsX64Process))]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
             IPEndPoint invalidEndpoint = new IPEndPoint(IPAddress.Broadcast, 1234);
