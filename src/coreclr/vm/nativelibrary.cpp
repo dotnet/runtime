@@ -123,7 +123,7 @@ namespace
             }
 #endif // TARGET_UNIX
 
-            __UNREACHABLE();
+            UNREACHABLE();
         }
 
     private:

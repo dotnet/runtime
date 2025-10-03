@@ -406,13 +406,6 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
     RETURN res;
 }
 
-
-inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *clsRet = NULL)
-{
-    WRAPPER_NO_CONTRACT;
-    return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
-}
-
 enum ConvToJitSigFlags : int
 {
     CONV_TO_JITSIG_FLAGS_NONE       = 0x0,
@@ -2580,7 +2573,7 @@ CorInfoType CEEInfo::asCorInfoType (CORINFO_CLASS_HANDLE clsHnd)
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
-    result = toJitType(VMClsHnd);
+    result = asCorInfoType(VMClsHnd.GetInternalCorElementType(), VMClsHnd);
 
     EE_TO_JIT_TRANSITION();
 
@@ -12460,8 +12453,17 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
+
+    // Only try instrumenting tiering-eligible methods
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+    if (pMD->IsEligibleForTieredCompilation())
+    {
+        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+    }
+    else
+    {
+        hr = E_NOTIMPL;
+    }
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
@@ -13409,8 +13411,28 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
+            InterpreterPrecode* pPrecode = NULL;
             AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            if (ftn->IsDynamicMethod())
+            {
+                // For LCG methods, the precode is stashed in the DynamicMethodDesc, and is shared across all future uses of the DynamicMethodDesc
+                DynamicMethodDesc* pDMD = ftn->AsDynamicMethodDesc();
+                if (pDMD->m_interpreterPrecode != NULL)
+                {
+                    pPrecode = pDMD->m_interpreterPrecode;
+                    pPrecode->GetData()->ByteCodeAddr = ret;
+                    FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
+                }
+                else
+                {
+                    pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+                    pDMD->m_interpreterPrecode = pPrecode;
+                }
+            }
+            else
+            {
+                pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            }
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
 

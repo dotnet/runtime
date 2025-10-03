@@ -5035,7 +5035,7 @@ MethodTableBuilder::ValidateMethods()
             }
         }
 
-        // Make sure that fcalls have a 0 rva.  This is assumed by the prejit fixup logic
+        // Make sure that fcalls have a 0 rva.
         if (it.MethodType() == mcFCall && it.RVA() != 0)
         {
             BuildMethodTableThrowException(BFA_ECALLS_MUST_HAVE_ZERO_RVA, it.Token());

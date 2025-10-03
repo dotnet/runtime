@@ -44,6 +44,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IDebugInfo)] = new DebugInfoFactory(),
             [typeof(ISHash)] = new SHashFactory(),
             [typeof(IGC)] = new GCFactory(),
+            [typeof(INotifications)] = new NotificationsFactory(),
             [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
         };
         configureFactories?.Invoke(_factories);
@@ -67,6 +68,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IDebugInfo DebugInfo => GetContract<IDebugInfo>();
     public override ISHash SHash => GetContract<ISHash>();
     public override IGC GC => GetContract<IGC>();
+    public override INotifications Notifications => GetContract<INotifications>();
     public override ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
 
     private TContract GetContract<TContract>() where TContract : IContract
