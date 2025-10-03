@@ -238,20 +238,6 @@ handle_arguments_local() {
             __RebuildTests=1
             ;;
 
-        wasm|-wasm)
-            __TargetArch=wasm
-            ;;
-
-        wasi|-wasi)
-            __TargetOS=wasi
-            __TargetArch=wasm
-            ;;
-
-        browser|-browser)
-            __TargetOS=browser
-            __TargetArch=wasm
-            ;;
-
         test*|-test*)
             local arg="$1"
             local parts=(${arg//:/ })
