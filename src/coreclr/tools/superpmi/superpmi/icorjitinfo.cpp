@@ -1065,7 +1065,6 @@ void MyICJI::reportAsyncDebugInfo(
 {
     jitInstance->mc->cr->AddCall("reportAsyncDebugInfo");
     // Compile output that we do not currently save
-    freeArray(asyncInfo);
     freeArray(suspensionPoints);
     freeArray(vars);
 }

@@ -3219,7 +3219,6 @@ namespace Internal.JitInterface
         private void reportAsyncDebugInfo(AsyncInfo* asyncInfo, AsyncSuspensionPoint* suspensionPoints, AsyncContinuationVarInfo* vars, uint numVars)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)asyncInfo);
             Marshal.FreeHGlobal((IntPtr)suspensionPoints);
             Marshal.FreeHGlobal((IntPtr)vars);
         }

@@ -434,7 +434,7 @@ public:
 
     struct AsyncContinuationVarInfo
     {
-        // IL number of variable (or one of the special IL numbers, like UNKNOWN_ILNUM)
+        // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
         uint32_t VarNumber;
         // Offset in continuation's data where this variable is stored
         uint32_t Offset;
