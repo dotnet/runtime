@@ -186,7 +186,7 @@ HRESULT WriteData(FILE * fp, const void * pData, unsigned len)
 
     if (cbWritten != len)
     {
-        hr = HRESULT_FROM_LAST_STDIO();
+        hr = E_FAIL;
     }
 
     return hr;
@@ -219,7 +219,7 @@ HRESULT WriteString(const void * pString, unsigned len, FILE * fp)
         }
     }
 
-    return HRESULT_FROM_LAST_STDIO();
+    return E_FAIL;
 }
 
 
