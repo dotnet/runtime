@@ -3,9 +3,20 @@
 
 ## Overview
 
-.NET ships on many platforms. Testing all platforms all the time is too expensive. This document defines the testing policy for each branch of the product.
+.NET ships on many platforms. For our purposes, a platform consists of a combination of:
+
+* Architectures (x86, arm64, et al.)
+* OSes, including libc (Windows, Linux, Linux-musl, Browser, et al.)
+* OS flavors (Windows Client, Windows Server, Windows Nano, Azure Linux, Ubuntu, Debian, Alpine, Chrome Browser, Mozilla Browser, et al.)
+* Crypto stack (OpenSSL, Android, SymCrypt, et al.)
+
+Each of the above combinations is considered a single "platform". New versions are not considered new platforms, but different versions of the same platform. Only if a new version modifies one of the above elements would it be considered a new platform.
+
+Testing all platforms all the time is too expensive. This document defines the testing policy for each branch of the product.
 
 ## Policy
+
+### Versions
 
 We want to mix and match platform versions and .NET versions to produce good platform coverage without too much cost. This means we want to catch breaks on each platform as quickly as possible, and prioritize catching the type of platform breaks that are most likely to affect the specific version being tested.
 
