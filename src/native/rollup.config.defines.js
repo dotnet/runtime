@@ -17,6 +17,7 @@ if (process.env.ProductVersion === undefined) {
 
 export const configuration = process.env.Configuration;
 export const productVersion = process.env.ProductVersion;
+export const netCoreAppCurrentVersion = process.env.NetCoreAppCurrentVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
@@ -34,6 +35,8 @@ export const reserved = [
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
+export const artifactsBinDir = "../../artifacts/bin";
+export const nativeJavaScriptBin = `${artifactsBinDir}/native/net${netCoreAppCurrentVersion}-browser-${configuration}-wasm/`;
 export const isDebug = process.env.Configuration !== "Release";
 
 export let gitHash;

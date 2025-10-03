@@ -6,7 +6,8 @@ import typescript from "@rollup/plugin-typescript";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import dts from "rollup-plugin-dts";
 import {
-    externalDependencies, isDebug, artifactsObjDir, envConstants, banner, banner_dts, configuration,
+    externalDependencies, envConstants, banner, banner_dts,
+    isDebug, nativeJavaScriptBin,
     keep_classnames, keep_fnames, reserved
 } from "./rollup.config.defines.js";
 import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, sourcemapPathTransform } from "./rollup.config.plugins.js";
@@ -17,7 +18,7 @@ const dotnetDTS = {
     output: [
         {
             format: "es",
-            file: artifactsObjDir + `/coreclr/browser.wasm.${configuration}/corehost/dotnet.d.ts`,
+            file: nativeJavaScriptBin + "dotnet.d.ts",
             banner: banner_dts,
             plugins: [writeOnChangePlugin()],
         },
@@ -36,7 +37,7 @@ const dotnetDTS = {
 const dotnetJS = configure({
     input: "./corehost/browserhost/loader/dotnet.ts",
     output: [{
-        file: artifactsObjDir + `/coreclr/browser.wasm.${configuration}/corehost/dotnet.js`,
+        file: nativeJavaScriptBin + "dotnet.js",
         intro: "/*! bundlerFriendlyImports */",
     }],
     terser: {
@@ -53,7 +54,7 @@ const libNativeBrowser = configure({
     output: [{
         name: "libNativeBrowser",
         format: "iife",
-        file: artifactsObjDir + `/native/browser-${configuration}-wasm/System.Native.Browser/libSystem.Native.Browser.js`,
+        file: nativeJavaScriptBin + "libSystem.Native.Browser.js",
         footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Native.Browser.footer.js"),
     }],
     terser: {
@@ -73,7 +74,7 @@ const libBrowserUtils = configure({
     output: [{
         name: "libBrowserUtils",
         format: "iife",
-        file: artifactsObjDir + `/native/browser-${configuration}-wasm/System.Native.Browser/libSystem.Browser.Utils.js`,
+        file: nativeJavaScriptBin + "libSystem.Browser.Utils.js",
         footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"),
     }],
     terser: {
@@ -91,7 +92,7 @@ const libBrowserUtils = configure({
 const dotnetRuntimeJS = configure({
     input: "./libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts",
     output: [{
-        file: artifactsObjDir + `/native/browser-${configuration}-wasm/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.js`,
+        file: nativeJavaScriptBin + "dotnet.runtime.js",
     }],
     terser: {
         compress: {
@@ -108,7 +109,7 @@ const libInteropJavaScriptNative = configure({
     output: [{
         name: "libInteropJavaScriptNative",
         format: "iife",
-        file: artifactsObjDir + `/native/browser-${configuration}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js`,
+        file: nativeJavaScriptBin + "libSystem.Runtime.InteropServices.JavaScript.Native.js",
         footer: await fs.readFile("./libs/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.footer.js"),
     }],
     terser: {
@@ -124,12 +125,12 @@ const libInteropJavaScriptNative = configure({
 });
 
 const libBrowserHost = configure({
-    input: "./corehost/browserhost/host/index.ts",
+    input: "./corehost/browserhost/lib-browserhost/index.ts",
     output: [{
         name: "libBrowserHost",
         format: "iife",
-        file: artifactsObjDir + `/coreclr/browser.wasm.${configuration}/corehost/libBrowserHost.js`,
-        footer: await fs.readFile("./corehost/browserhost/libBrowserHost.footer.js"),
+        file: nativeJavaScriptBin + "libBrowserHost.js",
+        footer: await fs.readFile("./corehost/browserhost/lib-browserhost/libBrowserHost.footer.js"),
     }],
     terser: {
         compress: {

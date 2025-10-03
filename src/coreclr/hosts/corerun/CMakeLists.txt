@@ -54,10 +54,12 @@ else(CLR_CMAKE_HOST_WIN32)
             target_compile_options(corerun PRIVATE -fwasm-exceptions)
             target_link_libraries(corerun PRIVATE 
                 System.Native.Browser-Static)
+            set(NATIVE_JAVASCRIPT_BIN
+                ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_TYPE}-wasm/)
             set(JS_SYSTEM_NATIVE_BROWSER
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+                "${NATIVE_JAVASCRIPT_BIN}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+                "${NATIVE_JAVASCRIPT_BIN}/libSystem.Browser.Utils.js")
             set(JS_CORE_RUN_PRE
                 "${CMAKE_CURRENT_SOURCE_DIR}/libCorerun.pre.js")
             set_target_properties(corerun PROPERTIES
