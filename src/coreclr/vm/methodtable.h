@@ -2788,6 +2788,19 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
+    inline BOOL IsContinuation()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetFlag(enum_flag_IsContinuationType);
+    }
+
+    inline void SetIsContinuation(const CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetFlag(enum_flag_IsContinuationType);
+        m_pContinuationOffsets = dataOffsets;
+    }
+
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
     {
@@ -2819,6 +2832,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return offsetof(MethodTable, m_ElementTypeHnd);
+    }
+
+    const CORINFO_CONTINUATION_DATA_OFFSETS* GetContinuationOffsets()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsContinuation());
+        return m_pContinuationOffsets;
     }
 
     //-------------------------------------------------------------------
@@ -3786,7 +3806,7 @@ private:
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_wflags2_unused_2          = 0x0008,
-        //unused                            = 0x0010,
+        enum_flag_IsContinuationType        = 0x0010,
         enum_flag_IsIntrinsicType           = 0x0020,
         enum_flag_HasCctor                  = 0x0040,
         enum_flag_HasVirtualStaticMethods   = 0x0080,
@@ -3930,13 +3950,14 @@ private:
 
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
     // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
-    // element type handle for array MethodTables.
+    // element type handle for array MethodTables and continuation layout offsets for continuations.
 
     public:
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
+        const CORINFO_CONTINUATION_DATA_OFFSETS* m_pContinuationOffsets;
     };
     union
     {

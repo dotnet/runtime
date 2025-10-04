@@ -746,6 +746,11 @@ uint32_t getJitFlags(
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;
 
+CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets) override;
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

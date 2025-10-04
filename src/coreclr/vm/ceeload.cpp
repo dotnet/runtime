@@ -2314,10 +2314,11 @@ static void EnumerateRunsOfObjRefs(unsigned size, bool* objRefs, TFunc func)
             end++;
 
         func((start - objRefs) * TARGET_POINTER_SIZE, (end - start) * TARGET_POINTER_SIZE);
+        start = end;
     }
 }
 
-MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objRefs, class AllocMemTracker* pamTracker)
+MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, class AllocMemTracker* pamTracker)
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
@@ -2325,46 +2326,75 @@ MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objR
     } CONTRACTL_END;
 
     MethodTable* pParentClass = CoreLibBinder::GetClass(CLASS__CONTINUATION);
-    unsigned parentInstanceSize = pParentClass->GetNumInstanceFieldBytes();
     DWORD numVirtuals = pParentClass->GetNumVirtuals();
 
     size_t cbMT = sizeof(MethodTable);
     cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
-    unsigned numSeries = 0;
+    unsigned numObjRefRuns = 0;
     EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count)
     {
-        numSeries++;
+        numObjRefRuns++;
     });
 
-    _ASSERTE(!pParentClass->ContainsGCPointers());
-    size_t cbGC = numSeries == 0 ? 0 : CGCDesc::ComputeSize(numSeries);
+    unsigned numParentPointerSeries = 0;
+    if (pParentClass->ContainsGCPointers())
+        numParentPointerSeries = static_cast<unsigned>(CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries());
+
+    unsigned numPointerSeries = numParentPointerSeries + numObjRefRuns;
+
+    size_t cbGC = numPointerSeries == 0 ? 0 : CGCDesc::ComputeSize(numPointerSeries);
 
     LoaderAllocator* pAllocator = GetLoaderAllocator();
-    BYTE* pMemory = (BYTE*)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
-    memset(pMemory, 0, cbGC + cbMT);
+    BYTE* pMemory = (BYTE*)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(CORINFO_CONTINUATION_DATA_OFFSETS)) + S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
 
-    MethodTable* pMT = (MethodTable*)(pMemory + cbGC);
+    CORINFO_CONTINUATION_DATA_OFFSETS* allocatedDataOffsets = new (pMemory) CORINFO_CONTINUATION_DATA_OFFSETS(dataOffsets);
+
+    unsigned startOfDataInInstance = AlignUp(pParentClass->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
+    unsigned startOfDataInObject = OBJECT_SIZE + startOfDataInInstance;
+
+    // Offsets passed in are relative to the data chunk, fix that up now to be relative to the start of the object.
+    if (allocatedDataOffsets->Result != UINT_MAX)
+        allocatedDataOffsets->Result += startOfDataInObject;
+    if (allocatedDataOffsets->Exception != UINT_MAX)
+        allocatedDataOffsets->Exception += startOfDataInObject;
+    if (allocatedDataOffsets->ContinuationContext != UINT_MAX)
+        allocatedDataOffsets->ContinuationContext += startOfDataInObject;
+    if (allocatedDataOffsets->KeepAlive != UINT_MAX)
+        allocatedDataOffsets->KeepAlive += startOfDataInObject;
+
+    MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
+    pMT->SetIsContinuation(allocatedDataOffsets);
     pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, MethodTableStaticsFlags::None);
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(this);
     pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
     pMT->SetParentMethodTable(pParentClass);
     pMT->SetClass(pParentClass->GetClass()); // TODO: needs its own?
-    pMT->SetBaseSize(OBJECT_BASESIZE + parentInstanceSize + dataSize);
+    pMT->SetBaseSize(OBJECT_BASESIZE + startOfDataInInstance + dataSize);
 
-    if (numSeries > 0)
+    if (numPointerSeries > 0)
     {
         pMT->SetContainsGCPointers();
-        CGCDesc::Init(pMT, numSeries);
+        CGCDesc::Init(pMT, numPointerSeries);
         CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries();
+
+        CGCDescSeries* pParentSeries = CGCDesc::GetCGCDescFromMT(pParentClass)->GetLowestSeries();
+        for (unsigned i = 0; i < numParentPointerSeries; i++)
+        {
+            pSeries->SetSeriesSize((pParentSeries->GetSeriesSize() + pParentClass->GetBaseSize()) - pMT->GetBaseSize());
+            pSeries->SetSeriesOffset(pParentSeries->GetSeriesOffset());
+            pSeries++;
+            pParentSeries++;
+        }
+
         auto writeSeries = [&](size_t start, size_t length) {
             pSeries->SetSeriesSize(length - pMT->GetBaseSize());
-            pSeries->SetSeriesOffset(OBJECT_SIZE + parentInstanceSize + start);
+            pSeries->SetSeriesOffset(startOfDataInObject + start);
             pSeries++;
             };
         EnumerateRunsOfObjRefs(dataSize, objRefs, writeSeries);
-        _ASSERTE(pSeries == CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries() + numSeries);
+        _ASSERTE(pSeries == CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries() + numPointerSeries);
     }
 
     pMT->SetClassInited();

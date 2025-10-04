@@ -180,5 +180,6 @@ DEF_CLR_API(getRelocTypeHint)
 DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(getJitFlags)
 DEF_CLR_API(getSpecialCopyHelper)
+DEF_CLR_API(getContinuationType)
 
 #undef DEF_CLR_API

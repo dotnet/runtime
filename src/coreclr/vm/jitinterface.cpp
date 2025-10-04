@@ -10242,8 +10242,6 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationResumeFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME));
     pAsyncInfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
     pAsyncInfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
-    pAsyncInfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
-    pAsyncInfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
     pAsyncInfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
     pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
     pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
@@ -10252,6 +10250,31 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
 
     EE_TO_JIT_TRANSITION();
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
+    size_t dataSize,
+    bool* objRefs,
+    const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    AllocMemTracker amTracker;
+    // TODO: table to share/deduplicate these
+    result = (CORINFO_CLASS_HANDLE)m_pMethodBeingCompiled->GetModule()->CreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, &amTracker);
+    amTracker.SuppressRelease();
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 // Return details about EE internal data structures
@@ -12388,6 +12411,7 @@ CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HA
 
                 // TODO: Check if the jit is allowed to embed this handle in jitted code.
                 // Note for the initonly cases it probably won't embed.
+
                 result = (CORINFO_CLASS_HANDLE) pObjMT;
             }
         }
@@ -14495,9 +14519,11 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTr
 {
     SigBuilder sigBuilder;
     sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    sigBuilder.AppendData(1); // 1 argument
+    sigBuilder.AppendData(2); // 2 argument
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+    sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF); // result location
+    sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
@@ -14701,93 +14727,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
         pCode->EmitLDLOC(newContinuationLoc);
         pCode->EmitBRTRUE(doneResult);
 
-        // Load 'next' of current continuation
-        pCode->EmitLDARG(0);
-        pCode->EmitLDFLD(FIELD__CONTINUATION__NEXT);
-
-        // Result is placed in GCData[0] if it has GC references (potentially boxing it).
-        bool isOrContainsGCPointers = false;
-        if (CorTypeInfo::IsObjRef(resultTypeHnd.GetInternalCorElementType()) || (resultTypeHnd.IsValueType() && resultTypeHnd.AsMethodTable()->ContainsGCPointers()))
-        {
-            // Load 'gcdata' of next continuation
-            pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
-
-            // Now we have the GC array. At the first index is the result.
-            pCode->EmitLDC(0);
-
-            // NOTE: that we are not using regular boxing (in EmitBOX sense) and allocate our own box instances via a helper.
-            // There are two reasons:
-            // - resultTypeHnd may be a nullable type and have different layout in boxed/unboxed forms.
-            //   We do not want to deal with that.
-            // - resultTypeHnd may contain __Canon fields. Regular boxing would not allow that, but this box is used for a very
-            //   specific internal purpose where we only require that the GC layout of the box matches the data
-            //   that we store in it, thus we want to allow __Canon.
-            if (resultTypeHnd.IsValueType())
-            {
-                // make a box and dup the ref
-                MethodDesc* md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__ALLOC_CONTINUATION_RESULT_BOX);
-                pCode->EmitLDC((DWORD_PTR)resultTypeHnd.AsMethodTable());
-                pCode->EmitCALL(pCode->GetToken(md), 1, 1);
-                pCode->EmitDUP();
-                // dst is the offset of the first field in the box
-                pCode->EmitLDFLDA(FIELD__RAW_DATA__DATA);
-                // load the result
-                pCode->EmitLDLOC(resultLoc);
-                // store into the box
-                pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
-            }
-            else
-            {
-                // load the result
-                pCode->EmitLDLOC(resultLoc);
-            }
-
-            // Store the result.
-            pCode->EmitSTELEM_REF();
-        }
-        else
-        {
-            // Otherwise it goes into Data, either at offset 0 or 4 depending
-            // on CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA.
-            ILCodeLabel* hasOsrILOffset = pCode->NewCodeLabel();
-
-            unsigned nextContinuationLcl = pCode->NewLocal(LocalDesc(continuationTypeHnd));
-            pCode->EmitSTLOC(nextContinuationLcl);
-
-            // Load 'flags' of next continuation
-            pCode->EmitLDLOC(nextContinuationLcl);
-            pCode->EmitLDFLD(FIELD__CONTINUATION__FLAGS);
-            pCode->EmitLDC(CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA);
-            pCode->EmitAND();
-            pCode->EmitBRTRUE(hasOsrILOffset);
-
-            // Load 'data' of next continuation
-            pCode->EmitLDLOC(nextContinuationLcl);
-            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
-            // Load address of array at index 0
-            pCode->EmitLDC(0);
-            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
-
-            // Store at index 0.
-            pCode->EmitLDLOC(resultLoc);
-            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
-
-            pCode->EmitBR(doneResult);
-
-            pCode->EmitLabel(hasOsrILOffset);
-
-            // Load 'data' of next continuation
-            pCode->EmitLDLOC(nextContinuationLcl);
-            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
-            // Load address of array at index 4
-            pCode->EmitLDC(4);
-            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
-
-            // Store at index 4.
-            pCode->EmitLDLOC(resultLoc);
-            pCode->EmitUNALIGNED(1);
-            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
-        }
+        pCode->EmitLDARG(1); // resultLoc
+        pCode->EmitLDLOC(resultLoc);
+        pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
 
         pCode->EmitLabel(doneResult);
     }

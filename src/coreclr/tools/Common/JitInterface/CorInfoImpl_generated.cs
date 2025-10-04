@@ -2603,10 +2603,25 @@ namespace Internal.JitInterface
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static CORINFO_CLASS_STRUCT_* _getContinuationType(IntPtr thisHandle, IntPtr* ppException, UIntPtr dataSize, bool* objRefs, CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getContinuationType(dataSize, ref *objRefs, ref *dataOffsets);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 176);
+            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 177);
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_notifyMethodInfoUsage;
@@ -2784,6 +2799,7 @@ namespace Internal.JitInterface
             callbacks[173] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[174] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
             callbacks[175] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
+            callbacks[176] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, bool*, CORINFO_CONTINUATION_DATA_OFFSETS*, CORINFO_CLASS_STRUCT_*>)&_getContinuationType;
 
             return (IntPtr)callbacks;
         }

@@ -187,6 +187,7 @@ struct JitInterfaceCallbacks
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     CORINFO_METHOD_HANDLE (* getSpecialCopyHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
+    CORINFO_CLASS_HANDLE (* getContinuationType)(void * thisHandle, CorInfoExceptionClass** ppException, size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets);
 
 };
 
@@ -1918,6 +1919,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_METHOD_HANDLE temp = _callbacks->getSpecialCopyHelper(_thisHandle, &pException, type);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_CLASS_HANDLE temp = _callbacks->getContinuationType(_thisHandle, &pException, dataSize, objRefs, dataOffsets);
     if (pException != nullptr) throw pException;
     return temp;
 }

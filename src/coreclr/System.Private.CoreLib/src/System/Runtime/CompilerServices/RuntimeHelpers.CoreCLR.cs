@@ -739,6 +739,9 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(ElementTypeOffset)]
         public MethodTable*** PerInstInfo;
 
+        [FieldOffset(ElementTypeOffset)]
+        public CORINFO_CONTINUATION_DATA_OFFSETS* ContinuationOffsets;
+
         /// <summary>
         /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>

@@ -862,8 +862,6 @@ DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
 DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
-DEFINE_FIELD(CONTINUATION,              DATA,               Data)
-DEFINE_FIELD(CONTINUATION,              GCDATA,             GCData)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)

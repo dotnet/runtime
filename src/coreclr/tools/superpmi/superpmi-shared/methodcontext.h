@@ -867,6 +867,10 @@ public:
     void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
     CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
 
+    void recGetContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, CORINFO_CLASS_HANDLE result);
+    void dmpGetContinuationType(const Agnostic_GetContinuationTypeIn& key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets);
+
     void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
     void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);
     void repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint);
@@ -1208,6 +1212,7 @@ enum mcPackets
     Packet_GetAsyncResumptionStub = 231,
     Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
+    Packet_GetContinuationType = 234,
 };
 
 void SetDebugDumpVariables();

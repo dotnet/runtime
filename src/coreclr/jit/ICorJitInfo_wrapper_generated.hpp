@@ -1744,6 +1744,17 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    API_ENTER(getContinuationType);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getContinuationType(dataSize, objRefs, dataOffsets);
+    API_LEAVE(getContinuationType);
+    return temp;
+}
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

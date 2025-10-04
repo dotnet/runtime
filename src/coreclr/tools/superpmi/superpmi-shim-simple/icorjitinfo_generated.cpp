@@ -1265,3 +1265,11 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
     return original_ICorJitInfo->getSpecialCopyHelper(type);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    return original_ICorJitInfo->getContinuationType(dataSize, objRefs, dataOffsets);
+}
+

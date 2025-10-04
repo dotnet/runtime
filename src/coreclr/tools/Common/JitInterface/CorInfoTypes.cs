@@ -884,6 +884,12 @@ namespace Internal.JitInterface
         public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
     }
 
+    public struct CORINFO_CONTINUATION_DATA_OFFSETS
+    {
+        public int ReturnValueOffset;
+        public int ExceptionOffset;
+    }
+
     // Flags passed from JIT to runtime.
     public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
     {
