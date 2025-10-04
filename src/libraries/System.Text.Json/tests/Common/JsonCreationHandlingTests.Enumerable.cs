@@ -2908,6 +2908,360 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ISet<int> Property { get; } = new StructSet<int>() { 1, 2, 3 };
     }
 
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfInt>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfInt));
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithAttributeOnType>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt_PropertyOccurringMultipleTimes()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfInt>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_PropertyOccurringMultipleTimes_NullInBetween()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<IReadOnlySet<int>>>(json, options);
+        Assert.Equal(Enumerable.Range(1, 2), obj.Property);
+    }
+
+    internal class ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfInt
+    {
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public IReadOnlySet<int> Property { get; } = new HashSet<int>() { 1, 2, 3 };
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadata_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute)));
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
+        {
+            if (ti.Type == typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute))
+            {
+                ti.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Populate;
+            }
+        });
+
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithOptions_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
+        {
+            opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+        });
+
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    internal class ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute
+    {
+        public IReadOnlySet<int> Property { get; } = new HashSet<int>() { 1, 2, 3 };
+    }
+
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    internal class ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithAttributeOnType
+    {
+        public IReadOnlySet<int> Property { get; } = new HashSet<int>() { 1, 2, 3 };
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandling>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandling));
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithAttributeOnType>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    internal struct ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandling
+    {
+        public ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandling() { }
+
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public IReadOnlySet<int> Property { get; } = new HashSet<int>() { 1, 2, 3 };
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadata_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
+        {
+            if (ti.Type == typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute))
+            {
+                ti.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Populate;
+            }
+        });
+
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithOptions_CanPopulate_IReadOnlySetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
+        {
+            opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+        });
+
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+    }
+
+    internal struct ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute
+    {
+        public ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute() { }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public IReadOnlySet<int> Property { get; } = new HashSet<int>() { 1, 2, 3 };
+    }
+
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    internal struct ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithAttributeOnType
+    {
+        public ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithAttributeOnType() { }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public IReadOnlySet<int> Property { get; } = new HashSet<int>() { 1, 2, 3 };
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt));
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithAttributeOnType>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt_PropertyOccurringMultipleTimes()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    internal struct ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt
+    {
+        public ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt() { }
+
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public IReadOnlySet<int> Property { get; } = new StructReadOnlySet<int>().Initialize(new() { 1, 2, 3 });
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadata_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute)));
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
+        {
+            if (ti.Type == typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute))
+            {
+                ti.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Populate;
+            }
+        });
+
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithOptions_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
+        {
+            opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+        });
+
+        string json = """{"Property":[4,5,6]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    internal struct ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute
+    {
+        public ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute() { }
+
+        public IReadOnlySet<int> Property { get; } = new StructReadOnlySet<int>().Initialize(new() { 1, 2, 3 });
+    }
+
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    internal struct ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithAttributeOnType
+    {
+        public ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithAttributeOnType() { }
+
+        public IReadOnlySet<int> Property { get; } = new StructReadOnlySet<int>().Initialize(new() { 1, 2, 3 });
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttribute_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandling>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+        CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandling));
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions();
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandling>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    internal class ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandling
+    {
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public IReadOnlySet<int> Property { get; } = new StructReadOnlySet<int>().Initialize(new() { 1, 2, 3 });
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadata_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
+        {
+            if (ti.Type == typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute))
+            {
+                ti.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Populate;
+            }
+        });
+
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+
+    [Fact]
+    public async Task CreationHandlingSetWithOptions_CanPopulate_IReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt_WithNumberHandling()
+    {
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
+        {
+            opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+        });
+
+        string json = """{"Property":["4","5","6"]}""";
+        var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
+        Assert.Equal(Enumerable.Range(1, 6), obj.Property);
+        ((StructReadOnlySet<int>)obj.Property).Validate();
+    }
+    internal class ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute
+    {
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public IReadOnlySet<int> Property { get; } = new StructReadOnlySet<int>().Initialize(new() { 1, 2, 3 });
+    }
+
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    internal class ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithAttributeOnType
+    {
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public IReadOnlySet<int> Property { get; } = new StructReadOnlySet<int>().Initialize(new() { 1, 2, 3 });
+    }
+#endif
+
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt()
     {

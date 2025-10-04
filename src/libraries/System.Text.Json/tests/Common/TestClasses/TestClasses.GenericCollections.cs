@@ -114,6 +114,27 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    public class SimpleTestClassWithStringIReadOnlySetWrapper
+    {
+        public WrapperForIReadOnlySetOfT<string> MyStringIReadOnlySetWrapper { get; set; }
+
+        public static readonly string s_json =
+            @"{" +
+            @"""MyStringIReadOnlySetWrapper"" : [""Hello""]" +
+            @"}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+
+        // Call only when testing serialization.
+        public void Initialize()
+        {
+            MyStringIReadOnlySetWrapper = new WrapperForIReadOnlySetOfT<string>(new HashSet<string> { "Hello" });
+        }
+    }
+#endif
+
     public class SimpleTestClassWithStringIReadOnlyListWrapper
     {
         public StringIReadOnlyListWrapper MyStringIReadOnlyListWrapper { get; set; }
@@ -438,6 +459,71 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    public class WrapperForIReadOnlySetOfT<T> : IReadOnlySet<T>
+    {
+        private readonly HashSet<T> _hashset;
+
+        public WrapperForIReadOnlySetOfT()
+        {
+            _hashset = new HashSet<T>();
+        }
+
+        public WrapperForIReadOnlySetOfT(IEnumerable<T> items)
+        {
+            _hashset = new HashSet<T>(items);
+        }
+
+        public int Count => _hashset.Count;
+
+        public bool Contains(T item)
+        {
+            return _hashset.Contains(item);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return ((IReadOnlySet<T>)_hashset).GetEnumerator();
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            return _hashset.Overlaps(other);
+        }
+
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            return _hashset.SetEquals(other);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IReadOnlySet<T>)_hashset).GetEnumerator();
+        }
+    }
+#endif
+
     public class GenericIReadOnlyCollectionWrapper<T> : IReadOnlyCollection<T>
     {
         private readonly List<T> _list = new List<T>();
@@ -726,6 +812,147 @@ namespace System.Text.Json.Serialization.Tests
     {
         internal GenericISetWrapperInternalConstructor() { }
     }
+
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    public class StringIReadOnlySetWrapper : IReadOnlySet<string>
+    {
+        private readonly HashSet<string> _hashset = new HashSet<string>();
+        public int Count => _hashset.Count;
+
+        /// <remarks>
+        /// This method is used to initialize the HashSet because IReadOnlySet<T> does not have an Add method.
+        /// We use this instead of a constructor to allow for parameterless construction, which is important for some tests.
+        /// </remarks>
+        public StringIReadOnlySetWrapper Initialize(HashSet<string> items)
+        {
+            foreach (string item in items)
+            {
+                _hashset.Add(item);
+            }
+
+            return this;
+        }
+        public bool Contains(string item)
+        {
+            return _hashset.Contains(item);
+        }
+        public IEnumerator<string> GetEnumerator()
+        {
+            return ((IReadOnlySet<string>)_hashset).GetEnumerator();
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<string> other)
+        {
+            return _hashset.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<string> other)
+        {
+            return _hashset.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<string> other)
+        {
+            return _hashset.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<string> other)
+        {
+            return _hashset.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<string> other)
+        {
+            return _hashset.Overlaps(other);
+        }
+        public bool SetEquals(IEnumerable<string> other)
+        {
+            return _hashset.SetEquals(other);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IReadOnlySet<string>)_hashset).GetEnumerator();
+        }
+    }
+
+    public class GenericIReadOnlySetWrapper<T> : IReadOnlySet<T>
+    {
+        private readonly HashSet<T> _hashset = new HashSet<T>();
+
+        public int Count => _hashset.Count;
+
+        /// <remarks>
+        /// This method is used to initialize the HashSet because IReadOnlySet<T> does not have an Add method.
+        /// We use this instead of a constructor to allow for parameterless construction, which is important for some tests.
+        /// </remarks>
+        public GenericIReadOnlySetWrapper<T> Initialize(HashSet<T> items)
+        {
+            foreach (T item in items)
+            {
+                _hashset.Add(item);
+            }
+
+            return this;
+        }
+
+        public bool Contains(T item)
+        {
+            return _hashset.Contains(item);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return ((IReadOnlySet<T>)_hashset).GetEnumerator();
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            return _hashset.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            return _hashset.Overlaps(other);
+        }
+
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            return _hashset.SetEquals(other);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IReadOnlySet<T>)_hashset).GetEnumerator();
+        }
+    }
+
+    public class GenericIReadOnlySetWrapperPrivateConstructor<T> : GenericIReadOnlySetWrapper<T>
+    {
+        private GenericIReadOnlySetWrapperPrivateConstructor() { }
+    }
+
+    public class GenericIReadOnlySetWrapperInternalConstructor<T> : GenericIReadOnlySetWrapper<T>
+    {
+        internal GenericIReadOnlySetWrapperInternalConstructor() { }
+    }
+#endif
 
     public class GenericIDictionaryWrapper<TKey, TValue> : IDictionary<TKey, TValue>
     {
@@ -1175,6 +1402,11 @@ namespace System.Text.Json.Serialization.Tests
 
     public interface IDerivedISetOfT<T> : ISet<T> { }
 
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    public interface IDerivedIReadOnlySetOfT<T> : ISet<T> { }
+#endif
+
     public struct GenericStructIListWrapper<T> : IList<T>
     {
         private List<T> _list;
@@ -1449,6 +1681,89 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    public struct GenericStructIReadOnlySetWrapper<T> : IReadOnlySet<T>
+    {
+        private HashSet<T> _hashset;
+
+        /// <remarks>
+        /// This method is used to initialize the HashSet because IReadOnlySet<T> does not have an Add method.
+        /// We use this instead of a constructor to allow for parameterless construction, which is important for some tests.
+        /// </remarks>
+        public GenericStructIReadOnlySetWrapper<T> Initialize(HashSet<T> items)
+        {
+            foreach (T item in items)
+            {
+                _hashset.Add(item);
+            }
+
+            return this;
+        }
+
+        private void InitializeIfNull()
+        {
+            if (_hashset == null)
+            {
+                _hashset = new HashSet<T>();
+            }
+        }
+
+        public int Count => _hashset == null ? 0 : _hashset.Count;
+
+        public bool Contains(T item)
+        {
+            InitializeIfNull();
+            return _hashset.Contains(item);
+        }
+        public IEnumerator<T> GetEnumerator()
+        {
+            InitializeIfNull();
+            return ((ISet<T>)_hashset).GetEnumerator();
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            InitializeIfNull();
+            return _hashset.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            InitializeIfNull();
+            return _hashset.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            InitializeIfNull();
+            return _hashset.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            InitializeIfNull();
+            return _hashset.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            InitializeIfNull();
+            return _hashset.Overlaps(other);
+        }
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            InitializeIfNull();
+            return _hashset.SetEquals(other);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            InitializeIfNull();
+            return ((ISet<T>)_hashset).GetEnumerator();
+        }
+    }
+#endif
     public struct GenericStructIDictionaryWrapper<TKey, TValue> : IDictionary<TKey, TValue>
     {
         private Dictionary<TKey, TValue> _dict;
@@ -1570,11 +1885,24 @@ namespace System.Text.Json.Serialization.Tests
         public GenericStructISetWrapper<int> Set { get; set; }
     }
 
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+    public class ClassWithGenericStructIReadOnlySetWrapper
+    {
+        public GenericStructIReadOnlySetWrapper<int> Set { get; set; }
+    }
+#endif
+
     public class SimpleTestClassWithGenericStructCollectionWrappers : ITestClass
     {
         public GenericStructIListWrapper<int> List { get; set; }
         public GenericStructICollectionWrapper<int> Collection { get; set; }
         public GenericStructISetWrapper<int> Set { get; set; }
+
+        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+        public GenericStructIReadOnlySetWrapper<int> ReadOnlySet { get; set; }
+#endif
         public GenericStructIDictionaryWrapper<string, string> Dictionary { get; set; }
 
         public static readonly string s_json =
@@ -1582,6 +1910,9 @@ namespace System.Text.Json.Serialization.Tests
             @"""List"" : [10]," +
             @"""Collection"" : [30]," +
             @"""Set"" : [50]," +
+#if NET
+            @"""ReadOnlySet"" : [50]," +
+#endif
             @"""Dictionary"" : {""key1"" : ""value1""}" +
             @"}";
 
@@ -1590,6 +1921,9 @@ namespace System.Text.Json.Serialization.Tests
             List = new GenericStructIListWrapper<int>() { 10 };
             Collection = new GenericStructICollectionWrapper<int>() { 30 };
             Set = new GenericStructISetWrapper<int>() { 50 };
+#if NET
+            ReadOnlySet = new GenericStructIReadOnlySetWrapper<int>().Initialize(new() { 50 });
+#endif
             Dictionary = new GenericStructIDictionaryWrapper<string, string>() { { "key1", "value1" } };
         }
 
@@ -1601,6 +1935,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(30, Collection.ElementAt(0));
             Assert.Equal(1, Set.Count);
             Assert.Equal(50, Set.ElementAt(0));
+
+#if NET
+            Assert.Equal(1, ReadOnlySet.Count);
+            Assert.Equal(50, ReadOnlySet.ElementAt(0));
+#endif
+
             Assert.Equal(1, Dictionary.Keys.Count);
             Assert.Equal("value1", Dictionary["key1"]);
         }
@@ -1611,6 +1951,11 @@ namespace System.Text.Json.Serialization.Tests
         public GenericStructIListWrapper<int>? List { get; set; }
         public GenericStructICollectionWrapper<int>? Collection { get; set; }
         public GenericStructISetWrapper<int>? Set { get; set; }
+
+        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+        public GenericStructIReadOnlySetWrapper<int>? ReadOnlySet { get; set; }
+#endif
         public GenericStructIDictionaryWrapper<string, string>? Dictionary { get; set; }
 
         public static readonly string s_json =
@@ -1618,6 +1963,9 @@ namespace System.Text.Json.Serialization.Tests
             @"""List"" : [10]," +
             @"""Collection"" : [30]," +
             @"""Set"" : [50]," +
+#if NET
+            @"""ReadOnlySet"" : [50]," +
+#endif
             @"""Dictionary"" : {""key1"" : ""value1""}" +
             @"}";
 
@@ -1626,6 +1974,9 @@ namespace System.Text.Json.Serialization.Tests
             List = new GenericStructIListWrapper<int>() { 10 };
             Collection = new GenericStructICollectionWrapper<int>() { 30 };
             Set = new GenericStructISetWrapper<int>() { 50 };
+#if NET
+            ReadOnlySet = new GenericStructIReadOnlySetWrapper<int>().Initialize(new() { 50 });
+#endif
             Dictionary = new GenericStructIDictionaryWrapper<string, string>() { { "key1", "value1" } };
         }
 
@@ -1637,6 +1988,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(30, Collection.Value.ElementAt(0));
             Assert.Equal(1, Set.Value.Count);
             Assert.Equal(50, Set.Value.ElementAt(0));
+
+#if NET
+            Assert.Equal(1, ReadOnlySet.Value.Count);
+            Assert.Equal(50, ReadOnlySet.Value.ElementAt(0));
+#endif
+
             Assert.Equal(1, Dictionary.Value.Keys.Count);
             Assert.Equal("value1", Dictionary.Value["key1"]);
         }

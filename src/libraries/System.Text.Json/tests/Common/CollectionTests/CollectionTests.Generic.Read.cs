@@ -687,6 +687,140 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, result.Count());
         }
 
+        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+        [Fact]
+        public async Task ReadGenericIReadOnlySetOfGenericIReadOnlySet()
+        {
+            IReadOnlySet<IReadOnlySet<int>> result = await Serializer.DeserializeWrapper<IReadOnlySet<IReadOnlySet<int>>>(@"[[1,2],[3,4]]");
+
+            if (result.First().Contains(1))
+            {
+                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
+                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+            }
+            else
+            {
+                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
+                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+            }
+
+            GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper> result2 = await Serializer.DeserializeWrapper<GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+
+            if (result2.First().Contains("1"))
+            {
+                Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result2.First());
+                Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result2.Last());
+            }
+            else
+            {
+                Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result.First());
+                Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result.Last());
+            }
+        }
+
+        [Fact]
+        public async Task ReadGenericStructIReadOnlySet()
+        {
+            string json = "[10, 20, 30]";
+            var wrapper = await Serializer.DeserializeWrapper<GenericStructIReadOnlySetWrapper<int>>(json);
+            Assert.Equal(3, wrapper.Count);
+            Assert.Equal(10, wrapper.ElementAt(0));
+            Assert.Equal(20, wrapper.ElementAt(1));
+            Assert.Equal(30, wrapper.ElementAt(2));
+        }
+
+        [Fact]
+        public async Task ReadNullableGenericStructIReadOnlySet()
+        {
+            string json = "[10, 20, 30]";
+            var wrapper = await Serializer.DeserializeWrapper<GenericStructIReadOnlySetWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value.ElementAt(0));
+            Assert.Equal(20, wrapper.Value.ElementAt(1));
+            Assert.Equal(30, wrapper.Value.ElementAt(2));
+        }
+
+        [Fact]
+        public async Task ReadNullableGenericStructIReadOnlySetWithNullJson()
+        {
+            var wrapper = await Serializer.DeserializeWrapper<GenericStructIReadOnlySetWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
+        public async Task ReadIReadOnlySetTOfHashSetT()
+        {
+            IReadOnlySet<HashSet<int>> result = await Serializer.DeserializeWrapper<IReadOnlySet<HashSet<int>>>(@"[[1,2],[3,4]]");
+
+            if (result.First().Contains(1))
+            {
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.Last());
+            }
+            else
+            {
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.Last());
+            }
+        }
+
+        [Fact]
+        public async Task ReadHashSetTOfIReadOnlySetT()
+        {
+            HashSet<IReadOnlySet<int>> result = await Serializer.DeserializeWrapper<HashSet<IReadOnlySet<int>>>(@"[[1,2],[3,4]]");
+
+            if (result.First().Contains(1))
+            {
+                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
+                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+            }
+            else
+            {
+                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
+                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+            }
+        }
+
+        [Fact]
+        public async Task ReadIReadOnlySetTOfArray()
+        {
+            IReadOnlySet<int[]> result = await Serializer.DeserializeWrapper<IReadOnlySet<int[]>>(@"[[1,2],[3,4]]");
+
+            if (result.First().Contains(1))
+            {
+                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
+                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+            }
+            else
+            {
+                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
+                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+            }
+        }
+
+        [Fact]
+        public async Task ReadArrayOfIReadOnlySetT()
+        {
+            IReadOnlySet<int>[] result = await Serializer.DeserializeWrapper<IReadOnlySet<int>[]>(@"[[1,2],[3,4]]");
+
+            Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
+            Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+        }
+
+        [Fact]
+        public async Task ReadSimpleIReadOnlySetT()
+        {
+            IReadOnlySet<int> result = await Serializer.DeserializeWrapper<IReadOnlySet<int>>(@"[1,2]");
+
+            Assert.Equal(new HashSet<int> { 1, 2 }, result);
+
+            result = await Serializer.DeserializeWrapper<IReadOnlySet<int>>(@"[]");
+            Assert.Equal(0, result.Count());
+        }
+#endif
+
         [Fact]
         public async Task StackTOfStackT()
         {
@@ -1060,6 +1194,10 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructICollectionWrapper>(@"{ ""Collection"": null }"));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructIDictionaryWrapper>(@"{ ""Dictionary"": null }"));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructISetWrapper>(@"{ ""Set"": null }"));
+            // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructIReadOnlySetWrapper>(@"{ ""ReadOnlySet"": null }"));
+#endif
         }
 
         [Fact]
@@ -1083,11 +1221,19 @@ namespace System.Text.Json.Serialization.Tests
                         @"""List"" : null," +
                         @"""Collection"" : null," +
                         @"""Set"" : null," +
+                        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+                        @"""ReadOnlySet"" : null," +
+#endif
                         @"""Dictionary"" : null" +
                         @"}";
                 SimpleTestStructWithNullableGenericStructCollectionWrappers obj = await Serializer.DeserializeWrapper<SimpleTestStructWithNullableGenericStructCollectionWrappers>(json);
                 Assert.False(obj.List.HasValue);
                 Assert.False(obj.Collection.HasValue);
+
+#if NET
+                Assert.False(obj.ReadOnlySet.HasValue);
+#endif
                 Assert.False(obj.Set.HasValue);
                 Assert.False(obj.Dictionary.HasValue);
             }
@@ -1136,6 +1282,16 @@ namespace System.Text.Json.Serialization.Tests
                     SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json,
                     typeof(GenericIReadOnlyDictionaryWrapper<string, string>)
                 };
+
+                // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIReadOnlySetWrapper),
+                    SimpleTestClassWithStringIReadOnlySetWrapper.s_json,
+                    typeof(WrapperForIReadOnlySetOfT<string>)
+                };
+#endif
             }
         }
 
@@ -1173,6 +1329,12 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(GenericIListWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericISetWrapperPrivateConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericISetWrapperInternalConstructor<string>), @"[""1""]")]
+
+#if NET
+        [InlineData(typeof(GenericIReadOnlySetWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIReadOnlySetWrapperInternalConstructor<string>), @"[""1""]")]
+#endif
+
         [InlineData(typeof(GenericIDictionaryWrapperPrivateConstructor<string, string>), @"{""Key"":""Value""}")]
         [InlineData(typeof(GenericIDictionaryWrapperInternalConstructor<string, string>), @"{""Key"":""Value""}")]
         [InlineData(typeof(StringToStringIReadOnlyDictionaryWrapperPrivateConstructor), @"{""Key"":""Value""}")]
@@ -1271,6 +1433,12 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { typeof(IDerivedICollectionOfT<string>) };
             yield return new object[] { typeof(IDerivedIList) };
             yield return new object[] { typeof(IDerivedISetOfT<string>) };
+
+            // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+            yield return new object[] { typeof(IDerivedIReadOnlySetOfT<string>) };
+#endif
+
         }
 
         public static IEnumerable<object[]> CustomInterfaces_Dictionaries()
