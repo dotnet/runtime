@@ -34,6 +34,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
+struct ExInfo;
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
+
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
 enum TrackerMemoryType
@@ -58,12 +61,10 @@ enum class InlinedCallFrameMarker
 {
 #ifdef HOST_64BIT
     ExceptionHandlingHelper = 2,
-    SecondPassFuncletCaller = 4,
 #else // HOST_64BIT
     ExceptionHandlingHelper = 1,
-    SecondPassFuncletCaller = 2,
 #endif // HOST_64BIT
-    Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
+    Mask = ExceptionHandlingHelper
 };
 
 #ifdef FEATURE_INTERPRETER

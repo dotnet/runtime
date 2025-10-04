@@ -550,6 +550,30 @@ namespace System.Runtime
 
             [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_notifyDebuggerSP)]
             internal volatile UIntPtr _notifyDebuggerSP;
+#if !NATIVEAOT
+            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pCatchHandler)]
+            internal volatile byte* _pCatchHandler;
+
+            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_handlingFrameSP)]
+            internal volatile UIntPtr _handlingFrameSP;
+
+#if TARGET_ARM64
+            // On ARM64, two frames can have the same SP, when a leaf function
+            // doesn't use any stack. So to distinguish between the caller frame
+            // and the leaf one, we also need to know the PC of the handling frame.
+            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_handlingFramePC)]
+            internal volatile byte* _handlingFramePC;
+#endif
+
+#if TARGET_UNIX
+            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback)]
+            internal volatile IntPtr _pReversePInvokePropagationCallback;
+
+            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pReversePInvokePropagationContext)]
+            internal volatile IntPtr _pReversePInvokePropagationContext;
+#endif // TARGET_UNIX
+
+#endif // !NATIVEAOT
         }
 
         //
@@ -637,7 +661,9 @@ namespace System.Runtime
 
             exInfo.Init(exceptionToThrow!, instructionFault);
             DispatchEx(ref exInfo._frameIter, ref exInfo);
+#if NATIVEAOT
             FallbackFailFast(RhFailFastReason.InternalError, null);
+#endif
         }
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
@@ -670,67 +696,10 @@ namespace System.Runtime
 
             exInfo.Init(exceptionObj);
             DispatchEx(ref exInfo._frameIter, ref exInfo);
+#if NATIVEAOT
             FallbackFailFast(RhFailFastReason.InternalError, null);
+#endif
         }
-
-#if !NATIVEAOT
-        public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
-        {
-            exInfo._passNumber = 2;
-            exInfo._idxCurClause = MaxTryRegionIdx;
-            uint startIdx = MaxTryRegionIdx;
-            bool unwoundReversePInvoke = false;
-            bool isExceptionIntercepted = false;
-            bool isValid = exInfo._frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
-            for (; isValid && !isExceptionIntercepted && ((byte*)exInfo._frameIter.SP <= (byte*)interceptStackFrameSP); isValid = exInfo._frameIter.Next(&startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
-            {
-                Debug.Assert(isValid, "Unwind and intercept failed unexpectedly");
-                DebugScanCallFrame(exInfo._passNumber, exInfo._frameIter.ControlPC, exInfo._frameIter.SP);
-
-                if (unwoundReversePInvoke)
-                {
-                    // Found the native frame that called the reverse P/invoke.
-                    // It is not possible to run managed second pass handlers on a native frame.
-                    break;
-                }
-
-                if (exInfo._frameIter.SP == interceptStackFrameSP)
-                {
-                    break;
-                }
-
-                InvokeSecondPass(ref exInfo, startIdx);
-                if (isExceptionIntercepted)
-                {
-                    Debug.Assert(false);
-                    break;
-                }
-            }
-
-            // ------------------------------------------------
-            //
-            // Call the interception code
-            //
-            // ------------------------------------------------
-            if (unwoundReversePInvoke)
-            {
-                object exceptionObj = exInfo.ThrownException;
-                fixed (EH.ExInfo* pExInfo = &exInfo)
-                {
-                    InternalCalls.RhpCallCatchFunclet(
-                        ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
-                }
-            }
-            else
-            {
-                InternalCalls.ResumeAtInterceptionLocation(exInfo._frameIter.RegisterSet);
-            }
-
-            Debug.Fail("unreachable");
-            FallbackFailFast(RhFailFastReason.InternalError, null);
-        }
-#endif // !NATIVEAOT
-
 
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
@@ -757,7 +726,9 @@ namespace System.Runtime
 
             exInfo.Init(rethrownException, ref activeExInfo);
             DispatchEx(ref exInfo._frameIter, ref exInfo);
+#if NATIVEAOT
             FallbackFailFast(RhFailFastReason.InternalError, null);
+#endif
         }
 
         [StackTraceHidden]
@@ -877,6 +848,21 @@ namespace System.Runtime
             Debug.Assert(pCatchHandler != null || pReversePInvokePropagationCallback != IntPtr.Zero || unwoundReversePInvoke || isExceptionIntercepted, "We should have a handler if we're starting the second pass");
             Debug.Assert(!isExceptionIntercepted || (pCatchHandler == null), "No catch handler should be returned for intercepted exceptions in the first pass");
 
+#if !NATIVEAOT
+            exInfo._pCatchHandler = pCatchHandler;
+            exInfo._handlingFrameSP = handlingFrameSP;
+#if TARGET_ARM64
+            exInfo._handlingFramePC = prevOriginalPC;
+#endif
+#if TARGET_UNIX
+            exInfo._pReversePInvokePropagationCallback = pReversePInvokePropagationCallback;
+            exInfo._pReversePInvokePropagationContext = pReversePInvokePropagationContext;
+#endif // TARGET_UNIX
+            exInfo._idxCurClause = catchingTryRegionIdx;
+
+            return;
+
+#else // !NATIVEAOT
             // ------------------------------------------------
             //
             // Second pass
@@ -888,9 +874,10 @@ namespace System.Runtime
             // 'collapse' funclets which gets confused when we walk out of the dispatch code and encounter the
             // 'main body' without first encountering the funclet.  The thunks used to invoke 2nd-pass
             // funclets will always toggle this mode off before invoking them.
-#if NATIVEAOT
+
             InternalCalls.RhpSetThreadDoNotTriggerGC();
-#endif
+
+
             exInfo._passNumber = 2;
             exInfo._idxCurClause = catchingTryRegionIdx;
             startIdx = MaxTryRegionIdx;
@@ -910,10 +897,8 @@ namespace System.Runtime
 
                 if (unwoundReversePInvoke)
                 {
-#if NATIVEAOT
                     Debug.Assert(pReversePInvokePropagationCallback != IntPtr.Zero, "Unwound to a reverse P/Invoke in the second pass. We should have a propagation handler.");
                     Debug.Assert(frameIter.PreviousTransitionFrame != IntPtr.Zero, "Should have a transition frame for reverse P/Invoke.");
-#endif
                     Debug.Assert(frameIter.SP == handlingFrameSP, "Encountered a different reverse P/Invoke frame in the second pass.");
                     // Found the native frame that called the reverse P/invoke.
                     // It is not possible to run managed second pass handlers on a native frame.
@@ -937,16 +922,13 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
-#if NATIVEAOT
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
-#endif
                 Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
             }
 #endif // FEATURE_OBJCMARSHAL
-
 
             // ------------------------------------------------
             //
@@ -954,19 +936,12 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if NATIVEAOT
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
-#else // NATIVEAOT
-            fixed (EH.ExInfo* pExInfo = &exInfo)
-            {
-                InternalCalls.RhpCallCatchFunclet(
-                    ObjectHandleOnStack.Create(ref exceptionObj), pCatchHandler, frameIter.RegisterSet, pExInfo);
-            }
-#endif // NATIVEAOT
             // currently, RhpCallCatchFunclet will resume after the catch
             Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
+#endif // !NATIVEAOT
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -1170,6 +1145,7 @@ namespace System.Runtime
 #endif
         }
 
+#if NATIVEAOT
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)
         {
             InvokeSecondPass(ref exInfo, idxStart, MaxTryRegionIdx);
@@ -1207,11 +1183,7 @@ namespace System.Runtime
 
                     // Now, we continue skipping while the try region is identical to the one that invoked the
                     // previous dispatch.
-                    if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == lastTryEnd)
-#if !NATIVEAOT
-                        && (ehClause._isSameTry)
-#endif
-                    )
+                    if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == lastTryEnd))
                         continue;
 
                     // We are done skipping. This is required to handle empty finally block markers that are used
@@ -1242,19 +1214,11 @@ namespace System.Runtime
 
                 byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
-#if NATIVEAOT
                 InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
-#else // NATIVEAOT
-                fixed (EH.ExInfo* pExInfo = &exInfo)
-                {
-                    InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet, pExInfo);
-                }
-#endif // NATIVEAOT
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }
         }
 
-#if NATIVEAOT
 #pragma warning disable IDE0060
         [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp")]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
