@@ -723,6 +723,13 @@ public class InterpreterTest
 
     static int Main(string[] args)
     {
+        // WASM-TODO this is just hello world for now
+        if (RuntimeInformation.ProcessArchitecture == Architecture.Wasm)
+        {
+            Console.WriteLine("WASM-TODO: Interpreter tests");
+            return 0;
+        }
+
         jitField1 = 42;
         jitField2 = 43;
 
@@ -2406,15 +2413,19 @@ public class InterpreterTest
 
     public static bool TestPInvoke()
     {
-        if (sumTwoInts(1, 2) != 3)
-            return false;
+        // WASM-TODO enable once we have generated pinvoke and in-tree native re-link
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            if (sumTwoInts(1, 2) != 3)
+                return false;
 
-        double summed = sumTwoDoubles(1, 2);
-        if (summed != 3)
-            return false;
+            double summed = sumTwoDoubles(1, 2);
+            if (summed != 3)
+                return false;
 
-        // Test marshaling wrappers
-        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+            // Test marshaling wrappers
+            writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+        }
 
         bool caught = false;
         try {

@@ -17,5 +17,5 @@ set_source_files_properties(autorelease.m PROPERTIES COMPILE_FLAGS -fno-objc-arc
 
 find_library(FOUNDATION Foundation REQUIRED)
 
-add_library(ObjectiveC SHARED ${SOURCES})
+add_library(ObjectiveC ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(ObjectiveC PRIVATE ${FOUNDATION})
