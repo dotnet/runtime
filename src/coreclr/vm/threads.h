@@ -1166,22 +1166,7 @@ public:
     //--------------------------------------------------------------
     // Returns innermost active GCFrame.
     //--------------------------------------------------------------
-    PTR_GCFrame GetGCFrame()
-    {
-        SUPPORTS_DAC;
-
-#ifdef _DEBUG_IMPL
-        WRAPPER_NO_CONTRACT;
-        if (this == GetThreadNULLOk())
-        {
-            void* curSP;
-            curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
-        }
-#endif
-
-        return m_pGCFrame;
-    }
+    PTR_GCFrame GetGCFrame();
 
     //--------------------------------------------------------------
     // Replaces innermost active Frames.

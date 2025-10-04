@@ -7758,6 +7758,23 @@ BOOL Thread::IsAddressInStack (PTR_VOID addr) const
     return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
 }
 
+PTR_GCFrame Thread::GetGCFrame()
+{
+    SUPPORTS_DAC;
+
+#ifdef _DEBUG_IMPL
+    WRAPPER_NO_CONTRACT;
+    if (this == GetThreadNULLOk())
+    {
+        void* curSP;
+        curSP = (void *)GetCurrentSP();
+        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+    }
+#endif
+
+    return m_pGCFrame;
+}
+
 #ifdef DACCESS_COMPILE
 
 void
