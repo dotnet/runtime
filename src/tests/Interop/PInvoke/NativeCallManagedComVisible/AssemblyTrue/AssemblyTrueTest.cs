@@ -643,6 +643,7 @@ public class ComVisibleServer
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Requires COM support")]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
