@@ -686,8 +686,8 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // .NET Framework does not support IReadOnlySet<T>
-#if !NETFRAMEWORK
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
     public class TestClassWithObjectIReadOnlySetT : ITestClass
     {
         public IReadOnlySet<SimpleTestClass> MyData { get; set; }
@@ -1155,8 +1155,8 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // .NET Framework does not support IReadOnlySet<T>
-#if !NETFRAMEWORK
+    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
     public class TestClassWithGenericIReadOnlySetT : ITestClass
     {
         public IReadOnlySet<string> MyData { get; set; }
@@ -1202,6 +1202,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 #endif
+
     public class TestClassWithStringToPrimitiveDictionary : ITestClass
     {
         public Dictionary<string, int> MyInt32Dict { get; set; }
