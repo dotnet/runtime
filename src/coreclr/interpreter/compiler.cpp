@@ -3443,6 +3443,10 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
+    PushStackType(StackTypeI, NULL);
+    int32_t intermediateVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
     if (handleData.argType == HelperArgType::GenericResolution)
@@ -3452,6 +3456,12 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVars2(handleData.genericVar, arg2);
+        m_pLastNewIns->SetDVar(intermediateVar);
+
+        AddIns(INTOP_UNBOX_END_GENERIC);
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVars2(handleData.genericVar, intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
     else
@@ -3461,6 +3471,12 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVar(arg2);
+        m_pLastNewIns->SetDVar(intermediateVar);
+
+        AddIns(INTOP_UNBOX_END);
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVar(intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
 }

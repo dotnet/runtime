@@ -548,6 +548,12 @@ namespace
         *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1));
     }
 
+    void CallFunc_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
+    }
+
     void CallFunc_I32_I32IND_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -720,6 +726,7 @@ namespace
         { "iiiii", (void*)&CallFunc_I32_I32_I32_I32_RetI32 },
 
         { "ini",  (void*)&CallFunc_I32IND_I32_RetI32 },
+        { "iini",  (void*)&CallFunc_I32_I32IND_I32_RetI32 },
         { "iinini", (void*)&CallFunc_I32_I32IND_I32_I32IND_I32_RetI32 },
         { "iniiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32 },
 
