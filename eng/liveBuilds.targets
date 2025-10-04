@@ -215,7 +215,8 @@
         $(LibrariesNativeArtifactsPath)*.dex;
         $(LibrariesNativeArtifactsPath)*.jar;"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
+      <!-- WASM-TODO build this also as part of coreCLR host.native -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
         $(LibrariesNativeArtifactsPath)dotnet.js;
