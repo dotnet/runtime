@@ -746,7 +746,7 @@ namespace System
             // Extract sign bit
             uint sign = (bitValue & float.SignMask) >> 16;
             // Detecting NaN (~0u if a is not NaN)
-            uint realMask = float.IsNaN(value) ? 0u : ~0u;
+            uint realMask = (uint)(Unsafe.BitCast<bool, sbyte>(float.IsNaN(value)) - 1);
             // Clear sign bit
             value = float.Abs(value);
             // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
@@ -1075,7 +1075,9 @@ namespace System
             // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
             uint offsetExponent = bitValueInProcess & HalfExponentMask;
             // ~0u when value is subnormal, 0 otherwise
-            uint subnormalMask = offsetExponent == 0u ? ~0u : 0u;
+            uint subnormalMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0u);
+            // ~0u when value is either Infinity or NaN, 0 otherwise
+            int infinityOrNaNMask = Unsafe.BitCast<bool, byte>(offsetExponent == HalfExponentMask);
             // 0x3880_0000u if value is subnormal, 0 otherwise
             uint maskedExponentLowerBound = subnormalMask & ExponentLowerBound;
             // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
@@ -1083,7 +1085,7 @@ namespace System
             // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
             bitValueInProcess <<= 13;
             // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
-            offsetMaskedExponentLowerBound <<= offsetExponent == HalfExponentMask ? 1 : 0;
+            offsetMaskedExponentLowerBound <<= infinityOrNaNMask;
             // Extract exponent bits and fraction bits of value
             bitValueInProcess &= HalfToSingleBitsMask;
             // Adjust exponent to match the range of exponent
