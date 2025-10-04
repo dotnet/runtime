@@ -127,7 +127,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //
             //  Write a dummy 0 index state entry
             //
-            CfgArc dummyArc = new();
+            CfgArc dummyArc = default;
 
             System.Diagnostics.Debug.Assert(streamBuffer.Stream.Position - startStreamPosition == header.pArcs);
             streamBuffer.WriteStream(dummyArc);
@@ -817,7 +817,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //
             Arc[] apArcTable = new Arc[header.arcs.Length];
             bool fLastArcNull = true;
-            CfgArc pLastArc = new();
+            CfgArc pLastArc = default;
             State currentState = null;
             SortedDictionary<int, Rule>.Enumerator ieFirstArcs = ruleFirstArcs.GetEnumerator();
 
