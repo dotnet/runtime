@@ -1,79 +1,79 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
-  <String Id="Caption" Value="[WixBundleName]-Installationsprogramm" />
-  <String Id="Title" Value="[BUNDLEMONIKER]" />
-  <String Id="Motto" Value="Sie benötigen nur eine Shell, einen Text-Editor und 10 Minuten Zeit.
+  <String Id="Caption" Value="[WixBundleName]-Installationsprogramm"/>
+  <String Id="Title" Value="[BUNDLEMONIKER]"/>
+  <String Id="Motto" Value="Sie benötigen nur eine Shell, einen Texteditor und 10 Minuten Zeit.
 
-Bereit? Los geht's!" />
-  <String Id="ConfirmCancelMessage" Value="Möchten Sie den Vorgang wirklich abbrechen?" />
-  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Vorherige Version" />
-  <String Id="HelpHeader" Value="Setup-Hilfe" />
-  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [Verzeichnis] - installiert, repariert, deinstalliert oder
-   erstellt eine vollständige lokale Kopie des Bundles im Verzeichnis. Installieren ist die Standardeinstellung.
+Auf die Plätze? Fertig? Los geht's!"/>
+  <String Id="ConfirmCancelMessage" Value="Möchten Sie den Vorgang wirklich abbrechen?"/>
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Vorherige Version"/>
+  <String Id="HelpHeader" Value="Setuphilfe"/>
+  <String Id="HelpText" Value="/installieren | /reparieren | /deinstallieren | /Layout [Verzeichnis] – installiert, repariert, deinstalliert oder
+   erstellt eine vollständige lokale Kopie des Bündels im Verzeichnis. Standardmäßig wird eine Installation durchgeführt.
 
-/passive | /quiet -  zeigt eine minimale Benutzeroberfläche ohne Eingabeaufforderungen oder keine
-   Benutzeroberfläche und keine Eingabeaufforderungen an. Standardmäßig werden die Benutzeroberfläche und alle Eingabeaufforderungen angezeigt.
+/passiv | /ruhig – Zeigt eine minimale Benutzeroberfläche ohne Prompts an oder zeigt keine Benutzeroberfläche und
+   keine Prompts an. Standardmäßig werden die Benutzeroberfläche und alle Prompts angezeigt.
 
-/norestart   - Unterdrückt alle Neustartversuche. Standardmäßig fordert die Benutzeroberfläche zum Bestätigen eines Neustarts auf.
-/log log.txt - Erstellt das Protokoll in einer bestimmten Datei. Standardmäßig wird die Protokolldatei in %TEMP% erstellt." />
-  <String Id="HelpCloseButton" Value="S&amp;chließen" />
-  <String Id="InstallAcceptCheckbox" Value="Ich &amp;stimme den Bedingungen des Lizenzvertrags zu" />
-  <String Id="InstallOptionsButton" Value="&amp;Optionen" />
-  <String Id="InstallInstallButton" Value="&amp;Installieren" />
-  <String Id="InstallCloseButton" Value="S&amp;chließen" />
-  <String Id="OptionsHeader" Value="Setupoptionen" />
-  <String Id="OptionsLocationLabel" Value="Installationspfad:" />
-  <String Id="OptionsBrowseButton" Value="&amp;Durchsuchen" />
-  <String Id="OptionsOkButton" Value="&amp;OK" />
-  <String Id="OptionsCancelButton" Value="&amp;Abbrechen" />
-  <String Id="ProgressHeader" Value="Setupstatus" />
-  <String Id="ProgressLabel" Value="Wird verarbeitet:" />
-  <String Id="OverallProgressPackageText" Value="Wird initialisiert..." />
-  <String Id="ProgressCancelButton" Value="&amp;Abbrechen" />
-  <String Id="ModifyHeader" Value="Setup ändern" />
-  <String Id="ModifyRepairButton" Value="&amp;Reparieren" />
-  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
-  <String Id="ModifyUninstallButton" Value="&amp;Deinstallieren" />
-  <String Id="ModifyCloseButton" Value="S&amp;chließen" />
-  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
-  <String Id="SuccessRepairHeader" Value="Reparatur erfolgreich abgeschlossen" />
-  <String Id="SuccessUninstallHeader" Value="Deinstallation erfolgreich abgeschlossen" />
-  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
-  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
-  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
-  <String Id="SuccessInstallHeader" Value="Die Installation war erfolgreich." />
-  <String Id="SuccessHeader" Value="Setup wurde erfolgreich abgeschlossen" />
-  <String Id="SuccessLaunchButton" Value="&amp;Starten" />
-  <String Id="SuccessRestartText" Value="Sie müssen den Computer neu starten, bevor Sie die Software verwenden können." />
-  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
-  <String Id="SuccessRestartButton" Value="&amp;Neustart" />
-  <String Id="SuccessCloseButton" Value="S&amp;chließen" />
-  <String Id="FailureHeader" Value="Setupfehler" />
-  <String Id="FailureInstallHeader" Value="Fehler beim Setup" />
-  <String Id="FailureUninstallHeader" Value="Fehler bei der Deinstallation" />
-  <String Id="FailureRepairHeader" Value="Fehler bei der Reparatur" />
-  <String Id="FailureHyperlinkLogText" Value="Setup ist aufgrund eines oder mehrerer Probleme fehlgeschlagen. Beheben Sie die Probleme, und führen Sie Setup erneut aus. Weitere Informationen finden Sie in der &lt;a href=&quot;#&quot;&gt;Protokolldatei&lt;/a&gt;." />
-  <String Id="FailureRestartText" Value="Sie müssen den Computer neu starten, um das Zurücksetzen der Software abzuschließen." />
-  <String Id="FailureRestartButton" Value="&amp;Neustart" />
-  <String Id="FailureCloseButton" Value="S&amp;chließen" />
-  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] wird auf diesem Betriebssystem nicht unterstützt. Weitere Informationen finden Sie unter [LINK_PREREQ_PAGE]." />
-  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] wird auf x86-Betriebssystemen nicht unterstützt. Installieren Sie das entsprechende x86-Installationsprogramm." />
-  <String Id="FilesInUseHeader" Value="Dateien in Verwendung" />
-  <String Id="FilesInUseLabel" Value="Die folgenden Anwendungen verwenden Dateien, die aktualisiert werden müssen:" />
-  <String Id="FilesInUseCloseRadioButton" Value="Schließen Sie die &amp;Anwendungen, und versuchen Sie sie erneut zu starten." />
-  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Anwendungen nicht schließen. Ein Neustart ist erforderlich." />
-  <String Id="FilesInUseOkButton" Value="&amp;OK" />
-  <String Id="FilesInUseCancelButton" Value="&amp;Abbrechen" />
-  <String Id="WelcomeHeaderMessage" Value=".NET-Runtime" />
-  <String Id="WelcomeDescription" Value="Die .NET-Runtime wird zum Ausführen von .NET-Anwendungen auf Ihrem Windows-Computer verwendet. .NET ist ein plattformübergreifendes Open-Source-Framework, das von Microsoft unterstützt wird. Wir wünschen Ihnen viel Spaß damit!" />
-  <String Id="LearnMoreTitle" Value="Weitere Informationen zu .NET" />
-  <String Id="SuccessInstallLocation" Value="Folgendes wurde unter [DOTNETHOME] installiert." />
-  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] " />
-  <String Id="ResourcesHeader" Value="Ressourcen" />
-  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentation&lt;/A&gt;" />
-  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Versionshinweise&lt;/A&gt;" />
-  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;" />
-  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET-Telemetrie&lt;/A&gt;" />
-  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Datenschutzerklärung&lt;/A&gt;" />
-  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Lizenzierungsinformationen für .NET&lt;/A&gt;" />
-  <String Id="LicenseAssent" Value="Durch Klicken auf „Installieren“ stimmen Sie den nachstehenden Bedingungen zu." />
+/norestart: Unterdrückt alle Neustartversuche. Standardmäßig wird die Benutzeroberfläche vor dem Neustart aufgefordert.
+/log log.txt: Protokolliert eine bestimmte Datei. Standardmäßig wird die Protokolldatei in %TEMP% erstellt."/>
+  <String Id="HelpCloseButton" Value="&amp;Schließen"/>
+  <String Id="InstallAcceptCheckbox" Value="Ich &amp;stimme den Bedingungen des Lizenzvertrags zu"/>
+  <String Id="InstallOptionsButton" Value="&amp;Optionen"/>
+  <String Id="InstallInstallButton" Value="&amp;Installieren"/>
+  <String Id="InstallCloseButton" Value="&amp;Schließen"/>
+  <String Id="OptionsHeader" Value="Setupoptionen"/>
+  <String Id="OptionsLocationLabel" Value="Installationsspeicherort:"/>
+  <String Id="OptionsBrowseButton" Value="&amp;Durchsuchen"/>
+  <String Id="OptionsOkButton" Value="&amp;OK"/>
+  <String Id="OptionsCancelButton" Value="&amp;Abbrechen"/>
+  <String Id="ProgressHeader" Value="Setupstatus"/>
+  <String Id="ProgressLabel" Value="Verarbeitung:"/>
+  <String Id="OverallProgressPackageText" Value="Initialisierung wird ausgeführt..."/>
+  <String Id="ProgressCancelButton" Value="&amp;Abbrechen"/>
+  <String Id="ModifyHeader" Value="Setup ändern"/>
+  <String Id="ModifyRepairButton" Value="&amp;Reparieren"/>
+  <String Id="ModifyText" Value="Wählen Sie „Reparieren“ aus, um das Produkt neu zu installieren, oder „Deinstallieren“, um es zu entfernen."/>
+  <String Id="ModifyUninstallButton" Value="&amp;Deinstallieren"/>
+  <String Id="ModifyCloseButton" Value="&amp;Schließen"/>
+  <String Id="SuccessCacheHeader" Value="Zwischenspeichern erfolgreich abgeschlossen"/>
+  <String Id="SuccessRepairHeader" Value="Reparatur erfolgreich abgeschlossen"/>
+  <String Id="SuccessUninstallHeader" Value="Deinstallation erfolgreich abgeschlossen"/>
+  <String Id="SuccessLayoutHeader" Value="Layout erfolgreich abgeschlossen"/>
+  <String Id="SuccessModifyHeader" Value="Änderung erfolgreich abgeschlossen"/>
+  <String Id="SuccessUnsafeUninstallHeader" Value="Deinstallation erfolgreich abgeschlossen"/>
+  <String Id="SuccessInstallHeader" Value="Die Installation war erfolgreich."/>
+  <String Id="SuccessHeader" Value="Setup wurde erfolgreich abgeschlossen"/>
+  <String Id="SuccessLaunchButton" Value="&amp;Starten"/>
+  <String Id="SuccessRestartText" Value="Sie müssen den Computer neu starten, bevor Sie die Software verwenden können."/>
+  <String Id="SuccessUninstallRestartText" Value="Sie müssen den Computer neu starten, um das Entfernen der Software abzuschließen."/>
+  <String Id="SuccessRestartButton" Value="&amp;Neu starten"/>
+  <String Id="SuccessCloseButton" Value="&amp;Schließen"/>
+  <String Id="FailureHeader" Value="Fehler beim Setup"/>
+  <String Id="FailureInstallHeader" Value="Fehler beim Setup"/>
+  <String Id="FailureUninstallHeader" Value="Fehler bei der Deinstallation"/>
+  <String Id="FailureRepairHeader" Value="Fehler bei der Reparatur"/>
+  <String Id="FailureHyperlinkLogText" Value="Mindestens ein Problem hat zu einem Fehler beim Setup geführt. Beheben Sie die Probleme, und wiederholen Sie dann die Einrichtung. Weitere Informationen finden Sie in der &lt;a href=&quot;#&quot;&gt;Protokolldatei&lt;/a&gt;."/>
+  <String Id="FailureRestartText" Value="Sie müssen den Computer neu starten, um das Zurücksetzen der Software abzuschließen."/>
+  <String Id="FailureRestartButton" Value="&amp;Neu starten"/>
+  <String Id="FailureCloseButton" Value="&amp;Schließen"/>
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] wird auf diesem Betriebssystem nicht unterstützt. Weitere Informationen finden Sie unter [LINK_PREREQ_PAGE]."/>
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] wird auf x86-Betriebssystemen nicht unterstützt. Installieren Sie das entsprechende x86-Installationsprogramm."/>
+  <String Id="FilesInUseHeader" Value="Dateien in Verwendung"/>
+  <String Id="FilesInUseLabel" Value="Die folgenden Anwendungen verwenden Dateien, die aktualisiert werden müssen:"/>
+  <String Id="FilesInUseCloseRadioButton" Value="Schließen Sie die &amp;Anwendungen, und versuchen Sie sie erneut zu starten."/>
+  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Schließen Sie die Anwendungen nicht. Ein Neustart ist erforderlich."/>
+  <String Id="FilesInUseOkButton" Value="&amp;OK"/>
+  <String Id="FilesInUseCancelButton" Value="&amp;Abbrechen"/>
+  <String Id="WelcomeHeaderMessage" Value=".NET-Runtime"/>
+  <String Id="WelcomeDescription" Value="Die .NET-Runtime wird zum Ausführen von .NET-Anwendungen auf Ihrem Windows-Computer verwendet. .NET ist ein plattformübergreifendes Open-Source-Framework, das von Microsoft unterstützt wird. Wir wünschen Ihnen viel Spaß damit!"/>
+  <String Id="LearnMoreTitle" Value="Weitere Informationen zu .NET"/>
+  <String Id="SuccessInstallLocation" Value="Folgendes wurde unter [DOTNETHOME] installiert."/>
+  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
+  <String Id="ResourcesHeader" Value="Ressourcen"/>
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentation&lt;/A&gt;"/>
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Versionshinweise&lt;/A&gt;"/>
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;"/>
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET-Telemetry&lt;/A&gt;"/>
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Datenschutzerklärung&lt;/A&gt;"/>
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Lizenzierungsinformationen für .NET&lt;/A&gt;"/>
+  <String Id="LicenseAssent" Value="Durch Klicken auf &quot;Installieren&quot; stimmen Sie den nachstehenden Bedingungen zu."/>
 </WixLocalization>
