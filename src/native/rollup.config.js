@@ -125,12 +125,12 @@ const libInteropJavaScriptNative = configure({
 });
 
 const libBrowserHost = configure({
-    input: "./corehost/browserhost/lib-browserhost/index.ts",
+    input: "./corehost/browserhost/host/index.ts",
     output: [{
         name: "libBrowserHost",
         format: "iife",
         file: nativeJavaScriptBin + "libBrowserHost.js",
-        footer: await fs.readFile("./corehost/browserhost/lib-browserhost/libBrowserHost.footer.js"),
+        footer: await fs.readFile("./corehost/browserhost/host/libBrowserHost.footer.js"),
     }],
     terser: {
         compress: {
