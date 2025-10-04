@@ -276,7 +276,9 @@ g_ensure_directory_exists (const gchar *filename)
 		return FALSE;
 	}
 
-	if (stat (dir, &sbuf) == 0 && S_ISDIR (sbuf.st_mode)) {
+	int stat_result;
+	while (-1 == (stat_result = stat (dir, &sbuf)) && errno == EINTR);
+	if (stat_result == 0 && S_ISDIR (sbuf.st_mode)) {
 		g_free (dir);
 		return TRUE;
 	}
@@ -289,7 +291,7 @@ g_ensure_directory_exists (const gchar *filename)
 		p = strchr (p, '/');
 		if (p)
 			*p = '\0';
-		retval = mkdir (dir, 0777);
+		while (-1 == (retval = mkdir (dir, 0777)) && errno == EINTR);
 		if (retval != 0 && errno != EEXIST) {
 			g_free (dir);
 			return FALSE;

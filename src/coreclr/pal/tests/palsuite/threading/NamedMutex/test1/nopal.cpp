@@ -45,7 +45,8 @@ int test_kill(unsigned int pid)
 
 bool TestFileExists(const char *path)
 {
-    int fd = open(path, O_RDWR);
+    int fd;
+    while (-1 == (fd = open(path, O_RDWR)) && errno == EINTR);
     if (fd == -1)
         return false;
     close(fd);
@@ -54,7 +55,8 @@ bool TestFileExists(const char *path)
 
 bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryType, char version, int *fdRef)
 {
-    int fd = open(path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    int fd;
+    while (-1 == (fd = open(path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) && errno == EINTR);
     if (fd == -1)
         return false;
 
@@ -71,9 +73,13 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     }
 
     *fdRef = fd;
-    if (ftruncate(fd, getpagesize()) != 0)
+    int result;
+    while (-1 == (result = ftruncate(fd, getpagesize())) && errno == EINTR);
+    if (result != 0)
         return false;
-    if (lseek(fd, 0, SEEK_SET) != 0)
+    off_t lseek_result;
+    while (-1 == (lseek_result = lseek(fd, 0, SEEK_SET)) && errno == EINTR);
+    if (lseek_result != 0)
         return false;
 
     // See SharedMemorySharedDataHeader for format
@@ -81,5 +87,7 @@ bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryTy
     if (write(fd, buffer, ARRAY_SIZE(buffer)) != ARRAY_SIZE(buffer))
         return false;
 
-    return flock(fd, LOCK_SH | LOCK_NB) == 0;
+    int flock_result;
+    while (-1 == (flock_result = flock(fd, LOCK_SH | LOCK_NB)) && errno == EINTR);
+    return flock_result == 0;
 }

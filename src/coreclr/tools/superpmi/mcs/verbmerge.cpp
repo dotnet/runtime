@@ -6,6 +6,7 @@
 #include "simpletimer.h"
 #include "logging.h"
 #include "spmiutil.h"
+#include <errno.h>
 #include "config.h"
 #include <stdio.h>
 #ifdef TARGET_UNIX
@@ -281,18 +282,22 @@ int verbMerge::FilterDirectory(LPCWSTR                      dir,
     std::string dirUtf8 = ConvertToUtf8(dir);
     std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
 
-    DIR* pDir = opendir(dirUtf8.c_str());
+    DIR* pDir;
+    while ((pDir = opendir(dirUtf8.c_str())) == nullptr && errno == EINTR);
+
     if (pDir != nullptr)
     {
         while (true)
         {
             dirent *pEntry;
             int dirEntryType;
-
-            errno = 0;
-            pEntry = readdir(pDir);
-            if (pEntry == nullptr)
-                break;
+            do
+            {
+                errno = 0;
+                pEntry = readdir(pDir);
+            }
+            while (pEntry == nullptr && errno == EINTR);
+            if (pEntry == nullptr) break;
 
 #if HAVE_DIRENT_D_TYPE
             dirEntryType = pEntry->d_type;
@@ -438,7 +443,7 @@ CLEAN_UP:
         return -1;
     }
 #else  // TARGET_WINDOWS
-    if (pDir != nullptr && (closedir(pDir) != 0))
+    if (pDir != nullptr && (closedir(pDir) != 0 && errno != EINTR))
     {
         LogError("Failed to close directory. errno=%d", errno);
         delete[] retArray;
@@ -514,7 +519,8 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 #else  // TARGET_WINDOWS
         struct stat fileStat;
         char *fileFullPathUtf8 = ConvertWideCharToMultiByte(fileFullPath);
-        int st = stat(fileFullPathUtf8, &fileStat);
+        int st;
+        while (-1 == (st = stat(fileFullPathUtf8, &fileStat)) && errno == EINTR);
         if (st != 0)
         {
             LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8, errno);
@@ -717,7 +723,8 @@ CLEAN_UP:
     if (result != 0)
     {
         // There was a failure. Delete the output file, to avoid leaving some half-created file.
-        int st = remove(nameOfOutputFile);
+        int st;
+        while (-1 == (st = remove(nameOfOutputFile)) && errno == EINTR);
         if (st != 0)
         {
             LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());

@@ -5,12 +5,15 @@
 #include "pal_utilities.h"
 #include <asm/termbits.h>
 #include <asm/ioctls.h>
+#include <errno.h>
 #include <sys/ioctl.h>
 
 int SystemIoPortsNative_Termios2SetSpeed(int fd, int speed)
 {
     struct termios2 tio2;
-    if (ioctl(fd, TCGETS2, &tio2) < 0)
+    int ioctl_result;
+    while (-1 == (ioctl_result = ioctl(fd, TCGETS2, &tio2)) && errno == EINTR);
+    if (ioctl_result < 0)
     {
         return -1;
     }
@@ -20,7 +23,8 @@ int SystemIoPortsNative_Termios2SetSpeed(int fd, int speed)
     tio2.c_ospeed = speed;
     tio2.c_ispeed = speed;
 
-    if (ioctl(fd, TCSETS2, &tio2) < 0)
+    while (-1 == (ioctl_result = ioctl(fd, TCSETS2, &tio2)) && errno == EINTR);
+    if (ioctl_result < 0)
     {
         return -1;
     }

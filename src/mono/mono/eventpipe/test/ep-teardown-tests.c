@@ -13,8 +13,8 @@ test_teardown (void)
 	if (eventpipe_test_domain)
 		mono_jit_cleanup (eventpipe_test_domain);
 
-	unlink (TEST_FILE_2);
-	unlink (TEST_FILE);
+	while (-1 == unlink (TEST_FILE_2) && errno == EINTR);
+	while (-1 == unlink (TEST_FILE) && errno == EINTR);
 
 	return NULL;
 }

@@ -1383,7 +1383,7 @@ CorUnix::GetThreadTimesInternal(
     int readResult;
     char statusFilename[64];
     snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/lwp/%d/lwpstatus", getpid(), pTargetThread->GetLwpId());
-    fd = open(statusFilename, O_RDONLY);
+    while (-1 == (fd = open(statusFilename, O_RDONLY)) && errno == EINTR);
     if (fd == -1)
     {
        ASSERT("open(%s) failed; errno is %d (%s)\n", statusFilename, errno, strerror(errno));
@@ -1393,11 +1393,17 @@ CorUnix::GetThreadTimesInternal(
     }
 
     lwpstatus_t status;
-    do
+    size_t readSoFar = 0;
+    while (readSoFar < sizeof(status))
     {
-        readResult = read(fd, &status, sizeof(status));
+        do
+        {
+            readResult = read(fd, (unsigned char*)&status + readSoFar, sizeof(status) - readSoFar);
+        }
+        while ((readResult == -1) && (errno == EINTR));
+        if (readResult <= 0) break;
+        readSoFar += readResult;
     }
-    while ((readResult == -1) && (errno == EINTR));
 
     close(fd);
 

@@ -104,7 +104,7 @@ test_open_tmp (void)
 	if (name == NULL)
 		return FAILED ("No name returned.");
 	close (fd);
-	unlink (name);
+	while (-1 == unlink (name) && errno == EINTR);
 	g_free (name);
 	return OK;
 }
@@ -195,7 +195,7 @@ test_file (void)
 	if (!res)
 		return FAILED ("4 %s should be a symlink", sympath);
 
-	unlink (path);
+	while (-1 == unlink (path) && errno == EINTR);
 
 	res = g_file_test (sympath, G_FILE_TEST_EXISTS);
 	if (res)
@@ -212,7 +212,7 @@ test_file (void)
 	res = g_file_test (sympath, G_FILE_TEST_IS_SYMLINK);
 	if (!res)
 		return FAILED ("5 %s should be a symlink", sympath);
-	unlink (sympath);
+	while (-1 == unlink (sympath) && errno == EINTR);
 	g_free (sympath);
 #endif
 	g_free (path);

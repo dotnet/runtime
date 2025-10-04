@@ -113,7 +113,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
         do
         {
             // Instructions for the parent process!
-            wait_code = waitpid(child_pid, &child_status, WNOHANG);
+            while (-1 == (wait_code = waitpid(child_pid, &child_status, WNOHANG)) && errno == EINTR);
 
             if (wait_code == -1)
                 return EINVAL;

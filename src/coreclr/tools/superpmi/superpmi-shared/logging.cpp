@@ -86,7 +86,9 @@ void Logger::CloseLogFile()
         {
             // We can call this before closing the handle because remove just marks the file
             // for deletion, i.e. it does not actually get deleted until its last handle is closed.
-            if (remove(s_logFilePath) == -1)
+            int remove_result;
+            while (-1 == (remove_result = remove(s_logFilePath)) && errno == EINTR);
+            if (remove_result == -1)
                 fprintf(stderr, "WARNING: [Logger::CloseLogFile] remove failed. GetLastError()=%u\n",
                         GetLastError());
         }

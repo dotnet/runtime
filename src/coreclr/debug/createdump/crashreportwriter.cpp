@@ -48,7 +48,7 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
         printf_error("Writing the crash report file FAILED\n");
 
         // Delete the partial json file on error
-        remove(crashReportFile.c_str());
+        while (-1 == remove(crashReportFile.c_str()) && errno == EINTR);
     }
 }
 
@@ -270,7 +270,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
 bool
 CrashReportWriter::OpenWriter(const char* fileName)
 {
-    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
+    while (-1 == (m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR)) && errno == EINTR);
     if (m_fd == -1)
     {
         printf_error("Could not create json file '%s': %s (%d)\n", fileName, strerror(errno), errno);

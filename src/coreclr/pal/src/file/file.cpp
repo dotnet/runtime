@@ -201,9 +201,14 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
         /* If the last path component is a directory,
            we return file not found. If it's a file or
            doesn't exist, we return path not found. */
-        if ( '\0' == *lpDupedPath ||
-             ( stat( lpDupedPath, &stat_data ) == 0 &&
-             ( stat_data.st_mode & S_IFMT ) == S_IFDIR ) )
+        bool condition = '\0' == *lpDupedPath;
+        if (!condition)
+        {
+            int stat_result;
+            while (-1 == (stat_result = stat( lpDupedPath, &stat_data )) && errno == EINTR);
+            condition = stat_result == 0 && ( stat_data.st_mode & S_IFMT ) == S_IFDIR;
+        }
+        if (condition)
         {
             TRACE( "ERROR_FILE_NOT_FOUND\n" );
             *lpErrorCode = ERROR_FILE_NOT_FOUND;
@@ -523,7 +528,9 @@ CorUnix::InternalCreateFile(
     } else {
         struct stat st;
 
-        if (stat(lpUnixPath, &st) == 0 && (st.st_mode & S_IFDIR))
+        int stat_result;
+        while (-1 == (stat_result = stat(lpUnixPath, &st)) && errno == EINTR);
+        if (stat_result == 0 && (st.st_mode & S_IFDIR))
         {
             /* The file exists and it is a directory.  Without
                    FILE_FLAG_BACKUP_SEMANTICS, Win32 CreateFile always fails
@@ -611,7 +618,9 @@ CorUnix::InternalCreateFile(
     if ( dwFlagsAndAttributes & FILE_FLAG_NO_BUFFERING )
     {
 #ifdef F_NOCACHE
-        if (-1 == fcntl(filed, F_NOCACHE, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(filed, F_NOCACHE, 1)) && errno == EINTR);
+        if (-1 == fcntl_result)
         {
             ASSERT("Can't set F_NOCACHE; fcntl() failed. errno is %d (%s)\n",
                errno, strerror(errno));
@@ -634,7 +643,9 @@ CorUnix::InternalCreateFile(
 
     /* make file descriptor close-on-exec; inheritable handles will get
       "uncloseonexeced" in CreateProcess if they are actually being inherited*/
-    if(-1 == fcntl(filed,F_SETFD, FD_CLOEXEC))
+    int fcntl_result;
+    while (-1 == (fcntl_result = fcntl(filed,F_SETFD, FD_CLOEXEC)) && errno == EINTR);
+    if(-1 == fcntl_result)
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
@@ -716,7 +727,9 @@ done:
         }
         if (bFileCreated)
         {
-            if (-1 == unlink(lpUnixPath))
+            int unlink_result;
+            while (-1 == (unlink_result = unlink(lpUnixPath)) && errno == EINTR);
+            if (-1 == unlink_result)
             {
                 WARN("can't delete file; unlink() failed with errno %d (%s)\n",
                      errno, strerror(errno));
@@ -945,7 +958,7 @@ DeleteFileA(
         }
     }
 
-    result = unlink( lpFullunixFileName );
+    while (-1 == (result = unlink( lpFullunixFileName )) && errno == EINTR);
 
     if (result < 0)
     {
@@ -1111,7 +1124,7 @@ CorUnix::InternalWriteFile(
     }
 #endif
 
-    res = write( ifd, lpBuffer, nNumberOfBytesToWrite );
+    while (-1 == (res = write( ifd, lpBuffer, nNumberOfBytesToWrite )) && errno == EINTR) { }
     TRACE("write() returns %d\n", res);
 
     if ( res >= 0 )
@@ -1467,7 +1480,7 @@ InternalSetFilePointerForUnixFd(
 
     /* store the current position, in case the lseek moves the pointer
        before the beginning of the file */
-    old_offset = lseek(iUnixFd, 0, SEEK_CUR);
+    while (-1 == (old_offset = lseek(iUnixFd, 0, SEEK_CUR)) && errno == EINTR);
     if (old_offset == -1)
     {
         ERROR("lseek(fd,0,SEEK_CUR) failed errno:%d (%s)\n",
@@ -1494,7 +1507,7 @@ InternalSetFilePointerForUnixFd(
         struct stat fileData;
         int result;
 
-        result = fstat(iUnixFd, &fileData);
+        while (-1 == (result = fstat(iUnixFd, &fileData)) && errno == EINTR);
         if (result == -1)
         {
             // It's a bad fd. This shouldn't happen because
@@ -1511,9 +1524,11 @@ InternalSetFilePointerForUnixFd(
         }
     }
 
-    seek_res = (int64_t)lseek( iUnixFd,
-                               seek_offset,
-                               seek_whence );
+    while (-1 == (
+        seek_res = (int64_t)lseek( iUnixFd,
+                                   seek_offset,
+                                   seek_whence )
+        ) && errno == EINTR);
     if ( seek_res < 0 )
     {
         /* lseek() returns -1 on error, but also can seek to negative
@@ -1521,7 +1536,7 @@ InternalSetFilePointerForUnixFd(
            -1.  Win32 doesn't allow negative file offsets, so either case
            is an error. */
         ERROR("lseek failed errno:%d (%s)\n", errno, strerror(errno));
-        lseek(iUnixFd, old_offset, SEEK_SET);
+        while (-1 == lseek(iUnixFd, old_offset, SEEK_SET) && errno == EINTR);
         palError = ERROR_ACCESS_DENIED;
     }
     else
@@ -1773,7 +1788,9 @@ CorUnix::InternalGetFileSize(
         goto InternalGetFileSizeExit;
     }
 
-    if (fstat(pLocalData->unix_fd, &stat_data) != 0)
+    int fstat_result;
+    while (-1 == (fstat_result = fstat(pLocalData->unix_fd, &stat_data)) && errno == EINTR);
+    if (fstat_result != 0)
     {
         ERROR("fstat failed of file descriptor %d\n", pLocalData->unix_fd);
         palError = FILEGetLastErrorFromErrno();
@@ -2156,7 +2173,9 @@ CorUnix::InternalCreatePipe(
         goto InternalCreatePipeExit;
     }
 
-    if (pipe(readWritePipeDes) == -1)
+    int pipe_result;
+    while (-1 == (pipe_result = pipe(readWritePipeDes)) && errno == EINTR);
+    if (pipe_result == -1)
     {
         ERROR("pipe() call failed errno:%d (%s) \n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;
@@ -2165,14 +2184,17 @@ CorUnix::InternalCreatePipe(
 
     /* enable close-on-exec for both pipes; if one gets passed to CreateProcess
        it will be "uncloseonexeced" in order to be inherited */
-    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC))
+    int fcntl_result;
+    while (-1 == (fcntl_result = fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC)) && errno == EINTR);
+    if(-1 == fcntl_result)
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreatePipeExit;
     }
-    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC))
+    while (-1 == (fcntl_result = fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC)) && errno == EINTR);
+    if(-1 == fcntl_result)
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
@@ -2415,7 +2437,7 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
-    new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+    while (-1 == (new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0)) && errno == EINTR); // dup, but with CLOEXEC
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));
