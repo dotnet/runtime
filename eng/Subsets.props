@@ -580,22 +580,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
   </ItemGroup>
 
-  <!-- Host sets -->
-  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
-  </ItemGroup>
-
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
@@ -628,6 +612,22 @@
 
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
+  </ItemGroup>
+
+  <!-- Host sets -->
+  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
+    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
+    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
   </ItemGroup>
 
   <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
