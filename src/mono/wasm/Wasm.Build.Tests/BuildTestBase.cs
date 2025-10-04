@@ -694,7 +694,6 @@ namespace Wasm.Build.Tests
         private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
-            RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
     }
