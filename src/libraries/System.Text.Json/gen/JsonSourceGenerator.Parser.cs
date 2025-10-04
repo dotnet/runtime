@@ -846,6 +846,14 @@ namespace System.Text.Json.SourceGeneration
                     collectionType = CollectionType.ISet;
                     valueType = actualTypeToConvert.TypeArguments[0];
                 }
+                // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IReadOnlySetOfTType)) != null)
+                {
+                    collectionType = CollectionType.IReadOnlySetOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
+#endif
                 else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ICollectionOfTType)) != null)
                 {
                     collectionType = CollectionType.ICollectionOfT;
