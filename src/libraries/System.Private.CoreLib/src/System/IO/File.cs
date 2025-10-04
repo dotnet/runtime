@@ -1411,6 +1411,28 @@ namespace System.IO
             WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
 
         /// <summary>
+        /// Establishes a hard link between an existing file and a new file.
+        /// </summary>
+        /// <param name="path">The path of the new file.</param>
+        /// <param name="pathToTarget">The path of the existing file.</param>
+        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateHardLink(string path, string pathToTarget)
+        {
+            string fullPath = Path.GetFullPath(path);
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
+            FileSystem.CreateHardLink(path, pathToTarget);
+            return new FileInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
+        }
+
+        /// <summary>
         /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
         /// </summary>
         /// <param name="path">The path where the symbolic link should be created.</param>

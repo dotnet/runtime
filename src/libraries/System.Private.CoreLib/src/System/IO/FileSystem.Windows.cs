@@ -518,6 +518,11 @@ namespace System.IO
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 
+        internal static void CreateHardLink(string path, string pathToTarget)
+        {
+            Interop.Kernel32.CreateHardLink(path, pathToTarget);
+        }
+
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             string? targetPath = returnFinalTarget ?
