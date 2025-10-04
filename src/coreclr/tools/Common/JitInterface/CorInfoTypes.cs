@@ -886,8 +886,10 @@ namespace Internal.JitInterface
 
     public struct CORINFO_CONTINUATION_DATA_OFFSETS
     {
-        public int ReturnValueOffset;
-        public int ExceptionOffset;
+        public int Result;
+        public int Exception;
+        public int ContinuationContext;
+        public int KeepAlive;
     }
 
     // Flags passed from JIT to runtime.
