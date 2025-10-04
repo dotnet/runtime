@@ -111,14 +111,12 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr+libs -rc Release -c $(_BuildConfig) -lc $(_BuildConfig)
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
-                  librariesConfigurationArg: /p:LibrariesConfiguration=Release
-                  runtimeFlavorArgs: /p:RuntimeFlavor=CoreCLR
-                  testBuildArgs: test JIT/interpreter/Interpreter.csproj
+                  testBuildArgs: test JIT/interpreter/Interpreter.csproj /p:LibrariesConfiguration=$(_BuildConfig)
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),
