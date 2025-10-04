@@ -1548,15 +1548,53 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            List<T> list = new List<T>();
+            List<T>? heapMatches = null; // only allocate if needed
+            InlineArray16<T> stackAllocatedMatches = default;
+            const int InlineArrayLength = 16;
+            int stackAllocatedMatchesFound = 0;
             for (int i = 0; i < array.Length; i++)
             {
                 if (match(array[i]))
                 {
-                    list.Add(array[i]);
+                    if (stackAllocatedMatchesFound < InlineArrayLength)
+                    {
+                        stackAllocatedMatches[stackAllocatedMatchesFound++] = array[i];
+                    }
+                    else
+                    {
+                        // Revert to the old logic, allocating and growing a List
+                        heapMatches ??= [];
+                        heapMatches.Add(array[i]);
+                    }
                 }
             }
-            return list.ToArray();
+
+            if (stackAllocatedMatchesFound == 0)
+            {
+                return EmptyArray<T>.Value;
+            }
+
+            int resultLength = stackAllocatedMatchesFound;
+            if (heapMatches != null)
+            {
+                resultLength += heapMatches.Count;
+            }
+
+            T[] result = new T[resultLength];
+
+            int index = 0;
+            foreach (T stackAllocatedMatch in stackAllocatedMatches)
+            {
+                result[index++] = stackAllocatedMatch;
+                if (index >= stackAllocatedMatchesFound)
+                {
+                    break;
+                }
+            }
+
+            heapMatches?.CopyTo(result.AsSpan(start: InlineArrayLength));
+
+            return result;
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)
