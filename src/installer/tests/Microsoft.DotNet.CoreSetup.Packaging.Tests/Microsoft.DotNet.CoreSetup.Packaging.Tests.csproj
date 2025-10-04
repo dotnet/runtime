@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
+    <!-- Package tests run on the host, not the target -->
+    <RuntimeIdentifier>$(HostRid)</RuntimeIdentifier>
     <IsPackable>false</IsPackable>
     <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
          This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
