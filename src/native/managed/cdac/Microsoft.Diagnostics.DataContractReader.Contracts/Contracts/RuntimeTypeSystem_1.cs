@@ -793,11 +793,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new TypeHandle(TargetPointer.Null);
     }
 
-    TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)
+    TypeHandle IRuntimeTypeSystem.GetBinderType(ushort typeCode)
     {
         TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
         CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
-        TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
+        TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + typeCode * (ulong)_target.PointerSize);
         return GetTypeHandle(typeHandlePtr);
     }
 
