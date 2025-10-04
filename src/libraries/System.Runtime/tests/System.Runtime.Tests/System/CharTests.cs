@@ -148,20 +148,59 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData('a', 'a', true)]
-        [InlineData('a', 'A', false)]
-        [InlineData('a', 'b', false)]
-        [InlineData('a', (int)'a', false)]
-        [InlineData('a', "a", false)]
-        [InlineData('a', null, false)]
-        public static void EqualsTest(char c, object? obj, bool expected)
+        [InlineData('a', 'a', StringComparison.Ordinal, null, true)]
+        [InlineData('a', 'A', StringComparison.Ordinal, null, false)]
+        [InlineData('a', 'b', StringComparison.Ordinal, null, false)]
+        [InlineData('a', (int)'a', StringComparison.Ordinal, null, false)]
+        [InlineData('a', "a", StringComparison.Ordinal, null, false)]
+        [InlineData('a', null, StringComparison.Ordinal, null, false)]
+        [InlineData('F', 'f', StringComparison.Ordinal, null, false)]
+        [InlineData('F', 'f', StringComparison.OrdinalIgnoreCase, null, true)]
+        [InlineData('F', 'f', StringComparison.CurrentCulture, null, false)]
+        [InlineData('F', 'f', StringComparison.CurrentCultureIgnoreCase, null, true)]
+        [InlineData('F', 'f', StringComparison.InvariantCulture, null, false)]
+        [InlineData('F', 'f', StringComparison.InvariantCultureIgnoreCase, null, true)]
+        [InlineData('ü', 'Ü', StringComparison.Ordinal, null, false)]
+        [InlineData('ü', 'Ü', StringComparison.OrdinalIgnoreCase, null, true)]
+        [InlineData('ü', 'Ü', StringComparison.CurrentCulture, null, false)]
+        [InlineData('ü', 'Ü', StringComparison.CurrentCultureIgnoreCase, null, true)]
+        [InlineData('ü', 'Ü', StringComparison.InvariantCulture, null, false)]
+        [InlineData('ü', 'Ü', StringComparison.InvariantCultureIgnoreCase, null, true)]
+        [InlineData('ı', 'I', StringComparison.Ordinal, null, false)]
+        [InlineData('ı', 'I', StringComparison.OrdinalIgnoreCase, null, false)]
+        [InlineData('ı', 'I', StringComparison.CurrentCulture, null, false)]
+        [InlineData('ı', 'I', StringComparison.CurrentCultureIgnoreCase, null, false)]
+        [InlineData('ı', 'I', StringComparison.InvariantCulture, null, false)]
+        [InlineData('ı', 'I', StringComparison.InvariantCultureIgnoreCase, null, false)]
+        [InlineData('ı', 'I', StringComparison.Ordinal, "tr-TR", false)]
+        [InlineData('ı', 'I', StringComparison.OrdinalIgnoreCase, "tr-TR", false)]
+        [InlineData('ı', 'I', StringComparison.CurrentCulture, "tr-TR", false)]
+        [InlineData('ı', 'I', StringComparison.CurrentCultureIgnoreCase, "tr-TR", true)]
+        [InlineData('ı', 'I', StringComparison.InvariantCulture, "tr-TR", false)]
+        [InlineData('ı', 'I', StringComparison.InvariantCultureIgnoreCase, "tr-TR", false)]
+        public static void EqualsTest(char c, object? other, StringComparison comparisonType, string? cultureName, bool expected)
         {
-            if (obj is char)
+            using (new ThreadCultureChange(cultureName))
             {
-                Assert.Equal(expected, c.Equals((char)obj));
-                Assert.Equal(expected, c.GetHashCode().Equals(obj.GetHashCode()));
+                if (other is char otherChar)
+                {
+                    if (comparisonType is StringComparison.Ordinal)
+                    {
+                        Assert.Equal(expected, c.Equals(otherChar));
+                        Assert.Equal(expected, c.ToString().Equals(otherChar.ToString()));
+
+                        Assert.Equal(expected, c.GetHashCode().Equals(other.GetHashCode()));
+                    }
+
+                    Assert.Equal(expected, c.Equals(otherChar, comparisonType));
+                    Assert.Equal(expected, c.ToString().Equals(otherChar.ToString(), comparisonType));
+                }
+
+                if (comparisonType is StringComparison.Ordinal)
+                {
+                    Assert.Equal(expected, c.Equals(other));
+                }
             }
-            Assert.Equal(expected, c.Equals(obj));
         }
 
         [Theory]
