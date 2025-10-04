@@ -756,6 +756,7 @@ RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 0) // Col
 
 CONFIG_INTEGER(JitInstrumentIfOptimizing, "JitInstrumentIfOptimizing", 0) // 1: Always add instrumentation if optimizing
                                                                           // and not prejitting
+CONFIG_STRING(JitInstrumentIfOptimizingRange, "JitInstrumentIfOptimizingRange")
 
 RELEASE_CONFIG_INTEGER(JitInstrumentInlinees, "JitInstrumentInlinees", 1) // Add instrumentation to inlined methods
 
