@@ -2353,15 +2353,16 @@ MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objR
     unsigned startOfDataInInstance = AlignUp(pParentClass->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
     unsigned startOfDataInObject = OBJECT_SIZE + startOfDataInInstance;
 
-    // Offsets passed in are relative to the data chunk, fix that up now to be relative to the start of the object.
+    // Offsets passed in are relative to the data chunk, fix that up now to be
+    // relative to the start of the instance data.
     if (allocatedDataOffsets->Result != UINT_MAX)
-        allocatedDataOffsets->Result += startOfDataInObject;
+        allocatedDataOffsets->Result += startOfDataInInstance;
     if (allocatedDataOffsets->Exception != UINT_MAX)
-        allocatedDataOffsets->Exception += startOfDataInObject;
+        allocatedDataOffsets->Exception += startOfDataInInstance;
     if (allocatedDataOffsets->ContinuationContext != UINT_MAX)
-        allocatedDataOffsets->ContinuationContext += startOfDataInObject;
+        allocatedDataOffsets->ContinuationContext += startOfDataInInstance;
     if (allocatedDataOffsets->KeepAlive != UINT_MAX)
-        allocatedDataOffsets->KeepAlive += startOfDataInObject;
+        allocatedDataOffsets->KeepAlive += startOfDataInInstance;
 
     MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
     pMT->SetIsContinuation(allocatedDataOffsets);
