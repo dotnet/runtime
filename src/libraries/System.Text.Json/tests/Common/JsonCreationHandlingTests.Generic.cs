@@ -282,6 +282,7 @@ namespace System.Text.Json.Serialization.Tests
             foreach (T item in items)
             {
                 _set.Add(item);
+                _count++;
             }
 
             return this;
