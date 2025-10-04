@@ -14,3 +14,7 @@ add_library(coreclrminipal
 )
 
 target_link_libraries(coreclrminipal PRIVATE minipal)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  install_clr(TARGETS coreclrminipal DESTINATIONS ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE})
+endif (CLR_CMAKE_TARGET_ARCH_WASM)
