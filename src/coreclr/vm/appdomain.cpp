@@ -1871,7 +1871,7 @@ DispIDCache* AppDomain::SetupRefDispIDCache()
 
 #endif // FEATURE_COMINTEROP
 
-FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly, Assembly *pAssembly)
+FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
@@ -1884,7 +1884,7 @@ FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssemb
     }
     CONTRACTL_END;
 
-    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly, pAssembly));
+    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly));
 
     pLock->AddElement(result);
     result->AddRef(); // Add one ref on behalf of the ListLock's reference. The corresponding Release() happens in FileLoadLock::CompleteLoadLevel.
@@ -1908,6 +1908,13 @@ Assembly *FileLoadLock::GetAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pAssembly;
+}
+
+PEAssembly *FileLoadLock::GetPEAssembly()
+{
+    LIMITED_METHOD_CONTRACT;
+    // Underlying PEAssembly pointer is stored in base ListLockEntry::m_data.
+    return (PEAssembly*)m_data;
 }
 
 FileLoadLevel FileLoadLock::GetLoadLevel()
@@ -1958,6 +1965,7 @@ BOOL FileLoadLock::CanAcquire(FileLoadLevel targetLevel)
 static const char *fileLoadLevelName[] =
 {
     "CREATE",                             // FILE_LOAD_CREATE
+    "ALLOCATE",                           // FILE_LOAD_ALLOCATE
     "BEGIN",                              // FILE_LOAD_BEGIN
     "BEFORE_TYPE_LOAD",                   // FILE_LOAD_BEFORE_TYPE_LOAD
     "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
@@ -1983,7 +1991,9 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
     if (level > m_level)
     {
         // Must complete each level in turn, unless we have an error
-        CONSISTENCY_CHECK(m_pAssembly->IsError() || (level == (m_level+1)));
+        CONSISTENCY_CHECK((level == (m_level+1)) || (m_pAssembly != nullptr && m_pAssembly->IsError()));
+        CONSISTENCY_CHECK(m_pAssembly != nullptr || level < FILE_LOAD_ALLOCATE);
+
         // Remove the lock from the list if the load is completed
         if (level >= FILE_ACTIVE)
         {
@@ -2019,7 +2029,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
         {
             m_level = (FileLoadLevel)level;
 
-            if (success)
+            if (success && level >= FILE_LOAD_ALLOCATE)
                 m_pAssembly->SetLoadLevel(level);
         }
 
@@ -2040,6 +2050,18 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
     }
     else
         return FALSE;
+}
+
+void FileLoadLock::SetAssembly(Assembly *pAssembly)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(HasLock());
+    _ASSERTE(m_level == FILE_LOAD_CREATE); // Only valid to set during CREATE -> ALLOCATE
+    _ASSERTE(m_pAssembly == nullptr);
+    _ASSERTE(pAssembly != nullptr && pAssembly->GetPEAssembly() == (PEAssembly *)m_data);
+
+    m_pAssembly = pAssembly;
 }
 
 void FileLoadLock::SetError(Exception *ex)
@@ -2088,10 +2110,10 @@ UINT32 FileLoadLock::Release()
     return count;
 }
 
-FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly, Assembly *pAssembly)
+FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly)
   : ListLockEntry(pLock, pPEAssembly, "File load lock"),
     m_level((FileLoadLevel) (FILE_LOAD_CREATE)),
-    m_pAssembly(pAssembly),
+    m_pAssembly(nullptr),
     m_cachedHR(S_OK)
 {
     WRAPPER_NO_CONTRACT;
@@ -2420,23 +2442,6 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
 
     if (result == NULL)
     {
-        LoaderAllocator *pLoaderAllocator = NULL;
-
-        AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
-        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-        // marked as collectible
-        pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
-        if (pLoaderAllocator == NULL)
-        {
-            pLoaderAllocator = this->GetLoaderAllocator();
-        }
-
-        // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
-        // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        AllocMemTracker amTracker;
-        AllocMemTracker *pamTracker = &amTracker;
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
-
         LoadLockHolder lock(this);
 
         // Find the list lock entry
@@ -2448,20 +2453,9 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             result = FindAssembly(pPEAssembly, FindAssemblyOptions_IncludeFailedToLoad);
             if (result == NULL)
             {
-                // We are the first one in - create the DomainAssembly
+                // We are the first one in - create the FileLoadLock. Creation of the Assembly will happen at FILE_LOAD_ALLOCATE stage
                 registerNewAssembly = true;
-                fileLock = FileLoadLock::Create(lock, pPEAssembly, pDomainAssembly->GetAssembly());
-                pDomainAssembly.SuppressRelease();
-                pamTracker->SuppressRelease();
-
-                // Set the assembly module to be tenured now that we know it won't be deleted
-                pDomainAssembly->GetAssembly()->SetIsTenured();
-                if (pDomainAssembly->GetAssembly()->IsCollectible())
-                {
-                    // We add the assembly to the LoaderAllocator only when we are sure that it can be added
-                    // and won't be deleted in case of a concurrent load from the same ALC
-                    ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
-                }
+                fileLock = FileLoadLock::Create(lock, pPEAssembly);
             }
         }
         else
@@ -2479,6 +2473,8 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
             // so it will not be removed until app domain unload.  So there is no need
             // to release our ref count.
             result = LoadAssembly(fileLock, targetLevel);
+            // By now FILE_LOAD_ALLOCATE should have run and the Assembly should exist
+            _ASSERTE(result != NULL);
         }
         else
         {
@@ -2487,7 +2483,7 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly)
         {
-            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetAssembly());
+            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(result);
         }
     }
     else
@@ -2517,6 +2513,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
         PRECONDITION(AppDomain::GetCurrentDomain() == this);
+        PRECONDITION(targetLevel >= FILE_LOAD_ALLOCATE);
         POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
@@ -2531,6 +2528,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
     {
+        _ASSERTE(pAssembly != nullptr);
         pAssembly->ThrowIfError(targetLevel);
 
         RETURN pAssembly;
@@ -2553,8 +2551,9 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
         if (immediateTargetLevel > limit.GetLoadLevel())
             immediateTargetLevel = limit.GetLoadLevel();
 
+        const char *simpleName = pLock->GetPEAssembly()->GetSimpleName();
         LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t>>>Load initiated, %s/%s\n",
-             pAssembly->GetSimpleName(),
+             simpleName,
              fileLoadLevelName[immediateTargetLevel], fileLoadLevelName[targetLevel]));
 
         // Now loop and do the load incrementally to the target level.
@@ -2577,29 +2576,31 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
 
                     LOG((LF_LOADER,
                          (workLevel == FILE_LOAD_BEGIN
-                          || workLevel == FILE_LOADED
-                          || workLevel == FILE_ACTIVE)
-                         ? LL_INFO10 : LL_INFO1000,
-                         "LOADER: %p:***%s*\t   loading at level %s\n",
-                         this, pAssembly->GetSimpleName(), fileLoadLevelName[workLevel]));
+                         || workLevel == FILE_LOADED
+                         || workLevel == FILE_ACTIVE)
+                        ? LL_INFO10 : LL_INFO1000,
+                        "LOADER: %p:***%s*\t   loading at level %s\n",
+                        this, simpleName, fileLoadLevelName[workLevel]));
 
-                    TryIncrementalLoad(pAssembly, workLevel, fileLock);
+                    TryIncrementalLoad(workLevel, fileLock);
                 }
             }
 
             if (pLock->GetLoadLevel() == immediateTargetLevel-1)
             {
                 LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t<<<Load limited due to detected deadlock, %s\n",
-                     pAssembly->GetSimpleName(),
+                     simpleName,
                      fileLoadLevelName[immediateTargetLevel-1]));
             }
         }
 
         LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t<<<Load completed, %s\n",
-             pAssembly->GetSimpleName(),
+             simpleName,
              fileLoadLevelName[pLock->GetLoadLevel()]));
-
     }
+
+    pAssembly = pLock->GetAssembly();
+    _ASSERTE(pAssembly != nullptr); // We should always be loading to at least FILE_LOAD_ALLOCATE, so the assembly should be created
 
     // There may have been an error stored on the domain file by another thread, or from a previous load
     pAssembly->ThrowIfError(targetLevel);
@@ -2624,7 +2625,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     RETURN pAssembly;
 }
 
-void AppDomain::TryIncrementalLoad(Assembly *pAssembly, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder)
+void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder &lockHolder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2632,11 +2633,38 @@ void AppDomain::TryIncrementalLoad(Assembly *pAssembly, FileLoadLevel workLevel,
 
     BOOL released = FALSE;
     FileLoadLock* pLoadLock = lockHolder.GetValue();
+    Assembly* pAssembly = pLoadLock->GetAssembly();
 
     EX_TRY
     {
-        // Do the work
-        BOOL success = pAssembly->DoIncrementalLoad(workLevel);
+        BOOL success;
+        if (workLevel == FILE_LOAD_ALLOCATE)
+        {
+            // Allocate DomainAssembly & Assembly
+            PEAssembly *pPEAssembly = pLoadLock->GetPEAssembly();
+            AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
+            LoaderAllocator *pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+            if (pLoaderAllocator == NULL)
+                pLoaderAllocator = this->GetLoaderAllocator();
+
+            AllocMemTracker amTracker;
+            AllocMemTracker *pamTracker = &amTracker;
+            NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
+            pLoadLock->SetAssembly(pDomainAssembly->GetAssembly());
+            pDomainAssembly->GetAssembly()->SetIsTenured();
+            if (pDomainAssembly->GetAssembly()->IsCollectible())
+            {
+                ((AssemblyLoaderAllocator *)pLoaderAllocator)->AddDomainAssembly(pDomainAssembly);
+            }
+            pDomainAssembly.SuppressRelease();
+            pamTracker->SuppressRelease();
+            pAssembly = pLoadLock->GetAssembly();
+            success = TRUE;
+        }
+        else
+        {
+            success = pAssembly->DoIncrementalLoad(workLevel);
+        }
 
         // Complete the level.
         if (pLoadLock->CompleteLoadLevel(workLevel, success) &&
@@ -2653,7 +2681,7 @@ void AppDomain::TryIncrementalLoad(Assembly *pAssembly, FileLoadLevel workLevel,
 
         //We will cache this error and wire this load to forever fail,
         // unless the exception is transient or the file is loaded OK but just cannot execute
-        if (!pEx->IsTransient() && !pAssembly->IsLoaded())
+        if (pAssembly != nullptr && !pEx->IsTransient() && !pAssembly->IsLoaded())
         {
             if (released)
             {
