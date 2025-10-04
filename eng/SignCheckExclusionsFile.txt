@@ -1,0 +1,15 @@
+;; Exclusions for SignCheck. Corresponds to info in Signing.props.
+;; Format: https://github.com/dotnet/arcade/blob/397316e195639450b6c76bfeb9823b40bee72d6d/src/SignCheck/Microsoft.SignCheck/Verification/Exclusion.cs#L23-L35
+;;
+;; This issue tracks a way to implement exclusions via Signing.props and avoid this extra file: https://github.com/dotnet/arcade/issues/2888
+
+;; The apphost and comhost are template files, modified by the SDK to produce the executable for FDE
+;; and SCD apps. If they are signed, the file that the SDK produces has an invalid signature and
+;; can't be signed again. More info at https://github.com/dotnet/core-setup/pull/7549.
+*apphost.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*singlefilehost.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*comhost.dll;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*apphosttemplateapphostexe.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*comhosttemplatecomhostdll.dll;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*staticapphosttemplateapphostexe.exe;;Template, DO-NOT-SIGN, https://github.com/dotnet/core-setup/pull/7549
+*dotnet.js;;Workaround, https://github.com/dotnet/core-eng/issues/9933
