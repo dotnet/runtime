@@ -69,6 +69,12 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 
 #define EP_MAX_STACK_DEPTH 100
 
+#define EP_USER_EVENTS_IOVEC_STACK_CAPACITY 30
+
+// Maximum number of bytes needed to encode (ActivityId + RelatedActivityId),
+// each as (1 marker byte + 16 byte GUID).
+#define EP_USER_EVENTS_ACTIVITY_ID_EXTENSION_MAX_SIZE (2 * (1 + EP_ACTIVITY_ID_SIZE))
+
 /*
  * EventPipe Enums.
  */
