@@ -624,12 +624,11 @@ PhaseStatus AsyncTransformation::Run()
     // ahead of time.
     for (BasicBlock* block : m_comp->Blocks())
     {
-        unsigned suspPointsInBlock = 0;
         for (GenTree* tree : LIR::AsRange(block))
         {
             if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
             {
-                JITDUMP(FMT_BB " contains await(s) that will turn into suspension points\n", block->bbNum);
+                JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
                 worklist.Push(block);
                 break;
             }
@@ -1026,7 +1025,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     {
         JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
                 m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
-        allocLayout(4, 4);
+        allocLayout(sizeof(int), sizeof(int));
     }
 
     if (layout.ReturnSize > 0)

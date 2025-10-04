@@ -95,22 +95,18 @@ namespace System.Runtime.CompilerServices
 
         public void SetException(Exception ex)
         {
-            // Only the special continuation sub types are expected.
-            Debug.Assert(GetType() != typeof(Continuation));
-
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-            Debug.Assert(mt->ContinuationOffsets->Exception != uint.MaxValue);
-
+            // Only the special continuation sub types are expected.
+            Debug.Assert(mt->IsContinuation);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
             Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->Exception)) = ex;
         }
 
         public ref byte GetResultStorageOrNull()
         {
-            // Only the special continuation sub types are expected.
-            Debug.Assert(GetType() != typeof(Continuation));
-
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
+            // Only the special continuation sub types are expected.
+            Debug.Assert(mt->IsContinuation);
             if (mt->ContinuationOffsets->Result == uint.MaxValue)
                 return ref Unsafe.NullRef<byte>();
 
@@ -120,10 +116,9 @@ namespace System.Runtime.CompilerServices
 
         public void SetKeepAlive(object? obj)
         {
-            // Only the special continuation sub types are expected.
-            Debug.Assert(GetType() != typeof(Continuation));
-
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
+            // Only the special continuation sub types are expected.
+            Debug.Assert(mt->IsContinuation);
             Debug.Assert(mt->ContinuationOffsets->KeepAlive != uint.MaxValue);
 
             ref byte data = ref RuntimeHelpers.GetRawData(this);
