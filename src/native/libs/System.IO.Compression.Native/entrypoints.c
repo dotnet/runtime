@@ -12,6 +12,7 @@
 
 static const Entry s_compressionNative[] =
 {
+#if !defined(TARGET_WASM)
     DllImportEntry(BrotliDecoderCreateInstance)
     DllImportEntry(BrotliDecoderDecompress)
     DllImportEntry(BrotliDecoderDecompressStream)
@@ -24,6 +25,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(BrotliEncoderHasMoreOutput)
     DllImportEntry(BrotliEncoderMaxCompressedSize)
     DllImportEntry(BrotliEncoderSetParameter)
+#endif // !TARGET_WASM
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)

@@ -16,14 +16,15 @@ It's **JavaScript ES6 module**
 Implements native part of the CoreCLR host and exposes it as an internal JavaScript interface to the loader.
 It is **Emscripten application** statically linked from libraries.
 
-- `host/index.ts` -> compiled -> `libBrowserHost.js` linked -> `dotnet.native.js`
-- `libBrowserHost.footer.js` -> compiled -> `libBrowserHost.js` linked -> `dotnet.native.js`
 - `libSystem.Native.Browser.js` linked -> `dotnet.native.js`
 - `libSystem.Browser.Utils.js` linked -> `dotnet.native.js`
 - `libSystem.Runtime.InteropServices.JavaScript.Native.js` linked -> `dotnet.native.js`
-- `browserhost.cpp` compiled + linked -> `dotnet.native.wasm`
 - `libSystem.Native.Browser.a` linked -> `dotnet.native.wasm`
 - `libSystem.Runtime.InteropServices.JavaScript.Native.a` linked -> `dotnet.native.wasm`
+- `host/index.ts` -> compiled -> `libBrowserHost.js` linked -> `dotnet.native.js`
+- `host/libBrowserHost.footer.js` -> compiled -> `libBrowserHost.js` linked -> `dotnet.native.js`
+- `host/browserhost.cpp` compiled -> `libBrowserHost.a` linked -> `dotnet.native.wasm`
+- `empty.c` compiled + linked -> `dotnet.native.wasm`
 
 ## Build
 TypeScript is compiled by `src/native/rollup.config.js`

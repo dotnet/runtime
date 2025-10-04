@@ -20,7 +20,7 @@ macro(append_extra_compression_libs NativeLibsExtra)
   endif ()
   list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
 
-  if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+  if (CLR_CMAKE_USE_SYSTEM_BROTLI AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     find_library(BROTLIDEC brotlidec REQUIRED)
     find_library(BROTLIENC brotlienc REQUIRED)
 
