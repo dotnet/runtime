@@ -211,7 +211,7 @@ namespace System.IO.Compression
             compressedStream.Position = 0;
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
 
-            while (decompressor.Read(bytes, 0, _bufferSize) > 0);
+            while (decompressor.Read(bytes, 0, _bufferSize) > 0) ;
             Assert.Equal(((compressedEndPosition / BufferSize) + 1) * BufferSize, compressedStream.Position);
         }
 
