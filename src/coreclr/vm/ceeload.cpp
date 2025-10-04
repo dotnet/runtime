@@ -2332,13 +2332,13 @@ MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objR
     cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
     unsigned numSeries = 0;
-    EnumerateRunsOfObjRefs(dataSize, objRefs, [&](unsigned start, unsigned count)
+    EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count)
     {
         numSeries++;
     });
 
     _ASSERTE(!pParentClass->ContainsGCPointers());
-    DWORD cbGC = numSeries == 0 ? 0 : CGCDesc::ComputeSize(numSeries);
+    size_t cbGC = numSeries == 0 ? 0 : CGCDesc::ComputeSize(numSeries);
 
     LoaderAllocator* pAllocator = GetLoaderAllocator();
     BYTE* pMemory = (BYTE*)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
@@ -2348,7 +2348,7 @@ MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objR
     pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, MethodTableStaticsFlags::None);
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(this);
-    pMT->SetNumVirtuals(numVirtuals);
+    pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
     pMT->SetParentMethodTable(pParentClass);
     pMT->SetClass(pParentClass->GetClass()); // TODO: needs its own?
     pMT->SetBaseSize(OBJECT_BASESIZE + parentInstanceSize + dataSize);
@@ -2358,12 +2358,12 @@ MethodTable* Module::CreateContinuationMethodTable(unsigned dataSize, bool* objR
         pMT->SetContainsGCPointers();
         CGCDesc::Init(pMT, numSeries);
         CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries();
-        auto writeSeries = [&](unsigned start, unsigned length) {
+        auto writeSeries = [&](size_t start, size_t length) {
             pSeries->SetSeriesSize(length - pMT->GetBaseSize());
             pSeries->SetSeriesOffset(OBJECT_SIZE + parentInstanceSize + start);
             pSeries++;
             };
-        EnumerateRunsOfObjRefs(size, objRefs, writeSeries);
+        EnumerateRunsOfObjRefs(dataSize, objRefs, writeSeries);
         _ASSERTE(pSeries == CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries() + numSeries);
     }
 
