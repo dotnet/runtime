@@ -20,7 +20,7 @@
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\WasmAppBuilder\WebcilConverter.cs" />
     <Compile Include="..\WasmAppBuilder\LogAdapter.cs" />
-    
+
     <ProjectReference Include="..\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
   </ItemGroup>
 

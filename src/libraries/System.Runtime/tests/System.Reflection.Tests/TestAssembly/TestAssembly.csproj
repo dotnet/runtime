@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ClassToInvoke.cs" />
-    <Compile Include="EquivalentValueType.cs" />    
+    <Compile Include="EquivalentValueType.cs" />
     <Compile Include="TestAssembly.cs" />
   </ItemGroup>
 </Project>

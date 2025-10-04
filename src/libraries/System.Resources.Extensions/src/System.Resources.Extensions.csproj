@@ -68,7 +68,7 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" 
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
@@ -92,7 +92,7 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
-  <Target Name="GeneratePackageTargetsFile" 
+  <Target Name="GeneratePackageTargetsFile"
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(SuggestedBindingRedirectsPackageFile)"
           AfterTargets="CoreCompile"
