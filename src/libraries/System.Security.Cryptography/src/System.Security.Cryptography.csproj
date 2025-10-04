@@ -1243,7 +1243,7 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
-    <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
