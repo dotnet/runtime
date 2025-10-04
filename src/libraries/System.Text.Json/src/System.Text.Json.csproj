@@ -193,7 +193,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlyDictionaryOfTKeyTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ISetOfTConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlySetOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\JsonCollectionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\JsonDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ListOfTConverter.cs" />
@@ -350,6 +349,10 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\ThrowHelper.cs" />
 
     <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '5.0'))">
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlySetOfTConverter.cs" />  
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

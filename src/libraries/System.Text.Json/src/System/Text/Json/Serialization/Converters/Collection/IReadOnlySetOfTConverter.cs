@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
@@ -46,4 +43,3 @@ namespace System.Text.Json.Serialization.Converters
         }
     }
 }
-#endif
