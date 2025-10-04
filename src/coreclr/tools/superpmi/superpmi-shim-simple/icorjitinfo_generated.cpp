@@ -1111,6 +1111,14 @@ bool interceptor_ICJI::getTailCallHelpers(
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    return original_ICorJitInfo->getContinuationType(dataSize, objRefs, dataOffsets);
+}
+
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
 {
     return original_ICorJitInfo->getAsyncResumptionStub();
@@ -1263,13 +1271,5 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type)
 {
     return original_ICorJitInfo->getSpecialCopyHelper(type);
-}
-
-CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
-          size_t dataSize,
-          bool* objRefs,
-          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
-{
-    return original_ICorJitInfo->getContinuationType(dataSize, objRefs, dataOffsets);
 }
 
