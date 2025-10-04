@@ -1504,8 +1504,6 @@ internal sealed unsafe partial class SOSDacImpl
         {
             hr = HResults.E_INVALIDARG;
         }
-        else if (rva == 0)
-            *il = 0;
         else
         {
             try
