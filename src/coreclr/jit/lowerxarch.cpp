@@ -247,6 +247,210 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// DeleteOperandsRecursively: tree and its operands recursively from block range
+//
+// Arguments:
+//    tree - The tree to delete from block range
+//
+void Lowering::DeleteOperandsRecursively(GenTree* tree)
+{
+    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+        DeleteOperandsRecursively(operand);
+        return GenTree::VisitResult::Continue;
+    });
+    BlockRange().Remove(tree);
+}
+
+//------------------------------------------------------------------------
+// TryLowerMorphedModIfNotCsed: Lower a GT_SUB node that is equivalent to a mod
+// a % b = a - (a / b) * b if CSE had not been able to optimize a / b next to a % b
+//
+// Arguments:
+//    binOp - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::TryLowerMorphedModIfNotCsed(GenTreeOp* binOp)
+{
+    assert(binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT, TYP_LONG));
+    var_types type = binOp->gtType;
+
+    GenTree*   binOp1    = binOp->gtGetOp1();
+    GenTree*   binOp2    = binOp->gtGetOp2();
+    genTreeOps operation = binOp2->OperGet();
+
+    switch (operation)
+    {
+        case GT_MUL:
+        {
+            // handles the case of a mod b that was morphed into a - (a / b) * b where a and b are not constants
+            GenTree* binOp21 = binOp2->gtGetOp1();
+            GenTree* binOp22 = binOp2->gtGetOp2();
+
+            if (binOp21->OperIs(GT_DIV, GT_UDIV))
+            {
+                GenTree* binOp211 = binOp21->gtGetOp1();
+                GenTree* binOp212 = binOp21->gtGetOp2();
+
+                if (GenTree::Compare(binOp1, binOp211) && GenTree::Compare(binOp22, binOp212))
+                {
+                    LIR::Use use;
+                    if (!BlockRange().TryGetUse(binOp, &use))
+                    {
+                        return nullptr;
+                    }
+                    GenTreeOp* loweredNode =
+                        comp->gtNewOperNode(binOp21->OperIs(GT_UDIV) ? GT_UMOD : GT_MOD, type, binOp211, binOp212);
+                    GenTree* insertionPoint = binOp->gtNext;
+                    DeleteOperandsRecursively(binOp);
+                    BlockRange().InsertBefore(insertionPoint, loweredNode);
+                    BlockRange().InsertBefore(loweredNode, binOp212);
+                    BlockRange().InsertBefore(binOp212, binOp211);
+                    use.ReplaceWith(loweredNode);
+                    return loweredNode;
+                }
+            }
+
+            break;
+        }
+        case GT_LSH:
+        {
+            // handles the case of a mod b / a umod b where b is constant power of 2.
+            // The a mod b is morphed into a - (a / b) * b and a / b is lowered before
+            // the tree turns up into a series of shift + (and / neg) operations
+            // we replace it with a % b and apply dedicated lowering as it yields more simple form
+            GenTree* binOp21 = binOp2->gtGetOp1();
+            GenTree* binOp22 = binOp2->gtGetOp2();
+
+            if (binOp21->OperIs(GT_RSH) && binOp22->OperIs(GT_CNS_INT, GT_CNS_LNG))
+            {
+                // handles the case of a mod b
+                GenTree* binOp211     = binOp21->gtGetOp1();
+                GenTree* binOp212     = binOp21->gtGetOp2();
+                INT64    pow2Exponent = binOp22->AsIntConCommon()->IntegralValue();
+
+                if (binOp211->OperIs(GT_ADD) && binOp212->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
+                    binOp212->AsIntConCommon()->IntegralValue() == pow2Exponent)
+                {
+                    GenTree* binOp2111 = binOp211->gtGetOp1();
+                    GenTree* binOp2112 = binOp211->gtGetOp2();
+
+                    if (binOp2111->OperIs(GT_AND) && GenTree::Compare(binOp1, binOp2112))
+                    {
+                        GenTree* binOp21111   = binOp2111->gtGetOp1();
+                        GenTree* binOp21112   = binOp2111->gtGetOp2();
+                        ssize_t  divisorValue = (ssize_t)pow(2, pow2Exponent);
+
+                        if (binOp21111->OperIs(GT_RSH) && binOp21112->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
+                            binOp21112->AsIntConCommon()->IntegralValue() == divisorValue - 1)
+                        {
+                            GenTree* binOp211111 = binOp21111->gtGetOp1();
+                            GenTree* binOp211112 = binOp21111->gtGetOp2();
+
+                            if (GenTree::Compare(binOp1, binOp211111) && binOp211112->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
+                                binOp211112->AsIntConCommon()->IntegralValue() == genTypeSize(type) * 8 - 1)
+                            {
+                                LIR::Use use;
+                                if (!BlockRange().TryGetUse(binOp, &use))
+                                {
+                                    return nullptr;
+                                }
+
+                                GenTree*   modeOp2        = comp->gtNewIconNode(divisorValue);
+                                GenTreeOp* loweredNode    = comp->gtNewOperNode(GT_MOD, type, binOp1, modeOp2);
+                                GenTree*   insertionPoint = binOp->gtNext;
+                                DeleteOperandsRecursively(binOp);
+                                BlockRange().InsertBefore(insertionPoint, loweredNode);
+                                BlockRange().InsertBefore(loweredNode, modeOp2);
+                                BlockRange().InsertBefore(modeOp2, binOp1);
+                                use.ReplaceWith(loweredNode);
+                                return LowerSignedDivOrMod(loweredNode)->gtPrev;
+                            }
+                        }
+                    }
+                }
+            }
+            else if (binOp21->OperIs(GT_NEG) && binOp22->OperIs(GT_CNS_INT, GT_CNS_LNG))
+            {
+                // handles the case of a umod b
+                GenTree* binOp211     = binOp21->gtGetOp1();
+                INT64    pow2Exponent = binOp22->AsIntConCommon()->IntegralValue();
+
+                if (binOp211->OperIs(GT_RSZ))
+                {
+                    GenTree* binOp2111 = binOp211->gtGetOp1();
+                    GenTree* binOp2112 = binOp211->gtGetOp2();
+
+                    if (GenTree::Compare(binOp1, binOp2111) && binOp2112->OperIs(GT_CNS_INT, GT_CNS_LNG) &&
+                        binOp2112->AsIntConCommon()->IntegralValue() == pow2Exponent)
+                    {
+                        LIR::Use use;
+                        if (!BlockRange().TryGetUse(binOp, &use))
+                        {
+                            return nullptr;
+                        }
+
+                        ssize_t    divisorValue   = (ssize_t)pow(2, pow2Exponent);
+                        GenTree*   modeOp2        = comp->gtNewIconNode(divisorValue);
+                        GenTreeOp* loweredNode    = comp->gtNewOperNode(GT_UMOD, type, binOp1, modeOp2);
+                        GenTree*   insertionPoint = binOp->gtNext;
+                        DeleteOperandsRecursively(binOp);
+                        BlockRange().InsertBefore(insertionPoint, loweredNode);
+                        BlockRange().InsertBefore(loweredNode, modeOp2);
+                        BlockRange().InsertBefore(modeOp2, binOp1);
+                        use.ReplaceWith(loweredNode);
+                        if (!LowerUnsignedDivOrMod(loweredNode))
+                        {
+                            ContainCheckDivOrMod(loweredNode);
+                        }
+                        return loweredNode->gtPrev;
+                    }
+                }
+            }
+            break;
+        }
+        case GT_SUB:
+        {
+            // TODO handle the case of magic division.
+            // It's a bit complicated to analyze the tree because the a mod b is morphed into a - (a / b) * b and the a
+            // / b part is lowered before we end up with two separate blocks and it's not easy to make sense of it
+
+            //  t9 =    CNS_INT   long   0x2492492492492493 $43
+            //       /--*  t8     int
+            // t14 = *  CAST      long <- uint REG rdx
+            //       /--*  t14    long
+            //       +--*  t9     long
+            // t15 = *  MULHI     long
+            //       /--*  t15    long
+            //  t4 = *  CAST      int <- long
+            //       /--*  t4     int
+            //       *  STORE_LCL_VAR int    V03 rat0
+
+            // t19 =    LCL_VAR   int    V03 rat0
+            //  t3 =    CNS_INT   int    3 $43
+            // t17 =    LCL_VAR   int    V03 rat0
+            //       /--*  t17    int
+            //       +--*  t3     int
+            // t18 = *  LSH       int
+            //       /--*  t18    int
+            //       +--*  t19    int
+            // t10 = *  SUB       int
+            //  t7 =    LCL_VAR   int    V02 tmp1         u:1 (last use) $100
+            //       /--*  t7     int
+            //       +--*  t10    int
+            // t11 = *  SUB       int    $103
+
+            break;
+        }
+        default:
+            break;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Recognizes opportunities for using target-independent "combined" nodes
@@ -309,6 +513,15 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         }
     }
 #endif // TARGET_AMD64
+
+    if (binOp->OperIs(GT_SUB) && binOp->TypeIs(TYP_INT, TYP_LONG))
+    {
+        GenTree* replacementNode = TryLowerMorphedModIfNotCsed(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
+    }
 
     return binOp->gtNext;
 }
