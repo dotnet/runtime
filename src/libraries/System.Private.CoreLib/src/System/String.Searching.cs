@@ -520,6 +520,11 @@ namespace System
         /// </returns>
         public int LastIndexOf(char value, int startIndex, int count, StringComparison comparisonType)
         {
+            if (Length == 0)
+            {
+                return -1;
+            }
+
             return comparisonType switch
             {
                 StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
@@ -751,6 +756,11 @@ namespace System
         /// </returns>
         public int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
+            if (Length == 0)
+            {
+                return -1;
+            }
+
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
             ArgumentOutOfRangeException.ThrowIfLessThan(startIndex - count + 1, 0);
