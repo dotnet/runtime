@@ -64,6 +64,7 @@ enum class common_property
     StartUpHooks,
     AppPaths,
     RuntimeIdentifier,
+    DotNetHostPath,
     // Sentinel value - new values should be defined above
     Last
 };
