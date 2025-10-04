@@ -6162,7 +6162,7 @@ namespace System.Text.RegularExpressions
 
             // SearchValues<char> is faster than a regular IndexOfAny("abcd") for sets of 4/5 values iff they are ASCII.
             // Only emit SearchValues instances when we know they'll be faster to avoid increasing the startup cost too much.
-            if (chars.Length is 4 or 5 && !RegexCharClass.IsAscii(chars))
+            if (chars.Length is 4 or 5 && !Ascii.IsValid(chars))
             {
                 Ldstr(chars.ToString());
                 Call(StringAsSpanMethod);
