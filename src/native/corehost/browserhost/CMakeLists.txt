@@ -31,12 +31,19 @@ LIST(APPEND NATIVE_LIBS
     ${STATIC_CLR_DESTINATION}/libcoreclr_static.a
     ${STATIC_CLR_DESTINATION}/libclrinterpreter.a
     ${STATIC_CLR_DESTINATION}/lib/libnativeresourcestring.a
+    ${STATIC_CLR_DESTINATION}/libcoreclrminipal.a
+    ${STATIC_CLR_DESTINATION}/lib/libcoreclrpal.a
     ${STATIC_CLR_DESTINATION}/gcinfo/libgcinfo_unix_wasm.a
+    ${STATIC_LIB_DESTINATION}/lib/libminipal.a
     ${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.a
     ${STATIC_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.a
     ${STATIC_LIB_DESTINATION}/libSystem.Native.a
     ${STATIC_LIB_DESTINATION}/libSystem.Globalization.Native.a
+    ${CMAKE_ICU_DIR}/lib/libicuuc.a
+    ${CMAKE_ICU_DIR}/lib/libicui18n.a
+    ${CMAKE_ICU_DIR}/lib/libicudata.a
     ${STATIC_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
+    ${STATIC_LIB_DESTINATION}/libz.a
     # WASM-TODO respect  $(InvariantTimezone)
     # libSystem.Native.TimeZoneData.Invariant.a
     ${STATIC_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a

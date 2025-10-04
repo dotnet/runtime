@@ -4,9 +4,6 @@
 project(BrowserHost-Static)
 set(DOTNET_PROJECT_NAME "BrowserHost-Static")
 
-configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
-
 include(configure.cmake)
 
 set(BROWSERHOST_STATIC_SOURCES
