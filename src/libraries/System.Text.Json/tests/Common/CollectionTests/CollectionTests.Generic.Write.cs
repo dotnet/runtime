@@ -957,14 +957,18 @@ namespace System.Text.Json.Serialization.Tests
             SimpleTestClassWithStringIReadOnlyCollectionWrapper obj3 = new SimpleTestClassWithStringIReadOnlyCollectionWrapper();
             SimpleTestClassWithStringIReadOnlyListWrapper obj4 = new SimpleTestClassWithStringIReadOnlyListWrapper();
             SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper obj5 = new SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper();
+#if NET
             SimpleTestClassWithStringIReadOnlySetWrapper obj6 = new SimpleTestClassWithStringIReadOnlySetWrapper();
+#endif
 
             obj1.Initialize();
             obj2.Initialize();
             obj3.Initialize();
             obj4.Initialize();
             obj5.Initialize();
+#if NET
             obj6.Initialize();
+#endif
 
             Assert.Equal(SimpleTestClassWithGenericCollectionWrappers.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj1));
             Assert.Equal(SimpleTestClassWithGenericCollectionWrappers.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj1));
@@ -981,8 +985,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj5));
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj5));
 
-            Assert.Equal(SimpleTestClassWithStringIReadOnlySetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj4));
-            Assert.Equal(SimpleTestClassWithStringIReadOnlySetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj4));
+#if NET
+            Assert.Equal(SimpleTestClassWithStringIReadOnlySetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj6));
+            Assert.Equal(SimpleTestClassWithStringIReadOnlySetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj6));
+#endif
         }
 
         [Fact]
