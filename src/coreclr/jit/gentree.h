@@ -4400,6 +4400,9 @@ struct AsyncCallInfo
     bool                        SaveAndRestoreSynchronizationContextField = false;
     bool                        HasSuspensionIndicatorDef                 = false;
     unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
+
+    // Exact debug info of call IL instruction
+    DebugInfo DebugInfo;
 };
 
 // Return type descriptor of a GT_CALL node.

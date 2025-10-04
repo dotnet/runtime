@@ -119,6 +119,7 @@ struct JitInterfaceCallbacks
     void (* getVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars);
     void (* reportRichMappings)(void * thisHandle, CorInfoExceptionClass** ppException, ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings);
+    void (* reportAsyncDebugInfo)(void * thisHandle, CorInfoExceptionClass** ppException, ICorDebugInfo::AsyncInfo* asyncInfo, ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints, ICorDebugInfo::AsyncContinuationVarInfo* vars, uint32_t numVars);
     void (* reportMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, const char* key, const void* value, size_t length);
     void* (* allocateArray)(void * thisHandle, CorInfoExceptionClass** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
@@ -1254,6 +1255,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->reportRichMappings(_thisHandle, &pException, inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->reportAsyncDebugInfo(_thisHandle, &pException, asyncInfo, suspensionPoints, vars, numVars);
     if (pException != nullptr) throw pException;
 }
 

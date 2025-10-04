@@ -431,4 +431,31 @@ public:
         // Source information about the IL instruction in the inlinee
         SourceTypes Source;
     };
+
+    struct AsyncContinuationVarInfo
+    {
+        // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
+        uint32_t VarNumber;
+        // Offset in continuation's data where this variable is stored
+        uint32_t Offset;
+    };
+
+    struct AsyncSuspensionPoint
+    {
+        // IL offset in the root method that resulted in the creation of this suspension point.
+        uint32_t RootILOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        uint32_t Inlinee;
+        // IL offset that resulted in the creation of the suspension point.
+        uint32_t ILOffset;
+        // Count of AsyncContinuationVarInfo in array of locals starting where
+        // the previous suspension point's locals end.
+        uint32_t NumContinuationVars;
+    };
+
+    struct AsyncInfo
+    {
+        // Number of suspension points in the method.
+        uint32_t NumSuspensionPoints;
+    };
 };

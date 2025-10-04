@@ -4601,7 +4601,7 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
-    void impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags);
+    void impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callInstDI);
 
     void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
 

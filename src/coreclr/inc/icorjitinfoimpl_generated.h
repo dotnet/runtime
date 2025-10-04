@@ -453,6 +453,12 @@ void reportRichMappings(
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
 
+void reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars) override;
+
 void reportMetadata(
           const char* key,
           const void* value,

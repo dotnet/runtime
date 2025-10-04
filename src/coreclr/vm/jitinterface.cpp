@@ -10723,6 +10723,9 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     , m_numInlineTreeNodes(0)
     , m_richOffsetMappings(NULL)
     , m_numRichOffsetMappings(0)
+    , m_dbgAsyncSuspensionPoints(NULL)
+    , m_dbgAsyncContinuationVars(NULL)
+    , m_numAsyncContinuationVars(0)
     , m_gphCache()
 {
     STANDARD_VM_CONTRACT;
@@ -10735,6 +10738,7 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     m_ILHeader = ilHeader;
 
     m_jitFlags = GetCompileFlags(config, m_pMethodBeingCompiled, &m_MethodInfo);
+    m_dbgAsyncInfo.NumSuspensionPoints = 0;
 }
 
 void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN  */
@@ -11166,6 +11170,28 @@ void CEECodeGenInfo::reportRichMappings(
     EE_TO_JIT_TRANSITION();
 }
 
+void CEECodeGenInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    m_dbgAsyncInfo = *asyncInfo;
+    m_dbgAsyncSuspensionPoints = suspensionPoints;
+    m_dbgAsyncContinuationVars = vars;
+    m_numAsyncContinuationVars = numVars;
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
 void CEECodeGenInfo::reportMetadata(
         const char* key,
         const void* value,
@@ -11428,7 +11454,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0) && (m_dbgAsyncInfo.NumSuspensionPoints == 0))
         return;
 
     if (patchpointInfo != NULL)
@@ -11438,14 +11464,6 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
 
     EX_TRY
     {
-        BOOL writeFlagByte = FALSE;
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-        writeFlagByte = TRUE;
-#endif
-        if (m_jitManager->IsStoringRichDebugInfo())
-            writeFlagByte = TRUE;
-
-
     const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
     InstrumentedILOffsetMapping loadTimeMapping;
 #ifdef FEATURE_REJIT
@@ -11473,13 +11491,13 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     }
 #endif
 
-        PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
+        PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(
             m_pOffsetMapping, m_iOffsetMapping, pILOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
             m_inlineTreeNodes, m_numInlineTreeNodes,
             m_richOffsetMappings, m_numRichOffsetMappings,
-            writeFlagByte,
+            &m_dbgAsyncInfo, m_dbgAsyncSuspensionPoints, m_dbgAsyncContinuationVars, m_numAsyncContinuationVars,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
         SetDebugInfo(pDebugInfo);
@@ -14807,6 +14825,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 
     amTracker.SuppressRelease();
 
+    ILStubResolver *pResolver = result->AsDynamicMethodDesc()->GetILStubResolver();
+    pResolver->SetStubTargetMethodDesc(m_pMethodBeingCompiled);
+
     const char* optimizationTierName = "UnknownTier";
 #ifdef FEATURE_TIERED_COMPILATION
     switch (ncv.GetOptimizationTier())
@@ -15003,6 +15024,16 @@ void CEEInfo::reportRichMappings(
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
