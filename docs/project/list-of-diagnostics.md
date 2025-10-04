@@ -117,6 +117,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0060`__ | The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead. |
 |  __`SYSLIB0061`__ | The Queryable MinBy and MaxBy taking an IComparer\<TSource\> are obsolete. Use the new ones that take an IComparer\<TKey\>. |
 |  __`SYSLIB0062`__ | XSLT Script blocks are not supported. |
+|  __`SYSLIB0063`__ | This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead. |
 
 ## Analyzer Warnings
 
