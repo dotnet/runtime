@@ -475,7 +475,7 @@ namespace System.Numerics
             // Extract sign bit
             ulong sign = (bitValue & double.SignMask) >> 48;
             // Detecting NaN (~0u if a is not NaN)
-            ulong realMask = (ulong)(Unsafe.BitCast<bool, sbyte>(double.IsNaN(value)) - 1);
+            ulong realMask = double.IsNaN(value) ? 0uL : ~0uL;
             // Clear sign bit
             value = double.Abs(value);
             // Rectify values that are Infinity in BFloat16. (float.Min now emits vminps instruction if one of two arguments is a constant)
