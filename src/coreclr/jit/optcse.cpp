@@ -2410,7 +2410,7 @@ void CSE_HeuristicParameterized::CaptureLocalWeights()
         }
 
         JITDUMP("V%02u," FMT_WT "\n", m_pCompiler->lvaGetLclNum(varDsc), varDsc->lvRefCntWtd());
-        m_localWeights->push_back(varDsc->lvRefCntWtd() / BB_UNITY_WEIGHT);
+        m_localWeights->push_back(varDsc->lvRefCntWtd());
     }
 }
 
@@ -4404,7 +4404,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     weight_t no_cse_cost    = 0;
     weight_t yes_cse_cost   = 0;
     unsigned extra_yes_cost = 0;
-    unsigned extra_no_cost  = 0;
+    weight_t extra_no_cost  = 0;
 
     // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
     // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
@@ -4728,6 +4728,8 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         // weighted count
         extra_no_cost = candidate->Size() - cse_use_cost;
         extra_no_cost = extra_no_cost * dsc->csdUseCount * 2;
+        // TODO-BB-UNITY-WEIGHT: Remove?
+        extra_no_cost /= 100;
     }
 
     /* no_cse_cost  is the cost estimate when we decide not to make a CSE */
@@ -4745,7 +4747,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         printf("cseRefCnt=%f, aggressiveRefCnt=%f, moderateRefCnt=%f\n", cseRefCnt, aggressiveRefCnt, moderateRefCnt);
         printf("defCnt=%f, useCnt=%f, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
                candidate->Cost(), candidate->Size(), candidate->LiveAcrossCall() ? ", LiveAcrossCall" : "");
-        printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost,
+        printf("def_cost=%d, use_cost=%d, extra_no_cost=%f, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost,
                extra_no_cost, extra_yes_cost);
 
         printf("CSE cost savings check (%f >= %f) %s\n", no_cse_cost, yes_cse_cost,
