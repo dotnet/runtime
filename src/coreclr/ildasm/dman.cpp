@@ -716,7 +716,7 @@ static void DumpResourceFile(void *GUICookie, BYTE *pRes, DWORD dwOffset, LPCWST
         if (g_pFile != NULL) // embedded resource -- dump as .resources file
         {
             FILE *pF = NULL;
-            _wfopen_s(&pF, pParam->wzFileName, W("wb"));
+            u16_fopen_s(&pF, pParam->wzFileName, W("wb"));
             if (pF)
             {
                 struct Param

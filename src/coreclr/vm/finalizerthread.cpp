@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -448,7 +449,11 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             // Writing an empty file to indicate completion
             WCHAR outputPath[MAX_PATH];
             ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
-            fclose(_wfopen(outputPath, W("w+")));
+            FILE* fp = NULL;
+            if (u16_fopen_s(&fp, outputPath, W("w+")) == 0)
+            {
+                fclose(fp);
+            }
         }
 
         if (!bPriorityBoosted)
