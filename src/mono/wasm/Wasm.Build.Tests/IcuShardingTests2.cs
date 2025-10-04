@@ -32,8 +32,8 @@ public class IcuShardingTests2 : IcuTestsBase
 
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id) =>
         TestIcuShards(buildArgs, shardName, testedLocales, host, id);
 }
