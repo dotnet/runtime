@@ -1163,6 +1163,8 @@ public:
     // the class load, which avoids the need for a 'being loaded' list
     MethodTable* CreateArrayMethodTable(TypeHandle elemType, CorElementType kind, unsigned rank, class AllocMemTracker *pamTracker);
 
+    MethodTable* CreateContinuationMethodTable(unsigned dataSize, bool* objRefs, class AllocMemTracker* pamTracker);
+
     // Module/Assembly traversal
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
