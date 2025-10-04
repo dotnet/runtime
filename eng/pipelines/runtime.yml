@@ -111,7 +111,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs -rc Release -c $(_BuildConfig) -lc $(_BuildConfig)
+            buildArgs: -s clr+libs -rc $(_BuildConfig) -c $(_BuildConfig) -lc $(_BuildConfig)
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
