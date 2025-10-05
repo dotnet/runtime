@@ -108,6 +108,10 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef TARGET_WASM
+    return false;
+
+#else // !TARGET_WASM
     Thread* finalizerThread = GetFinalizerThread();
     return finalizerThread->RequireSyncBlockCleanup()
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -116,6 +120,8 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+
+#endif // TARGET_WASM
 }
 
 static void DoExtraWorkForFinalizer(Thread* finalizerThread)
@@ -130,13 +136,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         PRECONDITION(FinalizerThread::HaveExtraWorkForFinalizer());
     }
     CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (finalizerThread->RequiresCoInitialize())
-    {
-        finalizerThread->SetApartment(Thread::AS_InMTA);
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     if (finalizerThread->RequireSyncBlockCleanup())
     {
@@ -639,6 +638,7 @@ void FinalizerThread::WaitForFinalizerThreadStart()
 // Wait for the finalizer thread to complete one pass.
 void FinalizerThread::FinalizerThreadWait()
 {
+#ifndef TARGET_WASM
     ASSERT(hEventFinalizerDone->IsValid());
     ASSERT(hEventFinalizer->IsValid());
     ASSERT(GetFinalizerThread());
@@ -692,4 +692,5 @@ void FinalizerThread::FinalizerThreadWait()
 
         _ASSERTE(status == WAIT_OBJECT_0);
     }
+#endif // !TARGET_WASM
 }
