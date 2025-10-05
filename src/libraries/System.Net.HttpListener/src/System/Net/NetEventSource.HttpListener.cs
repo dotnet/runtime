@@ -10,6 +10,6 @@ namespace System.Net
     {
         private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.HttpListener";
 
-        public NetEventSource() : base(NetEventSourceName) { }
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
     }
 }

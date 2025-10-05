@@ -16,7 +16,7 @@ namespace System.Net
     {
         private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Security";
 
-        public NetEventSource() : base(NetEventSourceName) { }
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
 
 #if WINDOWS
         // More events are defined in NetEventSource.Security.Windows.cs

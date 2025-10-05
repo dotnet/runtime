@@ -12,7 +12,7 @@ namespace System.Net
     {
         private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Http";
 
-        public NetEventSource() : base(NetEventSourceName) { }
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
 
         private const int UriBaseAddressId = NextAvailableEventId;
         private const int ContentNullId = UriBaseAddressId + 1;
