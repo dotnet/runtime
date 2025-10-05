@@ -438,7 +438,7 @@ void    AsmMan::EndAssembly()
                     size_t dwBytesRead;
                     
                     if ((dwBytesRead = fread(m_sStrongName.m_pbPublicKey, 1, m_sStrongName.m_cbPublicKey, fp)) <= m_sStrongName.m_cbPublicKey) {
-                        HRESULT hr = HRESULT_FROM_LAST_STDIO();
+                        HRESULT hr = HRESULTFromErrno();
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
                         report->error("Failed to read key file '%s': 0x%d\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;

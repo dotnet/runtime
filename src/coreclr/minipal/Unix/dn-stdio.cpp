@@ -83,7 +83,7 @@ int fsetpos_64(FILE* stream, int64_t pos)
 #define ERROR_ALREADY_EXISTS 183L
 #define ERROR_FILENAME_EXCED_RANGE 206L
 
-HRESULT HRESULT_FROM_LAST_STDIO()
+HRESULT HRESULTFromErrno()
 {
     // maps the common I/O errors
     // based on FILEGetLastErrorFromErrno

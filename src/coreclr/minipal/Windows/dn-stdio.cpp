@@ -32,7 +32,17 @@ int fsetpos_64(FILE* stream, int64_t pos)
     return fsetpos(stream, &fpos);
 }
 
-HRESULT HRESULT_FROM_LAST_STDIO()
+HRESULT HRESULTFromErrno()
 {
-    return HRESULT_FROM_WIN32(::GetLastError());
+    // stdio functions preserve last error in simple cases.
+    // It's sufficient for logging only.
+    HRESULT hr = HRESULT_FROM_WIN32(::GetLastError());
+
+    if (SUCCEEDED(hr) && errno != 0)
+    {
+        // Fallback when last error was cleared unexpectedly.
+        return E_FAIL;
+    }
+
+    return hr;
 }
