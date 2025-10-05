@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -26,9 +27,34 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
-        /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
-        private static string EscapeXmlComment(string text) =>
-            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+        /// <summary>Escapes characters that are invalid in XML comments.</summary>
+        private static string EscapeXmlComment(string text)
+        {
+            if (!string.IsNullOrEmpty(text))
+            {
+                StringBuilder sb = new(text.Length);
+                foreach (char c in text)
+                {
+                    switch ((int)c)
+                    {
+                        // Escape XML entities.
+                        case '&': sb.Append("&amp;"); break;
+                        case '<': sb.Append("&lt;"); break;
+                        case '>': sb.Append("&gt;"); break;
+
+                        // Propagate all other valid XML characters as-is. Control chars are considered invalid.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+
+                        // Use Unicode escape sequences for everything else.
+                        default: sb.Append($"\\u{(int)c:X4}"); break;
+                    }
+                }
+
+                text = sb.ToString();
+            }
+
+            return text;
+        }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
@@ -59,7 +85,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeXmlComment(Literal(regexMethod.Pattern, quote: false))}</code><br/>");
+            writer.WriteLine($"/// <code>{EscapeXmlComment(regexMethod.Pattern)}</code><br/>");
             if (regexMethod.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");

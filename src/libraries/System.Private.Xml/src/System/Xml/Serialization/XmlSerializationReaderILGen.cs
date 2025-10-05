@@ -3047,7 +3047,8 @@ namespace System.Xml.Serialization
                 {
                 }
 
-                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset)
+                    || element.Mapping.TypeDesc!.Type == typeof(DateOnly) || element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                        "get_Reader",

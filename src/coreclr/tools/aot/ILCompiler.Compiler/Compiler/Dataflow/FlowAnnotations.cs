@@ -504,6 +504,13 @@ namespace ILLink.Shared.TrimAnalysis
 
                     PropertyPseudoDesc property = new PropertyPseudoDesc(ecmaType, propertyHandle);
 
+                    if (CompilerGeneratedNames.IsExtensionType(ecmaType.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
+
                     if (!IsTypeInterestingForDataflow(property.Signature.ReturnType))
                     {
                         _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings, property.GetDisplayName());
@@ -592,39 +599,21 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    if (IsAutoProperty(property))
+                    FieldDesc? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
+                    if (backingField is not null)
                     {
-                        FieldDesc? backingField = null;
-                        if ((property.SetMethod is not null
-                                && property.SetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
-                                && backingFieldFromSetter is null)
-                            || (property.GetMethod is not null
-                                && property.GetMethod.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
-                                && backingFieldFromGetter is null))
+                        bool validBackingFieldFound = backingFieldFromGetter is null
+                            || backingFieldFromSetter is null
+                            || backingFieldFromGetter == backingFieldFromSetter;
+                        if (validBackingFieldFound)
                         {
-                            // We failed to find the backing field of an auto-property accessor
-                            _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        }
-                        else if (backingFieldFromGetter is not null && backingFieldFromSetter is not null
-                            && backingFieldFromSetter != backingFieldFromGetter)
-                        {
-                            // We found two different backing fields for the getter and the setter
-                            _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        }
-                        else
-                        {
-                            // We either have a single auto-property accessor or both accessors point to the same backing field
-                            backingField = backingFieldFromSetter ?? backingFieldFromGetter;
-                        }
-
-                        if (backingField != null)
-                        {
-                            if (annotatedFields.Any(a => a.Field == backingField))
+                            if (annotatedFields.Any(a => a.Field == backingField && a.Annotation != annotation))
                             {
                                 _logger.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
                             }
                             else
                             {
+                                // Unique backing field with no conflicts with property or existing field
                                 annotatedFields.Add(new FieldAnnotation(backingField, annotation));
                             }
                         }

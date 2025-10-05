@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary", "CollectionStructExplicit" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary", "CollectionStructExplicit" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::Program.MyClassWithCustomCollections instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            ValidateConfigurationKeys(typeof(global::Program.MyClassWithCustomCollections), s_configKeys_ProgramMyClassWithCustomCollections, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(global::Program.MyClassWithCustomCollections), s_configKeys_Program__MyClassWithCustomCollections, configuration, binderOptions);
 
             var value1 = configuration.GetSection("CustomDictionary");
             if (AsConfigWithChildren(value1) is IConfigurationSection section2)

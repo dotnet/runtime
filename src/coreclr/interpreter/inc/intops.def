@@ -362,6 +362,7 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_NULLCHECK, "call.nullcheck", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLDELEGATE, "call.delegate", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLDELEGATE_TAIL, "call.delegate.tail", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI, "calli", 6, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only
@@ -395,6 +396,9 @@ OPDEF(INTOP_CALL_HELPER_P_GA, "call.helper.p.ga", 6, 1, 2, InterpOpGenericHelper
 // Call a helper function with a signature of void helper(AddrOfDVar, TypeOrGenericArg, SVar))
 OPDEF(INTOP_CALL_HELPER_V_APS, "call.helper.v.aps", 5, 1, 1, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_V_AGS, "call.helper.v.ags", 6, 1, 2, InterpOpGenericHelperFtn)
+
+// Call a helper function with a signature of void helper(SVar1, AddrOfSVar2)
+OPDEF(INTOP_CALL_HELPER_V_SA, "call.helper.v.sa", 4, 0, 2, InterpOpHelperFtnNoArgs)
 
 OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 
