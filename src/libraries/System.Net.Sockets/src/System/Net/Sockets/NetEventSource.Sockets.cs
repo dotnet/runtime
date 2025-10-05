@@ -12,7 +12,7 @@ namespace System.Net
     {
         private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Sockets";
 
-        public NetEventSource() : base(NetEventSourceName) { }
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
 
         private const int AcceptedId = NextAvailableEventId;
         private const int ConnectedId = AcceptedId + 1;

@@ -13,7 +13,7 @@ namespace System.Net
     {
         private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.WebSockets";
 
-        public NetEventSource() : base(NetEventSourceName) { }
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
 
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
