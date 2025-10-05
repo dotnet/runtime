@@ -434,7 +434,7 @@ namespace System
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
-            int subIndex = this.AsSpan(startIndex..(startIndex + count)).IndexOf(valueChars, comparisonType);
+            int subIndex = this.AsSpan(startIndex, count).IndexOf(valueChars, comparisonType);
             return subIndex < 0 ? subIndex : startIndex + subIndex;
         }
 
@@ -771,7 +771,7 @@ namespace System
 
             int startIndexFromZero = startIndex - count + 1;
 
-            int subIndex = this.AsSpan(startIndexFromZero..(startIndexFromZero + count)).LastIndexOf(valueChars, comparisonType);
+            int subIndex = this.AsSpan(startIndexFromZero, count).LastIndexOf(valueChars, comparisonType);
             return subIndex < 0 ? subIndex : startIndexFromZero + subIndex;
         }
     }
