@@ -1562,16 +1562,16 @@ namespace System.Tests
 
         public static IEnumerable<object[]> IndexOf_Rune_StringComparison_TestData()
         {
-            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC4f'), 0, int.MaxValue, StringComparison.Ordinal, -1 };
-            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 5 };
+            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC4f'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 5 };
 
-            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, 5 };
-            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), 0, int.MaxValue, StringComparison.Ordinal, -1 };
+            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 5 };
+            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
 
-            yield return new object[] { "hello", new Rune('o'), 3, 2, StringComparison.Ordinal, 4 };
-            yield return new object[] { "HELLO", new Rune('o'), 3, 2, StringComparison.OrdinalIgnoreCase, 4 };
-            yield return new object[] { "hello\uD801\uDC28", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.Ordinal, 5 };
-            yield return new object[] { "HELLO\uD801\uDC00", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.OrdinalIgnoreCase, 5 };
+            yield return new object[] { "hello", new Rune('o'), 3, 2, StringComparison.Ordinal, null, 4 };
+            yield return new object[] { "HELLO", new Rune('o'), 3, 2, StringComparison.OrdinalIgnoreCase, null, 4 };
+            yield return new object[] { "hello\uD801\uDC28", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.Ordinal, null, 5 };
+            yield return new object[] { "HELLO\uD801\uDC00", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.OrdinalIgnoreCase, null, 5 };
 
             yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
             yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
