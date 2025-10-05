@@ -112,11 +112,13 @@ extends:
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs -c $(_BuildConfig)
-timeoutInMinutes: 120
+            timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
                   testBuildArgs: test JIT/interpreter/Interpreter.csproj
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),

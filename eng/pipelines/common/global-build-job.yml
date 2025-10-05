@@ -136,14 +136,6 @@ jobs:
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
         value: ''
-      - name: priorityArg
-        value: ''
-      - name: runtimeFlavorArgs
-        value: ''
-      - name: runtimeVariantArg
-        value: ''
-      - name: librariesConfigurationArg
-        value: ''
 
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
