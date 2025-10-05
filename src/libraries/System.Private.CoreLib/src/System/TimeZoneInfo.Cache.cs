@@ -689,7 +689,7 @@ namespace System
                             {
                                 // previous year transition end at the current year transition start, then include last year transition
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(previousRule.DateStart, previousRule.DateEnd, previousRule.BaseUtcOffsetDelta + (previousRule.HasDaylightSaving ? previousRule.DaylightDelta : TimeSpan.Zero), previousRule.HasDaylightSaving));
+                                    new TimeTransition(previousRule.DateStart, previousRule.DateEnd, GetRuleFullUtcOffset(previousRule), previousRule.HasDaylightSaving));
                             }
                         }
                         else
@@ -708,7 +708,7 @@ namespace System
                                 //
 
                                 // Get previous rule end in UTC coordinates
-                                DateTime previousYearEndUtc = SafeCreateDateTimeFromTicks(previousYearEnd.Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks + previousRule.DaylightDelta.Ticks) - 1);
+                                DateTime previousYearEndUtc = GetUtcDateTimeFromLocalTicks(previousYearEnd.Ticks, previousRule, includeDaylightDelta: true, tickAdjustment: -1);
 
                                 if (previousYearEndUtc.Ticks < rule.DateStart.Ticks - 1)
                                 {
@@ -721,9 +721,9 @@ namespace System
                                     // previous year transition end at the current year transition start, then include last year transition
                                     AddTransition(ref allTransitions, ref transitionCount,
                                         new TimeTransition(
-                                                SafeCreateDateTimeFromTicks(previousYearStart.Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks)),
+                                                GetUtcDateTimeFromLocalTicks(previousYearStart.Ticks, previousRule),
                                                 SafeCreateDateTimeFromTicks(rule.DateStart.Ticks - 1),
-                                                previousRule.BaseUtcOffsetDelta + (previousRule.HasDaylightSaving ? previousRule.DaylightDelta : TimeSpan.Zero),
+                                                GetRuleFullUtcOffset(previousRule),
                                                 previousRule.HasDaylightSaving));
                                 }
                             }
@@ -733,7 +733,7 @@ namespace System
                                 // Previous year has two transition periods. One start from the year beginning while the second go through the end of the year
                                 //
 
-                                long previousEndOfYearUtcTicks = new DateTime(year, 1, 1).Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks + previousRule.DaylightDelta.Ticks) - 1;
+                                long previousEndOfYearUtcTicks = startOfYear.Ticks - GetTransitionUtcOffsetTicks(previousRule, includeDaylightDelta: true) - 1;
                                 DateTime previousEndOfYearUtc = SafeCreateDateTimeFromTicks(previousEndOfYearUtcTicks, DateTimeKind.Utc);
 
                                 if (previousEndOfYearUtc.Ticks < rule.DateStart.Ticks - 1)
@@ -744,10 +744,10 @@ namespace System
                                 }
 
                                 // The daylight start should be around the end of the year and go through the end
-                                DateTime previousYearStartUtc = SafeCreateDateTimeFromTicks(previousYearStart.Ticks - (_baseUtcOffset.Ticks + previousRule.BaseUtcOffsetDelta.Ticks)); // daylight offset is not counted in this start
+                                DateTime previousYearStartUtc = GetUtcDateTimeFromLocalTicks(previousYearStart.Ticks, previousRule); // daylight offset is not counted in this start
 
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(previousYearStartUtc, previousEndOfYearUtc, previousRule.BaseUtcOffsetDelta + (previousRule.HasDaylightSaving ? previousRule.DaylightDelta : TimeSpan.Zero), previousRule.HasDaylightSaving));
+                                    new TimeTransition(previousYearStartUtc, previousEndOfYearUtc, GetRuleFullUtcOffset(previousRule), previousRule.HasDaylightSaving));
                             }
                         }
                     }
@@ -755,11 +755,10 @@ namespace System
                     {
                         // no rule is found
                         DateTime transitionStart = new DateTime(year > 1 ? year - 1 : 1, 1, 1);
+                        transitionStart = SafeCreateDateTimeFromTicks(transitionStart.Ticks - _baseUtcOffset.Ticks);
 
-                        if (rule.DateStart < transitionStart)
+                        if (transitionStart < rule.DateStart)
                         {
-                            transitionStart = SafeCreateDateTimeFromTicks(transitionStart.Ticks - _baseUtcOffset.Ticks);
-
                             AddTransition(ref allTransitions, ref transitionCount,
                                 new TimeTransition(transitionStart, SafeCreateDateTimeFromTicks(rule.DateStart.Ticks - 1), TimeSpan.Zero, false));
                         }
@@ -771,7 +770,7 @@ namespace System
                 //
 
                 AddTransition(ref allTransitions, ref transitionCount,
-                    new TimeTransition(rule.DateStart, rule.DateEnd, rule.BaseUtcOffsetDelta + (rule.HasDaylightSaving ? rule.DaylightDelta : TimeSpan.Zero), rule.HasDaylightSaving));
+                    new TimeTransition(rule.DateStart, rule.DateEnd, GetRuleFullUtcOffset(rule), rule.HasDaylightSaving));
 
                 //
                 // Ensure covering the whole year by adding transitions if necessary
@@ -785,21 +784,21 @@ namespace System
                     ruleIndex++;
                     if (ruleIndex < _adjustmentRules.Length && _adjustmentRules[ruleIndex].DateStart.Year <= allTransitions[transitionCount - 1].DateEnd.Year) // ensure the year is included in the rule
                     {
-                        AdjustmentRule? nextYearRule = _adjustmentRules[ruleIndex];
-                        if (nextYearRule.NoDaylightTransitions)
+                        AdjustmentRule? nextRule = _adjustmentRules[ruleIndex];
+                        if (nextRule.NoDaylightTransitions)
                         {
                             //
                             // Next year Rule is Linux style with Utc start and end dates
                             //
 
-                            if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextYearRule.DateStart.Ticks - 1)
+                            if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextRule.DateStart.Ticks - 1)
                             {
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextYearRule.DateStart.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false));
+                                    new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextRule.DateStart.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false));
                             }
 
                             AddTransition(ref allTransitions, ref transitionCount,
-                                new TimeTransition(nextYearRule.DateStart, nextYearRule.DateEnd, nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero), nextYearRule.HasDaylightSaving));
+                                new TimeTransition(nextRule.DateStart, nextRule.DateEnd, GetRuleFullUtcOffset(nextRule), nextRule.HasDaylightSaving));
                         }
                         else
                         {
@@ -807,9 +806,9 @@ namespace System
                             // Next Rule is Windows style with local start and end dates
                             //
 
-                            int nextYear = Math.Min(year + 1, nextYearRule.DateStart.Year);
-                            DateTime nextYearStart = StartTransitionTimeToDateTime(nextYear, nextYearRule); // in local time
-                            DateTime nextYearEnd = EndTransitionTimeToDateTime(nextYear, nextYearRule);     // in local time
+                            int nextYear = Math.Min(year + 1, nextRule.DateStart.Year);
+                            DateTime nextYearStart = StartTransitionTimeToDateTime(nextYear, nextRule); // in local time
+                            DateTime nextYearEnd = EndTransitionTimeToDateTime(nextYear, nextRule);     // in local time
 
                             if (nextYearStart < nextYearEnd)
                             {
@@ -818,21 +817,21 @@ namespace System
                                 //
 
                                 // Get next rule start in UTC coordinates
-                                DateTime nextYearStartUtc = SafeCreateDateTimeFromTicks(nextYearStart.Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks));
+                                DateTime nextYearStartUtc = GetUtcDateTimeFromLocalTicks(nextYearStart.Ticks, nextRule);
                                 if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextYearStartUtc.Ticks - 1)
                                 {
                                     // Fill the transition gap between the previous year transition end and next year transition start
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false));
+                                        new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false));
                                 }
 
                                 // Add next year transition
                                 AddTransition(ref allTransitions, ref transitionCount,
                                     new TimeTransition(
                                             nextYearStartUtc,
-                                            SafeCreateDateTimeFromTicks(nextYearEnd.Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks + nextYearRule.DaylightDelta.Ticks) - 1),
-                                            nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero),
-                                            nextYearRule.HasDaylightSaving));
+                                            GetUtcDateTimeFromLocalTicks(nextYearEnd.Ticks, nextRule, includeDaylightDelta: true, tickAdjustment: -1),
+                                            GetRuleFullUtcOffset(nextRule),
+                                            nextRule.HasDaylightSaving));
                             }
                             else // nextYearStart > nextYearEnd
                             {
@@ -841,15 +840,15 @@ namespace System
                                 //
 
                                 // The daylight should be starting from the beginning in the year and then go till next year transition end date.
-                                DateTime nextYearEndUtc = SafeCreateDateTimeFromTicks(nextYearEnd.Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks + nextYearRule.DaylightDelta.Ticks) - 1);
-                                DateTime nextBeginningOfYearUtc = SafeCreateDateTimeFromTicks(new DateTime(year + 1, 1, 1).Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks + nextYearRule.DaylightDelta.Ticks));
+                                DateTime nextYearEndUtc = GetUtcDateTimeFromLocalTicks(nextYearEnd.Ticks, nextRule, includeDaylightDelta: true, tickAdjustment: -1);
+                                DateTime nextBeginningOfYearUtc = GetUtcDateTimeFromLocalTicks(new DateTime(year + 1, 1, 1).Ticks, nextRule, includeDaylightDelta: true);
 
                                 if (allTransitions[transitionCount - 1].DateEnd.Ticks < nextBeginningOfYearUtc.Ticks - 1)
                                 {
                                     // Fill the gap between the previous year transition end and next year transition start
                                     AddTransition(ref allTransitions, ref transitionCount,
                                         // Use previous year rule, daylight included as the year started with the daylight
-                                        new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextBeginningOfYearUtc.AddTicks(-1), rule.BaseUtcOffsetDelta + (rule.HasDaylightSaving ? rule.DaylightDelta : TimeSpan.Zero), rule.HasDaylightSaving));
+                                        new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), nextBeginningOfYearUtc.AddTicks(-1), GetRuleFullUtcOffset(rule), rule.HasDaylightSaving));
                                 }
 
                                 if (allTransitions[transitionCount - 1].DateEnd < nextYearEndUtc)
@@ -858,21 +857,21 @@ namespace System
                                         new TimeTransition(
                                                 allTransitions[transitionCount - 1].DateEnd.AddTicks(1),
                                                 nextYearEndUtc,
-                                                nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero),
-                                                nextYearRule.HasDaylightSaving));
+                                                GetRuleFullUtcOffset(nextRule),
+                                                nextRule.HasDaylightSaving));
                                 }
                             }
 
                             if (allTransitions[transitionCount - 1].DateEnd < endOfCurrentYear)
                             {
                                 // Ensure covering up to and including the end of the year in local and Utc time
-                                if (nextYearRule.BaseUtcOffsetDelta.Ticks > 0)
+                                if (nextRule.BaseUtcOffsetDelta.Ticks > 0)
                                 {
-                                    endOfCurrentYear = SafeCreateDateTimeFromTicks(endOfCurrentYear.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks);
+                                    endOfCurrentYear = SafeCreateDateTimeFromTicks(endOfCurrentYear.Ticks + nextRule.BaseUtcOffsetDelta.Ticks);
                                 }
 
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), endOfCurrentYear, nextYearRule.BaseUtcOffsetDelta, false));
+                                    new TimeTransition(allTransitions[transitionCount - 1].DateEnd.AddTicks(1), endOfCurrentYear, nextRule.BaseUtcOffsetDelta, false));
                             }
 
                             break; // We know Windows Rules cover the whole year
@@ -908,11 +907,10 @@ namespace System
 
                 bool startWithDaylightOn = rule.IsStartDateMarkerForBeginningOfYear();
 
-                DateTime utcStart = SafeCreateDateTimeFromTicks(localStart.Ticks - (_baseUtcOffset.Ticks + rule.BaseUtcOffsetDelta.Ticks + (startWithDaylightOn ? rule.DaylightDelta.Ticks : 0)), DateTimeKind.Utc);
+                DateTime utcStart = GetUtcDateTimeFromLocalTicks(localStart.Ticks, rule, includeDaylightDelta: startWithDaylightOn, kind: DateTimeKind.Utc);
+                DateTime utcEnd = GetUtcDateTimeFromLocalTicks(localEnd.Ticks, rule, includeDaylightDelta: true, tickAdjustment: -1, kind: DateTimeKind.Utc);
 
-                DateTime utcEnd = SafeCreateDateTimeFromTicks(localEnd.Ticks - (_baseUtcOffset.Ticks + rule.BaseUtcOffsetDelta.Ticks + rule.DaylightDelta.Ticks) - 1, DateTimeKind.Utc);
-
-                long startOfCurrentYearUtcTicks = new DateTime(year, 1, 1).Ticks - (_baseUtcOffset.Ticks + rule.BaseUtcOffsetDelta.Ticks + (startWithDaylightOn || localStart > localEnd ? rule.DaylightDelta.Ticks : 0));
+                long startOfCurrentYearUtcTicks = new DateTime(year, 1, 1).Ticks - GetTransitionUtcOffsetTicks(rule, includeDaylightDelta: startWithDaylightOn || localStart > localEnd);
                 DateTime startOfCurrentYearUtc = SafeCreateDateTimeFromTicks(startOfCurrentYearUtcTicks, DateTimeKind.Utc);
                 DateTime currentYearStart = new DateTime(year, 1, 1);
 
@@ -928,32 +926,34 @@ namespace System
                         // cover the beginning of the current year using the previous year transitions
                         //
 
-                        AdjustmentRule? previousYearRule =
+                        AdjustmentRule? previousRule =
                             rule.DateStart.Year < year ?
                                 rule :
-                                ruleIndex > 0 && _adjustmentRules[ruleIndex - 1].DateStart.Year <= year - 1 && _adjustmentRules[ruleIndex - 1].DateEnd.Year >= year - 1 ?
-                                    _adjustmentRules[ruleIndex - 1] :
-                                    null;
+                                ruleIndex > 0 &&
+                                _adjustmentRules[ruleIndex - 1].DateStart.Year <= year - 1 &&
+                                _adjustmentRules[ruleIndex - 1].DateEnd.Year >= year - 1 ?
+                                    _adjustmentRules[ruleIndex - 1] : null;
 
-                        if (previousYearRule is not null)
+                        if (previousRule is not null)
                         {
-                            if (previousYearRule.NoDaylightTransitions)
+                            if (previousRule.NoDaylightTransitions)
                             {
                                 //
                                 // Previous rule is Linux style with Utc start and end dates
                                 //
 
-                                DateTime previousYearTransitionEnd = SafeCreateDateTimeFromTicks(previousYearRule.DateEnd.Ticks + 1); // UTC coordinate
+                                DateTime previousYearTransitionEnd = SafeCreateDateTimeFromTicks(previousRule.DateEnd.Ticks + 1); // UTC coordinate
                                 if (previousYearTransitionEnd.Ticks <= startOfCurrentYearUtc.Ticks - 1)
                                 {
                                     // Gap between the last year transition end and current year transition start. no daylight
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(previousYearTransitionEnd, SafeCreateDateTimeFromTicks(startOfCurrentYearUtc.Ticks - 1), previousYearRule.BaseUtcOffsetDelta, false));
+                                        new TimeTransition(previousYearTransitionEnd, SafeCreateDateTimeFromTicks(startOfCurrentYearUtc.Ticks - 1), previousRule.BaseUtcOffsetDelta, false));
                                 }
                                 else
                                 {
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(previousYearRule.DateStart, previousYearRule.DateEnd, previousYearRule.BaseUtcOffsetDelta + (previousYearRule.HasDaylightSaving ? previousYearRule.DaylightDelta : TimeSpan.Zero), previousYearRule.HasDaylightSaving));
+                                        new TimeTransition(previousRule.DateStart, previousRule.DateEnd, GetRuleFullUtcOffset(previousRule), previousRule.HasDaylightSaving));
+
                                 }
                             }
                             else
@@ -962,8 +962,8 @@ namespace System
                                 // Previous rule is Windows style with local start and end dates
                                 //
 
-                                DateTime previousYearStart = StartTransitionTimeToDateTime(year - 1, previousYearRule); // Local time
-                                DateTime previousYearEnd = EndTransitionTimeToDateTime(year - 1, previousYearRule); // Local time
+                                DateTime previousYearStart = StartTransitionTimeToDateTime(year - 1, previousRule); // Local time
+                                DateTime previousYearEnd = EndTransitionTimeToDateTime(year - 1, previousRule); // Local time
 
                                 if (previousYearStart < previousYearEnd)
                                 {
@@ -972,21 +972,21 @@ namespace System
                                     //
 
                                     // Get previous rule end in UTC coordinates
-                                    DateTime previousYearEndUtc = SafeCreateDateTimeFromTicks(previousYearEnd.Ticks - (_baseUtcOffset.Ticks + previousYearRule.BaseUtcOffsetDelta.Ticks + previousYearRule.DaylightDelta.Ticks));
+                                    DateTime previousYearEndUtc = GetUtcDateTimeFromLocalTicks(previousYearEnd.Ticks, previousRule, includeDaylightDelta: true);
 
                                     // previous year transition end at the current year transition start, then include last year transition
                                     AddTransition(ref allTransitions, ref transitionCount,
                                         new TimeTransition(
-                                                SafeCreateDateTimeFromTicks(previousYearStart.Ticks - (_baseUtcOffset.Ticks + previousYearRule.BaseUtcOffsetDelta.Ticks)),
+                                                GetUtcDateTimeFromLocalTicks(previousYearStart.Ticks, previousRule),
                                                 SafeCreateDateTimeFromTicks(previousYearEndUtc.Ticks - 1),
-                                                previousYearRule.BaseUtcOffsetDelta + (previousYearRule.HasDaylightSaving ? previousYearRule.DaylightDelta : TimeSpan.Zero),
-                                                previousYearRule.HasDaylightSaving));
+                                                GetRuleFullUtcOffset(previousRule),
+                                                previousRule.HasDaylightSaving));
 
                                     if (previousYearEndUtc.Ticks < startOfCurrentYearUtc.Ticks - 1)
                                     {
                                         // Gap between the last year transition end and current year transition start. no daylight
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(previousYearEndUtc, startOfCurrentYearUtc.AddTicks(-1), previousYearRule.BaseUtcOffsetDelta, false));
+                                            new TimeTransition(previousYearEndUtc, startOfCurrentYearUtc.AddTicks(-1), previousRule.BaseUtcOffsetDelta, false));
                                     }
                                 }
                                 else // previousYearStart > previousYearEnd
@@ -996,14 +996,13 @@ namespace System
                                     //
 
                                     // The daylight start should be around the end of the year and go through the end
-                                    DateTime previousYearStartUtc = SafeCreateDateTimeFromTicks(previousYearStart.Ticks - (_baseUtcOffset.Ticks + previousYearRule.BaseUtcOffsetDelta.Ticks)); // daylight offset is not counted in this start
-
+                                    DateTime previousYearStartUtc = GetUtcDateTimeFromLocalTicks(previousYearStart.Ticks, previousRule); // daylight offset is not counted in this start
                                     AddTransition(ref allTransitions, ref transitionCount,
                                         new TimeTransition(
                                             previousYearStartUtc,
                                             SafeCreateDateTimeFromTicks(startOfCurrentYearUtc.Ticks - 1),
-                                            previousYearRule.BaseUtcOffsetDelta + (previousYearRule.HasDaylightSaving ? previousYearRule.DaylightDelta : TimeSpan.Zero),
-                                            previousYearRule.HasDaylightSaving));
+                                            GetRuleFullUtcOffset(previousRule),
+                                            previousRule.HasDaylightSaving));
                                 }
                             }
                         }
@@ -1031,14 +1030,14 @@ namespace System
                     //
 
                     AddTransition(ref allTransitions, ref transitionCount,
-                        new TimeTransition(utcStart, utcEnd, rule.BaseUtcOffsetDelta + (rule.HasDaylightSaving ? rule.DaylightDelta : TimeSpan.Zero), rule.HasDaylightSaving));
+                        new TimeTransition(utcStart, utcEnd, GetRuleFullUtcOffset(rule), rule.HasDaylightSaving));
 
                     //
                     // Check if we still need to cover the rest of the year
                     //
 
                     DateTime endOfCurrentYear = year < MaxYear ? new DateTime(year + 1, 1, 1).AddTicks(-1) : DateTime.MaxValue;
-                    long endOfCurrentYearUtcTicks = endOfCurrentYear.Ticks - (_baseUtcOffset.Ticks + rule.BaseUtcOffsetDelta.Ticks + (rule.IsEndDateMarkerForEndOfYear() ? rule.DaylightDelta.Ticks : 0));
+                    long endOfCurrentYearUtcTicks = endOfCurrentYear.Ticks - GetTransitionUtcOffsetTicks(rule, includeDaylightDelta: rule.IsEndDateMarkerForEndOfYear());
                     DateTime endOfCurrentYearUtc = SafeCreateDateTimeFromTicks(endOfCurrentYearUtcTicks, DateTimeKind.Utc);
                     if (utcEnd < endOfCurrentYearUtc)
                     {
@@ -1049,26 +1048,29 @@ namespace System
                     // Check if end of the current year Utc time cover the whole year, we are sure the whole local year is already covered
                     if (endOfCurrentYearUtc < endOfCurrentYear)
                     {
-                        AdjustmentRule? nextYearRule = (rule.DateStart.Year <= year + 1 && rule.DateEnd.Year >= year + 1) ? rule :
-                                                                        ruleIndex < _adjustmentRules.Length - 1 && _adjustmentRules[ruleIndex + 1].DateStart.Year <= year + 1 && _adjustmentRules[ruleIndex + 1].DateEnd.Year >= year + 1 ?
-                                                                            _adjustmentRules[ruleIndex + 1] :
-                                                                            null;
-                        if (nextYearRule is not null)
+                        AdjustmentRule? nextRule = (rule.DateStart.Year <= year + 1 &&
+                            rule.DateEnd.Year >= year + 1) ?
+                            rule : ruleIndex < _adjustmentRules.Length - 1 &&
+                                _adjustmentRules[ruleIndex + 1].DateStart.Year <= year + 1 &&
+                                _adjustmentRules[ruleIndex + 1].DateEnd.Year >= year + 1 ?
+                                _adjustmentRules[ruleIndex + 1] : null;
+
+                        if (nextRule is not null)
                         {
-                            if (nextYearRule.NoDaylightTransitions)
+                            if (nextRule.NoDaylightTransitions)
                             {
                                 //
                                 // Linux style rule, it is unlikely case we get a Linux style rule after Windows style rule but we handle it anyway just in case in the future things can change
                                 //
 
-                                if (endOfCurrentYearUtc.Ticks < nextYearRule.DateStart.Ticks - 1)
+                                if (endOfCurrentYearUtc.Ticks < nextRule.DateStart.Ticks - 1)
                                 {
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearRule.DateStart.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false));
+                                        new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextRule.DateStart.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false));
                                 }
 
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(nextYearRule.DateStart, nextYearRule.DateEnd, nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero), nextYearRule.HasDaylightSaving));
+                                    new TimeTransition(nextRule.DateStart, nextRule.DateEnd, GetRuleFullUtcOffset(nextRule), nextRule.HasDaylightSaving));
                             }
                             else
                             {
@@ -1076,13 +1078,11 @@ namespace System
                                 // Next rule is Windows style with local start and end dates
                                 //
 
-                                DateTime nextYearStart = StartTransitionTimeToDateTime(year + 1, nextYearRule); // Local time
-                                DateTime nextYearEnd = EndTransitionTimeToDateTime(year + 1, nextYearRule); // Local time
+                                DateTime nextYearStart = StartTransitionTimeToDateTime(year + 1, nextRule); // Local time
+                                DateTime nextYearEnd = EndTransitionTimeToDateTime(year + 1, nextRule); // Local time
 
-                                DateTime nextYearStartUtc = SafeCreateDateTimeFromTicks(nextYearStart.Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks +
-                                                                                                        (nextYearRule.IsStartDateMarkerForBeginningOfYear() ? nextYearRule.DaylightDelta.Ticks : 0)));
-
-                                DateTime nextYearEndUtc = SafeCreateDateTimeFromTicks(nextYearEnd.Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks + nextYearRule.DaylightDelta.Ticks) - 1);
+                                DateTime nextYearStartUtc = GetUtcDateTimeFromLocalTicks(nextYearStart.Ticks, nextRule, includeDaylightDelta: nextRule.IsStartDateMarkerForBeginningOfYear());
+                                DateTime nextYearEndUtc = GetUtcDateTimeFromLocalTicks(nextYearEnd.Ticks, nextRule, includeDaylightDelta: true, tickAdjustment: -1);
 
                                 if (nextYearStart < nextYearEnd)
                                 {
@@ -1093,11 +1093,11 @@ namespace System
                                     if (endOfCurrentYearUtc.Ticks < nextYearStartUtc.Ticks - 1)
                                     {
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false));
+                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false));
                                     }
 
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(nextYearStartUtc, nextYearEndUtc, nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero), nextYearRule.HasDaylightSaving));
+                                        new TimeTransition(nextYearStartUtc, nextYearEndUtc, GetRuleFullUtcOffset(nextRule), nextRule.HasDaylightSaving));
                                 }
                                 else // nextYearStart > nextYearEnd
                                 {
@@ -1108,19 +1108,17 @@ namespace System
                                     if (endOfCurrentYearUtc < nextYearEndUtc)
                                     {
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearEndUtc, nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero), nextYearRule.HasDaylightSaving));
+                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearEndUtc, GetRuleFullUtcOffset(nextRule), nextRule.HasDaylightSaving));
                                     }
                                 }
                             }
                         }
                         else
                         {
-                            if (endOfCurrentYearUtc < endOfCurrentYear)
-                            {
-                                // no rule for next year
-                                AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(endOfCurrentYearUtc.AddTicks(1), endOfCurrentYear, TimeSpan.Zero, false));
-                            }
+                            // no rule for next year
+                            // endOfCurrentYearUtc < endOfCurrentYear
+                            AddTransition(ref allTransitions, ref transitionCount,
+                                new TimeTransition(endOfCurrentYearUtc.AddTicks(1), endOfCurrentYear, TimeSpan.Zero, false));
                         }
                     }
                 }
@@ -1135,26 +1133,28 @@ namespace System
                     if (startOfCurrentYearUtc > currentYearStart)
                     {
                         // need to cover the previous year transitions
-                        AdjustmentRule? previousYearRule = rule.DateStart.Year < year ? rule :
-                                                                            ruleIndex > 0 && _adjustmentRules[ruleIndex - 1].DateStart.Year <= year - 1 && _adjustmentRules[ruleIndex - 1].DateEnd.Year >= year - 1 ?
-                                                                                _adjustmentRules[ruleIndex - 1] :
-                                                                                null;
-                        if (previousYearRule is not null)
+                        AdjustmentRule? previousRule = rule.DateStart.Year < year ?
+                                                                rule :
+                                                                ruleIndex > 0 &&
+                                                                _adjustmentRules[ruleIndex - 1].DateStart.Year <= year - 1 &&
+                                                                _adjustmentRules[ruleIndex - 1].DateEnd.Year >= year - 1 ?
+                                                                _adjustmentRules[ruleIndex - 1] : null;
+                        if (previousRule is not null)
                         {
-                            if (previousYearRule.NoDaylightTransitions)
+                            if (previousRule.NoDaylightTransitions)
                             {
                                 //
                                 // Previous year has Linux style rule
                                 //
 
-                                if (startOfCurrentYearUtc.Ticks > previousYearRule.DateEnd.Ticks - 1)
+                                if (startOfCurrentYearUtc.Ticks > previousRule.DateEnd.Ticks - 1)
                                 {
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(previousYearRule.DateEnd.AddTicks(1), startOfCurrentYearUtc.AddTicks(-1), rule.BaseUtcOffsetDelta, false));
+                                        new TimeTransition(previousRule.DateEnd.AddTicks(1), startOfCurrentYearUtc.AddTicks(-1), rule.BaseUtcOffsetDelta, false));
                                 }
 
                                 AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(previousYearRule.DateStart, previousYearRule.DateEnd, previousYearRule.BaseUtcOffsetDelta + (previousYearRule.HasDaylightSaving ? previousYearRule.DaylightDelta : TimeSpan.Zero), previousYearRule.HasDaylightSaving));
+                                    new TimeTransition(previousRule.DateStart, previousRule.DateEnd, GetRuleFullUtcOffset(previousRule), previousRule.HasDaylightSaving));
                             }
                             else
                             {
@@ -1162,11 +1162,9 @@ namespace System
                                 // Previous year has Windows style rule
                                 //
 
-                                DateTime previousYearStart = StartTransitionTimeToDateTime(year - 1, previousYearRule); // Local time
-                                DateTime previousYearEnd = EndTransitionTimeToDateTime(year - 1, previousYearRule); // Local time
-
-                                DateTime previousYearStartUtc = SafeCreateDateTimeFromTicks(previousYearStart.Ticks - (_baseUtcOffset.Ticks + previousYearRule.BaseUtcOffsetDelta.Ticks +
-                                                                                                (previousYearRule.IsStartDateMarkerForBeginningOfYear() ? previousYearRule.DaylightDelta.Ticks : 0)));
+                                DateTime previousYearStart = StartTransitionTimeToDateTime(year - 1, previousRule); // Local time
+                                DateTime previousYearEnd = EndTransitionTimeToDateTime(year - 1, previousRule); // Local time
+                                DateTime previousYearStartUtc = GetUtcDateTimeFromLocalTicks(previousYearStart.Ticks, previousRule, includeDaylightDelta: previousRule.IsStartDateMarkerForBeginningOfYear());
 
                                 if (previousYearStart < previousYearEnd)
                                 {
@@ -1174,18 +1172,18 @@ namespace System
                                     // Previous year has one transition
                                     //
 
-                                    DateTime previousYearEndUtc = SafeCreateDateTimeFromTicks(previousYearEnd.Ticks - (_baseUtcOffset.Ticks + previousYearRule.BaseUtcOffsetDelta.Ticks + previousYearRule.DaylightDelta.Ticks) - 1);
+                                    DateTime previousYearEndUtc = GetUtcDateTimeFromLocalTicks(previousYearEnd.Ticks, previousRule, includeDaylightDelta: true, tickAdjustment: -1);
 
                                     if (previousYearEndUtc.Ticks < startOfCurrentYearUtc.Ticks - 1)
                                     {
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(previousYearEndUtc.AddTicks(1), startOfCurrentYearUtc.AddTicks(-1), previousYearRule.BaseUtcOffsetDelta, false));
+                                            new TimeTransition(previousYearEndUtc.AddTicks(1), startOfCurrentYearUtc.AddTicks(-1), previousRule.BaseUtcOffsetDelta, false));
                                     }
                                     else
                                     {
 
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(previousYearStartUtc, previousYearEndUtc, previousYearRule.BaseUtcOffsetDelta + (previousYearRule.HasDaylightSaving ? previousYearRule.DaylightDelta : TimeSpan.Zero), previousYearRule.HasDaylightSaving));
+                                            new TimeTransition(previousYearStartUtc, previousYearEndUtc, GetRuleFullUtcOffset(previousRule), previousRule.HasDaylightSaving));
                                     }
                                 }
                                 else // previousYearStart > previousYearEnd
@@ -1201,8 +1199,8 @@ namespace System
                                             new TimeTransition(
                                                     previousYearStartUtc,
                                                     startOfCurrentYearUtc.AddTicks(-1),
-                                                    previousYearRule.BaseUtcOffsetDelta + (previousYearRule.HasDaylightSaving ? previousYearRule.DaylightDelta : TimeSpan.Zero),
-                                                    previousYearRule.HasDaylightSaving));
+                                                    GetRuleFullUtcOffset(previousRule),
+                                                    previousRule.HasDaylightSaving));
                                     }
                                 }
                             }
@@ -1223,17 +1221,17 @@ namespace System
                     //
 
                     DateTime endOfCurrentYear = year < MaxYear ? new DateTime(year + 1, 1, 1).AddTicks(-1) : DateTime.MaxValue;
-                    long endOfCurrentYearUtcTicks = endOfCurrentYear.Ticks - (_baseUtcOffset.Ticks + rule.BaseUtcOffsetDelta.Ticks + rule.DaylightDelta.Ticks);
+                    long endOfCurrentYearUtcTicks = endOfCurrentYear.Ticks - GetTransitionUtcOffsetTicks(rule, includeDaylightDelta: true);
                     DateTime endOfCurrentYearUtc = SafeCreateDateTimeFromTicks(endOfCurrentYearUtcTicks, DateTimeKind.Utc);
 
                     AddTransition(ref allTransitions, ref transitionCount,
-                        new TimeTransition(startOfCurrentYearUtc, utcEnd, rule.BaseUtcOffsetDelta + (rule.HasDaylightSaving ? rule.DaylightDelta : TimeSpan.Zero), rule.HasDaylightSaving));
+                        new TimeTransition(startOfCurrentYearUtc, utcEnd, GetRuleFullUtcOffset(rule), rule.HasDaylightSaving));
 
                     AddTransition(ref allTransitions, ref transitionCount,
                         new TimeTransition(SafeCreateDateTimeFromTicks(utcEnd.Ticks + 1), SafeCreateDateTimeFromTicks(utcStart.Ticks - 1), rule.BaseUtcOffsetDelta, false));
 
                     AddTransition(ref allTransitions, ref transitionCount,
-                        new TimeTransition(utcStart, endOfCurrentYearUtc, rule.BaseUtcOffsetDelta + (rule.HasDaylightSaving ? rule.DaylightDelta : TimeSpan.Zero), rule.HasDaylightSaving));
+                        new TimeTransition(utcStart, endOfCurrentYearUtc, GetRuleFullUtcOffset(rule), rule.HasDaylightSaving));
 
                     //
                     // Check if we need to add more transitions to cover the the end of the year in Utc time. We already know we are covering the end of the year in local time.
@@ -1245,34 +1243,34 @@ namespace System
                         // Cover the transition in the next year in Utc time.
                         //
 
-                        AdjustmentRule? nextYearRule = rule.DateEnd.Year > year ? rule :
+                        AdjustmentRule? nextRule = rule.DateEnd.Year > year ? rule :
                                                         ruleIndex < _adjustmentRules.Length - 1 && _adjustmentRules[ruleIndex + 1].DateStart.Year <= year + 1 && _adjustmentRules[ruleIndex + 1].DateEnd.Year >= year + 1 ?
                                                             _adjustmentRules[ruleIndex + 1] :
                                                             null;
 
-                        if (nextYearRule is not null)
+                        if (nextRule is not null)
                         {
-                            if (nextYearRule.NoDaylightTransitions)
+                            if (nextRule.NoDaylightTransitions)
                             {
                                 //
                                 // Next year rule is Linux style rule. It is unlikely to get Linux style rules after Windows style rule, but handle gracefully.
                                 //
 
-                                if (endOfCurrentYearUtc.Ticks < nextYearRule.DateStart.Ticks)
+                                if (endOfCurrentYearUtc.Ticks < nextRule.DateStart.Ticks)
                                 {
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearRule.DateStart.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false)); // No daylight transitions
+                                        new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextRule.DateStart.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false)); // No daylight transitions
                                 }
                                 else
                                 {
-                                    if (endOfCurrentYearUtc < nextYearRule.DateEnd)
+                                    if (endOfCurrentYearUtc < nextRule.DateEnd)
                                     {
                                         AddTransition(ref allTransitions, ref transitionCount,
                                             new TimeTransition(
                                                     endOfCurrentYearUtc.AddTicks(1),
-                                                    nextYearRule.DateEnd,
-                                                    nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero),
-                                                    nextYearRule.HasDaylightSaving));
+                                                    nextRule.DateEnd,
+                                                    GetRuleFullUtcOffset(nextRule),
+                                                    nextRule.HasDaylightSaving));
                                     }
                                 }
                             }
@@ -1282,14 +1280,11 @@ namespace System
                                 // Next year rule is Windows style rule.
                                 //
 
-                                DateTime nextYearStart = StartTransitionTimeToDateTime(year + 1, nextYearRule); // in local time
-                                DateTime nextYearEnd = EndTransitionTimeToDateTime(year + 1, nextYearRule);     // in local time
+                                DateTime nextYearStart = StartTransitionTimeToDateTime(year + 1, nextRule); // in local time
+                                DateTime nextYearEnd = EndTransitionTimeToDateTime(year + 1, nextRule);     // in local time
 
-                                DateTime nextYearStartUtc = SafeCreateDateTimeFromTicks(nextYearStart.Ticks -
-                                                (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks + (nextYearRule.IsStartDateMarkerForBeginningOfYear() ? nextYearRule.DaylightDelta.Ticks : 0)));
-
-                                DateTime nextYearEndUtc = SafeCreateDateTimeFromTicks(
-                                    nextYearEnd.Ticks - (_baseUtcOffset.Ticks + nextYearRule.BaseUtcOffsetDelta.Ticks + nextYearRule.DaylightDelta.Ticks) - 1);
+                                DateTime nextYearStartUtc = GetUtcDateTimeFromLocalTicks(nextYearStart.Ticks, nextRule, includeDaylightDelta: nextRule.IsStartDateMarkerForBeginningOfYear());
+                                DateTime nextYearEndUtc = GetUtcDateTimeFromLocalTicks(nextYearEnd.Ticks, nextRule, includeDaylightDelta: true, tickAdjustment: -1);
 
                                 if (nextYearStart < nextYearEnd)
                                 {
@@ -1299,11 +1294,11 @@ namespace System
                                     if (endOfCurrentYearUtc.Ticks < nextYearStartUtc.Ticks - 1)
                                     {
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextYearRule.BaseUtcOffsetDelta, false)); // No daylight transitions
+                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearStartUtc.AddTicks(-1), nextRule.BaseUtcOffsetDelta, false)); // No daylight transitions
                                     }
 
                                     AddTransition(ref allTransitions, ref transitionCount,
-                                        new TimeTransition(nextYearStartUtc, nextYearEndUtc, nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero), nextYearRule.HasDaylightSaving));
+                                        new TimeTransition(nextYearStartUtc, nextYearEndUtc, GetRuleFullUtcOffset(nextRule), nextRule.HasDaylightSaving));
                                 }
                                 else
                                 {
@@ -1314,7 +1309,7 @@ namespace System
                                     if (endOfCurrentYearUtc < nextYearEndUtc)
                                     {
                                         AddTransition(ref allTransitions, ref transitionCount,
-                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearEndUtc, nextYearRule.BaseUtcOffsetDelta + (nextYearRule.HasDaylightSaving ? nextYearRule.DaylightDelta : TimeSpan.Zero), nextYearRule.HasDaylightSaving));
+                                            new TimeTransition(endOfCurrentYearUtc.AddTicks(1), nextYearEndUtc, GetRuleFullUtcOffset(nextRule), nextRule.HasDaylightSaving));
                                     }
                                 }
                             }
@@ -1322,12 +1317,9 @@ namespace System
                         else
                         {
                             // No rule is found
-
-                            if (endOfCurrentYearUtc < endOfCurrentYear)
-                            {
-                                AddTransition(ref allTransitions, ref transitionCount,
-                                    new TimeTransition(endOfCurrentYearUtc.AddTicks(1), endOfCurrentYear, TimeSpan.Zero, false));
-                            }
+                            // endOfCurrentYearUtc < endOfCurrentYear
+                            AddTransition(ref allTransitions, ref transitionCount,
+                                new TimeTransition(endOfCurrentYearUtc.AddTicks(1), endOfCurrentYear, TimeSpan.Zero, false));
                         }
                     }
                 }
@@ -1367,6 +1359,38 @@ namespace System
                 return (index, count);
             }
         }
+
+        /// <summary>
+        /// Calculates the full UTC transition offset ticks for a given adjustment rule.
+        /// </summary>
+        /// <param name="rule">The adjustment rule.</param>
+        /// <param name="includeDaylightDelta">Whether to include the daylight saving delta.</param>
+        /// <returns>The transition UTC offset ticks.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private long GetTransitionUtcOffsetTicks(AdjustmentRule rule, bool includeDaylightDelta = false) =>
+            _baseUtcOffset.Ticks + rule.BaseUtcOffsetDelta.Ticks + (includeDaylightDelta ? rule.DaylightDelta.Ticks : 0);
+
+        /// <summary>
+        /// Converts local time to UTC by subtracting the combined UTC offset, with an additional tick adjustment.
+        /// </summary>
+        /// <param name="localTicks">The local time ticks.</param>
+        /// <param name="rule">The adjustment rule.</param>
+        /// <param name="includeDaylightDelta">Whether to include the daylight saving delta.</param>
+        /// <param name="tickAdjustment">Additional ticks to add/subtract (e.g., -1 for end times).</param>
+        /// <param name="kind">The DateTimeKind for the result.</param>
+        /// <returns>A DateTime in UTC.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DateTime GetUtcDateTimeFromLocalTicks(long localTicks, AdjustmentRule rule, bool includeDaylightDelta = false, long tickAdjustment = 0, DateTimeKind kind = DateTimeKind.Utc) =>
+            SafeCreateDateTimeFromTicks(localTicks - GetTransitionUtcOffsetTicks(rule, includeDaylightDelta) + tickAdjustment, kind);
+
+        /// <summary>
+        /// Calculates the full UTC offset for a given adjustment rule, including daylight saving time if applicable.
+        /// </summary>
+        /// <param name="rule">The adjustment rule.</param>
+        /// <returns>The combined offset including daylight saving time if the rule has it.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan GetRuleFullUtcOffset(AdjustmentRule rule) =>
+            rule.BaseUtcOffsetDelta + (rule.HasDaylightSaving ? rule.DaylightDelta : TimeSpan.Zero);
 
         // _transitionCache maps a year to int value. the low 16 bits store the index of the first transition for that year in _yearsTransitions.
         // the high 16 bits store the number of transitions for that year. We use concurrent dictionary for thread-safe access.
