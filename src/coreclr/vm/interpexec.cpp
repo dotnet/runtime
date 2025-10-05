@@ -2821,7 +2821,7 @@ CALL_INTERP_METHOD:
                     if (pILTargetMethod != NULL)
                     {
                         callArgsOffset = pMethod->allocaSize;
-                        returnOffset = ip[1];
+                        returnOffset = dreg;
 
                         // Pass arguments to the target method
                         LOCAL_VAR(callArgsOffset, void*) = pMT;
@@ -2865,7 +2865,7 @@ CALL_INTERP_METHOD:
                     if (pILTargetMethod != NULL)
                     {
                         callArgsOffset = pMethod->allocaSize;
-                        returnOffset = ip[1];
+                        returnOffset = dreg;
 
                         // Pass arguments to the target method
                         LOCAL_VAR(callArgsOffset, void*) = pMTBoxedObj;
