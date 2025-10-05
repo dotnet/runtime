@@ -190,7 +190,7 @@ namespace System.Reflection
                 ReferenceEquals(rpi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode(), m_reflectedTypeCache.GetRuntimeType().GetHashCode());
         #endregion
 
         #region PropertyInfo Overrides
