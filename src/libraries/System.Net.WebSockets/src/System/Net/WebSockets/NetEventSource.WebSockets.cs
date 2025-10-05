@@ -8,9 +8,13 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.WebSockets")]
+    [EventSource(Name = NetEventSourceName)]
     internal sealed partial class NetEventSource
     {
+        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.WebSockets";
+
+        public NetEventSource() : base(NetEventSourceName) { }
+
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
         //   enable creating 'activities'.

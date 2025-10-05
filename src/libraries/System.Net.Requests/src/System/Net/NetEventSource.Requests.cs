@@ -5,6 +5,11 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Requests")]
-    internal sealed partial class NetEventSource { }
+    [EventSource(Name = NetEventSourceName)]
+    internal sealed partial class NetEventSource
+    {
+        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Requests";
+
+        public NetEventSource() : base(NetEventSourceName) { }
+    }
 }

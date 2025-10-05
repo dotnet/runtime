@@ -7,9 +7,13 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Http")]
+    [EventSource(Name = NetEventSourceName)]
     internal sealed partial class NetEventSource
     {
+        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Http";
+
+        public NetEventSource() : base(NetEventSourceName) { }
+
         private const int UriBaseAddressId = NextAvailableEventId;
         private const int ContentNullId = UriBaseAddressId + 1;
         private const int HeadersInvalidValueId = ContentNullId + 1;
