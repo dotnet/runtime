@@ -16,7 +16,10 @@ target_include_directories(corewasmrun PRIVATE
   ../corerun
 )
 
-target_compile_options(corewasmrun PRIVATE -fwasm-exceptions)
+target_compile_options(corewasmrun PRIVATE 
+  -fwasm-exceptions
+  -msimd128
+  )
 
 set(JS_SYSTEM_NATIVE_BROWSER
     "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
@@ -30,6 +33,7 @@ set_target_properties(corewasmrun PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_options(corewasmrun PRIVATE
   -fwasm-exceptions
+  -msimd128
   -sEXIT_RUNTIME=1
   -sINITIAL_MEMORY=134217728
   -sSTACK_SIZE=5MB
