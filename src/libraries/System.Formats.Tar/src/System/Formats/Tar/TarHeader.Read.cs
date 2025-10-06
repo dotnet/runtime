@@ -775,16 +775,13 @@ namespace System.Formats.Tar
         /// This provides better error messages when users try to read compressed tar files without decompressing them first.
         private static void CheckForCompressionMagicNumbers(ReadOnlySpan<byte> buffer)
         {
-            if (buffer.Length < 2)
-            {
-                return;
-            }
+            if (buffer.Length < 2) return; // Need at least 2 bytes for any compression format
 
-            static void ThrowIfSupportedCompression(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> magic, string compressionType, string streamType)
+            static void ThrowIfSupportedCompression(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> magic, string compressionType, string streamClass)
             {
                 if (buffer.Length >= magic.Length && buffer.StartsWith(magic))
                 {
-                    throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, compressionType, streamType));
+                    throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, compressionType, streamClass));
                 }
             }
 
@@ -796,19 +793,57 @@ namespace System.Formats.Tar
                 }
             }
 
-            // Check for supported compression algorithms (built into .NET)
-            ThrowIfSupportedCompression(buffer, [0x1F, 0x8B], "GZIP", "GZipStream");
-            ThrowIfSupportedCompression(buffer, [0x78, 0x01], "ZLIB", "ZLibStream");
-            ThrowIfSupportedCompression(buffer, [0x78, 0x5E], "ZLIB", "ZLibStream");
-            ThrowIfSupportedCompression(buffer, [0x78, 0x9C], "ZLIB", "ZLibStream");
-            ThrowIfSupportedCompression(buffer, [0x78, 0xDA], "ZLIB", "ZLibStream");
+            // Use switch on first byte for O(1) performance instead of sequential checking
+            byte firstByte = buffer[0];
+            switch (firstByte)
+            {
+                case 0x1F: // GZIP
+                    if (buffer.Length >= 2)
+                    {
+                        byte secondByte = buffer[1];
+                        switch (secondByte)
+                        {
+                            case 0x8B: // GZIP magic number
+                                throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, "GZIP", "GZipStream"));
+                        }
+                    }
+                    break;
 
-            // Check for unsupported compression algorithms (not built into .NET)
-            ThrowIfUnsupportedCompression(buffer, [0x42, 0x5A], "BZIP2");
-            ThrowIfUnsupportedCompression(buffer, [0x04, 0x22, 0x4D, 0x18], "LZ4");
-            ThrowIfUnsupportedCompression(buffer, [0x5D, 0x00, 0x00], "LZMA");
-            ThrowIfUnsupportedCompression(buffer, [0x89, 0x4C, 0x5A, 0x4F], "LZO");
-            ThrowIfUnsupportedCompression(buffer, [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], "XZ");
+                case 0x78: // ZLIB variants
+                    if (buffer.Length >= 2)
+                    {
+                        byte secondByte = buffer[1];
+                        switch (secondByte)
+                        {
+                            case 0x01: // No compression (no preset dictionary)
+                            case 0x5E: // Best speed (no preset dictionary)
+                            case 0x9C: // Default compression (no preset dictionary)
+                            case 0xDA: // Best compression (no preset dictionary)
+                                throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, "ZLIB", "ZLibStream"));
+                        }
+                    }
+                    break;
+
+                case 0x42: // BZIP2
+                    ThrowIfUnsupportedCompression(buffer, [0x42, 0x5A], "BZIP2");
+                    break;
+
+                case 0x04: // LZ4
+                    ThrowIfUnsupportedCompression(buffer, [0x04, 0x22, 0x4D, 0x18], "LZ4");
+                    break;
+
+                case 0x5D: // LZMA
+                    ThrowIfUnsupportedCompression(buffer, [0x5D, 0x00, 0x00], "LZMA");
+                    break;
+
+                case 0x89: // LZO
+                    ThrowIfUnsupportedCompression(buffer, [0x89, 0x4C, 0x5A, 0x4F], "LZO");
+                    break;
+
+                case 0xFD: // XZ
+                    ThrowIfUnsupportedCompression(buffer, [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], "XZ");
+                    break;
+            }
         }
     }
 }
