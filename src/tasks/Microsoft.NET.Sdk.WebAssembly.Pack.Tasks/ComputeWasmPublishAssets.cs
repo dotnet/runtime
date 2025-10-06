@@ -440,7 +440,7 @@ public class ComputeWasmPublishAssets : Task
         foreach (var kvp in assemblyAssets)
         {
             var asset = kvp.Value;
-            var fileName = Path.GetFileName(asset.ItemSpec);
+            var fileName = Path.GetFileName(FingerprintAssets ? asset.GetMetadata("OriginalItemSpec") : asset.ItemSpec);
             if (IsWebCilEnabled)
                 fileName = Path.ChangeExtension(fileName, ".dll");
 
