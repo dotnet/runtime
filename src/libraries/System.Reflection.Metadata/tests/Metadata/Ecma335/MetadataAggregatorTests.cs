@@ -186,7 +186,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         [Fact]
         public void HeapSize_GuidHeapSizes()
         {
-            MetadataReader baseReader = MetadataReaderTests.GetMetadataReader(NetModule.AppCS); ;
+            MetadataReader baseReader = MetadataReaderTests.GetMetadataReader(NetModule.AppCS);
             var bytes = CreateMinimalReaderMetadataAsBytes(Guid.NewGuid());
             unsafe
             {
