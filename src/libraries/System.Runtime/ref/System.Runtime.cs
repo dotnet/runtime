@@ -783,6 +783,9 @@ namespace System
     public static partial class BitConverter
     {
         public static readonly bool IsLittleEndian;
+        public static short BFloat16ToInt16Bits(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort BFloat16ToUInt16Bits(System.Numerics.BFloat16 value) { throw null; }
         public static long DoubleToInt64Bits(double value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong DoubleToUInt64Bits(double value) { throw null; }
@@ -806,6 +809,7 @@ namespace System
         public static short HalfToInt16Bits(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
+        public static System.Numerics.BFloat16 Int16BitsToBFloat16(short value) { throw null; }
         public static System.Half Int16BitsToHalf(short value) { throw null; }
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
@@ -866,6 +870,8 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteBytes(System.Span<byte> destination, ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.BFloat16 UInt16BitsToBFloat16(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Half UInt16BitsToHalf(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]

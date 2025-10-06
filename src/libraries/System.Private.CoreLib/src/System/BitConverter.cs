@@ -948,9 +948,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half Int16BitsToHalf(short value) => new Half((ushort)(value));
 
-        internal static short BFloat16BitsToInt16(BFloat16 value) => (short)value._value;
+        /// <summary>
+        /// Converts the specified <see cref="BFloat16"/> number to a 16-bit signed integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 16-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short BFloat16ToInt16Bits(BFloat16 value) => (short)value._value;
 
-        internal static BFloat16 Int16BitsToBFloat16(short value) => new BFloat16((ushort)(value));
+        /// <summary>
+        /// Converts the specified 16-bit signed integer to a <see cref="BFloat16"/> number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A <see cref="BFloat16"/> number whose bits are identical to <paramref name="value"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 Int16BitsToBFloat16(short value) => new BFloat16((ushort)(value));
 
         /// <summary>
         /// Converts the specified double-precision floating point number to a 64-bit unsigned integer.
@@ -1006,8 +1018,22 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half UInt16BitsToHalf(ushort value) => new Half(value);
 
-        internal static ushort BFloat16BitsToUInt16(BFloat16 value) => value._value;
+        /// <summary>
+        /// Converts the specified <see cref="BFloat16"/> number to a 16-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 16-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort BFloat16ToUInt16Bits(BFloat16 value) => value._value;
 
-        internal static BFloat16 UInt16BitsToBFloat16(ushort value) => new BFloat16(value);
+        /// <summary>
+        /// Converts the specified 16-bit unsigned integer to a <see cref="BFloat16"/> number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A <see cref="BFloat16"/> number whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 UInt16BitsToBFloat16(ushort value) => new BFloat16(value);
     }
 }
