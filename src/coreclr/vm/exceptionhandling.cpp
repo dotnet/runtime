@@ -3899,6 +3899,8 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     bool doingFuncletUnwind = pThis->m_crawl.IsFunclet();
     PCODE preUnwindControlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
 
+    bool isNativeTransition;
+
     retVal = pThis->Next();
     if (retVal == SWA_FAILED)
     {
@@ -3906,7 +3908,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         goto Exit;
     }
 
-    bool isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
+    isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
 
 #ifdef FEATURE_INTERPRETER
     if (isNativeTransition &&
