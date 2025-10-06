@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -11,7 +12,9 @@ namespace System.Collections.Generic
     /// <typeparam name="T">The element type.</typeparam>
     internal struct ArrayBuilder<T>
     {
-        private const int DefaultCapacity = 4;
+        private InlineArray16<T> _stackAllocatedBuffer = default;
+        private const int StackAllocatedCapacity = 16;
+        private const int DefaultHeapCapacity = 4;
 
         private T[]? _array; // Starts out null, initialized on first Add.
         private int _count; // Number of items into _array we're using.
@@ -23,9 +26,9 @@ namespace System.Collections.Generic
         public ArrayBuilder(int capacity) : this()
         {
             Debug.Assert(capacity >= 0);
-            if (capacity > 0)
+            if (capacity > StackAllocatedCapacity)
             {
-                _array = new T[capacity];
+                _array = new T[capacity - StackAllocatedCapacity];
             }
         }
 
@@ -33,10 +36,7 @@ namespace System.Collections.Generic
         /// Gets the number of items this instance can store without re-allocating,
         /// or 0 if the backing array is <c>null</c>.
         /// </summary>
-        public int Capacity => _array?.Length ?? 0;
-
-        /// <summary>Gets the current underlying array.</summary>
-        public T[]? Buffer => _array;
+        public int Capacity => _array?.Length + StackAllocatedCapacity ?? StackAllocatedCapacity;
 
         /// <summary>
         /// Gets the number of items in the array currently in use.
@@ -52,7 +52,7 @@ namespace System.Collections.Generic
             get
             {
                 Debug.Assert(index >= 0 && index < _count);
-                return _array![index];
+                return index < StackAllocatedCapacity ? _stackAllocatedBuffer[index] : _array![index - StackAllocatedCapacity];
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.Collections.Generic
         public T First()
         {
             Debug.Assert(_count > 0);
-            return _array![0];
+            return _stackAllocatedBuffer[0];
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace System.Collections.Generic
         public T Last()
         {
             Debug.Assert(_count > 0);
-            return _array![_count - 1];
+            return _count <= StackAllocatedCapacity ? _stackAllocatedBuffer[_count - 1] : _array![_count - StackAllocatedCapacity - 1];
         }
 
         /// <summary>
@@ -101,16 +101,18 @@ namespace System.Collections.Generic
                 return Array.Empty<T>();
             }
 
-            Debug.Assert(_array != null); // Nonzero _count should imply this
-
-            T[] result = _array;
-            if (_count < result.Length)
+            T[] result = new T[_count];
+            int index = 0;
+            foreach (T stackAllocatedValue in _stackAllocatedBuffer)
             {
-                // Avoid a bit of overhead (method call, some branches, extra codegen)
-                // which would be incurred by using Array.Resize
-                result = new T[_count];
-                Array.Copy(_array, result, _count);
+                result[index++] = stackAllocatedValue;
+                if (index >= _count)
+                {
+                    return result;
+                }
             }
+
+            _array.AsSpan(0, _count - StackAllocatedCapacity).CopyTo(result.AsSpan(start: StackAllocatedCapacity));
 
 #if DEBUG
             // Try to prevent callers from using the ArrayBuilder after ToArray, if _count != 0.
@@ -132,25 +134,42 @@ namespace System.Collections.Generic
         public void UncheckedAdd(T item)
         {
             Debug.Assert(_count < Capacity);
-
-            _array![_count++] = item;
+            if (_count < StackAllocatedCapacity)
+            {
+                _stackAllocatedBuffer[_count++] = item;
+            }
+            else
+            {
+                _array![_count++ - StackAllocatedCapacity] = item;
+            }
         }
 
         private void EnsureCapacity(int minimum)
         {
             Debug.Assert(minimum > Capacity);
 
-            int capacity = Capacity;
-            int nextCapacity = capacity == 0 ? DefaultCapacity : 2 * capacity;
-
-            if ((uint)nextCapacity > (uint)Array.MaxLength)
+            if (minimum < StackAllocatedCapacity)
             {
-                nextCapacity = Math.Max(capacity + 1, Array.MaxLength);
+                return;
             }
 
-            nextCapacity = Math.Max(nextCapacity, minimum);
+            if (_array == null)
+            {
+                // Initial capacity has not been set correctly, we will use the default size
+                _array = new T[DefaultHeapCapacity];
+                return;
+            }
 
-            T[] next = new T[nextCapacity];
+            int nextHeapCapacity = 2 * _array.Length;
+
+            if ((uint)nextHeapCapacity > (uint)Array.MaxLength)
+            {
+                nextHeapCapacity = Math.Max(_array.Length + 1, Array.MaxLength);
+            }
+
+            nextHeapCapacity = Math.Max(nextHeapCapacity, minimum);
+
+            T[] next = new T[nextHeapCapacity];
             if (_count > 0)
             {
                 Array.Copy(_array!, next, _count);
