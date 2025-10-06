@@ -1923,7 +1923,7 @@ public:
 #ifdef FEATURE_INTERPRETER
         return m_osStackLocation;
 #else
-        return this;
+        return dac_cast<PTR_VOID>(this);
 #endif
     }
 
