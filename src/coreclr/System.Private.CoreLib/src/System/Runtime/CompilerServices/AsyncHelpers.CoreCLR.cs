@@ -140,7 +140,7 @@ namespace System.Runtime.CompilerServices
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
         private struct RuntimeAsyncAwaitState
         {
-            public Continuation? SentinelContinuation;
+            public Continuation? HeadContinuation;
             public INotifyCompletion? Notifier;
         }
 
@@ -316,15 +316,14 @@ namespace System.Runtime.CompilerServices
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
-                Continuation continuation = TOps.GetContinuationState(task);
+                Continuation? continuation = TOps.GetContinuationState(task);
 
                 while (true)
                 {
+                    Debug.Assert(continuation != null);
                     try
                     {
-                        Debug.Assert(continuation.Next != null);
-
-                        ref byte resultLoc = ref continuation.Next.Resume != null ? ref continuation.Next.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
+                        ref byte resultLoc = ref continuation.Next != null ? ref continuation.Next.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
                         Continuation? newContinuation = continuation.Resume(continuation, ref resultLoc);
 
                         if (newContinuation != null)
@@ -339,8 +338,9 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
-                        Continuation nextContinuation = UnwindToPossibleHandler(continuation);
-                        if (nextContinuation.Resume == null)
+                        Debug.Assert(continuation != null);
+                        Continuation? nextContinuation = UnwindToPossibleHandler(continuation);
+                        if (nextContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             bool successfullySet = ex is OperationCanceledException oce ?
@@ -362,7 +362,7 @@ namespace System.Runtime.CompilerServices
                         continuation = nextContinuation;
                     }
 
-                    if (continuation.Resume == null)
+                    if (continuation == null)
                     {
                         bool successfullySet = TOps.SetCompleted(task);
 
@@ -384,14 +384,18 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static Continuation UnwindToPossibleHandler(Continuation continuation)
+            private static Continuation? UnwindToPossibleHandler(Continuation continuation)
             {
                 while (true)
                 {
-                    Debug.Assert(continuation.Next != null);
-                    continuation = continuation.Next;
-                    if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
-                        return continuation;
+                    Continuation? nextContinuation = continuation.Next;
+                    if (nextContinuation == null)
+                        return null;
+
+                    if ((nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                        return nextContinuation;
+
+                    continuation = nextContinuation;
                 }
             }
 
@@ -433,9 +437,9 @@ namespace System.Runtime.CompilerServices
                 notifier = state.Notifier;
                 state.Notifier = null;
 
-                Continuation sentinelContinuation = state.SentinelContinuation!;
-                Continuation head = sentinelContinuation.Next!;
-                sentinelContinuation.Next = null;
+                Continuation headContinuation = state.HeadContinuation!;
+                Continuation head = headContinuation.Next!;
+                headContinuation.Next = null;
                 return head;
             }
 
@@ -507,42 +511,30 @@ namespace System.Runtime.CompilerServices
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
-        private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation)
+        private static Task<T?> FinalizeTaskReturningThunk<T>()
         {
-            Continuation finalContinuation = new Continuation
-            {
-                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-            };
-            continuation.Next = finalContinuation;
-
             ThunkTask<T?> result = new();
             result.HandleSuspended();
             return result;
         }
 
-        private static Task FinalizeTaskReturningThunk(Continuation continuation)
+        private static Task FinalizeTaskReturningThunk()
         {
-            Continuation finalContinuation = new Continuation
-            {
-                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-            };
-            continuation.Next = finalContinuation;
-
             ThunkTask result = new();
             result.HandleSuspended();
             return result;
         }
 
-        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
+        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>()
         {
             // We only come to these methods in the expensive case (already
             // suspended), so ValueTask optimization here is not relevant.
-            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation));
+            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>());
         }
 
-        private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
+        private static ValueTask FinalizeValueTaskReturningThunk()
         {
-            return new ValueTask(FinalizeTaskReturningThunk(continuation));
+            return new ValueTask(FinalizeTaskReturningThunk());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

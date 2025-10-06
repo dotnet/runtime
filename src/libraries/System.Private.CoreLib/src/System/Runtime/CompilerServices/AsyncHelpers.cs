@@ -24,12 +24,12 @@ namespace System.Runtime.CompilerServices
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation;
-            if (sentinelContinuation == null)
-                state.SentinelContinuation = sentinelContinuation = new Continuation();
+            Continuation? headContinuations = state.HeadContinuation;
+            if (headContinuations == null)
+                state.HeadContinuation = headContinuations = new Continuation();
 
             state.Notifier = awaiter;
-            AsyncSuspend(sentinelContinuation);
+            AsyncSuspend(headContinuations);
         }
 
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
@@ -40,12 +40,12 @@ namespace System.Runtime.CompilerServices
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation;
-            if (sentinelContinuation == null)
-                state.SentinelContinuation = sentinelContinuation = new Continuation();
+            Continuation? headContinuation = state.HeadContinuation;
+            if (headContinuation == null)
+                state.HeadContinuation = headContinuation = new Continuation();
 
             state.Notifier = awaiter;
-            AsyncSuspend(sentinelContinuation);
+            AsyncSuspend(headContinuation);
         }
 
         [Intrinsic]
