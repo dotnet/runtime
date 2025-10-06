@@ -15,7 +15,7 @@ namespace System.Net
         private const string NameResolutionTelemetryName = "System.Net.NameResolution";
 
         public NameResolutionTelemetry()
-            : base(NameResolutionTelemetryName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(NameResolutionTelemetryName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 

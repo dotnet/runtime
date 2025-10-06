@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
         private const string OpenSslX509ChainEventSourceName = "System.Security.Cryptography.X509Certificates.X509Chain.OpenSsl";
 
         public OpenSslX509ChainEventSource()
-            : base(OpenSslX509ChainEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(OpenSslX509ChainEventSourceName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 

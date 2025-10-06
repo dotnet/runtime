@@ -407,7 +407,7 @@ namespace System.Diagnostics
         private DiagnosticSourceEventSource()
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
-            : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 
