@@ -688,9 +688,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(4)]
         public uint BaseSize;
 
-        [FieldOffset(8)]
-        public uint Flags2;
         // See additional native members in methodtable.h, not needed here yet.
+        // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
 
         /// <summary>
@@ -802,8 +801,6 @@ namespace System.Runtime.CompilerServices
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
-        private const uint enum_flag2_IsContinuationType = 0x10;
-
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
 #if TARGET_64BIT
@@ -903,7 +900,7 @@ namespace System.Runtime.CompilerServices
 
         public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
 
-        public bool IsContinuation => (Flags2 & enum_flag2_IsContinuationType) == enum_flag2_IsContinuationType;
+        public bool IsContinuation => ParentMethodTable == (MethodTable*)typeof(Continuation).TypeHandle.Value;
 
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 

@@ -47,6 +47,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     STANDARD_VM_CONTRACT;
 
     MethodTable* pParentClass = CoreLibBinder::GetClass(CLASS__CONTINUATION);
+
     DWORD numVirtuals = pParentClass->GetNumVirtuals();
 
     size_t cbMT = sizeof(MethodTable);
@@ -85,12 +86,12 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
         allocatedDataOffsets->KeepAlive += startOfDataInInstance;
 
     MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
-    pMT->SetIsContinuation(allocatedDataOffsets);
+    pMT->SetParentMethodTable(pParentClass);
+    pMT->SetContinuationDataOffsets(allocatedDataOffsets);
     pMT->AllocateAuxiliaryData(m_allocator, asyncMethod->GetLoaderModule(), pamTracker, MethodTableStaticsFlags::None);
     pMT->SetLoaderAllocator(m_allocator);
-    pMT->SetModule(asyncMethod->GetModule());
+    pMT->SetModule(pParentClass->GetModule());
     pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
-    pMT->SetParentMethodTable(pParentClass);
     pMT->SetClass(pParentClass->GetClass()); // TODO: needs its own?
     pMT->SetBaseSize(OBJECT_BASESIZE + startOfDataInInstance + dataSize);
 

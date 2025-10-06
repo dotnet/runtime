@@ -299,6 +299,13 @@ inline BOOL MethodTable::IsValueType()
     return GetFlag(enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 }
 
+inline BOOL MethodTable::IsContinuation()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return m_pParentMethodTable == CoreLibBinder::GetClassIfExist(CLASS__CONTINUATION);
+}
+
 //==========================================================================================
 inline DWORD MethodTable::GetRank()
 {

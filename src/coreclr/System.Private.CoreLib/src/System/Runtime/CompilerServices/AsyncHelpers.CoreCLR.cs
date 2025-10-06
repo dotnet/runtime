@@ -83,10 +83,10 @@ namespace System.Runtime.CompilerServices
 
         public unsafe object GetContinuationContext()
         {
-            // Only the special continuation sub types are expected.
-            Debug.Assert(GetType() != typeof(Continuation));
-
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
+
+            // Only the special continuation sub types have continuation offsets.
+            Debug.Assert(mt->IsContinuation);
             Debug.Assert(mt->ContinuationOffsets->ContinuationContext != uint.MaxValue);
 
             ref byte data = ref RuntimeHelpers.GetRawData(this);
@@ -96,7 +96,8 @@ namespace System.Runtime.CompilerServices
         public void SetException(Exception ex)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-            // Only the special continuation sub types are expected.
+
+            // Only the special continuation sub types have continuation offsets.
             Debug.Assert(mt->IsContinuation);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
             Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->Exception)) = ex;
@@ -105,8 +106,9 @@ namespace System.Runtime.CompilerServices
         public ref byte GetResultStorageOrNull()
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-            // Only the special continuation sub types are expected.
+            // Only the special continuation sub types have continuation offsets.
             Debug.Assert(mt->IsContinuation);
+
             if (mt->ContinuationOffsets->Result == uint.MaxValue)
                 return ref Unsafe.NullRef<byte>();
 
@@ -117,7 +119,7 @@ namespace System.Runtime.CompilerServices
         public void SetKeepAlive(object? obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-            // Only the special continuation sub types are expected.
+            // Only the special continuation sub types have continuation offsets.
             Debug.Assert(mt->IsContinuation);
             Debug.Assert(mt->ContinuationOffsets->KeepAlive != uint.MaxValue);
 
