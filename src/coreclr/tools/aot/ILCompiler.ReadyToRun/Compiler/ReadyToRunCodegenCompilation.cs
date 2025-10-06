@@ -517,7 +517,7 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                ReadyToRunContainerFormat.LegacyPE,
+                ReadyToRunContainerFormat.PE,
                 customPESectionAlignment: 0,
                 _logger);
         }

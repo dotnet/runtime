@@ -477,7 +477,7 @@ namespace ILCompiler.ObjectWriter
                     // list of (type<<12 | offsetInPage) WORD entries).
                     uint targetRva = _sections[sectionIndex].Header.VirtualAddress + (uint)reloc.Offset;
                     uint pageRva = targetRva & ~(PEHeaderConstants.SectionAlignment - 1);
-                    ushort offsetInPage = (ushort)(targetRva & ~(PEHeaderConstants.SectionAlignment - 1));
+                    ushort offsetInPage = (ushort)(targetRva & (PEHeaderConstants.SectionAlignment - 1));
                     ushort entry = (ushort)(((ushort)reloc.Type << 12) | offsetInPage);
 
                     if (!_baseRelocMap.TryGetValue(pageRva, out var list))
