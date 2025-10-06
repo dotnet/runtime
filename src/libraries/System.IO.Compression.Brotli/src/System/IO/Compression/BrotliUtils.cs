@@ -16,7 +16,7 @@ namespace System.IO.Compression
             compressionLevel switch
             {
                 CompressionLevel.NoCompression => Quality_Min,
-                CompressionLevel.Fastest => 1,
+                CompressionLevel.Fastest => 2,
                 CompressionLevel.Optimal => Quality_Default,
                 CompressionLevel.SmallestSize => Quality_Max,
                 _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel))
