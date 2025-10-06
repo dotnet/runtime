@@ -86,9 +86,9 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
         allocatedDataOffsets->KeepAlive += startOfDataInInstance;
 
     MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
+    pMT->AllocateAuxiliaryData(m_allocator, asyncMethod->GetLoaderModule(), pamTracker, MethodTableStaticsFlags::None);
     pMT->SetParentMethodTable(pParentClass);
     pMT->SetContinuationDataOffsets(allocatedDataOffsets);
-    pMT->AllocateAuxiliaryData(m_allocator, asyncMethod->GetLoaderModule(), pamTracker, MethodTableStaticsFlags::None);
     pMT->SetLoaderAllocator(m_allocator);
     pMT->SetModule(pParentClass->GetModule());
     pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
