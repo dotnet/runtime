@@ -98,7 +98,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private MetricsEventSource() 
+        private MetricsEventSource()
             : base(MetricsEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
