@@ -481,9 +481,9 @@ namespace System.Data.Common
                     {
                         throw ADP.KeywordNotSupported(keyname);
                     }
-                    if (!firstKey || !parsetable.ContainsKey(realkeyname))
+                    if (!firstKey)
                     {
-                        parsetable[realkeyname] = keyvalue!; // last key-value pair wins (or first)
+                        parsetable.TryAdd(realkeyname, keyvalue!); // last key-value pair wins (or first)
                     }
                 }
             }
@@ -578,9 +578,9 @@ namespace System.Data.Common
                     {
                         throw ADP.KeywordNotSupported(keyname);
                     }
-                    if (!firstKey || !parsetable.ContainsKey(realkeyname))
+                    if (!firstKey)
                     {
-                        parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
+                        parsetable.TryAdd(realkeyname, keyvalue); // last key-value pair wins (or first)
                     }
 
                     if (null != localKeychain)
