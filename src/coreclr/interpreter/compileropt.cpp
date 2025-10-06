@@ -310,7 +310,7 @@ void InterpCompiler::AllocOffsets()
                 continue;
 
 #ifdef DEBUG
-            if (t_interpDump)
+            if (IsInterpDumpActive())
             {
                 printf("\tins_index %d\t", insIndex);
                 PrintIns(pIns);
@@ -376,7 +376,7 @@ void InterpCompiler::AllocOffsets()
             }
 
 #ifdef DEBUG
-            if (t_interpDump)
+            if (IsInterpDumpActive())
             {
                 printf("active vars:");
                 for (int i = 0; i < m_pActiveVars->GetSize(); i++)

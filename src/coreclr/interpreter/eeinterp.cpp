@@ -156,8 +156,6 @@ void CILInterp::setTargetOS(CORINFO_OS os)
 {
 }
 
-bool IsInterpDumpActive();
-
 INTERPRETER_NORETURN void NO_WAY(const char* message)
 {
     if (IsInterpDumpActive())

@@ -121,12 +121,6 @@ extern bool g_arm64_atomics_present;
 #define LANG_ENGLISH                     0x09
 
 /******************* Compiler-specific glue *******************************/
-#if defined(_MSC_VER)
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__ ((aligned(x)))
-#endif
-
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
 #define EMPTY_BASES_DECL
@@ -143,24 +137,12 @@ extern bool g_arm64_atomics_present;
 
 #define UNALIGNED
 
-#ifndef FORCEINLINE
-#if _MSC_VER < 1200
-#define FORCEINLINE inline
-#else
-#define FORCEINLINE __forceinline
-#endif
-#endif
-
 #ifndef NOOPT_ATTRIBUTE
 #if defined(__llvm__)
 #define NOOPT_ATTRIBUTE optnone
 #else
 #define NOOPT_ATTRIBUTE optimize("O0")
 #endif
-#endif
-
-#ifndef __has_cpp_attribute
-#define __has_cpp_attribute(x) (0)
 #endif
 
 /******************* PAL-Specific Entrypoints *****************************/
@@ -413,28 +395,10 @@ PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
-#define MB_OKCANCEL             0x00000001L
-#define MB_ABORTRETRYIGNORE     0x00000002L
-
-#define MB_ICONEXCLAMATION      0x00000030L
-
-#define MB_TASKMODAL            0x00002000L
-
-#define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
-
 #define IDOK                    1
 #define IDCANCEL                2
 #define IDABORT                 3
 #define IDRETRY                 4
-
-// From win32.h
-#ifndef _CRTIMP
-#ifdef __GNUC__
-#define _CRTIMP
-#else // __GNUC__
-#define _CRTIMP __declspec(dllimport)
-#endif // __GNUC__
-#endif // _CRTIMP
 
 /******************* winbase.h Entrypoints and defines ************************/
 typedef struct _SECURITY_ATTRIBUTES {
@@ -442,8 +406,6 @@ typedef struct _SECURITY_ATTRIBUTES {
             LPVOID lpSecurityDescriptor;
             BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
-
-#define _SH_DENYWR      0x20    /* deny write mode */
 
 #define FILE_READ_DATA            ( 0x0001 )    // file & pipe
 #define FILE_APPEND_DATA          ( 0x0004 )    // file
@@ -585,38 +547,6 @@ BOOL
 PALAPI GetFileSizeEx(
         IN   HANDLE hFile,
         OUT  PLARGE_INTEGER lpFileSize);
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTimeAsFileTime(
-            OUT LPFILETIME lpSystemTimeAsFileTime);
-
-typedef struct _SYSTEMTIME {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDayOfWeek;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTime(
-          OUT LPSYSTEMTIME lpSystemTime);
-
-PALIMPORT
-BOOL
-PALAPI
-FileTimeToSystemTime(
-            IN CONST FILETIME *lpFileTime,
-            OUT LPSYSTEMTIME lpSystemTime);
-
-
 
 PALIMPORT
 BOOL
@@ -1221,12 +1151,12 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define XSTATE_AVX512_ZMM (7)
 #define XSTATE_APX (19)
 
-#define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
+#define XSTATE_MASK_GSSE (1ULL << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
-#define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
-                            (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
-                            (UI64(1) << (XSTATE_AVX512_ZMM)))
-#define XSTATE_MASK_APX (UI64(1) << (XSTATE_APX))
+#define XSTATE_MASK_AVX512 ((1ULL << (XSTATE_AVX512_KMASK)) | \
+                            (1ULL << (XSTATE_AVX512_ZMM_H)) | \
+                            (1ULL << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (1ULL << (XSTATE_APX))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
@@ -1708,7 +1638,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
 
 #define XSTATE_ARM64_SVE (2)
-#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
+#define XSTATE_MASK_ARM64_SVE (1ULL << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call

@@ -118,7 +118,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     theLog.tickFrequency = getTickFrequency();
 
-    PalGetSystemTimeAsFileTime (&theLog.startTime);
+    theLog.startTime = minipal_get_system_time();
     theLog.startTimeStamp = getTimeStamp();
 
     theLog.moduleOffset = (size_t)hMod; // HMODULES are base addresses.
