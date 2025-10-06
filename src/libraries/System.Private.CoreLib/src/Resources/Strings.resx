@@ -4379,6 +4379,9 @@
   <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
     <value>Emitting debug info is not supported for this member.</value>
   </data>
+  <data name="Arg_MustBeBFloat16" xml:space="preserve">
+    <value>Object must be of type BFloat16.</value>
+  </data>
   <data name="NotSupported_ReferenceEnumOrPrimitiveTypeRequired" xml:space="preserve">
     <value>The specified type must be a reference type, a primitive type, or an enum type.</value>
   </data>
