@@ -1536,7 +1536,7 @@ BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth) {
     }
 
     DWORD numConstraints;
-    TypeHandle *constraints = tyvar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED);
+    TypeHandle *constraints = tyvar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsOnly);
     for (unsigned i = 0; i < numConstraints; i++)
     {
         TypeHandle constraint = constraints[i];
@@ -1570,19 +1570,13 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularCl
 
     // Force a load of the constraints on the type parameters
     Instantiation classInst = GetClassInstantiation();
-    for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-    {
-        TypeVarTypeDesc* tyvar = classInst[i].AsGenericVariable();
-        _ASSERTE(tyvar != NULL);
-        tyvar->LoadConstraints(level);
-    }
 
     Instantiation methodInst = GetMethodInstantiation();
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeVarTypeDesc* tyvar = methodInst[i].AsGenericVariable();
         _ASSERTE(tyvar != NULL);
-        tyvar->LoadConstraints(level);
+        tyvar->LoadConstraints(level, WhichConstraintsToLoad::All); // Use the All here, since DoAccessibilityCheckForConstraints needs it, athough really, we only need to walk the typedefs/refs in the constraints
 
         VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy);
         DoAccessibilityCheckForConstraints(GetMethodTable(), tyvar, E_ACCESSDENIED);
@@ -1661,8 +1655,6 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
         TypeVarTypeDesc* tyvar = (TypeVarTypeDesc*) (typicalInst[i].AsTypeDesc());
         _ASSERTE(tyvar != NULL);
         _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtMethodDef);
-
-        tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical method?
 
         // Pass in the InstatiationContext so constraints can be correctly evaluated
         // if this is an instantiation where the type variable is in its open position

@@ -283,6 +283,14 @@ struct cdac_data<ParamTypeDesc>
     static constexpr size_t TypeArg = offsetof(ParamTypeDesc, m_Arg);
 };
 
+enum class WhichConstraintsToLoad
+{
+    All = 0,
+    TypeOrMethodVarsAndNonInterfacesOnly = 1,
+    TypeOrMethodVarsOnly = 2,
+    None = 3,
+};
+
 /*************************************************************************/
 // These are for verification of generic code and reflection over generic code.
 // Each TypeVarTypeDesc represents a class or method type variable, as specified by a GenericParam entry.
@@ -291,6 +299,8 @@ struct cdac_data<ParamTypeDesc>
 
 class TypeVarTypeDesc : public TypeDesc
 {
+    const DWORD WhichMask = 0xC0000000;
+    const DWORD WhichShift = 30;
 public:
 
 #ifndef DACCESS_COMPILE
@@ -314,7 +324,7 @@ public:
         m_token = token;
         m_index = index;
         m_constraints = NULL;
-        m_numConstraints = (DWORD)-1;
+        m_numConstraintsWithFlags = (DWORD)-1;
     }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -354,16 +364,16 @@ public:
     MethodDesc * LoadOwnerMethod();
     TypeHandle LoadOwnerType();
 
-    BOOL ConstraintsLoaded() { LIMITED_METHOD_CONTRACT; return m_numConstraints != (DWORD)-1; }
+    BOOL ConstraintsLoaded(WhichConstraintsToLoad which) { LIMITED_METHOD_CONTRACT; if (((m_numConstraintsWithFlags & WhichMask) >> WhichShift) <= (DWORD)which) return TRUE; return FALSE; }
 
     // Return NULL if no constraints are specified
     // Return an array of type handles if constraints are specified,
     // with the number of constraints returned in pNumConstraints
-    TypeHandle* GetCachedConstraints(DWORD *pNumConstraints);
-    TypeHandle* GetConstraints(DWORD *pNumConstraints, ClassLoadLevel level = CLASS_LOADED);
+    TypeHandle* GetCachedConstraints(DWORD *pNumConstraints, WhichConstraintsToLoad which);
+    TypeHandle* GetConstraints(DWORD *pNumConstraints, ClassLoadLevel level, WhichConstraintsToLoad which);
 
     // Load the constraints if not already loaded
-    void LoadConstraints(ClassLoadLevel level = CLASS_LOADED);
+    void LoadConstraints(ClassLoadLevel level, WhichConstraintsToLoad which);
 
     // Check the constraints on this type parameter hold in the supplied context for the supplied type
     BOOL SatisfiesConstraints(SigTypeContext *pTypeContext, TypeHandle thArg,
@@ -391,7 +401,7 @@ protected:
     mdToken m_typeOrMethodDef;
 
     // Constraints, determined on first call to GetConstraints
-    Volatile<DWORD> m_numConstraints;    // -1 until number has been determined
+    Volatile<DWORD> m_numConstraintsWithFlags;    // -1 until number has been determined. Bit 31 and 30 bits are WhichConstraintsToLoad
     PTR_TypeHandle m_constraints;
 
     // token for GenericParam entry
