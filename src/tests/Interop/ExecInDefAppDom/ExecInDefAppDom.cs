@@ -82,13 +82,13 @@ public class Program
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "Return0", "None", S_OK, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "Return1", "None", S_OK, 1);
         // This requires EH interop which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
-        if (!TestLibrary.Utilities.IsClrInterpreterActive)
+        if (!TestLibrary.Utilities.IsCoreClrInterpreter)
         {
             result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ThrowAnything", "None", COR_E_EXCEPTION, 0);
         }
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "0", S_OK, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "200", S_OK, 200);
-        if (!TestLibrary.Utilities.IsClrInterpreterActive)
+        if (!TestLibrary.Utilities.IsCoreClrInterpreter)
         {
             result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "None", COR_E_FORMAT, 0);
         }

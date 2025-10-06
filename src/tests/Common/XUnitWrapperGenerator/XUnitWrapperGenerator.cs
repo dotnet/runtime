@@ -938,7 +938,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.InterpreterActive))
         {
-            conditions.Add($"!{ConditionClass}.IsInterpreterActive");
+            conditions.Add($"!{ConditionClass}.IsCoreClrInterpreter");
         }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))

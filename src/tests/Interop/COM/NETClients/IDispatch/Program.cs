@@ -350,7 +350,7 @@ namespace NetClient
         public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano
-            if (Utilities.IsWindowsNanoServer || Utilities.IsClrInterpreterActive)
+            if (Utilities.IsWindowsNanoServer || Utilities.IsCoreClrInterpreter)
             {
                 return 100;
             }

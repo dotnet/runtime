@@ -99,7 +99,7 @@ namespace TestLibrary
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
 
-        public static bool IsClrInterpreterActive
+        public static bool IsCoreClrInterpreter
         {
             get
             {
