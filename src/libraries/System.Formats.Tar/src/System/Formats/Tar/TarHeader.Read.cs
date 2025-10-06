@@ -782,7 +782,7 @@ namespace System.Formats.Tar
 
             static void ThrowIfSupportedCompression(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> magic, string compressionType, string streamType)
             {
-                if (buffer.StartsWith(magic))
+                if (buffer.Length >= magic.Length && buffer.StartsWith(magic))
                 {
                     throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, compressionType, streamType));
                 }
@@ -790,7 +790,7 @@ namespace System.Formats.Tar
 
             static void ThrowIfUnsupportedCompression(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> magic, string compressionType)
             {
-                if (buffer.StartsWith(magic))
+                if (buffer.Length >= magic.Length && buffer.StartsWith(magic))
                 {
                     throw new InvalidDataException(SR.Format(SR.TarUnsupportedCompressionDetected, compressionType));
                 }
