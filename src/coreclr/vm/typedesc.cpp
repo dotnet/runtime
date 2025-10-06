@@ -729,9 +729,16 @@ TypeHandle* TypeVarTypeDesc::GetCachedConstraints(DWORD *pNumConstraints, WhichC
 
 TypeHandle* TypeVarTypeDesc::GetConstraints(DWORD *pNumConstraints, ClassLoadLevel level, WhichConstraintsToLoad which)
 {
-    WRAPPER_NO_CONTRACT;
-    PRECONDITION(CheckPointer(pNumConstraints));
-    PRECONDITION(level == CLASS_DEPENDENCIES_LOADED || level == CLASS_LOADED);
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(CheckPointer(pNumConstraints));
+    _ASSERTE(level == CLASS_DEPENDENCIES_LOADED || level == CLASS_LOADED);
 
     DWORD numConstraints = m_numConstraintsWithFlags;
     WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichShift);
