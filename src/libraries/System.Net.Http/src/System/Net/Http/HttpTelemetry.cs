@@ -15,7 +15,7 @@ namespace System.Net.Http
         private const string HttpTelemetryName = "System.Net.Http";
 
         public HttpTelemetry()
-            : base(HttpTelemetryName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(HttpTelemetryName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 

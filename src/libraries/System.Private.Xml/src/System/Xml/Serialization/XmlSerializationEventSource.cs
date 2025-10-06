@@ -11,7 +11,7 @@ namespace System.Xml.Serialization
         private const string XmlSerializationEventSourceName = "System.Xml.Serialzation.XmlSerialization";
 
         public XmlSerializationEventSource()
-            : base(XmlSerializationEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(XmlSerializationEventSourceName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 

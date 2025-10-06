@@ -99,7 +99,7 @@ namespace System.Diagnostics.Metrics
         }
 
         private MetricsEventSource()
-            : base(MetricsEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(MetricsEventSourceName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 

@@ -13,7 +13,7 @@ namespace System.Net.Sockets
         private const string SocketsTelemetryName = "System.Net.Sockets";
 
         public SocketsTelemetry()
-            : base(SocketsTelemetryName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(SocketsTelemetryName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 

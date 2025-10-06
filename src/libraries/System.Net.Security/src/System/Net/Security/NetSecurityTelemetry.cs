@@ -15,7 +15,7 @@ namespace System.Net.Security
         private const string NetSecurityTelemetryName = "System.Net.Security";
 
         public NetSecurityTelemetry()
-            : base(NetSecurityTelemetryName, EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(NetSecurityTelemetryName, EventSourceSettings.EtwManifestEventFormat)
         {
         }
 
