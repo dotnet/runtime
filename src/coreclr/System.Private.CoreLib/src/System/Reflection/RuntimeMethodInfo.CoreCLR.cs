@@ -159,7 +159,7 @@ namespace System.Reflection
         // retrieve items from and insert items into s_methodInstantiations.
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode(), m_reflectedTypeCache.GetRuntimeType().GetHashCode());
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle().GetHashCode());
 
         public override bool Equals(object? obj) =>
             obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
