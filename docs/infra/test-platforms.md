@@ -25,6 +25,8 @@ We want to mix and match platform versions and .NET versions to produce good pla
 
 The above policy only applies to PRs. Scheduled or incidental runs can be queued against other platform definitions, if deemed necessary.
 
+- [ ] **Open question** Should certain area paths trigger additional version testing?
+
 ## Details
 
 ### Platform version
