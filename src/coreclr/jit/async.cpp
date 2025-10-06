@@ -2233,7 +2233,8 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCa
 
         ICorDebugInfo::AsyncContinuationVarInfo varInf;
         varInf.VarNumber = ilVarNum;
-        varInf.Offset    = local.DataOffset;
+        varInf.Offset    = local.DataSize > 0 ? local.DataOffset : UINT_MAX;
+        varInf.GCIndex   = local.GCDataCount > 0 ? local.GCDataIndex : UINT_MAX;
         m_dbgContinuationVars.push_back(varInf);
         numLocals++;
     }

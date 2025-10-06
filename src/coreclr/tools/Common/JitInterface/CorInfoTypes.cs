@@ -1325,6 +1325,7 @@ namespace Internal.JitInterface
         public uint VarNumber;
         // Offset in continuation's data where this variable is stored
         public uint Offset;
+        public uint GCIndex;
     }
 
     public struct AsyncSuspensionPoint
