@@ -7,9 +7,16 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    [EventSource(Name = "System.Net.Sockets")]
+    [EventSource(Name = SocketsTelemetryName)]
     internal sealed class SocketsTelemetry : EventSource
     {
+        private const string SocketsTelemetryName = "System.Net.Sockets";
+
+        public SocketsTelemetry()
+            : base(SocketsTelemetryName, EventSourceSettings.EtwSelfDescribingEventFormat)
+        {
+        }
+
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
         private static readonly ActivitySource s_connectActivitySource = new ActivitySource(ActivitySourceName);
