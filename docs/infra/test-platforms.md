@@ -47,3 +47,8 @@ We currently regularly maintain three .NET versions:
 3. The release before the previous release
 
 The last two versions (which have already been released) are called "servicing" releases.
+
+Because the policy differs between main and servicing, whenever the main branch is snapped to a servicing release, the PR configuration needs to change. In particular, the following tasks have to be done:
+
+1. [ ] Determine the **oldest** supported version of each test platform. The policy to determine this version is currently out of scope of this document. Refer to https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core
+2. [ ] Change PR definitions in CI to use oldest versions.
