@@ -95,12 +95,12 @@ TypeHandle GetDeclaringMethodTableFromTypeVarTypeDesc(TypeVarTypeDesc *pTypeVar,
 
     // This currently should only happen in cases where we've already loaded the constraints.
     // Currently, the only known case where use this code is reflection over methods exposed on a TypeVariable.
-    _ASSERTE(pTypeVar->ConstraintsLoaded());
+    _ASSERTE(pTypeVar->ConstraintsLoaded(WhichConstraintsToLoad::All));
 
-    if (pTypeVar->ConstraintsLoaded())
+    if (pTypeVar->ConstraintsLoaded(WhichConstraintsToLoad::All))
     {
         DWORD cConstraints;
-        TypeHandle *pTypeHandles = pTypeVar->GetCachedConstraints(&cConstraints);
+        TypeHandle *pTypeHandles = pTypeVar->GetConstraints(&cConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::All);
         for (DWORD iConstraint = 0; iConstraint < cConstraints; iConstraint++)
         {
             if (pTypeHandles[iConstraint].IsGenericVariable())
@@ -146,7 +146,8 @@ void SigTypeContext::InitTypeContext(MethodDesc *md, TypeHandle declaringType, I
         // <TODO> factor this with the work above </TODO>
         if (declaringType.IsGenericVariable())
         {
-            declaringType = GetDeclaringMethodTableFromTypeVarTypeDesc(declaringType.AsGenericVariable(), md);
+            _ASSERTE(FALSE);
+//            declaringType = GetDeclaringMethodTableFromTypeVarTypeDesc(declaringType.AsGenericVariable(), md);
         }
 
         if (declaringType.IsNull())

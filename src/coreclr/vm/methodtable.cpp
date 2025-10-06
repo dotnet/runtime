@@ -4214,7 +4214,7 @@ VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc 
     CONTRACTL_END;
 
     DWORD numConstraints;
-    TypeHandle *pthConstraints = pTyVar->GetCachedConstraints(&numConstraints);
+    TypeHandle *pthConstraints = pTyVar->GetCachedConstraints(&numConstraints, WhichConstraintsToLoad::All);
     for (DWORD cidx = 0; cidx < numConstraints; cidx++)
     {
         TypeHandle thConstraint = pthConstraints[cidx];
@@ -4582,12 +4582,14 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth);
 
                 TypeVarTypeDesc *pTyVar = formalParams[i].AsGenericVariable();
-                pTyVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
                 if (!Bounded(pTyVar, formalParams.GetNumArgs()))
                 {
                     COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_VAR_CONSTRAINTS);
                 }
 
+                // For typical type definitions, we have to load the constraints here because they may not
+                // have been loaded yet. In principle we could change DoAccessibilityCheckForConstraints to walk the typedefs/refs in the constraint instead
+                pTyVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::All);
                 DoAccessibilityCheckForConstraints(this, pTyVar, E_ACCESSDENIED);
             }
         }
