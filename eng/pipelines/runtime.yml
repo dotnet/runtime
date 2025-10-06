@@ -115,7 +115,9 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['wasmDarcDependenciesChanged'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -900,13 +902,15 @@ extends:
 
       # WASI/WASM
 
-      # - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-      #   parameters:
-      #     platforms:
-      #       - wasi_wasm
-      #       - wasi_wasm_win
-      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      #     alwaysRun: ${{ variables.isRollingBuild }}
+      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
+          publishArtifactsForWorkload: false
+          publishWBT: false
 
       #
       # Android devices

@@ -47,11 +47,11 @@ public:
 
 private:
 #if defined(TARGET_XARCH)
-    // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
-    void genSSE2BitwiseOp(GenTree* treeNode);
+    // Generates intrinsic code for the given tree as "Operand BitWiseOp BitMask"
+    void genIntrinsicBitwiseOp(GenTree* treeNode);
 
-    // Generates SSE42 code for the given tree as a round operation
-    void genSSE42RoundOp(GenTreeOp* treeNode);
+    // Generates intrinsic code for the given tree as a round operation
+    void genIntrinsicRoundOp(GenTreeOp* treeNode);
 
     instruction simdAlignedMovIns()
     {
@@ -942,7 +942,6 @@ protected:
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
@@ -1045,7 +1044,7 @@ protected:
     //
     // Return Value:
     //     None.
-    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    FORCEINLINE void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
     {
         if (targetReg != REG_NA)
         {

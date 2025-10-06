@@ -874,15 +874,15 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
     else
     {
-        regIndices =
-            new regNumber[]{REG_RAX,   REG_RCX,   REG_RDX,   REG_RBX,   REG_RSP,   REG_RBP,   REG_RSI,   REG_RDI,
-                            REG_R8,    REG_R9,    REG_R10,   REG_R11,   REG_R12,   REG_R13,   REG_R14,   REG_R15,
-                            REG_XMM0,  REG_XMM1,  REG_XMM2,  REG_XMM3,  REG_XMM4,  REG_XMM5,  REG_XMM6,  REG_XMM7,
-                            REG_XMM8,  REG_XMM9,  REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
-                            REG_XMM16, REG_XMM17, REG_XMM18, REG_XMM19, REG_XMM20, REG_XMM21, REG_XMM22, REG_XMM23,
-                            REG_XMM24, REG_XMM25, REG_XMM26, REG_XMM27, REG_XMM28, REG_XMM29, REG_XMM30, REG_XMM31,
-                            REG_K0,    REG_K1,    REG_K2,    REG_K3,    REG_K4,    REG_K5,    REG_K6,    REG_K7,
-                            REG_COUNT};
+        regIndices = new (theCompiler, CMK_LSRA)
+            regNumber[]{REG_RAX,   REG_RCX,   REG_RDX,   REG_RBX,   REG_RSP,   REG_RBP,   REG_RSI,   REG_RDI,
+                        REG_R8,    REG_R9,    REG_R10,   REG_R11,   REG_R12,   REG_R13,   REG_R14,   REG_R15,
+                        REG_XMM0,  REG_XMM1,  REG_XMM2,  REG_XMM3,  REG_XMM4,  REG_XMM5,  REG_XMM6,  REG_XMM7,
+                        REG_XMM8,  REG_XMM9,  REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
+                        REG_XMM16, REG_XMM17, REG_XMM18, REG_XMM19, REG_XMM20, REG_XMM21, REG_XMM22, REG_XMM23,
+                        REG_XMM24, REG_XMM25, REG_XMM26, REG_XMM27, REG_XMM28, REG_XMM29, REG_XMM30, REG_XMM31,
+                        REG_K0,    REG_K1,    REG_K2,    REG_K3,    REG_K4,    REG_K5,    REG_K6,    REG_K7,
+                        REG_COUNT};
     }
 #endif // TARGET_AMD64
 
@@ -9622,7 +9622,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // This indicates that the var originally in rax is now in its target register.
 
     regNumberSmall location[REG_COUNT];
-    C_ASSERT(sizeof(char) == sizeof(regNumberSmall)); // for memset to work
+    static_assert(sizeof(char) == sizeof(regNumberSmall)); // for memset to work
     memset(location, REG_NA, REG_COUNT);
     regNumberSmall source[REG_COUNT];
     memset(source, REG_NA, REG_COUNT);
@@ -12575,7 +12575,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     this->linearScan = linearScan;
 
 #ifdef DEBUG
-    mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
+    mappingTable = new (linearScan->compiler, CMK_LSRA) ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);

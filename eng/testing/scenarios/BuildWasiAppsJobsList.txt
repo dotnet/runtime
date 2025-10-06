@@ -1,1 +1,1 @@
-
+Wasi.Build.Tests.BuildPublishTests

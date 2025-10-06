@@ -50,6 +50,8 @@ public interface IThread : IContract
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
+    TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
+    byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

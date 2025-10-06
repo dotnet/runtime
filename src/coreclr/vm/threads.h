@@ -592,9 +592,6 @@ public:
     enum ThreadTasks
     {
         TT_CleanupSyncBlock       = 0x00000001, // The synch block needs to be cleaned up.
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TT_CallCoInitialize       = 0x00000002, // CoInitialize needs to be called.
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     };
 
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
@@ -759,7 +756,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedOr((LONG*)&m_State, TS_CoInitialized);
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CallCoInitialize);
     }
 
     void ResetCoInitialized()
@@ -781,24 +777,6 @@ public:
         ResetThreadStateNC(TSNC_WinRTInitialized);
     }
 #endif // FEATURE_COMINTEROP
-
-    DWORD RequiresCoInitialize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_CallCoInitialize);
-    }
-
-    void SetRequiresCoInitialize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CallCoInitialize);
-    }
-
-    void ResetRequiresCoInitialize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks,~TT_CallCoInitialize);
-    }
 
     void CleanupCOMState();
 
@@ -3561,6 +3539,12 @@ public:
         _ASSERTE(!m_debuggerActivePatchSkipper.Load());
     }
 
+    bool HasActivePatchSkip() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_debuggerActivePatchSkipper.Load() != NULL;
+    }
+
 private:
 
     static BOOL EnterWorkingOnThreadContext(Thread *pThread)
@@ -3955,9 +3939,10 @@ struct cdac_data<Thread>
     #else
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_currentExInfo);
     #endif
-
     #ifndef TARGET_UNIX
     static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
+    + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
     #endif
 };
 
@@ -5156,17 +5141,24 @@ class CoopTransitionHolder
 {
     Frame * m_pFrame;
 
+#ifdef DEBUG
+    int m_uncaughtExceptions;
+#endif
+
 public:
     CoopTransitionHolder(Thread * pThread)
         : m_pFrame(pThread->m_pFrame)
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DEBUG
+        m_uncaughtExceptions = std::uncaught_exceptions();
+#endif
     }
 
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        _ASSERTE_MSG(m_pFrame == nullptr || m_uncaughtExceptions < std::uncaught_exceptions(), "Early return from JIT/EE interface method");
         if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }
@@ -5175,7 +5167,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
-        // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+        // static_assert(FRAME_TOP_VALUE != NULL);
         m_pFrame = nullptr;
     }
 };

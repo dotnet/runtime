@@ -43,12 +43,15 @@
 #define GC_STATS
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_BROWSER)
+#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_WASM)
     #define USE_LAZY_PREFERRED_RANGE       0
 
 #elif defined(TARGET_64BIT)
 
-#define FEATURE_ON_STACK_REPLACEMENT
+#ifdef FEATURE_TIERED_COMPILATION
+    // FEATURE_ON_STACK_REPLACEMENT is only needed for tiered compilation.
+    #define FEATURE_ON_STACK_REPLACEMENT
+#endif // FEATURE_TIERED_COMPILATION
 
 #if defined(HOST_UNIX)
     // In PAL we have a mechanism that reserves memory on start up that is
@@ -161,6 +164,14 @@
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 #define CHAIN_LOOKUP
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+#if !defined(FEATURE_PORTABLE_ENTRYPOINTS) && !defined(TARGET_X86)
+#define FEATURE_PORTABLE_SHUFFLE_THUNKS
+#endif
+
+#if defined(TARGET_UNIX) || !defined(TARGET_X86)
+#define FEATURE_INSTANTIATINGSTUB_AS_IL
+#endif
 
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.

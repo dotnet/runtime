@@ -159,6 +159,90 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_DateOnlyAsRoot()
+    {
+        DateOnly value = new DateOnly(2024, 12, 31);
+        string expected = @"<dateOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2024-12-31</dateOnly>";
+        Assert.StrictEqual(value, DataContractSerializerHelper.SerializeAndDeserialize<DateOnly>(value, expected));
+
+        // Nullable
+        DateOnly? nullable = new DateOnly(2001, 1, 1);
+        string expectedNullable = @"<dateOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2001-01-01</dateOnly>";
+        Assert.StrictEqual(nullable, DataContractSerializerHelper.SerializeAndDeserialize<DateOnly?>(nullable, expectedNullable));
+    }
+
+    [Fact]
+    public static void DCS_BinarySerializationOfDateOnly()
+    {
+        DateOnly dateOnly = new DateOnly(2021, 1, 1);
+        MemoryStream ms = new();
+        DataContractSerializer dcs = new(dateOnly.GetType());
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: false))
+            dcs.WriteObject(writer, dateOnly);
+        var serializedBytes = ms.ToArray();
+        // DateOnly is still serialized as a string. It would require new API in XmlNodeWriter to generate specialized byte format.
+        Assert.Equal(75, serializedBytes.Length);
+
+        // Verify round trip
+        ms.Position = 0;
+        using var reader = XmlDictionaryReader.CreateBinaryReader(ms, null, XmlDictionaryReaderQuotas.Max, null, null);
+        var roundTrip = (DateOnly)dcs.ReadObject(reader)!;
+        Assert.StrictEqual(dateOnly, roundTrip);
+    }
+
+    [Fact]
+    public static void DCS_TimeOnlyAsRoot()
+    {
+        TimeOnly value = new TimeOnly(13, 5, 7, 123); // 13:05:07.123
+        string expected = @"<timeOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">13:05:07.123</timeOnly>";
+        Assert.StrictEqual(value, DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(value, expected));
+
+        // Whole second (no fraction should be emitted)
+        TimeOnly wholeSecond = new TimeOnly(6, 30, 0);
+        string expectedWhole = @"<timeOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">06:30:00</timeOnly>";
+        Assert.StrictEqual(wholeSecond, DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(wholeSecond, expectedWhole));
+    }
+
+    [Fact]
+    public static void DCS_BinarySerializationOfTimeOnly()
+    {
+        TimeOnly timeOnly = new TimeOnly(13, 5, 7, 123);
+        MemoryStream ms = new();
+        DataContractSerializer dcs = new(timeOnly.GetType());
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: false))
+            dcs.WriteObject(writer, timeOnly);
+        var serializedBytes = ms.ToArray();
+        // TimeOnly is still serialized as a string. It would require new API in XmlNodeWriter to generate specialized byte format.
+        Assert.Equal(77, serializedBytes.Length);
+
+        // Verify round trip
+        ms.Position = 0;
+        using var reader = XmlDictionaryReader.CreateBinaryReader(ms, null, XmlDictionaryReaderQuotas.Max, null, null);
+        var roundTrip = (TimeOnly)dcs.ReadObject(reader)!;
+        Assert.StrictEqual(timeOnly, roundTrip);
+    }
+
+    [Fact]
+    public static void DCS_DateTimeOnlyWrapper_Roundtrip()
+    {
+        var original = new SerializationTestTypes.DateTimeOnlyWrapper
+        {
+            Date = new DateOnly(2030, 7, 15),
+            Time = new TimeOnly(9, 45, 30, 250),
+            NullableDate = null,
+            NullableTime = null
+        };
+
+        string xml = @"<DateTimeOnlyWrapper xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Date>2030-07-15</Date><NullableDate i:nil=""true""/><NullableTime i:nil=""true""/><Time>09:45:30.25</Time></DateTimeOnlyWrapper>";
+        var roundtrip = DataContractSerializerHelper.SerializeAndDeserialize<SerializationTestTypes.DateTimeOnlyWrapper>(original, xml);
+
+        Assert.Equal(original.Date, roundtrip.Date);
+        Assert.Equal(original.Time, roundtrip.Time);
+        Assert.Null(roundtrip.NullableDate);
+        Assert.Null(roundtrip.NullableTime);
+    }
+
+    [Fact]
     public static void DCS_GuidAsRoot()
     {
         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
@@ -1427,6 +1511,34 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
 
+    [Fact]
+    public static void DCS_DateTimeOffsetInIXmlSerializableContainer()
+    {
+        // Ensures DateTimeOffset deserialization works correctly when DCS is used
+        // within an IXmlSerializable implementation (regression coverage).
+        var originalDate = new DateTimeOffset(2025, 4, 17, 22, 45, 0, TimeSpan.FromHours(-4));
+        var container = new DateTimeOffsetIXmlSerializableContainer { Date = originalDate };
+
+        var serializer = new DataContractSerializer(typeof(DateTimeOffsetIXmlSerializableContainer));
+
+        string serialized;
+        using (var ms = new MemoryStream())
+        {
+            serializer.WriteObject(ms, container);
+            serialized = Encoding.UTF8.GetString(ms.ToArray());
+        }
+
+        DateTimeOffsetIXmlSerializableContainer deserialized;
+        using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(serialized)))
+        {
+            deserialized = (DateTimeOffsetIXmlSerializableContainer)serializer.ReadObject(ms);
+        }
+
+        Assert.Equal(originalDate, deserialized.Date);
+        Assert.Equal(originalDate.DateTime, deserialized.Date.DateTime);
+        Assert.Equal(originalDate.Offset, deserialized.Date.Offset);
+        Assert.Equal(originalDate.UtcDateTime, deserialized.Date.UtcDateTime);
+    }
     [Fact]
     public static void DCS_PrivateTypeSerialization()
     {

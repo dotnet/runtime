@@ -2,7 +2,6 @@ parameters:
   osGroup: ''
   runtimeType: 'mono' # Currently only used for Android Hello World app
   nameSuffix: ''
-  hybridGlobalization: False
 
 steps:
 # Build Android sample app
@@ -125,11 +124,11 @@ steps:
         displayName: clean bindir
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono')) }}:
-    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
-      displayName: Build HelloiOS AOT sample app LLVM=False STRIP_SYMBOLS=False HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+      displayName: Build HelloiOS AOT sample app LLVM=False STRIP_SYMBOLS=False
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
@@ -141,17 +140,17 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoLLVM
-        artifactName: iOSSampleAppNoLLVMSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
+        artifactName: iOSSampleAppNoLLVMSymbols
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
-      displayName: Build HelloiOS AOT sample app LLVM=False STRIP_SYMBOLS=True HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+      displayName: Build HelloiOS AOT sample app LLVM=False STRIP_SYMBOLS=True
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
@@ -163,17 +162,17 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoLLVM NoSymbols
-        artifactName: iOSSampleAppNoLLVMNoSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
+        artifactName: iOSSampleAppNoLLVMNoSymbols
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
-      displayName: Build HelloiOS AOT sample app LLVM=True STRIP_SYMBOLS=False HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+      displayName: Build HelloiOS AOT sample app LLVM=True STRIP_SYMBOLS=False
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
@@ -185,17 +184,17 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App LLVM
-        artifactName: iOSSampleAppLLVMSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
+        artifactName: iOSSampleAppLLVMSymbols
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
-      displayName: Build HelloiOS AOT sample app LLVM=True STRIP_SYMBOLS=True HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+      displayName: Build HelloiOS AOT sample app LLVM=True STRIP_SYMBOLS=True
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
@@ -207,16 +206,41 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App LLVM NoSymbols
-        artifactName: iOSSampleAppLLVMNoSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
+        artifactName: iOSSampleAppLLVMNoSymbols
         archiveExtension: '.zip'
         archiveType: zip
 
+  - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.runtimeType, 'coreclr')) }}:
+    # CoreCLR Interpreter Build
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Checked DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false USE_MONO_RUNTIME=false AOT=false
+      env:
+        DevTeamProvisioning: '-'
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Build HelloiOS sample app
+    - task: PublishBuildArtifacts@1
+      condition: succeededOrFailed()
+      displayName: 'Publish binlog'
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+        artifactName:  iOSCoreCLRArm64BuildLog
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Debug-iphoneos/HelloiOS.app
+        includeRootFolder: true
+        displayName: iOS Sample App
+        artifactName: iOSSampleApp
+        archiveExtension: '.zip'
+        archiveType: zip
+    - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Clean bindir
+
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT')) }}:
-    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
-      displayName: Build HelloiOS Native AOT sample app STRIP_SYMBOLS=False HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+      displayName: Build HelloiOS Native AOT sample app STRIP_SYMBOLS=False
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
@@ -228,17 +252,17 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App Symbols
-        artifactName: iOSSampleAppSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
+        artifactName: iOSSampleAppSymbols
         archiveExtension: '.zip'
         archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
       displayName: Clean bindir
-    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
-      displayName: Build HelloiOS Native AOT sample app STRIP_SYMBOLS=True HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
+      displayName: Build HelloiOS Native AOT sample app STRIP_SYMBOLS=True
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
@@ -250,6 +274,6 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
         includeRootFolder: true
         displayName: iOS Sample App NoSymbols
-        artifactName: iOSSampleAppNoSymbolsHybridGlobalization${{parameters.hybridGlobalization}}
+        artifactName: iOSSampleAppNoSymbols
         archiveExtension: '.zip'
         archiveType: zip

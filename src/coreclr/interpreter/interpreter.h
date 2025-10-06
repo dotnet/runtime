@@ -19,11 +19,13 @@
 #include "corhdr.h"
 #include "corjit.h"
 
-#include "interpretershared.h"
+#include <interpretershared.h>
 #include "compiler.h"
 #include "interpconfig.h"
 
 #define ALIGN_UP_TO(val,align) ((((size_t)val) + (size_t)((align) - 1)) & (~((size_t)(align - 1))))
+
+bool IsInterpDumpActive();
 
 #ifdef DEBUG
 extern "C" void assertAbort(const char* why, const char* file, unsigned line);

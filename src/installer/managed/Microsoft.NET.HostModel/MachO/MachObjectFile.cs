@@ -112,50 +112,35 @@ internal unsafe partial class MachObjectFile
     /// </summary>
     /// <param name="file">The file to write the signature to.</param>
     /// <param name="identifier">The identifier to use for the code signature.</param>
-    /// <param name="oldSignature">
-    /// An optional old signature to preserve entitlements metadata.
-    /// If not provided, the existing code signature blob will be used.
-    /// If the existing code signature blob is not present, a new signature will be created without entitlements.
-    /// </param>
-    public long AdHocSignFile(IMachOFileAccess file, string identifier, EmbeddedSignatureBlob? oldSignature = null)
+    public long AdHocSignFile(IMachOFileAccess file, string identifier)
     {
-        oldSignature ??= _codeSignatureBlob;
-        AllocateCodeSignatureLoadCommand(identifier, oldSignature);
+        AllocateCodeSignatureLoadCommand(identifier);
         _codeSignatureBlob = null;
         // The code signature includes hashes of the entire file up to the code signature.
         // In order to calculate the hashes correctly, everything up to the code signature must be written before the signature is built.
         Write(file);
-        _codeSignatureBlob = CreateSignature(this, file, identifier, oldSignature);
+        _codeSignatureBlob = CreateSignature(this, file, identifier);
         Validate();
         _codeSignatureBlob.Write(file, _codeSignatureLoadCommand.Command.GetDataOffset(_header));
         return GetFileSize();
     }
 
-    private static EmbeddedSignatureBlob CreateSignature(MachObjectFile machObject, IMachOFileReader file, string identifier, EmbeddedSignatureBlob? oldSignature)
+    private static EmbeddedSignatureBlob CreateSignature(MachObjectFile machObject, IMachOFileReader file, string identifier)
     {
-        var oldSignatureBlob = oldSignature;
-
         Debug.Assert(!machObject._codeSignatureLoadCommand.Command.IsDefault);
         uint signatureStart = machObject._codeSignatureLoadCommand.Command.GetDataOffset(machObject._header);
         RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
         CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
-        EntitlementsBlob? entitlementsBlob = oldSignatureBlob?.EntitlementsBlob;
-        DerEntitlementsBlob? derEntitlementsBlob = oldSignatureBlob?.DerEntitlementsBlob;
-
         var codeDirectory = CodeDirectoryBlob.Create(
             file,
             signatureStart,
             identifier,
-            requirementsBlob,
-            entitlementsBlob,
-            derEntitlementsBlob);
+            requirementsBlob);
 
         return new EmbeddedSignatureBlob(
             codeDirectoryBlob: codeDirectory,
             requirementsBlob: requirementsBlob,
-            cmsWrapperBlob: cmsWrapperBlob,
-            entitlementsBlob: entitlementsBlob,
-            derEntitlementsBlob: derEntitlementsBlob);
+            cmsWrapperBlob: cmsWrapperBlob);
     }
 
     /// <summary>
@@ -448,11 +433,11 @@ internal unsafe partial class MachObjectFile
     /// <summary>
     /// Clears the old signature and sets the codeSignatureLC to the proper size and offset for a new signature.
     /// </summary>
-    private void AllocateCodeSignatureLoadCommand(string identifier, EmbeddedSignatureBlob? oldSignature)
+    private void AllocateCodeSignatureLoadCommand(string identifier)
     {
         uint csOffset = GetSignatureStart();
         uint csPtr = (uint)(_codeSignatureLoadCommand.Command.IsDefault ? NextLoadCommandOffset : _codeSignatureLoadCommand.FileOffset);
-        uint csSize = (uint)EmbeddedSignatureBlob.GetSignatureSize(csOffset, identifier, oldSignature);
+        uint csSize = (uint)EmbeddedSignatureBlob.GetSignatureSize(csOffset, identifier);
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {

@@ -59,7 +59,7 @@ public:
     UPTR m_rgKeys[SLOTS_PER_BUCKET];
     UPTR m_rgValues[SLOTS_PER_BUCKET];
 
-#define VALUE_MASK (sizeof(LPVOID) == 4 ? 0x7FFFFFFF : I64(0x7FFFFFFFFFFFFFFF))
+#define VALUE_MASK (sizeof(LPVOID) == 4 ? 0x7FFFFFFF : 0x7FFFFFFFFFFFFFFFLL)
 
     void SetValue (UPTR value, UPTR i)
     {

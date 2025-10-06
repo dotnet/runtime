@@ -27,6 +27,14 @@
 #include "handletable.inl"
 #include "gcenv.inl"
 #include "gceventstatus.h"
+#include <minipal/memorybarrierprocesswide.h>
+
+// If FEATURE_INTERPRETER is set, always enable the GC side of FEATURE_CONSERVATIVE_GC
+#ifdef FEATURE_INTERPRETER
+#ifndef FEATURE_CONSERVATIVE_GC
+#define FEATURE_CONSERVATIVE_GC
+#endif
+#endif // FEATURE_INTERPRETER
 
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
@@ -42,9 +50,13 @@
 #endif // defined(FEATURE_SVR_GC)
 #endif // __INTELLISENSE__
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #include "vxsort/do_vxsort.h"
-#endif
+#define USE_VXSORT
+#else
+#define USE_INTROSORT
+#endif // TARGET_AMD64 || TARGET_ARM64
+#include "introsort.h"
 
 #ifdef SERVER_GC
 namespace SVR {
@@ -54,12 +66,6 @@ namespace WKS {
 
 #include "gcimpl.h"
 #include "gcpriv.h"
-
-#ifdef TARGET_AMD64
-#define USE_VXSORT
-#else
-#define USE_INTROSORT
-#endif
 
 #ifdef DACCESS_COMPILE
 #error this source file should not be compiled with DACCESS_COMPILE!
@@ -5298,7 +5304,7 @@ struct initial_memory_details
             case 0: return block_size_normal;
             case 1: return block_size_large;
             case 2: return block_size_pinned;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -5311,7 +5317,7 @@ struct initial_memory_details
             case soh_gen2: return initial_normal_heap[h_number].memory_base;
             case loh_generation: return initial_large_heap[h_number].memory_base;
             case poh_generation: return initial_pinned_heap[h_number].memory_base;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -5324,7 +5330,7 @@ struct initial_memory_details
             case soh_gen2: return block_size_normal;
             case loh_generation: return block_size_large;
             case poh_generation: return block_size_pinned;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -9871,7 +9877,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         if (!write_barrier_updated)
         {
             seg_mapping_table = new_seg_mapping_table;
-            GCToOSInterface::FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
             g_gc_lowest_address = saved_g_lowest_address;
             g_gc_highest_address = saved_g_highest_address;
 
@@ -10363,133 +10369,6 @@ void rqsort1( uint8_t* *low, uint8_t* *high)
     }
 }
 
-// vxsort uses introsort as a fallback if the AVX2 instruction set is not supported
-#if defined(USE_INTROSORT) || defined(USE_VXSORT)
-class introsort
-{
-
-private:
-    static const int size_threshold = 64;
-    static const int max_depth = 100;
-
-
-inline static void swap_elements(uint8_t** i,uint8_t** j)
-    {
-        uint8_t* t=*i;
-        *i=*j;
-        *j=t;
-    }
-
-public:
-    static void sort (uint8_t** begin, uint8_t** end, int ignored)
-    {
-        ignored = 0;
-        introsort_loop (begin, end, max_depth);
-        insertionsort (begin, end);
-    }
-
-private:
-
-    static void introsort_loop (uint8_t** lo, uint8_t** hi, int depth_limit)
-    {
-        while (hi-lo >= size_threshold)
-        {
-            if (depth_limit == 0)
-            {
-                heapsort (lo, hi);
-                return;
-            }
-            uint8_t** p=median_partition (lo, hi);
-            depth_limit=depth_limit-1;
-            introsort_loop (p, hi, depth_limit);
-            hi=p-1;
-        }
-    }
-
-    static uint8_t** median_partition (uint8_t** low, uint8_t** high)
-    {
-        uint8_t *pivot, **left, **right;
-
-        //sort low middle and high
-        if (*(low+((high-low)/2)) < *low)
-            swap_elements ((low+((high-low)/2)), low);
-        if (*high < *low)
-            swap_elements (low, high);
-        if (*high < *(low+((high-low)/2)))
-            swap_elements ((low+((high-low)/2)), high);
-
-        swap_elements ((low+((high-low)/2)), (high-1));
-        pivot =  *(high-1);
-        left = low; right = high-1;
-        while (1) {
-            while (*(--right) > pivot);
-            while (*(++left)  < pivot);
-            if (left < right)
-            {
-                swap_elements(left, right);
-            }
-            else
-                break;
-        }
-        swap_elements (left, (high-1));
-        return left;
-    }
-
-
-    static void insertionsort (uint8_t** lo, uint8_t** hi)
-    {
-        for (uint8_t** i=lo+1; i <= hi; i++)
-        {
-            uint8_t** j = i;
-            uint8_t* t = *i;
-            while((j > lo) && (t <*(j-1)))
-            {
-                *j = *(j-1);
-                j--;
-            }
-            *j = t;
-        }
-    }
-
-    static void heapsort (uint8_t** lo, uint8_t** hi)
-    {
-        size_t n = hi - lo + 1;
-        for (size_t i=n / 2; i >= 1; i--)
-        {
-            downheap (i,n,lo);
-        }
-        for (size_t i = n; i > 1; i--)
-        {
-            swap_elements (lo, lo + i - 1);
-            downheap(1, i - 1,  lo);
-        }
-    }
-
-    static void downheap (size_t i, size_t n, uint8_t** lo)
-    {
-        uint8_t* d = *(lo + i - 1);
-        size_t child;
-        while (i <= n / 2)
-        {
-            child = 2*i;
-            if (child < n && *(lo + child - 1)<(*(lo + child)))
-            {
-                child++;
-            }
-            if (!(d<*(lo + child - 1)))
-            {
-                break;
-            }
-            *(lo + i - 1) = *(lo + child - 1);
-            i = child;
-        }
-        *(lo + i - 1) = d;
-    }
-
-};
-
-#endif //defined(USE_INTROSORT) || defined(USE_VXSORT)
-
 #ifdef USE_VXSORT
 static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* range_low, uint8_t* range_high)
 {
@@ -10501,9 +10380,13 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
     // despite possible downclocking on current devices
     const ptrdiff_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
 
+    // above this threshold, using NEON for sorting will likely pay off
+    const ptrdiff_t NEON_THRESHOLD_SIZE = 1024;
+
     if (item_count <= 1)
         return;
 
+#if defined(TARGET_AMD64)
     if (IsSupportedInstructionSet (InstructionSet::AVX2) && (item_count > AVX2_THRESHOLD_SIZE))
     {
         dprintf(3, ("Sorting mark lists"));
@@ -10518,6 +10401,13 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
             do_vxsort_avx2 (item_array, &item_array[item_count - 1], range_low, range_high);
         }
     }
+#elif defined(TARGET_ARM64)
+    if (IsSupportedInstructionSet (InstructionSet::NEON) && (item_count > NEON_THRESHOLD_SIZE))
+    {
+        dprintf(3, ("Sorting mark lists"));
+        do_vxsort_neon (item_array, &item_array[item_count - 1], range_low, range_high);
+    }
+#endif
     else
     {
         dprintf (3, ("Sorting mark lists"));
@@ -11158,21 +11048,18 @@ uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, ui
 void gc_heap::grow_mark_list ()
 {
     // with vectorized sorting, we can use bigger mark lists
-#ifdef USE_VXSORT
-#ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ?
-        (1000 * 1024) : (200 * 1024);
-#else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ?
-        (32 * 1024) : (16 * 1024);
-#endif //MULTIPLE_HEAPS
-#else //USE_VXSORT
-#ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 200 * 1024;
-#else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 16 * 1024;
-#endif //MULTIPLE_HEAPS
+    bool use_big_lists = false;
+#if defined(USE_VXSORT) && defined(TARGET_AMD64)
+    use_big_lists = IsSupportedInstructionSet (InstructionSet::AVX2);
+#elif defined(USE_VXSORT) && defined(TARGET_ARM64)
+    use_big_lists = IsSupportedInstructionSet (InstructionSet::NEON);
 #endif //USE_VXSORT
+
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = use_big_lists ? (1000 * 1024) : (200 * 1024);
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = use_big_lists ? (32 * 1024) : (16 * 1024);
+#endif //MULTIPLE_HEAPS
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
     size_t new_mark_list_total_size = new_mark_list_size*n_heaps;
@@ -24752,7 +24639,7 @@ void gc_heap::garbage_collect (int n)
                 }
             }
 #else
-            do_concurrent_p = (!!bgc_thread && commit_mark_array_bgc_init());
+            do_concurrent_p = (bgc_thread_running && commit_mark_array_bgc_init());
             if (do_concurrent_p)
             {
                 background_saved_lowest_address = lowest_address;
@@ -30812,7 +30699,7 @@ void gc_heap::reset_mark_stack ()
 #else
 #define brick_bits (11)
 #endif //TARGET_AMD64
-C_ASSERT(brick_size == (1 << brick_bits));
+static_assert(brick_size == (1 << brick_bits));
 
 // The number of bits needed to represent the offset to a child node.
 // "brick_bits + 1" allows us to represent a signed offset within a brick.
@@ -44216,41 +44103,47 @@ void gc_heap::init_static_data()
 {
     size_t gen0_min_size = get_gen0_min_size();
 
-    size_t gen0_max_size =
-#ifdef MULTIPLE_HEAPS
-        max ((size_t)6*1024*1024, min ( Align(soh_segment_size/2), (size_t)200*1024*1024));
-#else //MULTIPLE_HEAPS
-        (
-#ifdef BACKGROUND_GC
-            gc_can_use_concurrent ?
-            6*1024*1024 :
-#endif //BACKGROUND_GC
-            max ((size_t)6*1024*1024,  min ( Align(soh_segment_size/2), (size_t)200*1024*1024))
-        );
-#endif //MULTIPLE_HEAPS
-
-    gen0_max_size = max (gen0_min_size, gen0_max_size);
-
-    if (heap_hard_limit)
-    {
-        size_t gen0_max_size_seg = soh_segment_size / 4;
-        dprintf (GTC_LOG, ("limit gen0 max %zd->%zd", gen0_max_size, gen0_max_size_seg));
-        gen0_max_size = min (gen0_max_size, gen0_max_size_seg);
-    }
+    size_t gen0_max_size = 0;
 
     size_t gen0_max_size_config = (size_t)GCConfig::GetGCGen0MaxBudget();
 
     if (gen0_max_size_config)
     {
-        gen0_max_size = min (gen0_max_size, gen0_max_size_config);
+        gen0_max_size = gen0_max_size_config;
 
 #ifdef FEATURE_EVENT_TRACE
         gen0_max_budget_from_config = gen0_max_size;
 #endif //FEATURE_EVENT_TRACE
     }
+    else
+    {
+        gen0_max_size =
+#ifdef MULTIPLE_HEAPS
+            max ((size_t)6 * 1024 * 1024, min (Align(soh_segment_size / 2), (size_t)200 * 1024 * 1024));
+#else //MULTIPLE_HEAPS
+            (
+#ifdef BACKGROUND_GC
+                gc_can_use_concurrent ?
+                6 * 1024 * 1024 :
+#endif //BACKGROUND_GC
+                max ((size_t)6 * 1024 * 1024, min (Align(soh_segment_size / 2), (size_t)200 * 1024 * 1024))
+                );
+#endif //MULTIPLE_HEAPS
+
+        gen0_max_size = max (gen0_min_size, gen0_max_size);
+
+        if (heap_hard_limit)
+        {
+            size_t gen0_max_size_seg = soh_segment_size / 4;
+            dprintf (GTC_LOG, ("limit gen0 max %zd->%zd", gen0_max_size, gen0_max_size_seg));
+            gen0_max_size = min (gen0_max_size, gen0_max_size_seg);
+        }
+    }
 
     gen0_max_size = Align (gen0_max_size);
     gen0_min_size = min (gen0_min_size, gen0_max_size);
+
+    GCConfig::SetGCGen0MaxBudget (gen0_max_size);
 
     // TODO: gen0_max_size has a 200mb cap; gen1_max_size should also have a cap.
     size_t gen1_max_size = (size_t)
@@ -44284,6 +44177,17 @@ void gc_heap::init_static_data()
         static_data_table[i][0].max_size = gen0_max_size;
         static_data_table[i][1].max_size = gen1_max_size;
     }
+
+#ifdef DYNAMIC_HEAP_COUNT
+    if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+    {
+        gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = gen0_min_size;
+        if (gen0_max_size_config)
+        {
+            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = gen0_max_size;
+        }
+    }
+#endif //DYNAMIC_HEAP_COUNT
 }
 
 bool gc_heap::init_dynamic_data()
@@ -49400,8 +49304,15 @@ HRESULT GCHeap::Initialize()
         }
         else
         {
-            // If no hard_limit is configured the reservation size is min of 1/2 GetVirtualMemoryLimit() or max of 256Gb or 2x physical limit.
-            gc_heap::regions_range = max((size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
+            gc_heap::regions_range = 
+#ifdef MULTIPLE_HEAPS
+            // For SVR use max of 2x total_physical_memory or 256gb
+            max(
+#else // MULTIPLE_HEAPS
+            // for WKS use min
+            min(
+#endif // MULTIPLE_HEAPS
+                (size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
         }
         size_t virtual_mem_limit = GCToOSInterface::GetVirtualMemoryLimit();
         gc_heap::regions_range = min(gc_heap::regions_range, virtual_mem_limit/2);
@@ -49735,13 +49646,43 @@ HRESULT GCHeap::Initialize()
             }
             // This should be adjusted based on the target tcp. See comments in gcpriv.h
             gc_heap::dynamic_heap_count_data.around_target_threshold = 10.0;
-            // This should really be set as part of computing static data and should take conserve_mem_setting into consideration.
-            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = Align (min (dd_max_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), (size_t)(64 * 1024 * 1024)), get_alignment_constant (TRUE));
-            gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = Align (dd_min_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), get_alignment_constant (TRUE));
 
-            dprintf (6666, ("datas max gen0 budget %Id, min %Id",
-                gc_heap::dynamic_heap_count_data.max_gen0_new_allocation, gc_heap::dynamic_heap_count_data.min_gen0_new_allocation));
+            int gen0_growth_soh_ratio_percent = (int)GCConfig::GetGCDGen0GrowthPercent();
+            if (gen0_growth_soh_ratio_percent)
+            {
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_percent = (int)GCConfig::GetGCDGen0GrowthPercent() * 0.01f;
+            }
+            // You can specify what sizes you want to allow DATAS to stay within wrt the SOH stable size.
+            // By default DATAS allows 10x this size for gen0 budget when the size is small, and 0.1x when the size is large.
+            int gen0_growth_min_permil = (int)GCConfig::GetGCDGen0GrowthMinFactor();
+            int gen0_growth_max_permil = (int)GCConfig::GetGCDGen0GrowthMaxFactor();
+            if (gen0_growth_min_permil)
+            {
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min = gen0_growth_min_permil * 0.001f;
+            }
+            if (gen0_growth_max_permil)
+            {
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max = gen0_growth_max_permil * 0.001f;
+            }
+
+            if (gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min > gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max)
+            {
+                log_init_error_to_host ("DATAS min permil for gen0 growth %d is greater than max %d, it needs to be lower",
+                    gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max);
+                return E_FAIL;
+            }
+
+            GCConfig::SetGCDTargetTCP ((int)gc_heap::dynamic_heap_count_data.target_tcp);
+            GCConfig::SetGCDGen0GrowthPercent ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_percent * 100.0f));
+            GCConfig::SetGCDGen0GrowthMinFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min * 1000.0f));
+            GCConfig::SetGCDGen0GrowthMaxFactor ((int)(gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max * 1000.0f));
+            dprintf (6666, ("DATAS gen0 growth multiplier will be adjusted by %d%%, cap %.3f-%.3f, min budget %Id, max %Id",
+                (int)GCConfig::GetGCDGen0GrowthPercent(),
+                gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_min, gc_heap::dynamic_heap_count_data.gen0_growth_soh_ratio_max,
+                gc_heap::dynamic_heap_count_data.min_gen0_new_allocation, gc_heap::dynamic_heap_count_data.max_gen0_new_allocation));
         }
+
+        GCConfig::SetGCDynamicAdaptationMode (gc_heap::dynamic_adaptation_mode);
 #endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);
 
@@ -52280,13 +52221,11 @@ size_t gc_heap::get_gen0_min_size()
         gen0size = gen0size / 8 * 5;
     }
 
-#ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
     // This is just so we can test allocation using more than one region on machines with very
     // small caches.
     gen0size = ((size_t)1 << min_segment_size_shr) * 3;
 #endif //STRESS_REGIONS
-#endif //USE_REGIONS
 
     gen0size = Align (gen0size);
 
@@ -53570,10 +53509,22 @@ bool GCHeap::IsConcurrentGCEnabled()
 #endif //BACKGROUND_GC
 }
 
+#ifdef GC_DESCRIPTOR
+extern "C"
+{
+    struct ContractDescriptor;
+    extern ContractDescriptor GCContractDescriptorWKS;
+#if FEATURE_SVR_GC
+    extern ContractDescriptor GCContractDescriptorSVR;
+#endif // FEATURE_SVR_GC
+}
+#endif // GC_DESCRIPTOR
+
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
+    bool v6 = gcDacVars->minor_version_number >= 6;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53622,9 +53573,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
         gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
     }
 #endif //USE_REGIONS
-#ifndef BACKGROUND_GC
+#ifdef BACKGROUND_GC
     g_build_variant |= build_variant_background_gc;
-#endif //!BACKGROUND_GC
+#endif //BACKGROUND_GC
 #ifdef DYNAMIC_HEAP_COUNT
     g_build_variant |= build_variant_dynamic_heap_count;
 #endif //DYNAMIC_HEAP_COUNT
@@ -53710,6 +53661,16 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #else
         gcDacVars->dynamic_adaptation_mode = nullptr;
 #endif //DYNAMIC_HEAP_COUNT
+    }
+    if (v6)
+    {
+#ifdef GC_DESCRIPTOR
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorSVR;
+#else // MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
+#endif // MULTIPLE_HEAPS
+#endif // GC_DESCRIPTOR
     }
 }
 
@@ -53882,6 +53843,8 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
 
     m_high_memory_load_th = min ((high_memory_load_th + 5), v_high_memory_load_th);
     almost_high_memory_load_th = (high_memory_load_th > 5) ? (high_memory_load_th - 5) : 1; // avoid underflow of high_memory_load_th - 5
+
+    GCConfig::SetGCHighMemPercent (high_memory_load_th);
 
     return true;
 }
