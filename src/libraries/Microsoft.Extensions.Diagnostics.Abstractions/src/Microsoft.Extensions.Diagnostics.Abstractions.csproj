@@ -26,6 +26,7 @@ Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">

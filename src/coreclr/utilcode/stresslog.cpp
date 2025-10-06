@@ -35,7 +35,7 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline
+FORCEINLINE
 #ifdef HOST_WINDOWS
 __declspec(naked)
 #else
@@ -251,7 +251,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
     theLog.tickFrequency = getTickFrequency();
 
-    GetSystemTimeAsFileTime(&theLog.startTime);
+    theLog.startTime = minipal_get_system_time();
     theLog.startTimeStamp = getTimeStamp();
     theLog.moduleOffset = (SIZE_T)moduleBase;
 
@@ -305,6 +305,9 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
+#ifdef TARGET_WASM
+    return; // no modules on wasm
+#endif
     unsigned moduleIndex = 0;
 #ifdef MEMORY_MAPPED_STRESSLOG
     StressLogHeader* hdr = theLog.stressLogHeader;

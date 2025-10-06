@@ -86,12 +86,16 @@ namespace System.Numerics.Tensors
         void FlattenTo(scoped System.Span<T> destination);
         System.Numerics.Tensors.ReadOnlyTensorDimensionSpan<T> GetDimensionSpan(int dimension);
         ref readonly T GetPinnableReference();
+        System.ReadOnlySpan<T> GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length);
+        System.ReadOnlySpan<T> GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length);
         TSelf Slice(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes);
         TSelf Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
         TSelf Slice(params scoped System.ReadOnlySpan<nint> startIndexes);
         TSelf ToDenseTensor();
         bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination);
         bool TryFlattenTo(scoped System.Span<T> destination);
+        bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.ReadOnlySpan<T> span);
+        bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.ReadOnlySpan<T> span);
     }
     public partial interface ITensor : System.Numerics.Tensors.IReadOnlyTensor
     {
@@ -114,13 +118,17 @@ namespace System.Numerics.Tensors
         System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes);
         System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
         System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<nint> startIndexes);
-        static abstract TSelf Create(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
-        static abstract TSelf Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
-        static abstract TSelf CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
-        static abstract TSelf CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false);
         void Fill(T value);
         new System.Numerics.Tensors.TensorDimensionSpan<T> GetDimensionSpan(int dimension);
         new ref T GetPinnableReference();
+        new System.Span<T> GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length);
+        new System.Span<T> GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length);
+        bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.Span<T> span);
+        bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.Span<T> span);
     }
     public readonly ref partial struct ReadOnlyTensorDimensionSpan<T>
     {
@@ -189,6 +197,8 @@ namespace System.Numerics.Tensors
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference() { throw null; }
+        public System.ReadOnlySpan<T> GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length) { throw null; }
+        public System.ReadOnlySpan<T> GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length) { throw null; }
         public static bool operator ==(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> right) { throw null; }
         public static implicit operator System.Numerics.Tensors.ReadOnlyTensorSpan<T> (T[]? array) { throw null; }
         public static bool operator !=(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> right) { throw null; }
@@ -196,8 +206,11 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(params scoped System.ReadOnlySpan<nint> startIndexes) { throw null; }
         public override string ToString() { throw null; }
+        public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
         public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -295,21 +308,16 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> CosPi<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Cos<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Cos<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillGaussianNormalDistribution<T>(System.Random random, scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillGaussianNormalDistribution<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillUniformDistribution<T>(System.Random random, scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateAndFillUniformDistribution<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Create<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array, int start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] array, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShape<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShape<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShapeUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateFromShapeUninitialized<T>(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned = false) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Decrement<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IDecrementOperators<T> { throw null; }
+        public static ref readonly System.Numerics.Tensors.TensorSpan<T> Decrement<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IDecrementOperators<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> DegreesToRadians<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> DegreesToRadians<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static T Distance<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IRootFunctions<T> { throw null; }
@@ -380,6 +388,8 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Ieee754Remainder<T>(T x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<int> ILogB<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IFloatingPointIeee754<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<int> ILogB<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<int> destination) where T : System.Numerics.IFloatingPointIeee754<T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Increment<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IIncrementOperators<T> { throw null; }
+        public static ref readonly System.Numerics.Tensors.TensorSpan<T> Increment<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IIncrementOperators<T> { throw null; }
         public static nint IndexOfMaxMagnitude<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static nint IndexOfMax<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static nint IndexOfMinMagnitude<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
@@ -518,6 +528,12 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> other) where T : System.IEquatable<T>? { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> SetSlice<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> values, params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SetSlice<T>(this System.Numerics.Tensors.Tensor<T> tensor, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> values, params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
+        public static Tensor<T> ShiftLeft<T>(in ReadOnlyTensorSpan<T> x, int shiftAmount) where T : IShiftOperators<T, int, T> { throw null; }
+        public static ref readonly TensorSpan<T> ShiftLeft<T>(scoped in ReadOnlyTensorSpan<T> x, int shiftAmount, in TensorSpan<T> destination) where T : IShiftOperators<T, int, T> { throw null; }
+        public static Tensor<T> ShiftRightArithmetic<T>(in ReadOnlyTensorSpan<T> x, int shiftAmount) where T : IShiftOperators<T, int, T> { throw null; }
+        public static ref readonly TensorSpan<T> ShiftRightArithmetic<T>(scoped in ReadOnlyTensorSpan<T> x, int shiftAmount, in TensorSpan<T> destination) where T : IShiftOperators<T, int, T> { throw null; }
+        public static Tensor<T> ShiftRightLogical<T>(in ReadOnlyTensorSpan<T> x, int shiftAmount) where T : IShiftOperators<T, int, T> { throw null; }
+        public static ref readonly TensorSpan<T> ShiftRightLogical<T>(scoped in ReadOnlyTensorSpan<T> x, int shiftAmount, in TensorSpan<T> destination) where T : IShiftOperators<T, int, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sigmoid<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IExponentialFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Sigmoid<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IExponentialFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sinh<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IHyperbolicFunctions<T> { throw null; }
@@ -555,9 +571,6 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> TanPi<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Tan<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Tan<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static string ToString<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, System.ReadOnlySpan<nint> maximumLengths) { throw null; }
-        public static string ToString<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, System.ReadOnlySpan<nint> maximumLengths) { throw null; }
-        public static string ToString<T>(this System.Numerics.Tensors.Tensor<T> tensor, System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> TrailingZeroCount<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> TrailingZeroCount<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Transpose<T>(System.Numerics.Tensors.Tensor<T> tensor) { throw null; }
@@ -573,6 +586,318 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Xor<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IAdditionOperators<TScalar, TScalar, TScalar>, System.Numerics.IAdditiveIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IAdditionOperators<TScalar, TScalar, TScalar>, System.Numerics.IAdditiveIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator +=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator +=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IAdditionOperators<TScalar, TScalar, TScalar>, System.Numerics.IAdditiveIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator +=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator +=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator &=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator &=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator &(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator &=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator &=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator |=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator |=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator |(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator |=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator |=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor) where TScalar : System.Numerics.IDecrementOperators<TScalar>
+        {
+            public void operator --() { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor) where TScalar : System.Numerics.IDecrementOperators<TScalar>
+        {
+            public void operator --() { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator /=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator /=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IDivisionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator /(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator /=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator /=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator ^=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator ^=(TScalar other) { throw null; }
+        }
+
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ^(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator ^=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator ^=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor) where TScalar : System.Numerics.IIncrementOperators<TScalar>
+        {
+            public void operator ++() { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor) where TScalar : System.Numerics.IIncrementOperators<TScalar>
+        {
+            public void operator ++() { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator <<(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator <<(System.Numerics.Tensors.Tensor<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator <<=(int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static Tensor<TScalar> operator <<(in TensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator <<=(int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IMultiplyOperators<TScalar, TScalar, TScalar>, System.Numerics.IMultiplicativeIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IMultiplyOperators<TScalar, TScalar, TScalar>, System.Numerics.IMultiplicativeIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator *=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator *=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IMultiplyOperators<TScalar, TScalar, TScalar>, System.Numerics.IMultiplicativeIdentity<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator *(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator *=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator *=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ~(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar>)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ~(in System.Numerics.Tensors.Tensor<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IBitwiseOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator ~(in System.Numerics.Tensors.TensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator >>(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator >>(System.Numerics.Tensors.Tensor<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator >>=(int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static Tensor<TScalar> operator >>(in TensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator >>=(int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.ISubtractionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(TScalar left, in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> right) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.ISubtractionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(System.Numerics.Tensors.Tensor<TScalar> left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(System.Numerics.Tensors.Tensor<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(TScalar left, System.Numerics.Tensors.Tensor<TScalar> right) { throw null; }
+            public void operator -=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator -=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.ISubtractionOperators<TScalar, TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.TensorSpan<TScalar> left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.TensorSpan<TScalar> left, TScalar right) { throw null; }
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(TScalar left, in System.Numerics.Tensors.TensorSpan<TScalar> right) { throw null; }
+            public void operator -=(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> other) { throw null; }
+            public void operator -=(TScalar other) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IUnaryNegationOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar>)
+            where TScalar : System.Numerics.IUnaryNegationOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.Tensor<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IUnaryNegationOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator -(in System.Numerics.Tensors.TensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IUnaryPlusOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> operator +(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar>)
+            where TScalar : System.Numerics.IUnaryPlusOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator +(System.Numerics.Tensors.Tensor<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IUnaryPlusOperators<TScalar, TScalar>
+        {
+            public static System.Numerics.Tensors.TensorSpan<TScalar> operator +(in System.Numerics.Tensors.TensorSpan<TScalar> tensor) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator >>>(in System.Numerics.Tensors.ReadOnlyTensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static System.Numerics.Tensors.Tensor<TScalar> operator >>>(System.Numerics.Tensors.Tensor<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.Tensor<TScalar> tensor)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator >>>=(int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(System.Numerics.Tensors.TensorSpan<TScalar>)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public static Tensor<TScalar> operator >>>(in TensorSpan<TScalar> tensor, int shiftAmount) { throw null; }
+        }
+        extension<TScalar>(ref System.Numerics.Tensors.TensorSpan<TScalar> tensor)
+            where TScalar : System.Numerics.IShiftOperators<TScalar, int, TScalar>
+        {
+            public void operator >>>=(int shiftAmount) { throw null; }
+        }
     }
     public readonly ref partial struct TensorDimensionSpan<T>
     {
@@ -881,6 +1206,8 @@ namespace System.Numerics.Tensors
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T GetPinnableReference() { throw null; }
+        public System.Span<T> GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length) { throw null; }
+        public System.Span<T> GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length) { throw null; }
         public static bool operator ==(in System.Numerics.Tensors.TensorSpan<T> left, in System.Numerics.Tensors.TensorSpan<T> right) { throw null; }
         public static implicit operator System.Numerics.Tensors.ReadOnlyTensorSpan<T> (scoped in System.Numerics.Tensors.TensorSpan<T> tensor) { throw null; }
         public static implicit operator System.Numerics.Tensors.TensorSpan<T> (T[]? array) { throw null; }
@@ -889,8 +1216,13 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.TensorSpan<T> Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public System.Numerics.Tensors.TensorSpan<T> Slice(params scoped System.ReadOnlySpan<nint> startIndexes) { throw null; }
         public override string ToString() { throw null; }
+        public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.Span<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.Span<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
         public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -942,6 +1274,8 @@ namespace System.Numerics.Tensors
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T GetPinnableReference() { throw null; }
         public System.Buffers.MemoryHandle GetPinnedHandle() { throw null; }
+        public System.Span<T> GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length) { throw null; }
+        public System.Span<T> GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length) { throw null; }
         public static implicit operator System.Numerics.Tensors.ReadOnlyTensorSpan<T> (System.Numerics.Tensors.Tensor<T> tensor) { throw null; }
         public static implicit operator System.Numerics.Tensors.TensorSpan<T> (System.Numerics.Tensors.Tensor<T> tensor) { throw null; }
         public static implicit operator System.Numerics.Tensors.Tensor<T> (T[] array) { throw null; }
@@ -953,16 +1287,23 @@ namespace System.Numerics.Tensors
         void System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.CopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { }
         System.Numerics.Tensors.ReadOnlyTensorDimensionSpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.GetDimensionSpan(int dimension) { throw null; }
         ref readonly T System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.GetPinnableReference() { throw null; }
+        System.ReadOnlySpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.GetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length) { throw null; }
+        System.ReadOnlySpan<T> System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.GetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length) { throw null; }
         bool System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         void System.Numerics.Tensors.ITensor.Fill(object value) { }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShape(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         public System.Numerics.Tensors.Tensor<T> ToDenseTensor() { throw null; }
+        public override string ToString() { throw null; }
         public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.Span<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.Span<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
+        public bool TryGetSpan(scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -974,5 +1315,15 @@ namespace System.Numerics.Tensors
             public void Reset() { }
             void System.IDisposable.Dispose() { }
         }
+    }
+}
+namespace System.Runtime.InteropServices
+{
+    public static class TensorMarshal
+    {
+        public static System.Numerics.Tensors.TensorSpan<T> CreateTensorSpan<T>(ref T data, nint dataLength, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> CreateReadOnlyTensorSpan<T>(ref readonly T data, nint dataLength, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        public static ref T GetReference<T>(in System.Numerics.Tensors.TensorSpan<T> tensorSpan) { throw null; }
+        public static ref readonly T GetReference<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensorSpan) { throw null; }
     }
 }

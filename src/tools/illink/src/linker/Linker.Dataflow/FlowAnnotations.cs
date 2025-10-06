@@ -42,7 +42,23 @@ namespace ILLink.Shared.TrimAnalysis
         public bool RequiresDataFlowAnalysis(FieldDefinition field) =>
             GetAnnotations(field.DeclaringType).TryGetAnnotation(field, out _);
 
-        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameter genericParameter) =>
+        public bool HasGenericParameterAnnotation(TypeReference type)
+        {
+            if (type.ResolveToTypeDefinition(_context) is not TypeDefinition typeDefinition)
+                return false;
+
+            return GetAnnotations(typeDefinition).HasGenericParameterAnnotation();
+        }
+
+        public bool HasGenericParameterAnnotation(MethodReference method)
+        {
+            if (_context.TryResolve(method) is not MethodDefinition methodDefinition)
+                return false;
+
+            return GetAnnotations(methodDefinition.DeclaringType).TryGetAnnotation(methodDefinition, out var annotation) && annotation.GenericParameterAnnotations != null;
+        }
+
+        public bool RequiresGenericArgumentDataFlow(GenericParameter genericParameter) =>
             GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
 
         internal DynamicallyAccessedMemberTypes GetParameterAnnotation(ParameterProxy param)
@@ -329,6 +345,13 @@ namespace ILLink.Shared.TrimAnalysis
                     if (annotation == DynamicallyAccessedMemberTypes.None)
                         continue;
 
+                    if (CompilerGeneratedNames.IsExtensionType(type.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
+
                     if (!IsTypeInterestingForDataflow(property.PropertyType))
                     {
                         _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings, property.GetDisplayName());
@@ -338,7 +361,7 @@ namespace ILLink.Shared.TrimAnalysis
                     FieldDefinition? backingFieldFromSetter = null;
 
                     // Propagate the annotation to the setter method
-                    MethodDefinition setMethod = property.SetMethod;
+                    MethodDefinition? setMethod = property.SetMethod;
                     if (setMethod != null)
                     {
 
@@ -349,7 +372,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
                             // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
                             // that the field (which ever it is) must be annotated as well.
-                            ScanMethodBodyForFieldAccess(setMethod.Body, write: true, out backingFieldFromSetter);
+                            backingFieldFromSetter = GetAutoPropertyCompilerGeneratedField(setMethod.Body, isWriteAccessor: true);
                         }
 
                         MethodAnnotations? setterAnnotation = null;
@@ -383,7 +406,7 @@ namespace ILLink.Shared.TrimAnalysis
                     FieldDefinition? backingFieldFromGetter = null;
 
                     // Propagate the annotation to the getter method
-                    MethodDefinition getMethod = property.GetMethod;
+                    MethodDefinition? getMethod = property.GetMethod;
                     if (getMethod != null)
                     {
 
@@ -394,7 +417,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Look for the compiler generated backing field. If it doesn't work out simply move on. In such case we would still
                             // propagate the annotation to the setter/getter and later on when analyzing the setter/getter we will warn
                             // that the field (which ever it is) must be annotated as well.
-                            ScanMethodBodyForFieldAccess(getMethod.Body, write: false, out backingFieldFromGetter);
+                            backingFieldFromGetter = GetAutoPropertyCompilerGeneratedField(getMethod.Body, isWriteAccessor: false);
                         }
                         MethodAnnotations? getterAnnotation = null;
                         foreach (var annotatedMethod in annotatedMethods)
@@ -417,27 +440,24 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    FieldDefinition? backingField;
-                    if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
-                        backingFieldFromGetter != backingFieldFromSetter)
-                    {
-                        _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName());
-                        backingField = null;
-                    }
-                    else
-                    {
-                        backingField = backingFieldFromGetter ?? backingFieldFromSetter;
-                    }
 
-                    if (backingField != null)
+                    FieldDefinition? backingField = backingFieldFromSetter ?? backingFieldFromGetter;
+                    if (backingField is not null)
                     {
-                        if (annotatedFields.Any(a => a.Field == backingField))
+                        bool validBackingFieldFound = backingFieldFromGetter is null
+                            || backingFieldFromSetter is null
+                            || backingFieldFromGetter == backingFieldFromSetter;
+                        if (validBackingFieldFound)
                         {
-                            _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
-                        }
-                        else
-                        {
-                            annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            if (annotatedFields.Any(a => a.Field == backingField && a.Annotation != annotation))
+                            {
+                                _context.LogWarning(backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName(), backingField.GetDisplayName());
+                            }
+                            else
+                            {
+                                // Unique backing field with no conflicts with property or existing field
+                                annotatedFields.Add(new FieldAnnotation(backingField, annotation));
+                            }
                         }
                     }
                 }
@@ -446,10 +466,10 @@ namespace ILLink.Shared.TrimAnalysis
             DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
             if (type.HasGenericParameters)
             {
-                var attrs = GetGeneratedTypeAttributes(type);
+                var attrs = GetGeneratedTypeAttributes(type) ?? type.GenericParameters;
                 for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++)
                 {
-                    var provider = attrs?[genericParameterIndex] ?? type.GenericParameters[genericParameterIndex];
+                    var provider = attrs[genericParameterIndex];
                     var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(type, providerIfNotMember: provider);
                     if (annotation != DynamicallyAccessedMemberTypes.None)
                     {
@@ -462,7 +482,21 @@ namespace ILLink.Shared.TrimAnalysis
             return new TypeAnnotations(type, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
         }
 
-        private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
+        /// <summary>
+        /// Returns true if the property has a single accessor which is compiler generated,
+        /// indicating that it is an auto-property.
+        /// </summary>
+        /// <remarks>
+        /// Ideally this would be tightened to only return true if both accessors are auto-property accessors,
+        /// but it allows for either for back compatibility with existing behavior.
+        /// </remarks>
+        private static bool IsAutoProperty(PropertyDefinition property)
+        {
+            return property.SetMethod?.IsCompilerGenerated() == true
+                || property.GetMethod?.IsCompilerGenerated() == true;
+        }
+
+        private IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
         {
             if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
             {
@@ -473,11 +507,15 @@ namespace ILLink.Shared.TrimAnalysis
             return attrs;
         }
 
-        bool ScanMethodBodyForFieldAccess(MethodBody body, bool write, out FieldDefinition? found)
+        FieldDefinition? GetAutoPropertyCompilerGeneratedField(MethodBody body, bool isWriteAccessor)
         {
             // Tries to find the backing field for a property getter/setter.
             // Returns true if this is a method body that we can unambiguously analyze.
             // The found field could still be null if there's no backing store.
+
+            // Auto properties have CompilerGeneratedAttribute
+            if (!body.Method.IsCompilerGenerated())
+                return null;
 
             FieldReference? foundReference = null;
 
@@ -485,17 +523,16 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 switch (instruction.OpCode.Code)
                 {
-                    case Code.Ldsfld when !write:
-                    case Code.Ldfld when !write:
-                    case Code.Stsfld when write:
-                    case Code.Stfld when write:
+                    case Code.Ldsfld when !isWriteAccessor:
+                    case Code.Ldfld when !isWriteAccessor:
+                    case Code.Stsfld when isWriteAccessor:
+                    case Code.Stfld when isWriteAccessor:
 
                         if (foundReference != null)
                         {
                             // This writes/reads multiple fields - can't guess which one is the backing store.
                             // Return failure.
-                            found = null;
-                            return false;
+                            return null;
                         }
 
                         foundReference = (FieldReference)instruction.Operand;
@@ -507,17 +544,16 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 // Doesn't access any fields. Could be e.g. "Type Foo => typeof(Bar);"
                 // Return success.
-                found = null;
-                return true;
+                return null;
             }
 
-            found = _context.Resolve(foundReference);
+            var found = _context.Resolve(foundReference);
 
             if (found == null)
             {
                 // If the field doesn't resolve, it can't be a field on the current type
                 // anyway. Return failure.
-                return false;
+                return null;
             }
 
             if (found.DeclaringType != body.Method.DeclaringType ||
@@ -526,11 +562,10 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 // A couple heuristics to make sure we got the right field.
                 // Return failure.
-                found = null;
-                return false;
+                return null;
             }
 
-            return true;
+            return found;
         }
 
         internal void ValidateMethodAnnotationsAreSame(OverrideInformation ov)
@@ -597,8 +632,8 @@ namespace ILLink.Shared.TrimAnalysis
                 var annotation = parameterAnnotations[parameterIndex];
                 if (annotation != DynamicallyAccessedMemberTypes.None)
                     LogValidationWarning(
-                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
-                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
+                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
+                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
                         ov);
             }
         }
@@ -731,6 +766,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                 return false;
             }
+
+            public bool HasGenericParameterAnnotation() => _genericParameterAnnotations != null;
         }
 
         readonly struct MethodAnnotations

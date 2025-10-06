@@ -34,6 +34,7 @@
     <Compile Include="MethodInfoTests.cs" />
     <Compile Include="MethodInvokerTests.cs" />
     <Compile Include="ModuleTests.cs" />
+    <Compile Include="OleAutBinderTests.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="ParameterInfoTests.cs" />
     <Compile Include="PropertyInfoTests.cs" />

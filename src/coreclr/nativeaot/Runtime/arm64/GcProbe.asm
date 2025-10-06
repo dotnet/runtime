@@ -168,16 +168,8 @@ WaitForGC
         ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGC2
 
-        ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
-        tbnz        x2, #PTFF_THREAD_ABORT_BIT, ThrowThreadAbort
-
         POP_PROBE_FRAME
         EPILOG_RETURN
-ThrowThreadAbort
-        POP_PROBE_FRAME
-        EPILOG_NOP mov w0, #STATUS_NATIVEAOT_THREAD_ABORT
-        EPILOG_NOP mov x1, lr ;; return address as exception PC
-        EPILOG_NOP b RhpThrowHwEx
     NESTED_END RhpWaitForGC
 
     LEAF_ENTRY RhpGcPoll

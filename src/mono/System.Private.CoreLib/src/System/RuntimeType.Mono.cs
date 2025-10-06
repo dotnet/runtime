@@ -679,17 +679,21 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<Type> GetNestedTypeCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
+            bool prefixLookup;
             bindingAttr &= ~BindingFlags.Static;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out _, out MemberListType listType);
+            string? name, ns;
+            MemberListType listType;
+            SplitName(fullname, out name, out ns);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out _, out listType);
 
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             ListBuilder<Type> candidates = new ListBuilder<Type>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedClass = cache[i];
-                if (FilterApplyType(nestedClass, bindingAttr, name, prefixLookup, null))
+                if (FilterApplyType(nestedClass, bindingAttr, name, prefixLookup, ns))
                 {
                     candidates.Add(nestedClass);
                 }
@@ -1000,37 +1004,31 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        internal Type? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
+        public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(fullname);
 
             bindingAttr &= ~BindingFlags.Static;
-            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
+            string? name, ns;
+            MemberListType listType;
+            SplitName(fullname, out name, out ns);
+            FilterHelper(bindingAttr, ref name, out _, out listType);
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             RuntimeType? match = null;
 
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedType = cache[i];
-                if (FilterApplyType(nestedType, bindingAttr, name, false, null))
+                if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
                         throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = nestedType;
-
-                    if (ignoreAmbiguousMatch)
-                        break;
                 }
             }
 
             return match;
-        }
-
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
-        {
-            return GetNestedType(name, bindingAttr, ignoreAmbiguousMatch: false);
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
@@ -1320,6 +1318,8 @@ namespace System
             CacheFlag(TypeCacheEntries.IsValueType, res);
             return res;
         }
+
+        internal bool IsActualInterface => IsInterface;
 
         // Returns true for actual value types only, ignoring generic parameter constraints.
         internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
@@ -2270,7 +2270,7 @@ namespace System
 
         public override string ToString()
         {
-            return getFullName(false, false);
+            return getFullName(false, false)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -2296,8 +2296,16 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetGenericArgumentsInternal(QCallTypeHandle type, ObjectHandleOnStack res, bool runtimeArray);
 
-        internal string getFullName(bool full_name, bool assembly_qualified)
+        internal string? getFullName(bool full_name, bool assembly_qualified)
         {
+            // If full name or assembly qualified name is requested,
+            // ensure that the type is compatible with full name round-tripping.
+            if ((full_name || assembly_qualified)
+                && !IsFullNameRoundtripCompatible(this))
+            {
+                return null;
+            }
+
             var this_type = this;
             string? res = null;
             getFullName(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res), full_name, assembly_qualified);
@@ -2428,11 +2436,15 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetNamespace(QCallTypeHandle type, ObjectHandleOnStack res);
 
-        public override string Namespace
+        public override string? Namespace
         {
             get
             {
-                var this_type = this;
+                Type type = GetRootElementType();
+                if (type.IsFunctionPointer)
+                    return null;
+
+                var this_type = (RuntimeType)type;
                 string? res = null;
                 GetNamespace(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
                 return res!;
@@ -2443,11 +2455,6 @@ namespace System
         {
             get
             {
-                // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
-                if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
-                    return null;
-
                 string? fullName;
                 TypeCache? cache = Cache;
                 if ((fullName = cache.full_name) == null)
@@ -2575,6 +2582,7 @@ namespace System
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                 default: break;
             }
 

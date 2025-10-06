@@ -11,7 +11,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
 {
     const char* className = NULL;
     const char* namespaceName = NULL;
-    const char* methodName = compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+    const char* enclosingClassNames[2] = {nullptr};
+    const char* methodName = compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames, ArrLen(enclosingClassNames));
 
     // Array methods don't have metadata
     if (!namespaceName)
@@ -35,6 +36,18 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_Math_ReciprocalEstimate;
             else if (!strcmp(methodName, "ReciprocalSqrtEstimate"))
                 return NI_System_Math_ReciprocalSqrtEstimate;
+            else if (!strcmp(methodName, "Sqrt"))
+                return NI_System_Math_Sqrt;
+        }
+    }
+    else if (!strcmp(namespaceName, "System.StubHelpers"))
+    {
+        if (!strcmp(className, "StubHelpers"))
+        {
+            if (!strcmp(methodName, "NextCallReturnAddress"))
+                return NI_System_StubHelpers_NextCallReturnAddress;
+            else if (!strcmp(methodName, "GetStubContext"))
+                return NI_System_StubHelpers_GetStubContext;
         }
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
@@ -76,6 +89,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             {
                 if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                else if (!strcmp(methodName, "GetMethodTable"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))
@@ -93,6 +108,10 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(methodName, "CompareExchange"))
                 return NI_System_Threading_Interlocked_CompareExchange;
+            else if (!strcmp(methodName, "Exchange"))
+                return NI_System_Threading_Interlocked_Exchange;
+            else if (!strcmp(methodName, "ExchangeAdd"))
+                return NI_System_Threading_Interlocked_ExchangeAdd;
             else if (!strcmp(methodName, "MemoryBarrier"))
                 return NI_System_Threading_Interlocked_MemoryBarrier;
         }

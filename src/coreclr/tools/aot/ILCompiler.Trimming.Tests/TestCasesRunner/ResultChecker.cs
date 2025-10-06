@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ILCompiler;
 using ILCompiler.Logging;
 using Internal.TypeSystem;
 using Mono.Cecil;
@@ -78,17 +80,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 _originalsResolver.Dispose();
             }
+        }
 
-            bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+        internal static bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+        {
+            if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
             {
-                if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
-                {
-                    object? by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
-                    return by is null ? true : ((Tool)by).HasFlag(Tool.NativeAot);
-                }
-
-                return false;
+                object? by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
+                return by is null ? true : ((Tool)by).HasFlag(Tool.NativeAot);
             }
+
+            return false;
         }
 
         protected virtual AssemblyChecker CreateAssemblyChecker(AssemblyDefinition original, TrimmedTestCaseResult testResult)
@@ -198,10 +200,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         private void VerifyLoggedMessages(AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
         {
-            List<MessageContainer> loggedMessages = logger.GetLoggedMessages();
+            ImmutableArray<MessageContainer> allMessages = logger.GetLoggedMessages();
+            List<MessageContainer> unmatchedMessages = [.. allMessages];
             List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new();
+            List<string> missingMessageWarnings = [];
+            List<string> unexpectedMessageWarnings = [];
             foreach (var attrProvider in GetAttributeProviders(original))
             {
+                if (attrProvider is MethodDefinition attrMethod &&
+                    attrMethod.DeclaringType is TypeDefinition declaringType &&
+                    declaringType.Name.StartsWith("<G>"))
+                {
+                    // Workaround: C# 14 extension methods result in a compiler-generated type
+                    // that has a method for each extension method (this is in addition to the type
+                    // which contains the actual extension method implementation).
+                    // The generated methods inherit attributes from the extension methods, but
+                    // have empty implementations. We don't want to check inherited ExpectedWarningAttributes
+                    // for these methods.
+                    // ExpectedWarnings for extension properties are still included, because those are only
+                    // included once in the generated output (and the user type doesn't have any properties).
+                    continue;
+                }
+
                 foreach (var attr in attrProvider.CustomAttributes)
                 {
                     if (!IsProducedByNativeAOT(attr))
@@ -216,33 +236,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                             List<MessageContainer> matchedMessages;
                             if ((bool)attr.ConstructorArguments[1].Value)
-                                matchedMessages = loggedMessages.Where(m => Regex.IsMatch(m.ToString(), expectedMessage)).ToList();
+                                matchedMessages = unmatchedMessages.Where(m => Regex.IsMatch(m.ToString(), expectedMessage)).ToList();
                             else
-                                matchedMessages = loggedMessages.Where(m => MessageTextContains(m.ToString(), expectedMessage)).ToList();
-                            Assert.True(
-                                matchedMessages.Count > 0,
-                                $"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join(Environment.NewLine, loggedMessages)}");
+                                matchedMessages = unmatchedMessages.Where(m => MessageTextContains(m.ToString(), expectedMessage)).ToList();
+                            if (matchedMessages.Count == 0)
+                                missingMessageWarnings.Add($"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}");
 
                             foreach (var matchedMessage in matchedMessages)
-                                loggedMessages.Remove(matchedMessage);
+                                unmatchedMessages.Remove(matchedMessage);
                         }
                         break;
 
                         case nameof(LogDoesNotContainAttribute):
                         {
                             var unexpectedMessage = (string)attr.ConstructorArguments[0].Value;
-                            foreach (var loggedMessage in loggedMessages)
+                            foreach (var loggedMessage in unmatchedMessages)
                             {
-                                var isLogged = () =>
-                                {
-                                    if ((bool)attr.ConstructorArguments[1].Value)
-                                        return !Regex.IsMatch(loggedMessage.ToString(), unexpectedMessage);
-                                    return !MessageTextContains(loggedMessage.ToString(), unexpectedMessage);
-                                };
+                                bool isRegex = (bool)attr.ConstructorArguments[1].Value;
+                                bool foundMatch = isRegex
+                                    ? Regex.IsMatch(loggedMessage.ToString(), unexpectedMessage)
+                                    : loggedMessage.ToString().Contains(unexpectedMessage);
 
-                                Assert.True(
-                                    isLogged(),
-                                    $"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join(Environment.NewLine, loggedMessages)}");
+                                if (foundMatch)
+                                    unexpectedMessageWarnings.Add($"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage}");
                             }
                         }
                         break;
@@ -281,7 +297,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             string? expectedOrigin = null;
                             bool expectedWarningFound = false;
 
-                            foreach (var loggedMessage in loggedMessages)
+                            foreach (var loggedMessage in unmatchedMessages.ToList())
                             {
                                 if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
                                     continue;
@@ -339,18 +355,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 }
                                 else if (isCompilerGeneratedCode == true)
                                 {
-                                    if (loggedMessage.Origin?.MemberDefinition is not MethodDesc methodDesc)
+                                    if (loggedMessage.Origin?.MemberDefinition is not TypeSystemEntity memberDesc)
                                         continue;
 
                                     if (attrProvider is IMemberDefinition expectedMember)
                                     {
-                                        string? actualName = NameUtils.GetActualOriginDisplayName(methodDesc);
+                                        string? actualName = NameUtils.GetActualOriginDisplayName(memberDesc);
                                         string expectedTypeName = NameUtils.GetExpectedOriginDisplayName(expectedMember.DeclaringType);
                                         if (actualName?.Contains(expectedTypeName) == true &&
                                             actualName?.Contains("<" + expectedMember.Name + ">") == true)
                                         {
                                             expectedWarningFound = true;
-                                            loggedMessages.Remove(loggedMessage);
+                                            unmatchedMessages.Remove(loggedMessage);
                                             break;
                                         }
                                         if (actualName?.StartsWith(expectedTypeName) == true)
@@ -359,14 +375,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                                 (expectedMember is FieldDefinition || expectedMember is PropertyDefinition))
                                             {
                                                 expectedWarningFound = true;
-                                                loggedMessages.Remove(loggedMessage);
+                                                unmatchedMessages.Remove(loggedMessage);
                                                 break;
                                             }
-                                            if (methodDesc.IsConstructor &&
+                                            if (memberDesc is MethodDesc methodDesc && methodDesc.IsConstructor &&
                                                 (expectedMember is FieldDefinition || expectedMember is PropertyDefinition || new AssemblyQualifiedToken(methodDesc.OwningType).Equals(new AssemblyQualifiedToken(expectedMember))))
                                             {
                                                 expectedWarningFound = true;
-                                                loggedMessages.Remove(loggedMessage);
+                                                unmatchedMessages.Remove(loggedMessage);
+                                                break;
+                                            }
+                                            if (GetMemberName(GetOwningType(memberDesc))!.StartsWith("<G>") == true && GetMemberName(memberDesc) == expectedMember.Name)
+                                            {
+                                                expectedWarningFound = true;
+                                                unmatchedMessages.Remove(loggedMessage);
                                                 break;
                                             }
                                         }
@@ -374,10 +396,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                     else if (attrProvider is AssemblyDefinition expectedAssembly)
                                     {
                                         // Allow assembly-level attributes to match warnings from compiler-generated Main
-                                        if (NameUtils.GetActualOriginDisplayName(methodDesc) == "Program.<Main>$(String[])")
+                                        if (NameUtils.GetActualOriginDisplayName(memberDesc) == "Program.<Main>$(String[])")
                                         {
                                             expectedWarningFound = true;
-                                            loggedMessages.Remove(loggedMessage);
+                                            unmatchedMessages.Remove(loggedMessage);
                                             break;
                                         }
                                     }
@@ -388,14 +410,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                     if (LogMessageHasSameOriginMember(loggedMessage, attrProvider))
                                     {
                                         expectedWarningFound = true;
-                                        loggedMessages.Remove(loggedMessage);
+                                        unmatchedMessages.Remove(loggedMessage);
                                         break;
                                     }
                                     continue;
                                 }
 
                                 expectedWarningFound = true;
-                                loggedMessages.Remove(loggedMessage);
+                                unmatchedMessages.Remove(loggedMessage);
                                 break;
                             }
 
@@ -403,11 +425,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 ? NameUtils.GetExpectedOriginDisplayName(attrProvider) + ": "
                                 : "";
 
-                            Assert.True(expectedWarningFound,
-                                $"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
+                            if (!expectedWarningFound)
+                                missingMessageWarnings.Add($"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
                                 $"warning {expectedWarningCode}: {expectedOriginString}" +
                                 $"and message containing {string.Join(" ", expectedMessageContains.Select(m => "'" + m + "'"))}, " +
-                                $"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join(Environment.NewLine, loggedMessages)}");
+                                $"but no such message was found");
                         }
                         break;
 
@@ -430,8 +452,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                 int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse(unexpectedWarningCode.Substring(2));
 
-                MessageContainer? unexpectedWarningMessage = null;
-                foreach (var mc in logger.GetLoggedMessages())
+                foreach (var mc in unmatchedMessages)
                 {
                     if (mc.Category != MessageCategory.Warning)
                         continue;
@@ -440,20 +461,35 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         continue;
 
                     // This is a hacky way to say anything in the "subtree" of the attrProvider
-                    if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.MemberDefinition is TypeSystemEntity member) && member.ToString()?.Contains(attrMember.FullName) != true)
-                        continue;
+                    if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.MemberDefinition is TypeSystemEntity member))
+                    {
+                        var memberDisplayName = NameUtils.GetActualOriginDisplayName(member);
+                        if (memberDisplayName?.Contains(attrMember.FullName) == false)
+                            continue;
+                    }
 
-                    unexpectedWarningMessage = mc;
-                    break;
+                    unexpectedMessageWarnings.Add($"Unexpected warning found: {mc}");
                 }
+            }
 
-                Assert.False(unexpectedWarningMessage.HasValue,
-                    $"Unexpected warning found: {unexpectedWarningMessage}");
+            if (missingMessageWarnings.Any())
+            {
+                missingMessageWarnings.Add("Unmatched Messages:" + Environment.NewLine);
+                missingMessageWarnings.AddRange(unmatchedMessages.Select(m => m.ToString()));
+                // Uncomment to show all messages when diagnosing test infrastructure issues
+                // missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
+                // missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
+                Assert.Fail(string.Join(Environment.NewLine, missingMessageWarnings));
+            }
+
+            if (unexpectedMessageWarnings.Any())
+            {
+                Assert.Fail(string.Join(Environment.NewLine, unexpectedMessageWarnings));
             }
 
             if (checkRemainingErrors)
             {
-                var remainingErrors = loggedMessages.Where(m => Regex.IsMatch(m.ToString(), @".*(error | warning): \d{4}.*"));
+                var remainingErrors = unmatchedMessages.Where(m => Regex.IsMatch(m.ToString(), @".*(error | warning): \d{4}.*"));
                 Assert.False(remainingErrors.Any(), $"Found unexpected errors:{Environment.NewLine}{string.Join(Environment.NewLine, remainingErrors)}");
             }
 
@@ -489,14 +525,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 DefType defType => defType.ContainingType,
                 MethodDesc method => method.OwningType,
                 FieldDesc field => field.OwningType,
+                PropertyPseudoDesc property => property.OwningType,
                 _ => null
             };
 
             static string? GetMemberName(TypeSystemEntity? entity) => entity switch
             {
-                DefType defType => defType.Name,
-                MethodDesc method => method.Name,
-                FieldDesc field => field.Name,
+                DefType defType => defType.GetName(),
+                MethodDesc method => method.GetName(),
+                FieldDesc field => field.GetName(),
+                PropertyPseudoDesc property => property.Name,
                 _ => null
             };
 

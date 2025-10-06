@@ -1772,6 +1772,7 @@ configuration:
       - mentionUsers:
           mentionees:
           - lewing
+          - pavelsavara
           replyTemplate: >-
             Tagging subscribers to 'arch-wasm': ${mentionees}
 
@@ -1789,7 +1790,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1828,7 +1828,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1848,7 +1847,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-

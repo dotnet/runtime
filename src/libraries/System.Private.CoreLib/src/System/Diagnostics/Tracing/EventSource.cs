@@ -1442,7 +1442,10 @@ namespace System.Diagnostics.Tracing
                     if (ex is EventSourceException)
                         throw;
                     else
-                        ThrowEventSourceException(m_eventData[eventId].Name, ex);
+                    {
+                        ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+                        ThrowEventSourceException(metadata.Name, ex);
+                    }
                 }
             }
         }
@@ -2072,7 +2075,10 @@ namespace System.Diagnostics.Tracing
                     if (ex is EventSourceException)
                         throw;
                     else
-                        ThrowEventSourceException(m_eventData[eventId].Name, ex);
+                    {
+                        ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+                        ThrowEventSourceException(metadata.Name, ex);
+                    }
                 }
             }
         }
@@ -2084,7 +2090,8 @@ namespace System.Diagnostics.Tracing
         private object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
-            TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
+            ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+            TraceLoggingEventTypes eventTypes = metadata.TraceLoggingEventTypes;
             int paramCount = Math.Min(eventTypes.typeInfos.Length, args.Length); // parameter count mismatch get logged in LogEventArgsMismatches
             var eventData = new object?[eventTypes.typeInfos.Length];
             for (int i = 0; i < paramCount; i++)
@@ -2103,7 +2110,8 @@ namespace System.Diagnostics.Tracing
         private void LogEventArgsMismatches(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
-            ParameterInfo[] infos = m_eventData[eventId].Parameters;
+            ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventId);
+            ParameterInfo[] infos = metadata.Parameters;
 
             if (args.Length != infos.Length)
             {
@@ -2360,9 +2368,10 @@ namespace System.Diagnostics.Tracing
                 return false;
 
             Debug.Assert(m_eventData != null);
-            EventLevel eventLevel = (EventLevel)m_eventData[eventNum].Descriptor.Level;
-            EventKeywords eventKeywords = unchecked((EventKeywords)((ulong)m_eventData[eventNum].Descriptor.Keywords & (~(SessionMask.All.ToEventKeywords()))));
-            EventChannel channel = unchecked((EventChannel)m_eventData[eventNum].Descriptor.Channel);
+            ref EventMetadata metadata = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventNum);
+            EventLevel eventLevel = (EventLevel)metadata.Descriptor.Level;
+            EventKeywords eventKeywords = unchecked((EventKeywords)((ulong)metadata.Descriptor.Keywords & (~(SessionMask.All.ToEventKeywords()))));
+            EventChannel channel = unchecked((EventChannel)metadata.Descriptor.Channel);
 
             return IsEnabledCommon(enable, currentLevel, currentMatchAnyKeyword, eventLevel, eventKeywords, channel);
         }
@@ -3889,7 +3898,9 @@ namespace System.Diagnostics.Tracing
             if (IsMeterSupported)
             {
                 const string name = "System.Diagnostics.Metrics";
-                Guid id = new Guid("20752bc4-c151-50f5-f27b-df92d8af5a61");
+
+                // 20752bc4-c151-50f5-f27b-df92d8af5a61
+                Guid id = new Guid(0x20752BC4, 0xC151, 0x50F5, 0xF2, 0x7B, 0xDF, 0x92, 0xD8, 0xAF, 0x5A, 0x61);
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
@@ -4449,7 +4460,7 @@ namespace System.Diagnostics.Tracing
                     {
                         if (cur.m_Listener == listenerToRemove)
                         {
-                            CallDisableEventsIfNecessary(cur!, eventSource);
+                            CallDisableEventsIfNecessary(cur, eventSource);
                         }
 
                         cur = cur.m_Next;

@@ -762,7 +762,6 @@ void SystemDomain::DetachBegin()
     // Shut down the domain and its children (but don't deallocate anything just
     // yet).
 
-    // TODO: we should really not running managed DLLMain during process detach.
     if (GetThreadNULLOk() == NULL)
     {
         return;
@@ -890,7 +889,7 @@ void SystemDomain::Init()
     {
         // We are about to start allocating objects, so we must be in cooperative mode.
         // However, many of the entrypoints to the system (DllGetClassObject and all
-        // N/Direct exports) get called multiple times.  Sometimes they initialize the EE,
+        // PInvoke exports) get called multiple times.  Sometimes they initialize the EE,
         // but generally they remain in preemptive mode.  So we really want to push/pop
         // the state here:
         GCX_COOP();
@@ -953,29 +952,23 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
 
 /*static*/ void SystemDomain::EnumAllStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-    SystemDomain* sysDomain = SystemDomain::System();
-    if (sysDomain)
+    AppDomain* pAppDomain = ::GetAppDomain();
+    if (pAppDomain)
     {
-        AppDomain* pAppDomain = ::GetAppDomain();
-        if (pAppDomain && pAppDomain->IsActive())
-        {
-            pAppDomain->EnumStaticGCRefs(fn, sc);
-        }
+        pAppDomain->EnumStaticGCRefs(fn, sc);
     }
-
-    RETURN;
 }
 
 extern "C" PCODE g_pGetGCStaticBase;
@@ -1303,10 +1296,30 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
 struct CallersDataWithStackMark
 {
-    StackCrawlMark* stackMark;
-    BOOL foundMe;
-    MethodDesc* pFoundMethod;
-    MethodDesc* pPrevMethod;
+    CallersDataWithStackMark(StackCrawlMark* mark, PTR_Thread thread) :
+        stackMark(mark)
+#ifdef FEATURE_INTERPRETER
+        // Since the interpreter has its own stack, we need to get a pointer which can be compared on the real
+        // stack so that IsInCalleesFrames can work correctly.
+        , stackMarkOnOSStack(ConvertStackMarkToPointerOnOSStack(thread, mark))
+#endif
+    {
+    }
+    StackCrawlMark* const stackMark;
+#ifdef FEATURE_INTERPRETER
+    PTR_VOID const stackMarkOnOSStack;
+#endif
+    PTR_VOID GetStackMarkPointerToCheckAgainstStack()
+    {
+#ifdef FEATURE_INTERPRETER
+        return stackMarkOnOSStack;
+#else
+        return (PTR_VOID)stackMark;
+#endif
+    }
+    BOOL foundMe = FALSE;
+    MethodDesc* pFoundMethod = NULL;
+    MethodDesc* pPrevMethod = NULL;
 };
 
 /*static*/
@@ -1327,11 +1340,10 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
 
     GCX_COOP();
 
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
+    PTR_Thread pThread = GetThread();
+    CallersDataWithStackMark cdata(stackMark, pThread);
 
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
+    pThread->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
         return cdata.pFoundMethod->GetModule();
@@ -1376,7 +1388,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     CallersDataWithStackMark* pCaller = (CallersDataWithStackMark*) data;
     if (pCaller->stackMark)
     {
-        if (!pCf->IsInCalleesFrames(pCaller->stackMark))
+        if (!pCf->IsInCalleesFrames(pCaller->GetStackMarkPointerToCheckAgainstStack()))
         {
             // save the current in case it is the one we want
             pCaller->pPrevMethod = pFunc;
@@ -1432,7 +1444,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 
     // If we got here, we must already be in the frame containing the stack mark and we are not looking for "me".
     _ASSERTE(pCaller->stackMark &&
-             pCf->IsInCalleesFrames(pCaller->stackMark) &&
+             pCf->IsInCalleesFrames(pCaller->GetStackMarkPointerToCheckAgainstStack()) &&
              *(pCaller->stackMark) != LookForMe);
 
     // When looking for caller's caller, we delay returning results for another
@@ -1480,7 +1492,6 @@ void AppDomain::Create()
 
     NewHolder<AppDomain> pDomain(new AppDomain());
     pDomain->Init();
-    pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
 
     m_pTheAppDomain = pDomain.Extract();
@@ -1504,11 +1515,26 @@ void SystemDomain::PublishAppDomainAndInformDebugger (AppDomain *pDomain)
 
     LOG((LF_CORDB, LL_INFO100, "SD::PADAID: Adding 0x%x\n", pDomain));
 
-    // Call the publisher API to add this appdomain entry to the list
-    // The publisher will handle failures, so we don't care if this succeeds or fails.
-    if (g_pDebugInterface != NULL)
+    //
+    // We need to synchronize this routine with the attach logic.  The "normal"
+    // attach case uses the HelperThread and TrapAllRuntimeThreads to synchronize
+    // the runtime before sending any of the events (including AppDomainCreates)
+    // to the right-side.  Thus, we can synchronize with this case by forcing us
+    // to go co-operative.  If we were already co-op, then the helper thread will
+    // wait to start the attach until all co-op threads are paused.  If we were
+    // pre-emptive, then going co-op will suspend us until the HelperThread finishes.
+    //
+    // The second case is under the IPC event for ATTACHING, which is where there are
+    // zero app domains, so it is considered an 'early attach' case.  To synchronize
+    // with this we have to grab and hold the AppDomainDB lock.
+    //
+
+
+    // Send event to debugger if one is attached.
+    if (CORDebuggerAttached())
     {
-        g_pDebugInterface->AddAppDomainToIPC(pDomain);
+        GCX_COOP();
+        g_pDebugInterface->AppDomainCreated(pDomain);
     }
 }
 
@@ -1613,7 +1639,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_COMWRAPPERS
     , m_pRCWRefCache{NULL}
 #endif // FEATURE_COMWRAPPERS
-    , m_Stage{STAGE_CREATING}
     , m_ForceTrivialWaitOperations{false}
 #ifdef FEATURE_TYPEEQUIVALENCE
     , m_pTypeEquivalenceTable{NULL}
@@ -1660,12 +1685,7 @@ AppDomain::~AppDomain()
 //*****************************************************************************
 void AppDomain::Init()
 {
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(m_Stage == STAGE_CREATING);
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     //
     //   The JIT lock and the CCtor locks are at the same level (and marked as
@@ -1706,8 +1726,6 @@ void AppDomain::Init()
     m_ReflectionCrst.Init(CrstReflection, CRST_UNSAFE_ANYMODE);
     m_RefClassFactCrst.Init(CrstClassFactInfoHash);
 
-    SetStage(STAGE_READYFORMANAGEDCODE);
-
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init();
 #endif
@@ -1738,13 +1756,6 @@ void AppDomain::Stop()
 #ifdef DEBUGGING_SUPPORTED
     if (IsDebuggerAttached())
         NotifyDebuggerUnload();
-
-    if (NULL != g_pDebugInterface)
-    {
-        // Call the publisher API to delete this appdomain entry from the list
-        CONTRACT_VIOLATION(ThrowsViolation);
-        g_pDebugInterface->RemoveAppDomainFromIPC (this);
-    }
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2786,7 +2797,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
     CONTRACTL
     {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // for NameChangeEvent
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -2811,13 +2822,9 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
 
     if(g_pDebugInterface)
     {
-        // update the name in the IPC publishing block
-        if (SUCCEEDED(g_pDebugInterface->UpdateAppDomainEntryInIPC(this)))
-        {
-            // inform the attached debugger that the name of this appdomain has changed.
-            if (IsDebuggerAttached())
-                g_pDebugInterface->NameChangeEvent(this, NULL);
-        }
+        // inform the attached debugger that the name of this appdomain has changed.
+        if (IsDebuggerAttached())
+            g_pDebugInterface->NameChangeEvent(this, NULL);
     }
 }
 #endif // !DACCESS_COMPILE
@@ -2839,48 +2846,6 @@ LPCWSTR AppDomain::GetFriendlyName()
 
     RETURN (LPCWSTR)m_friendlyName;
 }
-
-#ifndef DACCESS_COMPILE
-
-LPCWSTR AppDomain::GetFriendlyNameForDebugger()
-{
-    CONTRACT (LPCWSTR)
-    {
-        NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-
-    if (m_friendlyName == NULL)
-    {
-        BOOL fSuccess = FALSE;
-
-        EX_TRY
-        {
-            SetFriendlyName(NULL);
-
-            fSuccess = TRUE;
-        }
-        EX_CATCH
-        {
-            // Gobble all exceptions.
-        }
-        EX_END_CATCH
-
-        if (!fSuccess)
-        {
-            RETURN W("");
-        }
-    }
-
-    RETURN m_friendlyName;
-}
-
-
-#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -3430,7 +3395,7 @@ void AppDomain::RaiseExitProcessEvent()
     STATIC_CONTRACT_GC_TRIGGERS;
 
     // Only finalizer thread during shutdown can call this function.
-    _ASSERTE (g_fEEShutDown && (GetThread() == FinalizerThread::GetFinalizerThread()));
+    _ASSERTE (g_fEEShutDown && FinalizerThread::IsCurrentThreadFinalizer());
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 
@@ -4096,7 +4061,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 #if !defined(DACCESS_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, AssemblyBinder *pBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
+HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, AssemblyBinder *pBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
 {
     CONTRACTL
     {
@@ -4126,7 +4091,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     BINDER_SPACE::Assembly *pResolvedAssembly = NULL;
 
     bool fResolvedAssembly = false;
-    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pManagedAssemblyLoadContextToBindWithin, hr};
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pAssemblyLoadContextToBindWithin, hr};
 
     // Allocate an AssemblyName managed object
     _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
@@ -4150,7 +4115,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             // Setup the arguments for the call
             ARG_SLOT args[2] =
             {
-                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
+                PtrToArgSlot(pAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
                 ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
             };
 
@@ -4197,7 +4162,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             // Setup the arguments for the call
             ARG_SLOT args[2] =
             {
-                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
+                PtrToArgSlot(pAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
                 ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
             };
 
@@ -4226,7 +4191,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             // Setup the arguments for the call
             ARG_SLOT args[2] =
             {
-                PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
+                PtrToArgSlot(pAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
                 ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
             };
 

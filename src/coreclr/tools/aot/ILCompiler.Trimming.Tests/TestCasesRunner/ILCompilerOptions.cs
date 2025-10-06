@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public List<string> InitAssemblies = new List<string>();
         public List<string> TrimAssemblies = new List<string>();
         public List<string> AdditionalRootAssemblies = new List<string>();
+        public List<string> RootEntireAssemblies = new List<string>();
         public Dictionary<string, bool> FeatureSwitches = new Dictionary<string, bool>();
         public List<string> Descriptors = new List<string>();
         public bool FrameworkCompilation;
@@ -20,5 +21,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public bool TreatWarningsAsErrors;
         public Dictionary<int, bool> WarningsAsErrors = new Dictionary<int, bool>();
         public List<string> SuppressedWarningCategories = new List<string>();
+        public bool DisableGeneratedCodeHeuristics;
     }
 }

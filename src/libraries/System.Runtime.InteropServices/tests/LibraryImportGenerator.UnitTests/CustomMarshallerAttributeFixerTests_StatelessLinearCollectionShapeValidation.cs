@@ -614,6 +614,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static ReadOnlySpan<int> GetManagedValuesSource(ManagedType m) => default;
 
                     public static Span<T> GetUnmanagedValuesDestination(nint unmanaged, int numElements) => default;
+
                     public static int BufferSize
                     {
                         get

@@ -115,5 +115,37 @@ internal static partial class Interop
 
             return status == NTSTATUS.STATUS_SUCCESS;
         }
+
+        internal static unsafe bool BCryptVerifySignaturePqcPreHash(
+            SafeBCryptKeyHandle key,
+            ReadOnlySpan<byte> hash,
+            string hashAlgorithmIdentifier,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<byte> signature)
+        {
+            NTSTATUS status;
+
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
+            fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+            {
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
+                paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                status = BCryptVerifySignature(
+                    key,
+                    &paddingInfo,
+                    pHash,
+                    hash.Length,
+                    pSignature,
+                    signature.Length,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
+            }
+
+            return status == NTSTATUS.STATUS_SUCCESS;
+        }
     }
 }

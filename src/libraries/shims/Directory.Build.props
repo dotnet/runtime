@@ -21,7 +21,7 @@
     <!-- Allow shim ref projects to reference source projects which is required for referencing shared
         framework dependencies. -->
     <SkipValidateReferenceAssemblyProjectReferences Condition="'$(IsReferenceAssemblyProject)' == 'true'">true</SkipValidateReferenceAssemblyProjectReferences>
-    <SlnGenSolutionInnerFolder>shims</SlnGenSolutionInnerFolder>
+    <SlnGenSolutionInnerFolder>\shims</SlnGenSolutionInnerFolder>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">

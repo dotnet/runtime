@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #if NETFRAMEWORK
             X509KeyStorageFlags.DefaultKeySet;
 #else
-            PlatformDetection.UsesAppleCrypto ? 
+            PlatformDetection.UsesAppleCrypto ?
                 X509KeyStorageFlags.DefaultKeySet :
                 X509KeyStorageFlags.EphemeralKeySet;
 #endif
@@ -302,7 +302,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(contentType, actualType);
                 }
             }
-            
+
             if (path is null)
             {
                 Assert.ThrowsAny<CryptographicException>(() => LoadPfxNoFile(data));
@@ -744,14 +744,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
 
+#if !NET10_0_OR_GREATER
             if (allowDuplicates)
             {
                 limits = Pkcs12LoaderLimits.DangerousNoLimits;
             }
+#endif
 
             // remove the edit lock
             limits = new Pkcs12LoaderLimits(limits)
             {
+#if NET10_0_OR_GREATER
+                AllowDuplicateAttributes = allowDuplicates,
+#endif
                 PreserveCertificateAlias = false,
                 PreserveKeyName = false,
                 PreserveStorageProvider = false,
@@ -788,7 +793,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             // EphemeralKeySet is not available by name in the netfx build.
             const X509KeyStorageFlags EphemeralKeySet = (X509KeyStorageFlags)0x20;
-            bool expectLegacy = (flags & EphemeralKeySet) == 0 && preserveStorageProvider; 
+            bool expectLegacy = (flags & EphemeralKeySet) == 0 && preserveStorageProvider;
 
             using (X509Certificate2 cert = LoadPfxNoFile(TestData.SChannelPfx, TestData.PlaceholderPw, flags, limits))
             {

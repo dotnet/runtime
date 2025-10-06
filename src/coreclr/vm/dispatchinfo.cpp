@@ -2340,7 +2340,7 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
         {
             GCX_PREEMP();
-            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElementMT);
+            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
         }
         GCPROTECT_END();
 

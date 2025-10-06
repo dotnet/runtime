@@ -248,9 +248,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
-#define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
-                    == offsetof(VASigCookie, pNDirectILStub));
+#define               OFFSETOF__VASigCookie__pPInvokeILStub     0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pPInvokeILStub
+                    == offsetof(VASigCookie, pPInvokeILStub));
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:
@@ -538,6 +538,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -546,6 +547,7 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 #define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20

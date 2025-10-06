@@ -87,6 +87,9 @@ namespace System
 #endif
         internal static void OnUnhandledException(object e)
         {
+#if NATIVEAOT
+            RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
+#endif
             if (UnhandledException is UnhandledExceptionEventHandler handlers)
             {
                 UnhandledExceptionEventArgs args = new(e, isTerminating: true);

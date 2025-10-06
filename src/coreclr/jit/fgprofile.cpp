@@ -484,14 +484,6 @@ void BlockCountInstrumentor::RelocateProbes()
 
     JITDUMP("Optimized + instrumented + potential tail calls --- preparing to relocate edge probes\n");
 
-    // We should be in a root method compiler instance. We currently do not instrument inlinees.
-    //
-    // Relaxing this will require changes below because inlinee compilers
-    // share the root compiler flow graph (and hence bb epoch), and flow
-    // from inlinee tail calls to returns can be more complex.
-    //
-    assert(!m_comp->compIsForInlining());
-
     // Keep track of return blocks needing special treatment.
     //
     ArrayStack<BasicBlock*> criticalPreds(m_comp->getAllocator(CMK_Pgo));
@@ -763,7 +755,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
 
     // Read Basic-Block count value
     GenTree* valueNode =
-        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
     // Increment value by 1
     GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
@@ -850,26 +842,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // Push the method entry and all EH handler region entries on the stack.
     // (push method entry last so it's visited first).
     //
-    // Note inlinees are "contaminated" with root method EH structures.
-    // We know the inlinee itself doesn't have EH, so we only look at
-    // handlers for root methods.
-    //
-    // If we ever want to support inlining methods with EH, we'll
-    // have to revisit this.
-    //
-    if (!compIsForInlining())
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        for (EHblkDsc* const HBtab : EHClauses(this))
+        BasicBlock* hndBegBB = HBtab->ebdHndBeg;
+        stack.Push(hndBegBB);
+        BitVecOps::AddElemD(&traits, marked, hndBegBB->bbID);
+        if (HBtab->HasFilter())
         {
-            BasicBlock* hndBegBB = HBtab->ebdHndBeg;
-            stack.Push(hndBegBB);
-            BitVecOps::AddElemD(&traits, marked, hndBegBB->bbID);
-            if (HBtab->HasFilter())
-            {
-                BasicBlock* filterBB = HBtab->ebdFilter;
-                stack.Push(filterBB);
-                BitVecOps::AddElemD(&traits, marked, filterBB->bbID);
-            }
+            BasicBlock* filterBB = HBtab->ebdFilter;
+            stack.Push(filterBB);
+            BitVecOps::AddElemD(&traits, marked, filterBB->bbID);
         }
     }
 
@@ -1020,13 +1002,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // things will just work for switches either way, but it
                 // might work a bit better using the root compiler.
                 //
-                const unsigned numSucc = block->NumSucc(this);
+                const unsigned numSucc = block->NumSucc();
 
                 if (numSucc == 1)
                 {
                     // Not a fork. Just visit the sole successor.
                     //
-                    BasicBlock* const target = block->GetSucc(0, this);
+                    BasicBlock* const target = block->GetSucc(0);
                     if (BitVecOps::IsMember(&traits, marked, target->bbID))
                     {
                         // We can't instrument in the call finally pair tail block
@@ -1061,7 +1043,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
                     for (unsigned i = 0; i < numSucc; i++)
                     {
-                        BasicBlock* const succ = block->GetSucc(i, this);
+                        BasicBlock* const succ = block->GetSucc(i);
                         scratch.Push(succ);
                     }
 
@@ -1483,7 +1465,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                     // See if the edge still exists.
                     //
                     bool found = false;
-                    for (BasicBlock* const succ : block->Succs(m_comp))
+                    for (BasicBlock* const succ : block->Succs())
                     {
                         if (target == succ)
                         {
@@ -1558,14 +1540,6 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
     }
 
     JITDUMP("Optimized + instrumented + potential tail calls --- preparing to relocate edge probes\n");
-
-    // We should be in a root method compiler instance. We currently do not instrument inlinees.
-    //
-    // Relaxing this will require changes below because inlinee compilers
-    // share the root compiler flow graph (and hence bb epoch), and flow
-    // from inlinee tail calls to returns can be more complex.
-    //
-    assert(!m_comp->compIsForInlining());
 
     // We may need to track the critical predecessors of some blocks.
     //
@@ -2508,7 +2482,11 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
 //
 PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 {
-    noway_assert(!compIsForInlining());
+    if (compIsForInlining() && JitConfig.JitInstrumentInlinees() == 0)
+    {
+        JITDUMP("Inlinee instrumentation disabled by config\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     // Choose instrumentation technology.
     //
@@ -2626,6 +2604,59 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 //   appropriate phase status
 //
 // Note:
+//   Wrapper around fgInstrumentMethodCore, which handles
+//   special cases when instrumenting inlinees.
+//
+PhaseStatus Compiler::fgInstrumentMethod()
+{
+    // If this is an inlinee that returns a value, and we don't have a return
+    // value temp, the return value tree may not be linked into the return block.
+    //
+    // Temporarily link it in so the passes below can operate on it as needed.
+    //
+    BasicBlock* retBB                 = nullptr;
+    Statement*  tempInlineeReturnStmt = nullptr;
+
+    if (compIsForInlining())
+    {
+        if (JitConfig.JitInstrumentInlinees() == 0)
+        {
+            JITDUMP("Inlinee instrumentation disabled by config\n");
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+
+        GenTreeRetExpr* const retExpr = impInlineInfo->inlineCandidateInfo->retExpr;
+
+        // If there's a retExpr but no gtSubstBB, we assume the retExpr is a temp
+        // and so not interesting to instrumentation.
+        //
+        if ((retExpr != nullptr) && (retExpr->gtSubstBB != nullptr))
+        {
+            assert(retExpr->gtSubstExpr != nullptr);
+            retBB                 = retExpr->gtSubstBB;
+            tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, retExpr->gtSubstExpr);
+            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(retExpr->gtSubstExpr),
+                    retBB->bbNum);
+        }
+    }
+
+    PhaseStatus status = fgInstrumentMethodCore();
+
+    if (tempInlineeReturnStmt != nullptr)
+    {
+        fgRemoveStmt(retBB, tempInlineeReturnStmt);
+    }
+
+    return status;
+}
+
+//------------------------------------------------------------------------
+// fgInstrumentMethodCore: add instrumentation probes to the method
+//
+// Returns:
+//   appropriate phase status
+//
+// Note:
 //
 //   By default this instruments each non-internal block with
 //   a counter probe.
@@ -2635,10 +2666,9 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 //   Probe structure is described by a schema array, which is created
 //   here based on flowgraph and IR structure.
 //
-PhaseStatus Compiler::fgInstrumentMethod()
-{
-    noway_assert(!compIsForInlining());
 
+PhaseStatus Compiler::fgInstrumentMethodCore()
+{
     // Make post-import preparations.
     //
     const bool isPreImport = false;
@@ -2718,7 +2748,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     // If this is an OSR method, we should use the same buffer that the Tier0 method used.
     //
-    // This is supported by allocPgoInsrumentationDataBySchema, which will verify the schema
+    // This is supported by allocPgoInstrumentationBySchema, which will verify the schema
     // we provide here matches the one from Tier0, and will fill in the data offsets in
     // our schema properly.
     //
@@ -3782,7 +3812,7 @@ void EfficientEdgeCountReconstructor::Propagate()
         assert(info->m_weightKnown);
         block->setBBProfileWeight(info->m_weight);
 
-        const unsigned nSucc = block->NumSucc(m_comp);
+        const unsigned nSucc = block->NumSucc();
         if (nSucc == 0)
         {
             // No edges to worry about.
@@ -3983,7 +4013,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 
         weight_t equalLikelihood = 1.0 / nSucc;
 
-        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges())
         {
             BasicBlock* const succBlock = succEdge->getDestinationBlock();
             JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
@@ -4136,8 +4166,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned   caseCount    = block->GetSwitchTargets()->bbsCount;
-    FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+    const unsigned   caseCount    = block->GetSwitchTargets()->GetCaseCount();
+    FlowEdge** const jumpTab      = block->GetSwitchTargets()->GetCases();
     unsigned         dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4164,7 +4194,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->GetSwitchTargets()->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTargets()->HasDefaultCase() && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4178,8 +4208,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetSwitchTargets()->bbsHasDominantCase = true;
-    block->GetSwitchTargets()->bbsDominantCase    = dominantCase;
+    block->GetSwitchTargets()->SetDominantCase(dominantCase);
 }
 
 //------------------------------------------------------------------------
@@ -4346,14 +4375,6 @@ bool Compiler::fgComputeMissingBlockWeights()
                     changed        = true;
                     modified       = true;
                     bDst->bbWeight = newWeight;
-                    if (newWeight == BB_ZERO_WEIGHT)
-                    {
-                        bDst->SetFlags(BBF_RUN_RARELY);
-                    }
-                    else
-                    {
-                        bDst->RemoveFlags(BBF_RUN_RARELY);
-                    }
                 }
             }
             else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
@@ -4872,7 +4893,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 
     // We want switch targets unified, but not EH edges.
     //
-    const unsigned numSuccs = block->NumSucc(this);
+    const unsigned numSuccs = block->NumSucc();
 
     if ((numSuccs > 0) && !block->KindIs(BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
@@ -4884,7 +4905,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
-        for (FlowEdge* succEdge : block->SuccEdges(this))
+        for (FlowEdge* succEdge : block->SuccEdges())
         {
             assert(succEdge != nullptr);
             BasicBlock* succBlock = succEdge->getDestinationBlock();
@@ -4936,7 +4957,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 #ifdef DEBUG
                     if (verbose)
                     {
-                        for (const FlowEdge* succEdge : block->SuccEdges(this))
+                        for (const FlowEdge* succEdge : block->SuccEdges())
                         {
                             const BasicBlock* succBlock = succEdge->getDestinationBlock();
                             if (succEdge->hasLikelihood())

@@ -15,7 +15,7 @@ namespace System.IO.Tests
         [InlineData("filename.tmp", "...", "filename...")]
         [InlineData("filename.tmp", null, "filename")]
         [InlineData("filename.tmp.doc", ".tmp", "filename.tmp.tmp")]
-        public void ValidExtensions(string original, string newExtension, string expected)
+        public void ValidExtensions(string? original, string? newExtension, string? expected)
         {
             string newPath = Path.ChangeExtension(original, newExtension);
             Assert.Equal(expected, newPath);

@@ -45,7 +45,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(CookieUsePolicy.UseInternalCookieStoreOnly, handler.CookieUsePolicy);
             Assert.Null(handler.CookieContainer);
             Assert.Null(handler.ServerCertificateValidationCallback);
-            Assert.True(handler.CheckCertificateRevocationList);
+            Assert.False(handler.CheckCertificateRevocationList);
             Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOption);
             X509Certificate2Collection certs = handler.ClientCertificates;
             Assert.True(certs.Count == 0);
@@ -130,7 +130,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             using var handler = new WinHttpHandler();
 
-            SendRequestHelper.Send(handler, () => {
+            SendRequestHelper.Send(handler, () =>
+            {
                 handler.TcpKeepAliveEnabled = true;
                 handler.TcpKeepAliveTime = TimeSpan.FromMinutes(13);
                 handler.TcpKeepAliveInterval = TimeSpan.FromSeconds(42);
@@ -148,7 +149,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             using var handler = new WinHttpHandler();
 
-            SendRequestHelper.Send(handler, () => {
+            SendRequestHelper.Send(handler, () =>
+            {
                 handler.TcpKeepAliveEnabled = true;
                 handler.TcpKeepAliveTime = Timeout.InfiniteTimeSpan;
                 handler.TcpKeepAliveInterval = Timeout.InfiniteTimeSpan;
@@ -312,7 +314,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             SendRequestHelper.Send(
                 handler,
-                delegate {
+                delegate
+                {
                     handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
                     handler.CookieContainer = new CookieContainer();
                 });

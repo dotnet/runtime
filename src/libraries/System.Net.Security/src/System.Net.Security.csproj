@@ -15,6 +15,7 @@
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">$(DefineConstants);TARGET_APPLE</DefineConstants>
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseAppleCrypto>
     <UseManagedNtlm Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseManagedNtlm>
@@ -440,11 +441,22 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.OSStatus.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.OSStatus.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.NetworkFramework.cs"
+             Link="Common\Interop\OSX\Interop.NetworkFramework.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.NetworkFramework.Tls.cs"
+             Link="Common\Interop\OSX\Interop.NetworkFramework.Tls.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.OSX.cs"
+             Link="Common\System\Net\Security\CertificateValidation.OSX.cs" />
     <Compile Include="System\Net\CertificateValidationPal.OSX.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteSslContext.cs" />
+    <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteNwContext.cs" />
+    <!-- TODO: move to shared code -->
+    <Compile Include="../../System.Net.Quic/src/System/Net/Quic/Internal/ResettableValueTaskSource.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.OSX.cs" />

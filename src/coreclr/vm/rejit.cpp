@@ -548,7 +548,9 @@ HRESULT ReJitManager::UpdateActiveILVersions(
 
         if ((flags & COR_PRF_REJIT_BLOCK_INLINING) == COR_PRF_REJIT_BLOCK_INLINING)
         {
-            hr = UpdateNativeInlinerActiveILVersions(&mgrToCodeActivationBatch, pModule, rgMethodDefs[i], fIsRevert, flags);
+            _ASSERTE(!fIsRevert);
+
+            hr = UpdateNativeInlinerActiveILVersions(&mgrToCodeActivationBatch, pModule, rgMethodDefs[i], flags);
             if (FAILED(hr))
             {
                 return hr;
@@ -711,7 +713,6 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     SHash<CodeActivationBatchTraits>   *pMgrToCodeActivationBatch,
     Module                             *pInlineeModule,
     mdMethodDef                         inlineeMethodDef,
-    BOOL                                fIsRevert,
     COR_PRF_REJIT_FLAGS                 flags)
 {
     CONTRACTL
@@ -758,7 +759,7 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
                     }
                 }
 
-                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, inliner.m_module, inliner.m_methodDef, fIsRevert, flags);
+                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, inliner.m_module, inliner.m_methodDef, FALSE /* fIsRevert */, flags);
                 if (FAILED(hr))
                 {
                     ReportReJITError(inliner.m_module, inliner.m_methodDef, NULL, hr);

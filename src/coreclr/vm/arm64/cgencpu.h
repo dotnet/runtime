@@ -59,7 +59,7 @@ extern PCODE GetPreStubEntryPoint();
 #define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 

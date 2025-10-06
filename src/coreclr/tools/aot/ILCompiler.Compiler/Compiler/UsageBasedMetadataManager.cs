@@ -303,7 +303,7 @@ namespace ILCompiler
                 // in places where they assume IL-level trimming (where the method cannot be removed).
                 // We ask for a full reflectable method with its method body instead of just the
                 // metadata.
-                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
                 if (!IsReflectionBlocked(invokeMethod))
                 {
                     dependencies ??= new DependencyList();
@@ -405,13 +405,13 @@ namespace ILCompiler
             return false;
         }
 
-        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool allocated)
         {
             // Check to see if we have any dataflow annotations on the type.
             // The check below also covers flow annotations inherited through base classes and implemented interfaces.
-            bool hasFlowAnnotations = type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
+            bool allocatedWithFlowAnnotations = allocated && type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
 
-            if (hasFlowAnnotations)
+            if (allocatedWithFlowAnnotations)
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
@@ -420,7 +420,7 @@ namespace ILCompiler
                     "Type exists and GetType called on it"));
             }
 
-            if (hasFlowAnnotations
+            if (allocatedWithFlowAnnotations
                 && !type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */)
             {
                 // We have some flow annotations on this type.
@@ -718,25 +718,6 @@ namespace ILCompiler
             return _modulesWithMetadata;
         }
 
-        private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
-        {
-            // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
-            {
-                if (!IsReflectionBlocked(constructedType))
-                    yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
-            }
-        }
-
         public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, FieldDesc writtenField)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
@@ -770,6 +751,15 @@ namespace ILCompiler
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
                 DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+            }
+        }
+
+        public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        {
+            bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
+            if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, accessedType))
+            {
+                AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting type");
             }
         }
 
@@ -857,8 +847,11 @@ namespace ILCompiler
                 reflectableTypes[typeWithMetadata] = MetadataCategory.Description;
             }
 
-            foreach (var constructedType in GetTypesWithRuntimeMapping())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
+                if (IsReflectionBlocked(constructedType))
+                    continue;
+
                 reflectableTypes[constructedType] |= MetadataCategory.RuntimeMapping;
 
                 // Also set the description bit if the definition is getting metadata.

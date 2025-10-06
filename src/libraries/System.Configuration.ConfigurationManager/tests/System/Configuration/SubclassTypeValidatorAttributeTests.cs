@@ -11,7 +11,7 @@ namespace System.ConfigurationTests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(string))]
-        public void GetBaseClass_FlowFromConstructor_Equals(Type expected)
+        public void GetBaseClass_FlowFromConstructor_Equals(Type? expected)
         {
             SubclassTypeValidatorAttribute attr = new SubclassTypeValidatorAttribute(expected);
             Assert.Equal(expected, attr.BaseClass);

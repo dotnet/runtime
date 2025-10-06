@@ -10,43 +10,43 @@
 struct InterpOpNameCharacters
 {
 #define OPDEF(a,b,c,d,e,f) char a[sizeof(b)];
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 
 const struct InterpOpNameCharacters g_interpOpNameCharacters = {
 #define OPDEF(a,b,c,d,e,f) b,
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 
 const uint32_t g_interpOpNameOffsets[] = {
 #define OPDEF(a,b,c,d,e,f) offsetof(InterpOpNameCharacters, a),
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 
 const uint8_t g_interpOpLen[] = {
 #define OPDEF(a,b,c,d,e,f) c,
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 
 const int g_interpOpSVars[] = {
 #define OPDEF(a,b,c,d,e,f) e,
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 
 const int g_interpOpDVars[] = {
 #define OPDEF(a,b,c,d,e,f) d,
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 
 const InterpOpArgType g_interpOpArgType[] = {
 #define OPDEF(a,b,c,d,e,f) f,
-#include "intops.def"
+#include <intops.def>
 #undef OPDEF
 };
 

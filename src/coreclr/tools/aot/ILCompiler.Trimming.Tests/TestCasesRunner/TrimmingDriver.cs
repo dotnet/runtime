@@ -93,7 +93,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 singleWarnDisabledModules: Enumerable.Empty<string>(),
                 suppressedCategories: options.SuppressedWarningCategories,
                 treatWarningsAsErrors: options.TreatWarningsAsErrors,
-                warningsAsErrors: options.WarningsAsErrors);
+                warningsAsErrors: options.WarningsAsErrors,
+                disableGeneratedCodeHeuristics: options.DisableGeneratedCodeHeuristics);
 
             foreach (var descriptor in options.Descriptors)
             {
@@ -121,7 +122,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger, options.DisableGeneratedCodeHeuristics);
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
                 compilationGroup,
@@ -136,7 +137,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 options: default,
                 logger: logger,
                 featureSwitchValues: options.FeatureSwitches,
-                rootEntireAssembliesModules: Array.Empty<string>(),
+                rootEntireAssembliesModules: options.RootEntireAssemblies,
                 additionalRootedAssemblies: options.AdditionalRootAssemblies.ToArray(),
                 trimmedAssemblies: options.TrimAssemblies.ToArray(),
                 satelliteAssemblyFilePaths: Array.Empty<string>());

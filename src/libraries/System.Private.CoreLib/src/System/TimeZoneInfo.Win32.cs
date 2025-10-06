@@ -32,47 +32,6 @@ namespace System
 
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
-        private sealed partial class CachedData
-        {
-            private static TimeZoneInfo GetCurrentOneYearLocal()
-            {
-                // load the data from the OS
-                uint result = Interop.Kernel32.GetTimeZoneInformation(out TIME_ZONE_INFORMATION timeZoneInformation);
-                return result == Interop.Kernel32.TIME_ZONE_ID_INVALID ?
-                    CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId) :
-                    GetLocalTimeZoneFromWin32Data(timeZoneInformation, dstDisabled: false);
-            }
-
-            private volatile OffsetAndRule? _oneYearLocalFromUtc;
-
-            public OffsetAndRule GetOneYearLocalFromUtc(int year)
-            {
-                OffsetAndRule? oneYearLocFromUtc = _oneYearLocalFromUtc;
-                if (oneYearLocFromUtc == null || oneYearLocFromUtc.Year != year)
-                {
-                    TimeZoneInfo currentYear = GetCurrentOneYearLocal();
-                    AdjustmentRule? rule = currentYear._adjustmentRules?[0];
-                    oneYearLocFromUtc = new OffsetAndRule(year, currentYear.BaseUtcOffset, rule);
-                    _oneYearLocalFromUtc = oneYearLocFromUtc;
-                }
-                return oneYearLocFromUtc;
-            }
-        }
-
-        private sealed class OffsetAndRule
-        {
-            public readonly int Year;
-            public readonly TimeSpan Offset;
-            public readonly AdjustmentRule? Rule;
-
-            public OffsetAndRule(int year, TimeSpan offset, AdjustmentRule? rule)
-            {
-                Year = year;
-                Offset = offset;
-                Rule = rule;
-            }
-        }
-
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
         /// </summary>
@@ -360,38 +319,10 @@ namespace System
         private static TimeZoneInfoResult TryGetTimeZone(string id, out TimeZoneInfo? timeZone, out Exception? e, CachedData cachedData)
             => TryGetTimeZone(id, false, out timeZone, out e, cachedData);
 
-        // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
-        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
-        {
-            isAmbiguousLocalDst = false;
-
-            if (Invariant)
-            {
-                return TimeSpan.Zero;
-            }
-
-            int timeYear = time.Year;
-
-            OffsetAndRule match = s_cachedData.GetOneYearLocalFromUtc(timeYear);
-            TimeSpan baseOffset = match.Offset;
-
-            if (match.Rule != null)
-            {
-                baseOffset += match.Rule.BaseUtcOffsetDelta;
-                if (match.Rule.HasDaylightSaving)
-                {
-                    bool isDaylightSavings = GetIsDaylightSavingsFromUtc(time, timeYear, match.Offset, match.Rule, null, out isAmbiguousLocalDst, Local);
-                    baseOffset += (isDaylightSavings ? match.Rule.DaylightDelta : TimeSpan.Zero /* FUTURE: rule.StandardDelta */);
-                }
-            }
-
-            return baseOffset;
-        }
-
         /// <summary>
         /// Converts a REG_TZI_FORMAT struct to a TransitionTime
         /// - When the argument 'readStart' is true the corresponding daylightTransitionTimeStart field is read
-        /// - When the argument 'readStart' is false the corresponding dayightTransitionTimeEnd field is read
+        /// - When the argument 'readStart' is false the corresponding daylightTransitionTimeEnd field is read
         /// </summary>
         private static bool TransitionTimeFromTimeZoneInformation(in REG_TZI_FORMAT timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
         {

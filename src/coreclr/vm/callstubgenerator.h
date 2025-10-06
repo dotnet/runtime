@@ -42,7 +42,14 @@ struct CallStubHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(target != 0);
-        Routines[NumRoutines - 1] = target;
+        VolatileStore(&Routines[NumRoutines - 1], target);
+    }
+
+    PCODE GetTarget()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return VolatileLoadWithoutBarrier(&Routines[NumRoutines - 1]);
     }
 
     size_t GetSize()
@@ -83,7 +90,9 @@ class CallStubGenerator
         ReturnTypeFloat,
         ReturnType2Float,
         ReturnType3Float,
-        ReturnType4Float
+        ReturnType4Float,
+        ReturnTypeVector64,
+        ReturnTypeVector128
 #endif // TARGET_ARM64
     };
 

@@ -106,7 +106,7 @@ namespace Internal.Runtime.TypeLoader
                 sb.AppendLine();
                 sb.AppendLine("Declaring type: " + GetTypeNameDebug(slotMethod.OwningType));
                 sb.AppendLine("Target type: " + GetTypeNameDebug(targetType));
-                sb.AppendLine("Method name: " + slotMethod.Name);
+                sb.AppendLine("Method name: " + slotMethod.GetName());
                 sb.AppendLine("Instantiation:");
                 for (int i = 0; i < slotMethod.Instantiation.Length; i++)
                 {
@@ -134,7 +134,7 @@ namespace Internal.Runtime.TypeLoader
                 sb.AppendLine("Failed to create generic virtual method implementation");
                 sb.AppendLine();
                 sb.AppendLine("Declaring type: " + GetTypeNameDebug(result.OwningType));
-                sb.AppendLine("Method name: " + result.Name);
+                sb.AppendLine("Method name: " + result.GetName());
                 sb.AppendLine("Instantiation:");
                 for (int i = 0; i < result.Instantiation.Length; i++)
                 {
@@ -330,7 +330,7 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle openTargetTypeHandle = targetType.GetTypeDefinition().RuntimeTypeHandle;
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(slotMethod.OwningType) + "." + slotMethod.NameAndSignature.Name);
+            Debug.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(slotMethod.OwningType) + "." + slotMethod.Name);
 #endif
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
@@ -459,7 +459,7 @@ namespace Internal.Runtime.TypeLoader
             hashCode = ((hashCode << 13) ^ hashCode) ^ openTargetTypeHandle.GetHashCode();
 
 #if GVM_RESOLUTION_TRACE
-            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetType) + "." + slotMethod.NameAndSignature.Name);
+            Debug.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetType) + "." + slotMethod.Name);
 #endif
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))

@@ -582,6 +582,7 @@ namespace ILLink.Shared.TrimAnalysis
                 // GetMethod(string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
                 // GetMethod(string, int, Type[])
                 // GetMethod(string, int, Type[], ParameterModifier[]?)
+                // GetMethod(string, int, BindingFlags, Type[])
                 // GetMethod(string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
                 // GetMethod(string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
                 //

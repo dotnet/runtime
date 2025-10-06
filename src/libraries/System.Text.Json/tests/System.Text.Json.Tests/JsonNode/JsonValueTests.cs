@@ -1,11 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Tests;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -264,6 +266,68 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Theory]
+        [InlineData("\"A\"", "A")]
+        [InlineData("\"AB\"", "AB")]
+        [InlineData("\"A\\u0022\"", "A\"")] // ValueEquals compares unescaped values
+        public static void DeserializePrimitive_ToElement_String(string json, string expected)
+        {
+            DoTest(json, expected);
+
+            // Test long strings
+            string padding = new string('P', 256);
+            DoTest(json[0] + padding + json.Substring(1), padding + expected);
+
+            static void DoTest(string json, string expected)
+            {
+                JsonValue value = JsonSerializer.Deserialize<JsonValue>(json);
+                JsonElement element = value.GetValue<JsonElement>();
+
+                AssertExtensions.TrueExpression(element.ValueEquals(expected));
+
+                bool success = value.TryGetValue(out element);
+                Assert.True(success);
+                AssertExtensions.TrueExpression(element.ValueEquals(expected));
+            }
+        }
+
+        [Fact]
+        public static void DeserializePrimitive_ToElement_Bool()
+        {
+            // true
+            JsonValue value = JsonSerializer.Deserialize<JsonValue>("true");
+
+            JsonElement element = value.GetValue<JsonElement>();
+            Assert.Equal(JsonValueKind.True, element.ValueKind);
+
+            bool success = value.TryGetValue(out element);
+            Assert.True(success);
+            Assert.Equal(JsonValueKind.True, element.ValueKind);
+
+            // false
+            value = JsonSerializer.Deserialize<JsonValue>("false");
+
+            element = value.GetValue<JsonElement>();
+            Assert.Equal(JsonValueKind.False, element.ValueKind);
+
+            success = value.TryGetValue(out element);
+            Assert.True(success);
+            Assert.Equal(JsonValueKind.False, element.ValueKind);
+        }
+
+        [Fact]
+        public static void DeserializePrimitive_ToElement_Number()
+        {
+            JsonValue value = JsonSerializer.Deserialize<JsonValue>("42");
+
+            JsonElement element = value.GetValue<JsonElement>();
+            Assert.Equal(42, element.GetInt32());
+
+            bool success = value.TryGetValue(out element);
+            Assert.True(success);
+            Assert.Equal(42, element.GetInt32());
+        }
+
+        [Theory]
         [InlineData("42")]
         [InlineData("\"AB\"")]
         [InlineData("\"\"")]
@@ -307,6 +371,26 @@ namespace System.Text.Json.Nodes.Tests
 
             string json = Encoding.UTF8.GetString(stream.ToArray());
             Assert.Equal(Json, json);
+        }
+
+        [Theory]
+        [InlineData("\"A\"")]
+        [InlineData("\"AB\"")]
+        [InlineData("\"A\\u0022\"")]
+        [InlineData("42")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void DeserializePrimitive_WriteTo(string json)
+        {
+            byte[] utf8Json = Encoding.UTF8.GetBytes(json);
+            JsonValue value = JsonSerializer.Deserialize<JsonValue>(utf8Json);
+
+            var buffer = new ArrayBufferWriter<byte>(json.Length);
+            using Utf8JsonWriter writer = new Utf8JsonWriter(buffer);
+            value.WriteTo(writer);
+            writer.Flush();
+
+            AssertExtensions.SequenceEqual(utf8Json, buffer.WrittenSpan);
         }
 
         [Fact]
@@ -547,24 +631,27 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_ReturnExpectedTypeKind<T>(T value, JsonValueKind expectedKind)
+        public static void PrimitiveTypes_ReturnExpectedTypeKind<T>(WrappedT<T> wrapped, JsonValueKind expectedKind)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             Assert.Equal(expectedKind, node.GetValueKind());
         }
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_EqualThemselves<T>(T value, JsonValueKind _)
+        public static void PrimitiveTypes_EqualThemselves<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             Assert.True(JsonNode.DeepEquals(node, node));
         }
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_EqualClonedValue<T>(T value, JsonValueKind _)
+        public static void PrimitiveTypes_EqualClonedValue<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             JsonNode clone = node.DeepClone();
 
@@ -575,14 +662,109 @@ namespace System.Text.Json.Nodes.Tests
 
         [Theory]
         [MemberData(nameof(GetPrimitiveTypes))]
-        public static void PrimitiveTypes_EqualDeserializedValue<T>(T value, JsonValueKind _)
+        public static void PrimitiveTypes_EqualDeserializedValue<T>(WrappedT<T> wrapped, JsonValueKind _)
         {
+            T value = wrapped.Value;
             JsonNode node = JsonValue.Create(value);
             JsonNode clone = JsonSerializer.Deserialize<JsonNode>(node.ToJsonString());
 
             Assert.True(JsonNode.DeepEquals(clone, clone));
             Assert.True(JsonNode.DeepEquals(node, clone));
             Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_DeepEquals_DifferentRepresentations<T>(WrappedT<T> wrapped, JsonValueKind _)
+        {
+            T value = wrapped.Value;
+            string json = JsonSerializer.Serialize(value);
+            JsonNode node = JsonSerializer.Deserialize<JsonNode>(json);
+            JsonNode other = JsonSerializer.Deserialize<JsonArray>($"[{json}]")[0]; // JsonValueOfElement
+
+            Assert.True(JsonNode.DeepEquals(other, other));
+            Assert.True(JsonNode.DeepEquals(node, other));
+            Assert.True(JsonNode.DeepEquals(other, node));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualClonedValue_DeserializedValue<T>(WrappedT<T> wrapped, JsonValueKind _)
+        {
+            T value = wrapped.Value;
+            string json = JsonSerializer.Serialize(value);
+            JsonNode node = JsonSerializer.Deserialize<JsonNode>(json);
+            JsonNode clone = node.DeepClone();
+
+            Assert.True(JsonNode.DeepEquals(clone, clone));
+            Assert.True(JsonNode.DeepEquals(node, clone));
+            Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        private static readonly HashSet<Type> s_convertibleTypes =
+        [
+            // True/False
+            typeof(bool), typeof(bool?),
+
+            // Number
+            typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal),
+
+            typeof(byte?), typeof(sbyte?), typeof(short?), typeof(ushort?), typeof(int?), typeof(uint?),
+            typeof(long?), typeof(ulong?), typeof(float?), typeof(double?), typeof(decimal?),
+
+            // String
+            typeof(char), typeof(char?),
+            typeof(string),
+            typeof(DateTimeOffset), typeof(DateTimeOffset?),
+            typeof(DateTime), typeof(DateTime?),
+            typeof(Guid), typeof(Guid?),
+        ];
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_Conversion<T>(WrappedT<T> wrapped, JsonValueKind _)
+        {
+            T value = wrapped.Value;
+            string json = JsonSerializer.Serialize(value);
+            bool canGetValue = s_convertibleTypes.Contains(typeof(T));
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json)!;
+            AssertExtensions.TrueExpression(jsonValue.TryGetValue(out T unused) == canGetValue);
+
+            if (canGetValue)
+            {
+                // Assert no throw
+                jsonValue.GetValue<T>();
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<T>());
+            }
+
+            JsonValue jsonNode = (JsonValue)JsonSerializer.Deserialize<JsonNode>(json)!;
+            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused) == canGetValue);
+
+            // Ensure the eager evaluation code path also produces the same result
+            jsonNode = (JsonValue)JsonSerializer.Deserialize<JsonNode>(json, new JsonSerializerOptions { AllowDuplicateProperties = false })!;
+            AssertExtensions.TrueExpression(jsonNode.TryGetValue(out unused) == canGetValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_ReadOnlySequence<T>(WrappedT<T> wrapped, JsonValueKind _)
+        {
+            T value = wrapped.Value;
+
+            byte[] jsonBytes = JsonSerializer.SerializeToUtf8Bytes(value);
+            ReadOnlySequence<byte> seq = BufferFactory.Create([jsonBytes.AsMemory(0, 1), jsonBytes.AsMemory(1, jsonBytes.Length - 1)]);
+            Utf8JsonReader reader = new Utf8JsonReader(seq);
+            JsonValue jsonValueFromSequence = JsonSerializer.Deserialize<JsonValue>(ref reader)!;
+
+            string jsonString = JsonSerializer.Serialize(value);
+            JsonValue jsonValueFromString = JsonSerializer.Deserialize<JsonValue>(jsonString)!;
+
+            AssertExtensions.TrueExpression(JsonNode.DeepEquals(jsonValueFromString, jsonValueFromSequence));
         }
 
         public static IEnumerable<object[]> GetPrimitiveTypes()
@@ -592,23 +774,37 @@ namespace System.Text.Json.Nodes.Tests
             yield return Wrap((bool?)false, JsonValueKind.False);
             yield return Wrap((bool?)true, JsonValueKind.True);
             yield return Wrap((byte)42, JsonValueKind.Number);
+            yield return Wrap((byte?)42, JsonValueKind.Number);
             yield return Wrap((sbyte)42, JsonValueKind.Number);
+            yield return Wrap((sbyte?)42, JsonValueKind.Number);
             yield return Wrap((short)42, JsonValueKind.Number);
+            yield return Wrap((short?)42, JsonValueKind.Number);
             yield return Wrap((ushort)42, JsonValueKind.Number);
+            yield return Wrap((ushort?)42, JsonValueKind.Number);
             yield return Wrap(42, JsonValueKind.Number);
             yield return Wrap((int?)42, JsonValueKind.Number);
             yield return Wrap((uint)42, JsonValueKind.Number);
+            yield return Wrap((uint?)42, JsonValueKind.Number);
             yield return Wrap((long)42, JsonValueKind.Number);
+            yield return Wrap((long?)42, JsonValueKind.Number);
             yield return Wrap((ulong)42, JsonValueKind.Number);
+            yield return Wrap((ulong?)42, JsonValueKind.Number);
             yield return Wrap(42.0f, JsonValueKind.Number);
+            yield return Wrap((float?)42.0f, JsonValueKind.Number);
             yield return Wrap(42.0, JsonValueKind.Number);
+            yield return Wrap((double?)42.0, JsonValueKind.Number);
             yield return Wrap(42.0m, JsonValueKind.Number);
+            yield return Wrap((decimal?)42.0m, JsonValueKind.Number);
             yield return Wrap('A', JsonValueKind.String);
             yield return Wrap((char?)'A', JsonValueKind.String);
             yield return Wrap("A", JsonValueKind.String);
+            yield return Wrap("A\u0041", JsonValueKind.String); // \u0041 == A
+            yield return Wrap("A\u0022", JsonValueKind.String); // \u0022 == "
             yield return Wrap(new byte[] { 1, 2, 3 }, JsonValueKind.String);
             yield return Wrap(new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
+            yield return Wrap((DateTimeOffset?)new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
             yield return Wrap(new DateTime(2024, 06, 20, 10, 29, 0), JsonValueKind.String);
+            yield return Wrap((DateTime?)new DateTime(2024, 06, 20, 10, 29, 0), JsonValueKind.String);
             yield return Wrap(Guid.Empty, JsonValueKind.String);
             yield return Wrap((Guid?)Guid.Empty, JsonValueKind.String);
             yield return Wrap(new Uri("http://example.com"), JsonValueKind.String);
@@ -624,7 +820,94 @@ namespace System.Text.Json.Nodes.Tests
             yield return Wrap(new DateOnly(2024, 06, 20), JsonValueKind.String);
             yield return Wrap(new TimeOnly(10, 29), JsonValueKind.String);
 #endif
-            static object[] Wrap<T>(T value, JsonValueKind expectedKind) => [value, expectedKind];
+            static object[] Wrap<T>(T value, JsonValueKind expectedKind) => [new WrappedT<T> { Value = value }, expectedKind];
         }
+
+        public class WrappedT<T>
+        {
+            public T Value;
+
+            public override string ToString() => Value?.ToString();
+        }
+
+        [Theory]
+        [InlineData("\"string\"")]
+        [InlineData("42.0")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void PrimitiveTypes_ConverterThrows(string json)
+        {
+            JsonSerializerOptions opts = new JsonSerializerOptions
+            {
+                Converters = { new ThrowingConverter() }
+            };
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json, opts);
+
+            Assert.False(jsonValue.TryGetValue(out DummyClass unused));
+            Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<DummyClass>());
+        }
+
+        private sealed class ThrowingConverter : JsonConverter<DummyClass>
+        {
+            public override DummyClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new JsonException();
+
+            public override void Write(Utf8JsonWriter writer, DummyClass value, JsonSerializerOptions options) => Assert.Fail();
+        }
+
+        [Theory]
+        [InlineData("\"string\"")]
+        [InlineData("42.0")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void PrimitiveTypes_ConverterReturnsNull(string json)
+        {
+            JsonSerializerOptions opts = new JsonSerializerOptions
+            {
+                Converters = { new NullConverter() }
+            };
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json, opts);
+
+            Assert.False(jsonValue.TryGetValue(out DummyClass unused));
+            Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<DummyClass>());
+        }
+
+        private sealed class NullConverter : JsonConverter<DummyClass>
+        {
+            public override DummyClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
+
+            public override void Write(Utf8JsonWriter writer, DummyClass value, JsonSerializerOptions options) => Assert.Fail();
+        }
+
+        [Theory]
+        [InlineData("\"string\"")]
+        [InlineData("42.0")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void PrimitiveTypes_NoTypeInfo(string json)
+        {
+            JsonSerializerOptions opts = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new ExcludeType_TypeInfoResolver(typeof(DummyClass))
+            };
+
+            JsonValue jsonValue = JsonSerializer.Deserialize<JsonValue>(json, opts);
+
+            Assert.False(jsonValue.TryGetValue(out DummyClass unused));
+            Assert.Throws<InvalidOperationException>(() => jsonValue.GetValue<DummyClass>());
+        }
+
+        private class ExcludeType_TypeInfoResolver(Type excludeType) : IJsonTypeInfoResolver
+        {
+            private static readonly DefaultJsonTypeInfoResolver _defaultResolver = new DefaultJsonTypeInfoResolver();
+
+            public Type ExcludeType { get; } = excludeType;
+
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) =>
+                type == ExcludeType ? null : _defaultResolver.GetTypeInfo(type, options);
+        }
+
+        private record DummyClass;
     }
 }
