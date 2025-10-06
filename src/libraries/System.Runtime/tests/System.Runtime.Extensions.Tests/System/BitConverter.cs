@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using Xunit;
 
@@ -332,6 +333,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void BFloat16ToInt16Bits()
+        {
+            BFloat16 input = (BFloat16)123.456f;
+            short result = BitConverter.BFloat16ToInt16Bits(input);
+            Assert.Equal((short)17143, result);
+            BFloat16 roundtripped = BitConverter.Int16BitsToBFloat16(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
         public static void DoubleToUInt64Bits()
         {
             double input = 123456.3234;
@@ -358,6 +369,16 @@ namespace System.Tests
             ushort result = BitConverter.HalfToUInt16Bits(input);
             Assert.Equal((ushort)18988, result);
             Half roundtripped = BitConverter.UInt16BitsToHalf(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
+        public static void BFloat16ToUInt16Bits()
+        {
+            BFloat16 input = (BFloat16)123.456f;
+            ushort result = BitConverter.BFloat16ToUInt16Bits(input);
+            Assert.Equal((ushort)17143, result);
+            BFloat16 roundtripped = BitConverter.UInt16BitsToBFloat16(result);
             Assert.Equal(input, roundtripped);
         }
     }
