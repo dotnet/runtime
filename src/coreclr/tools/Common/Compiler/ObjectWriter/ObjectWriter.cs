@@ -450,7 +450,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (_outputInfoBuilder is not null)
                 {
-                    var outputNode = new OutputNode(sectionWriter.SectionIndex, checked((ulong)sectionWriter.Position), nodeContents.Data.Length, currentSymbolName);
+                    var outputNode = new OutputNode(sectionWriter.SectionIndex, checked((ulong)sectionWriter.Position), nodeContents.Data.Length, GetNodeTypeName(node.GetType()));
                     _outputInfoBuilder.AddNode(outputNode, nodeContents.DefinedSymbols[0]);
                     if (nodeContents.Relocs is not null)
                     {
@@ -571,6 +571,26 @@ namespace ILCompiler.ObjectWriter
                     _outputInfoBuilder.AddSection(outputSection);
                 }
             }
+        }
+
+        private static string GetNodeTypeName(Type nodeType)
+        {
+            string name = nodeType.ToString();
+            int firstGeneric = name.IndexOf('[');
+
+            if (firstGeneric < 0)
+            {
+                firstGeneric = name.Length;
+            }
+
+            int lastDot = name.LastIndexOf('.', firstGeneric - 1, firstGeneric);
+
+            if (lastDot > 0)
+            {
+                name = name.Substring(lastDot + 1);
+            }
+
+            return name;
         }
 
         private void EmitChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
