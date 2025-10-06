@@ -387,7 +387,7 @@ namespace System.Management
                 Marshal.Release(pWbemQualifierSet);
                 pWbemQualifierSet = IntPtr.Zero;
             }
-            if (finalization == false)
+            if (!finalization)
             {
                 GC.KeepAlive(this);
             }
@@ -1224,7 +1224,7 @@ namespace System.Management
             lock (critSec)
             {
                 // Make sure worker thread is initialized
-                if (workerThreadInitialized == false)
+                if (!workerThreadInitialized)
                 {
                     InitWorkerThread();
                     workerThreadInitialized = true;
@@ -1232,7 +1232,7 @@ namespace System.Management
 
                 ndx = reqList.Add(myReq);
 
-                if (evtGo.Set() == false)
+                if (!evtGo.Set())
                 {
                     reqList.RemoveAt(ndx);
                     throw new ManagementException(SR.WorkerThreadWakeupFailed);

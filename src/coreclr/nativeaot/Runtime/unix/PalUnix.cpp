@@ -507,12 +507,12 @@ bool InitializeSignalHandling();
 // initialization and false on failure.
 bool PalInit()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
     ConfigureSignals();
 
@@ -610,7 +610,7 @@ void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
@@ -671,7 +671,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -766,7 +766,7 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
-    
+
     size_t stacksize = GetDefaultStackSizeSetting();
     if (stacksize != 0)
     {
@@ -1232,21 +1232,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
-
-void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
-{
-    struct timeval time = { 0 };
-    gettimeofday(&time, NULL);
-
-    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
-        (time.tv_usec * 10);
-
-    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
-    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
 uint64_t PalGetCurrentOSThreadId()

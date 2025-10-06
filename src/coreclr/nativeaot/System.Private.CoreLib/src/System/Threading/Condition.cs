@@ -62,8 +62,7 @@ namespace System.Threading
             AssertIsNotInList(waiter);
 
             waiter.prev = _waitersTail;
-            if (waiter.prev != null)
-                waiter.prev.next = waiter;
+            waiter.prev?.next = waiter;
 
             _waitersTail = waiter;
 

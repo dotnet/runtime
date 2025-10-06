@@ -162,6 +162,8 @@ namespace System
             return bits & TrailingSignificandMask;
         }
 
+        internal static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle((sign ? SignMask : 0U) + ((uint)exp << BiasedExponentShift) + sig);
+
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
@@ -937,14 +939,20 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static float Clamp(float value, float min, float max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return Min(Max(value, min), max);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
         public static float ClampNative(float value, float min, float max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return MinNative(MaxNative(value, min), max);
         }
 
@@ -2216,7 +2224,7 @@ namespace System
         static ushort IBinaryFloatParseAndFormatInfo<float>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<float>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<float>.MinFastFloatDecimalExponent => -65;
+        static int IBinaryFloatParseAndFormatInfo<float>.MinFastFloatDecimalExponent => -64;
         static int IBinaryFloatParseAndFormatInfo<float>.MaxFastFloatDecimalExponent => 38;
 
         static int IBinaryFloatParseAndFormatInfo<float>.MinExponentRoundToEven => -17;

@@ -162,6 +162,8 @@ namespace System
             return bits & TrailingSignificandMask;
         }
 
+        internal static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble((sign ? SignMask : 0UL) + ((ulong)exp << BiasedExponentShift) + sig);
+
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
@@ -940,14 +942,20 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static double Clamp(double value, double min, double max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return Min(Max(value, min), max);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
         public static double ClampNative(double value, double min, double max)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
             return MinNative(MaxNative(value, min), max);
         }
 

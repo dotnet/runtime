@@ -4313,7 +4313,16 @@ namespace System
         {
             if (span.Length > 1)
             {
-                ArraySortHelper<T>.Default.Sort(span, comparer); // value-type comparer will be boxed
+                if (typeof(TComparer).IsValueType)
+                {
+                    #pragma warning disable CS8631
+                    ArraySortHelperForTComparer<T, TComparer>.Sort(span, comparer);
+                    #pragma warning restore CS8631
+                }
+                else
+                {
+                    ArraySortHelper<T>.Default.Sort(span, comparer);
+                }
             }
         }
 
@@ -4380,7 +4389,16 @@ namespace System
 
             if (keys.Length > 1)
             {
-                ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer); // value-type comparer will be boxed
+                if (typeof(TComparer).IsValueType)
+                {
+                    #pragma warning disable CS8631
+                    ArraySortHelperForTComparer<TKey, TValue, TComparer>.Sort(keys, items, comparer);
+                    #pragma warning restore CS8631
+                }
+                else
+                {
+                    ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer);
+                }
             }
         }
 
@@ -4420,7 +4438,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)span.Length;
+            uint length = (uint)span.Length;
 
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -4579,7 +4597,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;
@@ -4663,7 +4681,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue, IEqualityComparer<T>? comparer = null)
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;

@@ -206,7 +206,7 @@ namespace Internal.IL
                 // as empty at the use site.
                 if (kind is not UnsafeAccessorKind.Constructor)
                 {
-                    name = method.Name;
+                    name = method.GetName();
                 }
             }
 
@@ -329,6 +329,12 @@ namespace Internal.IL
                 return false;
             }
 
+            // Validate generic parameter.
+            if (declSig.GenericParameterCount != maybeSig.GenericParameterCount)
+            {
+                return false;
+            }
+
             // Validate argument count and return type
             if (context.Kind == UnsafeAccessorKind.Constructor)
             {
@@ -434,7 +440,7 @@ namespace Internal.IL
                 }
 
                 // Check for matching name
-                if (!md.Name.Equals(name))
+                if (!md.GetName().Equals(name))
                 {
                     continue;
                 }
@@ -497,7 +503,7 @@ namespace Internal.IL
                 }
 
                 // Validate the name and target type match.
-                if (fd.Name.Equals(name)
+                if (fd.GetName().Equals(name)
                     && fieldType == fd.FieldType)
                 {
                     context.TargetField = fd;
@@ -812,20 +818,20 @@ namespace Internal.IL
             if (result is SetTargetResult.Ambiguous)
             {
                 codeStream.EmitLdc((int)ExceptionStringID.AmbiguousMatchUnsafeAccessor);
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowAmbiguousMatchException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowAmbiguousMatchException"u8);
             }
             else if (result is SetTargetResult.Invalid)
             {
                 codeStream.EmitLdc((int)ExceptionStringID.InvalidProgramDefault);
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramException"u8);
             }
             else if (result is SetTargetResult.NotSupported)
             {
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8);
             }
             else if (result is SetTargetResult.MissingType)
             {
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowUnavailableType"u8);
             }
             else
             {
@@ -834,12 +840,12 @@ namespace Internal.IL
                 if (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
                 {
                     id = ExceptionStringID.MissingField;
-                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException");
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMissingFieldException"u8);
                 }
                 else
                 {
                     id = ExceptionStringID.MissingMethod;
-                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMissingMethodException"u8);
                 }
 
                 codeStream.EmitLdc((int)id);
@@ -860,7 +866,7 @@ namespace Internal.IL
             ILCodeLabel label = emit.NewCodeLabel();
             codeStream.EmitLabel(label);
             codeStream.EmitLdc((int)ExceptionStringID.BadImageFormatGeneric);
-            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
+            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowBadImageFormatException"u8);
             codeStream.Emit(ILOpcode.call, emit.NewToken(thrower));
             codeStream.Emit(ILOpcode.br, label);
 

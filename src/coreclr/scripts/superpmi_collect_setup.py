@@ -44,7 +44,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
-parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks)")
+parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
 parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
@@ -479,7 +479,7 @@ def main(main_args):
             if arch == "arm64": # public osx_arm64
                 helix_queue = "osx.13.arm64.open"
             else: # public osx_x64
-                helix_queue = "OSX.1200.Amd64.Open"
+                helix_queue = "OSX.13.Amd64.Open"
     else:
         if platform_name == "windows":
             if arch == "arm64": # internal windows_arm64
@@ -495,9 +495,9 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
-                helix_queue = "OSX.1200.ARM64"
+                helix_queue = "OSX.13.ARM64"
             else: # internal osx_x64
-                helix_queue = "OSX.1200.Amd64"
+                helix_queue = "OSX.13.Amd64"
 
     # Copy the superpmi scripts
 
@@ -516,7 +516,7 @@ def main(main_args):
         # Need to accept files without any extension, which is how executable file's names look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
-    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
+    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld" or coreclr_args.collection_name == "aspnet2":
       # create a directory with release runtime bits and a checked jit
       print('Copying {} -> {}'.format(coreclr_args.release_core_root_directory, core_root_dst_directory))
       copy_directory(coreclr_args.release_core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
@@ -530,6 +530,10 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
+    elif coreclr_args.collection_name == "aspnet2":
+        # Nothing to prepare for aspnet2, its script is fully self-contained.
+        # Just make sure workitem_payload_directory folder exists:
+        os.makedirs(workitem_payload_directory, exist_ok=True)
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 

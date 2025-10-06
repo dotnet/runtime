@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using System.Reflection;
 
 namespace System.Tests
 {
@@ -57,7 +58,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi)
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT", null },
@@ -185,6 +186,20 @@ namespace System.Tests
                 Assert.False(TimeZoneInfo.TryFindSystemTimeZoneById("Yukon Standard Time", out _));
                 return;
             }
+        }
+
+        [Theory]
+        [InlineData("2019-12-31T20:00:00", "2020-01-01T01:00:00")]
+        [InlineData("2019-12-31T20:30:00", "2020-01-01T01:30:00")]
+        [InlineData("2020-12-31T20:00:00", "2020-12-31T23:00:00")]
+        [InlineData("2020-12-31T20:30:00", "2020-12-31T23:30:00")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void TestVolgogradTZ(string utcTime, string expectedVolgogradTime)
+        {
+            TimeZoneInfo volgogradTZ = TimeZoneInfo.FindSystemTimeZoneById("Volgograd Standard Time");
+            DateTime dt = DateTime.ParseExact(utcTime, "s", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            DateTime convertedDt = TimeZoneInfo.ConvertTimeFromUtc(dt, volgogradTZ);
+            Assert.Equal(DateTime.ParseExact(expectedVolgogradTime, "s", CultureInfo.InvariantCulture), convertedDt);
         }
 
         [Fact]
@@ -2051,9 +2066,9 @@ namespace System.Tests
         {
             bool isUtc = s_UtcAliases.Contains(timeZone.Id, StringComparer.OrdinalIgnoreCase);
 
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi)
             {
-                // Browser platform doesn't have full ICU names, but uses the IANA IDs and abbreviations instead.
+                // WASM platforms don't have full ICU names, but use the IANA IDs and abbreviations instead.
 
                 // The display name will be the offset plus the ID.
                 // The offset is checked separately in TimeZoneInfo_DisplayNameStartsWithOffset
@@ -2154,7 +2169,28 @@ namespace System.Tests
             {
                 foreach (TimeZoneInfo.AdjustmentRule ar in tzi.GetAdjustmentRules())
                 {
-                    Assert.True(Math.Abs((tzi.GetUtcOffset(ar.DateStart)).TotalHours) <= 14.0);
+                    try
+                    {
+                        Assert.True(Math.Abs((tzi.GetUtcOffset(ar.DateStart)).TotalHours) <= 14.0);
+                    }
+                    catch (Exception ex)
+                    {
+                        string message = $"`tzi.GetUtcOffset({ar.DateStart})` throws ArgumentOutOfRangeException" +
+                            Environment.NewLine +
+                            $" for TimeZoneInfo '{tzi.Id}' with BaseUtcOffset '{tzi.BaseUtcOffset}'" +
+                            Environment.NewLine +
+                            $" and AdjustmentRule DateStart '{ar.DateStart}', DateEnd '{ar.DateEnd}', DaylightDelta '{ar.DaylightDelta}'" +
+                            Environment.NewLine +
+                            $"BaseUtcOffsetDelta         : {ar.BaseUtcOffsetDelta}" +
+                            Environment.NewLine +
+                            $"DaylightTransitionStart    : M:{ar.DaylightTransitionStart.Month}, D:{ar.DaylightTransitionStart.Day}, W:{ar.DaylightTransitionStart.Week}, DoW:{ar.DaylightTransitionStart.DayOfWeek}, Time:{ar.DaylightTransitionStart.TimeOfDay}, FixedDate:{ar.DaylightTransitionStart.IsFixedDateRule}" +
+                            Environment.NewLine +
+                            $"DaylightTransitionEnd      : M:{ar.DaylightTransitionEnd.Month}, D:{ar.DaylightTransitionEnd.Day}, W:{ar.DaylightTransitionEnd.Week}, DoW:{ar.DaylightTransitionEnd.DayOfWeek}, Time:{ar.DaylightTransitionEnd.TimeOfDay}, FixedDate:{ar.DaylightTransitionEnd.IsFixedDateRule}" +
+                            Environment.NewLine +
+                            $"NoDaylightTransitions      : {ar.GetType().GetProperty("NoDaylightTransitions", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(ar)}";
+
+                        throw new Exception(message, ex);
+                    }
                 }
             }
         }
@@ -2452,7 +2488,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [MemberData(nameof(AlternativeName_TestData))]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
@@ -2799,6 +2835,68 @@ namespace System.Tests
                 Assert.Equal(info1.DaylightName, info2.DaylightName);
                 Assert.Equal(info1.DisplayName, info2.DisplayName);
             }, windowsId, ianaId).Dispose();
+        }
+
+        public static TheoryData<DateTime, string, bool> InvalidTimeTestData => new()
+        {
+            // Paraguay DST start (invalid time)
+            { new DateTime(2024, 10, 6, 0, 0, 0), "America/Asuncion", true },
+            // Berlin DST start (invalid time)
+            { new DateTime(2025, 3, 30, 2, 30, 0), "Europe/Berlin", true },
+            // Lisbon DST start (invalid time)
+            { new DateTime(2025, 3, 30, 1, 30, 0), "Europe/Lisbon", true },
+            // London DST start (invalid time)
+            { new DateTime(2025, 3, 30, 1, 30, 0), "Europe/London", true },
+            // Valid time after DST transition in Paraguay
+            { new DateTime(2024, 10, 6, 1, 0, 0), "America/Asuncion", false },
+            // Valid time in Berlin
+            { new DateTime(2025, 4, 19, 15, 0, 0), "Europe/Berlin", false },
+            // should not be invalid, but BCL DateTimeZone detects it to be invalid
+            { new DateTime(1995, 3, 26, 3, 0, 0), "Europe/Lisbon", false },
+            // Kiritimati skipped the whole day of Dec 31st in 1994 due to an offset change
+            { new DateTime(1994, 12, 31, 0, 0, 0), "Pacific/Kiritimati", true },
+            { new DateTime(1994, 12, 31, 12, 0, 0), "Pacific/Kiritimati", true },
+            { new DateTime(1994, 12, 31, 12, 23, 59), "Pacific/Kiritimati", true },
+            // Moscow switched to UTC+4 in 2011
+            { new DateTime(2011, 3, 27, 2, 0, 0), "Europe/Moscow", true },
+        };
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [MemberData(nameof(InvalidTimeTestData))]
+        public static void IsInvalidTimeTestOnLinux(DateTime testTime, string timeZoneId, bool expectedIsInvalid)
+        {
+            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            Assert.Equal(expectedIsInvalid, timeZone.IsInvalidTime(testTime));
+        }
+
+        public static TheoryData<DateTime, string, bool> AmbiguousTimeTestData => new()
+        {
+            // DST end in Berlin (ambiguous)
+            { new DateTime(2023, 10, 29, 2, 30, 0), "Europe/Berlin", true },
+            // DST end in London (ambiguous)
+            { new DateTime(2023, 10, 29, 1, 30, 0), "Europe/London", true },
+            // DST end in Lisbon (ambiguous)
+            { new DateTime(2023, 10, 29, 1, 30, 0), "Europe/Lisbon", true },
+            // DST end in Lisbon (not ambiguous due to time zone switch at the same time)
+            { new DateTime(1992, 9, 27, 1, 30, 0), "Europe/Lisbon", false },
+            // After DST transition in Berlin (not ambiguous)
+            { new DateTime(2023, 10, 29, 3, 0, 0), "Europe/Berlin", false },
+            // DST end in New York (ambiguous)
+            { new DateTime(2023, 11, 5, 1, 30, 0), "America/New_York", true },
+            // Normal DST time in Berlin (not ambiguous)
+            { new DateTime(2023, 7, 15, 12, 0, 0), "Europe/Berlin", false },
+            // Moscow switched to UTC+3 in 2014
+            { new DateTime(2014, 10, 26, 1, 0, 0), "Europe/Moscow", true },
+        };
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [MemberData(nameof(AmbiguousTimeTestData))]
+        public static void IsAmbiguousTimeTestOnLinux(DateTime testTime, string timeZoneId, bool expectedIsAmbiguous)
+        {
+            TimeZoneInfo timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            Assert.Equal(expectedIsAmbiguous, timeZone.IsAmbiguousTime(testTime));
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

@@ -140,10 +140,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
 
     pEEClass->m_dwAttrClass = dwAttrClass;
 
-    // MDVal check: can't be both tdSequentialLayout and tdExplicitLayout
-    if((dwAttrClass & tdLayoutMask) == tdLayoutMask)
-        COMPlusThrowHR(COR_E_TYPELOAD);
-
     if (IsTdInterface(dwAttrClass))
     {
         // MDVal check: must have nil tkExtends and must be tdAbstract
@@ -1517,7 +1513,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
         LPCUTF8 nameSpace;
@@ -1542,11 +1538,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
             IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
+        // All the functions in System.Runtime.Intrinsics.<arch> are hardware intrinsics.
 #if defined(TARGET_ARM64)
-        // All the funtions in System.Runtime.Intrinsics.Arm are hardware intrinsics.
         if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm") == 0)
+#elif defined(TARGET_WASM)
+        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Wasm") == 0)
 #else
-        // All the funtions in System.Runtime.Intrinsics.X86 are hardware intrinsics.
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
@@ -5038,7 +5035,7 @@ MethodTableBuilder::ValidateMethods()
             }
         }
 
-        // Make sure that fcalls have a 0 rva.  This is assumed by the prejit fixup logic
+        // Make sure that fcalls have a 0 rva.
         if (it.MethodType() == mcFCall && it.RVA() != 0)
         {
             BuildMethodTableThrowException(BFA_ECALLS_MUST_HAVE_ZERO_RVA, it.Token());
@@ -8251,6 +8248,27 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     case EEClassLayoutInfo::LayoutType::Explicit:
         HandleExplicitLayout(pByValueClassCache);
         break;
+
+    case EEClassLayoutInfo::LayoutType::CStruct:
+    {
+        if (!pParentMT->IsValueTypeClass()
+            || hasGCFields
+            || isAutoLayoutOrHasAutoLayoutField)
+        {
+            // CStruct layout types can't have a parent type, GC fields
+            // or auto layout fields.
+            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        // Explicit size is not used for CStruct layout.
+        pLayoutInfo->SetHasExplicitSize(FALSE);
+        // CStruct layouts are always blittable
+        pLayoutInfo->SetIsBlittable(TRUE);
+
+        HandleCStructLayout(pByValueClassCache);
+        break;
+    }
+
     default:
         UNREACHABLE();
         break;
@@ -8711,6 +8729,33 @@ VOID MethodTableBuilder::HandleExplicitLayout(MethodTable** pByValueClassCache)
         // fields and call the method SetHasOverlaidFields() when they are detected,
         // so we do this for Explicit layout whether or not there's any GC fields.
         ValidateExplicitLayout(pByValueClassCache);
+    }
+}
+
+VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+
+    CONSISTENCY_CHECK(pLayoutInfo != nullptr);
+
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeCStructFieldLayout(
+        GetHalfBakedClass()->GetFieldDescList(),
+        pByValueClassCache,
+        bmtEnumFields->dwNumDeclaredFields
+    );
+
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    if (pLayoutInfo->IsZeroSized())
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
     }
 }
 
@@ -12390,7 +12435,7 @@ MethodTableBuilder::GatherGenericsInfo(
 //   *pPackingSize       declared packing size
 //   *pfExplicitoffsets  offsets explicit in metadata or computed?
 //=======================================================================
-BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, mdTypeDef cl, MethodTable* pParentMT, BYTE* pPackingSize, ULONG* pClassSize, CorNativeLinkType* pNLTType, BOOL* pfExplicitOffsets)
+BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, mdTypeDef cl, MethodTable* pParentMT, BYTE* pPackingSize, ULONG* pClassSize, CorNativeLinkType* pNLTType, EEClassLayoutInfo::LayoutType* pLayoutType)
 {
     CONTRACTL
     {
@@ -12401,7 +12446,7 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
         PRECONDITION(CheckPointer(pPackingSize));
         PRECONDITION(CheckPointer(pClassSize));
         PRECONDITION(CheckPointer(pNLTType));
-        PRECONDITION(CheckPointer(pfExplicitOffsets));
+        PRECONDITION(CheckPointer(pLayoutType));
     }
     CONTRACTL_END;
 
@@ -12414,15 +12459,53 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
 
     if (IsTdAutoLayout(clFlags))
     {
+        *pLayoutType = EEClassLayoutInfo::LayoutType::Auto;
         return FALSE;
     }
     else if (IsTdSequentialLayout(clFlags))
     {
-        *pfExplicitOffsets = FALSE;
+        *pLayoutType = EEClassLayoutInfo::LayoutType::Sequential;
     }
     else if (IsTdExplicitLayout(clFlags))
     {
-        *pfExplicitOffsets = TRUE;
+        *pLayoutType = EEClassLayoutInfo::LayoutType::Explicit;
+    }
+    else if (IsTdExtendedLayout(clFlags))
+    {
+        const void* pVal;                  // The custom value.
+        ULONG       cbVal;                 // Size of the custom value.
+        HRESULT hr = pInternalImport->GetCustomAttributeByName(
+            cl,
+            GetWellKnownAttributeName(WellKnownAttribute::ExtendedLayoutAttribute),
+            &pVal, &cbVal);
+
+        if (hr == S_FALSE)
+        {
+            pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        if (cbVal < (sizeof(INT32) + 2))
+        {
+            pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        CustomAttributeParser parser(pVal, cbVal);
+
+        IfFailThrow(parser.ValidateProlog());
+
+        int32_t kindValue;
+        IfFailThrow(parser.GetI4(&kindValue));
+
+        CorExtendedLayoutKind kind = (CorExtendedLayoutKind)kindValue;
+
+        if (kind == CorExtendedLayoutKind::CStruct)
+        {
+            *pLayoutType = EEClassLayoutInfo::LayoutType::CStruct;
+        }
+        else
+        {
+            pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+        }
     }
     else
     {
@@ -12570,7 +12653,6 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
 
     GetEnclosingClassThrowing(pInternalImport, pModule, cl, &tdEnclosing);
 
-    BOOL fExplicitOffsets = FALSE;
     MethodTableBuilder::bmtLayoutInfo layoutInfo;
     // NOTE: HasLayoutMetadata does not load classes
     BOOL fHasLayout =
@@ -12583,18 +12665,8 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
             &layoutInfo.packingSize,
             &layoutInfo.classSize,
             &layoutInfo.nlFlags,
-            &fExplicitOffsets);
+            &layoutInfo.layoutType);
 
-    if (fHasLayout)
-    {
-        layoutInfo.layoutType = fExplicitOffsets
-            ? EEClassLayoutInfo::LayoutType::Explicit
-            : EEClassLayoutInfo::LayoutType::Sequential;
-    }
-    else
-    {
-        layoutInfo.layoutType = EEClassLayoutInfo::LayoutType::Auto;
-    }
 
     BOOL fIsEnum = ((g_pEnumClass != NULL) && (pParentMethodTable == g_pEnumClass));
 

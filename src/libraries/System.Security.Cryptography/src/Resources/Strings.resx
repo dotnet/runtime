@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -98,6 +98,9 @@
   </data>
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
+  </data>
+  <data name="Argument_HashEmpty" xml:space="preserve">
+    <value>Hash cannot be empty.</value>
   </data>
   <data name="Argument_HashImprecise" xml:space="preserve">
     <value>Hash must be exactly {0} bytes.</value>

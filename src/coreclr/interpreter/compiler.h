@@ -26,6 +26,15 @@ struct InterpException
 class InterpreterStackMap;
 class InterpCompiler;
 
+class MemPoolAllocator
+{
+    InterpCompiler* const m_compiler;
+    public:
+    MemPoolAllocator(InterpCompiler* compiler) : m_compiler(compiler) {}
+    void* Alloc(size_t sz) const;
+    void Free(void* ptr) const;
+};
+
 class InterpDataItemIndexMap
 {
     struct VarSizedData
@@ -52,7 +61,7 @@ class InterpDataItemIndexMap
     };
 
     dn_simdhash_ght_t* _hash = nullptr;
-    TArray<void*> *_dataItems = nullptr; // Actual data items stored here, indexed by the value in the hash table. This pointer is owned by the InterpCompiler class.
+    TArray<void*, MemPoolAllocator> *_dataItems = nullptr; // Actual data items stored here, indexed by the value in the hash table. This pointer is owned by the InterpCompiler class.
     InterpCompiler* _compiler = nullptr;
 
     static unsigned int HashVarSizedData(const void *voidKey)
@@ -90,7 +99,7 @@ public:
     InterpDataItemIndexMap(const InterpDataItemIndexMap&) = delete;
     InterpDataItemIndexMap& operator=(const InterpDataItemIndexMap&) = delete;
 
-    void Init(TArray<void*> *dataItems, InterpCompiler* compiler)
+    void Init(TArray<void*, MemPoolAllocator> *dataItems, InterpCompiler* compiler)
     {
         _compiler = compiler;
         _dataItems = dataItems;
@@ -122,7 +131,7 @@ private:
     int32_t GetDataItemIndexForT(const T& lookup);
 };
 
-TArray<char> PrintMethodName(COMP_HANDLE comp,
+TArray<char, MallocAllocator> PrintMethodName(COMP_HANDLE comp,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
@@ -175,14 +184,31 @@ enum InterpType {
 };
 
 #ifdef DEBUG
+extern thread_local bool t_interpDump;
+
+class InterpDumpScope
+{
+    bool m_prev;
+    public:
+    InterpDumpScope(bool enable)
+    {
+        m_prev = t_interpDump;
+        t_interpDump = enable;
+    }
+    ~InterpDumpScope()
+    {
+        t_interpDump = m_prev;
+    }
+};
+
 #define INTERP_DUMP(...)            \
     {                               \
-        if (m_verbose)              \
+        if (t_interpDump)           \
             printf(__VA_ARGS__);    \
     }
-#else
+#else // !DEBUG
 #define INTERP_DUMP(...)
-#endif
+#endif // DEBUG
 
 struct InterpInst;
 struct InterpBasicBlock;
@@ -338,6 +364,8 @@ struct InterpBasicBlock
     }
 };
 
+#define UNALLOCATED_VAR_OFFSET -1
+
 struct InterpVar
 {
     CORINFO_CLASS_HANDLE clsHnd;
@@ -365,7 +393,7 @@ struct InterpVar
         this->interpType = interpType;
         this->clsHnd = clsHnd;
         this->size = size;
-        offset = -1;
+        offset = UNALLOCATED_VAR_OFFSET;
         liveStart = NULL;
         bbIndex = -1;
 
@@ -478,30 +506,6 @@ private:
     }
 
     CORINFO_CLASS_HANDLE m_classHnd;
-    #ifdef DEBUG
-    TArray<char> m_methodName;
-#ifdef TARGET_WASM
-    // enable verbose output on wasm temporarily
-    bool m_verbose = true;
-#else
-    bool m_verbose = false;
-#endif // TARGET_WASM
-
-    const char* PointerIsClassHandle = (const char*)0x1;
-    const char* PointerIsMethodHandle = (const char*)0x2;
-    const char* PointerIsStringLiteral = (const char*)0x3;
-
-    dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
-    bool PointerInNameMap(void* ptr)
-    {
-        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
-    }
-    void AddPointerToNameMap(void* ptr, const char* name)
-    {
-        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
-    }
-    void PrintNameInPointerMap(void* ptr);
-#endif // DEBUG
 
     dn_simdhash_ptr_ptr_holder m_stackmapsByClass;
     InterpreterStackMap* GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle);
@@ -510,7 +514,8 @@ private:
 
     uint8_t* m_ip;
     uint8_t* m_pILCode;
-    int32_t m_ILCodeSize;
+    int32_t m_ILCodeSizeFromILHeader;
+    int32_t m_ILCodeSize; // This can differ from the size of the header if we add instructions for synchronized methods
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
@@ -520,13 +525,13 @@ private:
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
-    TArray<LeavesTableEntry> m_leavesTable;
+    TArray<LeavesTableEntry, MemPoolAllocator> m_leavesTable;
 
     // This represents a mapping from indexes to pointer sized data. During compilation, an
     // instruction can request an index for some data (like a MethodDesc pointer), that it
     // will then embed in the instruction stream. The data item table will be referenced
     // from the interpreter code header during execution.
-    TArray<void*> m_dataItems;
+    TArray<void*, MemPoolAllocator> m_dataItems;
 
     InterpDataItemIndexMap m_genericLookupToDataItemIndex;
     int32_t GetDataItemIndex(void* data)
@@ -615,10 +620,12 @@ private:
 
     void* AllocMethodData(size_t numBytes);
 public:
-    // FIXME Mempool allocation currently leaks. We need to add an allocator and then
+    // FIXME MemPool allocation currently leaks. We need to add an allocator and then
     // free all memory when method is finished compilling.
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
+    MemPoolAllocator GetMemPoolAllocator() { return MemPoolAllocator(this); }
+
 private:
     void* AllocTemporary(size_t numBytes);
     void* AllocTemporary0(size_t numBytes);
@@ -649,6 +656,9 @@ private:
     InterpBasicBlock**  m_ppOffsetToBB;
 
     ICorDebugInfo::OffsetMapping* m_pILToNativeMap = NULL;
+#ifdef DEBUG
+    int32_t* m_pNativeMapIndexToILOffset = NULL;
+#endif
     int32_t m_ILToNativeMapSize = 0;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
@@ -675,11 +685,23 @@ private:
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
 
+    bool m_isSynchronized = false;
+    int32_t m_synchronizedFlagVarIndex = -1; // If the method is synchronized, this is the index of the argument that flag indicating if the lock was taken
+    int32_t m_synchronizedRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
+    int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
+    int32_t m_synchronizedPostFinallyOffset = -1; // If the method is synchronized, this is the offset of the instruction after the finally which does the actual return
+
+    bool m_shadowCopyOfThisPointerActuallyNeeded = false;
+    bool m_shadowCopyOfThisPointerHasVar = false;
+    int32_t m_shadowThisVar = -1; // If the method is an instance method and we need a shadow copy of the this pointer, this is the var index of the shadow copy
+
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
-    int32_t m_totalVarsStackSize, m_globalVarsWithRefsStackTop;
+    int32_t m_totalVarsStackSize;
+    int32_t m_globalVarsWithRefsStackTop;
     int32_t m_paramAreaOffset = 0;
-    int32_t m_ILLocalsOffset, m_ILLocalsSize;
+    int32_t m_ILLocalsOffset;
+    int32_t m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);
     int32_t AllocVarOffset(int var, int32_t *pPos);
     int32_t GetLiveStartOffset(int var);
@@ -701,6 +723,7 @@ private:
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
+    void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
@@ -711,7 +734,8 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
-    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
+    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);
@@ -720,10 +744,12 @@ private:
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
     void    EmitLdLocA(int32_t var);
     void    EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_RESULT &boxType, bool argByRef);
+    void    EmitLeave(int32_t ilOffset, int32_t target);
+    void    EmitPushSyncObject();
 
     // Var Offset allocator
-    TArray<InterpInst*> *m_pActiveCalls;
-    TArray<int32_t> *m_pActiveVars;
+    TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;
+    TArray<int32_t, MemPoolAllocator> *m_pActiveVars;
     TSList<InterpInst*> *m_pDeferredCalls;
 
     int32_t AllocGlobalVarOffset(int var);
@@ -743,14 +769,18 @@ private:
     int32_t ComputeCodeSize();
     uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
-    int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs);
-    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
-    void PatchRelocations(TArray<Reloc*> *relocs);
+    int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
+    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
+    void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
     InterpMethod* CreateInterpMethod();
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
     void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
+    void getEHinfo(CORINFO_METHOD_INFO* methodInfo, unsigned int index, CORINFO_EH_CLAUSE* ehClause);
+    unsigned int getEHcount(CORINFO_METHOD_INFO* methodInfo);
+    uint8_t* getILCode(CORINFO_METHOD_INFO* methodInfo);
+    unsigned int getILCodeSize(CORINFO_METHOD_INFO* methodInfo);
 
     // Debug
     void PrintClassName(CORINFO_CLASS_HANDLE cls);
@@ -763,6 +793,25 @@ private:
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
+#ifdef DEBUG
+    InterpDumpScope m_dumpScope;
+    TArray<char, MallocAllocator> m_methodName;
+
+    const char* PointerIsClassHandle = (const char*)0x1;
+    const char* PointerIsMethodHandle = (const char*)0x2;
+    const char* PointerIsStringLiteral = (const char*)0x3;
+
+    dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
+    bool PointerInNameMap(void* ptr)
+    {
+        return dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, NULL) != 0;
+    }
+    void AddPointerToNameMap(void* ptr, const char* name)
+    {
+        checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
+    }
+    void PrintNameInPointerMap(void* ptr);
+#endif // DEBUG
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
@@ -780,15 +829,25 @@ public:
  *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
  */
 
- inline void* operator new(size_t sz, InterpCompiler* compiler)
- {
+inline void* operator new(size_t sz, InterpCompiler* compiler)
+{
     return compiler->AllocMemPool0(sz);
 }
 
- inline void* operator new[](size_t sz, InterpCompiler* compiler)
- {
-     return compiler->AllocMemPool0(sz);
- }
+inline void* operator new[](size_t sz, InterpCompiler* compiler)
+{
+    return compiler->AllocMemPool0(sz);
+}
+
+inline void operator delete(void* ptr, InterpCompiler* compiler)
+{
+    // Nothing to do, memory will be freed when the compiler is destroyed
+}
+
+inline void operator delete[](void* ptr, InterpCompiler* compiler)
+{
+    // Nothing to do, memory will be freed when the compiler is destroyed
+}
 
 template<typename T>
 int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)

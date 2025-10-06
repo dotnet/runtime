@@ -182,6 +182,12 @@ struct RhEHClause
     BYTE *_handlerAddress;
     void *_pTargetType;
     BOOL _isSameTry;
+
+    bool ContainsCodeOffset(unsigned codeOffset)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (codeOffset >= _tryStartOffset) && (codeOffset < _tryEndOffset);
+    }
 };
 
 enum class ExKind : uint8_t
@@ -209,6 +215,7 @@ struct LastReportedFuncletInfo
 
 struct ExInfo
 {
+    friend struct ::cdac_data<ExInfo>;
     struct DAC_EXCEPTION_POINTERS
     {
         PTR_EXCEPTION_RECORD    ExceptionRecord;
@@ -315,6 +322,15 @@ struct ExInfo
     // The exception handling clause for the catch handler that was identified during pass 1
     EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
 
+    // Catch handler address
+    PCODE m_pCatchHandler;
+    // SP of the frame handling the exception
+    TADDR m_handlingFrameSP;
+#ifdef TARGET_ARM64
+    // PC of the frame handling the exception
+    PCODE m_handlingFramePC;
+#endif
+
 #ifdef TARGET_UNIX
     // Set to TRUE to take ownership of the EXCEPTION_RECORD and CONTEXT_RECORD in the m_ptrs. When set, the
     // memory of those records is freed using PAL_FreeExceptionRecords when the ExInfo is destroyed.
@@ -333,8 +349,6 @@ struct ExInfo
     REGDISPLAY     m_regDisplay;
     // Initial explicit frame for stack walking
     Frame         *m_pInitialFrame;
-    // Info on the last reported funclet used to report references in the parent frame
-    LastReportedFuncletInfo m_lastReportedFunclet;
 
 #ifdef TARGET_WINDOWS
     // Longjmp buffer used to restart longjmp after a block of managed frames when
@@ -509,6 +523,15 @@ private:
 
     static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
 };
+
+#ifndef TARGET_UNIX
+template<>
+struct cdac_data<ExInfo>
+{
+    static constexpr size_t ExceptionWatsonBucketTrackerBuckets = offsetof(ExInfo, m_WatsonBucketTracker)
+        + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
+};
+#endif // TARGET_UNIX
 
 #endif // !FEATURE_EH_FUNCLETS
 #endif // __ExInfo_h__

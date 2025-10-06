@@ -3943,7 +3943,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         // See if (X + CNS) is known to be non-negative
         if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
-            Range    rng = Range(Limit(Limit::keDependent));
+            Range    rng = Range(Limit(Limit::keUnknown));
             ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
             if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
             {
@@ -3951,7 +3951,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             }
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
 
             if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
                 (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
@@ -4416,13 +4415,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
     int op2cns;
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
-        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
-        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
-        && (op2cns != 0))
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) && vnStore->IsVNIntegralConstant(op2VN, &op2cns))
     {
         // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
-        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng1 = Range(Limit(Limit::keUnknown));
         Range rng2 = Range(Limit(Limit::keConstant, op2cns));
 
         if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
@@ -4702,6 +4698,13 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Find an equal or not equal assertion about op1 var.
     unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+
+    // Make sure the local is not truncated.
+    if (!op1->TypeIs(lvaGetRealType(lclNum)))
+    {
+        return nullptr;
+    }
+
     noway_assert(lclNum < lvaCount);
     AssertionIndex index = optLocalAssertionIsEqualOrNotEqual(op1Kind, lclNum, op2Kind, cnsVal, assertions);
 
