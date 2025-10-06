@@ -573,6 +573,16 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_REL32 => 4,
                 RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
                 RelocType.IMAGE_REL_FILE_ABSOLUTE => 4,
+                // The relocation itself aren't these sizes, but their values
+                // are immediates in instructions within
+                // a span of this many bytes.
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 4,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 16,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 16,
+                RelocType.IMAGE_REL_BASED_RISCV64_PC => 16,
                 _ => throw new NotSupportedException(),
             };
         }
