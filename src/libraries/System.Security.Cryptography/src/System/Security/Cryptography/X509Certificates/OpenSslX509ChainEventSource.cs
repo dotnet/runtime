@@ -7,9 +7,16 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    [EventSource(Name = "System.Security.Cryptography.X509Certificates.X509Chain.OpenSsl")]
+    [EventSource(Name = OpenSslX509ChainEventSourceName)]
     internal sealed class OpenSslX509ChainEventSource : EventSource
     {
+        private const string OpenSslX509ChainEventSourceName = "System.Security.Cryptography.X509Certificates.X509Chain.OpenSsl";
+
+        public OpenSslX509ChainEventSource()
+            : base(OpenSslX509ChainEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+        {
+        }
+
         internal static readonly OpenSslX509ChainEventSource Log = new OpenSslX509ChainEventSource();
 
         private const int EventId_ChainStart = 1;
