@@ -152,6 +152,14 @@ namespace System.Reflection.Tests
             }
         }
 
+        [Fact]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        {
+            var eventInfoBase = typeof(BaseClass).GetEvent(nameof(BaseClass.PublicVirtualEvent));
+            var eventInfoSub = typeof(SubClass).GetEvent(nameof(SubClass.PublicVirtualEvent));
+            Assert.NotEqual(eventInfoBase.GetHashCode(), eventInfoSub.GetHashCode());
+        }
+
         [Theory]
         [MemberData(nameof(Events_TestData))]
         public void EventHandlerType(Type type, string name)

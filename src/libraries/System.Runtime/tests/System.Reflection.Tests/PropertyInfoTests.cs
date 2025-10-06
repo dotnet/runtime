@@ -292,6 +292,14 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, propertyInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        {
+            var propertyInfoBase = typeof(BaseClass).GetProperty(nameof(BaseClass.IntProperty));
+            var propertyInfoSub = typeof(SubClass).GetProperty(nameof(SubClass.IntProperty));
+            Assert.NotEqual(propertyInfoBase.GetHashCode(), propertyInfoSub.GetHashCode());
+        }
+
         [Theory]
         [InlineData(typeof(BaseClass), "Item", new string[] { "Index" })]
         [InlineData(typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), new string[0])]

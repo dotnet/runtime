@@ -346,6 +346,14 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, methodInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        {
+            var methodInfoBase = typeof(MI_BaseClass).GetMethod(nameof(MI_BaseClass.IMethod));
+            var methodInfoSub = typeof(MI_SubClass).GetMethod(nameof(MI_SubClass.IMethod));
+            Assert.NotEqual(methodInfoBase.GetHashCode(), methodInfoSub.GetHashCode());
+        }
+
         public static IEnumerable<object[]> Invoke_TestData()
         {
             yield return new object[] { typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualReturnIntMethod), new MI_BaseClass(), null, 0 };

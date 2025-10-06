@@ -333,6 +333,14 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, fieldInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        {
+            var fieldInfoBase = typeof(FI_BaseClass).GetField(nameof(FI_BaseClass.intField));
+            var fieldInfoSub = typeof(FI_SubClass).GetField(nameof(FI_SubClass.intField));
+            Assert.NotEqual(fieldInfoBase.GetHashCode(), fieldInfoSub.GetHashCode());
+        }
+
         [Theory]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.intField), typeof(int))]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), typeof(string))]
@@ -719,7 +727,10 @@ namespace System.Reflection.Tests
         public static FI_GenericClass<object>[] gpa_g_object = new FI_GenericClass<object>[] { g_object, g_object };
         public static FI_GenericClass<FI_GenericClass<object>>[] ga_g_object = new FI_GenericClass<FI_GenericClass<object>>[] { g_g_object, g_g_object, g_g_object, g_g_object };
 
-        public class FI_BaseClass { }
+        public class FI_BaseClass
+        {
+            public int intField;
+        }
         public class FI_SubClass : FI_BaseClass { }
 
         public interface FI_Interface { }
