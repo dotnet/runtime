@@ -1277,13 +1277,13 @@ namespace Internal.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetField<T>(EETypeField eField)
         {
-            return ref Unsafe.As<byte, T>(ref *((byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(eField)));
+            return ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref Unsafe.As<MethodTable, byte>(ref Unsafe.AsRef(in this)), GetFieldOffset(eField)));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetField<T>(uint offset)
         {
-            return ref Unsafe.As<byte, T>(ref *((byte*)Unsafe.AsPointer(ref this) + offset));
+            return ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref Unsafe.As<MethodTable, byte>(ref Unsafe.AsRef(in this)), offset));
         }
 
 #if TYPE_LOADER_IMPLEMENTATION
