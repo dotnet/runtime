@@ -775,7 +775,8 @@ namespace ILCompiler.ObjectWriter
             foreach (SymbolicRelocation reloc in symbolicRelocations)
             {
                 SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
-                uint relocOffset = checked((uint)(_sections[definedSymbol.SectionIndex].Header.VirtualAddress + reloc.Offset));
+                uint relocOffset = checked((uint)(_sections[sectionIndex].Header.VirtualAddress + reloc.Offset));
+                uint relocLength = (uint)Relocation.GetSize(reloc.Type);
                 uint symbolImageOffset = checked((uint)(_sections[definedSymbol.SectionIndex].Header.VirtualAddress + definedSymbol.Value));
 
                 fixed (byte* pData = GetRelocDataSpan(reloc))
@@ -798,7 +799,7 @@ namespace ILCompiler.ObjectWriter
                             break;
                         case RelocType.IMAGE_REL_BASED_REL32:
                         case RelocType.IMAGE_REL_BASED_RELPTR32:
-                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - relocOffset + addend);
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - (relocOffset + relocLength) + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                             long fileOffset = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;
