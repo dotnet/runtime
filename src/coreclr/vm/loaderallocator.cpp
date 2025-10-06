@@ -63,6 +63,8 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_onStackReplacementManager = NULL;
 #endif
 
+    m_asyncContinuationsManager = NULL;
+
     m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
@@ -1410,6 +1412,12 @@ void LoaderAllocator::Terminate()
     }
 #endif
 
+    if (m_asyncContinuationsManager != NULL)
+    {
+        delete m_asyncContinuationsManager;
+        m_asyncContinuationsManager = NULL;
+    }
+
     // In collectible types we merge the low frequency and high frequency heaps
     // So don't destroy them twice.
     if ((m_pLowFrequencyHeap != NULL) && (m_pLowFrequencyHeap != m_pHighFrequencyHeap))
@@ -2294,6 +2302,31 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifndef DACCESS_COMPILE
+PTR_AsyncContinuationsManager LoaderAllocator::GetAsyncContinuationsManager()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (m_asyncContinuationsManager == NULL)
+    {
+        AsyncContinuationsManager* newManager = new AsyncContinuationsManager(this);
+
+        if (InterlockedCompareExchangeT(&m_asyncContinuationsManager, newManager, NULL) != NULL)
+        {
+            // some thread swooped in and set the field
+            delete newManager;
+        }
+    }
+    _ASSERTE(m_asyncContinuationsManager != NULL);
+    return m_asyncContinuationsManager;
+}
+
 void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem, bool isClassInitedByUpdatingStaticPointer)
 {
     CONTRACTL

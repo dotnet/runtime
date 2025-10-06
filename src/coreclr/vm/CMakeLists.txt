@@ -52,6 +52,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     array.cpp
     assembly.cpp
     assemblybinder.cpp
+    asynccontinuations.cpp
     binder.cpp
     castcache.cpp
     callcounting.cpp
@@ -149,6 +150,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     array.h
     assembly.hpp
     assemblybinder.h
+    asynccontinuations.h
     binder.h
     castcache.h
     callcounting.h

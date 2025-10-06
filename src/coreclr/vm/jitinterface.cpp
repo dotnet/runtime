@@ -10267,9 +10267,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
+    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
+    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
     AllocMemTracker amTracker;
-    // TODO: table to share/deduplicate these
-    result = (CORINFO_CLASS_HANDLE)m_pMethodBeingCompiled->GetModule()->CreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, &amTracker);
+    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, m_pMethodBeingCompiled, &amTracker);
     amTracker.SuppressRelease();
 
     EE_TO_JIT_TRANSITION();
