@@ -68,6 +68,7 @@ else(CLR_CMAKE_HOST_WIN32)
                 LINK_FLAGS "--pre-js ${JS_CORE_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
+                -fwasm-exceptions
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
                 -sENVIRONMENT=node,shell

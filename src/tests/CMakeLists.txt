@@ -71,6 +71,9 @@ else()
     add_compile_options(
       -fwasm-exceptions 
       -msimd128)
+    add_link_options(
+      -fwasm-exceptions 
+      )
 
     # opt in into tests that make sense for WASM
     add_subdirectory(JIT/interpreter)
