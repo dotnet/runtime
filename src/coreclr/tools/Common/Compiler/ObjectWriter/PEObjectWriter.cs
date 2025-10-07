@@ -32,7 +32,7 @@ namespace ILCompiler.ObjectWriter
         /// (the number of bits corresponds to the page size) to be identical to the file offset,
         /// otherwise memory mapping of the file fails.
         /// </remarks>
-        const int RVABitsToMatchFilePos = 16;
+        private const int RVABitsToMatchFilePos = 16;
         internal const int DosHeaderSize = 0x80;
         private const int NoSectionIndex = -1;
 
@@ -502,10 +502,10 @@ namespace ILCompiler.ObjectWriter
                     // even though we omit them in EmitObjectFile.
                     _outputSectionLayout.Add(new OutputSection(h.Name, h.VirtualAddress, h.PointerToRawData, (uint)s.Stream.Length));
                 }
+                firstSection = false;
             }
 
             sizeOfImage = (uint)AlignmentHelper.AlignUp((int)virtualAddress, (int)_peSectionAlignment);
-            firstSection = false;
         }
 
         private protected override unsafe void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)

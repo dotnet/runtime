@@ -172,7 +172,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected uint GetSectionAlignment(CoffSectionHeader header)
+        protected static uint GetSectionAlignment(CoffSectionHeader header)
         {
             SectionCharacteristics alignmentFlag = (header.SectionCharacteristics & SectionCharacteristics.AlignMask);
             if (alignmentFlag == 0)
