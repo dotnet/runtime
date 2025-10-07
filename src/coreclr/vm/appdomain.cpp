@@ -1913,7 +1913,8 @@ Assembly *FileLoadLock::GetAssembly()
 PEAssembly* FileLoadLock::GetPEAssembly()
 {
     LIMITED_METHOD_CONTRACT;
-    // Underlying PEAssembly pointer is stored in base ListLockEntry::m_data.
+    // Underlying PEAssembly pointer is stored in the constructor in base ListLockEntry::m_data.
+    _ASSERTE(m_data != NULL);
     return (PEAssembly*)m_data;
 }
 
@@ -2640,6 +2641,9 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
         BOOL success;
         if (workLevel == FILE_LOAD_ALLOCATE)
         {
+            // FileLoadLock should not have an assembly yet
+            _ASSERTE(pAssembly == NULL);
+
             // Allocate DomainAssembly & Assembly
             PEAssembly *pPEAssembly = pLoadLock->GetPEAssembly();
             AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
