@@ -13,14 +13,14 @@
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
 // Enum that corresponds to C# CompareOptions
-typedef enum
+typedef enum : int32_t
 {
-    None = 0,
-    IgnoreCase = 1,
-    IgnoreNonSpace = 2,
-    IgnoreKanaType = 8,
-    IgnoreWidth = 16,
-    StringSort = 536870912,
+    None = 0x00000000,
+    IgnoreCase = 0x00000001,
+    IgnoreNonSpace = 0x00000002,
+    IgnoreKanaType = 0x00000008,
+    IgnoreWidth = 0x00000010,
+    StringSort = 0x20000000,
 } CompareOptions;
 
 typedef enum
@@ -45,7 +45,7 @@ static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLengt
     return currentLocale;
 }
 
-static bool IsComparisonOptionSupported(int32_t comparisonOptions)
+static bool IsComparisonOptionSupported(CompareOptions comparisonOptions)
 {
     int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort | IgnoreKanaType;
     if ((comparisonOptions | supportedOptions) != supportedOptions)
@@ -53,7 +53,7 @@ static bool IsComparisonOptionSupported(int32_t comparisonOptions)
     return true;
 }
 
-static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions, bool isLiteralSearchSupported)
+static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(CompareOptions comparisonOptions, bool isLiteralSearchSupported)
 {
     // To achieve an equivalent search behavior to the default in ICU,
     // NSLiteralSearch is employed as the default search option.

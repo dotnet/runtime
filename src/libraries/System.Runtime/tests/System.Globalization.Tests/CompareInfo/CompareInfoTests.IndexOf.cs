@@ -82,10 +82,43 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
 
-            // Ignore symbols
-            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform) // IgnoreSymbols are not supported
-                yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5, 6 };
+            // Ignore symbols - punctuation characters
+            yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5, 6 };
+            yield return new object[] { s_invariantCompare, "-Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Test(ing)", "Testing", 0, 9, CompareOptions.IgnoreSymbols, 0, 8 };
+            yield return new object[] { s_invariantCompare, "Testing]", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "{Test}ing", "Testing", 0, 9, CompareOptions.IgnoreSymbols, 1, 8 };
+            yield return new object[] { s_invariantCompare, "\"Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+
+            // Ignore symbols - currency and math symbols
+            yield return new object[] { s_invariantCompare, "$Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Test€ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 };
+            yield return new object[] { s_invariantCompare, "Testing¢", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "+Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Test=ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 };
+            yield return new object[] { s_invariantCompare, "Testing%", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+
+            // Ignore symbols - whitespace characters
+            yield return new object[] { s_invariantCompare, " Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Testing ", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "Test\u00A0ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 }; // Non-breaking space
+            yield return new object[] { s_invariantCompare, "Testing\u2028", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 }; // Line separator
+            yield return new object[] { s_invariantCompare, "\u2029Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 }; // Paragraph separator
+            yield return new object[] { s_invariantCompare, "Test\ting\n", "Testing", 0, 9, CompareOptions.IgnoreSymbols, 0, 8 }; // Tab and newline
+
+            // Ignore symbols - multiple whitespace and punctuation
+            yield return new object[] { s_invariantCompare, "  Testing,  ", "Testing", 0, 11, CompareOptions.IgnoreSymbols, 2, 7 };
+            yield return new object[] { s_invariantCompare, "'Te st  i ng!", "Testing", 0, 13, CompareOptions.IgnoreSymbols, 1, 11 };
+
+            // Ignore symbols - mixed categories
+            yield return new object[] { s_invariantCompare, "$Te%s t&ing+", "Testing", 0, 12, CompareOptions.IgnoreSymbols, 1, 10 };
+            yield return new object[] { s_invariantCompare, ", Hello World!", "HelloWorld", 0, 13, CompareOptions.IgnoreSymbols, 2, 11 };
+
+            // With symbols - should not match
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "Tes ting", "Testing", 0, 8, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "'Te st  i ng!", "Testing", 0, 11, CompareOptions.IgnoreSymbols, -1, 0 };
+
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2, 2 };
 
             // Ordinal should be case-sensitive
