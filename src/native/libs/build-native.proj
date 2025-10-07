@@ -20,7 +20,7 @@
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
     <_CMakeArgs Condition="'$(_IcuDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_ICU_DIR=$(_IcuDir)"</_CMakeArgs>
     <_CMakeArgs Condition="'$(_TzdDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_TZD_DIR=$(_TzdDir)"</_CMakeArgs>
-    <_CMakeArgs Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
+    <_CMakeArgs Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">$(_CMakeArgs) -cmakeargs "-DBUILD_LIBS_NATIVE_BROWSER=1"</_CMakeArgs>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs)</_BuildNativeArgs>
   </PropertyGroup>
