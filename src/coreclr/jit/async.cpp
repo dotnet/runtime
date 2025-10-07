@@ -802,7 +802,7 @@ void AsyncTransformation::Transform(
 
     CreateLiveSetForSuspension(block, call, defs, life, liveLocals);
 
-    ContinuationLayout layout = LayOutContinuation(block, call, liveLocals);
+    ContinuationLayout layout = LayOutContinuation(block, call, ContinuationNeedsKeepAlive(life), liveLocals);
 
     ClearSuspendedIndicator(block, call);
 
@@ -931,9 +931,36 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
     }
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::ContinuationNeedsKeepAlive:
+//   Check whether we need to allocate a "KeepAlive" field in the continuation.
+//
+// Parameters:
+//   life - Live locals
+//
+// Returns:
+//   True if we need to keep a LoaderAllocator for generic context or
+//   collectible method alive.
+//
+bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
+{
+    if (m_asyncInfo->continuationsNeedMethodHandle)
+    {
+        return true;
+    }
+
+    const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
+    if (((m_comp->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) && life.IsLive(m_comp->info.compTypeCtxtArg))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 class GCPointerBitMapBuilder
 {
-    bool* m_objRefs;
+    bool*  m_objRefs;
     size_t m_size;
 
 public:
@@ -989,16 +1016,18 @@ public:
 //   object.
 //
 // Parameters:
-//   block      - The block containing the async call
-//   call       - The async call
-//   liveLocals - [in, out] Information about each live local. Size/alignment
-//                information is read and offset/index information is written.
+//   block          - The block containing the async call
+//   call           - The async call
+//   needsKeepAlive - Whether the layout needs a "keep alive" field allocated
+//   liveLocals     - [in, out] Information about each live local. Size/alignment
+//                    information is read and offset/index information is written.
 //
 // Returns:
 //   Layout information.
 //
 ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*                    block,
                                                            GenTreeCall*                   call,
+                                                           bool                           needsKeepAlive,
                                                            jitstd::vector<LiveLocalInfo>& liveLocals)
 {
     ContinuationLayout layout(liveLocals);
@@ -1111,6 +1140,12 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 layout.ExecContextOffset);
     }
 
+    unsigned keepAliveOffset = UINT_MAX;
+    if (needsKeepAlive)
+    {
+        keepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+    }
+
     for (LiveLocalInfo& inf : liveLocals)
     {
         inf.Offset = allocLayout(inf.Alignment, inf.Size);
@@ -1130,7 +1165,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 #endif
 
     // Now create continuation type. First create bitmap of object refs.
-    bool* objRefs = new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE] {};
+    bool* objRefs = new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE]{};
 
     GCPointerBitMapBuilder bitmapBuilder(objRefs, layout.Size);
     bitmapBuilder.SetIfNotMax(layout.ExceptionOffset);
@@ -1152,8 +1187,9 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 #ifdef DEBUG
     if (m_comp->verbose)
     {
-        printf("Getting continuation layout size = %u, numGCRefs = %u (Continuation_%s_%u_%u)\n", layout.Size, bitmapBuilder.NumObjRefs, m_comp->info.compMethodName, layout.Size, bitmapBuilder.NumObjRefs);
-        bool* start = objRefs;
+        printf("Getting continuation layout size = %u, numGCRefs = %u (Continuation_%s_%u_%u)\n", layout.Size,
+               bitmapBuilder.NumObjRefs, m_comp->info.compMethodName, layout.Size, bitmapBuilder.NumObjRefs);
+        bool* start        = objRefs;
         bool* endOfObjRefs = objRefs + layout.Size / TARGET_POINTER_SIZE;
         while (start < endOfObjRefs)
         {
@@ -1167,7 +1203,8 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
             while (end < endOfObjRefs && *end)
                 end++;
 
-            printf("  [%3u..%3u) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE, (end - objRefs) * TARGET_POINTER_SIZE);
+            printf("  [%3u..%3u) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE,
+                   (end - objRefs) * TARGET_POINTER_SIZE);
             start = end;
         }
     }
@@ -1177,7 +1214,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     offsets.Result              = layout.ReturnValOffset;
     offsets.Exception           = layout.ExceptionOffset;
     offsets.ContinuationContext = layout.ContinuationContextOffset;
-    offsets.KeepAlive           = UINT_MAX;
+    offsets.KeepAlive           = keepAliveOffset;
     layout.ClassHnd             = m_comp->info.compCompHnd->getContinuationType(layout.Size, objRefs, offsets);
 
     return layout;

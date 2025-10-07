@@ -78,8 +78,11 @@ class AsyncTransformation
                       const jitstd::vector<GenTree*>& defs,
                       jitstd::vector<LiveLocalInfo>&  liveLocals);
 
+    bool ContinuationNeedsKeepAlive(class AsyncLiveness& life);
+
     ContinuationLayout LayOutContinuation(BasicBlock*                    block,
                                           GenTreeCall*                   call,
+                                          bool                           needsKeepAlive,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
     void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
