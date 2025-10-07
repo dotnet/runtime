@@ -454,8 +454,6 @@ public class ComputeWasmPublishAssets : Task
 
             if (resolvedAssembliesToPublish.TryGetValue(fileName, out var existing))
             {
-                Log.LogMessage(MessageImportance.Low, "MF: assetsToUpdate add '{0}', itemSpec '{1}'", assetToUpdateItemSpec, asset.ItemSpec);
-
                 // We found the assembly, so it'll have to be updated.
                 assetsToUpdate.Add(assetToUpdateItemSpec, asset);
                 filesToRemove.Add(existing);
@@ -475,8 +473,6 @@ public class ComputeWasmPublishAssets : Task
         {
             var satelliteAssembly = kvp.Value;
             var relatedAsset = satelliteAssembly.GetMetadata("RelatedAsset");
-
-            Log.LogMessage(MessageImportance.Low, "MF: relatedAsset '{0}' found '{1}'", relatedAsset, assetsToUpdate.ContainsKey(relatedAsset));
 
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
@@ -591,8 +587,6 @@ public class ComputeWasmPublishAssets : Task
 
     private void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap)
     {
-        Log.LogMessage(MessageImportance.Low, "MF: UpdateRelatedAssetProperty '{0}', related '{1}' found '{2}'", asset.ItemSpec, asset.GetMetadata("RelatedAsset"), updatedAssetsMap.ContainsKey(asset.GetMetadata("RelatedAsset")));
-
         if (!updatedAssetsMap.TryGetValue(asset.GetMetadata("RelatedAsset"), out var updatedRelatedAsset))
         {
             throw new InvalidOperationException("Related asset not found.");
