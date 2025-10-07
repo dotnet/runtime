@@ -771,7 +771,16 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
 
     DWORD numConstraints;
 
-     // If we have already loaded the constraints, and the previously loaded constraints are sufficient for the current request, return.
+    // If we have already loaded the constraints, and the previously loaded constraints are sufficient for the current request, skip the logic to find more constraints.
+    // Otherwise we need to load more constraints, and then possibly actually force them to be loaded to the appropriate load level.
+    // NOTE:
+    // The WhichConstraintsToLoad enum is ordered from most constraints to least constraints, so we can use a simple greater-than comparison to determine
+    // if the previously loaded constraints are sufficient for the current request.
+    // There are 4 possible values for WhichConstraintsToLoad:
+    //   All   - Load all constraints
+    //   TypeOrMethodVarsAndNonInterfacesOnly - Load all constraints except interface constraints that are not type or method variables. The code MAY load other constraints. This is used when loading constraints for the purpose of type safety checks.
+    //   TypeOrMethodVarsOnly - Load only type or method variables. (Needed for the Bounded algorithm)
+    //   None - Load no constraints. This is the initial state.
 
     do
     {

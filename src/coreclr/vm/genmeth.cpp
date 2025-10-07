@@ -1536,7 +1536,7 @@ BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth) {
     }
 
     DWORD numConstraints;
-    TypeHandle *constraints = tyvar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsOnly);
+    TypeHandle *constraints = tyvar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
     for (unsigned i = 0; i < numConstraints; i++)
     {
         TypeHandle constraint = constraints[i];
@@ -1576,8 +1576,6 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularCl
     {
         TypeVarTypeDesc* tyvar = methodInst[i].AsGenericVariable();
         _ASSERTE(tyvar != NULL);
-        tyvar->LoadConstraints(level, WhichConstraintsToLoad::All); // Use the All here, since DoAccessibilityCheckForConstraints needs it, athough really, we only need to walk the typedefs/refs in the constraints
-
         VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy);
         DoAccessibilityCheckForConstraints(GetMethodTable(), tyvar, E_ACCESSDENIED);
     }
