@@ -119,6 +119,9 @@ extends:
                   testBuildArgs: test JIT/interpreter/Interpreter.csproj
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),
