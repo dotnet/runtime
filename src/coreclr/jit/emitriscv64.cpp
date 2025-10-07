@@ -1327,7 +1327,7 @@ void emitter::emitSetMediumJump(instrDescJmp* id)
 #endif // DEBUG_EMIT
 
     assert(emitIsCmpJump(id));
-    id->idCodeSize(2 * sizeof(code_t)); // two 32-bit instruction
+    id->idCodeSize(2 * sizeof(code_t)); // two 32-bit instructions
     id->idInsOpt(INS_OPTS_JALR);
     id->idjShort = false;
 }
@@ -1429,9 +1429,43 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     emitTotalIGjmps++;
 #endif
 
-    // TODO: estimate jump length, now we're starting from maximum size
     id->idCodeSize((emitIsUncondJump(id) ? 2 : 3) * sizeof(code_t));
     id->idInsOpt(INS_OPTS_JALR);
+
+    /* Figure out the max. size of the jump/call instruction */
+    if (insGroup* tgt = (insGroup*)emitCodeGetCookie(dst); !id->idjKeepLong && (tgt != nullptr))
+    {
+        /* This is a backward jump - figure out the distance */
+        UNATIVE_OFFSET srcOffs = emitCurCodeOffset + emitCurIGsize;
+
+        /* Compute the distance estimate */
+        int jmpDist = srcOffs - tgt->igOffs;
+        assert(jmpDist >= 0);
+
+        // TODO: separate, unconditional jumps only in emitIns_J, branches in emitIns_J_cond_la.
+        if (emitIsCmpJump(id))
+        {
+            if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                /* This jump surely will be short */
+                emitSetShortJump(id);
+            }
+            else if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                /* This jump surely will be medium */
+                emitSetMediumJump(id);
+            }
+        }
+        else
+        {
+            assert(emitIsUncondJump(id));
+            if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                /* This jump surely will be short */
+                emitSetShortJump(id);
+            }
+        }
+    }
 
     appendToCurIG(id);
 }
@@ -1487,6 +1521,41 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     // TODO: estimate jump length, now we're starting from maximum size
     id->idCodeSize(3 * sizeof(code_t));
     id->idInsOpt(INS_OPTS_JALR);
+
+    /* Figure out the max. size of the jump/call instruction */
+    if (insGroup* tgt = (insGroup*)emitCodeGetCookie(dst); !id->idjKeepLong && (tgt != nullptr))
+    {
+        /* This is a backward jump - figure out the distance */
+        UNATIVE_OFFSET srcOffs = emitCurCodeOffset + emitCurIGsize;
+
+        /* Compute the distance estimate */
+        int jmpDist = srcOffs - tgt->igOffs;
+        assert(jmpDist >= 0);
+
+        // TODO: separate, unconditional jumps only in emitIns_J, branches in emitIns_J_cond_la.
+        if (emitIsCmpJump(id))
+        {
+            if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                /* This jump surely will be short */
+                emitSetShortJump(id);
+            }
+            else if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                /* This jump surely will be medium */
+                emitSetMediumJump(id);
+            }
+        }
+        else
+        {
+            assert(emitIsUncondJump(id));
+            if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                /* This jump surely will be short */
+                emitSetShortJump(id);
+            }
+        }
+    }
 
     appendToCurIG(id);
 }

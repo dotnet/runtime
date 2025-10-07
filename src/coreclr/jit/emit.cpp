@@ -5501,7 +5501,7 @@ AGAIN:
         // All other code size is 4.
         assert((sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_RISCV64)
-        assert((sizeDif == 4) || (sizeDif == 8));
+        assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
 #else
 #error Unsupported or unset target architecture
 #endif
