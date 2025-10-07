@@ -26,14 +26,10 @@ namespace System.Globalization
             AssertComparisonSupported(options);
 
             // Handle IgnoreSymbols preprocessing
-            bool ignoreSymbols = (options & CompareOptions.IgnoreSymbols) != 0;
-            ReadOnlySpan<char> filteredString1 = string1;
-            ReadOnlySpan<char> filteredString2 = string2;
-
-            if (ignoreSymbols)
+            if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                filteredString1 = FilterSymbolsFromSpan(string1, out _);
-                filteredString2 = FilterSymbolsFromSpan(string2, out _);
+                string1 = FilterSymbolsFromSpan(string1, out _);
+                string2 = FilterSymbolsFromSpan(string2, out _);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
@@ -42,10 +38,10 @@ namespace System.Globalization
             // GetReference may return nullptr if the input span is defaulted. The native layer handles
             // this appropriately; no workaround is needed on the managed side.
             int result;
-            fixed (char* pString1 = &MemoryMarshal.GetReference(filteredString1))
-            fixed (char* pString2 = &MemoryMarshal.GetReference(filteredString2))
+            fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
+            fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                result = Interop.Globalization.CompareStringNative(m_name, m_name.Length, pString1, filteredString1.Length, pString2, filteredString2.Length, options);
+                result = Interop.Globalization.CompareStringNative(m_name, m_name.Length, pString1, string1.Length, pString2, string2.Length, options);
             }
 
             Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
@@ -58,26 +54,24 @@ namespace System.Globalization
             AssertComparisonSupported(options);
             // We only implement managed preprocessing for IgnoreSymbols.
             bool ignoreSymbols = (options & CompareOptions.IgnoreSymbols) != 0;
-            ReadOnlySpan<char> filteredTarget = target;
-            ReadOnlySpan<char> filteredSource = source;
             int[]? sourceIndexMap = null; // maps each char index in filteredSource to original source char index
 
             // If we are ignoring symbols, preprocess the strings by removing specified Unicode categories.
             if (ignoreSymbols)
             {
-                filteredTarget = FilterSymbolsFromSpan(target, out _);
-                filteredSource = FilterSymbolsFromSpan(source, out sourceIndexMap);
+                target = FilterSymbolsFromSpan(target, out _);
+                source = FilterSymbolsFromSpan(source, out sourceIndexMap);
 
-                // Remove the flag before passing to native since we handled it here.
+                // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
             }
 
             int nativeLocation;
             int nativeLength;
-            fixed (char* pTarget = &MemoryMarshal.GetReference(filteredTarget))
-            fixed (char* pSource = &MemoryMarshal.GetReference(filteredSource))
+            fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                Interop.Range result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, pTarget, filteredTarget.Length, pSource, filteredSource.Length, options, fromBeginning);
+                Interop.Range result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
                 Debug.Assert(result.Location != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
                 if (result.Location == (int)ErrorCodes.ERROR_MIXED_COMPOSITION_NOT_FOUND)
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMixedCompositions);
@@ -85,23 +79,16 @@ namespace System.Globalization
                 nativeLength = result.Length;
             }
 
-            if (!ignoreSymbols)
+            // If not ignoring symbols / nothing found / an error code / no source index map (no ignorable symbols in source string), just propagate.
+            if (!ignoreSymbols || nativeLocation < 0 || sourceIndexMap == null)
             {
                 if (matchLengthPtr != null)
                     *matchLengthPtr = nativeLength;
                 return nativeLocation;
             }
 
-            // If ignoring symbols and nothing found, or an error code, or no source index map, just propagate.
-            if (nativeLocation < 0 || sourceIndexMap == null)
-            {
-                if (matchLengthPtr != null)
-                    *matchLengthPtr = nativeLength;
-                return nativeLocation;
-            }
-
-            // Map filtered indices back to original indices, expanding match length to include removed symbol chars inside the span.
-            // nativeLocation is index into filteredSource; nativeLength is length in filteredSource UTF-16 code units.
+            // If ignoring symbols, map filtered indices back to original indices, expanding match length to include removed symbol chars inside the span.
+            // nativeLocation is index into filtered source; nativeLength is length in filtered source UTF-16 code units.
             int originalStart = sourceIndexMap[nativeLocation];
             int filteredEnd = nativeLocation + nativeLength - 1;
 
@@ -155,24 +142,20 @@ namespace System.Globalization
             AssertComparisonSupported(options);
 
             // Handle IgnoreSymbols preprocessing
-            bool ignoreSymbols = (options & CompareOptions.IgnoreSymbols) != 0;
-            ReadOnlySpan<char> filteredPrefix = prefix;
-            ReadOnlySpan<char> filteredSource = source;
-
-            if (ignoreSymbols)
+            if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                filteredPrefix = FilterSymbolsFromSpan(prefix, out _);
-                filteredSource = FilterSymbolsFromSpan(source, out _);
+                prefix = FilterSymbolsFromSpan(prefix, out _);
+                source = FilterSymbolsFromSpan(source, out _);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
             }
 
             int result;
-            fixed (char* pPrefix = &MemoryMarshal.GetReference(filteredPrefix))
-            fixed (char* pSource = &MemoryMarshal.GetReference(filteredSource))
+            fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                result = Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, filteredPrefix.Length, pSource, filteredSource.Length, options);
+                result = Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, prefix.Length, pSource, source.Length, options);
             }
             Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
 
@@ -184,24 +167,20 @@ namespace System.Globalization
             AssertComparisonSupported(options);
 
             // Handle IgnoreSymbols preprocessing
-            bool ignoreSymbols = (options & CompareOptions.IgnoreSymbols) != 0;
-            ReadOnlySpan<char> filteredSuffix = suffix;
-            ReadOnlySpan<char> filteredSource = source;
-
-            if (ignoreSymbols)
+            if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                filteredSuffix = FilterSymbolsFromSpan(suffix, out _);
-                filteredSource = FilterSymbolsFromSpan(source, out _);
+                suffix = FilterSymbolsFromSpan(suffix, out _);
+                source = FilterSymbolsFromSpan(source, out _);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
             }
 
             int result;
-            fixed (char* pSuffix = &MemoryMarshal.GetReference(filteredSuffix))
-            fixed (char* pSource = &MemoryMarshal.GetReference(filteredSource))
+            fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                result = Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, filteredSuffix.Length, pSource, filteredSource.Length, options);
+                result = Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, suffix.Length, pSource, source.Length, options);
             }
             Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
 
