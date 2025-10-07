@@ -2711,12 +2711,14 @@ void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
     _ASSERTE(*pSlot != (PCODE)NULL);
 #endif
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (RequiresStableEntryPoint())
     {
         // The rest of the system assumes that certain methods always have stable entrypoints.
         // Mark the precode as such
         MarkPrecodeAsStableEntrypoint();
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 void MethodDesc::EnsureTemporaryEntryPoint()
