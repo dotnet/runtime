@@ -66,7 +66,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override TypeDesc OwningType
+        public override EcmaType OwningType
         {
             get
             {
@@ -581,5 +581,9 @@ namespace Internal.TypeSystem.Ecma
             }
             return null;
         }
+
+        public override EcmaMethod GetMethodDefinition() => this;
+
+        public override EcmaMethod GetTypicalMethodDefinition() => this;
     }
 }

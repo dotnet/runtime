@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
                     PropertyAccessors accessors = property.GetAccessors();
 
                     if (accessors.Getter == methodHandle || accessors.Setter == methodHandle)
-                        AddDependenciesDueToCustomAttributes(ref dependencies, propertyCondition, factory, method.Module, property.GetCustomAttributes(), new PropertyPseudoDesc((EcmaType)method.OwningType, propertyHandle));
+                        AddDependenciesDueToCustomAttributes(ref dependencies, propertyCondition, factory, method.Module, property.GetCustomAttributes(), new PropertyPseudoDesc(method.OwningType, propertyHandle));
                 }
 
                 object eventCondition = GetMetadataApiDependency(factory, "Event"u8);
@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                     EventAccessors accessors = @event.GetAccessors();
 
                     if (accessors.Adder == methodHandle || accessors.Remover == methodHandle || accessors.Raiser == methodHandle)
-                        AddDependenciesDueToCustomAttributes(ref dependencies, eventCondition, factory, method.Module, @event.GetCustomAttributes(), new EventPseudoDesc((EcmaType)method.OwningType, eventHandle));
+                        AddDependenciesDueToCustomAttributes(ref dependencies, eventCondition, factory, method.Module, @event.GetCustomAttributes(), new EventPseudoDesc(method.OwningType, eventHandle));
                 }
             }
         }

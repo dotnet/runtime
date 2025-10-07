@@ -3443,7 +3443,7 @@ namespace Internal.JitInterface
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                EcmaType owningType = (EcmaType)ecmaMethod.OwningType;
+                EcmaType owningType = ecmaMethod.OwningType;
                 var reader = owningType.MetadataReader;
 
                 if (className != null)
@@ -3456,7 +3456,7 @@ namespace Internal.JitInterface
                 EcmaType containingType = owningType;
                 for (nuint i = 0; i < maxEnclosingClassNames; i++)
                 {
-                    containingType = containingType.ContainingType as EcmaType;
+                    containingType = containingType.ContainingType;
                     if (containingType == null)
                         break;
 

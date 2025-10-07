@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (type is EcmaType ecmaType)
                     _tasksThatMustFinish.Enqueue(ValidateType(this, ecmaType));
             }
-            _tasksThatMustFinish.Enqueue(ValidateType(this, (EcmaType)module.GetGlobalModuleType()));
+            _tasksThatMustFinish.Enqueue(ValidateType(this, module.GetGlobalModuleType()));
 
             bool failAtEnd = false;
             while (_tasksThatMustFinish.TryDequeue(out var taskToComplete))
@@ -151,7 +151,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Per method rules
                 foreach (var methodDesc in type.GetMethods())
                 {
-                    var method = (EcmaMethod)methodDesc;
+                    var method = methodDesc;
                     var methodDef = method.MetadataReader.GetMethodDefinition(method.Handle);
                     // Validate that the validateTokenSig algorithm on all methods defined on the type
                     // The validateTokenSig algorithm simply validates the phyical structure of the signature. Getting a MethodSignature object is a more complete check

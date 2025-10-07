@@ -20,7 +20,7 @@ namespace ILCompiler
 
         private EventDefinition Definition => _type.MetadataReader.GetEventDefinition(_handle);
 
-        public MethodDesc AddMethod
+        public EcmaMethod AddMethod
         {
             get
             {
@@ -29,7 +29,7 @@ namespace ILCompiler
             }
         }
 
-        public MethodDesc RemoveMethod
+        public EcmaMethod RemoveMethod
         {
             get
             {
@@ -38,7 +38,7 @@ namespace ILCompiler
             }
         }
 
-        public MethodDesc RaiseMethod
+        public EcmaMethod RaiseMethod
         {
             get
             {
@@ -55,7 +55,7 @@ namespace ILCompiler
             }
         }
 
-        public MetadataType OwningType
+        public EcmaType OwningType
         {
             get
             {

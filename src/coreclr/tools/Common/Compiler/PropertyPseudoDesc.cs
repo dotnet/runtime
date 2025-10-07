@@ -24,7 +24,7 @@ namespace ILCompiler
             new EcmaSignatureParser(_type.Module, _type.MetadataReader.GetBlobReader(Definition.Signature), NotFoundBehavior.Throw)
             .ParsePropertySignature();
 
-        public MethodDesc GetMethod
+        public EcmaMethod GetMethod
         {
             get
             {
@@ -33,7 +33,7 @@ namespace ILCompiler
             }
         }
 
-        public MethodDesc SetMethod
+        public EcmaMethod SetMethod
         {
             get
             {
@@ -50,7 +50,7 @@ namespace ILCompiler
             }
         }
 
-        public MetadataType OwningType
+        public EcmaType OwningType
         {
             get
             {

@@ -12,7 +12,7 @@ namespace ILCompiler
     {
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
         {
-            var ecmaType = prop.OwningType as EcmaType;
+            var ecmaType = prop.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
@@ -26,7 +26,7 @@ namespace ILCompiler
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
         {
-            var ecmaType = prop.OwningType as EcmaType;
+            var ecmaType = prop.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandles = prop.GetCustomAttributes;
@@ -41,7 +41,7 @@ namespace ILCompiler
 
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
         {
-            var ecmaType = @event.OwningType as EcmaType;
+            var ecmaType = @event.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandle = metadataReader.GetCustomAttributeHandle(@event.GetCustomAttributes,
@@ -55,7 +55,7 @@ namespace ILCompiler
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
         {
-            var ecmaType = @event.OwningType as EcmaType;
+            var ecmaType = @event.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandles = @event.GetCustomAttributes;
