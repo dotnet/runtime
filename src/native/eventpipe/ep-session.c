@@ -260,7 +260,7 @@ session_user_events_tracepoints_init (
 		EP_ASSERT (session_provider != NULL);
 		ep_raise_error_if_nok (ep_session_provider_register_tracepoints (session_provider, session->user_events_data_fd));
 	} DN_LIST_FOREACH_END;
-
+	
 	result = true;
 
 ep_on_exit:
@@ -401,7 +401,7 @@ ep_session_remove_dangling_session_states (EventPipeSession *session)
 				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
 				if (session_state) {
 					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
-					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access
+					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
 					// the session from the thread session state. Whenever we terminate a session we check to make sure
 					// we haven't leaked any thread session states.
 					ep_thread_delete_session_state(thread, session);

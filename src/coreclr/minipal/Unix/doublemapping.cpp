@@ -83,7 +83,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     }
 #endif
     uint64_t maxDoubleMappedMemorySize = MaxDoubleMappedSize;
-
+    
     // Set the maximum double mapped memory size to the size of the physical memory
     long pages = sysconf(_SC_PHYS_PAGES);
     if (pages != -1)
@@ -370,7 +370,7 @@ static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *i
             {
                 return -1; // Opening the image didn't work
             }
-
+            
             locals->data.fdImage = fdImage;
             locals->data.offsetInFileOfStartOfSection = info->dlpi_phdr[j].p_offset;
             locals->data.addrOfStartOfSection = baseSectionAddr;
@@ -414,7 +414,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         int fd = memfd_create("doublemapper-template", MFD_CLOEXEC);
 #else
         int fd = -1;
-
+    
 #ifndef TARGET_ANDROID
         // Bionic doesn't have shm_{open,unlink}
         // POSIX fallback
@@ -456,7 +456,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 
     TemplateThunkMappingData *pAllocatedData = (TemplateThunkMappingData*)malloc(sizeof(TemplateThunkMappingData));
     *pAllocatedData = locals.data;
-    TemplateThunkMappingData *pExpectedNull = NULL;
+    TemplateThunkMappingData *pExpectedNull = NULL; 
     if (__atomic_compare_exchange_n (&s_pThunkData, &pExpectedNull, pAllocatedData, false, __ATOMIC_RELEASE, __ATOMIC_RELAXED))
     {
         return pAllocatedData;

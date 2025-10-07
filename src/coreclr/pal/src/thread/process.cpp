@@ -2495,7 +2495,7 @@ PROCCreateCrashDump(
         int bytesRead;
         while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
         close(child_read_pipe);
-
+        
         if (bytesRead != 1)
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);

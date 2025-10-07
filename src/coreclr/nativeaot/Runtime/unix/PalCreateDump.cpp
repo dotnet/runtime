@@ -55,7 +55,7 @@
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
-#define MAX_ARGV_ENTRIES 32
+#define MAX_ARGV_ENTRIES 32 
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
