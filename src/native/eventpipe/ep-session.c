@@ -720,7 +720,7 @@ construct_extension_activity_ids_buffer (
 		memcpy (extension + offset, activity_id, EP_ACTIVITY_ID_SIZE);
 		offset += EP_ACTIVITY_ID_SIZE;
 	}
-
+	
 	EP_ASSERT ((size_t)(offset + 1 + EP_ACTIVITY_ID_SIZE) <= extension_size);
 	if (!related_activity_id_is_empty) {
 		extension[offset] = 0x03;
