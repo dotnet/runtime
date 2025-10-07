@@ -4204,6 +4204,87 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
 
 }
 
+VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSigPtr, MethodTable *pAskingMT, UINT resIDWhy)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    CorElementType elemType;
+    IfFailThrow(sigPtr.GetElemType(&elemType));
+    switch (elemType)
+    {
+        case ELEMENT_TYPE_CLASS:
+        case ELEMENT_TYPE_VALUETYPE:
+        {
+            mdToken typeDefOrRef;
+            IfFailThrow(sigPtr.GetToken(&typeDefOrRef));
+
+            TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes, CLASS_DEPENDENCIES_LOADED);
+            DoAccessibilityCheckForConstraint(pAskingMT, th, resIDWhy);
+            break;
+        }
+        case ELEMENT_TYPE_GENERICINST:
+        {
+            IfFailThrow(sigPtr.GetElemType(&elemType));
+            if (!(elemType == ELEMENT_TYPE_CLASS || elemType == ELEMENT_TYPE_VALUETYPE))
+            {
+                COMPlusThrow(kTypeLoadException, IDS_CLASSLOAD_BADFORMAT);
+            }
+            mdToken typeDefOrRef;
+            IfFailThrow(sigPtr.GetToken(&typeDefOrRef));
+            TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes, CLASS_DEPENDENCIES_LOADED);
+            DoAccessibilityCheckForConstraint(pAskingMT, th, resIDWhy);
+            ULONG numArgs;
+            IfFailThrow(sigPtr.GetData(&numArgs));
+            for (ULONG i = 0; i < numArgs; i++)
+            {
+                DoAccessibilityCheckForConstraintSignature(pModule, sigPtr, pAskingMT, resIDWhy);
+            }
+            break;
+        }
+        case ELEMENT_TYPE_SZARRAY:
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+            DoAccessibilityCheckForConstraintSignature(pModule, sigPtr, pAskingMT, resIDWhy);
+            break;
+        case ELEMENT_TYPE_ARRAY:
+        {
+            IfFailThrow(sigPtr.GetElemType(&elemType));
+            DoAccessibilityCheckForConstraintSignature(pModule, sigPtr, pAskingMT, resIDWhy);
+            ULONG rank;
+            IfFailThrow(sigPtr.GetData(&rank));
+            ULONG numSizes;
+            IfFailThrow(sigPtr.GetData(&numSizes));
+            for (ULONG i = 0; i < numSizes; i++)
+            {
+                ULONG size;
+                IfFailThrow(sigPtr.GetData(&size));
+            }
+            ULONG numLoBounds;
+            IfFailThrow(sigPtr.GetData(&numLoBounds));
+            for (ULONG i = 0; i < numLoBounds; i++)
+            {
+                ULONG loBound;
+                IfFailThrow(sigPtr.GetData(&loBound));
+            }
+            break;
+        }
+        case ELEMENT_TYPE_FNPTR:
+        {
+            // Function pointers can't be in constraint signatures
+            COMPlusThrow(kTypeLoadException, IDS_CLASSLOAD_BADFORMAT);
+        }
+        default:
+            // Primitive types and such. Nothing to check
+            break;
+    }
+}
+
+
 VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy)
 {
     CONTRACTL
@@ -4214,12 +4295,52 @@ VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc 
     CONTRACTL_END;
 
     DWORD numConstraints;
-    TypeHandle *pthConstraints = pTyVar->GetCachedConstraints(&numConstraints, WhichConstraintsToLoad::All);
+    TypeHandle *pthConstraints = pTyVar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
     for (DWORD cidx = 0; cidx < numConstraints; cidx++)
     {
         TypeHandle thConstraint = pthConstraints[cidx];
 
-        DoAccessibilityCheckForConstraint(pAskingMT, thConstraint, resIDWhy);
+        if (thConstraint.IsNull())
+        {
+            // This is a constraint which we didn't load above. Instead of doing the full load, just iterate the signature of the constraint to make sure all of the TypeDefs/Refs are accessible
+            Module *pModule = pTyVar->GetModule();
+
+            IMDInternalImport* pInternalImport = pModule->GetMDImport();
+            HENUMInternalHolder hEnum(pInternalImport);
+            mdGenericParamConstraint tkConstraint;
+            hEnum.EnumInit(mdtGenericParamConstraint, pTyVar->GetToken());
+            DWORD i = 0;
+            while (pInternalImport->EnumNext(&hEnum, &tkConstraint))
+            {
+                _ASSERTE(i <= numConstraints);
+                if (i == cidx)
+                {
+                    // We've found the constraint we're looking for.
+                    mdToken tkConstraintType, tkParam;
+                    if (FAILED(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType)))
+                    {
+                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                    }
+                    _ASSERTE(tkParam == pTyVar->GetToken());
+
+                    _ASSERTE(TypeFromToken(tkConstraintType) == mdtTypeSpec);
+                    ULONG cSig;
+                    PCCOR_SIGNATURE pSig;
+
+                    if (FAILED(pInternalImport->GetTypeSpecFromToken(tkConstraintType, &pSig, &cSig)))
+                    {
+                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                    }
+                    SigPointer sigPtr(pSig, cSig);
+                    DoAccessibilityCheckForConstraintSignature(pModule, &sigPtr, pAskingMT, resIDWhy);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            DoAccessibilityCheckForConstraint(pAskingMT, thConstraint, resIDWhy);
+        }
     }
 }
 
@@ -4589,7 +4710,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
                 // For typical type definitions, we have to load the constraints here because they may not
                 // have been loaded yet. In principle we could change DoAccessibilityCheckForConstraints to walk the typedefs/refs in the constraint instead
-                pTyVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::All);
                 DoAccessibilityCheckForConstraints(this, pTyVar, E_ACCESSDENIED);
             }
         }
