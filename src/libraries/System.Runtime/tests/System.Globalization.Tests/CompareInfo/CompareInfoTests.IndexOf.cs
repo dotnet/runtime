@@ -97,6 +97,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "+Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
             yield return new object[] { s_invariantCompare, "Test=ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 };
             yield return new object[] { s_invariantCompare, "Testing%", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "x$test$xtest$x", "test", 0, 14, CompareOptions.IgnoreSymbols, 2, 4 };
 
             // Ignore symbols - whitespace characters
             yield return new object[] { s_invariantCompare, " Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
@@ -113,6 +114,14 @@ namespace System.Globalization.Tests
             // Ignore symbols - mixed categories
             yield return new object[] { s_invariantCompare, "$Te%s t&ing+", "Testing", 0, 12, CompareOptions.IgnoreSymbols, 1, 10 };
             yield return new object[] { s_invariantCompare, ", Hello World!", "HelloWorld", 0, 13, CompareOptions.IgnoreSymbols, 2, 11 };
+
+            // Ignore symbols - source contains surrogates (to match) + symbols (to ignore)
+            yield return new object[] { s_invariantCompare, "$\U0001D7D8Testing!", "\U0001D7D8Testing", 0, 11, CompareOptions.IgnoreSymbols, 1, 9 }; 
+            yield return new object[] { s_invariantCompare, "Test$\U0001D7D8ing", "Test\U0001D7D8ing", 0, 10, CompareOptions.IgnoreSymbols, 0, 10 }; 
+            yield return new object[] { s_invariantCompare, "$Testing\U0001D7DA", "Testing\U0001D7DA", 0, 10, CompareOptions.IgnoreSymbols, 1, 9 }; 
+            yield return new object[] { s_invariantCompare, "$\U0001D7D8Test!\U0001D7D9ing", "\U0001D7D8Test\U0001D7D9ing", 0, 13, CompareOptions.IgnoreSymbols, 1, 12 }; 
+            yield return new object[] { s_invariantCompare, "\U0001D7D8 Test$ \U0001D7D9 ing!", "\U0001D7D8 Test \U0001D7D9 ing", 0, 15, CompareOptions.IgnoreSymbols, 0, 15 };
+            yield return new object[] { s_invariantCompare, "!$\U0001D7D8Test\U0001D7D9ing\U0001D7DA!", "\U0001D7D8Test\U0001D7D9ing\U0001D7DA", 0, 15, CompareOptions.IgnoreSymbols, 2, 13 };
 
             // With symbols - should not match
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1, 0 };

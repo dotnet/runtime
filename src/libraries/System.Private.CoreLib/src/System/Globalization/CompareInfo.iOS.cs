@@ -95,8 +95,22 @@ namespace System.Globalization
             Debug.Assert(filteredEnd < sourceIndexMap.Length,
                 $"Filtered end index {filteredEnd} should not exceed the length of the filtered string {sourceIndexMap.Length}. nativeLocation={nativeLocation}, nativeLength={nativeLength}");
 
-            int originalEnd = sourceIndexMap[filteredEnd];
-            int originalLength = originalEnd - originalStart + 1;
+            // Find the end position of the character at filteredEnd in the original string.
+            int endCharStartPos = sourceIndexMap[filteredEnd];
+
+            // Check if the previous position belongs to the same character (first unit of a surrogate pair)
+            int firstUnit = (filteredEnd > 0 && sourceIndexMap[filteredEnd - 1] == endCharStartPos)
+                ? filteredEnd - 1
+                : filteredEnd;
+
+            // Check if the next position belongs to the same character (second unit of a surrogate pair)
+            int lastUnit = (filteredEnd + 1 < sourceIndexMap.Length && sourceIndexMap[filteredEnd + 1] == endCharStartPos)
+                ? filteredEnd + 1
+                : filteredEnd;
+
+            int endCharWidth = lastUnit - firstUnit + 1;
+            int originalEnd = endCharStartPos + endCharWidth;
+            int originalLength = originalEnd - originalStart;
 
             if (matchLengthPtr != null)
                 *matchLengthPtr = originalLength;
@@ -193,8 +207,8 @@ namespace System.Globalization
         /// <param name="input">The input span to filter.</param>
         /// <param name="indexMap">
         /// When this method returns, contains a mapping array where each index in the filtered output
-        /// maps to the corresponding character index in the original input span. This parameter is
-        /// passed uninitialized and will be null if no symbols were removed.
+        /// maps to the corresponding character start position in the original input span.
+        /// This parameter is passed uninitialized and will be null if no symbols were removed.
         /// </param>
         /// <returns>
         /// A read-only span with ignorable symbols removed. If no symbols were found, returns the
