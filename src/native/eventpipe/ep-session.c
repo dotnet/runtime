@@ -766,7 +766,7 @@ session_tracepoint_write_event (
 
 	// Setup iovec array
 	const int max_non_parameter_iov = 9;
-	const int max_static_io_capacity = 30; // Should account for most events that use EventData structs
+	enum { max_static_io_capacity = 30 };
 	struct iovec static_io[max_static_io_capacity];
 	struct iovec *io = static_io;
 	ssize_t io_bytes_to_write = 0;
@@ -854,7 +854,7 @@ session_tracepoint_write_event (
 	}
 
 	// Extension Activity IDs
-	const int extension_activity_ids_max_len = 2 * (1 + EP_ACTIVITY_ID_SIZE);
+	enum { extension_activity_ids_max_len = 2 * (1 + EP_ACTIVITY_ID_SIZE) };
 	uint8_t extension_activity_ids[extension_activity_ids_max_len];
 	uint16_t extension_activity_ids_len = construct_extension_activity_ids_buffer (extension_activity_ids, extension_activity_ids_max_len, activity_id, related_activity_id);
 	EP_ASSERT (extension_activity_ids_len <= extension_activity_ids_max_len);
