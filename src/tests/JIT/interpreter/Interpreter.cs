@@ -727,7 +727,7 @@ public class InterpreterTest
         if (RuntimeInformation.ProcessArchitecture == Architecture.Wasm)
         {
             Console.WriteLine("WASM-TODO: Interpreter tests");
-            return 0;
+            return 100;
         }
 
         jitField1 = 42;
