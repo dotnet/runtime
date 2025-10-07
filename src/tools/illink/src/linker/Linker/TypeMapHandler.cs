@@ -4,10 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using ILLink.Shared.TrimAnalysis;
+using System.Linq;
 using Mono.Cecil;
-using Mono.CompilerServices.SymbolWriter;
 using Mono.Linker.Steps;
 
 using CustomAttributeWithOrigin = (Mono.Cecil.CustomAttribute Attribute, Mono.Cecil.AssemblyDefinition Origin);
@@ -16,7 +14,9 @@ namespace Mono.Linker
 {
     sealed class TypeMapHandler
     {
-        readonly TypeMapResolver _lazyTypeMapResolver;
+        TypeMapResolver _lazyTypeMapResolver = null!;
+        LinkContext _context = null!;
+        MarkStep _markStep = null!;
 
         // [trim target: [type map group: custom attributes with assembly origin]]
         readonly Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> _unmarkedExternalTypeMapEntries = [];
@@ -26,85 +26,85 @@ namespace Mono.Linker
 
         // CustomAttributes that we want to mark when the type mapping APIs are used.
         // [type map group: custom attributes]
-        Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingExternalTypeMapEntries = [];
-        Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingProxyTypeMapEntries = [];
-        HashSet<TypeReference> _referencedExternalTypeMaps = [];
-        HashSet<TypeReference> _referencedProxyTypeMaps = [];
+        Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingExternalTypeMapEntries = null!;
+        Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingProxyTypeMapEntries = null!;
+        Dictionary<TypeReference, List<CustomAttributeWithOrigin>> _pendingAssemblyTargets = null!;
 
-        LinkContext _context = null!;
-        MarkStep _markStep = null!;
+        HashSet<TypeReference> _referencedExternalTypeMaps = null!;
+        HashSet<TypeReference> _referencedProxyTypeMaps = null!;
 
         public TypeMapHandler()
         {
-            _lazyTypeMapResolver = new TypeMapResolver(new HashSet<AssemblyNameReference>());
         }
 
-        public TypeMapHandler(AssemblyDefinition entryPointAssembly)
+        [Conditional("DEBUG")]
+        private void EnsureInitialized()
         {
-            HashSet<AssemblyNameReference> assemblies = [AssemblyNameReference.Parse(entryPointAssembly.FullName)];
-            foreach (var attr in entryPointAssembly.CustomAttributes)
-            {
-                if (attr.AttributeType is not GenericInstanceType
-                    {
-                        Namespace: "System.Runtime.InteropServices",
-                        GenericArguments: [_]
-                    })
-                {
-                    continue; // Only interested in System.Runtime.InteropServices attributes
-                }
-
-                if (attr.AttributeType.Name != "TypeMapAssemblyTarget`1"
-                    || attr.ConstructorArguments[0].Value is not string str)
-                {
-                    // Invalid attribute, skip it.
-                    // Let the runtime handle the failure.
-                    continue;
-                }
-
-                assemblies.Add(AssemblyNameReference.Parse(str));
-            }
-
-            _lazyTypeMapResolver = new TypeMapResolver(assemblies);
+            if (_lazyTypeMapResolver is null)
+                throw new InvalidOperationException("TypeMapHandler not initialized");
         }
 
-        public void Initialize(LinkContext context, MarkStep markStep)
+        public void Initialize(LinkContext context, MarkStep markStep, AssemblyDefinition? entryPointAssembly)
         {
             _context = context;
             _markStep = markStep;
-            _lazyTypeMapResolver.Resolve(context, this);
+            var typeReferenceEqualityComparer = new TypeReferenceEqualityComparer(context);
+            _pendingExternalTypeMapEntries = new(typeReferenceEqualityComparer);
+            _pendingProxyTypeMapEntries = new(typeReferenceEqualityComparer);
+            _pendingAssemblyTargets = new(typeReferenceEqualityComparer);
+            _referencedExternalTypeMaps = new(typeReferenceEqualityComparer);
+            _referencedProxyTypeMaps = new(typeReferenceEqualityComparer);
+            var typeMapResolver = new TypeMapResolver(entryPointAssembly);
+            typeMapResolver.Resolve(context, this);
+            _lazyTypeMapResolver = typeMapResolver;
         }
 
         public void ProcessExternalTypeMapGroupSeen(MethodDefinition callingMethod, TypeReference typeMapGroup)
         {
+            EnsureInitialized();
             _referencedExternalTypeMaps.Add(typeMapGroup);
-            if (!_pendingExternalTypeMapEntries.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries))
+            if (_pendingExternalTypeMapEntries.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries))
             {
-                return;
+                foreach (var entry in pendingEntries)
+                {
+                    MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod));
+                }
             }
-
-            foreach (var entry in pendingEntries)
+            if (_pendingAssemblyTargets.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? assemblyTargets))
             {
-                MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod));
+                foreach (var entry in assemblyTargets)
+                {
+                    _markStep.MarkCustomAttribute(entry.Attribute, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod), new MessageOrigin(entry.Origin));
+                    _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
+                }
             }
         }
 
         public void ProcessProxyTypeMapGroupSeen(MethodDefinition callingMethod, TypeReference typeMapGroup)
         {
+            EnsureInitialized();
             _referencedProxyTypeMaps.Add(typeMapGroup);
-            if (!_pendingProxyTypeMapEntries.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries))
+            if (_pendingProxyTypeMapEntries.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingEntries))
             {
-                return;
+                foreach (var entry in pendingEntries)
+                {
+                    MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod));
+                }
             }
-
-            foreach (var entry in pendingEntries)
+            if (_pendingAssemblyTargets.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? assemblyTargets))
             {
-                MarkTypeMapAttribute(entry, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod));
+                foreach (var entry in assemblyTargets)
+                {
+                    _markStep.MarkCustomAttribute(entry.Attribute, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod), new MessageOrigin(entry.Origin));
+                    _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
+                }
             }
         }
 
         void MarkTypeMapAttribute(CustomAttributeWithOrigin entry, DependencyInfo info)
         {
             _markStep.MarkCustomAttribute(entry.Attribute, info, new MessageOrigin(entry.Origin));
+            _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
 
             // Mark the target type as instantiated
             TypeReference targetType = (TypeReference)entry.Attribute.ConstructorArguments[1].Value;
@@ -114,6 +114,7 @@ namespace Mono.Linker
 
         public void ProcessType(TypeDefinition definition)
         {
+            EnsureInitialized();
             RecordTargetTypeSeen(definition, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
         }
 
@@ -123,32 +124,32 @@ namespace Mono.Linker
             HashSet<TypeReference> referenceTypeMapGroups,
             Dictionary<TypeReference, List<CustomAttributeWithOrigin>> typeMapAttributesPendingUniverseMarking)
         {
-            if (unmarkedTypeMapAttributes.Remove(targetType, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
-            {
-                foreach (var (typeMapGroup, attributes) in entries)
-                {
+            if (!unmarkedTypeMapAttributes.Remove(targetType, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
+                return;
 
-                    if (referenceTypeMapGroups.Contains(typeMapGroup))
+            foreach (var (typeMapGroup, attributes) in entries)
+            {
+                if (referenceTypeMapGroups.Contains(typeMapGroup))
+                {
+                    foreach (var attr in attributes)
                     {
-                        foreach (var attr in attributes)
-                        {
-                            MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, targetType));
-                        }
+                        MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, targetType));
                     }
-                    else if (!typeMapAttributesPendingUniverseMarking.TryGetValue(typeMapGroup, out List<CustomAttributeWithOrigin>? value))
-                    {
-                        typeMapAttributesPendingUniverseMarking[typeMapGroup] = [.. attributes];
-                    }
-                    else
-                    {
-                        value.AddRange(attributes);
-                    }
+                }
+                else if (!typeMapAttributesPendingUniverseMarking.TryGetValue(typeMapGroup, out List<CustomAttributeWithOrigin>? value))
+                {
+                    typeMapAttributesPendingUniverseMarking[typeMapGroup] = [.. attributes];
+                }
+                else
+                {
+                    value.AddRange(attributes);
                 }
             }
         }
 
         public void ProcessInstantiated(TypeDefinition definition)
         {
+            EnsureInitialized();
             RecordTargetTypeSeen(definition, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
         }
 
@@ -156,14 +157,12 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }])
             {
-                RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries);
-                return;
+                RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
-            if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
+            else if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
             {
                 // There's no trim target, so include the attribute unconditionally.
-                RecordTypeMapEntry(attr, group, null, _unmarkedExternalTypeMapEntries);
-                return;
+                RecordTypeMapEntry(attr, group, null, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
             // Invalid attribute, skip it.
             // Let the runtime handle the failure.
@@ -174,50 +173,70 @@ namespace Mono.Linker
             if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _])
             {
                 // This is a TypeMapAssociationAttribute, which has a single type argument.
-                RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries);
+                RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
                 return;
             }
             // Invalid attribute, skip it.
             // Let the runtime handle the failure.
         }
 
-        void RecordTypeMapEntry(CustomAttributeWithOrigin attr, TypeReference group, TypeReference? trimTarget, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedEntryList)
+        private void AddAssemblyTarget(TypeReference typeMapGroup, CustomAttributeWithOrigin attr)
         {
-            if (trimTarget is null)
+            // Validate attribute
+            if (attr.Attribute.ConstructorArguments is not ([{ Value: string }]))
+                return;
+
+            // If the type map group has been seen, mark the attribute immediately
+            if (_referencedExternalTypeMaps.Contains(typeMapGroup) || _referencedProxyTypeMaps.Contains(typeMapGroup))
             {
-                // If there's no trim target, we can just mark the attribute.
-                MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, null));
+                _markStep.MarkCustomAttribute(attr.Attribute, new DependencyInfo(DependencyKind.TypeMapEntry, null), new MessageOrigin(attr.Origin));
                 return;
             }
 
-            TypeDefinition? typeDef = _context.Resolve(trimTarget);
-            if (typeDef is null)
+            // Otherwise, it's pending until the type map group is seen
+            _pendingAssemblyTargets.AddToList(typeMapGroup, attr);
+        }
+
+
+        void RecordTypeMapEntry(CustomAttributeWithOrigin attr, TypeReference group, TypeReference? dependencySource, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedEntryList, HashSet<TypeReference> seenTypeGroups, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> pendingEntryList)
+        {
+            if (dependencySource is null)
+            {
+                // Mark or directly add to pending group
+                if (seenTypeGroups.Contains(group))
+                {
+                    // If there's no trim target, we can just mark the attribute.
+                    MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, null));
+                    return;
+                }
+                else
+                {
+                    pendingEntryList.AddToList(group, attr);
+                    return;
+                }
+            }
+
+            TypeDefinition? dependencyTypeDef = _context.Resolve(dependencySource);
+            if (dependencyTypeDef is null)
             {
                 return; // Couldn't find the type we were asked about.
             }
 
-            if (_context.Annotations.IsMarked(typeDef))
+            if (seenTypeGroups.Contains(group) && attr.DependencySourceRequiresTarget(_context, dependencyTypeDef))
             {
-                MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, trimTarget));
+                MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, dependencySource));
             }
             else
             {
-                if (!unmarkedEntryList.TryGetValue(typeDef, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
+                if (!unmarkedEntryList.TryGetValue(dependencyTypeDef, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
                 {
-                    entries = new() {
+                    entries = new(new TypeReferenceEqualityComparer(_context)) {
                         { group, [] }
                     };
-                    unmarkedEntryList[typeDef] = entries;
+                    unmarkedEntryList[dependencyTypeDef] = entries;
                 }
 
-                if (!entries.TryGetValue(group, out List<CustomAttributeWithOrigin>? attrs))
-                {
-                    entries[group] = [attr];
-                }
-                else
-                {
-                    attrs.Add(attr);
-                }
+                entries.AddToList(group, attr);
             }
         }
 
@@ -226,18 +245,18 @@ namespace Mono.Linker
             return type is { Namespace: "System.Runtime.InteropServices", Name: "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" or "TypeMapAssemblyTargetAttribute`1" };
         }
 
-        class TypeMapResolver(IReadOnlySet<AssemblyNameReference> assemblies)
+        class TypeMapResolver(AssemblyDefinition? _assembly)
         {
             public void Resolve(LinkContext context, TypeMapHandler manager)
             {
-                foreach (AssemblyNameReference assemblyName in assemblies)
+                HashSet<AssemblyDefinition> visited = new();
+                Queue<AssemblyDefinition> toVisit = new();
+                if (_assembly is not null)
+                    toVisit.Enqueue(_assembly);
+                while (toVisit.Count > 0)
                 {
-                    if (context.TryResolve(assemblyName) is not AssemblyDefinition assembly)
-                    {
-                        // If we cannot find the assembly, skip it.
-                        // We'll fail at runtime as expected.
-                        continue;
-                    }
+                    var assembly = toVisit.Dequeue();
+                    visited.Add(assembly);
                     foreach (CustomAttribute attr in assembly.CustomAttributes)
                     {
                         if (attr.AttributeType is not GenericInstanceType
@@ -257,9 +276,41 @@ namespace Mono.Linker
                         {
                             manager.AddProxyTypeMapEntry(typeMapGroup, (attr, assembly));
                         }
+                        else if (attr.AttributeType.Name is "TypeMapAssemblyTargetAttribute`1")
+                        {
+                            manager.AddAssemblyTarget(typeMapGroup, (attr, assembly));
+                            if (attr.ConstructorArguments[0].Value is string str)
+                            {
+                                var nextAssemblyName = AssemblyNameReference.Parse(str);
+                                if (context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
+                                {
+                                    if (!visited.Contains(nextAssembly) && !toVisit.Contains(nextAssembly))
+                                        toVisit.Enqueue(nextAssembly);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
-}
+
+    file static class CustomAttributeWithOriginExtensions
+    {
+        extension(CustomAttributeWithOrigin self)
+        {
+            public bool DependencySourceRequiresTarget(LinkContext context, TypeDefinition sourceType)
+            {
+                return self.Attribute.AttributeType.Name switch
+                {
+                    "TypeMapAttribute`1" =>
+                        sourceType is null || context.Annotations.IsRelevantToVariantCasting(sourceType)
+                        || context.Annotations.IsInstantiated(sourceType),
+                    "TypeMapAssociationAttribute`1" =>
+                        context.Annotations.IsInstantiated(sourceType),
+                    _ => false,
+                };
+            }
+        }
+    }
+ }
