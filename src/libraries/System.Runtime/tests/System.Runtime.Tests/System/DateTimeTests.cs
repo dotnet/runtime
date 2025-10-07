@@ -2788,13 +2788,13 @@ namespace System.Tests
             string formatted = date.ToString(pattern, ci);
             Assert.Equal("2008-08-29T07:27:15", formatted);
             Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out DateTime parsedDate));
-            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+            Assert.Equal(date.AddTicks(-(long)(TimeSpan.TicksPerMillisecond * 18)), parsedDate); // 18 milliseconds fraction difference
 
             pattern = "yyyy-MM-ddThh:mm:ss.FF";
             formatted = date.ToString(pattern, ci);
             Assert.Equal("2008-08-29T07:27:15.01", formatted);
             Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
-            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+            Assert.Equal(date.AddTicks(-(long)(TimeSpan.TicksPerMillisecond * 8)), parsedDate); // 8 milliseconds fraction difference
 
             pattern = "yyyy-MM-ddThh:mm:ss.FFF";
             formatted = date.ToString(pattern, ci);
