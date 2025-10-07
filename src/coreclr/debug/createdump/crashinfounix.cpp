@@ -191,9 +191,9 @@ CrashInfo::GetAuxvEntries()
         size_t readSoFar = 0;
         while (readSoFar < sizeof(elf_aux_entry))
         {
-            size_t readResult;
+            ssize_t readResult;
             while (-1 == (readResult = read(fd, (unsigned char*)&auxvEntry + readSoFar, sizeof(elf_aux_entry) - readSoFar) && errno == EINTR));
-            if (readResult == (size_t) -1)
+            if (readResult == -1)
             {
                 break;
             }
@@ -201,7 +201,7 @@ CrashInfo::GetAuxvEntries()
             {
                 break;
             }
-            readSoFar += readResult;
+            readSoFar += (size_t)readResult;
         }
         if (readSoFar != sizeof(elf_aux_entry)) break;
         m_auxvEntries.push_back(auxvEntry);
