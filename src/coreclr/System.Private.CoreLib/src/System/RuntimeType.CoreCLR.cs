@@ -1177,10 +1177,8 @@ namespace System
                         {
                             string name = eventInfo.Name;
 
-                            if (csEventInfos.ContainsKey(name))
+                            if (!csEventInfos.TryAdd(name, eventInfo))
                                 continue;
-
-                            csEventInfos[name] = eventInfo;
                         }
                         else
                         {

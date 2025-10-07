@@ -9,9 +9,16 @@ using System.Threading;
 
 namespace System.Net.Http
 {
-    [EventSource(Name = "System.Net.Http")]
+    [EventSource(Name = HttpTelemetryName)]
     internal sealed partial class HttpTelemetry : EventSource
     {
+        private const string HttpTelemetryName = "System.Net.Http";
+
+        public HttpTelemetry()
+            : base(HttpTelemetryName, EventSourceSettings.EtwManifestEventFormat)
+        {
+        }
+
         public static readonly HttpTelemetry Log = new HttpTelemetry();
 
         public static class Keywords
