@@ -2186,7 +2186,9 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     exceptionClauseArgs.isFilter = isFilter;
     exceptionClauseArgs.throwable = throwable;
 
+    GCPROTECT_BEGIN(exceptionClauseArgs.throwable);
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext, &exceptionClauseArgs);
+    GCPROTECT_END();
 
     frames.interpreterFrame.Pop();
 
