@@ -1181,7 +1181,19 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     for (LiveLocalInfo& inf : liveLocals)
     {
         LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-        bitmapBuilder.SetType(inf.Offset, dsc->TypeGet(), dsc->TypeIs(TYP_STRUCT) ? dsc->GetLayout() : nullptr);
+        var_types storedType;
+        ClassLayout* layout;
+        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
+        {
+            storedType = TYP_STRUCT;
+            layout = dsc->GetLayout();
+        }
+        else
+        {
+            storedType = dsc->TypeGet();
+            layout = NULL;
+        }
+        bitmapBuilder.SetType(inf.Offset, storedType, layout);
     }
 
 #ifdef DEBUG
