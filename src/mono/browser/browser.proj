@@ -218,6 +218,7 @@
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+      <_WasmOptConfigurationFlags>"[@(WasmOptConfigurationFlags -> '%27%(Identity)%27', ',')]"</_WasmOptConfigurationFlags>
       <!-- reserve at least enough space to complete initializing sgen without growing the heap -->
       <EmccInitialHeapSize>33554432</EmccInitialHeapSize>
       <EmccStackSize>5MB</EmccStackSize>
@@ -230,7 +231,7 @@
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
-      <_EmccLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-s BINARYEN_EXTRA_PASSES=@(WasmOptConfigurationFlags, ',')" />
+      <_EmccLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-s BINARYEN_EXTRA_PASSES=$(_WasmOptConfigurationFlags)" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
