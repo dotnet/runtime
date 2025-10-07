@@ -51,7 +51,10 @@ else(CLR_CMAKE_HOST_WIN32)
         System.Native.TimeZoneData)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
-            target_compile_options(corerun PRIVATE -fwasm-exceptions)
+            target_compile_options(corerun PRIVATE 
+                -fwasm-exceptions
+                -msimd128
+                )
             target_link_libraries(corerun PRIVATE 
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
@@ -66,6 +69,7 @@ else(CLR_CMAKE_HOST_WIN32)
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -fwasm-exceptions
+                -msimd128
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
                 -sENVIRONMENT=node,shell
