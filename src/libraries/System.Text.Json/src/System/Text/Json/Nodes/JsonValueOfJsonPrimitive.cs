@@ -42,6 +42,9 @@ namespace System.Text.Json.Nodes
                 case JsonTokenType.String
                     when typeof(T) == typeof(JsonValuePrimitive<Version>):
                     return JsonValue.Create(reader.GetVersion(), options);
+                case JsonTokenType.String
+                    when typeof(T) == typeof(JsonValuePrimitive<char>):
+                    return JsonValue.Create(reader.GetChar(), options);
                 case JsonTokenType.String:
                     byte[] buffer = new byte[reader.ValueLength];
                     ReadOnlyMemory<byte> utf8String = buffer.AsMemory(0, reader.CopyString(buffer));

@@ -187,6 +187,18 @@ namespace System.Text.Json.Extensions
         }
 #endif
 
+        internal static char GetChar(this ref Utf8JsonReader reader)
+        {
+            string? charString = reader.GetString();
+
+            if (charString?.Length != 1)
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            return charString[0];
+        }
+
         internal static TimeSpan GetTimeSpan(this ref Utf8JsonReader reader)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
