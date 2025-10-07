@@ -4214,14 +4214,14 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
     CONTRACTL_END;
 
     CorElementType elemType;
-    IfFailThrow(sigPtr.GetElemType(&elemType));
+    IfFailThrow(pSigPtr->GetElemType(&elemType));
     switch (elemType)
     {
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_VALUETYPE:
         {
             mdToken typeDefOrRef;
-            IfFailThrow(sigPtr.GetToken(&typeDefOrRef));
+            IfFailThrow(pSigPtr->GetToken(&typeDefOrRef));
 
             TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes, CLASS_DEPENDENCIES_LOADED);
             DoAccessibilityCheckForConstraint(pAskingMT, th, resIDWhy);
@@ -4229,47 +4229,47 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
         }
         case ELEMENT_TYPE_GENERICINST:
         {
-            IfFailThrow(sigPtr.GetElemType(&elemType));
+            IfFailThrow(pSigPtr->GetElemType(&elemType));
             if (!(elemType == ELEMENT_TYPE_CLASS || elemType == ELEMENT_TYPE_VALUETYPE))
             {
                 COMPlusThrow(kTypeLoadException, IDS_CLASSLOAD_BADFORMAT);
             }
             mdToken typeDefOrRef;
-            IfFailThrow(sigPtr.GetToken(&typeDefOrRef));
+            IfFailThrow(pSigPtr->GetToken(&typeDefOrRef));
             TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes, CLASS_DEPENDENCIES_LOADED);
             DoAccessibilityCheckForConstraint(pAskingMT, th, resIDWhy);
-            ULONG numArgs;
-            IfFailThrow(sigPtr.GetData(&numArgs));
-            for (ULONG i = 0; i < numArgs; i++)
+            uint32_t numArgs;
+            IfFailThrow(pSigPtr->GetData(&numArgs));
+            for (uint32_t i = 0; i < numArgs; i++)
             {
-                DoAccessibilityCheckForConstraintSignature(pModule, sigPtr, pAskingMT, resIDWhy);
+                DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
             }
             break;
         }
         case ELEMENT_TYPE_SZARRAY:
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_PTR:
-            DoAccessibilityCheckForConstraintSignature(pModule, sigPtr, pAskingMT, resIDWhy);
+            DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
             break;
         case ELEMENT_TYPE_ARRAY:
         {
-            IfFailThrow(sigPtr.GetElemType(&elemType));
-            DoAccessibilityCheckForConstraintSignature(pModule, sigPtr, pAskingMT, resIDWhy);
-            ULONG rank;
-            IfFailThrow(sigPtr.GetData(&rank));
-            ULONG numSizes;
-            IfFailThrow(sigPtr.GetData(&numSizes));
+            IfFailThrow(pSigPtr->GetElemType(&elemType));
+            DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
+            uint32_t rank;
+            IfFailThrow(pSigPtr->GetData(&rank));
+            uint32_t numSizes;
+            IfFailThrow(pSigPtr->GetData(&numSizes));
             for (ULONG i = 0; i < numSizes; i++)
             {
-                ULONG size;
-                IfFailThrow(sigPtr.GetData(&size));
+                uint32_t size;
+                IfFailThrow(pSigPtr->GetData(&size));
             }
-            ULONG numLoBounds;
-            IfFailThrow(sigPtr.GetData(&numLoBounds));
-            for (ULONG i = 0; i < numLoBounds; i++)
+            uint32_t numLoBounds;
+            IfFailThrow(pSigPtr->GetData(&numLoBounds));
+            for (uint32_t i = 0; i < numLoBounds; i++)
             {
-                ULONG loBound;
-                IfFailThrow(sigPtr.GetData(&loBound));
+                uint32_t loBound;
+                IfFailThrow(pSigPtr->GetData(&loBound));
             }
             break;
         }
@@ -4319,7 +4319,7 @@ VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc 
                     mdToken tkConstraintType, tkParam;
                     if (FAILED(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType)))
                     {
-                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
                     }
                     _ASSERTE(tkParam == pTyVar->GetToken());
 
@@ -4329,7 +4329,7 @@ VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc 
 
                     if (FAILED(pInternalImport->GetTypeSpecFromToken(tkConstraintType, &pSig, &cSig)))
                     {
-                        GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
                     }
                     SigPointer sigPtr(pSig, cSig);
                     DoAccessibilityCheckForConstraintSignature(pModule, &sigPtr, pAskingMT, resIDWhy);
