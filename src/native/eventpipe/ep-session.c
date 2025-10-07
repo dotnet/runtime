@@ -908,7 +908,7 @@ session_tracepoint_write_event (
 		bytes_written_total += bytes_written;
 		while (iovcnt > 0 && bytes_written > 0)
 		{
-			if (iov->iov_len >= bytes_written)
+			if (iov->iov_len >= (size_t)bytes_written)
 			{
 				bytes_written -= iov->iov_len;
 				iovcnt--;
