@@ -104,6 +104,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<decimal>? s_decimalConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Decimal}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<decimal>?> JsonValuePrimitiveDecimalConverter { get; } = new JsonValueConverter<JsonValuePrimitive<decimal>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="double"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

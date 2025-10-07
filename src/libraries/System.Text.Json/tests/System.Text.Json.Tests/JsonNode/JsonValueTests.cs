@@ -76,10 +76,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create('X')
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(decimal.MinValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(decimal.MinValue)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(double.MinValue)
