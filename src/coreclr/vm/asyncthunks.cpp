@@ -234,14 +234,14 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             int fromExceptionToken;
             if (logicalResultLocal != UINT_MAX)
             {
-                MethodDesc* md;
+                MethodDesc* fromExceptionMD;
                 if (isValueTask)
-                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION_1);
+                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION_1);
                 else
-                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION_1);
+                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION_1);
 
-                md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-                fromExceptionToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, md);
+                fromExceptionMD = FindOrCreateAssociatedMethodDesc(fromExceptionMD, fromExceptionMD->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+                fromExceptionToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, fromExceptionMD);
             }
             else
             {
@@ -250,6 +250,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                     md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION);
                 else
                     md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION);
+
                 fromExceptionToken = pCode->GetToken(md);
             }
 
