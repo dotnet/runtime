@@ -923,7 +923,7 @@ session_tracepoint_write_event (
 		}
 	}
 
-	if (should_write_metadata && (bytes_written == io_bytes_to_write))
+	if (should_write_metadata && (bytes_written_total == io_bytes_to_write))
 		ep_event_update_metadata_written_mask (ep_event, session_mask, true);
 
 	if (io != static_io)
