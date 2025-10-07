@@ -148,7 +148,6 @@ int TwoWayPipe::Write(const void *data, DWORD dataSize)
 
     while (true)
     {
-        int bytesWritten;
         while (-1 == (bytesWritten = (int)write(m_outboundPipe, data, cb)) && errno == EINTR);
         if (bytesWritten <= 0) break;
         totalBytesWritten += bytesWritten;
