@@ -290,7 +290,14 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
-        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)"/>
+        /// <summary>Parses a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <returns>The result of parsing <paramref name="utf8Text" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="utf8Text" /> has fewer than two or more than four version components.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">At least one component in <paramref name="utf8Text" /> is less than zero.</exception>
+        /// <exception cref="FormatException"><paramref name="utf8Text" /> is not in the correct format or at least one component in <paramref name="utf8Text" /> is not an integer.</exception>
+        /// <exception cref="OverflowException">At least one component in <paramref name="utf8Text" /> represents a number that is greater than <see cref="int.MaxValue"/>.</exception>
         static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
         {
             Version? result = ParseVersion(utf8Text, throwOnFailure: false);
@@ -347,7 +354,11 @@ namespace System
             return result is not null;
         }
 
-        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)"/>
+        /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         static bool IUtf8SpanParsable<Version>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out Version? result)
         {
             result = ParseVersion(utf8Text, throwOnFailure: false);

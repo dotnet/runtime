@@ -345,6 +345,10 @@ namespace System
             return result.ToGuid();
         }
 
+        /// <summary>Converts a read-only UTF-8 character span that represents a GUID to the equivalent <see cref="Guid" /> structure.</summary>
+        /// <param name="utf8Text">A span containing the bytes representing the GUID to convert.</param>
+        /// <returns>A structure that contains the value that was parsed.</returns>
+        /// <exception cref="FormatException">The span does not contain a valid string representation of a GUID.</exception>
         public static Guid Parse(ReadOnlySpan<byte> utf8Text)
         {
             var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
@@ -380,6 +384,14 @@ namespace System
             }
         }
 
+        /// <summary>Converts the UTF-8 character span representation of a GUID to the equivalent <see cref="Guid" /> structure.</summary>
+        /// <param name="utf8Text">A span containing the bytes representing the GUID to convert.</param>
+        /// <param name="result">
+        /// When this method returns, contains the parsed value.
+        /// If the method returns <c>true</c>, <paramref name="result" /> contains a valid <see cref="Guid" />.
+        /// If the method returns <c>false</c>, <paramref name="result" /> equals <see cref="Empty" />.
+        /// </param>
+        /// <returns><c>true</c> if the parse operation was successful; otherwise, <c>false</c>.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Guid result)
         {
             var parseResult = new GuidResult(GuidParseThrowStyle.None);

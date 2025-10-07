@@ -813,6 +813,9 @@ namespace System
             Out.WriteLine(value);
         }
 
+        /// <summary>Writes the specified character span, followed by the current line terminator, to the standard output stream.</summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="IOException">An I/O error occurred.</exception>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void WriteLine(ReadOnlySpan<char> value)
         {
@@ -975,6 +978,9 @@ namespace System
             Out.Write(value);
         }
 
+        /// <summary>Writes the specified character span to the standard output stream.</summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="IOException">An I/O error occurred.</exception>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write(ReadOnlySpan<char> value)
         {

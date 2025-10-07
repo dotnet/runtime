@@ -244,7 +244,12 @@ namespace System
             return true;
         }
 
-        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        /// <summary>Parses a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <returns>The result of parsing <paramref name="utf8Text" />.</returns>
+        /// <exception cref="FormatException"><paramref name="utf8Text" /> is not in the correct format.</exception>
+        /// <exception cref="OverflowException"><paramref name="utf8Text" /> is not representable by <see cref="char" />.</exception>
         static char IUtf8SpanParsable<char>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
         {
             if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out int bytesConsumed) != Buffers.OperationStatus.Done ||
@@ -261,7 +266,11 @@ namespace System
             return (char)rune.Value;
         }
 
-        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         static bool IUtf8SpanParsable<char>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out char result)
         {
             if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out int bytesConsumed) != Buffers.OperationStatus.Done ||
