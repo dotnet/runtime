@@ -46,7 +46,7 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal partial class CoffObjectWriter : ObjectWriter
     {
-        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName, string OriginalName);
+        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
 
         protected readonly Machine _machine;
         protected readonly List<SectionDefinition> _sections = new();
@@ -154,8 +154,7 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            string originalName = sectionHeader.Name;
-            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName, originalName));
+            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName));
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
