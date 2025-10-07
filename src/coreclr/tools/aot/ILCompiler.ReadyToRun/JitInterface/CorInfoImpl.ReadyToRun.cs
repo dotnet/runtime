@@ -1429,7 +1429,7 @@ namespace Internal.JitInterface
                     {
                         Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType));
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
-                        module = ecmaType.EcmaModule;
+                        module = ecmaType.Module;
                     }
                     else
                     {

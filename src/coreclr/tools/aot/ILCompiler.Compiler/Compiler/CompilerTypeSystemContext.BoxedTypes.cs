@@ -267,8 +267,7 @@ namespace ILCompiler
             public override bool IsExtendedLayout => true;
             public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
-            public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
-            public override DefType BaseType => MetadataBaseType;
+            public override MetadataType BaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override bool IsSealed => true;
             public override bool IsAbstract => false;
             public override DefType ContainingType => null;

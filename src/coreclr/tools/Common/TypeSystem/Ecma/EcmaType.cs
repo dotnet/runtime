@@ -109,15 +109,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override ModuleDesc Module
-        {
-            get
-            {
-                return _module;
-            }
-        }
-
-        public EcmaModule EcmaModule
+        public override EcmaModule Module
         {
             get
             {
@@ -160,17 +152,7 @@ namespace Internal.TypeSystem.Ecma
             return type;
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {

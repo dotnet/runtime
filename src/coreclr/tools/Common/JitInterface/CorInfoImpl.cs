@@ -2334,7 +2334,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.MetadataBaseType is { ContainsGCPointers: true } baseType)
+            if (type.BaseType is { ContainsGCPointers: true } baseType)
                 result += GatherClassGCLayout(baseType, gcPtrs);
 
             bool isInlineArray = type.IsInlineArray;

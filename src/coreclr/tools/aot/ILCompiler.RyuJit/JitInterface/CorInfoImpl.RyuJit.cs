@@ -829,7 +829,7 @@ namespace Internal.JitInterface
                 MethodDesc caller = HandleToObject(callerHnd);
 
                 if (caller.OwningType is EcmaType ecmaOwningType
-                    && ecmaOwningType.EcmaModule.EntryPoint == caller)
+                    && ecmaOwningType.Module.EntryPoint == caller)
                 {
                     // Do not tailcall from the application entrypoint.
                     // We want Main to be visible in stack traces.

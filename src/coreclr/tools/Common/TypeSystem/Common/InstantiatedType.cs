@@ -69,7 +69,7 @@ namespace Internal.TypeSystem
             return (_baseType = (uninst != null) ? (MetadataType)uninst.InstantiateSignature(_instantiation, default(Instantiation)) : null);
         }
 
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {

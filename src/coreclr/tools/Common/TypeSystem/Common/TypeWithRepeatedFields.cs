@@ -109,9 +109,7 @@ namespace Internal.TypeSystem
 
         public override ModuleDesc Module => MetadataType.Module;
 
-        public override MetadataType MetadataBaseType => MetadataType.MetadataBaseType;
-
-        public override DefType BaseType => MetadataType.BaseType;
+        public override MetadataType BaseType => MetadataType.BaseType;
 
         public override bool IsSealed => true;
 

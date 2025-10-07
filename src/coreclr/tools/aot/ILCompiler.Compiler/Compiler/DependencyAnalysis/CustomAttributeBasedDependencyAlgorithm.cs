@@ -91,14 +91,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataReader reader = type.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(type.Handle);
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.EcmaModule, typeDef.GetCustomAttributes(), type);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.Module, typeDef.GetCustomAttributes(), type);
 
             // Handle custom attributes on generic type parameters
             object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter"u8);
             foreach (GenericParameterHandle genericParameterHandle in typeDef.GetGenericParameters())
             {
                 GenericParameter parameter = reader.GetGenericParameter(genericParameterHandle);
-                AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, type.EcmaModule, parameter.GetCustomAttributes(), type);
+                AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, type.Module, parameter.GetCustomAttributes(), type);
             }
         }
 
@@ -250,7 +250,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (!accessors.Setter.IsNil)
                     {
-                        MethodDesc setterMethod = (MethodDesc)attributeTypeDefinition.EcmaModule.GetObject(accessors.Setter);
+                        MethodDesc setterMethod = (MethodDesc)attributeTypeDefinition.Module.GetObject(accessors.Setter);
                         if (factory.MetadataManager.IsReflectionBlocked(setterMethod))
                             return false;
 

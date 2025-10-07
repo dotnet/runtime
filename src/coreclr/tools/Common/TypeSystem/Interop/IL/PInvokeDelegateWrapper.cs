@@ -106,15 +106,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                return InteropTypes.GetNativeFunctionPointerWrapper(Context);
-            }
-        }
-
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {

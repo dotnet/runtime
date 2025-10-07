@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                     }
                     // validate that the global class cannot have instance methods
-                    if (type.EcmaModule.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
+                    if (type.Module.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
                     {
                         AddTypeValidationError(type, $"'{method}' is an instance method defined on the global <module> type");
                         return false;
@@ -310,8 +310,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (var methodImplHandle in typeDef.GetMethodImplementations())
                 {
                     var methodImpl = type.MetadataReader.GetMethodImplementation(methodImplHandle);
-                    var methodBody = type.EcmaModule.GetMethod(methodImpl.MethodBody);
-                    var methodDecl = type.EcmaModule.GetMethod(methodImpl.MethodDeclaration);
+                    var methodBody = type.Module.GetMethod(methodImpl.MethodBody);
+                    var methodDecl = type.Module.GetMethod(methodImpl.MethodDeclaration);
 
                     // Validate that all MethodImpls actually match signatures closely enough
                     if (!methodBody.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(methodDecl.Signature.ApplySubstitution(type.Instantiation)))

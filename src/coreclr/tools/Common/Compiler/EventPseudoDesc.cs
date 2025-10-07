@@ -25,7 +25,7 @@ namespace ILCompiler
             get
             {
                 MethodDefinitionHandle adder = Definition.GetAccessors().Adder;
-                return adder.IsNil ? null : _type.EcmaModule.GetMethod(adder);
+                return adder.IsNil ? null : _type.Module.GetMethod(adder);
             }
         }
 
@@ -34,7 +34,7 @@ namespace ILCompiler
             get
             {
                 MethodDefinitionHandle setter = Definition.GetAccessors().Remover;
-                return setter.IsNil ? null : _type.EcmaModule.GetMethod(setter);
+                return setter.IsNil ? null : _type.Module.GetMethod(setter);
             }
         }
 
@@ -43,7 +43,7 @@ namespace ILCompiler
             get
             {
                 MethodDefinitionHandle raiser = Definition.GetAccessors().Raiser;
-                return raiser.IsNil ? null : _type.EcmaModule.GetMethod(raiser);
+                return raiser.IsNil ? null : _type.Module.GetMethod(raiser);
             }
         }
 

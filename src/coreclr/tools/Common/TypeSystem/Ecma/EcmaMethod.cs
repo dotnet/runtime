@@ -98,7 +98,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _type.EcmaModule;
+                return _type.Module;
             }
         }
 
@@ -517,7 +517,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
                 CustomAttributeValue<TypeDesc> decoded = attribute.DecodeValue(
-                    new CustomAttributeTypeProvider(_type.EcmaModule));
+                    new CustomAttributeTypeProvider(_type.Module));
 
                 if (decoded.FixedArguments.Length != 1 || !(decoded.FixedArguments[0].Value is bool))
                     ThrowHelper.ThrowBadImageFormatException();

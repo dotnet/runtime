@@ -73,7 +73,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _type.EcmaModule;
+                return _type.Module;
             }
         }
 
@@ -293,7 +293,7 @@ namespace Internal.TypeSystem.Ecma
             if ((definition.Attributes & FieldAttributes.HasFieldMarshal) != 0)
             {
                 BlobReader marshalAsReader = reader.GetBlobReader(definition.GetMarshallingDescriptor());
-                EcmaSignatureParser parser = new EcmaSignatureParser(_type.EcmaModule, marshalAsReader, NotFoundBehavior.Throw);
+                EcmaSignatureParser parser = new EcmaSignatureParser(_type.Module, marshalAsReader, NotFoundBehavior.Throw);
                 return parser.ParseMarshalAsDescriptor();
             }
 

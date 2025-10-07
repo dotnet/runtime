@@ -230,16 +230,7 @@ namespace ILCompiler
                 }
             }
 
-            public override DefType BaseType
-            {
-                get
-                {
-                    // See below
-                    return null;
-                }
-            }
-
-            public override MetadataType MetadataBaseType
+            public override MetadataType BaseType
             {
                 get
                 {

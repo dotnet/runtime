@@ -21,7 +21,7 @@ namespace ILCompiler
             if (attributeHandle.IsNil)
                 return null;
 
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
         }
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
@@ -34,7 +34,7 @@ namespace ILCompiler
             {
                 if (MetadataExtensions.IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
-                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace ILCompiler
             if (attributeHandle.IsNil)
                 return null;
 
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
         }
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
@@ -63,7 +63,7 @@ namespace ILCompiler
             {
                 if (MetadataExtensions.IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
-                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
                 }
             }
         }
