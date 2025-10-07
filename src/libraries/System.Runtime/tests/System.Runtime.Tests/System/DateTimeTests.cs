@@ -2763,8 +2763,8 @@ namespace System.Tests
             DateTime dt = DateTime.UtcNow;
             GetSystemTime(out st1);
 
-            DateTime systemDateTimeNow1  = new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMillisecond, DateTimeKind.Utc);
-            DateTime systemDateTimeNow2  = new DateTime(st1.wYear, st1.wMonth, st1.wDay, st1.wHour, st1.wMinute, st1.wSecond, st1.wMillisecond, DateTimeKind.Utc);
+            DateTime systemDateTimeNow1 = new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMillisecond, DateTimeKind.Utc);
+            DateTime systemDateTimeNow2 = new DateTime(st1.wYear, st1.wMonth, st1.wDay, st1.wHour, st1.wMinute, st1.wSecond, st1.wMillisecond, DateTimeKind.Utc);
 
             // Usually GetSystemTime and DateTime.UtcNow calls doesn't take one second to execute, if this is not the case then
             // the thread was sleeping for awhile and we cannot test reliably on that case.
@@ -2775,6 +2775,32 @@ namespace System.Tests
                 diff = dt - systemDateTimeNow1;
                 Assert.True(diff < TimeSpan.FromSeconds(1), $"Reported DateTime.UtcNow {dt} is shifted by more than one second then the system time {systemDateTimeNow1}");
             }
+        }
+
+        [Fact]
+        public void TestFractionSpecifier()
+        {
+            DateTime date = new DateTime(2008, 8, 29, 7, 27, 15, 18);
+            CultureInfo ci = CultureInfo.InvariantCulture;
+
+            // Test using .F format https://learn.microsoft.com/dotnet/standard/base-types/custom-date-and-time-format-strings#F_Specifier
+            string pattern = "yyyy-MM-ddThh:mm:ss.F";
+            string formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out DateTime parsedDate));
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+
+            pattern = "yyyy-MM-ddThh:mm:ss.FF";
+            formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15.01", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+
+            pattern = "yyyy-MM-ddThh:mm:ss.FFF";
+            formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15.018", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate);
         }
 
         [DllImport("Kernel32.dll")]
