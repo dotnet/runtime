@@ -426,25 +426,24 @@ namespace System.Net
                 return resultOnFailure;
             }
 
-            if (hostName.Equals("invalid", StringComparison.OrdinalIgnoreCase) ||
-                hostName.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new SocketException((int)SocketError.HostNotFound);
-            }
-
-            if (hostName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-                hostName.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
-            {
-                IPAddress[] loopbacks = new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback };
-                return justAddresses ? (object)loopbacks : new IPHostEntry { AddressList = loopbacks, HostName = hostName, Aliases = Array.Empty<string>() };
-            }
-
             // NameResolutionActivity may have already been set if we're being called from RunAsync.
             NameResolutionActivity activity = activityOrDefault ?? NameResolutionTelemetry.Log.BeforeResolution(hostName);
 
             object result;
             try
             {
+                if (MatchesReservedName(hostName, "invalid"))
+                {
+                    LogSpecialUse(hostName);
+                    throw new SocketException((int)SocketError.HostNotFound);
+                }
+
+                if (MatchesReservedName(hostName, "localhost"))
+                {
+                    LogSpecialUse(hostName);
+                    return GetLoopbacksForAddressFamily(addressFamily);
+                }
+
                 SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, addressFamily, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
 
                 if (errorCode != SocketError.Success)
@@ -713,6 +712,33 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(hostName),
                     SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
             }
+        }
+
+        private static IPAddress[] GetLoopbacksForAddressFamily(AddressFamily addressFamily)
+        {
+            bool ipv4Enabled = SocketProtocolSupportPal.OSSupportsIPv4;
+            bool ipv6Enabled = SocketProtocolSupportPal.OSSupportsIPv6;
+
+            return addressFamily switch
+            {
+                AddressFamily.InterNetwork when ipv4Enabled => new[] { IPAddress.Loopback },
+                AddressFamily.InterNetworkV6 when ipv6Enabled => new[] { IPAddress.IPv6Loopback },
+                AddressFamily.Unspecified when ipv4Enabled && ipv6Enabled => new[] { IPAddress.Loopback, IPAddress.IPv6Loopback },
+                AddressFamily.Unspecified when ipv4Enabled => new[] { IPAddress.Loopback },
+                AddressFamily.Unspecified when ipv6Enabled => new[] { IPAddress.IPv6Loopback },
+                _ => Array.Empty<IPAddress>(),
+            };
+        }
+
+        private static bool MatchesReservedName(string name, string reservedName)
+        {
+            return name.Equals(reservedName, StringComparison.OrdinalIgnoreCase) ||
+                name.EndsWith("." + reservedName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void LogSpecialUse(string hostName)
+        {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, $"Special-use domain intercepted before calling OS resolver: {hostName}");
         }
 
         private static bool LogFailure(object hostNameOrAddress, in NameResolutionActivity activity, Exception exception)
