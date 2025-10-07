@@ -13,20 +13,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public partial class ImportThunk : ISymbolNode
     {
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                // We stuff the reloc to the module import pointer before the start of the thunk
-                // to ensure alignment.
-                // The thunk itself starts immediately after the reloc.
-                // We don't need this for an Eager thunk.
-                if (_thunkKind == Kind.Eager)
-                    return base.Offset;
-                return base.Offset + 8;
-            }
-        }
-
         protected override void EmitCode(NodeFactory factory, ref ARM64Emitter instructionEncoder, bool relocsOnly)
         {
             if (_thunkKind == Kind.Eager)

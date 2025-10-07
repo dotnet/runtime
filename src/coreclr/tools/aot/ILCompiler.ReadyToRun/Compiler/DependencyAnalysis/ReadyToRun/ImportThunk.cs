@@ -28,6 +28,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ImportSectionNode _containingImportSection;
 
+        private readonly int _symbolOffset = 0;
+
         /// <summary>
         /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
         /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
@@ -59,6 +61,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 _thunkKind = Kind.Eager;
+            }
+
+            if (_thunkKind != Kind.Eager && factory.Target.Architecture == Internal.TypeSystem.TargetArchitecture.ARM64)
+            {
+                // We stuff the reloc to the module import pointer before the start of the thunk
+                // to ensure alignment.
+                // The thunk itself starts immediately after the reloc.
+                // We don't need this for an Eager thunk.
+                _symbolOffset = 8;
+            }
+        }
+
+        int ISymbolNode.Offset
+        {
+            get
+            {
+                return base.Offset + _symbolOffset;
             }
         }
 
