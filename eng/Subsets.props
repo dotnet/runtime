@@ -32,6 +32,7 @@
     <!-- Android 32-bit builds blocked by https://github.com/dotnet/runtime/issues/111665 -->
     <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' and '$(TargetArchitecture)' != 'arm' and '$(TargetArchitecture)' != 'x86'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsBrowser)' == 'true'">true</_CoreCLRSupportedOS>
+    <_CoreCLRSupportedOS Condition="'$(TargetsAppleMobile)' == 'true'">true</_CoreCLRSupportedOS>
 
     <_CoreCLRSupportedArch Condition="'$(TargetArchitecture)' != 'ppc64le' and '$(TargetArchitecture)' != 's390x'">true</_CoreCLRSupportedArch>
     <CoreCLRSupported Condition="'$(_CoreCLRSupportedOS)' == 'true' and '$(_CoreCLRSupportedArch)' == 'true'">true</CoreCLRSupported>
