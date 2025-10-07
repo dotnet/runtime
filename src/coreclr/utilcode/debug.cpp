@@ -12,6 +12,9 @@
 #include "ex.h"
 #include "corexcep.h"
 #include <time.h>
+#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+#include <sys/time.h>
+#endif
 
 #include <minipal/debugger.h>
 
@@ -160,7 +163,15 @@ VOID LogAssert(
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     struct timespec ts;
+#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+    // timespec_get is only available on iOS 13.0+, use gettimeofday instead
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    ts.tv_sec = tv.tv_sec;
+    ts.tv_nsec = tv.tv_usec * 1000;
+#else
     int ret = timespec_get(&ts, TIME_UTC);
+#endif
 
     struct tm local;
 #ifdef HOST_WINDOWS
