@@ -8,9 +8,9 @@
     <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
     <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
 
-    <_WebAssemblyPropsFile>$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
-    <_WebAssemblyTargetsFile>$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory>$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\</_WebAssemblySdkToolsDirectory>
+    <_WebAssemblyPropsFile Condition="'$(_WebAssemblyPropsFile)' == ''">$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile Condition="'$(_WebAssemblyTargetsFile)' == ''">$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
+    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)' == ''">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\</_WebAssemblySdkToolsDirectory>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
