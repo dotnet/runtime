@@ -105,13 +105,13 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
+          buildConfig: Debug
           platforms:
           - browser_wasm
           - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs -c $(_BuildConfig)
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
