@@ -74,7 +74,8 @@ namespace Mono.Linker
             {
                 foreach (var entry in assemblyTargets)
                 {
-                    _markStep.MarkCustomAttribute(entry.Attribute, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod), new MessageOrigin(entry.Origin));
+                    var info = new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod);
+                    _markStep.MarkCustomAttribute(entry.Attribute, info, new MessageOrigin(entry.Origin));
                     _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
                 }
             }
@@ -95,7 +96,8 @@ namespace Mono.Linker
             {
                 foreach (var entry in assemblyTargets)
                 {
-                    _markStep.MarkCustomAttribute(entry.Attribute, new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod), new MessageOrigin(entry.Origin));
+                    var info = new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod);
+                    _markStep.MarkCustomAttribute(entry.Attribute, info, new MessageOrigin(entry.Origin));
                     _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
                 }
             }
