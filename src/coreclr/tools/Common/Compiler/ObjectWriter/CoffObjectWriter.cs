@@ -172,6 +172,13 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        protected uint GetSectionAlignment(CoffSectionHeader header)
+        {
+            int currentAlignmentBits = (int)(header.SectionCharacteristics & SectionCharacteristics.AlignMask);
+            uint alignment = (uint)(1 << ((currentAlignmentBits >> 20) - 1));
+            return alignment;
+        }
+
         protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,

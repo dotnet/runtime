@@ -24,6 +24,15 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal sealed class PEObjectWriter : CoffObjectWriter
     {
+        /// <summary>
+        /// Number of low-order RVA bits that must match file position on Linux.
+        /// </summary>
+        /// <remarks>
+        /// This is because the CoreCLR runtime on Linux requires the 12-16 low-order bits of section RVAs
+        /// (the number of bits corresponds to the page size) to be identical to the file offset,
+        /// otherwise memory mapping of the file fails.
+        /// </remarks>
+        const int RVABitsToMatchFilePos = 16;
         internal const int DosHeaderSize = 0x80;
         private const int NoSectionIndex = -1;
 
@@ -384,6 +393,12 @@ namespace ILCompiler.ObjectWriter
                 sectionAlignment = fileAlignment;
             }
 
+            if (_requestedSectionAlignment != 0)
+            {
+                fileAlignment = (uint)_requestedSectionAlignment;
+                sectionAlignment = (uint)_requestedSectionAlignment;
+            }
+
             _peFileAlignment = fileAlignment;
             _peSectionAlignment = sectionAlignment;
             LayoutSections(recordFinalLayout: false, out _, out _, out _, out _, out _);
@@ -423,11 +438,15 @@ namespace ILCompiler.ObjectWriter
             sizeOfCode = 0;
             sizeOfInitializedData = 0;
 
+            bool firstSection = true;
             foreach (SectionDefinition s in _sections)
             {
                 CoffSectionHeader h = s.Header;
                 h.SizeOfRawData = (uint)s.Stream.Length;
-                uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData) ? 0u : (uint)AlignmentHelper.AlignUp((int)h.SizeOfRawData, (int)_peFileAlignment);
+                uint requestedAlignment = GetSectionAlignment(h);
+                uint rawAligned = h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData)
+                    ? 0u
+                    : (uint)AlignmentHelper.AlignUp((int)h.SizeOfRawData, (int)uint.Max(requestedAlignment, _peFileAlignment));
 
                 if (rawAligned != 0)
                 {
@@ -440,9 +459,36 @@ namespace ILCompiler.ObjectWriter
                     h.PointerToRawData = 0;
                 }
 
+                uint sectionAlignment = uint.Max(requestedAlignment, _peSectionAlignment);
+                if (!_nodeFactory.Target.IsWindows)
+                {
+                    const int RVAAlign = 1 << RVABitsToMatchFilePos;
+                    if (!firstSection)
+                    {
+                        // when assembly is stored in a singlefile bundle, an additional skew is introduced
+                        // as the streams inside the bundle are not necessarily page aligned as we do not
+                        // know the actual page size on the target system.
+                        // We may need one page gap of unused VA space before the next section starts.
+                        // We will assume the page size is <= RVAAlign
+                        virtualAddress += RVAAlign;
+                    }
+
+                    virtualAddress = (uint)AlignmentHelper.AlignUp((int)virtualAddress, RVAAlign);
+
+                    uint rvaAdjust = (h.PointerToRawData - virtualAddress) & (RVAAlign - 1);
+                    virtualAddress += rvaAdjust;
+                }
+                else
+                {
+                    virtualAddress = (uint)AlignmentHelper.AlignUp((int)virtualAddress, (int)sectionAlignment);
+                }
+
+                uint virtualSize = (uint)AlignmentHelper.AlignUp((int)h.SizeOfRawData, (int)_peSectionAlignment);
+
                 h.VirtualAddress = virtualAddress;
-                h.VirtualSize = Math.Max(h.VirtualSize, h.SizeOfRawData);
-                virtualAddress += (uint)AlignmentHelper.AlignUp((int)h.VirtualSize, (int)_peSectionAlignment);
+                h.VirtualSize = virtualSize;
+
+                virtualAddress += virtualSize;
 
                 if (h.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsCode))
                     sizeOfCode += h.SizeOfRawData;
@@ -459,6 +505,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             sizeOfImage = (uint)AlignmentHelper.AlignUp((int)virtualAddress, (int)_peSectionAlignment);
+            firstSection = false;
         }
 
         private protected override unsafe void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
