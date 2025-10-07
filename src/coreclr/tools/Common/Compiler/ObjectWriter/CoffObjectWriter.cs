@@ -174,8 +174,12 @@ namespace ILCompiler.ObjectWriter
 
         protected uint GetSectionAlignment(CoffSectionHeader header)
         {
-            int currentAlignmentBits = (int)(header.SectionCharacteristics & SectionCharacteristics.AlignMask);
-            uint alignment = (uint)(1 << ((currentAlignmentBits >> 20) - 1));
+            SectionCharacteristics alignmentFlag = (header.SectionCharacteristics & SectionCharacteristics.AlignMask);
+            if (alignmentFlag == 0)
+            {
+                return 1;
+            }
+            uint alignment = (uint)(1 << (((int)alignmentFlag >> 20) - 1));
             return alignment;
         }
 
