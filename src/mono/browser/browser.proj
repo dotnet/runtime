@@ -193,41 +193,6 @@
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
-    <PropertyGroup>
-      <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
-      <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
-      <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
-      <!-- reserve at least enough space to complete initializing sgen without growing the heap -->
-      <EmccInitialHeapSize>33554432</EmccInitialHeapSize>
-      <EmccStackSize>5MB</EmccStackSize>
-    </PropertyGroup>
-    <ItemGroup>
-      <_EmccLinkFlags Include="-Wno-unused-command-line-argument" />
-      <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
-      <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
-      <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
-      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
-      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
-      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
-      <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
-      <!-- for jiterpreter -->
-      <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
-      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />
-      <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
-      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
-      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
-      <_EmccLinkFlags Include="--source-map-base http://example.com" />
-      <_EmccLinkFlags Include="-s WASM_BIGINT=1" />
-      <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
-      <_EmccLinkFlags Include="-s MODULARIZE=1" />
-
-      <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
-      <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
-           active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
-      <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
-    </ItemGroup>
-
     <ItemGroup>
       <WasmOptConfigurationFlags Include="--all-features" />
       <WasmOptConfigurationFlags Include="--enable-bulk-memory" />
@@ -246,9 +211,43 @@
     </ItemGroup>
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <WasmOptConfigurationFlags Include="--enable-threads" />
-
       <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
       <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
+      <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
+      <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+      <!-- reserve at least enough space to complete initializing sgen without growing the heap -->
+      <EmccInitialHeapSize>33554432</EmccInitialHeapSize>
+      <EmccStackSize>5MB</EmccStackSize>
+    </PropertyGroup>
+    <ItemGroup>
+      <_EmccLinkFlags Include="-Wno-unused-command-line-argument" />
+      <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+      <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
+      <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
+      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
+      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
+      <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
+      <_EmccLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-s BINARYEN_EXTRA_PASSES=@(WasmOptConfigurationFlags, ',')" />
+      <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <!-- for jiterpreter -->
+      <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
+      <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=0" />
+      <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
+      <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
+      <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
+      <_EmccLinkFlags Include="--source-map-base http://example.com" />
+      <_EmccLinkFlags Include="-s WASM_BIGINT=1" />
+      <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
+      <_EmccLinkFlags Include="-s MODULARIZE=1" />
+
+      <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
+      <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
+           active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
+      <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
