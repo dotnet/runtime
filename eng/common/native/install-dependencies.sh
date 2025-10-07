@@ -48,6 +48,7 @@ case "$os" in
         brew bundle --no-upgrade --file=- <<EOF
 brew "cmake"
 brew "icu4c"
+brew "ninja"
 brew "openssl@3"
 brew "pkgconf"
 brew "python3"
