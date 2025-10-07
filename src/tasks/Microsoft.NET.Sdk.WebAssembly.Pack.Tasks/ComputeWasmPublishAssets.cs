@@ -469,7 +469,7 @@ public class ComputeWasmPublishAssets : Task
             {
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
-                var fileName = Path.GetFileName(satelliteAssembly.ItemSpec);
+                var fileName = Path.GetFileName(FingerprintAssets ? satelliteAssembly.GetMetadata("OriginalItemSpec") : satelliteAssembly.ItemSpec);
                 if (IsWebCilEnabled)
                     fileName = Path.ChangeExtension(fileName, ".dll");
 
