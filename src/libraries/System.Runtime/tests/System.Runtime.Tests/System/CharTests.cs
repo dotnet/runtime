@@ -147,37 +147,48 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\u0000', '\u0000')); // Non-surrogate, non-surrogate
         }
 
+        public static IEnumerable<object[]> EqualsTest_TestData()
+        {
+            yield return new object[] { 'a', 'a', StringComparison.Ordinal, null, true };
+            yield return new object[] { 'a', 'A', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', 'b', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', (int)'a', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', "a", StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', null, StringComparison.Ordinal, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.OrdinalIgnoreCase, null, true };
+            yield return new object[] { 'F', 'f', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.CurrentCultureIgnoreCase, null, true };
+            yield return new object[] { 'F', 'f', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.InvariantCultureIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.OrdinalIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.CurrentCultureIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.InvariantCultureIgnoreCase, null, true };
+            yield return new object[] { 'ı', 'I', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.OrdinalIgnoreCase, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.CurrentCultureIgnoreCase, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.InvariantCultureIgnoreCase, null, false };
+
+            // Android has different results with "tr-TR" culture
+            // See https://github.com/dotnet/runtime/issues/106560
+            if (PlatformDetection.IsNotAndroid)
+            {
+                yield return new object[] { 'ı', 'I', StringComparison.Ordinal, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.OrdinalIgnoreCase, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.CurrentCulture, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.CurrentCultureIgnoreCase, "tr-TR", true };
+                yield return new object[] { 'ı', 'I', StringComparison.InvariantCulture, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.InvariantCultureIgnoreCase, "tr-TR", false };
+            }
+        }
+
         [Theory]
-        [InlineData('a', 'a', StringComparison.Ordinal, null, true)]
-        [InlineData('a', 'A', StringComparison.Ordinal, null, false)]
-        [InlineData('a', 'b', StringComparison.Ordinal, null, false)]
-        [InlineData('a', (int)'a', StringComparison.Ordinal, null, false)]
-        [InlineData('a', "a", StringComparison.Ordinal, null, false)]
-        [InlineData('a', null, StringComparison.Ordinal, null, false)]
-        [InlineData('F', 'f', StringComparison.Ordinal, null, false)]
-        [InlineData('F', 'f', StringComparison.OrdinalIgnoreCase, null, true)]
-        [InlineData('F', 'f', StringComparison.CurrentCulture, null, false)]
-        [InlineData('F', 'f', StringComparison.CurrentCultureIgnoreCase, null, true)]
-        [InlineData('F', 'f', StringComparison.InvariantCulture, null, false)]
-        [InlineData('F', 'f', StringComparison.InvariantCultureIgnoreCase, null, true)]
-        [InlineData('ü', 'Ü', StringComparison.Ordinal, null, false)]
-        [InlineData('ü', 'Ü', StringComparison.OrdinalIgnoreCase, null, true)]
-        [InlineData('ü', 'Ü', StringComparison.CurrentCulture, null, false)]
-        [InlineData('ü', 'Ü', StringComparison.CurrentCultureIgnoreCase, null, true)]
-        [InlineData('ü', 'Ü', StringComparison.InvariantCulture, null, false)]
-        [InlineData('ü', 'Ü', StringComparison.InvariantCultureIgnoreCase, null, true)]
-        [InlineData('ı', 'I', StringComparison.Ordinal, null, false)]
-        [InlineData('ı', 'I', StringComparison.OrdinalIgnoreCase, null, false)]
-        [InlineData('ı', 'I', StringComparison.CurrentCulture, null, false)]
-        [InlineData('ı', 'I', StringComparison.CurrentCultureIgnoreCase, null, false)]
-        [InlineData('ı', 'I', StringComparison.InvariantCulture, null, false)]
-        [InlineData('ı', 'I', StringComparison.InvariantCultureIgnoreCase, null, false)]
-        [InlineData('ı', 'I', StringComparison.Ordinal, "tr-TR", false)]
-        [InlineData('ı', 'I', StringComparison.OrdinalIgnoreCase, "tr-TR", false)]
-        [InlineData('ı', 'I', StringComparison.CurrentCulture, "tr-TR", false)]
-        [InlineData('ı', 'I', StringComparison.CurrentCultureIgnoreCase, "tr-TR", true)]
-        [InlineData('ı', 'I', StringComparison.InvariantCulture, "tr-TR", false)]
-        [InlineData('ı', 'I', StringComparison.InvariantCultureIgnoreCase, "tr-TR", false)]
+        [MemberData(nameof(EqualsTest_TestData))]
         public static void EqualsTest(char c, object? other, StringComparison comparisonType, string? cultureName, bool expected)
         {
             using (new ThreadCultureChange(cultureName))
