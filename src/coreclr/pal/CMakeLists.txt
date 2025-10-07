@@ -13,10 +13,6 @@ else()
         -fwasm-exceptions
         -msimd128
         )
-    add_link_options(
-        -fwasm-exceptions 
-        -msimd128
-        )
 endif()
 
 add_subdirectory(src)

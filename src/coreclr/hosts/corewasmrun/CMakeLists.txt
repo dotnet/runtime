@@ -32,8 +32,6 @@ set_target_properties(corewasmrun PROPERTIES
   LINK_FLAGS "--pre-js ${JS_CORE_WASM_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS}"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_options(corewasmrun PRIVATE
-  -fwasm-exceptions
-  -msimd128
   -sEXIT_RUNTIME=1
   -sINITIAL_MEMORY=134217728
   -sSTACK_SIZE=5MB
