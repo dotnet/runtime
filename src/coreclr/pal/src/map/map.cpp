@@ -1972,13 +1972,13 @@ MAPmmapAndRecord(
         bool failCondition = mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1;
         if (!failCondition)
         {
-            unsigned char* buf = pvBaseAddress;
+            unsigned char *buf = (unsigned char*)pvBaseAddress;
             size_t nbyte = len + adjust;
             size_t offset2 = offset - adjust;
             while (nbyte > 0)
             {
                 ssize_t result;
-                while (-1 == result = pread(fd, buf, nbyte, offset2) && errno == EINTR);
+                while (-1 == (result = pread(fd, buf, nbyte, offset2)) && errno == EINTR);
                 if (result == -1)
                 {
                     failCondition = true;

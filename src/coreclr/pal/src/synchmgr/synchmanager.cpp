@@ -1850,7 +1850,7 @@ namespace CorUnix
                 Poll.events = POLLIN;
                 Poll.revents = 0;
 
-                while (-1 == (iRet = poll(&Poll, 1, iTimeout)) && errno == EINTR);
+                while (-1 == (iRet = poll(&Poll, 1, iTimeout)) && errno == EINTR) { }
 
                 TRACE("Woken up from poll() with ret=%d [iTimeout=%d]\n",
                        iRet, iTimeout);
@@ -1937,7 +1937,7 @@ namespace CorUnix
                 }
 #endif // HAVE_KQUEUE
 
-                while (-1 == (iRet = read(m_iProcessPipeRead, pPos, iBytes - iBytesRead)) && errno == EINTR);
+                while (-1 == (iRet = read(m_iProcessPipeRead, pPos, iBytes - iBytesRead)) && errno == EINTR) { }
 
                 if (0 == iRet)
                 {
@@ -2721,7 +2721,7 @@ namespace CorUnix
 
         /* create the pipe, with full access to the owner only */
         int mkfifo_result;
-        while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR);
+        while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR) { }
         if (mkfifo_result == -1)
         {
             if (errno == EEXIST)
@@ -2729,7 +2729,7 @@ namespace CorUnix
                 /* Some how no one deleted the pipe, perhaps it was left behind
                 from a crash?? Delete the pipe and try again. */
                 int unlink_result;
-                while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR);
+                while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR) { }
                 if (-1 == unlink_result)
                 {
                     ERROR( "Unable to delete the process pipe that was left behind.\n" );
@@ -2738,7 +2738,7 @@ namespace CorUnix
                 }
                 else
                 {
-                    while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR);
+                    while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR) { }
                     if (mkfifo_result == -1)
                     {
                         ERROR( "Still unable to create the process pipe...giving up!\n" );
@@ -2787,8 +2787,8 @@ namespace CorUnix
             goto CPP_exit;
         }
 #if !HAVE_PIPE2
-        while (-1 == fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC) && errno == EINTR); // make pipe non-inheritable, if possible
-        while (-1 == fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC) && errno == EINTR);
+        while (-1 == fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC) && errno == EINTR) { } // make pipe non-inheritable, if possible
+        while (-1 == fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC) && errno == EINTR) { }
 #endif // !HAVE_PIPE2
 #endif // !CORECLR
 
@@ -2823,7 +2823,7 @@ namespace CorUnix
             // Failed
             if (0 != szPipeFilename[0])
             {
-                while (-1 == unlink(szPipeFilename) && errno == EINTR);
+                while (-1 == unlink(szPipeFilename) && errno == EINTR) { }
             }
             if (-1 != iPipeRd)
             {
@@ -2872,7 +2872,7 @@ namespace CorUnix
         if (GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
             int unlink_result;
-            while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR);
+            while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR) { }
             if (unlink_result == -1)
             {
                 ERROR("Unable to unlink the pipe file name errno=%d (%s)\n",
@@ -3122,7 +3122,7 @@ namespace CorUnix
             ERROR("Failed creating thread synchronization mutex [error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
-                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR);
+                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR) { }
                 goto Mutex_retry;
             }
             else if (ENOMEM == iRet)
@@ -3148,7 +3148,7 @@ namespace CorUnix
                   "[error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
-                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR);
+                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR) { }
                 goto Cond_retry;
             }
             else if (ENOMEM == iRet)

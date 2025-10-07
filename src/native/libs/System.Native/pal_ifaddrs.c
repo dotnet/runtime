@@ -137,7 +137,7 @@ static int send_netlink_dump_request(struct netlink_session *session, int type)
     session->message_header.msg_iovlen = 1;
     session->message_header.msg_iov = &session->payload_vector;
 
-    int sendmsg_result;
+    ssize_t sendmsg_result;
     while (-1 == (sendmsg_result = sendmsg(session->sock_fd, (const struct msghdr*)&session->message_header, 0)) && errno == EINTR);
     if (sendmsg_result < 0) {
         LOG_WARN("Failed to send netlink message. %s\n", strerror(errno));
