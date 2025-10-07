@@ -3363,8 +3363,6 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(UIntPtr dataSize, ref bool objRefs, ref CORINFO_CONTINUATION_DATA_OFFSETS dataOffsets)
         {
-            // Hint for the developer: Use CorInfoImpl.RyuJit.cs and CorInfoImpl.ReadyToRun.cs if the implementation
-            // is not shared for NativeAOT and R2R.
             throw new NotImplementedException("getContinuationType");
         }
 
