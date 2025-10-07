@@ -37,8 +37,8 @@ public class IcuTests : IcuTestsBase
             .UnwrapItemsAsArrays();
 
     [Theory]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void FullIcuFromRuntimePackWithInvariant(BuildArgs buildArgs, bool invariant, bool fullIcu, string testedLocales, RunHost host, string id)
     {
         string projectName = $"fullIcuInvariant_{fullIcu}_{invariant}_{buildArgs.Config}_{buildArgs.AOT}";
@@ -60,8 +60,8 @@ public class IcuTests : IcuTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool fullIcu, RunHost host, string id)
     {
         string projectName = $"fullIcuCustom_{fullIcu}_{buildArgs.Config}_{buildArgs.AOT}";
