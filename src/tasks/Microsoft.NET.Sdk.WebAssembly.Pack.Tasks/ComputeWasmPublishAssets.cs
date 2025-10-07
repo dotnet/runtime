@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -324,9 +324,9 @@ public class ComputeWasmPublishAssets : Task
 
         static bool IsDotNetWasm(string key)
         {
-            var name = Path.GetFileName(key);
-            return string.Equals("dotnet.native.wasm", name, StringComparison.Ordinal)
-                || string.Equals("dotnet.wasm", name, StringComparison.Ordinal);
+            var fileName = Path.GetFileName(key);
+            return (fileName.StartsWith("dotnet.native", StringComparison.Ordinal) && fileName.EndsWith(".wasm", StringComparison.Ordinal))
+                || string.Equals("dotnet.wasm", fileName, StringComparison.Ordinal);
         }
     }
 
@@ -420,6 +420,13 @@ public class ComputeWasmPublishAssets : Task
         }
     }
 
+    private string GetNonFingerprintedAssetItemSpec(ITaskItem asset)
+    {
+        var fileName = Path.GetFileName(FingerprintAssets ? asset.GetMetadata("OriginalItemSpec") : asset.ItemSpec);
+        var assetToUpdateItemSpec = Path.Combine(Path.GetDirectoryName(asset.ItemSpec), fileName);
+        return assetToUpdateItemSpec;
+    }
+
     private void ComputeUpdatedAssemblies(
         IDictionary<(string, string assemblyName), ITaskItem> satelliteAssemblies,
         List<ITaskItem> filesToRemove,
@@ -441,13 +448,16 @@ public class ComputeWasmPublishAssets : Task
         {
             var asset = kvp.Value;
             var fileName = Path.GetFileName(FingerprintAssets ? asset.GetMetadata("OriginalItemSpec") : asset.ItemSpec);
+            var assetToUpdateItemSpec = FingerprintAssets ? GetNonFingerprintedAssetItemSpec(asset) : asset.ItemSpec;
             if (IsWebCilEnabled)
                 fileName = Path.ChangeExtension(fileName, ".dll");
 
             if (resolvedAssembliesToPublish.TryGetValue(fileName, out var existing))
             {
+                Log.LogMessage(MessageImportance.Low, "MF: assetsToUpdate add '{0}', itemSpec '{1}'", assetToUpdateItemSpec, asset.ItemSpec);
+
                 // We found the assembly, so it'll have to be updated.
-                assetsToUpdate.Add(asset.ItemSpec, asset);
+                assetsToUpdate.Add(assetToUpdateItemSpec, asset);
                 filesToRemove.Add(existing);
                 if (!string.Equals(asset.ItemSpec, existing.GetMetadata("FullPath"), StringComparison.Ordinal))
                 {
@@ -465,6 +475,9 @@ public class ComputeWasmPublishAssets : Task
         {
             var satelliteAssembly = kvp.Value;
             var relatedAsset = satelliteAssembly.GetMetadata("RelatedAsset");
+
+            Log.LogMessage(MessageImportance.Low, "MF: relatedAsset '{0}' found '{1}'", relatedAsset, assetsToUpdate.ContainsKey(relatedAsset));
+
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
@@ -517,7 +530,8 @@ public class ComputeWasmPublishAssets : Task
                     ApplyPublishProperties(newAsemblyAsset);
 
                     newAssets.Add(newAsemblyAsset);
-                    updatedAssetsMap.Add(asset.ItemSpec, newAsemblyAsset);
+                    var assetToUpdateItemSpec = FingerprintAssets ? GetNonFingerprintedAssetItemSpec(asset) : asset.ItemSpec;
+                    updatedAssetsMap.Add(assetToUpdateItemSpec, newAsemblyAsset);
                     break;
                 default:
                     // Satellite assembliess and compressed assets
@@ -575,8 +589,10 @@ public class ComputeWasmPublishAssets : Task
         return runtimeAssetsToUpdate;
     }
 
-    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap)
+    private void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap)
     {
+        Log.LogMessage(MessageImportance.Low, "MF: UpdateRelatedAssetProperty '{0}', related '{1}' found '{2}'", asset.ItemSpec, asset.GetMetadata("RelatedAsset"), updatedAssetsMap.ContainsKey(asset.GetMetadata("RelatedAsset")));
+
         if (!updatedAssetsMap.TryGetValue(asset.GetMetadata("RelatedAsset"), out var updatedRelatedAsset))
         {
             throw new InvalidOperationException("Related asset not found.");
