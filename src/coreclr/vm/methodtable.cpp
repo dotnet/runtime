@@ -6245,7 +6245,7 @@ BOOL MethodTable::SanityCheck()
     if (GetNumGenericArgs() != 0)
         return (pCanonMT->GetClass() == pClass);
     else
-        return (pCanonMT == this) || IsArray() || IsContinuation(); // TODO -- allocate an EEClass instead?
+        return (pCanonMT == this) || IsArray() || IsContinuation();
 }
 
 

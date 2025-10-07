@@ -37,7 +37,7 @@ static void EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc fun
         while (end < objRefsEnd && *end)
             end++;
 
-        func((start - objRefs) * TARGET_POINTER_SIZE, (end - start) * TARGET_POINTER_SIZE);
+        func((start - objRefs) * TARGET_POINTER_SIZE, end - start);
         start = end;
     }
 }
@@ -92,7 +92,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     pMT->SetLoaderAllocator(m_allocator);
     pMT->SetModule(pParentClass->GetModule());
     pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
-    pMT->SetClass(pParentClass->GetClass()); // TODO: needs its own?
+    pMT->SetClass(pParentClass->GetClass()); // EEClass of System.Runtime.CompilerServices.Continuation
     pMT->SetBaseSize(OBJECT_BASESIZE + startOfDataInInstance + dataSize);
 
     if (numPointerSeries > 0)
@@ -101,23 +101,40 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
         CGCDesc::Init(pMT, numPointerSeries);
         CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries();
 
+        // Write GC runs. In memory they must be descending by offset, so we
+        // enumerate forwards but write them from the end.
+        unsigned curIndex = numPointerSeries;
         CGCDescSeries* pParentSeries = CGCDesc::GetCGCDescFromMT(pParentClass)->GetLowestSeries();
-        for (unsigned i = 0; i < numParentPointerSeries; i++)
+        for (unsigned i = numParentPointerSeries; i--;)
         {
-            pSeries->SetSeriesSize((pParentSeries->GetSeriesSize() + pParentClass->GetBaseSize()) - pMT->GetBaseSize());
-            pSeries->SetSeriesOffset(pParentSeries->GetSeriesOffset());
-            pSeries++;
-            pParentSeries++;
+            curIndex--;
+            pSeries[curIndex].SetSeriesSize((pParentSeries[i].GetSeriesSize() + pParentClass->GetBaseSize()) - pMT->GetBaseSize());
+            pSeries[curIndex].SetSeriesOffset(pParentSeries[i].GetSeriesOffset());
         }
 
-        auto writeSeries = [&](size_t start, size_t length) {
-            pSeries->SetSeriesSize(length - pMT->GetBaseSize());
-            pSeries->SetSeriesOffset(startOfDataInObject + start);
-            pSeries++;
+        auto writeSeries = [&](size_t start, size_t count) {
+            curIndex--;
+            pSeries[curIndex].SetSeriesSize((count * TARGET_POINTER_SIZE) - pMT->GetBaseSize());
+            pSeries[curIndex].SetSeriesOffset(startOfDataInObject + start);
             };
         EnumerateRunsOfObjRefs(dataSize, objRefs, writeSeries);
-        _ASSERTE(pSeries == CGCDesc::GetCGCDescFromMT(pMT)->GetLowestSeries() + numPointerSeries);
+
+        _ASSERTE(curIndex == 0);
     }
+
+#ifdef DEBUG
+    size_t numObjRefs = 0;
+    EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count) {
+        numObjRefs += count;
+        });
+    StackSString debugName;
+    debugName.Printf("Continuation_%s_%u_%zu", asyncMethod->m_pszDebugMethodName, dataSize, numObjRefs);
+    const char* debugNameUTF8 = debugName.GetUTF8();
+    size_t len = strlen(debugNameUTF8) + 1;
+    char* name = (char*)pamTracker->Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
+    strcpy_s(name, len, debugNameUTF8);
+    pMT->SetDebugClassName(name);
+#endif
 
     pMT->SetClassInited();
 

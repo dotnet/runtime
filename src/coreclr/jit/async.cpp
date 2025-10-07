@@ -1078,13 +1078,15 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 #endif
 
     // Now create continuation type. First create bitmap of object refs.
-    bool* objRefs = new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE];
+    bool* objRefs = new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE] {};
+    unsigned numObjRefs = 0;
     for (LiveLocalInfo& inf : liveLocals)
     {
         LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
         if (dsc->TypeIs(TYP_REF))
         {
             objRefs[inf.Offset / TARGET_POINTER_SIZE] = true;
+            numObjRefs++;
         }
         else if (dsc->TypeIs(TYP_STRUCT))
         {
@@ -1095,10 +1097,35 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 if (layout->GetGCPtrType(slot) == TYP_REF)
                 {
                     objRefs[inf.Offset / TARGET_POINTER_SIZE + slot] = true;
+                    numObjRefs++;
                 }
             }
         }
     }
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("Getting continuation layout size = %u, numGCRefs = %u (Continuation_%s_%u_%u)\n", layout.Size, numObjRefs, m_comp->info.compMethodName, layout.Size, numObjRefs);
+        bool* start = objRefs;
+        bool* endOfObjRefs = objRefs + layout.Size / TARGET_POINTER_SIZE;
+        while (start < endOfObjRefs)
+        {
+            while (start < endOfObjRefs && !*start)
+                start++;
+
+            if (start >= endOfObjRefs)
+                break;
+
+            bool* end = start;
+            while (end < endOfObjRefs && *end)
+                end++;
+
+            printf("  [%3u..%3u) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE, (end - objRefs) * TARGET_POINTER_SIZE);
+            start = end;
+        }
+    }
+#endif
 
     CORINFO_CONTINUATION_DATA_OFFSETS offsets;
     offsets.Result              = layout.ReturnValOffset;
