@@ -843,7 +843,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
             
             if (whichCurrent == WhichConstraintsToLoad::None)
             {
-                constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
+                constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints & ~WhichMask) * S_SIZE_T(sizeof(TypeHandle))));
                 constraints = (TypeHandle*)constraintAlloc;
             }
             else
@@ -966,7 +966,11 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 }
 
                 if (!thConstraint.IsNull())
-                    VolatileStore((TADDR*)&constraints[i++], thConstraint.AsTAddr());
+                {
+                    VolatileStore((TADDR*)&constraints[i], thConstraint.AsTAddr());
+                }
+
+                i++;
             }
 
             if (whichCurrent == WhichConstraintsToLoad::None)
