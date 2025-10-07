@@ -1890,7 +1890,7 @@ DispIDCache* AppDomain::SetupRefDispIDCache()
 
 #endif // FEATURE_COMINTEROP
 
-FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly)
+FileLoadLock* FileLoadLock::Create(PEFileListLock* pLock, PEAssembly* pPEAssembly)
 {
     CONTRACTL
     {
@@ -1929,7 +1929,7 @@ Assembly *FileLoadLock::GetAssembly()
     return m_pAssembly;
 }
 
-PEAssembly *FileLoadLock::GetPEAssembly()
+PEAssembly* FileLoadLock::GetPEAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     // Underlying PEAssembly pointer is stored in base ListLockEntry::m_data.
@@ -2071,7 +2071,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
         return FALSE;
 }
 
-void FileLoadLock::SetAssembly(Assembly *pAssembly)
+void FileLoadLock::SetAssembly(Assembly* pAssembly)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2129,7 +2129,7 @@ UINT32 FileLoadLock::Release()
     return count;
 }
 
-FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly)
+FileLoadLock::FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly)
   : ListLockEntry(pLock, pPEAssembly, "File load lock"),
     m_level((FileLoadLevel) (FILE_LOAD_CREATE)),
     m_pAssembly(nullptr),
@@ -2644,7 +2644,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     RETURN pAssembly;
 }
 
-void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder &lockHolder)
+void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& lockHolder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2698,7 +2698,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder &
     {
         Exception *pEx = GET_EXCEPTION();
 
-        //We will cache this error and wire this load to forever fail,
+        // We will cache this error and wire this load to forever fail,
         // unless the exception is transient or the file is loaded OK but just cannot execute
         if (pAssembly != nullptr && !pEx->IsTransient() && !pAssembly->IsLoaded())
         {
