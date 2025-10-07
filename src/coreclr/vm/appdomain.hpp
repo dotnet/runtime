@@ -297,11 +297,11 @@ private:
     HRESULT         m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly);
+    static FileLoadLock* Create(PEFileListLock* pLock, PEAssembly* pPEAssembly);
 
     ~FileLoadLock();
     Assembly *GetAssembly();
-    PEAssembly *GetPEAssembly();
+    PEAssembly* GetPEAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -322,7 +322,7 @@ public:
     BOOL CompleteLoadLevel(FileLoadLevel level, BOOL success);
 
     // Associate an Assembly with this lock
-    void SetAssembly(Assembly *pAssembly);
+    void SetAssembly(Assembly* pAssembly);
 
     void SetError(Exception *ex);
 
@@ -331,7 +331,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly);
+    FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1102,7 +1102,7 @@ private:
 
     Assembly *LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel);
 
-    void TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 public:
