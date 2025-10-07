@@ -931,6 +931,58 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
     }
 }
 
+class GCPointerBitMapBuilder
+{
+    bool* m_objRefs;
+    size_t m_size;
+
+public:
+    GCPointerBitMapBuilder(bool* objRefs, size_t size)
+        : m_objRefs(objRefs)
+        , m_size(size)
+    {
+    }
+
+    INDEBUG(unsigned NumObjRefs = 0);
+
+    void Set(unsigned offset)
+    {
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        assert(offset < m_size);
+        unsigned slot = offset / TARGET_POINTER_SIZE;
+
+        // We do not expect to set the same offset multiple times
+        assert(!m_objRefs[slot]);
+        m_objRefs[slot] = true;
+    }
+
+    void SetIfNotMax(unsigned offset)
+    {
+        if (offset != UINT_MAX)
+        {
+            Set(offset);
+        }
+    }
+
+    void SetType(unsigned offset, var_types type, ClassLayout* layout)
+    {
+        if (type == TYP_REF)
+        {
+            Set(offset);
+        }
+        else if (type == TYP_STRUCT)
+        {
+            for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+            {
+                if (layout->GetGCPtrType(slot) == TYP_REF)
+                {
+                    Set(offset + slot * TARGET_POINTER_SIZE);
+                }
+            }
+        }
+    }
+};
+
 //------------------------------------------------------------------------
 // AsyncTransformation::LayOutContinuation:
 //   Create the layout of the GC pointer and data arrays in the continuation
@@ -1079,34 +1131,28 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
     // Now create continuation type. First create bitmap of object refs.
     bool* objRefs = new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE] {};
-    unsigned numObjRefs = 0;
+
+    GCPointerBitMapBuilder bitmapBuilder(objRefs, layout.Size);
+    bitmapBuilder.SetIfNotMax(layout.ExceptionOffset);
+    bitmapBuilder.SetIfNotMax(layout.ContinuationContextOffset);
+    bitmapBuilder.SetIfNotMax(layout.ExecContextOffset);
+    bitmapBuilder.SetIfNotMax(keepAliveOffset);
+
+    if (layout.ReturnSize > 0)
+    {
+        bitmapBuilder.SetType(layout.ReturnValOffset, call->gtReturnType, layout.ReturnStructLayout);
+    }
+
     for (LiveLocalInfo& inf : liveLocals)
     {
         LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-        if (dsc->TypeIs(TYP_REF))
-        {
-            objRefs[inf.Offset / TARGET_POINTER_SIZE] = true;
-            numObjRefs++;
-        }
-        else if (dsc->TypeIs(TYP_STRUCT))
-        {
-            ClassLayout* layout = dsc->GetLayout();
-
-            for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
-            {
-                if (layout->GetGCPtrType(slot) == TYP_REF)
-                {
-                    objRefs[inf.Offset / TARGET_POINTER_SIZE + slot] = true;
-                    numObjRefs++;
-                }
-            }
-        }
+        bitmapBuilder.SetType(inf.Offset, dsc->TypeGet(), dsc->TypeIs(TYP_STRUCT) ? dsc->GetLayout() : nullptr);
     }
 
 #ifdef DEBUG
     if (m_comp->verbose)
     {
-        printf("Getting continuation layout size = %u, numGCRefs = %u (Continuation_%s_%u_%u)\n", layout.Size, numObjRefs, m_comp->info.compMethodName, layout.Size, numObjRefs);
+        printf("Getting continuation layout size = %u, numGCRefs = %u (Continuation_%s_%u_%u)\n", layout.Size, bitmapBuilder.NumObjRefs, m_comp->info.compMethodName, layout.Size, bitmapBuilder.NumObjRefs);
         bool* start = objRefs;
         bool* endOfObjRefs = objRefs + layout.Size / TARGET_POINTER_SIZE;
         while (start < endOfObjRefs)
