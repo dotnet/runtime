@@ -17,6 +17,7 @@ namespace System.Runtime
 #if FEATURE_INTERPRETER
         private nuint _osStackLocation;
 #endif
+
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
             _reserved1 = 0;
