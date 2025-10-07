@@ -30,6 +30,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<byte>? s_byteConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Byte}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<byte>?> JsonValuePrimitiveByteConverter { get; } = new JsonValueConverter<JsonValuePrimitive<byte>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="char"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

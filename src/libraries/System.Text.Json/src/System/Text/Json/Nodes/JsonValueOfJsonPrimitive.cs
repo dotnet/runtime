@@ -57,6 +57,9 @@ namespace System.Text.Json.Nodes
                     when typeof(T) == typeof(JsonValuePrimitive<UInt128>):
                     return JsonValue.Create(reader.GetUInt128(), options);
 #endif
+                case JsonTokenType.Number
+                    when typeof(T) == typeof(JsonValuePrimitive<byte>):
+                    return JsonValue.Create(reader.GetByte(), options);
                 case JsonTokenType.Number:
                     byte[] numberValue = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
                     return new JsonValueOfJsonNumber(numberValue, options);

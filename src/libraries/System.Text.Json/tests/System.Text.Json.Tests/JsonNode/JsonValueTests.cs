@@ -68,10 +68,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(true)
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(byte.MinValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(byte.MinValue)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create('X')
