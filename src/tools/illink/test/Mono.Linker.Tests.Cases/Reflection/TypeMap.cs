@@ -98,7 +98,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
     // No types kept in library2, just TypeMap attributes
     [RemovedTypeInAssembly("library2.dll", typeof(TypeMapReferencedAssembly2))]
     [RemovedTypeInAssembly("library2.dll", typeof(UsedTypeMapUniverse2))]
-    [RemovedTypeInAssembly("library2.dll", typeof(UsedTypeMapUniverse2))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxySource1))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxySource2))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxyTarget1))]
