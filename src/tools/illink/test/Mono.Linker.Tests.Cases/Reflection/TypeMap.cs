@@ -11,9 +11,13 @@ using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Reflection;
+using Mono.Linker.Tests.Cases.Reflection.Dependencies;
+using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 
-[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), By = Tool.Trimmer)]
-[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), By = Tool.Trimmer)]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedProxyTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedExternalTypeMap>))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
 [assembly: TypeMap<UsedTypeMap>(nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
@@ -28,6 +32,15 @@ using Mono.Linker.Tests.Cases.Reflection;
 [assembly: TypeMap<UsedTypeMap>("Ldobj", typeof(LdobjTarget), typeof(LdobjType))]
 [assembly: TypeMap<UsedTypeMap>("ArrayElement", typeof(ArrayElementTarget), typeof(ArrayElement))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsAllocatedNoTypeCheckNoBoxStruct", typeof(ConstructedNoTypeCheckOrBoxTarget), typeof(ConstructedNoTypeCheckNoBoxStruct))]
+
+// The TypeMap Universes are kept separate such that Proxy attributes shouldn't be kept if only the External type map is needed.
+[assembly: TypeMap<UsedExternalTypeMap>("UsedOnlyForExternalTypeMap", typeof(UsedExternalTarget), typeof(UsedTrimTarget))] // Kept
+[assembly: TypeMapAssociation<UsedExternalTypeMap>(typeof(UsedProxySource), typeof(UsedProxyTarget))] // Removed
+
+// The TypeMap Universes are kept separate such that External attributes shouldn't be kept if only the Proxy type map is needed.
+[assembly: TypeMap<UsedProxyTypeMap>("UsedOnlyForExternalTypeMap", typeof(UsedExternalTarget2), typeof(UsedTrimTarget2))] // Removed
+[assembly: TypeMapAssociation<UsedProxyTypeMap>(typeof(UsedProxySource2), typeof(UsedProxyTarget2))] // Kept
+
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(TypeCheckOnlyClass), typeof(TypeCheckOnlyProxy))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(AllocatedNoBoxStructType), typeof(AllocatedNoBoxProxy))]
@@ -40,14 +53,67 @@ using Mono.Linker.Tests.Cases.Reflection;
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedTypeMap>))]
+[assembly: TypeMapAssemblyTarget<UsedTypeMap>("library")]
+// TypeMapAssemblyTarget is kept regardless of which type map the program needs (External or Proxy)
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedProxyTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedExternalTypeMap>))]
+[assembly: TypeMapAssemblyTarget<UsedProxyTypeMap>("library")]
+[assembly: TypeMapAssemblyTarget<UsedExternalTypeMap>("library")]
+[assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
+
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-    [Kept]
+    [SetupLinkerAction("link", "System.Private.CoreLib")] // Needed to get the RemoveAttributeInstances in embedded xml
+    [SetupLinkerArgument("--ignore-link-attributes", "false")]
     [SetupCompileArgument("/unsafe")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/TypeMapReferencedAssembly.cs" })]
+    [SetupCompileBefore("library2.dll", new[] { "Dependencies/TypeMapSecondOrderReference.cs" })]
+    [Kept]
+    [KeptAssembly("library.dll")]
+    [KeptAssembly("library2.dll")]
+    [KeptTypeInAssembly("library.dll", typeof(TypeMapReferencedAssembly))]
+    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Main()")]
+    [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional1), Tool = Tool.Trimmer)]
+    [KeptTypeInAssembly("library.dll", typeof(TrimTarget1))]
+    [KeptMemberInAssembly("library.dll", typeof(TrimTarget1), ".ctor()")]
+    [KeptTypeInAssembly("library.dll", typeof(TrimTarget2))]
+    [KeptMemberInAssembly("library.dll", typeof(TrimTarget2), ".ctor()")]
+    [KeptTypeInAssembly("library.dll", typeof(TargetTypeConditional1), Tool = Tool.Trimmer)]
+    [KeptTypeInAssembly("library.dll", typeof(ProxySource1))]
+    [KeptMemberInAssembly("library.dll", typeof(ProxySource1), ".ctor()")]
+    [KeptTypeInAssembly("library.dll", typeof(ProxyTarget1))]
+
+    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedTypeMapUniverse>))]
+    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UsedTypeMapUniverse>))]
+    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssemblyTargetAttribute<UsedTypeMapUniverse>))]
+    [RemovedAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UnusedTypeMapUniverse>))]
+    [RemovedAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UnusedTypeMapUniverse>))]
+
+    [KeptAttributeInAssembly("library2.dll", typeof(TypeMapAttribute<string>))]
+    [KeptAttributeInAssembly("library2.dll", typeof(TypeMapAssociationAttribute<string>))]
+    [KeptAttributeInAssembly("library2.dll", typeof(TypeMapAssemblyTargetAttribute<string>))]
+    [RemovedAttributeInAssembly("library2.dll", typeof(TypeMapAttribute<UnusedTypeMapUniverse2>))]
+    [RemovedAttributeInAssembly("library2.dll", typeof(TypeMapAssociationAttribute<UnusedTypeMapUniverse2>))]
+    // No types kept in library2, just TypeMap attributes
+    [RemovedTypeInAssembly("library2.dll", typeof(TypeMapReferencedAssembly2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(UsedTypeMapUniverse2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(UsedTypeMapUniverse2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxySource1))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxySource2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxyTarget1))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.ProxyTarget2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeConditional1))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeConditional2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeUnconditional1))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeUnconditional2))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget1))]
+    [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget2))]
     class TypeMap
     {
         [Kept]
         [ExpectedWarning("IL2057", "Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(String)'")]
+        [ExpectBodyModified] // Bug
         public static void Main(string[] args)
         {
             object t = Activator.CreateInstance(Type.GetType(args[1]));
@@ -114,6 +180,29 @@ namespace Mono.Linker.Tests.Cases.Reflection
             Console.WriteLine(new ArrayElement[1]);
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
+
+            TypeMapReferencedAssembly.Main();
+
+            // TypeMapUniverses are independent between External and Proxy type maps.
+            // That is, if the External type map is used for a given universe, that doesn't keep the Proxy type map, and vice versa.
+            // Since we only use UsedExternalTypeMap for its External type map, the Proxy type map and its attributes should be removed.
+            // And vice versa for UsedProxyTypeMap.
+            _ = TypeMapping.GetOrCreateExternalTypeMapping<UsedExternalTypeMap>();
+            _ = TypeMapping.GetOrCreateProxyTypeMapping<UsedProxyTypeMap>();
+            _ = new UsedProxySource();
+            _ = new UsedProxySource2();
+            object obj = null!;
+            // Rewritten as if these types are removed
+            if (obj is UsedTrimTarget) ;
+            if (obj is UsedTrimTarget2) ;
+
+            // For the second order reference, instantiate int and string as the dependency source types to root the TypeMap attributes
+            // Do not directly root anything in the assembly to validate the assembly is kept even in only the typemap attributes are marked.
+            _ = new string('h', 2);
+            _ = new int();
+            _ = TypeMapping.GetOrCreateExternalTypeMapping<string>();
+            _ = TypeMapping.GetOrCreateProxyTypeMapping<string>();
+
         }
 
         [Kept]
@@ -180,7 +269,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         private static UnboxedOnly Unbox(object o)
         {
-            return (UnboxedOnly) o;
+            return (UnboxedOnly)o;
         }
 
         [Kept]
@@ -216,6 +305,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     class UnusedTypeMap;
+    class UnusedTypeMap2;
     class UnusedTargetType;
     class UnusedSourceClass;
     class UnusedProxyType;
@@ -400,57 +490,29 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     class AllocatedNoBoxProxy;
-}
 
-// Polyfill for the type map types until we use an LKG runtime that has them with an updated LinkAttributes XML.
-namespace System.Runtime.InteropServices
-{
-    [Kept(By = Tool.Trimmer)]
-    [KeptBaseType(typeof(Attribute), By = Tool.Trimmer)]
-    [KeptAttributeAttribute(typeof(AttributeUsageAttribute), By = Tool.Trimmer)]
-    [KeptAttributeAttribute(typeof(RemoveAttributeInstancesAttribute), By = Tool.Trimmer)]
-    [RemoveAttributeInstances]
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
-    {
-        [Kept(By = Tool.Trimmer)]
-        public TypeMapAttribute(string value, Type target) { }
+    [Kept]
+    class UsedExternalTypeMap;
+    [Kept]
+    class UsedProxyTypeMap;
 
-        [Kept(By = Tool.Trimmer)]
-        [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
-        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
-        public TypeMapAttribute(string value, Type target, Type trimTarget) { }
-    }
+    [Kept]
+    [KeptMember(".ctor()")]
+    class UsedProxySource;
+    [Kept]
+    [KeptMember(".ctor()")]
+    class UsedProxySource2;
+    [Kept]
+    class UsedTrimTarget;
+    [Kept(By=Tool.NativeAot)]
+    class UsedTrimTarget2;
 
-    [Kept(By = Tool.Trimmer)]
-    [KeptBaseType(typeof(Attribute), By = Tool.Trimmer)]
-    [KeptAttributeAttribute(typeof(AttributeUsageAttribute), By = Tool.Trimmer)]
-    [KeptAttributeAttribute(typeof(RemoveAttributeInstancesAttribute), By = Tool.Trimmer)]
-    [RemoveAttributeInstances]
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
-    {
-        [Kept(By = Tool.Trimmer)]
-        public TypeMapAssociationAttribute(Type source, Type proxy) { }
-    }
+    [Kept]
+    class UsedExternalTarget;
+    class UsedExternalTarget2;
 
-    [Kept(By = Tool.Trimmer)]
-    public static class TypeMapping
-    {
-        [Kept(By = Tool.Trimmer)]
-        [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
-        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
-        public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup>()
-        {
-            throw new NotImplementedException($"External type map for {typeof(TTypeMapGroup).Name}");
-        }
 
-        [Kept(By = Tool.Trimmer)]
-        [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
-        [RequiresUnreferencedCode("Interop types may be removed by trimming")]
-        public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>()
-        {
-            throw new NotImplementedException($"Proxy type map for {typeof(TTypeMapGroup).Name}");
-        }
-    }
+    class UsedProxyTarget;
+    [Kept]
+    class UsedProxyTarget2;
 }
