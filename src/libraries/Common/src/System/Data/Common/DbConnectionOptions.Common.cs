@@ -483,7 +483,7 @@ namespace System.Data.Common
                     }
                     if (!firstKey)
                     {
-                        parsetable.TryAdd(realkeyname, keyvalue!); // last key-value pair wins (or first)
+                        parsetable.TryAdd(realkeyname, keyvalue!);
                     }
                 }
             }
@@ -580,7 +580,7 @@ namespace System.Data.Common
                     }
                     if (!firstKey)
                     {
-                        parsetable.TryAdd(realkeyname, keyvalue); // last key-value pair wins (or first)
+                        parsetable.TryAdd(realkeyname, keyvalue);
                     }
 
                     if (null != localKeychain)
