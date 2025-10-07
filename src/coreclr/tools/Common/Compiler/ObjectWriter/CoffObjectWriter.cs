@@ -117,7 +117,8 @@ namespace ILCompiler.ObjectWriter
                 // We find the defining section of the COMDAT symbol. That one is marked
                 // as "ANY" selection type. All the other ones are marked as associated.
                 bool isPrimary = Equals(comdatName, symbolName);
-                uint definingSectionIndex = isPrimary ? (uint)sectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
+                uint coffSectionIndex = (uint)sectionIndex + 1u; // COFF section index is 1-based
+                uint definingSectionIndex = isPrimary ? coffSectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
 
                 var auxRecord = new CoffSectionSymbol
                 {
@@ -135,7 +136,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Name = sectionHeader.Name,
                     Value = 0,
-                    SectionIndex = (uint)sectionIndex,
+                    SectionIndex = coffSectionIndex,
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     NumberOfAuxiliaryRecords = 1,
                 });
@@ -148,7 +149,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         Name = symbolName,
                         Value = 0,
-                        SectionIndex = (uint)sectionIndex,
+                        SectionIndex = coffSectionIndex,
                         StorageClass = isPrimary ? CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL : CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     });
                 }
