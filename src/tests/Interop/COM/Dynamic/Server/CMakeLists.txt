@@ -33,7 +33,7 @@ if (CLR_CMAKE_HOST_WIN32)
 endif()
 
 # add the shared library
-add_library (${PROJECT_NAME} ${TEST_LIB_TYPE} ${SOURCES})
+add_library (${PROJECT_NAME} SHARED ${SOURCES})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy manifest file to project output

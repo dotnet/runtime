@@ -3,7 +3,7 @@ include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES
     SeqStructDelRevPInvokeNative.cpp
 )
-add_library (SeqPInvokeNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (SeqPInvokeNative SHARED ${SOURCES})
 target_link_libraries(SeqPInvokeNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets
 install (TARGETS SeqPInvokeNative DESTINATION bin)

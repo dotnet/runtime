@@ -5,7 +5,7 @@ set(SOURCES
     CriticalHandlesNative.cpp
 )
 # add the executable
-add_library (CriticalHandlesNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (CriticalHandlesNative SHARED ${SOURCES})
 target_link_libraries(CriticalHandlesNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets
 install (TARGETS CriticalHandlesNative DESTINATION bin)

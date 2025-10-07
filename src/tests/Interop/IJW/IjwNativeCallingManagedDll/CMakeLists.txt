@@ -5,7 +5,7 @@ include_directories( ${INC_PLATFORM_DIR} )
 set(SOURCES IjwNativeCallingManagedDll.cpp)
 
 # add the shared library
-add_library (IjwNativeCallingManagedDll ${TEST_LIB_TYPE} ${SOURCES})
+add_library (IjwNativeCallingManagedDll SHARED ${SOURCES})
 target_link_libraries(IjwNativeCallingManagedDll PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets

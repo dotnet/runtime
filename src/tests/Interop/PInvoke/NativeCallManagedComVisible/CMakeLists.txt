@@ -6,6 +6,6 @@ set(SOURCES
 ) 
 # Additional files to reference: 
 # add the executable 
-add_library (ComVisibleNative ${TEST_LIB_TYPE} ${SOURCES}) 
+add_library (ComVisibleNative SHARED ${SOURCES}) 
 # add the install targets 
 install (TARGETS ComVisibleNative DESTINATION bin) 

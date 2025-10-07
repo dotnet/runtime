@@ -3,7 +3,7 @@ include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES SimpleStructNative.cpp )
 
 # add the executable
-add_library (SimpleStructNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (SimpleStructNative SHARED ${SOURCES})
 target_link_libraries(SimpleStructNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets

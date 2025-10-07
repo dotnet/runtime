@@ -3,7 +3,7 @@ include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 set(SOURCES MarshalStructAsParamDLL.cpp)
 
 # add the executable
-add_library (MarshalStructAsParam ${TEST_LIB_TYPE} ${SOURCES})
+add_library (MarshalStructAsParam SHARED ${SOURCES})
 target_link_libraries(MarshalStructAsParam PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets

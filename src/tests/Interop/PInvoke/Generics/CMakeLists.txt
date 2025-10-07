@@ -73,5 +73,5 @@ set(SOURCES
   GenericsNative.VectorL.cpp
   GenericsNative.VectorU.cpp
 )
-add_library (GenericsNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (GenericsNative SHARED ${SOURCES})
 install (TARGETS GenericsNative DESTINATION bin)

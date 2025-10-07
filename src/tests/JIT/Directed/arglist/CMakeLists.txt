@@ -8,7 +8,7 @@ else()
 endif()
 
 # add the executable
-add_library (varargnative ${TEST_LIB_TYPE} varargnative.c)
+add_library (varargnative SHARED varargnative.c)
 
 # add the install targets
 install (TARGETS varargnative DESTINATION bin)

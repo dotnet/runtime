@@ -8,7 +8,7 @@ set(SOURCES
 )
 
 # add the executable
-add_library (MarshalArrayByValArrayNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (MarshalArrayByValArrayNative SHARED ${SOURCES})
 target_link_libraries(MarshalArrayByValArrayNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets
 install (TARGETS MarshalArrayByValArrayNative DESTINATION bin)

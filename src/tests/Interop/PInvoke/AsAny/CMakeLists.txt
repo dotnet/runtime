@@ -9,7 +9,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 endif(CLR_CMAKE_HOST_WIN32)
 # add the executable
-add_library (AsAnyNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (AsAnyNative SHARED ${SOURCES})
 target_link_libraries(AsAnyNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 # add the install targets
 install (TARGETS AsAnyNative DESTINATION bin)

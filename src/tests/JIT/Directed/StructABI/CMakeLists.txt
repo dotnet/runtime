@@ -9,8 +9,8 @@ else()
 endif()
 
 # add the executable
-add_library (StructABILib ${TEST_LIB_TYPE} StructABI.c)
-add_library (EmptyStructsLib ${TEST_LIB_TYPE} EmptyStructs.cpp)
+add_library (StructABILib SHARED StructABI.c)
+add_library (EmptyStructsLib SHARED EmptyStructs.cpp)
 
 # add the install targets
 install (TARGETS StructABILib EmptyStructsLib DESTINATION bin)

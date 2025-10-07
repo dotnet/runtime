@@ -7,6 +7,6 @@ else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden -Oz")
 endif()
 
-add_library (PrimitiveABINative ${TEST_LIB_TYPE} PrimitiveABI.c)
+add_library (PrimitiveABINative SHARED PrimitiveABI.c)
 
 install (TARGETS PrimitiveABINative DESTINATION bin)

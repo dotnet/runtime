@@ -9,5 +9,5 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif()
 
 # add the executable
-add_library (DelegateTestNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (DelegateTestNative SHARED ${SOURCES})
 target_link_libraries(DelegateTestNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})

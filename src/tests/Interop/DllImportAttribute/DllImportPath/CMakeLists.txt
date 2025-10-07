@@ -6,10 +6,10 @@ set(SOURCES
 
 # Additional files to reference:
 # add the executable
-add_library (DllImportPath_Local ${TEST_LIB_TYPE} ${SOURCES})
-add_library (DllImportPath.Local ${TEST_LIB_TYPE} ${SOURCES})
-add_library (DllImportPath_PathEnv ${TEST_LIB_TYPE} ${SOURCES})
-add_library (DllImportPath_Relative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (DllImportPath_Local SHARED ${SOURCES})
+add_library (DllImportPath.Local SHARED ${SOURCES})
+add_library (DllImportPath_PathEnv SHARED ${SOURCES})
+add_library (DllImportPath_Relative SHARED ${SOURCES})
 add_executable(DllImportPath_ExeFile ${SOURCES})
 target_link_libraries(DllImportPath_Local PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 target_link_libraries(DllImportPath.Local PRIVATE ${LINK_LIBRARIES_ADDITIONAL})

@@ -5,6 +5,6 @@ set(SOURCES
     MAWSPINative.cpp 
 )
 # add the executable 
-add_library (MAWSPINative ${TEST_LIB_TYPE} ${SOURCES}) 
+add_library (MAWSPINative SHARED ${SOURCES}) 
 # add the install targets 
 install (TARGETS MAWSPINative DESTINATION bin) 

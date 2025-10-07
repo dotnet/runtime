@@ -7,6 +7,6 @@ set(SOURCES
 # Additional files to reference: 
 #    HandleRefNative.def 
 # add the executable 
-add_library (HandleRefNative ${TEST_LIB_TYPE} ${SOURCES}) 
+add_library (HandleRefNative SHARED ${SOURCES}) 
 # add the install targets 
 install (TARGETS HandleRefNative DESTINATION bin) 

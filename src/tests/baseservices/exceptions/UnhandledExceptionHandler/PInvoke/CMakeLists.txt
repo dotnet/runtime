@@ -9,7 +9,7 @@ if(NOT CLR_CMAKE_HOST_WIN32)
 endif()
 
 # add the executable
-add_library (PInvokeUnhandledNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (PInvokeUnhandledNative SHARED ${SOURCES})
 
 # add the install targets
 install (TARGETS PInvokeUnhandledNative DESTINATION bin)

@@ -9,7 +9,7 @@ if (CLR_CMAKE_HOST_WIN32)
 endif()
 
 # add the shared library
-add_library (COMNativeServer ${TEST_LIB_TYPE} ${SOURCES})
+add_library (COMNativeServer SHARED ${SOURCES})
 target_link_libraries(COMNativeServer PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy manifest file to project output

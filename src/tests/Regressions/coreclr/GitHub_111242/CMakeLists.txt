@@ -9,7 +9,7 @@ else()
 endif()
 
 # add the executable
-add_library (Test111242Lib ${TEST_LIB_TYPE} Test111242.c)
+add_library (Test111242Lib SHARED Test111242.c)
 
 # add the install targets
 install (TARGETS Test111242Lib DESTINATION bin)

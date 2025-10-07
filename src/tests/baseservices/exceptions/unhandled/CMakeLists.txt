@@ -9,7 +9,7 @@ if(NOT CLR_CMAKE_HOST_WIN32)
 endif()
 
 # add the executable
-add_library (unhandlednative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (unhandlednative SHARED ${SOURCES})
 
 # add the install targets
 install (TARGETS unhandlednative DESTINATION bin)

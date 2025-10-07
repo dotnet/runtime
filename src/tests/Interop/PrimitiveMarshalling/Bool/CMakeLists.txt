@@ -3,7 +3,7 @@ set(SOURCES BoolNative.cpp )
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 
 # add the executable
-add_library (BoolNative ${TEST_LIB_TYPE} ${SOURCES})
+add_library (BoolNative SHARED ${SOURCES})
 target_link_libraries(BoolNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 #get_cmake_property(_variableNames VARIABLES)
