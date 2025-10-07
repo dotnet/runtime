@@ -142,7 +142,7 @@ namespace System.Runtime.CompilerServices
             public Continuation? SentinelContinuation;
             public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
-            public Task? Task;
+            public Task? CalledTask;
         }
 
         [ThreadStatic]
@@ -215,7 +215,7 @@ namespace System.Runtime.CompilerServices
             if (sentinelContinuation == null)
                 state.SentinelContinuation = sentinelContinuation = new Continuation();
 
-            state.Task = t;
+            state.CalledTask = t;
             AsyncSuspend(sentinelContinuation);
         }
 
@@ -463,11 +463,11 @@ namespace System.Runtime.CompilerServices
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
                 ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
                 INotifyCompletion? notifier = state.Notifier;
-                Task? calledTask = state.Task;
+                Task? calledTask = state.CalledTask;
 
                 state.CriticalNotifier = null;
                 state.Notifier = null;
-                state.Task = null;
+                state.CalledTask = null;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
