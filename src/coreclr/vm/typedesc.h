@@ -299,8 +299,8 @@ enum class WhichConstraintsToLoad
 
 class TypeVarTypeDesc : public TypeDesc
 {
-    const DWORD WhichMask = 0xC0000000;
-    const DWORD WhichShift = 30;
+    static const DWORD WhichMask = 0xC0000000;
+    static const DWORD WhichShift = 30;
 public:
 
 #ifndef DACCESS_COMPILE
