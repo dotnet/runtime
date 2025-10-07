@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override int GetHashCode()
         {
-            return _genericMethodDefinition.GetHashCode();
+            return HashCode.Combine(_genericMethodDefinition.GetHashCode(), ReflectedType.GetHashCode());
         }
 
         internal sealed override int GenericParameterCount => _genericMethodDefinition.GenericParameterCount;

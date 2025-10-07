@@ -133,7 +133,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
 
         public sealed override int GetHashCode()
         {
-            return _eventHandle.GetHashCode();
+            return HashCode.Combine(_eventHandle.GetHashCode(), ReflectedType.GetHashCode());
         }
 
         public sealed override Type EventHandlerType

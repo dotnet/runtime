@@ -222,7 +222,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override int GetHashCode()
         {
-            return _common.GetHashCode();
+            return HashCode.Combine(_common.GetHashCode(), ReflectedType.GetHashCode());
         }
 
         public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(null);
