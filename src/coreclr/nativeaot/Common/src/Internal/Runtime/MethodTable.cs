@@ -1277,13 +1277,17 @@ namespace Internal.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetField<T>(EETypeField eField)
         {
+#pragma warning disable CS9084 // Struct member returns 'this' or other instance members by reference
             return ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref Unsafe.As<MethodTable, byte>(ref Unsafe.AsRef(in this)), (nint)GetFieldOffset(eField)));
+#pragma warning restore CS9084
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetField<T>(uint offset)
         {
+#pragma warning disable CS9084 // Struct member returns 'this' or other instance members by reference
             return ref Unsafe.As<byte, T>(ref Unsafe.AddByteOffset(ref Unsafe.As<MethodTable, byte>(ref Unsafe.AsRef(in this)), (nint)offset));
+#pragma warning restore CS9084
         }
 
 #if TYPE_LOADER_IMPLEMENTATION
