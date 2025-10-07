@@ -198,7 +198,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
         if (isGlobalLockAcquired)
         {
             int operationResult;
-            while (-1 == (mkdir_result = mkdir(path, permissionsMask)) && errno == EINTR);
+            while (-1 == (operationResult = mkdir(path, permissionsMask)) && errno == EINTR);
             if (operationResult != 0)
             {
                 if (errors != nullptr)
@@ -1043,7 +1043,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
             if (m_createdFile)
             {
                 _ASSERTE(m_filePath != nullptr);
-                while (-1 == unlink(m_filePath) && errno == EINTR);
+                while (-1 == unlink(*m_filePath) && errno == EINTR);
             }
 
             if (m_sessionDirectoryPathCharCount != 0)

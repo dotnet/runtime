@@ -35,6 +35,7 @@ Abstract:
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <algorithm>
 
 #include "rt/ntimage.h"
 #include <pal_endian.h>
@@ -1507,9 +1508,9 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         TRACE( "Trying the less efficient way.\n" );
 
         off_t lseek_result;
-        while (-1 == (lseek_result lseek( UnixFD, 0, SEEK_CUR )) && errno == EINTR);
+        while (-1 == (lseek_result = lseek( UnixFD, 0, SEEK_CUR )) && errno == EINTR);
         CurrentPosition = lseek_result;
-        while (-1 == (lseek_result lseek( UnixFD, 0, SEEK_END )) && errno == EINTR);
+        while (-1 == (lseek_result = lseek( UnixFD, 0, SEEK_END )) && errno == EINTR);
         OrigSize = lseek_result;
         if ( OrigSize == -1 )
         {
@@ -1529,7 +1530,7 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         while (toWrite > 0)
         {
             ssize_t writeResult;
-            while (-1 == (writeResult = write( UnixFD, (LPVOID)buf, std::min(toWrite, BUFFER_SIZE) )) && errno == EINTR);
+            while (-1 == (writeResult = write( UnixFD, (LPVOID)buf, std::min(toWrite, (size_t)BUFFER_SIZE) )) && errno == EINTR);
             if (writeResult == -1)
             {
                 ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
@@ -2107,13 +2108,16 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //Step 1: Read the PE headers and reserve enough space for the whole image somewhere.
     IMAGE_DOS_HEADER dosHeader;
     IMAGE_NT_HEADERS ntHeader;
-    unsigned char* preadBuf = &dosHeader;
-    size_t nbyte = sizeof(dosHeader);
-    size_t preadOffset = offset;
+    unsigned char *preadBuf;
+    preadBuf = (unsigned char*)&dosHeader;
+    size_t nbyte;
+    nbyte = sizeof(dosHeader);
+    size_t preadOffset;
+    preadOffset = offset;
     while (nbyte > 0)
     {
         ssize_t result;
-        while (-1 == result = pread(fd, preadBuf, nbyte, preadOffset) && errno == EINTR);
+        while (-1 == (result = pread(fd, preadBuf, nbyte, preadOffset)) && errno == EINTR);
         if (result == 0)
         {
             if (nbyte > 0)
@@ -2132,13 +2136,13 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         nbyte -= result;
         preadOffset += result;
     }
-    unsigned char* preadBuf = &ntHeader;
-    size_t nbyte = sizeof(ntHeader);
-    size_t preadOffset = offset + dosHeader.e_lfanew;
+    preadBuf = (unsigned char*)&ntHeader;
+    nbyte = sizeof(ntHeader);
+    preadOffset = offset + dosHeader.e_lfanew;
     while (nbyte > 0)
     {
         ssize_t result;
-        while (-1 == result = pread(fd, preadBuf, nbyte, preadOffset) && errno == EINTR);
+        while (-1 == (result = pread(fd, preadBuf, nbyte, preadOffset)) && errno == EINTR);
         if (result == 0)
         {
             if (nbyte > 0)

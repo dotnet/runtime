@@ -77,9 +77,9 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
     int pipeRv;
     while (-1 == (pipeRv =
 #if HAVE_PIPE2
-        pipe2(pipe_descs, O_CLOEXEC);
+        pipe2(pipe_descs, O_CLOEXEC)
 #else
-        pipe(pipe_descs);
+        pipe(pipe_descs)
 #endif // HAVE_PIPE2
     ) && errno == EINTR);
     if (pipeRv == -1)

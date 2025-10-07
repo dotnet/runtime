@@ -44,6 +44,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 {
 	int result;
 	while (-1 == (result = poll (ufds, nfds, timeout)) && errno == EINTR);
+	return result;
 }
 #else
 

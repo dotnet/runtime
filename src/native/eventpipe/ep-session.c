@@ -915,7 +915,7 @@ session_tracepoint_write_event (
 			else
 			{
 				iov->iov_len -= bytes_written;
-				iov->iov_base += bytes_written;
+				iov->iov_base = (unsigned char*)iov->iov_base + bytes_written;
 				break;
 			}
 		}
