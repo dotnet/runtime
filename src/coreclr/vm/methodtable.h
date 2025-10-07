@@ -2296,7 +2296,7 @@ public:
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
-                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner->GetSpecialInstantiationType()))
                 {
                     exactMatch = true;
 #ifndef DACCESS_COMPILE
@@ -2311,6 +2311,8 @@ public:
 
             RETURN (exactMatch);
         }
+
+        bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {

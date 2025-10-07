@@ -1753,6 +1753,63 @@ NOINLINE BOOL MethodTable::ImplementsInterface(MethodTable *pInterface)
     return ImplementsInterfaceInline(pInterface);
 }
 
+bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMT->IsInterface()); // class we are looking up should be an interface
+    }
+    CONTRACTL_END;
+
+    MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
+
+    if (pCurrentMethodTable == pMT)
+        return true;
+        
+    if (pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pCurrentMethodTable->HasSameTypeDefAs(pMT))
+    {
+        // Any matches need to use the special marker type logic
+        if (!pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
+        {
+            TypeHandle pSpecialInstantiationType = pCurrentMethodTable->GetSpecialInstantiationType();
+            // If we reach here, we are trying to do a compare with a value in the interface map which is a special marker type
+            // First check for exact match.
+            if (pMT->GetInstantiation().ContainsAllOneType(pSpecialInstantiationType))
+            {
+                // We match exactly, and have an actual pMT loaded. Insert
+                // the searched for interface if it is fully loaded, so that
+                // future checks are more efficient
+#ifndef DACCESS_COMPILE
+                if (pMT->IsFullyLoaded())
+                    SetInterface(pMT);
+#endif 
+                return true;
+            }
+            else
+            {
+                // We don't match exactly, but we may still be equivalent
+                for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
+                {
+                    TypeHandle arg = pMT->GetInstantiation()[i];
+                    if (!arg.IsEquivalentTo(pSpecialInstantiationType))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+    else
+    {
+        // We don't have a special marker type in the interface map, so we need to do the normal equivalence check
+        return pCurrentMethodTable->IsEquivalentTo(pMT);
+    }
+}
+
 //==========================================================================================
 BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
 {
@@ -1778,16 +1835,12 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
     if (numInterfaces == 0)
         return FALSE;
 
-    InterfaceInfo_t *pInfo = GetInterfaceMap();
-
-    do
+    InterfaceMapIterator it = IterateInterfaceMap();
+    while (it.Next())
     {
-        if (pInfo->GetMethodTable()->IsEquivalentTo(pInterface))
+        if (it.CurrentInterfaceEquivalentTo(this, pInterface))
             return TRUE;
-
-        pInfo++;
     }
-    while (--numInterfaces);
 
     return FALSE;
 }
