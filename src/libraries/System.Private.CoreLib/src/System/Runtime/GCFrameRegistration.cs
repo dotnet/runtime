@@ -14,6 +14,7 @@ namespace System.Runtime
         private void** _pObjRefs;
         private uint _numObjRefs;
         private int _maybeInterior;
+        private nuint _reserved3;
 
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
@@ -22,6 +23,7 @@ namespace System.Runtime
             _pObjRefs = allocation;
             _numObjRefs = elemCount;
             _maybeInterior = areByRefs ? 1 : 0;
+            _reserved3 = 0;
         }
 
 #if CORECLR
