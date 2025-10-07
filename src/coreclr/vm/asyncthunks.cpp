@@ -70,7 +70,6 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     // try
     // {
     //   Continuation cont;
-    //   Exception ex;
     //   try
     //   {
     //     T result = Inner(args);
@@ -78,13 +77,13 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     //     cont = StubHelpers.AsyncCallContinuation();
     //     if (cont == null)
     //       return Task.FromResult(result);
+    //
+    //     return FinalizeTaskReturningThunk(cont);
     //   }
-    //   catch (Exception ex1)
+    //   catch (Exception ex)
     //   {
-    //     ex = ex1;
+    //     return TaskFromException(ex);
     //   }
-    // 
-    //   return FinalizeTaskReturningThunk(cont, ex);
     // }
     // finally
     // {
@@ -94,7 +93,6 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
 
     unsigned continuationLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
-    unsigned exceptionLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
 
     TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
 
@@ -114,7 +112,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     DWORD executionAndSyncBlockStoreLocal = pCode->NewLocal(executionAndSyncBlockStoreLocalDesc);
 
     ILCodeLabel* returnTaskLabel = pCode->NewCodeLabel();
-    ILCodeLabel* finalizeTaskLabel = pCode->NewCodeLabel();
+    ILCodeLabel* suspendedLabel = pCode->NewCodeLabel();
     ILCodeLabel* finishedLabel = pCode->NewCodeLabel();
 
     pCode->EmitLDLOCA(executionAndSyncBlockStoreLocal);
@@ -201,7 +199,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             pCode->EmitLDLOC(continuationLocal);
             pCode->EmitBRFALSE(finishedLabel);
 
-            pCode->EmitLEAVE(finalizeTaskLabel);
+            pCode->EmitLEAVE(suspendedLabel);
 
             pCode->EmitLabel(finishedLabel);
             if (logicalResultLocal != UINT_MAX)
@@ -232,12 +230,36 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
         // Catch
         {
             pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
-            pCode->EmitSTLOC(exceptionLocal);
-            pCode->EmitLEAVE(finalizeTaskLabel);
+
+            int fromExceptionToken;
+            if (logicalResultLocal != UINT_MAX)
+            {
+                MethodDesc* md;
+                if (isValueTask)
+                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION_1);
+                else
+                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION_1);
+
+                md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+                fromExceptionToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, md);
+            }
+            else
+            {
+                MethodDesc* md;
+                if (isValueTask)
+                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION);
+                else
+                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION);
+                fromExceptionToken = pCode->GetToken(md);
+            }
+
+            pCode->EmitCALL(fromExceptionToken, 1, 1);
+            pCode->EmitSTLOC(returnTaskLocal);
+            pCode->EmitLEAVE(returnTaskLabel);
             pCode->EndCatchBlock();
         }
 
-        pCode->EmitLabel(finalizeTaskLabel);
+        pCode->EmitLabel(suspendedLabel);
 
         int finalizeTaskReturningThunkToken;
         if (logicalResultLocal != UINT_MAX)
@@ -260,10 +282,8 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
             finalizeTaskReturningThunkToken = pCode->GetToken(md);
         }
-
         pCode->EmitLDLOC(continuationLocal);
-        pCode->EmitLDLOC(exceptionLocal);
-        pCode->EmitCALL(finalizeTaskReturningThunkToken, 2, 1);
+        pCode->EmitCALL(finalizeTaskReturningThunkToken, 1, 1);
         pCode->EmitSTLOC(returnTaskLocal);
         pCode->EmitLEAVE(returnTaskLabel);
 

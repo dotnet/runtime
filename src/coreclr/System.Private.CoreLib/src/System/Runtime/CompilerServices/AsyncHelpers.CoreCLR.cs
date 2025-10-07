@@ -532,91 +532,91 @@ namespace System.Runtime.CompilerServices
 
         // Change return type to ThunkTask<T?> -- no benefit since this is used for Task returning thunks only
 #pragma warning disable CA1859
-        // We come here when a Task-returning thunk called into async method and did not see a normal return.
-        // The result will be:
-        // * continuation => return an incomplete Task that represents the continuation chain.
-        // * exception    => return a Faulted or Canceled task, accordingly.
-        private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation, Exception ex)
+        // When a Task-returning thunk gets a continuation result
+        // it calls here to make a Task that awaits on the current async state.
+        private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation)
         {
-            if (continuation is not null)
+            Continuation finalContinuation = new Continuation();
+
+            // Note that the exact location the return value is placed is tied
+            // into getAsyncResumptionStub in the VM, so do not change this
+            // without also changing that code (and the JIT).
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                Continuation finalContinuation = new Continuation();
-
-                // Note that the exact location the return value is placed is tied
-                // into getAsyncResumptionStub in the VM, so do not change this
-                // without also changing that code (and the JIT).
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                {
-                    finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-                    finalContinuation.GCData = new object[1];
-                }
-                else
-                {
-                    finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-                    finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
-                }
-
-                continuation.Next = finalContinuation;
-
-                ThunkTask<T?> result = new();
-                result.HandleSuspended();
-                return result;
+                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                finalContinuation.GCData = new object[1];
             }
             else
             {
-                Task<T?> task = new();
-                // Tail of AsyncTaskMethodBuilderT.SetException
-                bool successfullySet = ex is OperationCanceledException oce ?
-                    task.TrySetCanceled(oce.CancellationToken, oce) :
-                    task.TrySetException(ex);
-
-                Debug.Assert(successfullySet);
-                return task;
+                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+                finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
             }
+
+            continuation.Next = finalContinuation;
+
+            ThunkTask<T?> result = new();
+            result.HandleSuspended();
+            return result;
         }
 
-        // We come here when a Task-returning thunk called into async method and did not see a normal return.
-        // The result will be:
-        // * continuation => return an incomplete Task that represents the continuation chain.
-        // * exception    => return a Faulted or Canceled task, accordingly.
-        private static Task FinalizeTaskReturningThunk(Continuation continuation, Exception ex)
+        private static Task FinalizeTaskReturningThunk(Continuation continuation)
         {
-            if (continuation is not null)
+            Continuation finalContinuation = new Continuation
             {
-                Continuation finalContinuation = new Continuation
-                {
-                    Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-                };
-                continuation.Next = finalContinuation;
+                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
+            };
+            continuation.Next = finalContinuation;
 
-                ThunkTask result = new();
-                result.HandleSuspended();
-                return result;
-            }
-            else
-            {
-                Debug.Assert(ex is not null);
-                Task task = new();
-                // Tail of AsyncTaskMethodBuilderT.SetException
-                bool successfullySet = ex is OperationCanceledException oce ?
-                    task.TrySetCanceled(oce.CancellationToken, oce) :
-                    task.TrySetException(ex);
-
-                Debug.Assert(successfullySet);
-                return task;
-            }
+            ThunkTask result = new();
+            result.HandleSuspended();
+            return result;
         }
 
-        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation, Exception ex)
+        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
         {
-            // We only come to these methods to handle abnormal cases (suspended, faulted, canceled),
+            // We only come to these methods in the expensive case (already
+            // suspended), so ValueTask optimization here is not relevant.
+            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation));
+        }
+
+        private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
+        {
+            return new ValueTask(FinalizeTaskReturningThunk(continuation));
+        }
+
+        private static Task<T?> TaskFromException<T>(Exception ex)
+        {
+            Task<T?> task = new();
+            bool successfullySet = ex is OperationCanceledException oce ?
+                task.TrySetCanceled(oce.CancellationToken, oce) :
+                task.TrySetException(ex);
+
+            Debug.Assert(successfullySet);
+            return task;
+        }
+
+        private static Task TaskFromException(Exception ex)
+        {
+            Task task = new();
+            // Tail of AsyncTaskMethodBuilderT.SetException
+            bool successfullySet = ex is OperationCanceledException oce ?
+                task.TrySetCanceled(oce.CancellationToken, oce) :
+                task.TrySetException(ex);
+
+            Debug.Assert(successfullySet);
+            return task;
+        }
+
+        private static ValueTask ValueTaskFromException(Exception ex)
+        {
+            // We only come to these methods in the expensive case (exception),
             // so ValueTask optimization here is not relevant.
-            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation, ex));
+            return new ValueTask(TaskFromException(ex));
         }
 
-        private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation, Exception ex)
+        private static ValueTask<T?> ValueTaskFromException<T>(Exception ex)
         {
-            return new ValueTask(FinalizeTaskReturningThunk(continuation, ex));
+            return new ValueTask<T?>(TaskFromException<T>(ex));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
