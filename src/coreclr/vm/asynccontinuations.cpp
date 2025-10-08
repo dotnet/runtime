@@ -18,10 +18,14 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
     : m_allocator(allocator)
 {
     LIMITED_METHOD_CONTRACT;
+
+    m_layoutsLock.Init(CrstLeafLock);
+    LockOwner lock = {&m_layoutsLock, IsOwnerOfCrst};
+    m_layouts.Init(16, &lock, m_allocator->GetLowFrequencyHeap());
 }
 
 template<typename TFunc>
-static void EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc func)
+static bool EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc func)
 {
     const bool* objRefsEnd = objRefs + (size + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE;
     const bool* start = objRefs;
@@ -31,15 +35,19 @@ static void EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc fun
             start++;
 
         if (start >= objRefsEnd)
-            return;
+            return true;
 
         const bool* end = start;
         while (end < objRefsEnd && *end)
             end++;
 
-        func((start - objRefs) * TARGET_POINTER_SIZE, end - start);
+        if (!func((start - objRefs) * TARGET_POINTER_SIZE, end - start))
+            return false;
+
         start = end;
     }
+
+    return true;
 }
 
 MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod, AllocMemTracker* pamTracker)
@@ -62,6 +70,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count)
     {
         numObjRefRuns++;
+        return true;
     });
 
     unsigned numParentPointerSeries = 0;
@@ -121,6 +130,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
             curIndex--;
             pSeries[curIndex].SetSeriesSize((count * TARGET_POINTER_SIZE) - pMT->GetBaseSize());
             pSeries[curIndex].SetSeriesOffset(startOfDataInObject + start);
+            return true;
             };
         EnumerateRunsOfObjRefs(dataSize, objRefs, writeSeries);
 
@@ -131,6 +141,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     size_t numObjRefs = 0;
     EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count) {
         numObjRefs += count;
+        return true;
         });
     StackSString debugName;
     debugName.Printf("Continuation_%s_%u_%zu", asyncMethod->m_pszDebugMethodName, dataSize, numObjRefs);
@@ -146,12 +157,191 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     return pMT;
 }
 
-MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod, AllocMemTracker* pamTracker)
+MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod)
 {
     STANDARD_VM_CONTRACT;
 
-    // TODO: table to share/deduplicate these.
-    return CreateNewContinuationMethodTable(dataSize, objRefs, dataOffsets, asyncMethod, pamTracker);
+    ContinuationLayoutKeyData keyData(dataSize, objRefs, dataOffsets);
+    {
+        CrstHolder lock(&m_layoutsLock);
+        ContinuationLayoutKey key(&keyData);
+        MethodTable* lookupResult;
+        if (m_layouts.GetValue(key, (HashDatum*)&lookupResult))
+        {
+            return lookupResult;
+        }
+    }
+
+    AllocMemTracker amTracker;
+    MethodTable* result = CreateNewContinuationMethodTable(dataSize, objRefs, dataOffsets, asyncMethod, &amTracker);
+    {
+        CrstHolder lock(&m_layoutsLock);
+        ContinuationLayoutKey key(&keyData);
+        MethodTable* lookupResult;
+        if (m_layouts.GetValue(key, (HashDatum*)&lookupResult))
+        {
+            result = lookupResult;
+        }
+        else
+        {
+            m_layouts.InsertValue(ContinuationLayoutKey(result), result);
+            amTracker.SuppressRelease();
+        }
+    }
+
+    return result;
+}
+
+ContinuationLayoutKey::ContinuationLayoutKey(MethodTable* pMT)
+    : Data(reinterpret_cast<uintptr_t>(pMT) | 1)
+{
+}
+
+ContinuationLayoutKey::ContinuationLayoutKey(ContinuationLayoutKeyData* pData)
+    : Data(reinterpret_cast<uintptr_t>(pData))
+{
+}
+
+EEHashEntry_t* ContinuationLayoutKeyHashTableHelper::AllocateEntry(ContinuationLayoutKey key, BOOL bDeepCopy, AllocationHeap heap)
+{
+    CONTRACTL
+    {
+        WRAPPER(THROWS);
+        WRAPPER(GC_NOTRIGGER);
+        INJECT_FAULT(return FALSE;);
+    }
+    CONTRACTL_END
+
+    EEHashEntry_t* pEntry = (EEHashEntry_t*)new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(ContinuationLayoutKey)];
+    if (!pEntry)
+        return NULL;
+    memcpy(pEntry->Key, &key, sizeof(ContinuationLayoutKey));
+    return pEntry;
+}
+
+void ContinuationLayoutKeyHashTableHelper::DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap heap)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    delete [] (BYTE*) pEntry;
+}
+
+static CGCDescSeries* NextSeriesInData(CGCDescSeries* curSeries, CGCDescSeries* lowestSeries)
+{
+    while (curSeries >= lowestSeries && curSeries->GetSeriesOffset() < OFFSETOF__CORINFO_Continuation__data)
+    {
+        curSeries--;
+    }
+
+    return curSeries;
+}
+
+BOOL ContinuationLayoutKeyHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, ContinuationLayoutKey key)
+{
+    LIMITED_METHOD_CONTRACT;
+    ContinuationLayoutKey storedKey;
+    memcpy(&storedKey, pEntry->Key, sizeof(ContinuationLayoutKey));
+
+    _ASSERTE((storedKey.Data & 1) != 0); // Always stores a MethodTable* as key
+    _ASSERTE((key.Data & 1) == 0); // Always uses ContinuationLayoutKeyData* as lookup key
+
+    MethodTable* left = reinterpret_cast<MethodTable*>(storedKey.Data ^ 1);
+    ContinuationLayoutKeyData* right = reinterpret_cast<ContinuationLayoutKeyData*>(key.Data);
+    if (left->GetBaseSize() != (OBJHEADER_SIZE + OFFSETOF__CORINFO_Continuation__data + right->DataSize))
+        return FALSE;
+
+    const CORINFO_CONTINUATION_DATA_OFFSETS& leftOffsets = *left->GetContinuationOffsets();
+    const CORINFO_CONTINUATION_DATA_OFFSETS& rightOffsets = right->DataOffsets;
+    if (leftOffsets.Result != rightOffsets.Result ||
+        leftOffsets.Exception != rightOffsets.Exception ||
+        leftOffsets.ContinuationContext != rightOffsets.ContinuationContext ||
+        leftOffsets.KeepAlive != rightOffsets.KeepAlive)
+    {
+        return FALSE;
+    }
+
+    // Now compare GC pointer series.
+    CGCDesc* gc = CGCDesc::GetCGCDescFromMT(left);
+    CGCDescSeries* curSeries = gc->GetHighestSeries();
+    CGCDescSeries* lowestSeries = gc->GetLowestSeries();
+
+    // Skip ahead to first series inside the data region.
+    curSeries = NextSeriesInData(curSeries, lowestSeries);
+
+    // Now verify that the series in the data match the bitmap.
+    auto compare = [=, &curSeries](size_t offset, size_t count)
+        {
+            if (curSeries < lowestSeries)
+                return false;
+
+            if (OFFSETOF__CORINFO_Continuation__data + offset != curSeries->GetSeriesOffset())
+                return false;
+
+            if (count * TARGET_POINTER_SIZE != curSeries->GetSeriesSize() + left->GetBaseSize())
+                return false;
+
+            curSeries--;
+            return true;
+        };
+
+    if (!EnumerateRunsOfObjRefs(right->DataSize, right->ObjRefs, compare))
+    {
+        return false;
+    }
+
+    // Finally verify that we ran out of GC pointers simultaneously.
+    return curSeries + 1 == lowestSeries;
+}
+
+DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
+{
+    DWORD dwHash = 5381;
+
+    const CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets;
+    if ((key.Data & 1) != 0)
+    {
+        MethodTable* pMT = reinterpret_cast<MethodTable*>(key.Data ^ 1);
+        dataOffsets = pMT->GetContinuationOffsets();
+
+        CGCDesc* gc = CGCDesc::GetCGCDescFromMT(pMT);
+        CGCDescSeries* curSeries = gc->GetHighestSeries();
+        CGCDescSeries* lowestSeries = gc->GetLowestSeries();
+
+        // Skip ahead to first series inside the data region.
+        curSeries = NextSeriesInData(curSeries, lowestSeries);
+
+        dwHash = ((dwHash << 5) + dwHash) ^ (pMT->GetBaseSize() - (OBJHEADER_SIZE + OFFSETOF__CORINFO_Continuation__data));
+        while (curSeries >= lowestSeries)
+        {
+            dwHash = ((dwHash << 5) + dwHash) ^ (unsigned)(curSeries->GetSeriesOffset() - OFFSETOF__CORINFO_Continuation__data);
+            dwHash = ((dwHash << 5) + dwHash) ^ (unsigned)((curSeries->GetSeriesSize() + pMT->GetBaseSize()) / TARGET_POINTER_SIZE);
+            curSeries--;
+        }
+    }
+    else
+    {
+        ContinuationLayoutKeyData* keyData = reinterpret_cast<ContinuationLayoutKeyData*>(key.Data);
+        dataOffsets = &keyData->DataOffsets;
+
+        dwHash = ((dwHash << 5) + dwHash) ^ keyData->DataSize;
+        EnumerateRunsOfObjRefs(keyData->DataSize, keyData->ObjRefs, [&dwHash](size_t offset, size_t count){
+            dwHash = ((dwHash << 5) + dwHash) ^ (unsigned)offset;
+            dwHash = ((dwHash << 5) + dwHash) ^ (unsigned)count;
+            return true;
+            });
+    }
+
+    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->Result;
+    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->Exception;
+    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->ContinuationContext;
+    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->KeepAlive;
+
+    return dwHash;
+}
+
+void ContinuationLayoutKeyHashTableHelper::ReplaceKey(EEHashEntry_t *pEntry, ContinuationLayoutKey newKey)
+{
+    memcpy(pEntry->Key, &newKey, sizeof(ContinuationLayoutKey));
 }
 
 #endif

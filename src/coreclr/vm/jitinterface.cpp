@@ -10269,9 +10269,12 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
     AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-    AllocMemTracker amTracker;
-    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, m_pMethodBeingCompiled, &amTracker);
-    amTracker.SuppressRelease();
+    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, m_pMethodBeingCompiled);
+
+#ifdef DEBUG
+    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, m_pMethodBeingCompiled);
+    _ASSERTE(result2 == result);
+#endif
 
     EE_TO_JIT_TRANSITION();
 
@@ -14519,7 +14522,7 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTr
 {
     SigBuilder sigBuilder;
     sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    sigBuilder.AppendData(2); // 2 argument
+    sigBuilder.AppendData(2); // 2 arguments
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
     sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF); // result location
