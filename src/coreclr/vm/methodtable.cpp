@@ -5752,6 +5752,27 @@ namespace
     }
 }
 
+// Looking only at the typedef details of pMT, determine if it might have a candidate implementation
+bool InterfaceMayHaveCandidateImplementation(MethodTable *pMT, MethodDesc *pInterfaceMD)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    MethodTable *pInterfaceMT = pInterfaceMD->GetMethodTable();
+
+    // If a method is defined on pMT and isn't abstract, then it might have a default implementation on that type if it isn't abstract
+    if (pMT->HasSameTypeDefAs(pInterfaceMT))
+    {
+        return !pInterfaceMD->IsAbstract();
+    }
+
+    // If a pMT has MethodImpl records then its possible that it could override the interface method
+    if (pMT->GetClass()->ContainsMethodImpls())
+        return true;
+
+    // Otherwise the type pMT cannot possibly have a candidate implementation for pInterfaceMD
+    return false;
+}
+
 // Find the default interface implementation method for interface dispatch
 // It is either the interface method with default interface method implementation,
 // or an most specific interface with an explicit methodimpl overriding the method
@@ -5785,7 +5806,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
+    if (IsInterface() && InterfaceMayHaveCandidateImplementation(this, pInterfaceMD) && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5822,73 +5843,76 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
             while (!it.Finished())
             {
-                MethodTable *pCurMT = it.GetInterface(pMT, level);
-
-                MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
+                if (InterfaceMayHaveCandidateImplementation(it.GetInterfaceApprox(), pInterfaceMD))
                 {
-                    //
-                    // Found a match. But is it a more specific match (we want most specific interfaces)
-                    //
-                    _ASSERTE(pCurMD != NULL);
-                    bool needToInsert = true;
-                    bool seenMoreSpecific = false;
+                    MethodTable *pCurMT = it.GetInterface(pMT, level);
 
-                    // We need to maintain the invariant that the candidates are always the most specific
-                    // in all path scaned so far. There might be multiple incompatible candidates
-                    for (unsigned i = 0; i < candidatesCount; ++i)
+                    MethodDesc *pCurMD = NULL;
+                    if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
                     {
-                        MethodTable *pCandidateMT = candidates[i].pMT;
-                        if (pCandidateMT == NULL)
-                            continue;
+                        //
+                        // Found a match. But is it a more specific match (we want most specific interfaces)
+                        //
+                        _ASSERTE(pCurMD != NULL);
+                        bool needToInsert = true;
+                        bool seenMoreSpecific = false;
 
-                        if (pCandidateMT == pCurMT)
+                        // We need to maintain the invariant that the candidates are always the most specific
+                        // in all path scaned so far. There might be multiple incompatible candidates
+                        for (unsigned i = 0; i < candidatesCount; ++i)
                         {
-                            // A dup - we are done
-                            needToInsert = false;
-                            break;
-                        }
+                            MethodTable *pCandidateMT = candidates[i].pMT;
+                            if (pCandidateMT == NULL)
+                                continue;
 
-                        if (allowVariance && pCandidateMT->HasSameTypeDefAs(pCurMT))
-                        {
-                            // Variant match on the same type - this is a tie
-                        }
-                        else if (pCurMT->CanCastToInterface(pCandidateMT))
-                        {
-                            // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
-                            if (!seenMoreSpecific)
+                            if (pCandidateMT == pCurMT)
                             {
-                                seenMoreSpecific = true;
-                                candidates[i].pMT = pCurMT;
-                                candidates[i].pMD = pCurMD;
+                                // A dup - we are done
+                                needToInsert = false;
+                                break;
+                            }
+
+                            if (allowVariance && pCandidateMT->HasSameTypeDefAs(pCurMT))
+                            {
+                                // Variant match on the same type - this is a tie
+                            }
+                            else if (pCurMT->CanCastToInterface(pCandidateMT))
+                            {
+                                // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
+                                if (!seenMoreSpecific)
+                                {
+                                    seenMoreSpecific = true;
+                                    candidates[i].pMT = pCurMT;
+                                    candidates[i].pMD = pCurMD;
+                                }
+                                else
+                                {
+                                    candidates[i].pMT = NULL;
+                                    candidates[i].pMD = NULL;
+                                }
+
+                                needToInsert = false;
+                            }
+                            else if (pCandidateMT->CanCastToInterface(pCurMT))
+                            {
+                                // pCurMT is less specific - we don't need to scan more entries as this entry can
+                                // represent pCurMT (other entries are incompatible with pCurMT)
+                                needToInsert = false;
+                                break;
                             }
                             else
                             {
-                                candidates[i].pMT = NULL;
-                                candidates[i].pMD = NULL;
+                                // pCurMT is incompatible - keep scanning
                             }
+                        }
 
-                            needToInsert = false;
-                        }
-                        else if (pCandidateMT->CanCastToInterface(pCurMT))
+                        if (needToInsert)
                         {
-                            // pCurMT is less specific - we don't need to scan more entries as this entry can
-                            // represent pCurMT (other entries are incompatible with pCurMT)
-                            needToInsert = false;
-                            break;
+                            ASSERT(candidatesCount < candidates.Size());
+                            candidates[candidatesCount].pMT = pCurMT;
+                            candidates[candidatesCount].pMD = pCurMD;
+                            candidatesCount++;
                         }
-                        else
-                        {
-                            // pCurMT is incompatible - keep scanning
-                        }
-                    }
-
-                    if (needToInsert)
-                    {
-                        ASSERT(candidatesCount < candidates.Size());
-                        candidates[candidatesCount].pMT = pCurMT;
-                        candidates[candidatesCount].pMD = pCurMD;
-                        candidatesCount++;
                     }
                 }
 
@@ -8298,6 +8322,21 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             // entries, let's reset the count and just break out. (Should we throw?)
             break;
         }
+
+        LPCUTF8     szMember = NULL;
+        PCCOR_SIGNATURE pSigMember = NULL;
+        DWORD       cSigMember = 0;
+        if (TypeFromToken(methodDecl) == mdtMemberRef)
+        {
+            IfFailThrow(pMDInternalImport->GetNameAndSigOfMemberRef(methodDecl, &pSigMember, &cSigMember, &szMember));
+
+            // Do a quick name check to avoid excess use of FindMethod and the type load below
+            if (strcmp(szMember, pInterfaceMD->GetName()) != 0)
+            {
+                continue;
+            }
+        }
+
         mdToken tkParent;
         hr = pMDInternalImport->GetParentToken(methodDecl, &tkParent);
         if (FAILED(hr))
@@ -8344,19 +8383,8 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         }
         else if (TypeFromToken(methodDecl) == mdtMemberRef)
         {
-            LPCUTF8     szMember;
-            PCCOR_SIGNATURE pSig;
-            DWORD       cSig;
-
-            IfFailThrow(pMDInternalImport->GetNameAndSigOfMemberRef(methodDecl, &pSig, &cSig, &szMember));
-
-            // Do a quick name check to avoid excess use of FindMethod
-            if (strcmp(szMember, pInterfaceMD->GetName()) != 0)
-            {
-                continue;
-            }
-
-            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSig, cSig, GetModule());
+            // We've already gotten the szMember, pSigMember, and cSigMember as a result of the early out check above.
+            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSigMember, cSigMember, GetModule());
         }
         else
         {
