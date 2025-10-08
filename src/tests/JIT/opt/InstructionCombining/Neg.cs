@@ -39,7 +39,7 @@ namespace TestNeg
             {
                 fail = true;
             }
-            
+
             if (NegLargeShift64Bit(0xD) != 0x6000000000000000)
             {
                 fail = true;
@@ -95,6 +95,26 @@ namespace TestNeg
                 fail = true;
             }
 
+            if (!NegsGreaterThan(-1))
+            {
+                fail = true;
+            }
+
+            if (!NegsGreaterThanEq(0))
+            {
+                fail = true;
+            }
+
+            if (!NegsLessThan(5))
+            {
+                fail = true;
+            }
+
+            if (!NegsLessThanEq(20))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -113,7 +133,7 @@ namespace TestNeg
         static int NegLSL(int a)
         {
             //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
-            return -(a<<2);
+            return -(a << 2);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -121,35 +141,36 @@ namespace TestNeg
         {
             //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}},  #20
             //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
-            return (uint)-(a>>20);
+            return (uint)-(a >> 20);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int NegASR(int a)
         {
             //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}, ASR #13
-            return -(a>>13);
+            return -(a >> 13);
         }
-        
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int NegLargeShift(int a)
         {
             //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}, LSL #17
-            return -(a<<81);
+            return -(a << 81);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long NegLargeShift64Bit(long a)
         {
             //ARM64-FULL-LINE: neg {{x[0-9]+}}, {{x[0-9]+}}, LSL #61
-            return -(a<<189);
+            return -(a << 189);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Negs(int a)
         {
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
-            if (-a != 0) {
+            if (-a != 0)
+            {
                 return 1;
             }
             return -1;
@@ -159,7 +180,8 @@ namespace TestNeg
         static int NegsLSL(int a)
         {
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSL #14
-            if (-(a<<14) != 0) {
+            if (-(a << 14) != 0)
+            {
                 return 1;
             }
             return -1;
@@ -170,7 +192,8 @@ namespace TestNeg
         {
             //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #3
             //ARM64-FULL-LINE: negs {{x[0-9]+}}, {{x[0-9]+}}
-            if (-(a>>3) != 0) {
+            if (-(a >> 3) != 0)
+            {
                 return 1;
             }
             return -1;
@@ -180,7 +203,8 @@ namespace TestNeg
         static int NegsASR(int a)
         {
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, ASR #2
-            if (-(a>>2) != 0) {
+            if (-(a >> 2) != 0)
+            {
                 return 1;
             }
             return -1;
@@ -191,7 +215,8 @@ namespace TestNeg
         {
             //ARM64-FULL-LINE: lsl  {{w[0-9]+}}, {{w[0-9]+}}, #4
             //ARM64-FULL-LINE: negs {{x[0-9]+}}, {{x[0-9]+}}
-            if (-(a<<100) != 0) {
+            if (-(a << 100) != 0)
+            {
                 return 1;
             }
             return -1;
@@ -201,7 +226,8 @@ namespace TestNeg
         static int NegsLargeShift64Bits(long a)
         {
             //ARM64-FULL-LINE: negs {{x[0-9]+}}, {{x[0-9]+}}, ASR #34
-            if (-(a>>98) != 0) {
+            if (-(a >> 98) != 0)
+            {
                 return 1;
             }
             return -1;
@@ -218,7 +244,7 @@ namespace TestNeg
         static bool NegsSingleLineLSL(int a)
         {
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSL #13
-            return -(a<<13) != 0;
+            return -(a << 13) != 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -226,7 +252,8 @@ namespace TestNeg
         {
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, ASR #5
-            if ((-a != 0) == (-(b>>5) != 0)) {
+            if ((-a != 0) == (-(b >> 5) != 0))
+            {
                 return 1;
             }
             return -1;
@@ -237,7 +264,35 @@ namespace TestNeg
         {
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, ASR #1
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSL #1
-            return (-(a>>1) != 0) | (-(b<<1) != 0);
+            return (-(a >> 1) != 0) | (-(b << 1) != 0);
+        }
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsGreaterThan(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsGreaterThanEq(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsLessThan(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsLessThanEq(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a <= 0;
         }
     }
 }
