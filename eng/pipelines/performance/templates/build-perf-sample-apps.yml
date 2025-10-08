@@ -166,7 +166,7 @@ steps:
         parameters:
           rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
           includeRootFolder: true
-          displayName: iOS Sample App Mono FullAOTLLVM NoSymbols
+          displayName: iOS Sample App Mono FullAOT LLVM NoSymbols
           artifactName: iOSSampleAppMonoFullAOTLLVMNoSymbols
           archiveExtension: '.zip'
           archiveType: zip
