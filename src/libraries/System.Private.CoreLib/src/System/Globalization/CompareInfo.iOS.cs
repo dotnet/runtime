@@ -249,10 +249,7 @@ namespace System.Globalization
                     for (int j = 0; j < consumed; j++)
                     {
                         destination[writeIndex] = input[i + j];
-                        if (indexMap is not null)
-                        {
-                            indexMap[writeIndex] = i;
-                        }
+                        indexMap?[writeIndex] = i;
                         writeIndex++;
                     }
                 }
