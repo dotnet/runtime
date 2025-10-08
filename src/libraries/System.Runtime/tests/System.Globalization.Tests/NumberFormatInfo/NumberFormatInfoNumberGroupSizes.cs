@@ -25,7 +25,7 @@ namespace System.Globalization.Tests
         public void NumberGroupSizes_Get_ReturnsExpected(string cultureName, NumberFormatInfo format, int[] expected1, int[] expected2)
         {
             int[] actual = format.NumberGroupSizes;
-            Assert.True(expected1.SequenceEqual(actual) || (expected2 != null && expected2.SequenceEqual(actual)),
+            Assert.True(expected1.SequenceEqual(actual) || (expected2 is not null && expected2.SequenceEqual(actual)),
                 $"Expected: [{string.Join(", ", expected1)}] or [{(expected2 is null ? "<null>" : string.Join(", ", expected2))}], Actual: [{string.Join(", ", actual)}]"
                 + $"{Environment.NewLine}Culture: {cultureName}");
         }
