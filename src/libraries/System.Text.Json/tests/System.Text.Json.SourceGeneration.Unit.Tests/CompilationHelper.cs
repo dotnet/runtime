@@ -889,11 +889,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                 if (value.EndsWith("\r\n", StringComparison.Ordinal))
                 {
-                    WriteLine(value.Substring(0, value.Length - 2));
+                    WriteLine(value[..^2]);
                 }
                 else if (value.EndsWith("\n", StringComparison.Ordinal))
                 {
-                    WriteLine(value.Substring(0, value.Length - 1));
+                    WriteLine(value[..^1]);
                 }
                 else
                 {
