@@ -107,7 +107,7 @@ public class CallbackStressTest
     public static void ManualRaiseException()
     {
 #if WINDOWS
-        if (!TestLibrary.Utilities.IsMonoRuntime)
+        if (!TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsCoreClrInterpreter)
         {
             try
             {

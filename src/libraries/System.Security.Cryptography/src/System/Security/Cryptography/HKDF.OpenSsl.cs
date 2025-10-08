@@ -9,9 +9,8 @@ namespace System.Security.Cryptography
     {
         private static readonly bool s_hasOpenSslImplementation = Interop.Crypto.EvpKdfAlgs.Hkdf is not null;
 
-        private static void Extract(
+        private static void ExtractCore(
             HashAlgorithmName hashAlgorithmName,
-            int hashLength,
             ReadOnlySpan<byte> ikm,
             ReadOnlySpan<byte> salt,
             Span<byte> prk)
@@ -25,7 +24,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                HKDFManagedImplementation.Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
+                HKDFManagedImplementation.Extract(hashAlgorithmName, ikm, salt, prk);
             }
         }
 

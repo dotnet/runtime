@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -646,6 +648,14 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Returns an enumeration of <see cref="Rune"/> from this builder.
+        /// </summary>
+        /// <remarks>
+        /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
+        /// </remarks>
+        public StringBuilderRuneEnumerator EnumerateRunes() => new StringBuilderRuneEnumerator(this);
+
+        /// <summary>
         /// Appends a character 0 or more times to the end of this builder.
         /// </summary>
         /// <param name="value">The character to append.</param>
@@ -1027,6 +1037,20 @@ namespace System.Text
             m_ChunkLength++;
         }
 
+        /// <summary>
+        /// Appends the string representation of a specified <see cref="Rune"/> to this instance.
+        /// </summary>
+        /// <param name="value">The UTF-32-encoded code unit to append.</param>
+        /// <returns>A reference to this instance after the append operation has completed.</returns>
+        public StringBuilder Append(Rune value)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Append span
+            return Append(valueChars);
+        }
+
         [CLSCompliant(false)]
         public StringBuilder Append(sbyte value) => AppendSpanFormattable(value);
 
@@ -1325,6 +1349,21 @@ namespace System.Text
 
             Insert(index, ref value, 1);
             return this;
+        }
+
+        /// <summary>
+        /// Inserts the string representation of a specified Unicode rune into this instance at the specified character position.
+        /// </summary>
+        /// <param name="index">The position in this instance where insertion begins.</param>
+        /// <param name="value">The value to insert.</param>
+        /// <returns>A reference to this instance after the insert operation has completed.</returns>
+        public StringBuilder Insert(int index, Rune value)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Insert span
+            return Insert(index, valueChars);
         }
 
         public StringBuilder Insert(int index, char[]? value)
@@ -2249,6 +2288,40 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Replaces all occurrences of a specified rune in this instance with another specified rune using an ordinal comparison.
+        /// </summary>
+        /// <param name="oldRune">The rune to replace.</param>
+        /// <param name="newRune">The rune that replaces <paramref name="oldRune"/>.</param>
+        /// <returns>A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/>.</returns>
+        public StringBuilder Replace(Rune oldRune, Rune newRune)
+        {
+            return Replace(oldRune, newRune, 0, Length);
+        }
+
+        /// <summary>
+        /// Replaces, within a substring of this instance, all occurrences of a specified rune with another specified rune using an ordinal comparison.
+        /// </summary>
+        /// <param name="oldRune">The rune to replace.</param>
+        /// <param name="newRune">The rune that replaces <paramref name="oldRune"/>.</param>
+        /// <param name="startIndex">The position in this instance where the substring begins.</param>
+        /// <param name="count">The length of the substring.</param>
+        /// <returns>
+        /// A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/> in the range
+        /// from <paramref name="startIndex"/> to <paramref name="startIndex"/> + <paramref name="count"/> - 1.
+        /// </returns>
+        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        {
+            // Convert oldRune to span
+            ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Convert newRune to span
+            ReadOnlySpan<char> newChars = newRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Replace span with span
+            return Replace(oldChars, newChars, startIndex, count);
+        }
+
+        /// <summary>
         /// Appends a character buffer to this builder.
         /// </summary>
         /// <param name="value">The pointer to the start of the buffer.</param>
@@ -2796,6 +2869,54 @@ namespace System.Text
 
             Debug.Assert(chunk != null, "We fell off the beginning of the string!");
             AssertInvariants();
+        }
+
+        /// <summary>
+        /// Gets the <see cref="Rune"/> that begins at a specified position in this builder.
+        /// </summary>
+        /// <param name="index">The starting position in this builder at which to decode the rune.</param>
+        /// <returns>The rune obtained from this builder at the specified <paramref name="index"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The index is out of the range of the builder.</exception>
+        /// <exception cref="ArgumentException">The rune at the specified index is not valid.</exception>
+        public Rune GetRuneAt(int index)
+        {
+            if (TryGetRuneAt(index, out Rune value))
+            {
+                return value;
+            }
+            ThrowHelper.ThrowArgumentException_CannotExtractScalar(ExceptionArgument.index);
+            return default;
+        }
+
+        /// <summary>
+        /// Attempts to get the <see cref="Rune"/> that begins at a specified position in this builder, and return a value that indicates whether the operation succeeded.
+        /// </summary>
+        /// <param name="index">The starting position in this builder at which to decode the rune.</param>
+        /// <param name="value">When this method returns, the decoded rune.</param>
+        /// <returns>
+        /// <see langword="true"/> if a scalar value was successfully extracted from the specified index;
+        /// <see langword="false"/> if a value could not be extracted because of invalid data.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">The index is out of the range of the builder.</exception>
+        public bool TryGetRuneAt(int index, out Rune value)
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+
+            // Get span at StringBuilder index
+            Span<char> chars = index + 1 < Length
+                ? [this[index], this[index + 1]]
+                : [this[index]];
+
+            OperationStatus status = Rune.DecodeFromUtf16(chars, out Rune result, out _);
+            if (status is OperationStatus.Done)
+            {
+                value = result;
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         /// <summary>Provides a handler used by the language compiler to append interpolated strings into <see cref="StringBuilder"/> instances.</summary>

@@ -90,7 +90,7 @@ export interface IDiagnosticClient {
 export type fnClientProvider = (scenarioName:string) => IDiagnosticClient;
 
 export function downloadBlob (messages:Uint8Array[]) {
-    const blob = new Blob(messages, { type: "application/octet-stream" });
+    const blob = new Blob(messages as BlobPart[], { type: "application/octet-stream" });
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.download = "trace." + (new Date()).valueOf() + ".nettrace";

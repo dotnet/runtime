@@ -129,7 +129,28 @@ namespace System.Security.Cryptography
 
             if (key.PublicKey is not null)
             {
-                GetECPointFromUncompressedPublicKey(key.PublicKey.Value.Span, key.PrivateKey.Length, out x, out y);
+                ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
+
+                if (publicKeyBytes.Length == 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                // Implementation limitation
+                // 04 (Uncompressed ECPoint) is almost always used.
+                if (publicKeyBytes[0] != 0x04)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
+                if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                x = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray();
+                y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray();
             }
 
             ECDomainParameters domainParameters;
@@ -771,7 +792,30 @@ namespace System.Security.Cryptography
 
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
-            WriteUncompressedPublicKey(ecParameters.Q.X!, ecParameters.Q.Y!, writer);
+            int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
+
+            // A NIST P-521 Q will encode to 133 bytes: (521 + 7)/8 * 2 + 1.
+            // 256 should be plenty for all but very atypical uses.
+            const int MaxStackAllocSize = 256;
+            Span<byte> publicKeyBytes = stackalloc byte[MaxStackAllocSize];
+            byte[]? rented = null;
+
+            if (publicKeyLength > MaxStackAllocSize)
+            {
+                publicKeyBytes = rented = CryptoPool.Rent(publicKeyLength);
+            }
+
+            publicKeyBytes[0] = 0x04;
+            ecParameters.Q.X.CopyTo(publicKeyBytes.Slice(1));
+            ecParameters.Q.Y.CopyTo(publicKeyBytes.Slice(1 + ecParameters.Q.X!.Length));
+
+            writer.WriteBitString(publicKeyBytes.Slice(0, publicKeyLength));
+
+            if (rented is not null)
+            {
+                // Q contains public EC parameters that are not sensitive.
+                CryptoPool.Return(rented, clearSize: 0);
+            }
         }
 
         internal static AsnWriter WriteECPrivateKey(in ECParameters ecParameters)

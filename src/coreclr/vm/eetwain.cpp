@@ -1189,6 +1189,21 @@ FCIMPL1(void, GCReporting::Register, GCFrame* frame)
 
     // Construct a GCFrame.
     _ASSERTE(frame != NULL);
+#ifdef FEATURE_INTERPRETER
+    Thread *pThread = GetThread();
+    Frame *pFrame = pThread->GetFrame();
+    frame->SetOSStackLocation(frame);
+
+    if ((pFrame != FRAME_TOP) && (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        InterpreterFrame *pInterpFrame = (InterpreterFrame *)(pFrame);
+        InterpMethodContextFrame *pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+        if (pTopInterpMethodContextFrame->pStack <= (int8_t*)frame && (int8_t*)frame < pThread->GetInterpThreadContext()->pStackPointer)
+        {
+            frame->SetOSStackLocation(pTopInterpMethodContextFrame);
+        }
+    }
+#endif // FEATURE_INTERPRETER
     frame->Push(GetThread());
 }
 FCIMPLEND
@@ -2186,7 +2201,9 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
     exceptionClauseArgs.isFilter = isFilter;
     exceptionClauseArgs.throwable = throwable;
 
+    GCPROTECT_BEGIN(exceptionClauseArgs.throwable);
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext, &exceptionClauseArgs);
+    GCPROTECT_END();
 
     frames.interpreterFrame.Pop();
 
@@ -2204,10 +2221,13 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
 {
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
+#ifdef TARGET_WASM
+    throw ResumeAfterCatchException(resumeSP, resumeIP);
+#else
+    Thread *pThread = GetThread();
+    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
 
     ClrCaptureContext(pContext);
 
@@ -2237,6 +2257,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
 #endif    
     ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
+#endif // TARGET_WASM
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
