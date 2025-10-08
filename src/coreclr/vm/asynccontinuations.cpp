@@ -88,17 +88,6 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     unsigned startOfDataInInstance = AlignUp(pParentClass->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
     unsigned startOfDataInObject = OBJECT_SIZE + startOfDataInInstance;
 
-    // Offsets passed in are relative to the data chunk, fix that up now to be
-    // relative to the start of the instance data.
-    if (allocatedDataOffsets->Result != UINT_MAX)
-        allocatedDataOffsets->Result += startOfDataInInstance;
-    if (allocatedDataOffsets->Exception != UINT_MAX)
-        allocatedDataOffsets->Exception += startOfDataInInstance;
-    if (allocatedDataOffsets->ContinuationContext != UINT_MAX)
-        allocatedDataOffsets->ContinuationContext += startOfDataInInstance;
-    if (allocatedDataOffsets->KeepAlive != UINT_MAX)
-        allocatedDataOffsets->KeepAlive += startOfDataInInstance;
-
     MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
     pMT->AllocateAuxiliaryData(m_allocator, asyncMethod->GetLoaderModule(), pamTracker, MethodTableStaticsFlags::None);
     pMT->SetParentMethodTable(pParentClass);
@@ -161,7 +150,22 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
 {
     STANDARD_VM_CONTRACT;
 
-    ContinuationLayoutKeyData keyData(dataSize, objRefs, dataOffsets);
+    // The API we expose has all offsets relative to the data, but we prefer to
+    // have offsets relative to the start of instance data so that
+    // RuntimeHelpers.GetRawData(obj) + offset returns the right offset. Adjust
+    // it here.
+    CORINFO_CONTINUATION_DATA_OFFSETS adjustedDataOffsets = dataOffsets;
+    const uint32_t startOfDataInInstance = OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object;
+    if (dataOffsets.Result != UINT_MAX)
+        adjustedDataOffsets.Result += startOfDataInInstance;
+    if (dataOffsets.Exception != UINT_MAX)
+        adjustedDataOffsets.Exception += startOfDataInInstance;
+    if (dataOffsets.ContinuationContext != UINT_MAX)
+        adjustedDataOffsets.ContinuationContext += startOfDataInInstance;
+    if (dataOffsets.KeepAlive != UINT_MAX)
+        adjustedDataOffsets.KeepAlive += startOfDataInInstance;
+
+    ContinuationLayoutKeyData keyData(dataSize, objRefs, adjustedDataOffsets);
     {
         CrstHolder lock(&m_layoutsLock);
         ContinuationLayoutKey key(&keyData);
@@ -173,7 +177,7 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
     }
 
     AllocMemTracker amTracker;
-    MethodTable* result = CreateNewContinuationMethodTable(dataSize, objRefs, dataOffsets, asyncMethod, &amTracker);
+    MethodTable* result = CreateNewContinuationMethodTable(dataSize, objRefs, adjustedDataOffsets, asyncMethod, &amTracker);
     {
         CrstHolder lock(&m_layoutsLock);
         ContinuationLayoutKey key(&keyData);
