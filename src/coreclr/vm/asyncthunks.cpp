@@ -58,9 +58,37 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     return true;
 }
 
+// provided an async method, emits a Task-returning wrapper.
 void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL)
 {
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
+
+    // Emits roughly the following code:
+    // 
+    // ExecutionAndSyncBlockStore store = default;
+    // store.Push();
+    // try
+    // {
+    //   Continuation cont;
+    //   try
+    //   {
+    //     T result = Inner(args);
+    //     // call an intrisic to see if the call above produced a continuation
+    //     cont = StubHelpers.AsyncCallContinuation();
+    //     if (cont == null)
+    //       return Task.FromResult(result);
+    //
+    //     return FinalizeTaskReturningThunk(cont);
+    //   }
+    //   catch (Exception ex)
+    //   {
+    //     return TaskFromException(ex);
+    //   }
+    // }
+    // finally
+    // {
+    //   store.Pop();
+    // }
 
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
 
@@ -208,24 +236,24 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             {
                 MethodDesc* fromExceptionMD;
                 if (isValueTask)
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_EXCEPTION_1);
+                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION_1);
                 else
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION_1);
+                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION_1);
 
                 fromExceptionMD = FindOrCreateAssociatedMethodDesc(fromExceptionMD, fromExceptionMD->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-
                 fromExceptionToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, fromExceptionMD);
             }
             else
             {
-                MethodDesc* fromExceptionMD;
+                MethodDesc* md;
                 if (isValueTask)
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__VALUETASK__FROM_EXCEPTION);
+                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__VALUETASK_FROM_EXCEPTION);
                 else
-                    fromExceptionMD = CoreLibBinder::GetMethod(METHOD__TASK__FROM_EXCEPTION);
+                    md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TASK_FROM_EXCEPTION);
 
-                fromExceptionToken = pCode->GetToken(fromExceptionMD);
+                fromExceptionToken = pCode->GetToken(md);
             }
+
             pCode->EmitCALL(fromExceptionToken, 1, 1);
             pCode->EmitSTLOC(returnTaskLocal);
             pCode->EmitLEAVE(returnTaskLabel);
@@ -447,12 +475,13 @@ int MethodDesc::GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream
     return pCode->GetToken(md, typeSigToken);
 }
 
+// provided a Task-returning method, emits an async wrapper.
 void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
 {
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
     _ASSERTE(!pAsyncOtherVariant->IsVoid());
 
-    // Implement IL that is effectively the following
+    // Implement IL that is effectively the following:
     /*
     {
         Task task = other(arg);

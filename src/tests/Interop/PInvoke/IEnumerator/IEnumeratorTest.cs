@@ -74,6 +74,7 @@ namespace PInvokeTests
         }
 
         [Fact]
+        [Xunit.SkipOnCoreClrAttribute("Depends on COM behavior that is not correct in interpreter", RuntimeTestModes.InterpreterActive)]
         public static void TestSupportForICustomAdapter()
         {
             {

@@ -59,10 +59,12 @@ bool IsInterpDumpActive()
 
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 {
+#ifdef DEBUG
     fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
                 (int32_t)(offset),
                 CEEOpName(CEEDecodeOpcode(&ip)));
-    assert(!"opcode not implemented");
+#endif // DEBUG
+    BADCODE("opcode not implemented");
 }
 
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
@@ -3443,6 +3445,10 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
+    PushStackType(StackTypeI, NULL);
+    int32_t intermediateVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
     if (handleData.argType == HelperArgType::GenericResolution)
@@ -3452,6 +3458,12 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVars2(handleData.genericVar, arg2);
+        m_pLastNewIns->SetDVar(intermediateVar);
+
+        AddIns(INTOP_UNBOX_END_GENERIC);
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVars2(handleData.genericVar, intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
     else
@@ -3461,6 +3473,12 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVar(arg2);
+        m_pLastNewIns->SetDVar(intermediateVar);
+
+        AddIns(INTOP_UNBOX_END);
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVar(intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
 }
@@ -4483,8 +4501,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             break;
         }
         default:
-            // TODO
-            assert(!"Unsupported (yet) static field accessor");
+            BADCODE("Unsupported static field accessor");
             break;
     }
 
