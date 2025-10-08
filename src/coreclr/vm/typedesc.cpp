@@ -719,11 +719,11 @@ TypeHandle* TypeVarTypeDesc::GetCachedConstraints(DWORD *pNumConstraints, WhichC
     PRECONDITION(CheckPointer(pNumConstraints));
 
     DWORD numConstraints = m_numConstraintsWithFlags;
-    WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichShift);
+    WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichConstraintsLoadedShift);
     bool prevWhichInsufficient = whichCurrent > which;
     _ASSERTE(!prevWhichInsufficient);
 
-    *pNumConstraints = numConstraints & ~WhichMask;
+    *pNumConstraints = numConstraints & ~WhichConstraintsLoadedMask;
     return m_constraints;
 }
 
@@ -741,13 +741,13 @@ TypeHandle* TypeVarTypeDesc::GetConstraints(DWORD *pNumConstraints, ClassLoadLev
     _ASSERTE(level == CLASS_DEPENDENCIES_LOADED || level == CLASS_LOADED);
 
     DWORD numConstraints = m_numConstraintsWithFlags;
-    WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichShift);
+    WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichConstraintsLoadedShift);
     bool prevWhichInsufficient = whichCurrent > which;
 
     if (prevWhichInsufficient)
         LoadConstraints(level, which);
 
-    *pNumConstraints = m_numConstraintsWithFlags & ~WhichMask;
+    *pNumConstraints = m_numConstraintsWithFlags & ~WhichConstraintsLoadedMask;
     return m_constraints;
 }
 
@@ -776,17 +776,16 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
     // NOTE:
     // The WhichConstraintsToLoad enum is ordered from most constraints to least constraints, so we can use a simple greater-than comparison to determine
     // if the previously loaded constraints are sufficient for the current request.
-    // There are 4 possible values for WhichConstraintsToLoad:
+    // There are 3 possible values for WhichConstraintsToLoad:
     //   All   - Load all constraints
     //   TypeOrMethodVarsAndNonInterfacesOnly - Load all constraints except interface constraints that are not type or method variables. The code MAY load other constraints. This is used when loading constraints for the purpose of type safety checks.
-    //   TypeOrMethodVarsOnly - Load only type or method variables. (Needed for the Bounded algorithm)
     //   None - Load no constraints. This is the initial state.
 
     do
     {
         numConstraints = m_numConstraintsWithFlags;
         DWORD initialNumConstraints = numConstraints;
-        WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichShift);
+        WhichConstraintsToLoad whichCurrent = (WhichConstraintsToLoad)(numConstraints >> WhichConstraintsLoadedShift);
         bool prevWhichInsufficient = whichCurrent > which;
 
         if (!prevWhichInsufficient)
@@ -834,7 +833,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
         numConstraints = pInternalImport->EnumGetCount(&hEnum);
         if (numConstraints != 0)
         {
-            numConstraints = (numConstraints & ~WhichMask) | (((DWORD)which) << WhichShift);
+            numConstraints = (numConstraints & ~WhichConstraintsLoadedMask) | (((DWORD)which) << WhichConstraintsLoadedShift);
 
             LoaderAllocator* pAllocator = GetModule()->GetLoaderAllocator();
             // If there is a single class constraint we place it at index 0 of the array
@@ -843,7 +842,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
             
             if (whichCurrent == WhichConstraintsToLoad::None)
             {
-                constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints & ~WhichMask) * S_SIZE_T(sizeof(TypeHandle))));
+                constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints & ~WhichConstraintsLoadedMask) * S_SIZE_T(sizeof(TypeHandle))));
                 constraints = (TypeHandle*)constraintAlloc;
             }
             else
@@ -867,6 +866,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 bool loadConstraint;
                 if (TypeFromToken(tkConstraintType) == mdtTypeSpec && which != WhichConstraintsToLoad::All)
                 {
+                    _ASSERTE(which == WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
                     ULONG cSig;
                     PCCOR_SIGNATURE pSig;
 
@@ -883,10 +883,8 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                         // We can always load variable constraints
                         loadConstraint = true;
                     }
-                    else if (which != WhichConstraintsToLoad::TypeOrMethodVarsOnly)
+                    else
                     {
-                        _ASSERTE(which == WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
-                        
                         if (elemType != ELEMENT_TYPE_GENERICINST)
                         {
                             // We don't know if its a class or interface, but it isn't generic, so finding out is the same as loading
@@ -918,10 +916,6 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                                 loadConstraint = true;
                             }
                         }
-                    }
-                    else
-                    {
-                        loadConstraint = false;
                     }
                 }
                 else
@@ -984,7 +978,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
             if (loadedAllConstraints)
             {
                 // We loaded all the constraints, so we can update the number we're going to store to indicate that we're storing all of them
-                numConstraints = numConstraints & ~WhichMask;
+                numConstraints = numConstraints & ~WhichConstraintsLoadedMask;
             }
         }
 
@@ -996,7 +990,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
         break;
     } while (true);
 
-    for (DWORD i = 0; i < (numConstraints & ~WhichMask); i++)
+    for (DWORD i = 0; i < (numConstraints & ~WhichConstraintsLoadedMask); i++)
     {
         TypeHandle constraint = m_constraints[i];
         if (constraint.IsNull())
@@ -1824,7 +1818,7 @@ TypeVarTypeDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (m_numConstraintsWithFlags != (DWORD)-1)
     {
         PTR_TypeHandle constraint = m_constraints;
-        for (DWORD i = 0; i < (m_numConstraintsWithFlags & ~WhichMask); i++)
+        for (DWORD i = 0; i < (m_numConstraintsWithFlags & ~WhichConstraintsLoadedMask); i++)
         {
             if (constraint.IsValid() && !constraint->IsNull())
             {
