@@ -24,25 +24,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             instructionEncoder.Builder.RequireInitialPointerAlignment();
             Debug.Assert(instructionEncoder.Builder.CountBytes == 0);
 
+            instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
+
+            Debug.Assert(instructionEncoder.Builder.CountBytes == ((ISymbolNode)this).Offset);
+
+            if (relocsOnly)
+            {
+                // When doing relocs only, we don't need to generate the actual instructions
+                // as they will be ignored. Just emit the jump so we record the dependency.
+                instructionEncoder.EmitJMP(_helperCell);
+                return;
+            }
+
             switch (_thunkKind)
             {
                 case Kind.DelayLoadHelper:
                 case Kind.DelayLoadHelperWithExistingIndirectionCell:
                 case Kind.VirtualStubDispatch:
 
-                    instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
-
-                    Debug.Assert(instructionEncoder.Builder.CountBytes == ((ISymbolNode)this).Offset);
-
                     // x11 contains indirection cell
                     // Do nothing x11 contains our first param
 
-                    if (!relocsOnly)
-                    {
-                        // movz x9, #index
-                        int index = _containingImportSection.IndexFromBeginningOfArray;
-                        instructionEncoder.EmitMOV(Register.X9, checked((ushort)index));
-                    }
+                    // movz x9, #index
+                    int index = _containingImportSection.IndexFromBeginningOfArray;
+                    instructionEncoder.EmitMOV(Register.X9, checked((ushort)index));
 
                     // Move Module* -> x10
                     // ldr x10, [PC-0xc]
@@ -53,9 +58,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case Kind.Lazy:
-                    instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
-
-                    Debug.Assert(instructionEncoder.Builder.CountBytes == ((ISymbolNode)this).Offset);
 
                     // Move Module* -> x1
                     // ldr x1, [PC-0x8]

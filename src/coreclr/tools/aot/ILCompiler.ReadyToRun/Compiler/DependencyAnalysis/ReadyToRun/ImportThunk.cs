@@ -63,7 +63,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _thunkKind = Kind.Eager;
             }
 
-            if (_thunkKind != Kind.Eager && factory.Target.Architecture == Internal.TypeSystem.TargetArchitecture.ARM64)
+            if (_thunkKind != Kind.Eager
+                && factory.Target.Architecture is Internal.TypeSystem.TargetArchitecture.ARM64
+                    or Internal.TypeSystem.TargetArchitecture.LoongArch64
+                    or Internal.TypeSystem.TargetArchitecture.RiscV64)
             {
                 // We stuff the reloc to the module import pointer before the start of the thunk
                 // to ensure alignment.

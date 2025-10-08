@@ -107,6 +107,14 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         {
             if (symbol.RepresentsIndirectionCell)
             {
+                Builder.RequireInitialPointerAlignment();
+
+                if (Builder.CountBytes % Builder.TargetPointerSize != 0)
+                {
+                    // Emit a NOP instruction to align the 64-bit reloc below.
+                    EmitNOP();
+                }
+
                 // pcaddi R21, 0
                 EmitPCADDI(Register.R21);
 
@@ -149,6 +157,12 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         public void EmitDBAR()
         {
             Builder.EmitUInt(0x38720000);
+        }
+
+        // nop
+        public void EmitNOP()
+        {
+            Builder.EmitUInt(0x03400000);
         }
     }
 }
