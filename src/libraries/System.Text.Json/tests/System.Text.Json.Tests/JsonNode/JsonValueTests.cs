@@ -116,10 +116,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(ulong.MaxValue)
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(ushort.MaxValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(ushort.MaxValue)
+                };
             }
         }
 

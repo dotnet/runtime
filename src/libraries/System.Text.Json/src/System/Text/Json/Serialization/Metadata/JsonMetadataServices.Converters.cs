@@ -330,6 +330,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<ushort>? s_uint16Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt16}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<ushort>?> JsonValuePrimitiveUInt16Converter { get; } = new JsonValueConverter<JsonValuePrimitive<ushort>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="uint"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
