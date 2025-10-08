@@ -100,10 +100,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(sbyte.MaxValue)
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(short.MinValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(short.MinValue)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create("HelloWorld")
