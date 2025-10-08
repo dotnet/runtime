@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
-                    Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
+                    Assert.True(valid, $"Chain built validly but failed with '{chain2.AllStatusFlags()}'.");
                 }
             }
         }
