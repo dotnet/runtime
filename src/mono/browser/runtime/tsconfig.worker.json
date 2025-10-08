@@ -1,9 +1,10 @@
 {
-    "extends": "./tsconfig.shared.json",
-    "compilerOptions": {
-        "lib": [
-            "esnext",
-            "webworker"
-        ],
-    }
+  "extends": "./tsconfig.shared.json",
+  "compilerOptions": {
+    "lib": [
+      "esnext",
+      "webworker"
+    ]
+
+  }
 }
