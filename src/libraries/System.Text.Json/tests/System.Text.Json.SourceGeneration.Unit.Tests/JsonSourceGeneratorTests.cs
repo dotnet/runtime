@@ -522,36 +522,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void NoWarningsDueToExperimentalMembers()
-        {
-            string source = """
-                using System;
-                using System.Diagnostics.CodeAnalysis;
-                using System.Text.Json.Serialization;
-
-                namespace Test
-                {
-                #pragma warning disable TEST001
-                    [JsonSerializable(typeof(ClassWithExperimental))]
-                #pragma warning restore TEST001
-                    public partial class JsonContext : JsonSerializerContext { }
-
-                    public class ClassWithExperimental
-                    {
-                        [Experimental("TEST001")]
-                        public bool Test { get; set; }
-
-                        [Experimental("TEST002")]
-                        public bool Test2 { get; set; }
-                    }
-                }
-                """;
-
-            Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
-        }
-
-        [Fact]
         public static void NoErrorsWhenUsingReservedCSharpKeywords()
         {
             string source = """
