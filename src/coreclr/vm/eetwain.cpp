@@ -2131,6 +2131,7 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
     }
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);
+    UNREACHABLE();
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)

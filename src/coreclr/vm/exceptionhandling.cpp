@@ -3252,6 +3252,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         }
 #undef FIRST_ARG_REG
     }
+    UNREACHABLE();
 }
 
 void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
@@ -3301,6 +3302,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
     ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+    UNREACHABLE();
 }
 
 void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
