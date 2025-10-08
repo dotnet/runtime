@@ -104,10 +104,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(short.MinValue)
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create("HelloWorld")
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create("HelloWorld")
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(uint.MaxValue)
