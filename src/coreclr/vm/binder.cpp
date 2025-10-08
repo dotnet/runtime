@@ -431,6 +431,12 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
     callConv = *pSig++;
     pSigBuilder->AppendData(callConv);
 
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        unsigned genericArgCount = *pSig++;
+        pSigBuilder->AppendData(genericArgCount);
+    }
+
     if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_DEFAULT) {
         // arg count
         argCount = *pSig++;
@@ -440,12 +446,6 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
             THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
         argCount = 0;
-    }
-
-    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
-    {
-        unsigned genericArgCount = *pSig++;
-        pSigBuilder->AppendData(genericArgCount);
     }
 
     // <= because we want to include the return value or the field
