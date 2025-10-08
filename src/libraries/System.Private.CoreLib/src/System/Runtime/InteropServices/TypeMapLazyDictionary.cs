@@ -270,14 +270,9 @@ namespace System.Runtime.InteropServices
             {
                 if (Utf8TypeNameLen != other.Utf8TypeNameLen)
                     return false;
-                byte* thisChars = (byte*)Utf8TypeName;
-                byte* otherChars = (byte*)Utf8TypeName;
-                for (int i = 0; i < Utf8TypeNameLen; i++)
-                {
-                    if (thisChars[i] != otherChars[i])
-                        return false;
-                }
-                return true;
+                ReadOnlySpan<byte> thisSpan = new ReadOnlySpan<byte>(Utf8TypeName, Utf8TypeNameLen);
+                ReadOnlySpan<byte> otherSpan = new ReadOnlySpan<byte>(other.Utf8TypeName, other.Utf8TypeNameLen);
+                return thisSpan.SequenceEqual(otherSpan);
             }
         }
 
@@ -346,12 +341,14 @@ namespace System.Runtime.InteropServices
                 int hash = ComputeHashCode(key);
                 // Allow duplicates that have the same string -> mapping. They may have different trimTargets.
                 // Warn if the mapping conflicts with an existing mapping.
-                if (_lazyData.TryGetValue(hash, out DelayedType? existing) && existing.TypeName.Equals(targetType))
+                if (!_lazyData.TryGetValue(hash, out DelayedType? existing))
+                {
+                    _lazyData.Add(hash, new DelayedType(targetType, fallbackAssembly));
+                }
+                else if (!existing.TypeName.Equals(targetType))
                 {
                     ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
                 }
-
-                _lazyData.Add(hash, new DelayedType(targetType, fallbackAssembly));
             }
         }
 

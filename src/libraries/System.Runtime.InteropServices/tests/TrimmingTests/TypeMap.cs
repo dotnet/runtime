@@ -115,10 +115,10 @@ static Type GetTypeWithoutTrimAnalysis(string typeName)
 class UsedTypeMap;
 class TargetAndTrimTarget;
 class TargetType;
-class TargetType1;
+class TargetType2;
 class TrimTarget;
-class TrimTarget1;
 class TrimTarget2;
+class TrimTarget3;
 class UnreferencedTargetType;
 class UnreferencedTrimTarget;
 class SourceClass;
