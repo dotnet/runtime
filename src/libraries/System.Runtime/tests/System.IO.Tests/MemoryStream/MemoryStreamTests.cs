@@ -146,8 +146,7 @@ namespace System.IO.Tests
             Assert.True(s.ReadArrayInvoked);
         }
 
-        [Fact]
-        [SkipOnCI("Skipping on CI due to large memory allocation")]
+        [Fact(Skip = "Skipping on CI due to large memory allocation")]
         public void MemoryStream_CapacityBoundaryChecks()
         {
             int MaxSupportedLength = Array.MaxLength;
