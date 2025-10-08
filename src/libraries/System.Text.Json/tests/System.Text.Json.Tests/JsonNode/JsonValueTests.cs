@@ -108,10 +108,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create("HelloWorld")
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(uint.MaxValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(uint.MaxValue)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(ulong.MaxValue)
