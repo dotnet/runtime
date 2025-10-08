@@ -2173,7 +2173,7 @@ namespace Internal.JitInterface
                             ((target.OperatingSystem == TargetOS.Linux) &&
                             (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {
-                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
+                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex(field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)
                             {
                                 if (ti.IsInlined)
@@ -2197,12 +2197,12 @@ namespace Internal.JitInterface
                         if (field.HasGCStaticBase)
                         {
                             pResult->fieldLookup.accessType = InfoAccessType.IAT_PVALUE;
-                            baseAddr = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
+                            baseAddr = _compilation.NodeFactory.TypeGCStaticsSymbol(field.OwningType);
                         }
                         else
                         {
                             pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
-                            baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                            baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol(field.OwningType);
                         }
                         pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddr);
                     }

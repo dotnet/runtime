@@ -619,7 +619,7 @@ namespace ILCompiler
                                     return false;
                                 if (field.IsStatic)
                                     return false;
-                                MetadataType owningMetadataType = (MetadataType)field.OwningType;
+                                MetadataType owningMetadataType = field.OwningType;
                                 if (!owningMetadataType.IsNonVersionable())
                                     return false;
                                 break;

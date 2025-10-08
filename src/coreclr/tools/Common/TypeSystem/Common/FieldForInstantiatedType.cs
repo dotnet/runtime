@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType OwningType
+        public override MetadataType OwningType
         {
             get
             {
