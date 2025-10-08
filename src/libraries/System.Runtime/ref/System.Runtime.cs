@@ -806,6 +806,7 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
+        public static byte[] GetBytes(System.Numerics.BFloat16 value) { throw null; }
         public static short HalfToInt16Bits(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
@@ -816,6 +817,8 @@ namespace System
         public static int SingleToInt32Bits(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint SingleToUInt32Bits(float value) { throw null; }
+        public static System.Numerics.BFloat16 ToBFloat16(byte[] value, int startIndex) { throw null; }
+        public static System.Numerics.BFloat16 ToBFloat16(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static bool ToBoolean(System.ReadOnlySpan<byte> value) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
@@ -870,6 +873,7 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteBytes(System.Span<byte> destination, ulong value) { throw null; }
+        public static bool TryWriteBytes(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.BFloat16 UInt16BitsToBFloat16(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
