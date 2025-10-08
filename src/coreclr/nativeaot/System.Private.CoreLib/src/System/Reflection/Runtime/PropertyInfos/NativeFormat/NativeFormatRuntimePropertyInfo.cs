@@ -113,7 +113,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         public sealed override int GetHashCode()
         {
-            return HashCode.Combine(_propertyHandle.GetHashCode(), ReflectedType.GetHashCode());
+            return HashCode.Combine(_reader, _propertyHandle, ContextTypeInfo, _reflectedType);
         }
 
         public sealed override int MetadataToken

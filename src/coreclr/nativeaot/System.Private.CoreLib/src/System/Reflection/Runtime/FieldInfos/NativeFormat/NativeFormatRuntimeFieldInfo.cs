@@ -121,7 +121,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override int GetHashCode()
         {
-            return HashCode.Combine(_fieldHandle.GetHashCode(), ReflectedType.GetHashCode());
+            return HashCode.Combine(_reader, _fieldHandle, _contextTypeInfo, _reflectedType);
         }
 
         public sealed override RuntimeFieldHandle FieldHandle

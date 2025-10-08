@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override int GetHashCode()
         {
-            return HashCode.Combine(_declaringType.GetHashCode(), ReflectedType.GetHashCode());
+            return HashCode.Combine(_syntheticMethodId, _declaringType);
         }
 
         public sealed override bool IsConstructedGenericMethod
