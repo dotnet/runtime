@@ -140,7 +140,7 @@ namespace System.Runtime.CompilerServices
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
         private struct RuntimeAsyncAwaitState
         {
-            public Continuation? HeadContinuation;
+            public Continuation? SentinelContinuation;
             public INotifyCompletion? Notifier;
         }
 
@@ -437,9 +437,9 @@ namespace System.Runtime.CompilerServices
                 notifier = state.Notifier;
                 state.Notifier = null;
 
-                Continuation headContinuation = state.HeadContinuation!;
-                Continuation head = headContinuation.Next!;
-                headContinuation.Next = null;
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation head = sentinelContinuation.Next!;
+                sentinelContinuation.Next = null;
                 return head;
             }
 
