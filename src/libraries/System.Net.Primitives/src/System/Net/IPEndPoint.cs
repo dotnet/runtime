@@ -96,23 +96,20 @@ namespace System.Net
             return TryParse(s.AsSpan(), out result);
         }
 
-        internal static bool InternalTryParse<TChar>(ReadOnlySpan<TChar> s, [NotNullWhen(true)] out IPEndPoint? result)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static bool InternalTryParse(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPEndPoint? result)
         {
-            Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
-
             int addressLength = s.Length;  // If there's no port then send the entire string to the address parser
-            int lastColonPos = s.LastIndexOf(TChar.CreateTruncating(':'));
+            int lastColonPos = s.LastIndexOf(':');
 
             // Look to see if this is an IPv6 address with a port.
             if (lastColonPos > 0)
             {
-                if (s[lastColonPos - 1] == TChar.CreateTruncating(']'))
+                if (s[lastColonPos - 1] == ']')
                 {
                     addressLength = lastColonPos;
                 }
                 // Look to see if this is IPv4 with a port (IPv6 will have another colon)
-                else if (s.Slice(0, lastColonPos).LastIndexOf(TChar.CreateTruncating(':')) == -1)
+                else if (s.Slice(0, lastColonPos).LastIndexOf(':') == -1)
                 {
                     addressLength = lastColonPos;
                 }
@@ -129,17 +126,57 @@ namespace System.Net
                 else
                 {
                     uint port;
-                    ReadOnlySpan<TChar> portSpan = s.Slice(addressLength + 1);
+                    ReadOnlySpan<char> portSpan = s.Slice(addressLength + 1);
                     bool isConvertedToInt;
 
-                    if (typeof(TChar) == typeof(byte))
+                    isConvertedToInt = uint.TryParse(portSpan, NumberStyles.None, CultureInfo.InvariantCulture, out port);
+
+                    if (isConvertedToInt && port <= MaxPort)
                     {
-                        isConvertedToInt = uint.TryParse(MemoryMarshal.Cast<TChar, byte>(portSpan), NumberStyles.None, CultureInfo.InvariantCulture, out port);
+                        result = new IPEndPoint(address, (int)port);
+                        return true;
                     }
-                    else
-                    {
-                        isConvertedToInt = uint.TryParse(MemoryMarshal.Cast<TChar, char>(portSpan), NumberStyles.None, CultureInfo.InvariantCulture, out port);
-                    }
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        internal static bool InternalTryParse(ReadOnlySpan<byte> s, [NotNullWhen(true)] out IPEndPoint? result)
+        {
+            int addressLength = s.Length;  // If there's no port then send the entire string to the address parser
+            int lastColonPos = s.LastIndexOf((byte)':');
+
+            // Look to see if this is an IPv6 address with a port.
+            if (lastColonPos > 0)
+            {
+                if (s[lastColonPos - 1] == (byte)']')
+                {
+                    addressLength = lastColonPos;
+                }
+                // Look to see if this is IPv4 with a port (IPv6 will have another colon)
+                else if (s.Slice(0, lastColonPos).LastIndexOf((byte)':') == -1)
+                {
+                    addressLength = lastColonPos;
+                }
+            }
+
+            IPAddress? address = IPAddressParser.Parse(s.Slice(0, addressLength), true);
+            if (address is not null)
+            {
+                if (addressLength == s.Length)
+                {
+                    result = new IPEndPoint(address, 0);
+                    return true;
+                }
+                else
+                {
+                    uint port;
+                    ReadOnlySpan<byte> portSpan = s.Slice(addressLength + 1);
+                    bool isConvertedToInt;
+
+                    isConvertedToInt = uint.TryParse(portSpan, NumberStyles.None, CultureInfo.InvariantCulture, out port);
 
                     if (isConvertedToInt && port <= MaxPort)
                     {
