@@ -125,7 +125,7 @@ steps:
 
   # Build iOS sample app
   - ${{ if eq(parameters.osGroup, 'ios') }}:
-    - ${{ if eq(parameters.runtimeType, 'mono') }}:
+    - ${{ if eq(parameters.nameSuffix, 'iOSMono') }}:
       # Mono FullAOT (no LLVM) build 
       - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 USE_MONO_RUNTIME=true BUILD_CONFIG=Release AOT=True INTERP=false USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
         env:
