@@ -4761,8 +4761,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                     COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_VAR_CONSTRAINTS);
                 }
 
-                // For typical type definitions, we have to load the constraints here because they may not
-                // have been loaded yet. In principle we could change DoAccessibilityCheckForConstraints to walk the typedefs/refs in the constraint instead
                 DoAccessibilityCheckForConstraints(this, pTyVar, E_ACCESSDENIED);
             }
         }
