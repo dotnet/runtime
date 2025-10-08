@@ -158,6 +158,11 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<long> Int64Converter => s_int64Converter ??= new Int64Converter();
         private static JsonConverter<long>? s_int64Converter;
 
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Int64}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<long>?> JsonValuePrimitiveInt64Converter { get; } = new JsonValueConverter<JsonValuePrimitive<long>>();
+
 #if NET
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Int128"/> values.

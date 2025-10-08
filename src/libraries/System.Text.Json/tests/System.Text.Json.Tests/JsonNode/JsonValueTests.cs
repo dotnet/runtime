@@ -92,10 +92,10 @@ namespace System.Text.Json.Nodes.Tests
                 {
                     JsonValue.Create(111)
                 };
-                //yield return new object[]
-                //{
-                //    JsonValue.Create(long.MaxValue)
-                //};
+                yield return new object[]
+                {
+                    JsonValue.Create(long.MaxValue)
+                };
                 //yield return new object[]
                 //{
                 //    JsonValue.Create(sbyte.MaxValue)
