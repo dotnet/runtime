@@ -239,45 +239,25 @@ namespace System.Globalization
             int length = input.Length;
             int writeIndex = 0;
 
-            if (indexMap is null)
+            for (int i = 0; i < length;)
             {
-                // Fast path when no index mapping is needed
-                for (int i = 0; i < length;)
+                Rune.DecodeFromUtf16(input.Slice(i), out Rune rune, out int consumed);
+
+                if (!IsIgnorableSymbol(rune))
                 {
-                    Rune.DecodeFromUtf16(input.Slice(i), out Rune rune, out int consumed);
-
-                    if (!IsIgnorableSymbol(rune))
+                    // Copy the UTF-16 units and map each filtered position to the start of the original character
+                    for (int j = 0; j < consumed; j++)
                     {
-                        // Copy the UTF-16 units
-                        for (int j = 0; j < consumed; j++)
+                        destination[writeIndex] = input[i + j];
+                        if (indexMap is not null)
                         {
-                            destination[writeIndex++] = input[i + j];
-                        }
-                    }
-
-                    i += consumed;
-                }
-            }
-            else
-            {
-                // Path with index mapping
-                for (int i = 0; i < length;)
-                {
-                    Rune.DecodeFromUtf16(input.Slice(i), out Rune rune, out int consumed);
-
-                    if (!IsIgnorableSymbol(rune))
-                    {
-                        // Copy the UTF-16 units and map each filtered position to the start of the original character
-                        for (int j = 0; j < consumed; j++)
-                        {
-                            destination[writeIndex] = input[i + j];
                             indexMap[writeIndex] = i;
-                            writeIndex++;
                         }
+                        writeIndex++;
                     }
-
-                    i += consumed;
                 }
+
+                i += consumed;
             }
 
             return writeIndex;
