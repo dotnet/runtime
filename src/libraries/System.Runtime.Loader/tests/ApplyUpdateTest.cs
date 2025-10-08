@@ -23,7 +23,8 @@ namespace System.Reflection.Metadata
     {
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        void DeleteMethodTest()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120547", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        void DeleteMemberTest()
         {
             ApplyUpdateUtil.TestCase(static () =>
             {
