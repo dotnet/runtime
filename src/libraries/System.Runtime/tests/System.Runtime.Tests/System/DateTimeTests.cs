@@ -2789,16 +2789,28 @@ namespace System.Tests
             Assert.Equal("2008-08-29T07:27:15", formatted);
             Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out DateTime parsedDate));
             Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+            pattern = "yyyy-MM-ddThh:mm.F:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, "yyyy-MM-ddThh:mm.F:ss", ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
 
             pattern = "yyyy-MM-ddThh:mm:ss.FF";
             formatted = date.ToString(pattern, ci);
             Assert.Equal("2008-08-29T07:27:15.01", formatted);
             Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
             Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+            pattern = "yyyy-MM-ddThh.FF:mm:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
 
             pattern = "yyyy-MM-ddThh:mm:ss.FFF";
             formatted = date.ToString(pattern, ci);
             Assert.Equal("2008-08-29T07:27:15.018", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate);
+            pattern = "yyyy-MM-ddThh.FFF:mm:ss";
+            formatted = date.ToString(pattern, ci);
             Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
             Assert.Equal(date, parsedDate);
         }
