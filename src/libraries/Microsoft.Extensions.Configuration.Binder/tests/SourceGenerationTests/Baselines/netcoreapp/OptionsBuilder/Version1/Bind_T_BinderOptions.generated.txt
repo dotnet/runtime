@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IServiceCollection extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
 
         public static void BindCoreMain(IConfiguration configuration, object instance, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_Program__MyClass, configuration, binderOptions);
 
             if (TryGetConfigurationValue(configuration, key: "MyString", out string? value1))
             {

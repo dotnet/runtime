@@ -2266,11 +2266,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // GatherVector...(Vector<T> mask, T* address, Vector<T2> indices)
 
                     emitAttr baseSize = emitActualTypeSize(intrin.baseType);
-                    bool     isLoadingBytes =
-                        ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting) ||
+                    bool     isLoadingFromOffsets =
+                        ((intrin.id == NI_Sve_GatherVectorByteZeroExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorByteZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorSByteSignExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorSByteSignExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend) ||
                          (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting) ||
-                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting));
+                         (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)
@@ -2279,13 +2288,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
                                                                           : INS_OPTS_SCALABLE_S_SXTW;
 
-                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
+                        sopt = isLoadingFromOffsets ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
                     }
                     else
                     {
                         // Index is multiplied.
                         assert(baseSize == EA_8BYTE);
-                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
+                        sopt = isLoadingFromOffsets ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
                     }
 
                     GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt, sopt);

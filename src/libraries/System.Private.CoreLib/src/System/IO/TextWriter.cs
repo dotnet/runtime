@@ -125,6 +125,23 @@ namespace System.IO
         {
         }
 
+        /// <summary>
+        /// Writes a rune to the text stream.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
+        public virtual void Write(Rune value)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Write span
+            Write(valueChars[0]);
+            if (valueChars.Length > 1)
+            {
+                Write(valueChars[1]);
+            }
+        }
+
         // Writes a character array to the text stream. This default method calls
         // Write(char) for each of the characters in the character array.
         // If the character array is null, nothing is written.
@@ -343,6 +360,26 @@ namespace System.IO
             WriteLine();
         }
 
+        /// <summary>
+        /// Writes a rune followed by a line terminator to the text stream.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
+        public virtual void WriteLine(Rune value)
+        {
+            // Convert value to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            if (valueChars.Length > 1)
+            {
+                Write(valueChars[0]);
+                WriteLine(valueChars[1]);
+            }
+            else
+            {
+                WriteLine(valueChars[0]);
+            }
+        }
+
         // Writes an array of characters followed by a line terminator to the text
         // stream.
         //
@@ -542,6 +579,28 @@ namespace System.IO
                 t.Item1.Write(t.Item2);
             }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        /// <summary>
+        /// Writes a rune to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public virtual Task WriteAsync(Rune value)
+        {
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            if (valueChars.Length > 1)
+            {
+                return Task.Factory.StartNew(static state =>
+                {
+                    var t = (TupleSlim<TextWriter, char, char>)state!;
+                    t.Item1.Write(t.Item2);
+                    t.Item1.Write(t.Item3);
+                }, new TupleSlim<TextWriter, char, char>(this, valueChars[0], valueChars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+
+            return WriteAsync(valueChars[0]);
+        }
+
         public virtual Task WriteAsync(string? value) =>
             Task.Factory.StartNew(static state =>
             {
@@ -604,6 +663,28 @@ namespace System.IO
                 var t = (TupleSlim<TextWriter, char>)state!;
                 t.Item1.WriteLine(t.Item2);
             }, new TupleSlim<TextWriter, char>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+
+        /// <summary>
+        /// Writes a rune followed by a line terminator to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The rune to write to the text stream.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        public virtual Task WriteLineAsync(Rune value)
+        {
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            if (valueChars.Length > 1)
+            {
+                return Task.Factory.StartNew(static state =>
+                {
+                    var t = (TupleSlim<TextWriter, char, char>)state!;
+                    t.Item1.Write(t.Item2);
+                    t.Item1.WriteLine(t.Item3);
+                }, new TupleSlim<TextWriter, char, char>(this, valueChars[0], valueChars[1]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+
+            return WriteLineAsync(valueChars[0]);
+        }
 
         public virtual Task WriteLineAsync(string? value) =>
             Task.Factory.StartNew(static state =>
@@ -702,6 +783,7 @@ namespace System.IO
             public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
             public override void Write(char value) { }
+            public override void Write(Rune value) { }
             public override void Write(char[]? buffer) { }
             public override void Write(char[] buffer, int index, int count) { }
             public override void Write(ReadOnlySpan<char> buffer) { }
@@ -722,12 +804,14 @@ namespace System.IO
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
             public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) { }
             public override Task WriteAsync(char value) => Task.CompletedTask;
+            public override Task WriteAsync(Rune value) => Task.CompletedTask;
             public override Task WriteAsync(string? value) => Task.CompletedTask;
             public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public override Task WriteAsync(char[] buffer, int index, int count) => Task.CompletedTask;
             public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public override void WriteLine() { }
             public override void WriteLine(char value) { }
+            public override void WriteLine(Rune value) { }
             public override void WriteLine(char[]? buffer) { }
             public override void WriteLine(char[] buffer, int index, int count) { }
             public override void WriteLine(ReadOnlySpan<char> buffer) { }
@@ -748,6 +832,7 @@ namespace System.IO
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
             public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg) { }
             public override Task WriteLineAsync(char value) => Task.CompletedTask;
+            public override Task WriteLineAsync(Rune value) => Task.CompletedTask;
             public override Task WriteLineAsync(string? value) => Task.CompletedTask;
             public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public override Task WriteLineAsync(char[] buffer, int index, int count) => Task.CompletedTask;
@@ -804,6 +889,9 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(char value) => _out.Write(value);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void Write(Rune value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(char[]? buffer) => _out.Write(buffer);
@@ -867,6 +955,9 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(char value) => _out.WriteLine(value);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void WriteLine(Rune value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(decimal value) => _out.WriteLine(value);
@@ -944,6 +1035,13 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteAsync(Rune value)
+            {
+                Write(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteAsync(string? value)
             {
                 Write(value);
@@ -995,6 +1093,13 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteLineAsync(char value)
+            {
+                WriteLine(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteLineAsync(Rune value)
             {
                 WriteLine(value);
                 return Task.CompletedTask;

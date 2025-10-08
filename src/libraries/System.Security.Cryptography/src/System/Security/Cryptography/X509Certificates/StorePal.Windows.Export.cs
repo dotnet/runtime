@@ -109,20 +109,20 @@ namespace System.Security.Cryptography.X509Certificates
             Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS* exportParams = null;
             PbeParameters? reEncodeParameters = null;
 
+            char* PKCS12_PBES2_ALG_AES256_SHA256 = stackalloc char[] { 'A', 'E', 'S', '2', '5', '6', '-', 'S', 'H', 'A', '2', '5', '6', '\0' };
+            Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS specifiedParams = new()
+            {
+                dwSize = (uint)sizeof(Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS),
+                hNcryptDescriptor = 0,
+                pwszPbes2Alg = PKCS12_PBES2_ALG_AES256_SHA256,
+            };
+
             if (exportParameters is Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 or Pkcs12ExportPbeParameters.Default)
             {
                 if (s_supportsAes256Sha256)
                 {
                     flags |= Interop.Crypt32.PFXExportFlags.PKCS12_EXPORT_PBES2_PARAMS;
-                    // PKCS12_PBES2_ALG_AES256_SHA256
-                    char* algStr = stackalloc char[] { 'A', 'E', 'S', '2', '5', '6', '-', 'S', 'H', 'A', '2', '5', '6', '\0' };
-                    Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS p = new()
-                    {
-                        dwSize = (uint)Marshal.SizeOf<Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS>(),
-                        hNcryptDescriptor = 0,
-                        pwszPbes2Alg = algStr,
-                    };
-                    exportParams = &p;
+                    exportParams = &specifiedParams;
                 }
                 else
                 {

@@ -1356,7 +1356,6 @@ public:
 
     void ClearDumpStats();
     JITNotification* GetHostJitNotificationTable();
-    GcNotification*  GetHostGcNotificationTable();
 
     void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
@@ -1471,7 +1470,6 @@ private:
     ICLRDataLoggingCallback* m_logMessageCb;
     CLRDataEnumMemoryFlags m_enumMemFlags;
     JITNotification* m_jitNotificationTable;
-    GcNotification*  m_gcNotificationTable;
     TSIZE_T m_cbMemoryReported;
     DumpMemoryReportStatics m_dumpStats;
 

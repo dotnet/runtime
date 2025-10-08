@@ -525,7 +525,7 @@ namespace System.Security.Cryptography.Tests
         public static void SignData_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
-            int lowerBound = 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes +
+            int lowerBound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes +
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8,
@@ -592,7 +592,7 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     algorithm,
                     rsa => algorithm.MaxSignatureSizeInBytes,
-                    ecdsa => 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes + 8,
+                    ecdsa => CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes + 8,
                     eddsa => algorithm.MaxSignatureSizeInBytes);
 
             AssertExtensions.FalseExpression(dsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[threshold - 1]));

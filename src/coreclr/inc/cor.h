@@ -1657,14 +1657,6 @@ typedef enum
 //*****************************************************************************
 //*****************************************************************************
 
-#ifndef FORCEINLINE
- #if _MSC_VER < 1200
-   #define FORCEINLINE inline
- #else
-   #define FORCEINLINE __forceinline
- #endif
-#endif
-
 
 // We need a version that is FORCEINLINE on retail and NOINLINE on debug
 
@@ -1675,16 +1667,6 @@ typedef enum
 #define DEBUG_NOINLINE
 #endif
 #endif
-
-#ifndef NOINLINE
-#ifdef _MSC_VER
-#define NOINLINE __declspec(noinline)
-#elif defined __GNUC__
-#define NOINLINE __attribute__ ((noinline))
-#else
-#define NOINLINE
-#endif
-#endif // !NOINLINE
 
 // return true if it is a primitive type, i.e. only need to store CorElementType
 FORCEINLINE int CorIsPrimitiveType(CorElementType elementtype)
