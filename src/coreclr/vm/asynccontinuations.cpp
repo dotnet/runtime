@@ -48,6 +48,11 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
 
     MethodTable* pParentClass = CoreLibBinder::GetClass(CLASS__CONTINUATION);
 
+    if (g_pContinuationClassIfSubTypeCreated.Load() == NULL)
+    {
+        g_pContinuationClassIfSubTypeCreated.Store(pParentClass);
+    }
+
     DWORD numVirtuals = pParentClass->GetNumVirtuals();
 
     size_t cbMT = sizeof(MethodTable);

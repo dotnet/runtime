@@ -175,6 +175,8 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_TypedReferenceMT, ::g_TypedReferenceM
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceClass, ::g_pWeakReferenceClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceOfTClass, ::g_pWeakReferenceOfTClass)
 
+DEFINE_DACVAR_VOLATILE(UNKNOWN_POINTER_TYPE, dac__g_pContinuationClassIfSubTypeCreated, ::g_pContinuationClassIfSubTypeCreated)
+
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
 #endif

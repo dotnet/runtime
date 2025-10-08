@@ -303,7 +303,8 @@ inline BOOL MethodTable::IsContinuation()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return m_pParentMethodTable == CoreLibBinder::GetClassIfExist(CLASS__CONTINUATION);
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass;
 }
 
 //==========================================================================================

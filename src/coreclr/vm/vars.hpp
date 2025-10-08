@@ -345,6 +345,12 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 GPTR_DECL(MethodTable,      g_pWeakReferenceClass);
 GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
+#ifdef DACCESS_COMPILE
+GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+#else
+GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+#endif
+
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
