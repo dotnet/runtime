@@ -64,6 +64,16 @@ public:
 
 };
 
+struct Continuation : public Object
+{
+    struct Continuation* next;
+    TADDR resume;  
+    uint32_t state;
+    CorInfoContinuationFlags flags;
+    uint8_t* data;          // byte[] -> byte* (managed arrays are just pointers in native)
+    void** gcData;          // object[] -> void** (object references)
+};
+
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF <StackFrameHelper> STACKFRAMEHELPERREF;
 #else
@@ -133,6 +143,11 @@ public:
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
+    QCall::ObjectHandleOnStack exception);
+
+extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
+    void* resume,
+    uint32_t state,
     QCall::ObjectHandleOnStack exception);
 
 extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);

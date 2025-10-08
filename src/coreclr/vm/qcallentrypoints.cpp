@@ -177,6 +177,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeFieldHandle_GetFieldDataReference)
     DllImportEntry(UnsafeAccessors_ResolveGenericParamToTypeHandle)
     DllImportEntry(StackTrace_GetStackFramesInternal)
+    DllImportEntry(AsyncHelpers_AddContinuationToExInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
     DllImportEntry(ModuleBuilder_GetTypeRef)

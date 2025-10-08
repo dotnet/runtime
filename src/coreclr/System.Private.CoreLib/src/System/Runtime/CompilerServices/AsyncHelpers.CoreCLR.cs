@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -145,6 +146,12 @@ namespace System.Runtime.CompilerServices
 
         [ThreadStatic]
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
+        private static unsafe partial void AddContinuationToExInternal(void* resume, uint state, ObjectHandleOnStack ex);
+
+        internal static unsafe void AddContinuationToExInternal(Continuation continuation, Exception e)
+            => AddContinuationToExInternal(continuation.Resume, continuation.State, ObjectHandleOnStack.Create(ref e));
 
         private static Continuation AllocContinuation(Continuation prevContinuation, nuint numGCRefs, nuint dataSize)
         {
@@ -366,7 +373,7 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
-                        Continuation nextContinuation = UnwindToPossibleHandler(continuation);
+                        Continuation nextContinuation = UnwindToPossibleHandler(continuation, ex);
                         if (nextContinuation.Resume == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
@@ -411,7 +418,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static Continuation UnwindToPossibleHandler(Continuation continuation)
+            private static Continuation UnwindToPossibleHandler(Continuation continuation, Exception ex)
             {
                 while (true)
                 {
@@ -419,6 +426,7 @@ namespace System.Runtime.CompilerServices
                     continuation = continuation.Next;
                     if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
                         return continuation;
+                    AddContinuationToExInternal(continuation, ex);
                 }
             }
 
