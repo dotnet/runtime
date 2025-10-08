@@ -341,33 +341,53 @@ namespace System.Runtime.CompilerServices
 
         private static class ThunkTaskCore
         {
+            private unsafe struct NextContinuationData
+            {
+                public NextContinuationData* Next;
+                public Continuation* NextContinuation;
+            }
+
+            // To be used for async stack walking
+            [ThreadStatic]
+            private static unsafe NextContinuationData* t_nextContinuation;
+
             public static unsafe void MoveNext<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
                 Continuation continuation = TOps.GetContinuationState(task);
 
+                ref NextContinuationData* nextContRef = ref t_nextContinuation;
+                NextContinuationData nextContinuationData;
+                nextContinuationData.Next = nextContRef;
+                nextContinuationData.NextContinuation = &continuation;
+
+                nextContRef = &nextContinuationData;
+
                 while (true)
                 {
                     try
                     {
-                        Continuation? newContinuation = continuation.Resume(continuation);
+                        Continuation? curContinuation = continuation;
+                        Debug.Assert(curContinuation != null);
+                        Debug.Assert(curContinuation.Next != null);
+                        continuation = curContinuation.Next;
+
+                        Continuation? newContinuation = curContinuation.Resume(curContinuation);
 
                         if (newContinuation != null)
                         {
-                            newContinuation.Next = continuation.Next;
+                            newContinuation.Next = continuation;
                             HandleSuspended<T, TOps>(task);
                             contexts.Pop();
+                            t_nextContinuation = nextContinuationData.Next;
                             return;
                         }
-
-                        Debug.Assert(continuation.Next != null);
-                        continuation = continuation.Next;
                     }
                     catch (Exception ex)
                     {
-                        Continuation nextContinuation = UnwindToPossibleHandler(continuation);
-                        if (nextContinuation.Resume == null)
+                        Continuation handlerContinuation = UnwindToPossibleHandler(continuation);
+                        if (handlerContinuation.Resume == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             bool successfullySet = ex is OperationCanceledException oce ?
@@ -375,6 +395,8 @@ namespace System.Runtime.CompilerServices
                                 task.TrySetException(ex);
 
                             contexts.Pop();
+
+                            t_nextContinuation = nextContinuationData.Next;
 
                             if (!successfullySet)
                             {
@@ -384,9 +406,8 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        nextContinuation.SetException(ex);
-
-                        continuation = nextContinuation;
+                        handlerContinuation.SetException(ex);
+                        continuation = handlerContinuation;
                     }
 
                     if (continuation.Resume == null)
@@ -394,6 +415,8 @@ namespace System.Runtime.CompilerServices
                         bool successfullySet = TOps.SetCompleted(task, continuation);
 
                         contexts.Pop();
+
+                        t_nextContinuation = nextContinuationData.Next;
 
                         if (!successfullySet)
                         {
@@ -406,6 +429,7 @@ namespace System.Runtime.CompilerServices
                     if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, continuation))
                     {
                         contexts.Pop();
+                        t_nextContinuation = nextContinuationData.Next;
                         return;
                     }
                 }
@@ -415,10 +439,11 @@ namespace System.Runtime.CompilerServices
             {
                 while (true)
                 {
-                    Debug.Assert(continuation.Next != null);
-                    continuation = continuation.Next;
                     if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
                         return continuation;
+
+                    Debug.Assert(continuation.Next != null);
+                    continuation = continuation.Next;
                 }
             }
 
