@@ -981,6 +981,7 @@ public:
         // We do not expect to set the same offset multiple times
         assert(!m_objRefs[slot]);
         m_objRefs[slot] = true;
+        INDEBUG(NumObjRefs++);
     }
 
     void SetIfNotMax(unsigned offset)
