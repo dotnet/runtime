@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 49;
+            const int NumberOfSimpleConverters = 50;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters, new SimpleConverterTypeComparer());
 
             // Use a dictionary for simple converters.
@@ -80,6 +80,7 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.ReadOnlyMemoryByteConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveSByteConverter);
             Add(JsonMetadataServices.SingleConverter);
             Add(JsonMetadataServices.JsonValuePrimitiveSingleConverter);
             Add(JsonMetadataServices.StringConverter);
