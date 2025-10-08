@@ -271,7 +271,7 @@ namespace System.Runtime.InteropServices
                 if (Utf8TypeNameLen != other.Utf8TypeNameLen)
                     return false;
                 byte* thisChars = (byte*)Utf8TypeName;
-                byte* otherChars = (byte*)Utf8TypeName;
+                byte* otherChars = (byte*)other.Utf8TypeName;
                 for (int i = 0; i < Utf8TypeNameLen; i++)
                 {
                     if (thisChars[i] != otherChars[i])
