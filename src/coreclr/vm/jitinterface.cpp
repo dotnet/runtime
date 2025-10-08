@@ -12412,7 +12412,6 @@ CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HA
 
                 // TODO: Check if the jit is allowed to embed this handle in jitted code.
                 // Note for the initonly cases it probably won't embed.
-
                 result = (CORINFO_CLASS_HANDLE) pObjMT;
             }
         }
