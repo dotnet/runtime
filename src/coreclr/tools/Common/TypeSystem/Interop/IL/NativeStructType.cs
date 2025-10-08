@@ -125,7 +125,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {

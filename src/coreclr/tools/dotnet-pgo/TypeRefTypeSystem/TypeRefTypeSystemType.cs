@@ -172,7 +172,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override bool IsAbstract => throw new NotImplementedException();
 
-        public override DefType ContainingType => _containingType;
+        public override TypeRefTypeSystemType ContainingType => _containingType;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 

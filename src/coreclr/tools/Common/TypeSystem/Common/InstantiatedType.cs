@@ -297,7 +297,7 @@ namespace Internal.TypeSystem
             return _typeDef;
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {

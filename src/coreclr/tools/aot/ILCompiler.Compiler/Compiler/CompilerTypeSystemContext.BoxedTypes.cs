@@ -270,7 +270,7 @@ namespace ILCompiler
             public override MetadataType BaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override bool IsSealed => true;
             public override bool IsAbstract => false;
-            public override DefType ContainingType => null;
+            public override MetadataType ContainingType => null;
             public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
             public override TypeSystemContext Context => ValueTypeRepresented.Context;
 

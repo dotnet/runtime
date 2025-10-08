@@ -225,7 +225,7 @@ namespace Internal.TypeSystem
                 else
                 {
                     // nested type
-                    resolutionScope = GetTypeRef((MetadataType)metadataType.ContainingType);
+                    resolutionScope = GetTypeRef(metadataType.ContainingType);
                 }
 
                 typeHandle = _metadataBuilder.AddTypeReference(resolutionScope, typeNamespace, typeName);

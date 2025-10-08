@@ -256,7 +256,7 @@ namespace ILCompiler
                 }
             }
 
-            public override DefType ContainingType
+            public override MetadataType ContainingType
             {
                 get
                 {

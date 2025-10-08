@@ -51,7 +51,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType ContainingType => null;
+        public override MetadataType ContainingType => null;
     }
 
     /// <summary>

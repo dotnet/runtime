@@ -115,7 +115,7 @@ namespace Internal.TypeSystem
 
         public override bool IsAbstract => false;
 
-        public override DefType ContainingType => MetadataType.ContainingType;
+        public override MetadataType ContainingType => MetadataType.ContainingType;
 
         public override PInvokeStringFormat PInvokeStringFormat => MetadataType.PInvokeStringFormat;
 

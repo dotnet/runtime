@@ -87,7 +87,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
-        public abstract override DefType ContainingType { get; }
+        public abstract override MetadataType ContainingType { get; }
 
         /// <summary>
         /// Get all of the types nested in this type.
