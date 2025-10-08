@@ -122,7 +122,7 @@ namespace System.Reflection
             (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_handle, m_declaringType.GetUnderlyingNativeHandle());
         #endregion
 
         #region ICustomAttributeProvider

@@ -71,10 +71,11 @@ namespace System.Reflection
             (MetadataUpdater.IsSupported &&
                 obj is RtFieldInfo fi &&
                 fi.m_fieldHandle == m_fieldHandle &&
+                ReferenceEquals(fi.m_declaringType, m_declaringType) &&
                 ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_fieldHandle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_fieldHandle, m_declaringType.GetUnderlyingNativeHandle(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
 
         #endregion
 

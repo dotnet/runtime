@@ -53,7 +53,7 @@ namespace System.Reflection
                 ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_tkField.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_tkField, m_declaringType.GetUnderlyingNativeHandle(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
         #endregion
 
         #region FieldInfo Overrides
