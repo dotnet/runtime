@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
+[assembly: TypeMap<UsedTypeMap>("DuplicateMappingWithDifferentTrimTargets", typeof(TargetType2), typeof(TrimTarget2))]
+[assembly: TypeMap<UsedTypeMap>("DuplicateMappingWithDifferentTrimTargets", typeof(TargetType2), typeof(TrimTarget3))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnreferenced", typeof(UnreferencedTargetType), typeof(UnreferencedTrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(SourceClass), typeof(ProxyType))]
 
@@ -34,7 +36,7 @@ if (args.Length > 1 && args[0] == "instantiate")
 
 IReadOnlyDictionary<string, Type> usedTypeMap = TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap>();
 
-if (!usedTypeMap.TryGetValue("TrimTargetIsTarget", out Type targetAndTrimTargetType))
+if (!usedTypeMap.TryGetValue("TrimTargetIsTarget", out Type? targetAndTrimTargetType))
 {
     Console.WriteLine("TrimTargetIsTarget not found in used type map.");
     return 1;
@@ -46,11 +48,12 @@ if (targetAndTrimTargetType != GetTypeWithoutTrimAnalysis(nameof(TargetAndTrimTa
     return 2;
 }
 
-if (!usedTypeMap.TryGetValue("TrimTargetIsUnrelated", out Type targetType))
+if (!usedTypeMap.TryGetValue("TrimTargetIsUnrelated", out Type? targetType))
 {
     Console.WriteLine("TrimTargetIsUnrelated not found in used type map.");
     return 3;
 }
+
 
 if (targetType != GetTypeWithoutTrimAnalysis(nameof(TargetType)))
 {
@@ -71,7 +74,7 @@ if (usedTypeMap.TryGetValue("TrimTargetIsUnreferenced", out _))
 }
 
 IReadOnlyDictionary<Type, Type> usedProxyTypeMap = TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap>();
-if (!usedProxyTypeMap.TryGetValue(typeof(SourceClass), out Type proxyType))
+if (!usedProxyTypeMap.TryGetValue(typeof(SourceClass), out Type? proxyType))
 {
     Console.WriteLine("SourceClass not found in used proxy type map.");
     return 7;
@@ -95,6 +98,12 @@ if (GetTypeWithoutTrimAnalysis(nameof(UnusedProxyType)) is not null)
     return 10;
 }
 
+if (!usedTypeMap.TryGetValue("DuplicateMappingWithDifferentTrimTargets", out Type? duplicatedTarget))
+{
+    Console.WriteLine("Could not find duplicated target type");
+    return 11;
+}
+
 return 100;
 
 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -106,7 +115,10 @@ static Type GetTypeWithoutTrimAnalysis(string typeName)
 class UsedTypeMap;
 class TargetAndTrimTarget;
 class TargetType;
+class TargetType1;
 class TrimTarget;
+class TrimTarget1;
+class TrimTarget2;
 class UnreferencedTargetType;
 class UnreferencedTrimTarget;
 class SourceClass;

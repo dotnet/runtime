@@ -265,6 +265,20 @@ namespace System.Runtime.InteropServices
         {
             public required void* Utf8TypeName { get; init; }
             public required int Utf8TypeNameLen { get; init; }
+
+            public bool Equals(TypeNameUtf8 other)
+            {
+                if (Utf8TypeNameLen != other.Utf8TypeNameLen)
+                    return false;
+                byte* thisChars = (byte*)Utf8TypeName;
+                byte* otherChars = (byte*)Utf8TypeName;
+                for (int i = 0; i < Utf8TypeNameLen; i++)
+                {
+                    if (thisChars[i] != otherChars[i])
+                        return false;
+                }
+                return true;
+            }
         }
 
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
@@ -281,6 +295,8 @@ namespace System.Runtime.InteropServices
                 _fallbackAssembly = fallbackAssembly;
                 _type = null;
             }
+
+            public TypeNameUtf8 TypeName => _typeNameUtf8;
 
             public unsafe Type GetOrLoadType()
             {
@@ -328,7 +344,9 @@ namespace System.Runtime.InteropServices
             public void Add(string key, TypeNameUtf8 targetType, RuntimeAssembly fallbackAssembly)
             {
                 int hash = ComputeHashCode(key);
-                if (_lazyData.ContainsKey(hash))
+                // Allow duplicates that have the same string -> mapping. They may have different trimTargets.
+                // Warn if the mapping conflicts with an existing mapping.
+                if (_lazyData.TryGetValue(hash, out DelayedType? existing) && existing.TypeName.Equals(targetType))
                 {
                     ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
                 }
