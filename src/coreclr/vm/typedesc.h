@@ -287,7 +287,7 @@ enum class WhichConstraintsToLoad
 {
     All = 0,
     TypeOrMethodVarsAndNonInterfacesOnly = 1,
-    TypeOrMethodVarsOnly = 2,
+    Invalid = 2,
     None = 3,
 };
 
@@ -299,8 +299,8 @@ enum class WhichConstraintsToLoad
 
 class TypeVarTypeDesc : public TypeDesc
 {
-    static const DWORD WhichMask = 0xC0000000;
-    static const DWORD WhichShift = 30;
+    static const DWORD WhichConstraintsLoadedMask = 0xC0000000;
+    static const DWORD WhichConstraintsLoadedShift = 30;
 public:
 
 #ifndef DACCESS_COMPILE
@@ -364,7 +364,7 @@ public:
     MethodDesc * LoadOwnerMethod();
     TypeHandle LoadOwnerType();
 
-    BOOL ConstraintsLoaded(WhichConstraintsToLoad which) { LIMITED_METHOD_CONTRACT; if (((m_numConstraintsWithFlags & WhichMask) >> WhichShift) <= (DWORD)which) return TRUE; return FALSE; }
+    BOOL ConstraintsLoaded(WhichConstraintsToLoad which) { LIMITED_METHOD_CONTRACT; if (((m_numConstraintsWithFlags & WhichConstraintsLoadedMask) >> WhichConstraintsLoadedShift) <= (DWORD)which) return TRUE; return FALSE; }
 
     // Return NULL if no constraints are specified
     // Return an array of type handles if constraints are specified,
