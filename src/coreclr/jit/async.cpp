@@ -1111,7 +1111,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
     if (layout.ReturnSize > 0)
     {
-        layout.ReturnValOffset = allocLayout(1, layout.ReturnSize);
+        layout.ReturnValOffset = allocLayout(layout.ReturnAlignment, layout.ReturnSize);
 
         JITDUMP("  Will store return of type %s, size %u at offset %u\n",
                 call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
