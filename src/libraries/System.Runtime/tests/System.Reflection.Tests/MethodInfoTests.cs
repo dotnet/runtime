@@ -346,11 +346,15 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, methodInfo.GetHashCode());
         }
 
-        [Fact]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        [Theory]
+        [InlineData(typeof(MI_BaseClass), typeof(MI_SubClass), nameof(MI_BaseClass.IMethod))]
+        [InlineData(typeof(MI_BaseClass), typeof(MI_SubClass), nameof(MI_BaseClass.IMethodNew))]
+        [InlineData(typeof(MI_BaseClass), typeof(MI_SubClass), nameof(MI_BaseClass.PublicStructMethod))]
+        [InlineData(typeof(MethodInfoBaseDefinitionBaseClass), typeof(MethodInfoBaseDefinitionSubClass), nameof(MethodInfoBaseDefinitionBaseClass.InterfaceMethod1))]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string methodName)
         {
-            var methodInfoBase = typeof(MI_BaseClass).GetMethod(nameof(MI_BaseClass.IMethod));
-            var methodInfoSub = typeof(MI_SubClass).GetMethod(nameof(MI_SubClass.IMethod));
+            var methodInfoBase = baseType.GetMethod(methodName);
+            var methodInfoSub = subType.GetMethod(methodName);
             Assert.NotEqual(methodInfoBase.GetHashCode(), methodInfoSub.GetHashCode());
         }
 

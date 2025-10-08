@@ -292,11 +292,15 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, propertyInfo.GetHashCode());
         }
 
-        [Fact]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        [Theory]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.ReadOnlyProperty))]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.WriteOnlyProperty))]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.ReadWriteProperty1))]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.ReadWriteProperty2))]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string propertyName)
         {
-            var propertyInfoBase = typeof(BaseClass).GetProperty(nameof(BaseClass.IntProperty));
-            var propertyInfoSub = typeof(SubClass).GetProperty(nameof(SubClass.IntProperty));
+            var propertyInfoBase = baseType.GetProperty(propertyName);
+            var propertyInfoSub = subType.GetProperty(propertyName);
             Assert.NotEqual(propertyInfoBase.GetHashCode(), propertyInfoSub.GetHashCode());
         }
 

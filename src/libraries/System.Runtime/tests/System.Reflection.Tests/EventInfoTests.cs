@@ -152,11 +152,15 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual()
+        [Theory]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicVirtualEvent))]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicEvent1))]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicEvent2))]
+        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicEvent3))]
+        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string eventName)
         {
-            var eventInfoBase = typeof(BaseClass).GetEvent(nameof(BaseClass.PublicVirtualEvent));
-            var eventInfoSub = typeof(SubClass).GetEvent(nameof(SubClass.PublicVirtualEvent));
+            var eventInfoBase = baseType.GetEvent(eventName);
+            var eventInfoSub = subType.GetEvent(eventName);
             Assert.NotEqual(eventInfoBase.GetHashCode(), eventInfoSub.GetHashCode());
         }
 
@@ -201,6 +205,9 @@ namespace System.Reflection.Tests
             public event EventHandler PublicEvent;
             public static event EventHandler PublicStaticEvent;
             public virtual event EventHandler PublicVirtualEvent;
+            public event EventHandler PublicEvent1;
+            public event EventHandler PublicEvent2;
+            public event EventHandler PublicEvent3;
         }
 
         protected class SubClass : BaseClass
