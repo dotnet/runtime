@@ -265,6 +265,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<float>? s_singleConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Single}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<float>?> JsonValuePrimitiveSingleConverter { get; } = new JsonValueConverter<JsonValuePrimitive<float>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="sbyte"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
