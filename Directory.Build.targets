@@ -41,7 +41,7 @@
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
-    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(IsServicingBuild)' == 'true'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
@@ -121,7 +121,7 @@
           AfterTargets="ResolveProjectReferences"
           BeforeTargets="FindReferenceAssembliesForReferences"
           Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
-    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies, 
+    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies,
          and ignore architecture mismatches in those implementation assemblies. -->
     <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
       <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
