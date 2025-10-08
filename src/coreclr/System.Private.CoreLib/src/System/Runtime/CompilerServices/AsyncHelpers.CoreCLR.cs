@@ -250,7 +250,7 @@ namespace System.Runtime.CompilerServices
 
             private void MoveNext()
             {
-                RuntimeAsyncTaskCore.MoveNext<RuntimeAsyncTask<T>, Ops>(this);
+                RuntimeAsyncTaskCore.DispatchContinuations<RuntimeAsyncTask<T>, Ops>(this);
             }
 
             public void HandleSuspended()
@@ -332,7 +332,7 @@ namespace System.Runtime.CompilerServices
 
             private void MoveNext()
             {
-                RuntimeAsyncTaskCore.MoveNext<RuntimeAsyncTask, Ops>(this);
+                RuntimeAsyncTaskCore.DispatchContinuations<RuntimeAsyncTask, Ops>(this);
             }
 
             public void HandleSuspended()
@@ -377,7 +377,7 @@ namespace System.Runtime.CompilerServices
 
         private static class RuntimeAsyncTaskCore
         {
-            public static unsafe void MoveNext<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
+            public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
