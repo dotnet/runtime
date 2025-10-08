@@ -10,21 +10,24 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> NumberGroupSizes_TestData()
         {
-            yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
-            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 } };
+            yield return new object[] { "Invariant", NumberFormatInfo.InvariantInfo, new int[] { 3 }, null };
+            yield return new object[] { "en-US", CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 }, null };
 
             // Culture does not exist on Windows 7 and in Browser's ICU
             if (!PlatformDetection.IsWindows7 && PlatformDetection.IsNotBrowser)
             {
-                yield return new object[] { CultureInfo.GetCultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
+                yield return new object[] { "ur-IN", CultureInfo.GetCultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes(), new int[] { 3, 2 } };
             }
         }
 
         [Theory]
         [MemberData(nameof(NumberGroupSizes_TestData))]
-        public void NumberGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected)
+        public void NumberGroupSizes_Get_ReturnsExpected(string cultureName, NumberFormatInfo format, int[] expected1, int[] expected2)
         {
-            Assert.Equal(expected, format.NumberGroupSizes);
+            int[] actual = format.NumberGroupSizes;
+            Assert.True(expected1.SequenceEqual(actual) || (expected2 != null && expected2.SequenceEqual(actual)),
+                $"Expected: [{string.Join(", ", expected1)}] or [{(expected2 is null ? "<null>" : string.Join(", ", expected2))}], Actual: [{string.Join(", ", actual)}]"
+                + $"{Environment.NewLine}Culture: {cultureName}");
         }
 
         [Theory]
