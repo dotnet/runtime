@@ -351,6 +351,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<ulong>? s_uint64Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt64}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<ulong>?> JsonValuePrimitiveUInt64Converter { get; } = new JsonValueConverter<JsonValuePrimitive<ulong>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Uri"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
