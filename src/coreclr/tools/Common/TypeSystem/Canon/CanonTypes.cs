@@ -8,6 +8,10 @@ using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
     /// <summary>

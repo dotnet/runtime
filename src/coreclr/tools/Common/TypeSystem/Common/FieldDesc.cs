@@ -6,6 +6,10 @@ using System.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
     public abstract partial class FieldDesc : TypeSystemEntity
