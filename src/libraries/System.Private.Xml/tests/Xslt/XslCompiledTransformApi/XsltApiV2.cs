@@ -51,10 +51,16 @@ namespace System.Xml.XslCompiledTransformApiTests
         public string[] szWhiteSpace = { "  ", "\n", "\t", "\r", "\t\n  \r\t" };
         public string szSimple = "myArg";
 
-        // Variables from init string
-        private string _strPath;                           // Path of the data files
+        protected static string _standardTests;
 
-        private string _httpPath;                          // Http Path of the data files
+        /// <summary>
+        /// Path of the data files.
+        /// </summary>
+        private static string _strPath;
+        /// <summary>
+        /// Http Path of the data files.
+        /// </summary>
+        private static string _httpPath;
 
         // Other global variables
         protected string _strOutFile = "out.xml";        // File to create when using write transforms
@@ -64,14 +70,12 @@ namespace System.Xml.XslCompiledTransformApiTests
         protected XsltArgumentList m_xsltArg;                      // For XsltArgumentList tests
         public object retObj;
 
-        protected string _standardTests;
-
         private ITestOutputHelper _output;
+
         public XsltApiTestCaseBase2(ITestOutputHelper output)
         {
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
             _output = output;
-            this.Init(null);
         }
 
         static XsltApiTestCaseBase2()
@@ -84,6 +88,11 @@ namespace System.Xml.XslCompiledTransformApiTests
             string xslString = doc.OuterXml.Replace("ABSOLUTE_URI", targetFile);
             doc.LoadXml(xslString);
             doc.Save(xslFile);
+
+            //This is a temporary fix to restore the baselines. Refer to Test bug #
+            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
+            _httpPath = Path.Combine(FilePathUtil.GetHttpTestDataPath(), "XsltApiV2");
+            _standardTests = Path.Combine("TestFiles", FilePathUtil.GetHttpStandardPath(), "xslt10", "Current");
         }
 
         public OutputType GetOutputType(string s)
@@ -159,17 +168,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        public void Init(object objParam)
-        {
-            //This is a temporary fix to restore the baselines. Refer to Test bug #
-            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
-            _httpPath = Path.Combine(FilePathUtil.GetHttpTestDataPath(), "XsltApiV2");
-            _standardTests = Path.Combine("TestFiles", FilePathUtil.GetHttpStandardPath(), "xslt10","Current");
-
-            return;
-        }
-
-        public string FullFilePath(string szFile)
+        public static string FullFilePath(string szFile)
         {
             if (szFile == null || szFile == string.Empty)
                 return szFile;
