@@ -137,11 +137,11 @@ internal sealed class IcallTableGenerator
 
             try
             {
-                AddSignature(type, method);
+                AddSignatureForMethod(method);
             }
-            catch (Exception ex) when (ex is not LogAsErrorException)
+            catch (Exception ex)
             {
-                Log.Warning("WASM0001", $"Could not get icall, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
+                Log.Warning("WASM0001", $"Skipping '{type.FullName}.{method.Name}' because processing it caused an exception: {ex}");
                 continue;
             }
 
@@ -193,7 +193,7 @@ internal sealed class IcallTableGenerator
                 }
                 catch (NotImplementedException nie)
                 {
-                    Log.Warning("WASM0001", $"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
+                    Log.Warning("WASM0001", $"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}.{method.Name}'" +
                                     $" because type '{nie.Message}' is not supported for parameter named '{par.Name}'. Ignoring.");
                     return null;
                 }
@@ -204,15 +204,13 @@ internal sealed class IcallTableGenerator
             return sig.ToString();
         }
 
-        void AddSignature(Type type, MethodInfo method)
+        void AddSignatureForMethod(MethodInfo method)
         {
             string? signature = SignatureMapper.MethodToSignature(method, Log);
-            if (signature == null)
-            {
-                throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-            }
 
-            if (_signatures.Add(signature))
+            if (signature == null)
+                Log.Warning("WASM0001", $"Skipping method '{type.FullName}.{method.Name}' because the icall signature couldn't be determined.");
+            else if (_signatures.Add(signature))
                 Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");
         }
     }
