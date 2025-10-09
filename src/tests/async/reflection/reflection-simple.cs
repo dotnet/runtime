@@ -22,7 +22,6 @@ public class Async2Reflection
         Assert.Equal(100, (int)(r.Result + d.Bar().Result));
     }
 
-#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
     [Fact]
     public static void MethodInfo_Invoke_AsyncHelper()
     {
@@ -37,7 +36,6 @@ public class Async2Reflection
         // dynamic d = FooTask();
         // System.Runtime.CompilerServices.AsyncHelpers.Await(d);
     }
-#pragma warning restore SYSLIB5007
 
     private static async Task<int> Foo()
     {
@@ -164,9 +162,7 @@ public class Async2Reflection
         // }
         ILGenerator ilGenerator = methodBuilder.GetILGenerator();
         ilGenerator.Emit(OpCodes.Ldarg_0);
-#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
         var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
-#pragma warning restore SYSLIB5007
         ilGenerator.EmitCall(OpCodes.Call, mi, new Type[] { typeof(Task) });
         ilGenerator.Emit(OpCodes.Ret);
 
