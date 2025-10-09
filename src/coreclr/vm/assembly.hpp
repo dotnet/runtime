@@ -430,9 +430,7 @@ public:
 
     //****************************************************************************************
     // Is the given assembly a friend of this assembly?
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD);
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD);
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT);
+    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly);
     bool IgnoresAccessChecksTo(Assembly *pAccessedAssembly);
 
 #ifdef FEATURE_COMINTEROP
@@ -578,24 +576,18 @@ public:
     //
     // Arguments:
     //    pAccessingAssembly - the assembly requesting friend access
-    //    pMember            - the member that is attempting to be accessed
     //
     // Return Value:
     //    true if friend access is allowed, false otherwise
     //
-    // Notes:
-    //    Template type T should be either FieldDesc, MethodDesc, or MethodTable.
-    //
 
-    template <class T>
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, T *pMember)
+    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly)
     {
         CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             PRECONDITION(CheckPointer(pAccessingAssembly));
-            PRECONDITION(CheckPointer(pMember));
         }
         CONTRACTL_END;
 
