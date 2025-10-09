@@ -13,7 +13,17 @@
                 "HelloWorld.dll"
             ],
             preRun: [ function () {
-                ENV["APP_ASSEMBLIES"] = "/System.Private.CoreLib.dll:/System.Runtime.dll:/System.Console.dll:/System.Threading.dll:/System.Runtime.InteropServices.dll";
+                // Build the TPA list and set the APP_ASSEMBLIES environment variable.
+                const path = "/";
+                let tpaList = "";
+                let files = FS.readdir(path);
+                files.forEach(function(file) {
+                    if (file.endsWith(".dll")) {
+                        tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
+                    }
+                });
+
+                ENV["APP_ASSEMBLIES"] = tpaList;
             } ],
             onExit: function (code) {
                 console.log("onExit, code: " + code);
