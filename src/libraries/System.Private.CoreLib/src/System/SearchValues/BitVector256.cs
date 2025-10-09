@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Buffers
 {
@@ -15,14 +16,25 @@ namespace System.Buffers
         {
             BitVector256 inverse = default;
 
-            inverse._values[0] = ~_values[0];
-            inverse._values[1] = ~_values[1];
-            inverse._values[2] = ~_values[2];
-            inverse._values[3] = ~_values[3];
-            inverse._values[4] = ~_values[4];
-            inverse._values[5] = ~_values[5];
-            inverse._values[6] = ~_values[6];
-            inverse._values[7] = ~_values[7];
+            if (Vector256.IsHardwareAccelerated)
+            {
+                fixed (uint* src = _values)
+                {
+                    uint* dst = inverse._values;
+                    (~Vector256.Load(src)).Store(dst);
+                }
+            }
+            else
+            {
+                inverse._values[0] = ~_values[0];
+                inverse._values[1] = ~_values[1];
+                inverse._values[2] = ~_values[2];
+                inverse._values[3] = ~_values[3];
+                inverse._values[4] = ~_values[4];
+                inverse._values[5] = ~_values[5];
+                inverse._values[6] = ~_values[6];
+                inverse._values[7] = ~_values[7];
+            }
 
             return inverse;
         }
