@@ -113,7 +113,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
     {
         [Kept]
         [ExpectedWarning("IL2057", "Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(String)'")]
-        [ExpectBodyModified] // Bug
         public static void Main(string[] args)
         {
             object t = Activator.CreateInstance(Type.GetType(args[1]));
@@ -191,10 +190,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = TypeMapping.GetOrCreateProxyTypeMapping<UsedProxyTypeMap>();
             _ = new UsedProxySource();
             _ = new UsedProxySource2();
-            object obj = null!;
-            // Rewritten as if these types are removed
-            if (obj is UsedTrimTarget) ;
-            if (obj is UsedTrimTarget2) ;
+
+            UseTrimTargets();
 
             // For the second order reference, instantiate int and string as the dependency source types to root the TypeMap attributes
             // Do not directly root anything in the assembly to validate the assembly is kept even in only the typemap attributes are marked.
@@ -202,7 +199,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = new int();
             _ = TypeMapping.GetOrCreateExternalTypeMapping<string>();
             _ = TypeMapping.GetOrCreateProxyTypeMapping<string>();
+        }
 
+        [ExpectBodyModified]
+        [Kept]
+        static void UseTrimTargets()
+        {
+            object obj = null!;
+            // Rewritten as if these types are removed
+            if (obj is UsedTrimTarget)
+                obj = 1;
+            if (obj is UsedTrimTarget2)
+                obj = 2;
         }
 
         [Kept]
@@ -504,7 +512,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class UsedProxySource2;
     [Kept]
     class UsedTrimTarget;
-    [Kept(By=Tool.NativeAot)]
+    [Kept(By=Tool.NativeAot)] // Associated attribute not kept
     class UsedTrimTarget2;
 
     [Kept]

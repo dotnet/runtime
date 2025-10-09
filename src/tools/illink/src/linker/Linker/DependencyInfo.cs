@@ -147,6 +147,7 @@ namespace Mono.Linker
         UnsafeAccessorTarget = 89, // the member is referenced via UnsafeAccessor attribute
 
         TypeMapEntry = 90, // external or proxy type map entry
+        TypeMapAssemblyTarget = 91, // TypeMapTargetAssembly for a used typeMapGroup
     }
 
     public readonly struct DependencyInfo : IEquatable<DependencyInfo>
