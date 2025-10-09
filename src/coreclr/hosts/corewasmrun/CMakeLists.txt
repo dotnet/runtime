@@ -22,9 +22,9 @@ target_compile_options(corewasmrun PRIVATE
   )
 
 set(JS_SYSTEM_NATIVE_BROWSER
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+    "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+    "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
 set(JS_CORE_WASM_RUN_PRE
     "${CMAKE_CURRENT_SOURCE_DIR}/libCorewasmrun.pre.js")
 set_target_properties(corewasmrun PROPERTIES
