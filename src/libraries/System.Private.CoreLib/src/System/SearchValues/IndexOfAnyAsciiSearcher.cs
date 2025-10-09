@@ -70,16 +70,13 @@ namespace System.Buffers
             state = new AnyByteState(bitmapSpace0, bitmapSpace1, lookupLocal);
         }
 
-        internal static unsafe void ComputeAsciiState<T>(ReadOnlySpan<T> values, out AsciiState state)
-            where T : struct, IUnsignedNumber<T>
+        internal static unsafe void ComputeAsciiState(ReadOnlySpan<char> values, out AsciiState state)
         {
-            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
-
             Vector128<byte> bitmapSpace = default;
             byte* bitmapLocal = (byte*)&bitmapSpace;
             BitVector256 lookupLocal = default;
 
-            foreach (T tValue in values)
+            foreach (char tValue in values)
             {
                 int value = int.CreateChecked(tValue);
 
@@ -95,11 +92,8 @@ namespace System.Buffers
             state = new AsciiState(bitmapSpace, lookupLocal);
         }
 
-        public static bool CanUseUniqueLowNibbleSearch<T>(ReadOnlySpan<T> values, int maxInclusive)
-            where T : struct, IUnsignedNumber<T>
+        public static bool CanUseUniqueLowNibbleSearch(ReadOnlySpan<char> values, int maxInclusive)
         {
-            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
-
             if (!IsVectorizationSupported || values.Length > 16)
             {
                 return false;
@@ -112,7 +106,7 @@ namespace System.Buffers
                 return false;
             }
 
-            if (typeof(T) == typeof(char) && maxInclusive >= byte.MaxValue)
+            if (maxInclusive >= byte.MaxValue)
             {
                 // When packing UTF-16 characters into bytes, values may saturate to 255 (false positives), hence ">=" instead of ">".
                 return false;
@@ -121,7 +115,7 @@ namespace System.Buffers
             // We assume there are no duplicates to simplify the logic (if there are any, they just won't use this searching approach).
             int seenNibbles = 0;
 
-            foreach (T tValue in values)
+            foreach (char tValue in values)
             {
                 int bit = 1 << (int.CreateChecked(tValue) & 0xF);
 
@@ -137,17 +131,97 @@ namespace System.Buffers
             return true;
         }
 
-        public static void ComputeUniqueLowNibbleState<T>(ReadOnlySpan<T> values, out AsciiState state)
-            where T : struct, IUnsignedNumber<T>
+        public static void ComputeUniqueLowNibbleState(ReadOnlySpan<char> values, out AsciiState state)
         {
-            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
-
             Vector128<byte> valuesByLowNibble = default;
             BitVector256 lookup = default;
 
-            foreach (T tValue in values)
+            foreach (char tValue in values)
             {
-                byte value = byte.CreateTruncating(tValue);
+                byte value = (byte)(tValue);
+                lookup.Set(value);
+                valuesByLowNibble.SetElementUnsafe(value & 0xF, value);
+            }
+
+            // Elements of 'valuesByLowNibble' where no value had that low nibble will be left uninitialized at 0.
+            // For most, that is okay, as only the zero character in the input could ever match against them,
+            // but where such input characters will always be mapped to the 0th element of 'valuesByLowNibble'.
+            //
+            // That does mean we could still see false positivies if none of the values had a low nibble of zero.
+            // To avoid that, we can replace the 0th element with any other byte that has a non-zero low nibble.
+            // The zero character will no longer match, and the new value we pick won't match either as
+            // it will be mapped to a different element in 'valuesByLowNibble' given its non-zero low nibble.
+            if (valuesByLowNibble.GetElement(0) == 0 && !lookup.Contains(0))
+            {
+                valuesByLowNibble.SetElementUnsafe(0, (byte)1);
+            }
+
+            state = new AsciiState(valuesByLowNibble, lookup);
+        }
+
+        internal static unsafe void ComputeAsciiState(ReadOnlySpan<byte> values, out AsciiState state)
+        {
+            Vector128<byte> bitmapSpace = default;
+            byte* bitmapLocal = (byte*)&bitmapSpace;
+            BitVector256 lookupLocal = default;
+
+            foreach (byte tValue in values)
+            {
+                int value = int.CreateChecked(tValue);
+
+                if (value > 127)
+                {
+                    continue;
+                }
+
+                lookupLocal.Set(value);
+                SetBitmapBit(bitmapLocal, value);
+            }
+
+            state = new AsciiState(bitmapSpace, lookupLocal);
+        }
+
+        public static bool CanUseUniqueLowNibbleSearch(ReadOnlySpan<byte> values, int maxInclusive)
+        {
+            if (!IsVectorizationSupported || values.Length > 16)
+            {
+                return false;
+            }
+
+            if (Ssse3.IsSupported && maxInclusive > 127)
+            {
+                // We could support values higher than 127 if we did the "& 0xF" before calling into Shuffle in IndexOfAnyLookupCore.
+                // We currently optimize for the common case of ASCII characters instead, saving an instruction there.
+                return false;
+            }
+
+            // We assume there are no duplicates to simplify the logic (if there are any, they just won't use this searching approach).
+            int seenNibbles = 0;
+
+            foreach (byte tValue in values)
+            {
+                int bit = 1 << (int.CreateChecked(tValue) & 0xF);
+
+                if ((seenNibbles & bit) != 0)
+                {
+                    // We already saw a value with the same low nibble.
+                    return false;
+                }
+
+                seenNibbles |= bit;
+            }
+
+            return true;
+        }
+
+        public static void ComputeUniqueLowNibbleState(ReadOnlySpan<byte> values, out AsciiState state)
+        {
+            Vector128<byte> valuesByLowNibble = default;
+            BitVector256 lookup = default;
+
+            foreach (byte tValue in values)
+            {
+                byte value = (byte)tValue;
                 lookup.Set(value);
                 valuesByLowNibble.SetElementUnsafe(value & 0xF, value);
             }
