@@ -484,7 +484,7 @@ endif()
 if(HOST_BROWSER OR HOST_WASI)
   add_library(mono-wasm-simd STATIC interp/interp-simd.c)
   target_link_libraries (mono-wasm-simd PRIVATE monoapi eglib_api)
-  set_target_properties(mono-wasm-simd PROPERTIES COMPILE_FLAGS "-msimd128")
+  set_target_properties(mono-wasm-simd PROPERTIES COMPILE_FLAGS "-msimd128 -mbulk-memory")
   install(TARGETS mono-wasm-simd LIBRARY)
 endif()
 

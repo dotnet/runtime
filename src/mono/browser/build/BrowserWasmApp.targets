@@ -56,7 +56,7 @@
 
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions</_WasmDefaultFlags>
-    <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128 -mbulk-memory</_WasmDefaultFlags>
 
     <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
 

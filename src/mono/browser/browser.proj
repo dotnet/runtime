@@ -193,10 +193,32 @@
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
       <EmccExportedFunction Include="_emscripten_main_runtime_thread_id"  />
     </ItemGroup>
+    <ItemGroup>
+      <WasmOptConfigurationFlags Include="--all-features" />
+      <WasmOptConfigurationFlags Include="--enable-bulk-memory" />
+      <WasmOptConfigurationFlags Include="--enable-sign-ext" />
+      <WasmOptConfigurationFlags Include="--translate-to-new-eh" />
+      <!-- emscripten defaults -->
+      <WasmOptConfigurationFlags Include="--low-memory-unused" />
+      <WasmOptConfigurationFlags Include="--zero-filled-memory" />
+      <WasmOptConfigurationFlags Include="--enable-reference-types" />
+      <WasmOptConfigurationFlags Include="--enable-mutable-globals" />
+      <WasmOptConfigurationFlags Include="--enable-multivalue" />
+      <WasmOptConfigurationFlags Include="--mvp-features" />
+      <WasmOptConfigurationFlags Include="--pass-arg=directize-initial-contents-immutable" />
+      <WasmOptConfigurationFlags Include="--post-emscripten" />
+      <WasmOptConfigurationFlags Include="--strip-target-features" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
+      <WasmOptConfigurationFlags Include="--enable-threads" />
+      <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
+      <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
+    </ItemGroup>
     <PropertyGroup>
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+      <_WasmOptConfigurationFlags>"@(WasmOptConfigurationFlags -> '%27%(Identity)%27', ',')"</_WasmOptConfigurationFlags>
       <!-- reserve at least enough space to complete initializing sgen without growing the heap -->
       <EmccInitialHeapSize>33554432</EmccInitialHeapSize>
       <EmccStackSize>5MB</EmccStackSize>
@@ -209,6 +231,7 @@
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
+      <_EmccLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-s BINARYEN_EXTRA_PASSES=$(_WasmOptConfigurationFlags)" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
@@ -226,13 +249,6 @@
       <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
            active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
       <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
-
-      <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
-      <_EmccLinkFlags Include="-s TEXTDECODER=0"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
@@ -307,13 +323,13 @@
 
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationEmccFlags) -msimd128 -mbulk-memory</CMakeConfigurationEmccFlags>
 
-      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) --all-features -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2 --all-features </CMakeConfigurationLinkFlags>
 
       <!-- -lexports.js has the magical property of disabling minification of export names -->
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1 -lexports.js</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
@@ -328,7 +344,7 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/').Replace('\','/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTION1=&quot;-msimd128&quot; -DCONFIGURATION_COMPILE_OPTION2=&quot;-mbulk-memory&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DENABLE_JS_INTEROP_BY_VALUE=1</CMakeBuildRuntimeConfigureCmd>

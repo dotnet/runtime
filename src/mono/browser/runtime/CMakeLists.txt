@@ -9,7 +9,7 @@ set(CMAKE_EXECUTABLE_SUFFIX ".js")
 add_executable(dotnet.native runtime.c corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet.native PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
-target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1 ${CONFIGURATION_COMPILE_OPTIONS})
+target_compile_options(dotnet.native PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-compile.rsp -DGEN_PINVOKE=1 ${CONFIGURATION_COMPILE_OPTION1} ${CONFIGURATION_COMPILE_OPTION2})
 
 set_target_properties(dotnet.native PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
 
@@ -39,12 +39,12 @@ set_target_properties(dotnet.native PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
-set(ignoreMeWasmOptAdditionalFlags "${CONFIGURATION_COMPILE_OPTIONS}")
+set(ignoreMeWasmOptAdditionalFlags "${CONFIGURATION_COMPILE_OPTION1}" "${CONFIGURATION_COMPILE_OPTION2}")
 set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet.native
-                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-simd --enable-bulk-memory ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
+                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 
