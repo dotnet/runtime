@@ -9124,17 +9124,22 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     {
         // FCalls can be called directly
         ret = (void*)ECall::GetFCallImpl(ftn, false /* throwForInvalidFCall */);
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (ret == NULL)
         {
             ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
             accessType = IAT_PVALUE;
         }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+        _ASSERTE(ret != NULL);
     }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     else if (ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
         ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     else
     {
         ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);

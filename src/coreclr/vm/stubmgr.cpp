@@ -971,6 +971,7 @@ BOOL ThePreStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 // Stub manager functions & globals
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 SPTR_IMPL(PrecodeStubManager, PrecodeStubManager, g_pManager);
 
 #ifndef DACCESS_COMPILE
@@ -1159,6 +1160,7 @@ BOOL PrecodeStubManager::TraceManager(Thread *thread,
     return FALSE;
 }
 #endif
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // -------------------------------------------------------
 // StubLinkStubManager
@@ -2146,6 +2148,7 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
 
 #ifdef DACCESS_COMPILE
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 void
 PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2154,6 +2157,7 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 void
 StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

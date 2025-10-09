@@ -1433,6 +1433,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
 
     UMEntryThunk* pUMEntryThunk = NULL;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     auto stubKind = RangeSectionStubManager::GetStubKind((PCODE)pCallback);
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
@@ -1442,7 +1443,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
             pUMEntryThunk = pPrecode->AsUMEntryThunk();
         }
     }
-
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.

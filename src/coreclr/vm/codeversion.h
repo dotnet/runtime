@@ -29,7 +29,7 @@ typedef DPTR(class ILCodeVersioningState) PTR_ILCodeVersioningState;
 class CodeVersionManager;
 typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifdef HAVE_GCCOVER
 class GCCoverageInfo;

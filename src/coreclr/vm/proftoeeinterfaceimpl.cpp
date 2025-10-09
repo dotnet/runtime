@@ -2535,6 +2535,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         if (SUCCEEDED(hr))
         {
             PCODE pCodeStart = (PCODE)NULL;
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
@@ -2549,6 +2550,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
                     break;
                 }
             }
+#endif // FEATURE_CODE_VERSIONING
 
             hr = GetCodeInfoFromCodeStart(pCodeStart,
                                           cCodeInfos,
@@ -4919,6 +4921,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         else
         {
             PCODE pCodeStart = (PCODE)NULL;
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
@@ -4934,6 +4937,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
                     break;
                 }
             }
+#endif // FEATURE_CODE_VERSIONING
 
             hr = GetILToNativeMapping3(pCodeStart, cMap, pcMap, map);
         }
@@ -6439,6 +6443,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
         ULONG32 trueLen = 0;
         StackSArray<UINT_PTR> addresses;
 
+#ifdef FEATURE_CODE_VERSIONING
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
 
         ILCodeVersion ilCodeVersion = NULL;
@@ -6459,6 +6464,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
                 }
             }
         }
+#endif // FEATURE_CODE_VERSIONING
 
         if (pcCodeStartAddresses != NULL)
         {

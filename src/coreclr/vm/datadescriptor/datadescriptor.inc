@@ -183,7 +183,9 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, MemberRefToDescMap, cdac_data<Module>::Memb
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_data<Module>::MethodDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_data<Module>::TypeDefToMethodTableMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_data<Module>::TypeRefToMethodTableMap)
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
+#endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
 CDAC_TYPE_END(Module)
 
@@ -499,14 +501,18 @@ CDAC_TYPE_END(CodePointer)
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+#endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_END(MethodDescCodeData)
 
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(MethodDescVersioningState)
 CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
 CDAC_TYPE_END(MethodDescVersioningState)
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
@@ -677,6 +683,7 @@ CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBa
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(CodeHeapListNode)
 
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(ILCodeVersioningState)
 CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, FirstVersionNode, cdac_data<ILCodeVersioningState>::FirstVersionNode)
@@ -705,6 +712,7 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, Next, cdac_data<ILCodeVersionNod
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*uint32*/, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_END(ILCodeVersionNode)
+#endif // FEATURE_CODE_VERSIONING
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))

@@ -164,13 +164,6 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     return NULL;
 }
 
-Precode* Precode::GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"Precode::GetPrecodeFromEntryPoint is not supported with Portable EntryPoints");
-    return NULL;
-}
-
 PrecodeType Precode::GetType()
 {
     LIMITED_METHOD_CONTRACT;

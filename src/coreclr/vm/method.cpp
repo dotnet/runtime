@@ -239,6 +239,7 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     return S_OK;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
 {
     WRAPPER_NO_CONTRACT;
@@ -252,6 +253,7 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_INTERPRETER
 // Set the call stub for the interpreter to JIT/AOT calls
@@ -279,6 +281,7 @@ CallStubHeader *MethodDesc::GetCallStub()
 
 #endif //!DACCESS_COMPILE
 
+#ifdef FEATURE_CODE_VERSIONING
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
 {
     WRAPPER_NO_CONTRACT;
@@ -287,6 +290,7 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
 }
+#endif // FEATURE_CODE_VERSIONING
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()
@@ -1057,7 +1061,7 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
     {
         return pDefaultCode;
     }
-
+#ifdef FEATURE_CODE_VERSIONING
     else
     {
         CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
@@ -1075,8 +1079,10 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
                 }
             }
         }
-        return (PCODE)NULL;
     }
+#endif // FEATURE_CODE_VERSIONING
+
+    return (PCODE)NULL;
 }
 
 //*******************************************************************************
@@ -2386,10 +2392,15 @@ BOOL MethodDesc::IsPointingToPrestub()
         return TRUE;
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    return FALSE;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (!HasPrecode())
         return FALSE;
 
     return GetPrecode()->IsPointingToPrestub();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 //*******************************************************************************
@@ -2408,11 +2419,13 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (HasPrecode())
     {
         GetPrecode()->Reset();
     }
     else
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     {
         // We should go here only for the rental methods
         _ASSERTE(GetLoaderModule()->IsReflectionEmit());
@@ -2861,8 +2874,7 @@ void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
     }
 }
 
-
-//*******************************************************************************
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 Precode* MethodDesc::GetOrCreatePrecode()
 {
     WRAPPER_NO_CONTRACT;
@@ -2883,11 +2895,9 @@ Precode* MethodDesc::GetOrCreatePrecode()
     PTR_PCODE pSlot = GetAddrOfSlot();
     _ASSERTE(*pSlot != (PCODE)NULL);
     _ASSERTE(*pSlot == tempEntry);
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 #endif // _DEBUG
 
     // Set the flags atomically
@@ -2895,6 +2905,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
     return Precode::GetPrecodeFromEntryPoint(tempEntry);
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 void MethodDesc::MarkPrecodeAsStableEntrypoint()
 {
@@ -3125,6 +3136,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     return true;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     PCODE entryPoint,
     bool mayHaveEntryPointSlotsToBackpatch)
@@ -3144,6 +3156,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */);
     }
 }
+#endif // FEATURE_CODE_VERSIONING
 
 void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 {
@@ -3185,6 +3198,7 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     }
 }
 
+#ifdef FEATURE_TIERED_COMPILATION
 void MethodDesc::ResetCodeEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
@@ -3202,6 +3216,7 @@ void MethodDesc::ResetCodeEntryPoint()
         GetPrecode()->ResetTargetInterlocked();
     }
 }
+#endif // FEATURE_TIERED_COMPILATION
 
 void MethodDesc::ResetCodeEntryPointForEnC()
 {
@@ -3221,12 +3236,15 @@ void MethodDesc::ResetCodeEntryPointForEnC()
         return;
     }
 
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
-        this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
+    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
+        (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
     {
         GetPrecode()->ResetTargetInterlocked();
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {

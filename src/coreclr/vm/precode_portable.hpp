@@ -114,8 +114,6 @@ public: // static
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-    static Precode* GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative = FALSE);
-
 public:
     PrecodeType GetType();
 

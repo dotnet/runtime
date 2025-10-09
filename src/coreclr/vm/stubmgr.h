@@ -392,6 +392,7 @@ class ThePreStubManager : public StubManager
 // frame-pushing, StubLinker created stubs
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 typedef VPTR(class PrecodeStubManager) PTR_PrecodeStubManager;
 
 class PrecodeStubManager : public StubManager
@@ -434,6 +435,7 @@ class PrecodeStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("MethodDescPrestub"); }
 #endif
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // Note that this stub was written by a debugger guy, and thus when he refers to 'multicast'
 // stub, he really means multi or single cast stub.  This was done b/c the same stub

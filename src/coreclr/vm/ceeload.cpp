@@ -1319,7 +1319,9 @@ void Module::AllocateMaps()
         m_TypeRefToMethodTableMap.dwCount = TYPEREF_MAP_INITIAL_SIZE;
         m_MemberRefMap.dwCount = MEMBERREF_MAP_INITIAL_SIZE;
         m_MethodDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
+#ifdef FEATURE_CODE_VERSIONING
         m_ILCodeVersioningStateMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
+#endif // FEATURE_CODE_VERSIONING
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
@@ -1340,8 +1342,10 @@ void Module::AllocateMaps()
         // Get # MethodDefs
         m_MethodDefToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtMethodDef)+1;
 
+#ifdef FEATURE_CODE_VERSIONING
         // IL code versions are relatively rare so keep small.
         m_ILCodeVersioningStateMap.dwCount = 1;
+#endif // FEATURE_CODE_VERSIONING
 
         // Get # FieldDefs
         m_FieldDefToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtFieldDef)+1;
@@ -1359,7 +1363,9 @@ void Module::AllocateMaps()
     nTotal += m_TypeRefToMethodTableMap.dwCount;
     nTotal += m_MemberRefMap.dwCount;
     nTotal += m_MethodDefToDescMap.dwCount;
+#ifdef FEATURE_CODE_VERSIONING
     nTotal += m_ILCodeVersioningStateMap.dwCount;
+#endif // FEATURE_CODE_VERSIONING
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
@@ -1386,13 +1392,20 @@ void Module::AllocateMaps()
     m_MethodDefToDescMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
     m_MethodDefToDescMap.pTable = &m_MemberRefMap.pTable[m_MemberRefMap.dwCount];
 
+#ifdef FEATURE_CODE_VERSIONING
     m_ILCodeVersioningStateMap.pNext  = NULL;
     m_ILCodeVersioningStateMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
     m_ILCodeVersioningStateMap.pTable = &m_MethodDefToDescMap.pTable[m_MethodDefToDescMap.dwCount];
+#endif // FEATURE_CODE_VERSIONING
 
     m_FieldDefToDescMap.pNext  = NULL;
     m_FieldDefToDescMap.supportedFlags = FIELD_DEF_MAP_ALL_FLAGS;
+
+#ifdef FEATURE_CODE_VERSIONING
     m_FieldDefToDescMap.pTable = &m_ILCodeVersioningStateMap.pTable[m_ILCodeVersioningStateMap.dwCount];
+#else // !FEATURE_CODE_VERSIONING
+    m_FieldDefToDescMap.pTable = NULL;
+#endif // FEATURE_CODE_VERSIONING
 
     m_GenericParamToDescMap.pNext  = NULL;
     m_GenericParamToDescMap.supportedFlags = GENERIC_PARAM_MAP_ALL_FLAGS;
