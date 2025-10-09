@@ -173,6 +173,7 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
+    <HelixProperties Condition="'$(WorkItemPrefix)' != ''" Include="jobName" Value="$(WorkItemPrefix)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunGrpcTestsOnly)' == 'true' and '$(BuildGrpcServerDockerImage)' == 'true'">
