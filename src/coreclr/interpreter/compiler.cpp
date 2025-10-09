@@ -6383,6 +6383,12 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
 
+                if (fieldInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&fieldInfo.accessCalloutHelper);
+                }
+
                 bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
 
                 if (isStatic)
@@ -6413,6 +6419,12 @@ retry_emit:
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                if (fieldInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&fieldInfo.accessCalloutHelper);
+                }
 
                 CorInfoType fieldType = fieldInfo.fieldType;
                 bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
@@ -6474,6 +6486,12 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
 
+                if (fieldInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&fieldInfo.accessCalloutHelper);
+                }
+
                 CorInfoType fieldType = fieldInfo.fieldType;
                 bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
                 InterpType interpFieldType = GetInterpType(fieldType);
@@ -6508,6 +6526,12 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
 
+                if (fieldInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&fieldInfo.accessCalloutHelper);
+                }
+
                 EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
 
                 m_ip += 5;
@@ -6520,6 +6544,12 @@ retry_emit:
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                if (fieldInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&fieldInfo.accessCalloutHelper);
+                }
 
                 CorInfoType fieldType = fieldInfo.fieldType;
                 InterpType interpFieldType = GetInterpType(fieldType);
@@ -6543,6 +6573,12 @@ retry_emit:
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                if (fieldInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&fieldInfo.accessCalloutHelper);
+                }
 
                 CorInfoType fieldType = fieldInfo.fieldType;
                 InterpType interpFieldType = GetInterpType(fieldType);
@@ -6674,6 +6710,16 @@ retry_emit:
 
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_HELPER_DESC calloutHelper;
+                CorInfoIsAccessAllowedResult accessAllowed =
+                    m_compHnd->canAccessClass(&resolvedToken, m_methodHnd, &calloutHelper);
+                if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&calloutHelper);
+                }
+
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 m_compHnd->embedGenericHandle(&resolvedToken, true, m_methodInfo->ftn, &embedInfo);
                 assert(embedInfo.compileTimeHandle != NULL);
@@ -6960,6 +7006,12 @@ retry_emit:
                             NO_WAY("Currently do not support LDFTN of Parameterized functions");
                         }
 
+                        if (callInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                        {
+                            // Inject call to callsite callout helper
+                            EmitCallsiteCallout(&callInfo.callsiteCalloutHelper);
+                        }
+
 DO_LDFTN:
                         if (callInfo.kind == CORINFO_CALL)
                         {
@@ -7057,6 +7109,17 @@ DO_LDFTN:
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Box, &resolvedToken);
+
+                CORINFO_HELPER_DESC calloutHelper;
+                CorInfoIsAccessAllowedResult accessAllowed =
+                    m_compHnd->canAccessClass(&resolvedToken, m_methodHnd, &calloutHelper);
+                if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&calloutHelper);
+                }
+
+
                 if (m_compHnd->isValueClass(resolvedToken.hClass))
                 {
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
@@ -7076,6 +7139,16 @@ DO_LDFTN:
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                CORINFO_HELPER_DESC calloutHelper;
+                CorInfoIsAccessAllowedResult accessAllowed =
+                    m_compHnd->canAccessClass(&resolvedToken, m_methodHnd, &calloutHelper);
+                if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&calloutHelper);
+                }
+
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                 DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
@@ -7162,6 +7235,15 @@ DO_LDFTN:
 
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Newarr, &resolvedToken);
+
+                CORINFO_HELPER_DESC calloutHelper;
+                CorInfoIsAccessAllowedResult accessAllowed =
+                    m_compHnd->canAccessClass(&resolvedToken, m_methodHnd, &calloutHelper);
+                if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&calloutHelper);
+                }
 
                 CORINFO_CLASS_HANDLE arrayClsHnd = resolvedToken.hClass;
                 CorInfoHelpFunc helpFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
@@ -7560,6 +7642,15 @@ DO_LDFTN:
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
+
+                CORINFO_HELPER_DESC calloutHelper;
+                CorInfoIsAccessAllowedResult accessAllowed =
+                    m_compHnd->canAccessClass(&resolvedToken, m_methodHnd, &calloutHelper);
+                if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                {
+                    // Inject call to callsite callout helper
+                    EmitCallsiteCallout(&calloutHelper);
+                }
 
                 CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, *m_ip == CEE_CASTCLASS /* throwing */);
 
