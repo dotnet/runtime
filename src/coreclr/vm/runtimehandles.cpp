@@ -89,7 +89,7 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         pCAMT,
         pCAMT->GetAssembly(),
         dwAttr,
-        NULL,
+        pCACtor,
         *AccessCheckOptions::s_pNormalAccessChecks);
 }
 
