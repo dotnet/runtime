@@ -130,7 +130,7 @@ static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posix
             return true;
 
         default:
-            *posixSignal = signalCode;
+            *posixSignal = (PosixSignal)signalCode;
             return false;
     }
 }
