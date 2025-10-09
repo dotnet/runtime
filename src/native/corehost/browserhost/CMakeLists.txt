@@ -93,7 +93,6 @@ target_link_options(browserhost PRIVATE
     -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
     -sEXPORT_NAME=createDotnetRuntime
     -fwasm-exceptions
-    -msimd128
     -lnodefs.js
     -Wno-unused-command-line-argument
     -Wl,-error-limit=0)

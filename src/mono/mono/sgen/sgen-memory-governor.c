@@ -141,7 +141,7 @@ sgen_need_major_collection_conservative (void)
 	size_t max_allowance = GDOUBLE_TO_SIZE (max_last_collection_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO);
 	max_allowance = MAX (max_allowance, GDOUBLE_TO_SIZE (MIN_MINOR_COLLECTION_ALLOWANCE));
 
-	return min_heap_size > max_allowance;
+	return min_heap_size > (max_last_collection_heap_size + max_allowance);
 }
 
 static size_t
