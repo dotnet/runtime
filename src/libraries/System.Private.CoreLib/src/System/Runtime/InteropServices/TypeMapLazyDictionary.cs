@@ -268,8 +268,6 @@ namespace System.Runtime.InteropServices
 
             public bool Equals(TypeNameUtf8 other)
             {
-                if (Utf8TypeNameLen != other.Utf8TypeNameLen)
-                    return false;
                 ReadOnlySpan<byte> thisSpan = new ReadOnlySpan<byte>(Utf8TypeName, Utf8TypeNameLen);
                 ReadOnlySpan<byte> otherSpan = new ReadOnlySpan<byte>(other.Utf8TypeName, other.Utf8TypeNameLen);
                 return thisSpan.SequenceEqual(otherSpan);
