@@ -11,9 +11,6 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IReadOnlySet<TElement>
     {
-        // TODO: Set to false because I think IReadOnlySet<T> is always read-only.
-        // However, because we use HashSet<T> as the concrete type, we can still add items to it.
-        // So I'm unsure if this should be true or false.
         internal override bool CanPopulate => false;
 
         protected override void Add(in TElement value, ref ReadStack state)
