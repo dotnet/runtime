@@ -74,9 +74,8 @@ namespace Mono.Linker
             {
                 foreach (var entry in assemblyTargets)
                 {
-                    var info = new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod);
-                    _markStep.MarkCustomAttribute(entry.Attribute, info, new MessageOrigin(entry.Origin));
-                    _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
+                    var info = new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod);
+                    MarkTypeMapAttribute(entry, info);
                 }
             }
         }
@@ -96,9 +95,8 @@ namespace Mono.Linker
             {
                 foreach (var entry in assemblyTargets)
                 {
-                    var info = new DependencyInfo(DependencyKind.TypeMapEntry, callingMethod);
-                    _markStep.MarkCustomAttribute(entry.Attribute, info, new MessageOrigin(entry.Origin));
-                    _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
+                    var info = new DependencyInfo(DependencyKind.TypeMapAssemblyTarget, callingMethod);
+                    MarkTypeMapAttribute(entry, info);
                 }
             }
         }
@@ -109,8 +107,7 @@ namespace Mono.Linker
             _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
 
             // Mark the target type as instantiated
-            TypeReference targetType = (TypeReference)entry.Attribute.ConstructorArguments[1].Value;
-            if (targetType is not null && _context.Resolve(targetType) is TypeDefinition targetTypeDef)
+            if (entry.TargetType is { } targetType && _context.Resolve(targetType) is TypeDefinition targetTypeDef)
                 _context.Annotations.MarkInstantiated(targetTypeDef);
         }
 
@@ -200,7 +197,7 @@ namespace Mono.Linker
         }
 
 
-        void RecordTypeMapEntry(CustomAttributeWithOrigin attr, TypeReference group, TypeReference? dependencySource, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> unmarkedEntryList, HashSet<TypeReference> seenTypeGroups, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> pendingEntryList)
+        void RecordTypeMapEntry(CustomAttributeWithOrigin attr, TypeReference group, TypeReference? dependencySource, Dictionary<TypeDefinition, Dictionary<TypeReference, List<CustomAttributeWithOrigin>>> pendingDependencySourceMarking, HashSet<TypeReference> seenTypeGroups, Dictionary<TypeReference, List<CustomAttributeWithOrigin>> pendingTypeMapGroupMarking)
         {
             if (dependencySource is null)
             {
@@ -213,7 +210,7 @@ namespace Mono.Linker
                 }
                 else
                 {
-                    pendingEntryList.AddToList(group, attr);
+                    pendingTypeMapGroupMarking.AddToList(group, attr);
                     return;
                 }
             }
@@ -224,18 +221,25 @@ namespace Mono.Linker
                 return; // Couldn't find the type we were asked about.
             }
 
-            if (seenTypeGroups.Contains(group) && attr.DependencySourceRequiresTarget(_context, dependencyTypeDef))
+            if (attr.DependencySourceRequiresTarget(_context, dependencyTypeDef))
             {
-                MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, dependencySource));
+                if (seenTypeGroups.Contains(group))
+                {
+                    MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, dependencySource));
+                }
+                else
+                {
+                    pendingTypeMapGroupMarking.AddToList(group, attr);
+                }
             }
             else
             {
-                if (!unmarkedEntryList.TryGetValue(dependencyTypeDef, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
+                if (!pendingDependencySourceMarking.TryGetValue(dependencyTypeDef, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entries))
                 {
                     entries = new(new TypeReferenceEqualityComparer(_context)) {
                         { group, [] }
                     };
-                    unmarkedEntryList[dependencyTypeDef] = entries;
+                    pendingDependencySourceMarking[dependencyTypeDef] = entries;
                 }
 
                 entries.AddToList(group, attr);
@@ -251,14 +255,14 @@ namespace Mono.Linker
         {
             public void Resolve(LinkContext context, TypeMapHandler manager)
             {
-                HashSet<AssemblyDefinition> visited = new();
+                if (_assembly is null)
+                    return;
+                HashSet<AssemblyDefinition> seen = new();
                 Queue<AssemblyDefinition> toVisit = new();
-                if (_assembly is not null)
-                    toVisit.Enqueue(_assembly);
+                toVisit.Enqueue(_assembly);
                 while (toVisit.Count > 0)
                 {
                     var assembly = toVisit.Dequeue();
-                    visited.Add(assembly);
                     foreach (CustomAttribute attr in assembly.CustomAttributes)
                     {
                         if (attr.AttributeType is not GenericInstanceType
@@ -286,8 +290,13 @@ namespace Mono.Linker
                                 var nextAssemblyName = AssemblyNameReference.Parse(str);
                                 if (context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
                                 {
-                                    if (!visited.Contains(nextAssembly) && !toVisit.Contains(nextAssembly))
+#pragma warning disable CA1868 // Unnecessary call to 'Contains(item)'
+                                    if (!seen.Contains(nextAssembly))
+                                    {
+                                        seen.Add(nextAssembly);
                                         toVisit.Enqueue(nextAssembly);
+                                    }
+#pragma warning restore CA1868 // Unnecessary call to 'Contains(item)'
                                 }
                             }
                         }
@@ -307,12 +316,21 @@ namespace Mono.Linker
                 {
                     "TypeMapAttribute`1" =>
                         sourceType is null || context.Annotations.IsRelevantToVariantCasting(sourceType)
-                        || context.Annotations.IsInstantiated(sourceType),
+                        || context.Annotations.IsInstantiated(sourceType), // Or target of an IsInst instruction
                     "TypeMapAssociationAttribute`1" =>
                         context.Annotations.IsInstantiated(sourceType),
                     _ => false,
                 };
             }
+
+            public TypeReference? TargetType =>
+                self.Attribute.AttributeType.Name switch
+                {
+                    "TypeMapAttribute`1" or "TypeMapAssociationAttribute`1" =>
+                        (TypeReference)self.Attribute.ConstructorArguments[1].Value!,
+                    _ => null
+                };
+
         }
     }
  }
