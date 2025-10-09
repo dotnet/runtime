@@ -3022,36 +3022,12 @@ BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* i
 {
     const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
     assert((immediate & 0x01) == 0);
+    assert(emitIsUncondJump(id));
 
     *ins = id->idIns();
 
-    switch (*ins)
-    {
-        case INS_jal:
-            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_RA, TrimSignedToImm21(immediate));
-            break;
-        case INS_j:
-            dst += emitOutput_JTypeInstr(dst, INS_j, REG_ZERO, TrimSignedToImm21(immediate));
-            break;
-        case INS_jalr:
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg1(), id->idReg2(), TrimSignedToImm12(immediate));
-            break;
-        case INS_bnez:
-        case INS_beqz:
-            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), REG_ZERO, TrimSignedToImm13(immediate));
-            break;
-        case INS_beq:
-        case INS_bne:
-        case INS_blt:
-        case INS_bge:
-        case INS_bltu:
-        case INS_bgeu:
-            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), TrimSignedToImm13(immediate));
-            break;
-        default:
-            unreached();
-            break;
-    }
+    regNumber linkReg = (*ins == INS_jal) ? REG_RA : REG_ZERO;
+    dst += emitOutput_JTypeInstr(dst, *ins, linkReg, TrimSignedToImm21(immediate));
     return dst;
 }
 
