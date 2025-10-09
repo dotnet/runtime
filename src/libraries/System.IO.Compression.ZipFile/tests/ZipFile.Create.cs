@@ -153,5 +153,31 @@ namespace System.IO.Compression.Tests
 
             await DisposeZipArchive(async, archive);
         }
+
+        [Theory]
+        [InlineData("file1.txt", "file2.txt", "file3.txt")]
+        public void CreatedOnUnixFlagTest(params string[] entryNames)
+        {
+            bool expectedCreatedOnUnix = !PlatformDetection.IsWindows;
+
+            using var memoryStream = new MemoryStream();
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var entryName in entryNames)
+                {
+                    var entry = archive.CreateEntry(entryName);
+                    using var entryStream = entry.Open();
+                    entryStream.WriteByte(42);
+                }
+            }
+
+            memoryStream.Position = 0;
+            using var readArchive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
+
+            foreach (var entry in readArchive.Entries)
+            {
+                Assert.Equal(expectedCreatedOnUnix, entry.CreatedOnUnix);
+            }
+        }
     }
 }
