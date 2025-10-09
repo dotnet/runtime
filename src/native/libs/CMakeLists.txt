@@ -50,6 +50,13 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
     add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+        set(GEN_SHARED_LIB 0)
+        if (NOT STATIC_LIB_DESTINATION)
+            set(STATIC_LIB_DESTINATION .)
+        endif ()
+    endif ()
+
     if (CLR_CMAKE_TARGET_WASI)
         set(HOST_WASI 1)
         add_compile_options(-Wno-unused-parameter)
