@@ -840,13 +840,14 @@ namespace ILCompiler.ObjectWriter
                             // RyuJIT generates the Thumb bit in the addend and we also get it from
                             // the symbol value. The AAELF ABI specification defines
                             // the R_ARM_THM_MOVW_ABS_NC relocations using the formula ((S + A) | T).
-                            // The thumb bit is thus supposed to be only added once.
-                            const long thumbBit = 1;
+                            // The thumb bit is thus supposed to be only added once
+                            // (and only if the target needs the Thumb bit).
+                            long codeDelta = symbolImageOffset & _nodeFactory.Target.CodeDelta;
 
-                            long s = symbolImageOffset & ~thumbBit;
+                            long s = symbolImageOffset & ~codeDelta;
                             long a = addend;
 
-                            long value = ((s + a) | thumbBit);
+                            long value = (s + a) | codeDelta;
 
                             Relocation.WriteValue(reloc.Type, pData, value);
 
@@ -872,15 +873,15 @@ namespace ILCompiler.ObjectWriter
                         {
                             // RyuJIT generates the Thumb bit in the addend and we also get it from
                             // the symbol value. The AAELF ABI specification defines
-                            // the R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
-                            // The thumb bit is thus supposed to be only added once.
-                            long codeDelta = _nodeFactory.Target.CodeDelta;
+                            // the R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) - P.
+                            // The thumb bit is thus supposed to be only added once
+                            // (and only if the target needs the Thumb bit).
+                            long codeDelta = symbolImageOffset & _nodeFactory.Target.CodeDelta;
 
                             long s = symbolImageOffset & ~codeDelta;
                             long a = addend;
 
-                            const uint offsetCorrection = 12;
-                            long p = relocOffset + offsetCorrection;
+                            long p = relocOffset + relocLength;
 
                             long value = ((s + a) | codeDelta) - p;
 
