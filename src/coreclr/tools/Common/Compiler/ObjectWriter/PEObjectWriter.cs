@@ -844,7 +844,7 @@ namespace ILCompiler.ObjectWriter
                             // (and only if the target needs the Thumb bit).
                             long codeDelta = symbolImageOffset & _nodeFactory.Target.CodeDelta;
 
-                            long s = symbolImageOffset & ~codeDelta;
+                            long s = symbolImageOffset & ~codeDelta + imageBase;
                             long a = addend;
 
                             long value = (s + a) | codeDelta;
