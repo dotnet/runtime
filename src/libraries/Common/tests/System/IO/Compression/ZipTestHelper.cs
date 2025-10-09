@@ -565,12 +565,12 @@ namespace System.IO.Compression.Tests
         public static IEnumerable<object[]> Utf8_Encoded_Test_Pairs()
         {
             yield return new object[] { "ascii.txt", Encoding.Latin1, "Latin1 comment", false };
-            yield return new object[] { "üñîçødë.txt", Encoding.UTF8, "utf8 comment", true };
+            yield return new object[] { UnicodeFileName, Encoding.UTF8, "utf8 comment", true };
             yield return new object[] { "file.txt", Encoding.Latin1, "plain ascii", false };
             yield return new object[] { "file.txt", Encoding.UTF8, "üñîçødë comment", true };
             yield return new object[] { "ascii.txt", Encoding.ASCII, "ASCII comment", false };
-            yield return new object[] { "üñîçødë.txt", Encoding.ASCII, "ASCII comment", false }; // Will lose data, but encoding is not UTF8
-            yield return new object[] { "üñîçødë.txt", null, "utf8 comment", true }; // Default encoding (null) for runtime is UTF8 for non-ASCII
+            yield return new object[] { UnicodeFileName, Encoding.ASCII, "ASCII comment", false }; // Will lose data, but encoding is not UTF8
+            yield return new object[] { UnicodeFileName, null, "utf8 comment", true }; // Default encoding (null) for runtime is UTF8 for non-ASCII
             yield return new object[] { "ascii.txt", null, "ascii comment", false };
         }
 
