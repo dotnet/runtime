@@ -836,6 +836,22 @@ namespace ILCompiler.ObjectWriter
                             break;
 
                         case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                        {
+                            // RyuJIT generates the Thumb bit in the addend and we also get it from
+                            // the symbol value. The AAELF ABI specification defines
+                            // the R_ARM_THM_MOVW_ABS_NC relocations using the formula ((S + A) | T).
+                            // The thumb bit is thus supposed to be only added once.
+                            const long thumbBit = 1;
+
+                            long s = symbolImageOffset & ~thumbBit;
+                            long a = addend;
+
+                            long value = ((s + a) | thumbBit);
+
+                            Relocation.WriteValue(reloc.Type, pData, value);
+
+                            break;
+                        }
                         case RelocType.IMAGE_REL_BASED_DIR64:
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
                             // Write the ImageBase-relative value to be relocated at load time.
@@ -853,9 +869,25 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
+                        {
+                            // RyuJIT generates the Thumb bit in the addend and we also get it from
+                            // the symbol value. The AAELF ABI specification defines
+                            // the R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
+                            // The thumb bit is thus supposed to be only added once.
+                            long codeDelta = _nodeFactory.Target.CodeDelta;
+
+                            long s = symbolImageOffset & ~codeDelta;
+                            long a = addend;
+
                             const uint offsetCorrection = 12;
-                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - (relocOffset + offsetCorrection) + addend);
+                            long p = relocOffset + offsetCorrection;
+
+                            long value = ((s + a) | codeDelta) - p;
+
+                            Relocation.WriteValue(reloc.Type, pData, value);
+
                             break;
+                        }
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                         {
                             if (addend != 0)
