@@ -148,9 +148,9 @@ namespace ILCompiler.ObjectWriter
             public uint LoaderFlags { get; set; }
             public uint NumberOfRvaAndSizes { get; set; }
 
-            public PEOptionalHeader(Machine machine)
+            public PEOptionalHeader(bool isPe32Plus)
             {
-                IsPE32Plus = machine is Machine.Amd64 or Machine.Arm64;
+                IsPE32Plus = isPe32Plus;
 
                 // Defaults taken from PETargetExtensions (PEHeaderConstants / PE32/PE64 constants)
                 MajorLinkerVersion = PEHeaderConstants.MajorLinkerVersion;
@@ -699,7 +699,7 @@ namespace ILCompiler.ObjectWriter
 
             coffHeader.Write(outputFileStream);
 
-            var peOptional = new PEOptionalHeader(_machine)
+            var peOptional = new PEOptionalHeader(isPE32Plus)
             {
                 SizeOfCode = sizeOfCode,
                 SizeOfInitializedData = sizeOfInitializedData,
