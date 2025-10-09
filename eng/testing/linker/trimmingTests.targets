@@ -30,20 +30,11 @@
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
         <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
-        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'wwwroot', 'run-v8.sh'))</TestCommand>
+        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'wwwroot', 'run-v8.sh'))</TestCommand>
         <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
         <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'wwwroot'))</TestExecutionDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
-
-    <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">
-      <_WasmRunV8Lines>
-<![CDATA[#!/bin/sh
-v8 --module test-main.js -- ${RUNTIME_ARGS} --run project.dll $*
-]]>
-      </_WasmRunV8Lines>
-    </PropertyGroup>
-    <WriteLinesToFile File="%(TestConsoleAppSourceFiles.TestCommand)" Lines="$(_WasmRunV8Lines)" Overwrite="true" Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'" />
 
     <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(TargetRid)'))">
       <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(TargetRid)'))" />
