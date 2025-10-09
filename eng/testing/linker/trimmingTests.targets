@@ -32,7 +32,7 @@
         <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
         <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'wwwroot', 'run-v8.sh'))</TestCommand>
         <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' or '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
-        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'wwwroot'))</TestExecutionDirectory>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'wwwroot'))</TestExecutionDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
