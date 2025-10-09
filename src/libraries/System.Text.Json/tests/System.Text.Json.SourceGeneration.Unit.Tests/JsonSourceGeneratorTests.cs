@@ -885,7 +885,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
-#if ROSLYN4_4_OR_GREATER
+#if ROSLYN4_4_OR_GREATER && NET
         [Fact]
         public void PropertyWithExperimentalType_JsonIgnore_CompilesSuccessfully()
         {
@@ -938,6 +938,31 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
+        public void PocoWithExperimentalProperty_NoJsonIgnore_EmitsDiagnostic()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    [Experimental("EXP001")]
+                    public int ExperimentalProperty { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            var result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            Assert.NotEmpty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP001"));
         }
 #endif
     }
