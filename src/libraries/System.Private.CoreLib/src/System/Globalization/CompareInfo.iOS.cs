@@ -25,17 +25,17 @@ namespace System.Globalization
 
             AssertComparisonSupported(options);
 
+            using SymbolFilterHelper helper1 = new SymbolFilterHelper();
+            using SymbolFilterHelper helper2 = new SymbolFilterHelper();
+
             // Handle IgnoreSymbols preprocessing
             if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                using SymbolFilterHelper filter1 = new SymbolFilterHelper(string1, needsIndexMap: false);
-                using SymbolFilterHelper filter2 = new SymbolFilterHelper(string2, needsIndexMap: false);
+                string1 = helper1.GetFilteredString(string1, generateIndexMap: false);
+                string2 = helper2.GetFilteredString(string2, generateIndexMap: false);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
-
-                string1 = filter1.FilteredSpan;
-                string2 = filter2.FilteredSpan;
             }
 
             // GetReference may return nullptr if the input span is defaulted. The native layer handles
@@ -53,134 +53,87 @@ namespace System.Globalization
         {
             AssertComparisonSupported(options);
 
-            SymbolFilterHelper targetFilter = default;
-            SymbolFilterHelper sourceFilter = default;
+            using SymbolFilterHelper targetHelper = new SymbolFilterHelper();
+            using SymbolFilterHelper sourceHelper = new SymbolFilterHelper();
             bool ignoreSymbols = (options & CompareOptions.IgnoreSymbols) != 0;
 
             // If we are ignoring symbols, preprocess the strings by removing specified Unicode categories.
             if (ignoreSymbols)
             {
-                targetFilter = new SymbolFilterHelper(target, needsIndexMap: false);
-                sourceFilter = new SymbolFilterHelper(source, needsIndexMap: true);
+                target = targetHelper.GetFilteredString(target, generateIndexMap: false);
+                source = sourceHelper.GetFilteredString(source, generateIndexMap: true);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
-
-                target = targetFilter.FilteredSpan;
-                source = sourceFilter.FilteredSpan;
             }
 
-            try
+            Interop.Range result;
+            fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                Interop.Range result;
-                fixed (char* pTarget = &MemoryMarshal.GetReference(target))
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
-                {
-                    result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
-                    Debug.Assert(result.Location != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
-                    if (result.Location == (int)ErrorCodes.ERROR_MIXED_COMPOSITION_NOT_FOUND)
-                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMixedCompositions);
-                }
+                result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
+                Debug.Assert(result.Location != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
+                if (result.Location == (int)ErrorCodes.ERROR_MIXED_COMPOSITION_NOT_FOUND)
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMixedCompositions);
+            }
 
-                int nativeLocation = result.Location;
-                int nativeLength = result.Length;
+            int nativeLocation = result.Location;
+            int nativeLength = result.Length;
 
-                // If not ignoring symbols / nothing found / an error code / filtered length is same as original (no ignorable symbols in source string), just propagate.
-                if (!ignoreSymbols || nativeLocation < 0 || sourceFilter.FilteredLength == sourceFilter.OriginalLength)
-                {
-                    if (matchLengthPtr != null)
-                        *matchLengthPtr = nativeLength;
-                    return nativeLocation;
-                }
+            ReadOnlySpan<int> sourceIndexMap = sourceHelper.GetIndexMap();
 
-                // If ignoring symbols, map filtered indices back to original indices, expanding match length to include removed symbol chars inside the span.
-                ReadOnlySpan<int> sourceIndexMap = sourceFilter.IndexMap;
-                int originalStart = sourceIndexMap[nativeLocation];
-                int filteredEnd = nativeLocation + nativeLength - 1;
-
-                Debug.Assert(filteredEnd < sourceFilter.FilteredLength,
-                    $"Filtered end index {filteredEnd} should not exceed the length of the filtered string {sourceFilter.FilteredLength}. nativeLocation={nativeLocation}, nativeLength={nativeLength}");
-
-                // Find the end position of the character at filteredEnd in the original string.
-                int endCharStartPos = sourceIndexMap[filteredEnd];
-
-                // Check if the previous position belongs to the same character (first unit of a surrogate pair)
-                int firstUnit = (filteredEnd > 0 && sourceIndexMap[filteredEnd - 1] == endCharStartPos)
-                    ? filteredEnd - 1
-                    : filteredEnd;
-
-                // Check if the next position belongs to the same character (second unit of a surrogate pair)
-                int lastUnit = (filteredEnd + 1 < sourceFilter.FilteredLength && sourceIndexMap[filteredEnd + 1] == endCharStartPos)
-                    ? filteredEnd + 1
-                    : filteredEnd;
-
-                int endCharWidth = lastUnit - firstUnit + 1;
-                int originalEnd = endCharStartPos + endCharWidth;
-                int originalLength = originalEnd - originalStart;
-
+            // If not ignoring symbols / nothing found / an error code / no index map (no symbols found in source), just propagate.
+            if (!ignoreSymbols || nativeLocation < 0 || sourceIndexMap.IsEmpty)
+            {
                 if (matchLengthPtr != null)
-                    *matchLengthPtr = originalLength;
-                return originalStart;
+                    *matchLengthPtr = nativeLength;
+                return nativeLocation;
             }
-            finally
-            {
-                if (ignoreSymbols)
-                {
-                    targetFilter.Dispose();
-                    sourceFilter.Dispose();
-                }
-            }
-        }
 
-        /// <summary>
-        /// Determines whether the specified rune should be ignored when using CompareOptions.IgnoreSymbols.
-        /// </summary>
-        /// <param name="rune">The rune to check.</param>
-        /// <returns>
-        /// <c>true</c> if the rune should be ignored; otherwise, <c>false</c>.
-        /// </returns>
-        /// <remarks>
-        /// This method returns <c>true</c> for:
-        /// - All separator categories (SpaceSeparator, LineSeparator, ParagraphSeparator)
-        /// - All punctuation categories (ConnectorPunctuation through OtherPunctuation)
-        /// - All symbol categories (MathSymbol through ModifierSymbol)
-        /// - Whitespace control characters (tab, line feed, vertical tab, form feed, carriage return, etc.)
-        /// </remarks>
-        private static bool IsIgnorableSymbol(Rune rune)
-        {
-            UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(rune.Value);
+            // If ignoring symbols, map filtered indices back to original indices, expanding match length to include removed symbol chars inside the span.
+            int originalStart = sourceIndexMap[nativeLocation];
+            int filteredEnd = nativeLocation + nativeLength - 1;
 
-            // Check for separator categories (11-13)
-            if (category >= UnicodeCategory.SpaceSeparator && category <= UnicodeCategory.ParagraphSeparator)
-                return true;
+            Debug.Assert(filteredEnd < source.Length,
+                $"Filtered end index {filteredEnd} should not exceed the length of the filtered string {source.Length}. nativeLocation={nativeLocation}, nativeLength={nativeLength}");
 
-            // Check for punctuation/symbol categories (18-27)
-            if (category >= UnicodeCategory.ConnectorPunctuation && category <= UnicodeCategory.ModifierSymbol)
-                return true;
+            // Find the end position of the character at filteredEnd in the original string.
+            int endCharStartPos = sourceIndexMap[filteredEnd];
 
-            // For Control (14) and Format (15) categories, only include whitespace characters
-            // This includes: tab (U+0009), LF (U+000A), VT (U+000B), FF (U+000C), CR (U+000D), NEL (U+0085)
-            if (category == UnicodeCategory.Control || category == UnicodeCategory.Format)
-                return Rune.IsWhiteSpace(rune);
+            // Check if the previous position belongs to the same character (first unit of a surrogate pair)
+            int firstUnit = (filteredEnd > 0 && sourceIndexMap[filteredEnd - 1] == endCharStartPos)
+                ? filteredEnd - 1
+                : filteredEnd;
 
-            return false;
+            // Check if the next position belongs to the same character (second unit of a surrogate pair)
+            int lastUnit = (filteredEnd + 1 < source.Length && sourceIndexMap[filteredEnd + 1] == endCharStartPos)
+                ? filteredEnd + 1
+                : filteredEnd;
+
+            int endCharWidth = lastUnit - firstUnit + 1;
+            int originalEnd = endCharStartPos + endCharWidth;
+            int originalLength = originalEnd - originalStart;
+
+            if (matchLengthPtr != null)
+                *matchLengthPtr = originalLength;
+            return originalStart;
         }
 
         private unsafe bool NativeStartsWith(ReadOnlySpan<char> prefix, ReadOnlySpan<char> source, CompareOptions options)
         {
             AssertComparisonSupported(options);
 
+            using SymbolFilterHelper prefixHelper = new SymbolFilterHelper();
+            using SymbolFilterHelper sourceHelper = new SymbolFilterHelper();
+
             // Handle IgnoreSymbols preprocessing
             if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                using SymbolFilterHelper prefixFilter = new SymbolFilterHelper(prefix, needsIndexMap: false);
-                using SymbolFilterHelper sourceFilter = new SymbolFilterHelper(source, needsIndexMap: false);
+                prefix = prefixHelper.GetFilteredString(prefix, generateIndexMap: false);
+                source = sourceHelper.GetFilteredString(source, generateIndexMap: false);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
-
-                prefix = prefixFilter.FilteredSpan;
-                source = sourceFilter.FilteredSpan;
             }
 
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
@@ -196,17 +149,17 @@ namespace System.Globalization
         {
             AssertComparisonSupported(options);
 
+            using SymbolFilterHelper suffixHelper = new SymbolFilterHelper();
+            using SymbolFilterHelper sourceHelper = new SymbolFilterHelper();
+
             // Handle IgnoreSymbols preprocessing
             if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                using SymbolFilterHelper suffixFilter = new SymbolFilterHelper(suffix, needsIndexMap: false);
-                using SymbolFilterHelper sourceFilter = new SymbolFilterHelper(source, needsIndexMap: false);
+                suffix = suffixHelper.GetFilteredString(suffix, generateIndexMap: false);
+                source = sourceHelper.GetFilteredString(source, generateIndexMap: false);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
-
-                suffix = suffixFilter.FilteredSpan;
-                source = sourceFilter.FilteredSpan;
             }
 
             fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
@@ -219,87 +172,181 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Filters out ignorable symbol characters from the input span.
-        /// </summary>
-        /// <param name="input">The input span to filter.</param>
-        /// <param name="destination">The destination span to write filtered characters to. Must be at least as large as input.</param>
-        /// <param name="indexMap">
-        /// Optional array to store the mapping where each index in the filtered output maps to the corresponding
-        /// character start position in the original input span. Pass null if mapping is not needed.
-        /// Must be at least as large as input if provided.
-        /// </param>
-        /// <returns>
-        /// The number of characters written to the destination span after filtering.
-        /// </returns>
-        private static int FilterSymbolsFromSpan(ReadOnlySpan<char> input, Span<char> destination, int[]? indexMap)
-        {
-            Debug.Assert(destination.Length >= input.Length, "Destination buffer must be at least as large as input");
-            Debug.Assert(indexMap is null || indexMap.Length >= input.Length, "Index map buffer must be at least as large as input if provided");
-
-            int length = input.Length;
-            int writeIndex = 0;
-
-            for (int i = 0; i < length;)
-            {
-                Rune.DecodeFromUtf16(input.Slice(i), out Rune rune, out int consumed);
-
-                if (!IsIgnorableSymbol(rune))
-                {
-                    // Copy the UTF-16 units and map each filtered position to the start of the original character
-                    for (int j = 0; j < consumed; j++)
-                    {
-                        destination[writeIndex] = input[i + j];
-                        indexMap?[writeIndex] = i;
-                        writeIndex++;
-                    }
-                }
-
-                i += consumed;
-            }
-
-            return writeIndex;
-        }
-
-        /// <summary>
         /// Helper struct that manages buffers for filtering symbols from a span.
-        /// Uses ArrayPool to rent temporary buffers.
-        /// Implements IDisposable to return rented arrays.
+        /// Uses stack allocation for short strings (up to 256 characters) and ArrayPool for longer strings.
+        /// Implements IDisposable to return rented arrays when heap allocation was used.
         /// </summary>
         private ref struct SymbolFilterHelper
         {
-            private char[]? _rentedCharArray;
-            private int[]? _rentedIntArray;
+            private const int StackAllocThreshold = 256;
+            private char[]? _arrayToReturnToPool;
+            private int[]? _indexMapArrayToReturnToPool;
+            private bool _usedStackAllocation;
+            private Span<int> _indexMapSpan;
+            private bool _hasIndexMap;
 
-            public ReadOnlySpan<char> FilteredSpan { get; }
-            public ReadOnlySpan<int> IndexMap { get; }
-            public int FilteredLength { get; }
-            public int OriginalLength { get; }
+            public SymbolFilterHelper() { }
 
-            public SymbolFilterHelper(ReadOnlySpan<char> input, bool needsIndexMap)
+            /// <summary>
+            /// Gets the index map as a ReadOnlySpan, or an empty span if no index map was generated.
+            /// </summary>
+            public ReadOnlySpan<int> GetIndexMap() => _hasIndexMap ? _indexMapSpan : ReadOnlySpan<int>.Empty;
+
+            /// <summary>
+            /// Filters ignorable symbols from the input span and optionally generates an index map.
+            /// </summary>
+            /// <param name="input">The input span to filter.</param>
+            /// <param name="generateIndexMap">
+            /// If <c>true</c>, generates an index map that tracks the position of each character in the filtered
+            /// output back to its original position in the input. The map is accessible via <see cref="IndexMap"/>.
+            /// </param>
+            /// <returns>
+            /// A span containing the filtered string with ignorable symbols removed. If no symbols are found,
+            /// returns the original input span without allocating. For short strings (up to 256 characters),
+            /// uses stack allocation. For longer strings, uses a rented array from <see cref="ArrayPool{T}"/>
+            /// that will be returned when <see cref="Dispose"/> is called.
+            /// </returns>
+            public ReadOnlySpan<char> GetFilteredString(ReadOnlySpan<char> input, bool generateIndexMap = false)
             {
-                OriginalLength = input.Length;
-                _rentedCharArray = ArrayPool<char>.Shared.Rent(input.Length);
-                _rentedIntArray = needsIndexMap ? ArrayPool<int>.Shared.Rent(input.Length) : null;
+                if (_arrayToReturnToPool is not null)
+                {
+                    Dispose();
+                }
 
-                Span<char> charBuffer = _rentedCharArray.AsSpan(0, input.Length);
+                int i = 0;
+                int consumed = 0;
+                // Fast path: scan through the input until we find the first ignorable symbol
+                for (; i < input.Length;)
+                {
+                    Rune.DecodeFromUtf16(input.Slice(i), out Rune rune, out consumed);
+                    if (IsIgnorableSymbol(rune))
+                    {
+                        break;
+                    }
+                    i += consumed;
+                }
 
-                FilteredLength = FilterSymbolsFromSpan(input, charBuffer, _rentedIntArray);
-                FilteredSpan = charBuffer.Slice(0, FilteredLength);
-                IndexMap = _rentedIntArray is not null ? _rentedIntArray.AsSpan(0, FilteredLength) : default;
+                // If we scanned the entire input without finding any ignorable symbols, return original input
+                if (i >= input.Length)
+                {
+                    return input;
+                }
+
+                // Decide whether to use stack or heap allocation based on input length
+                Span<char> outSpan;
+                if (input.Length <= StackAllocThreshold)
+                {
+                    outSpan = stackalloc char[input.Length];
+                    if (generateIndexMap)
+                    {
+                        _indexMapSpan = stackalloc int[input.Length];
+                        _hasIndexMap = true;
+                    }
+                    _usedStackAllocation = true;
+                }
+                else
+                {
+                    _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(input.Length);
+                    outSpan = _arrayToReturnToPool;
+                    if (generateIndexMap)
+                    {
+                        _indexMapArrayToReturnToPool = ArrayPool<int>.Shared.Rent(input.Length);
+                        _indexMapSpan = _indexMapArrayToReturnToPool;
+                        _hasIndexMap = true;
+                    }
+                    _usedStackAllocation = false;
+                }
+
+                // Copy the initial segment that contains no ignorable symbols (positions 0 to i-1)
+                input.Slice(0, i).CopyTo(outSpan);
+                if (generateIndexMap)
+                {
+                    // Initialize the index map for the initial segment with identity mapping
+                    for (int j = 0; j < i; j++)
+                    {
+                        _indexMapSpan[j] = j;
+                    }
+                }
+
+                int writeIndex = i;
+                i += consumed; // skip the ignorable symbol we just found
+
+                for (; i < input.Length;)
+                {
+                    Rune.DecodeFromUtf16(input.Slice(i), out Rune rune, out consumed);
+                    if (!IsIgnorableSymbol(rune))
+                    {
+                        // Copy the UTF-16 units and map each filtered position to the start of the original character
+                        outSpan[writeIndex] = input[i];
+                        if (generateIndexMap)
+                        {
+                            _indexMapSpan[writeIndex] = i;
+                        }
+                        writeIndex++;
+
+                        if (consumed > 1)
+                        {
+                            outSpan[writeIndex] = input[i + 1];
+                            if (generateIndexMap)
+                            {
+                                _indexMapSpan[writeIndex] = i + 1;
+                            }
+                            writeIndex++;
+                        }
+                    }
+                    i += consumed;
+                }
+
+                return outSpan.Slice(0, writeIndex);
             }
 
             public void Dispose()
             {
-                if (_rentedCharArray is not null)
+                // Only return the arrays if we used heap allocation (not stack allocation)
+                if (!_usedStackAllocation && _arrayToReturnToPool is not null)
                 {
-                    ArrayPool<char>.Shared.Return(_rentedCharArray);
-                    _rentedCharArray = null;
+                    ArrayPool<char>.Shared.Return(_arrayToReturnToPool);
+                    _arrayToReturnToPool = null;
                 }
-                if (_rentedIntArray is not null)
+                if (!_usedStackAllocation && _indexMapArrayToReturnToPool is not null)
                 {
-                    ArrayPool<int>.Shared.Return(_rentedIntArray);
-                    _rentedIntArray = null;
+                    ArrayPool<int>.Shared.Return(_indexMapArrayToReturnToPool);
+                    _indexMapArrayToReturnToPool = null;
                 }
+            }
+
+            /// <summary>
+            /// Determines whether the specified rune should be ignored when using CompareOptions.IgnoreSymbols.
+            /// </summary>
+            /// <param name="rune">The rune to check.</param>
+            /// <returns>
+            /// <c>true</c> if the rune should be ignored; otherwise, <c>false</c>.
+            /// </returns>
+            /// <remarks>
+            /// This method returns <c>true</c> for:
+            /// - All separator categories (SpaceSeparator, LineSeparator, ParagraphSeparator)
+            /// - All punctuation categories (ConnectorPunctuation through OtherPunctuation)
+            /// - All symbol categories (MathSymbol through ModifierSymbol)
+            /// - Whitespace control characters (tab, line feed, vertical tab, form feed, carriage return, etc.)
+            /// </remarks>
+            private static bool IsIgnorableSymbol(Rune rune)
+            {
+                UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(rune.Value);
+
+                // Check for separator categories (11-13)
+                if (category >= UnicodeCategory.SpaceSeparator && category <= UnicodeCategory.ParagraphSeparator)
+                    return true;
+
+                // Check for punctuation/symbol categories (18-27)
+                if (category >= UnicodeCategory.ConnectorPunctuation && category <= UnicodeCategory.ModifierSymbol)
+                    return true;
+
+                // For Control (14) and Format (15) categories, only include whitespace characters
+                // This includes: tab (U+0009), LF (U+000A), VT (U+000B), FF (U+000C), CR (U+000D), NEL (U+0085)
+                if (category == UnicodeCategory.Control || category == UnicodeCategory.Format)
+                    return Rune.IsWhiteSpace(rune);
+
+                return false;
             }
         }
 
