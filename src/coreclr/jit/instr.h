@@ -553,9 +553,7 @@ enum insOpts : unsigned
 
     INS_OPTS_RC,     // see ::emitIns_R_C().
     INS_OPTS_RL,     // see ::emitIns_R_L().
-    INS_OPTS_JALR,   // see ::emitIns_J_R().
-    INS_OPTS_J,      // see ::emitIns_J().
-    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_JUMP,   // see ::emitIns_J and ::emitIns_J_cond_la().
     INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().

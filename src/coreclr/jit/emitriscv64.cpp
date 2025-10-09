@@ -74,9 +74,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 
     switch (insOp)
     {
-        case INS_OPTS_JALR:
-        case INS_OPTS_J_cond:
-        case INS_OPTS_J:
+        case INS_OPTS_JUMP:
             return sizeof(instrDescJmp);
 
         case INS_OPTS_C:
@@ -1299,7 +1297,6 @@ void emitter::emitSetShortJump(instrDescJmp* id)
     assert(emitIsCmpJump(id) || emitIsUncondJump(id));
     id->idCodeSize(sizeof(code_t)); // single 32-bit instruction
     id->idjShort = true;
-    id->idInsOpt(emitIsUncondJump(id) ? INS_OPTS_J : INS_OPTS_J_cond);
 
 #if DEBUG_EMIT
     if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
@@ -1328,7 +1325,6 @@ void emitter::emitSetMediumJump(instrDescJmp* id)
 
     assert(emitIsCmpJump(id));
     id->idCodeSize(2 * sizeof(code_t)); // two 32-bit instructions
-    id->idInsOpt(INS_OPTS_JALR);
     id->idjShort = false;
 }
 
@@ -1424,7 +1420,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 
     // Start from worst case (2 instructions): "auipc; jr"
     id->idCodeSize(2 * sizeof(code_t));
-    id->idInsOpt(INS_OPTS_JALR);
+    id->idInsOpt(INS_OPTS_JUMP);
 
     /* Figure out the max. size of the jump/call instruction */
     if (insGroup* tgt = (insGroup*)emitCodeGetCookie(dst); !id->idjKeepLong && (tgt != nullptr))
@@ -1479,7 +1475,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
 
     // Start from worst case (3 instructions): "branch (reversed); auipc; jr"
     id->idCodeSize(3 * sizeof(code_t));
-    id->idInsOpt(INS_OPTS_JALR);
+    id->idInsOpt(INS_OPTS_JUMP);
 
     /* Figure out the max. size of the jump/call instruction */
     if (insGroup* tgt = (insGroup*)emitCodeGetCookie(dst); !id->idjKeepLong && (tgt != nullptr))
@@ -2975,59 +2971,53 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
+BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
 {
-    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp) - 4;
+    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp);
     assert((immediate & 0x01) == 0);
+    assert(emitIsUncondJump(jmp) || emitIsCmpJump(jmp));
 
     *ins = jmp->idIns();
-    if (jmp->idInsIs(INS_jal, INS_j)) // far jump
+    if (jmp->idjShort)
     {
-        assert(jmp->idCodeSize() == 2 * sizeof(code_t));
-        assert(isValidSimm32(immediate));
-        dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, REG_RA, LowerNBitsOfWord<12>(immediate));
-    }
-    else // opposite branch + jump
-    {
-        assert(jmp->idInsIs(INS_beqz, INS_bnez, INS_beq, INS_bne, INS_blt, INS_bltu, INS_bge, INS_bgeu));
-        regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
-        dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, jmp->idCodeSize());
-        if (jmp->idCodeSize() == 2 * sizeof(code_t))
+        assert(jmp->idCodeSize() == sizeof(code_t));
+        if (emitIsUncondJump(jmp))
         {
-            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+            regNumber linkReg = (*ins == INS_jal) ? REG_RA : REG_ZERO;
+            dst += emitOutput_JTypeInstr(dst, *ins, linkReg, TrimSignedToImm21(immediate));
         }
         else
         {
-            assert(jmp->idCodeSize() == 3 * sizeof(code_t));
-            assert(isValidSimm32(immediate));
-            dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, REG_RA, LowerNBitsOfWord<12>(immediate));
+            dst += emitOutput_BTypeInstr(dst, *ins, jmp->idReg1(), jmp->idReg2(), TrimSignedToImm13(immediate));
         }
     }
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
-{
-    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
-
-    *ins = id->idIns();
-
-    dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), TrimSignedToImm13(immediate));
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
-{
-    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
-    assert((immediate & 0x01) == 0);
-    assert(emitIsUncondJump(id));
-
-    *ins = id->idIns();
-
-    regNumber linkReg = (*ins == INS_jal) ? REG_RA : REG_ZERO;
-    dst += emitOutput_JTypeInstr(dst, *ins, linkReg, TrimSignedToImm21(immediate));
+    else // far jump
+    {
+        if (emitIsUncondJump(jmp))
+        {
+            assert(jmp->idCodeSize() == 2 * sizeof(code_t));
+            assert(isValidSimm32(immediate));
+            dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
+            dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, REG_RA, LowerNBitsOfWord<12>(immediate));
+        }
+        else // opposite branch + jump
+        {
+            assert(!jmp->idInsIs(INS_beqz, INS_bnez) || (jmp->idReg2() == REG_ZERO));
+            dst += emitOutput_BTypeInstr_InvertComparation(dst, *ins, jmp->idReg1(), jmp->idReg2(), jmp->idCodeSize());
+            immediate -= sizeof(code_t);
+            if (jmp->idCodeSize() == 2 * sizeof(code_t))
+            {
+                dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+            }
+            else
+            {
+                assert(jmp->idCodeSize() == 3 * sizeof(code_t));
+                assert(isValidSimm32(immediate));
+                dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
+                dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, REG_RA, LowerNBitsOfWord<12>(immediate));
+            }
+        }
+    }
     return dst;
 }
 
@@ -3126,17 +3116,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst = emitOutputInstr_OptsRl(dst, id, &ins);
             sz  = sizeof(instrDesc);
             break;
-        case INS_OPTS_JALR:
-            dst = emitOutputInstr_OptsJalr(dst, static_cast<instrDescJmp*>(id), ig, &ins);
-            sz  = sizeof(instrDescJmp);
-            break;
-        case INS_OPTS_J_cond:
-            dst = emitOutputInstr_OptsJCond(dst, id, ig, &ins);
-            sz  = sizeof(instrDescJmp);
-            break;
-        case INS_OPTS_J:
-            // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
-            dst = emitOutputInstr_OptsJ(dst, id, ig, &ins);
+        case INS_OPTS_JUMP:
+            dst = emitOutputInstr_OptsJump(dst, static_cast<instrDescJmp*>(id), ig, &ins);
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
