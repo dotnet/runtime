@@ -80,10 +80,9 @@ namespace System.Globalization
             int nativeLocation = result.Location;
             int nativeLength = result.Length;
 
-            ReadOnlySpan<int> sourceIndexMap = sourceHelper.GetIndexMap();
 
             // If not ignoring symbols / nothing found / an error code / no index map (no symbols found in source), just propagate.
-            if (!ignoreSymbols || nativeLocation < 0 || sourceIndexMap.IsEmpty)
+            if (!ignoreSymbols || nativeLocation < 0 || sourceHelper.IndexMap is null)
             {
                 if (matchLengthPtr != null)
                     *matchLengthPtr = nativeLength;
@@ -91,22 +90,22 @@ namespace System.Globalization
             }
 
             // If ignoring symbols, map filtered indices back to original indices, expanding match length to include removed symbol chars inside the span.
-            int originalStart = sourceIndexMap[nativeLocation];
+            int originalStart = sourceHelper.IndexMap[nativeLocation];
             int filteredEnd = nativeLocation + nativeLength - 1;
 
             Debug.Assert(filteredEnd < source.Length,
                 $"Filtered end index {filteredEnd} should not exceed the length of the filtered string {source.Length}. nativeLocation={nativeLocation}, nativeLength={nativeLength}");
 
             // Find the end position of the character at filteredEnd in the original string.
-            int endCharStartPos = sourceIndexMap[filteredEnd];
+            int endCharStartPos = sourceHelper.IndexMap[filteredEnd];
 
             // Check if the previous position belongs to the same character (first unit of a surrogate pair)
-            int firstUnit = (filteredEnd > 0 && sourceIndexMap[filteredEnd - 1] == endCharStartPos)
+            int firstUnit = (filteredEnd > 0 && sourceHelper.IndexMap[filteredEnd - 1] == endCharStartPos)
                 ? filteredEnd - 1
                 : filteredEnd;
 
             // Check if the next position belongs to the same character (second unit of a surrogate pair)
-            int lastUnit = (filteredEnd + 1 < source.Length && sourceIndexMap[filteredEnd + 1] == endCharStartPos)
+            int lastUnit = (filteredEnd + 1 < source.Length && sourceHelper.IndexMap[filteredEnd + 1] == endCharStartPos)
                 ? filteredEnd + 1
                 : filteredEnd;
 
@@ -173,24 +172,19 @@ namespace System.Globalization
 
         /// <summary>
         /// Helper struct that manages buffers for filtering symbols from a span.
-        /// Uses stack allocation for short strings (up to 256 characters) and ArrayPool for longer strings.
-        /// Implements IDisposable to return rented arrays when heap allocation was used.
+        /// Uses ArrayPool for memory allocation.
+        /// Implements IDisposable to return rented arrays.
         /// </summary>
         private ref struct SymbolFilterHelper
         {
-            private const int StackAllocThreshold = 256;
             private char[]? _arrayToReturnToPool;
-            private int[]? _indexMapArrayToReturnToPool;
-            private bool _usedStackAllocation;
-            private Span<int> _indexMapSpan;
-            private bool _hasIndexMap;
 
             public SymbolFilterHelper() { }
 
             /// <summary>
-            /// Gets the index map as a ReadOnlySpan, or an empty span if no index map was generated.
+            /// Gets the index map array, or null if no index map was generated.
             /// </summary>
-            public ReadOnlySpan<int> GetIndexMap() => _hasIndexMap ? _indexMapSpan : ReadOnlySpan<int>.Empty;
+            public int[]? IndexMap { get; private set; }
 
             /// <summary>
             /// Filters ignorable symbols from the input span and optionally generates an index map.
@@ -198,16 +192,16 @@ namespace System.Globalization
             /// <param name="input">The input span to filter.</param>
             /// <param name="generateIndexMap">
             /// If <c>true</c>, generates an index map that tracks the position of each character in the filtered
-            /// output back to its original position in the input. The map is accessible via <see cref="GetIndexMap"/>.
+            /// output back to its original position in the input. The map is accessible via <see cref="IndexMap"/>.
             /// </param>
             /// <returns>
             /// A span containing the filtered string with ignorable symbols removed. If no symbols are found,
-            /// returns the original input span without allocating. Otherwise, returns a span backed by either
-            /// stack-allocated or pooled memory that will be returned when <see cref="Dispose"/> is called.
+            /// returns the original input span without allocating. Otherwise, returns a span backed by
+            /// pooled memory that will be returned when <see cref="Dispose"/> is called.
             /// </returns>
             public ReadOnlySpan<char> GetFilteredString(ReadOnlySpan<char> input, bool generateIndexMap = false)
             {
-                if (_arrayToReturnToPool is not null || _indexMapArrayToReturnToPool is not null)
+                if (_arrayToReturnToPool is not null || IndexMap is not null)
                 {
                     Dispose();
                 }
@@ -231,39 +225,19 @@ namespace System.Globalization
                     return input;
                 }
 
-                // Decide whether to use stack or heap allocation based on input length
-                Span<char> outSpan;
-                if (input.Length <= StackAllocThreshold)
-                {
-                    outSpan = stackalloc char[input.Length];
-                    if (generateIndexMap)
-                    {
-                        _indexMapSpan = stackalloc int[input.Length];
-                        _hasIndexMap = true;
-                    }
-                    _usedStackAllocation = true;
-                }
-                else
-                {
-                    _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(input.Length);
-                    outSpan = _arrayToReturnToPool;
-                    if (generateIndexMap)
-                    {
-                        _indexMapArrayToReturnToPool = ArrayPool<int>.Shared.Rent(input.Length);
-                        _indexMapSpan = _indexMapArrayToReturnToPool;
-                        _hasIndexMap = true;
-                    }
-                    _usedStackAllocation = false;
-                }
+                // Rent buffers from ArrayPool
+                _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(input.Length);
+                Span<char> outSpan = _arrayToReturnToPool;
 
                 // Copy the initial segment that contains no ignorable symbols (positions 0 to i-1)
                 input.Slice(0, i).CopyTo(outSpan);
                 if (generateIndexMap)
                 {
                     // Initialize the index map for the initial segment with identity mapping
+                    IndexMap = ArrayPool<int>.Shared.Rent(input.Length);
                     for (int j = 0; j < i; j++)
                     {
-                        _indexMapSpan[j] = j;
+                        IndexMap![j] = j;
                     }
                 }
 
@@ -277,19 +251,13 @@ namespace System.Globalization
                     {
                         // Copy the UTF-16 units and map each filtered position to the start of the original character
                         outSpan[writeIndex] = input[i];
-                        if (generateIndexMap)
-                        {
-                            _indexMapSpan[writeIndex] = i;
-                        }
+                        IndexMap?[writeIndex] = i;
                         writeIndex++;
 
                         if (consumed > 1)
                         {
                             outSpan[writeIndex] = input[i + 1];
-                            if (generateIndexMap)
-                            {
-                                _indexMapSpan[writeIndex] = i + 1;
-                            }
+                            IndexMap?[writeIndex] = i + 1;
                             writeIndex++;
                         }
                     }
@@ -301,16 +269,15 @@ namespace System.Globalization
 
             public void Dispose()
             {
-                // Only return the arrays if we used heap allocation (not stack allocation)
-                if (!_usedStackAllocation && _arrayToReturnToPool is not null)
+                if (_arrayToReturnToPool is not null)
                 {
                     ArrayPool<char>.Shared.Return(_arrayToReturnToPool);
                     _arrayToReturnToPool = null;
                 }
-                if (!_usedStackAllocation && _indexMapArrayToReturnToPool is not null)
+                if (IndexMap is not null)
                 {
-                    ArrayPool<int>.Shared.Return(_indexMapArrayToReturnToPool);
-                    _indexMapArrayToReturnToPool = null;
+                    ArrayPool<int>.Shared.Return(IndexMap);
+                    IndexMap = null;
                 }
             }
 
