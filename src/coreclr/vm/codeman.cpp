@@ -1518,11 +1518,13 @@ void EEJitManager::SetCpuInfo()
 
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
 
+#ifdef FEATURE_INTERPRETER
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
     {
         // Disable larger Vector<T> sizes when interpreter is enabled, and not compiling S.P.Corelib
         preferredVectorBitWidth = 128;
     }
+#endif
 
     if ((preferredVectorBitWidth == 0) && throttleVector512)
     {

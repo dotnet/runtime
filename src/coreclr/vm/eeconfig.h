@@ -441,7 +441,9 @@ public:
 
     bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
 
+#ifdef FEATURE_INTERPRETER
     bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
+#endif
     bool    EnableHWIntrinsic()            const { LIMITED_METHOD_CONTRACT; return enableHWIntrinsic; }
 
 private: //----------------------------------------------------------------
