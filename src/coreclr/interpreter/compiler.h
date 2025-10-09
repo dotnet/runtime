@@ -746,6 +746,7 @@ private:
     void    EmitBox(StackInfo* pStackInfo, const CORINFO_GENERICHANDLE_RESULT &boxType, bool argByRef);
     void    EmitLeave(int32_t ilOffset, int32_t target);
     void    EmitPushSyncObject();
+    void    EmitCallsiteCallout(CORINFO_HELPER_DESC* calloutDesc);
 
     // Var Offset allocator
     TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;

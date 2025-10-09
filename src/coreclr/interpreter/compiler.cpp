@@ -1645,6 +1645,11 @@ static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
     delete (InterpreterStackMap *)value;
 }
 
+static void InterpreterCompilerBreak()
+{
+    assert(!"InterpreterCompilerBreak reached");
+}
+
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
     : m_stackmapsByClass(FreeInterpreterStackMap)
@@ -1668,7 +1673,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
-
+#ifdef DEBUG
+#endif
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
                             /* includeAssembly */ false,
@@ -1689,6 +1695,13 @@ InterpMethod* InterpCompiler::CompileMethod()
         printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
 #endif
+#ifdef DEBUG
+    if (InterpConfig.InterpBreak().contains(m_compHnd, m_methodInfo->ftn, m_classHnd, &m_methodInfo->args))
+    {
+        InterpreterCompilerBreak();
+    }
+#endif
+
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
     {
@@ -3679,6 +3692,77 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
 }
 
+void InterpCompiler::EmitCallsiteCallout(CORINFO_HELPER_DESC* calloutDesc)
+{
+    int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
+
+    for (unsigned i = 0; i < calloutDesc->numArgs; i++)
+    {
+        void *value = NULL;
+        void *pValue = NULL;
+
+        switch (calloutDesc->args[i].argType)
+        {
+            case CORINFO_HELPER_ARG_TYPE_Class:
+                value = (void*)m_compHnd->embedClassHandle(calloutDesc->args[i].classHandle, &pValue);
+                break;
+            case CORINFO_HELPER_ARG_TYPE_Method:
+                value = (void*)m_compHnd->embedMethodHandle(calloutDesc->args[i].methodHandle, &pValue);
+                break;
+            default:
+                NO_WAY("Callsite callout with unsupported arg type");
+        }
+
+        if (value == NULL)
+        {
+            if (pValue == NULL)
+            {
+                NO_WAY("Callsite callout with unsupported arg type");
+            }
+
+            AddIns(INTOP_LDPTR);
+            m_pLastNewIns->data[0] = GetDataItemIndex(pValue);
+            PushInterpType(InterpTypeI, nullptr);
+            int tempVar = m_pStackPointer[-1].var;
+            m_pLastNewIns->SetDVar(tempVar);
+
+            // Now we generate an LDIND_I to get the actual value out of the ref
+            AddIns(INTOP_LDIND_I);
+            m_pLastNewIns->data[0] = 0;
+            m_pLastNewIns->SetSVar(tempVar);
+            m_pStackPointer--;
+            PushInterpType(InterpTypeI, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pStackPointer--;
+            svars[i] = m_pStackPointer[0].var;
+        }
+        else
+        {
+            AddIns(INTOP_LDPTR);
+            m_pLastNewIns->data[0] = GetDataItemIndex(value);
+            PushInterpType(InterpTypeI, nullptr);
+            svars[i] = m_pStackPointer[-1].var;
+            m_pLastNewIns->SetDVar(svars[i]);
+            m_pStackPointer--;
+        }
+    }
+    if (calloutDesc->numArgs == 2)
+    {
+        AddIns(INTOP_CALL_HELPER_V_SS);
+        m_pLastNewIns->SetSVars2(svars[0], svars[1]);
+    }
+    else if (calloutDesc->numArgs == 3)
+    {
+        AddIns(INTOP_CALL_HELPER_V_SSS);
+        m_pLastNewIns->SetSVars3(svars[0], svars[1], svars[2]);
+    }
+    else
+    {
+        NO_WAY("Callsite callout with unsupported number of args");
+    }
+    m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -3761,6 +3845,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        if (callInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+        {
+            // Inject call to callsite callout helper
+            EmitCallsiteCallout(&callInfo.callsiteCalloutHelper);
+        }
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
             NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
@@ -6832,6 +6922,12 @@ retry_emit:
                         if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
                         {
                             NO_WAY("Currently do not support LDFTN of Parameterized functions");
+                        }
+
+                        if (callInfo.accessAllowed == CORINFO_ACCESS_ILLEGAL)
+                        {
+                            // Inject call to callsite callout helper
+                            EmitCallsiteCallout(&callInfo.callsiteCalloutHelper);
                         }
 
                         m_pStackPointer--;
