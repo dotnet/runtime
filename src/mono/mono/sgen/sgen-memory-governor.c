@@ -45,7 +45,6 @@ static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword soft_heap_limit = ((mword)0) - ((mword)1);
 
 static double default_allowance_nursery_size_ratio = SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO;
-static double save_target_ratio = SGEN_DEFAULT_SAVE_TARGET_RATIO;
 
 /**/
 static mword allocated_heap;
@@ -528,7 +527,7 @@ sgen_memgov_try_alloc_space (mword size, int space)
 }
 
 void
-sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double allowance_ratio, double save_target)
+sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double allowance_ratio)
 {
 	if (soft_limit)
 		soft_heap_limit = soft_limit;
@@ -544,6 +543,9 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_LOG_ENTRY, sizeof (SgenLogEntry));
 
 	sgen_gc_info.total_nursery_size_bytes = sgen_get_nursery_end () - sgen_get_nursery_start ();
+
+	if (allowance_ratio)
+		default_allowance_nursery_size_ratio = allowance_ratio;
 
 	if (max_heap == 0) {
 		sgen_gc_info.total_available_memory_bytes = mono_determine_physical_ram_size ();
@@ -572,12 +574,6 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	sgen_gc_info.total_available_memory_bytes = max_heap;
 	sgen_gc_info.high_memory_load_threshold_bytes = GDOUBLE_TO_UINT64 (.9 * sgen_gc_info.total_available_memory_bytes);
-
-	if (allowance_ratio)
-		default_allowance_nursery_size_ratio = allowance_ratio;
-
-	if (save_target)
-		save_target_ratio = save_target;
 }
 
 #endif
