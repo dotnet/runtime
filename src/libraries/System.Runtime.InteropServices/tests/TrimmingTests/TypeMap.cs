@@ -54,7 +54,6 @@ if (!usedTypeMap.TryGetValue("TrimTargetIsUnrelated", out Type? targetType))
     return 3;
 }
 
-
 if (targetType != GetTypeWithoutTrimAnalysis(nameof(TargetType)))
 {
     Console.WriteLine("TrimTargetIsUnrelated type does not match expected type.");
