@@ -102,7 +102,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <NoWarn>$(NoWarn);xUnit1013;CS1998;SYSLIB5007</NoWarn>
+    <NoWarn>$(NoWarn);xUnit1013;CS1998</NoWarn>
     <Features Condition="'$(RuntimeFlavor)' != 'mono' and '$(TestBuildMode)' != 'nativeaot' and '$(TargetArchitecture)' != 'wasm'">$(Features);runtime-async=on</Features>
   </PropertyGroup>
   
