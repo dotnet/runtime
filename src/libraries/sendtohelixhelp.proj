@@ -288,6 +288,7 @@
         $(HelixPreCommands);
         find $HELIX_CORRELATION_PAYLOAD -name createdump | xargs -n 1 codesign -s - -f --preserve-metadata=entitlements
       </HelixPreCommands>
+      <HelixJobName>$(WorkItemPrefix)</HelixJobName>
     </PropertyGroup>
 
     <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true' and ('$(SdkWithWorkloadForTestingPath)' == '' or !Exists($(SdkWithWorkloadForTestingPath)))"

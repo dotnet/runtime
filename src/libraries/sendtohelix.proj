@@ -120,8 +120,7 @@
           TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);
           WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);
           WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting);
-          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly);
-          HelixJobMarker=$(WorkItemPrefix)
+          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly)
         </AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
