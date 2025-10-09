@@ -15,10 +15,14 @@ namespace System.Buffers
         {
             BitVector256 inverse = default;
 
-            for (int i = 0; i < 8; i++)
-            {
-                inverse._values[i] = ~_values[i];
-            }
+            inverse._values[0] = ~_values[0];
+            inverse._values[1] = ~_values[1];
+            inverse._values[2] = ~_values[2];
+            inverse._values[3] = ~_values[3];
+            inverse._values[4] = ~_values[4];
+            inverse._values[5] = ~_values[5];
+            inverse._values[6] = ~_values[6];
+            inverse._values[7] = ~_values[7];
 
             return inverse;
         }
