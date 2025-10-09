@@ -16,8 +16,6 @@
 static const Entry s_compressionNative[] =
 {
 #if !defined(TARGET_WASM)
-
-dfds
     DllImportEntry(BrotliDecoderCreateInstance)
     DllImportEntry(BrotliDecoderDecompress)
     DllImportEntry(BrotliDecoderDecompressStream)
