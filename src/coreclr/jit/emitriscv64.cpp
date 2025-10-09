@@ -1379,77 +1379,28 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 {
-    assert(dst != nullptr);
-    assert(dst->HasFlag(BBF_HAS_LABEL));
-
-    instrDescJmp* id = emitNewInstrJmp();
-    id->idIns(ins);
-    id->idReg1((ins == INS_jal) ? REG_RA : REG_ZERO); // link register
-    assert(emitIsUncondJump(id));
-    id->idAddr()->iiaBBlabel = dst;
-
-    if (emitComp->opts.compReloc)
-    {
-        id->idSetIsDspReloc();
-    }
-
-    id->idjShort = false;
-
-    // TODO-RISCV64: maybe deleted this.
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
-#ifdef DEBUG
-    if (emitComp->opts.compLongAddress) // Force long branches
-        id->idjKeepLong = 1;
-#endif // DEBUG
-
-    /* Record the jump's IG and offset within it */
-    id->idjIG   = emitCurIG;
-    id->idjOffs = emitCurIGsize;
-
-    /* Append this jump to this IG's jump list */
-    id->idjNext      = emitCurIGjmpList;
-    emitCurIGjmpList = id;
-
-#if EMITTER_STATS
-    emitTotalIGjmps++;
-#endif
-
-    // Start from worst case (2 instructions): "auipc; jr"
-    id->idCodeSize(2 * sizeof(code_t));
-    id->idInsOpt(INS_OPTS_JUMP);
-
-    /* Figure out the max. size of the jump/call instruction */
-    if (insGroup* tgt = (insGroup*)emitCodeGetCookie(dst); !id->idjKeepLong && (tgt != nullptr))
-    {
-        /* This is a backward jump - figure out the distance */
-        UNATIVE_OFFSET srcOffs = emitCurCodeOffset + emitCurIGsize;
-
-        /* Compute the distance estimate */
-        int jmpDist = srcOffs - tgt->igOffs;
-        assert(jmpDist >= 0);
-
-        if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
-        {
-            emitSetShortJump(id);
-        }
-    }
-
-    appendToCurIG(id);
+    assert(emitIsUncondJump(ins));
+    regNumber linkReg = (ins == INS_jal) ? REG_RA : REG_ZERO;
+    emitIns_Jump(ins, dst, linkReg, REG_ZERO);
 }
 
 void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
 {
+    assert(emitIsCmpJump(ins));
+    assert((ins != INS_bnez && ins != INS_beqz) || (reg2 == REG_ZERO));
+    emitIns_Jump(ins, dst, reg1, reg2);
+}
+
+void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
+{
     assert(dst != nullptr);
     assert(dst->HasFlag(BBF_HAS_LABEL));
-
-    assert((ins != INS_bnez && ins != INS_beqz) || (reg2 == REG_ZERO));
 
     instrDescJmp* id = emitNewInstrJmp();
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    id->idjShort = false;
-    assert(emitIsCmpJump(id));
+    id->idjShort             = false;
     id->idAddr()->iiaBBlabel = dst;
 
     id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
@@ -1470,8 +1421,8 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     emitTotalIGjmps++;
 #endif
 
-    // Start from worst case (3 instructions): "branch (reversed); auipc; jr"
-    id->idCodeSize(3 * sizeof(code_t));
+    // Start from the worst case: "[branch (reversed);] auipc; jr"
+    id->idCodeSize((emitIsCmpJump(id) ? 3 : 2) * sizeof(code_t));
     id->idInsOpt(INS_OPTS_JUMP);
 
     /* Figure out the max. size of the jump/call instruction */
@@ -1484,13 +1435,24 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
         int jmpDist = srcOffs - tgt->igOffs;
         assert(jmpDist >= 0);
 
-        if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
+        if (emitIsCmpJump(id))
         {
-            emitSetShortJump(id);
+            if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                emitSetShortJump(id);
+            }
+            else if (J_DIST_SMALL_MAX_NEG <= -jmpDist - sizeof(code_t)) // the PC will be taken after the reversed
+                                                                        // branch
+            {
+                emitSetMediumJump(id);
+            }
         }
-        else if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+        else
         {
-            emitSetMediumJump(id);
+            if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                emitSetShortJump(id);
+            }
         }
     }
 

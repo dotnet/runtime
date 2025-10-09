@@ -30,6 +30,7 @@ const char* emitVectorRegName(regNumber reg);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
+void emitIns_J(instruction ins, BasicBlock* dst);
 
 void emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
 
@@ -61,6 +62,8 @@ private:
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+
+void emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1 = REG_ZERO, regNumber reg2 = REG_ZERO);
 
 // RVC emitters
 bool tryEmitCompressedIns_R_R_R(
@@ -283,12 +286,6 @@ inline static bool isFloatReg(regNumber reg)
 }
 
 /************************************************************************/
-/*                   Output target-independent instructions             */
-/************************************************************************/
-
-void emitIns_J(instruction ins, BasicBlock* dst);
-
-/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -362,7 +359,13 @@ unsigned get_curTotalCodeSize(); // bytes of code
 //
 inline static bool emitIsCmpJump(instrDesc* jmp)
 {
-    return jmp->idInsIs(INS_beqz, INS_bnez, INS_bne, INS_beq, INS_blt, INS_bltu, INS_bge, INS_bgeu);
+    return emitIsCmpJump(jmp->idIns());
+}
+
+inline static bool emitIsCmpJump(instruction ins)
+{
+    return (ins == INS_beqz) || (ins == INS_bnez) || (ins == INS_bne) || (ins == INS_beq) || (ins == INS_blt) ||
+           (ins == INS_bltu) || (ins == INS_bge) || (ins == INS_bgeu);
 }
 
 //------------------------------------------------------------------------
@@ -373,7 +376,12 @@ inline static bool emitIsCmpJump(instrDesc* jmp)
 //
 inline static bool emitIsUncondJump(instrDesc* jmp)
 {
-    return jmp->idInsIs(INS_j, INS_jal);
+    return emitIsUncondJump(jmp->idIns());
+}
+
+inline static bool emitIsUncondJump(instruction ins)
+{
+    return (ins == INS_j) || (ins == INS_jal);
 }
 
 #endif // TARGET_RISCV64
