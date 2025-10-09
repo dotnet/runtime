@@ -2343,8 +2343,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
 
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
             // Do nothing; these nodes are simply markers for debug info.
             break;
+
 
 #if defined(TARGET_AMD64)
         case GT_CCMP:

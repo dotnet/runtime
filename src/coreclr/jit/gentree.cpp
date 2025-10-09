@@ -6724,6 +6724,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -10357,6 +10358,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -12441,6 +12443,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_IL_OFFSET:
             printf(" ");
             tree->AsILOffset()->gtStmtDI.Dump(true);
+            break;
+
+        case GT_RECORD_ASYNC_JOIN:
+            printf(" %d", tree->AsRecordAsyncJoin()->gtSuspensionPointIndex);
             break;
 
         case GT_JCC:

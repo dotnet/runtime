@@ -446,12 +446,8 @@ public:
 
     struct AsyncSuspensionPoint
     {
-        // IL offset in the root method that resulted in the creation of this suspension point.
-        uint32_t RootILOffset;
-        // Index of inline tree node containing the IL offset (0 for root)
-        uint32_t Inlinee;
-        // IL offset that resulted in the creation of the suspension point.
-        uint32_t ILOffset;
+        // Logical return address of the async call (join point of synchronous and resuming paths)
+        uint32_t NativeOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.
         uint32_t NumContinuationVars;

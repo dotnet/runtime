@@ -642,6 +642,9 @@ PhaseStatus AsyncTransformation::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    m_comp->compSuspensionPoints = new (m_comp, CMK_Async) jitstd::vector<AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
+    m_comp->compAsyncVars = new (m_comp, CMK_Async) jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_comp->getAllocator(CMK_Async));
+
     // Ask the VM to create a resumption stub for this specific version of the
     // code. It is stored in the continuation as a function pointer, so we need
     // the fixed entry point here.
@@ -760,8 +763,6 @@ PhaseStatus AsyncTransformation::Run()
 
     m_comp->fgInvalidateDfsTree();
 
-    ReportDebugInfo();
-
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -821,7 +822,7 @@ void AsyncTransformation::Transform(
 
     m_resumptionBBs.push_back(resumeBB);
 
-    CreateDebugInfoForSuspensionPoint(call, layout);
+    CreateDebugInfoForSuspensionPoint(call, layout, *remainder);
 }
 
 //------------------------------------------------------------------------
@@ -2212,10 +2213,10 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(GenTree* base, unsigned offs
 //
 // Parameters:
 //   asyncCall - Call node resulting in the suspension point
-//   stateNum  - State number that was assigned to the suspension point
 //   layout    - Layout of continuation
+//   joinBB    - BB where the synchronous and resumption paths join
 //
-void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCall, const ContinuationLayout& layout)
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCall, const ContinuationLayout& layout, BasicBlock* joinBB)
 {
     if (!m_comp->opts.compDbgInfo)
     {
@@ -2235,48 +2236,16 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCa
         varInf.VarNumber = ilVarNum;
         varInf.Offset    = local.DataSize > 0 ? local.DataOffset : UINT_MAX;
         varInf.GCIndex   = local.GCDataCount > 0 ? local.GCDataIndex : UINT_MAX;
-        m_dbgContinuationVars.push_back(varInf);
+        m_comp->compAsyncVars->push_back(varInf);
         numLocals++;
     }
 
-    ICorDebugInfo::AsyncSuspensionPoint suspensionPoint;
-    const DebugInfo&                    di = asyncCall->GetAsyncInfo().DebugInfo;
-    suspensionPoint.RootILOffset           = di.GetRoot().GetLocation().GetOffset();
-    suspensionPoint.Inlinee                = di.GetInlineContext()->GetOrdinal();
-    suspensionPoint.ILOffset               = di.GetLocation().GetOffset();
-    suspensionPoint.NumContinuationVars    = numLocals;
+    AsyncSuspensionPoint suspensionPoint;
+    suspensionPoint.numContinuationVars = numLocals;
+    m_comp->compSuspensionPoints->push_back(suspensionPoint);
 
-    m_dbgSuspensionPoints.push_back(suspensionPoint);
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::ReportDebugInfo:
-//   Report debug info back to EE.
-//
-void AsyncTransformation::ReportDebugInfo()
-{
-    if (!m_comp->opts.compDbgInfo)
-    {
-        return;
-    }
-
-    ICorDebugInfo::AsyncInfo asyncInfo;
-    asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(m_dbgSuspensionPoints.size());
-
-    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints =
-        static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(m_comp->info.compCompHnd->allocateArray(
-            m_dbgSuspensionPoints.size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
-    for (size_t i = 0; i < m_dbgSuspensionPoints.size(); i++)
-        hostSuspensionPoints[i] = m_dbgSuspensionPoints[i];
-
-    ICorDebugInfo::AsyncContinuationVarInfo* hostVars =
-        static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(m_comp->info.compCompHnd->allocateArray(
-            m_dbgContinuationVars.size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
-    for (size_t i = 0; i < m_dbgContinuationVars.size(); i++)
-        hostVars[i] = m_dbgContinuationVars[i];
-
-    m_comp->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
-                                                   static_cast<uint32_t>(m_dbgContinuationVars.size()));
+    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_JOIN) GenTreeRecordAsyncJoin((int)(m_comp->compSuspensionPoints->size() - 1));
+    LIR::AsRange(joinBB).InsertAtBeginning(recordOffset);
 }
 
 //------------------------------------------------------------------------
