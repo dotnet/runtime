@@ -1377,11 +1377,6 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
-{
-    NYI_RISCV64("emitIns_J_R-----unimplemented/unused on RISCV64 yet----");
-}
-
 void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 {
     assert(dst != nullptr);
@@ -1446,6 +1441,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
 {
     assert(dst != nullptr);
     assert(dst->HasFlag(BBF_HAS_LABEL));
+
     assert((ins != INS_bnez && ins != INS_beqz) || (reg2 == REG_ZERO));
 
     instrDescJmp* id = emitNewInstrJmp();
