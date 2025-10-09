@@ -473,7 +473,7 @@ namespace System
 
         //
         // Char parsing
-        // 
+        //
 
         private static bool TryParseGuid(ReadOnlySpan<char> guidString, ref GuidResult result)
         {
@@ -669,7 +669,7 @@ namespace System
 
             // Eat all of the whitespace.  Unlike the other forms, X allows for any amount of whitespace
             // anywhere, not just at the beginning and end.
-            guidString = EatAllWhitespace(guidString, ref result);
+            guidString = EatAllWhitespace(guidString);
 
             // Check for leading '{'
             if (guidString.Length == 0 || guidString[0] != '{')
@@ -889,7 +889,7 @@ namespace System
             return true;
         }
 
-        private static ReadOnlySpan<char> EatAllWhitespace(ReadOnlySpan<char> str, scoped ref GuidResult result)
+        private static ReadOnlySpan<char> EatAllWhitespace(ReadOnlySpan<char> str)
         {
             ReadOnlySpan<char> charSpan = Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<char>>(str);
             // Find the first whitespace character. If there is none, just return the input.

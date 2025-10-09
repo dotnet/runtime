@@ -21,7 +21,7 @@ namespace System.Net
 
         //
         // Char parsing
-        // 
+        //
 
         // Only called from the IPv6Helper, only parse the canonical format
         internal static int ParseHostNumber(ReadOnlySpan<char> str, int start, int end)
