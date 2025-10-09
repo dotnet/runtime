@@ -18,7 +18,7 @@ const dotnetDTS = {
     output: [
         {
             format: "es",
-            file: staticLibDestination + "dotnet.d.ts",
+            file: staticLibDestination + "/dotnet.d.ts",
             banner: banner_dts,
             plugins: [writeOnChangePlugin()],
         },
@@ -37,7 +37,7 @@ const dotnetDTS = {
 const dotnetJS = configure({
     input: "./corehost/browserhost/loader/dotnet.ts",
     output: [{
-        file: staticLibDestination + "dotnet.js",
+        file: staticLibDestination + "/dotnet.js",
         intro: "/*! bundlerFriendlyImports */",
     }],
     terser: {
@@ -54,7 +54,7 @@ const libNativeBrowser = configure({
     output: [{
         name: "libNativeBrowser",
         format: "iife",
-        file: staticLibDestination + "libSystem.Native.Browser.js",
+        file: staticLibDestination + "/libSystem.Native.Browser.js",
         footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Native.Browser.footer.js"),
     }],
     terser: {
@@ -74,7 +74,7 @@ const libBrowserUtils = configure({
     output: [{
         name: "libBrowserUtils",
         format: "iife",
-        file: staticLibDestination + "libSystem.Browser.Utils.js",
+        file: staticLibDestination + "/libSystem.Browser.Utils.js",
         footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"),
     }],
     terser: {
@@ -92,7 +92,7 @@ const libBrowserUtils = configure({
 const dotnetRuntimeJS = configure({
     input: "./libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts",
     output: [{
-        file: staticLibDestination + "dotnet.runtime.js",
+        file: staticLibDestination + "/dotnet.runtime.js",
     }],
     terser: {
         compress: {
@@ -109,7 +109,7 @@ const libInteropJavaScriptNative = configure({
     output: [{
         name: "libInteropJavaScriptNative",
         format: "iife",
-        file: staticLibDestination + "libSystem.Runtime.InteropServices.JavaScript.Native.js",
+        file: staticLibDestination + "/libSystem.Runtime.InteropServices.JavaScript.Native.js",
         footer: await fs.readFile("./libs/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.footer.js"),
     }],
     terser: {
@@ -129,7 +129,7 @@ const libBrowserHost = configure({
     output: [{
         name: "libBrowserHost",
         format: "iife",
-        file: staticLibDestination + "libBrowserHost.js",
+        file: staticLibDestination + "/libBrowserHost.js",
         footer: await fs.readFile("./corehost/browserhost/host/libBrowserHost.footer.js"),
     }],
     terser: {

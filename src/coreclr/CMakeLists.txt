@@ -94,7 +94,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
-  set(STATIC_LIB_DESTINATION $ENV{__CMakeBinDir}/libs-native/)
+  set(STATIC_LIB_DESTINATION $ENV{__CMakeBinDir}/libs-native)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif()
 

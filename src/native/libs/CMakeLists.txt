@@ -20,7 +20,7 @@ if (BUILD_LIBS_NATIVE_BROWSER)
     set(STATIC_LIBS_ONLY 1)
     set(GEN_SHARED_LIB 0)
     if (NOT STATIC_LIB_DESTINATION)
-        set(STATIC_LIB_DESTINATION $ENV{__CMakeBinDir}/lib/)
+        set(STATIC_LIB_DESTINATION $ENV{__CMakeBinDir}/lib)
     endif ()
 elseif (STATIC_LIBS_ONLY)
     # Suppress exporting of the PAL APIs
