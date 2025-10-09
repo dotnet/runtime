@@ -1389,6 +1389,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 
     instrDescJmp* id = emitNewInstrJmp();
     id->idIns(ins);
+    id->idReg1((ins == INS_jal) ? REG_RA : REG_ZERO); // link register
     assert(emitIsUncondJump(id));
     id->idAddr()->iiaBBlabel = dst;
 
@@ -2983,8 +2984,7 @@ BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insG
         assert(jmp->idCodeSize() == sizeof(code_t));
         if (emitIsUncondJump(jmp))
         {
-            regNumber linkReg = (*ins == INS_jal) ? REG_RA : REG_ZERO;
-            dst += emitOutput_JTypeInstr(dst, *ins, linkReg, TrimSignedToImm21(immediate));
+            dst += emitOutput_JTypeInstr(dst, *ins, jmp->idReg1(), TrimSignedToImm21(immediate));
         }
         else
         {
@@ -2997,8 +2997,10 @@ BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insG
         {
             assert(jmp->idCodeSize() == 2 * sizeof(code_t));
             assert(isValidSimm32(immediate));
-            dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, REG_RA, LowerNBitsOfWord<12>(immediate));
+            regNumber linkReg = jmp->idReg1();
+            regNumber tempReg = (linkReg == REG_ZERO) ? codeGen->rsGetRsvdReg() : linkReg;
+            dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+            dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, LowerNBitsOfWord<12>(immediate));
         }
         else // opposite branch + jump
         {
@@ -3013,8 +3015,9 @@ BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insG
             {
                 assert(jmp->idCodeSize() == 3 * sizeof(code_t));
                 assert(isValidSimm32(immediate));
-                dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
-                dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, REG_RA, LowerNBitsOfWord<12>(immediate));
+                regNumber tempReg = codeGen->rsGetRsvdReg();
+                dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+                dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, tempReg, LowerNBitsOfWord<12>(immediate));
             }
         }
     }
