@@ -170,6 +170,7 @@
     <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
                       Private="true"
-                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)"
+                      Condition="'$(TargetOS)' != 'browser'" />
   </ItemGroup>
 </Project>
