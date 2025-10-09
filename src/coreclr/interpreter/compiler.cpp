@@ -59,10 +59,12 @@ bool IsInterpDumpActive()
 
 void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 {
+#ifdef DEBUG
     fprintf(stderr, "IL_%04x %-10s - opcode not supported yet\n",
                 (int32_t)(offset),
                 CEEOpName(CEEDecodeOpcode(&ip)));
-    assert(!"opcode not implemented");
+#endif // DEBUG
+    BADCODE("opcode not implemented");
 }
 
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
@@ -1985,13 +1987,13 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
         }
 
         // Only try regions in which the leave instruction is located are considered.
-        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset > (clause.TryOffset + clause.TryLength))
+        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset >= (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
 
         // If the leave target is inside the try region, we don't need to create a finally call island block.
-        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset <= (clause.TryOffset + clause.TryLength))
+        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
@@ -3037,9 +3039,28 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         }
 
         case NI_Throw_PlatformNotSupportedException:
+        {
+            // This NI is used in places where a method is not supported on the current platform. We
+            // need to adjust the IL stack as if the method was actually called, so pop the arguments and push a return value.
+            int numArgsFromStack = sig.totalILArgs();
+            CHECK_STACK(numArgsFromStack);
+            m_pStackPointer -= numArgsFromStack;
+            if (sig.retType != CORINFO_TYPE_VOID)
+            {
+                InterpType retType = GetInterpType(sig.retType);
+                CORINFO_CLASS_HANDLE clsHnd = NULL;
+                if (sig.retType == CORINFO_TYPE_VALUECLASS)
+                {
+                    clsHnd = sig.retTypeClass;
+                }
+                PushInterpType(retType, clsHnd);
+                AddIns(INTOP_DEF);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            }
+
             AddIns(INTOP_THROW_PNSE);
             return true;
-
+        }
         case NI_System_StubHelpers_GetStubContext:
         {
             assert(m_hiddenArgumentVar >= 0);
@@ -3424,6 +3445,10 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
+    PushStackType(StackTypeI, NULL);
+    int32_t intermediateVar = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
     if (handleData.argType == HelperArgType::GenericResolution)
@@ -3433,6 +3458,12 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVars2(handleData.genericVar, arg2);
+        m_pLastNewIns->SetDVar(intermediateVar);
+
+        AddIns(INTOP_UNBOX_END_GENERIC);
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVars2(handleData.genericVar, intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
     else
@@ -3442,6 +3473,12 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
         m_pLastNewIns->data[1] = handleData.dataItemIndex;
 
         m_pLastNewIns->SetSVar(arg2);
+        m_pLastNewIns->SetDVar(intermediateVar);
+
+        AddIns(INTOP_UNBOX_END);
+        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+
+        m_pLastNewIns->SetSVar(intermediateVar);
         m_pLastNewIns->SetDVar(resultVar);
     }
 }
@@ -4464,8 +4501,7 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             break;
         }
         default:
-            // TODO
-            assert(!"Unsupported (yet) static field accessor");
+            BADCODE("Unsupported static field accessor");
             break;
     }
 

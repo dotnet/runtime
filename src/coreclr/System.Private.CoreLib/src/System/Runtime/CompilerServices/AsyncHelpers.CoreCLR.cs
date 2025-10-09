@@ -140,7 +140,9 @@ namespace System.Runtime.CompilerServices
         private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
+            public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
+            public Task? CalledTask;
         }
 
         [ThreadStatic]
@@ -203,6 +205,20 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
         }
 
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [RequiresPreviewFeatures]
+        private static void TransparentAwaitTask(Task t)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation;
+            if (sentinelContinuation == null)
+                state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+            state.CalledTask = t;
+            AsyncSuspend(sentinelContinuation);
+        }
+
         private interface IRuntimeAsyncTaskOps<T>
         {
             static abstract Action GetContinuationAction(T task);
@@ -214,7 +230,7 @@ namespace System.Runtime.CompilerServices
 
         // Represents execution of a chain of suspended and resuming runtime
         // async functions.
-        private sealed class RuntimeAsyncTask<T> : Task<T>
+        private sealed class RuntimeAsyncTask<T> : Task<T>, ITaskCompletionAction
         {
             public RuntimeAsyncTask()
             {
@@ -240,6 +256,13 @@ namespace System.Runtime.CompilerServices
             {
                 RuntimeAsyncTaskCore.HandleSuspended<RuntimeAsyncTask<T>, Ops>(this);
             }
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                MoveNext();
+            }
+
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
             {
@@ -286,7 +309,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private sealed class RuntimeAsyncTask : Task
+        // Represents execution of a chain of suspended and resuming runtime
+        // async functions.
+        private sealed class RuntimeAsyncTask : Task, ITaskCompletionAction
         {
             public RuntimeAsyncTask()
             {
@@ -312,6 +337,13 @@ namespace System.Runtime.CompilerServices
             {
                 RuntimeAsyncTaskCore.HandleSuspended<RuntimeAsyncTask, Ops>(this);
             }
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                MoveNext();
+            }
+
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
             {
@@ -353,7 +385,7 @@ namespace System.Runtime.CompilerServices
             [ThreadStatic]
             private static unsafe NextContinuationData* t_nextContinuation;
 
-            public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task where TOps : IRuntimeAsyncTaskOps<T>
+            public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
@@ -449,9 +481,20 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void HandleSuspended<T, TOps>(T task) where T : Task where TOps : IRuntimeAsyncTaskOps<T>
+            public static void HandleSuspended<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
-                Continuation headContinuation = UnlinkHeadContinuation(out INotifyCompletion? notifier);
+                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+                ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
+                INotifyCompletion? notifier = state.Notifier;
+                Task? calledTask = state.CalledTask;
+
+                state.CriticalNotifier = null;
+                state.Notifier = null;
+                state.CalledTask = null;
+
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation headContinuation = sentinelContinuation.Next!;
+                sentinelContinuation.Next = null;
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                 // These never have special continuation handling.
@@ -465,9 +508,19 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (notifier is ICriticalNotifyCompletion crit)
+                    if (critNotifier != null)
                     {
-                        crit.UnsafeOnCompleted(TOps.GetContinuationAction(task));
+                        critNotifier.UnsafeOnCompleted(TOps.GetContinuationAction(task));
+                    }
+                    else if (calledTask != null)
+                    {
+                        // Runtime async callable wrapper for task returning
+                        // method. This implements the context transparent
+                        // forwarding and makes these wrappers minimal cost.
+                        if (!calledTask.TryAddCompletionAction(task))
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal: true);
+                        }
                     }
                     else
                     {
@@ -479,18 +532,6 @@ namespace System.Runtime.CompilerServices
                 {
                     Task.ThrowAsync(ex, targetContext: null);
                 }
-            }
-
-            private static Continuation UnlinkHeadContinuation(out INotifyCompletion? notifier)
-            {
-                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                notifier = state.Notifier;
-                state.Notifier = null;
-
-                Continuation sentinelContinuation = state.SentinelContinuation!;
-                Continuation head = sentinelContinuation.Next!;
-                sentinelContinuation.Next = null;
-                return head;
             }
 
             private static bool QueueContinuationFollowUpActionIfNecessary<T, TOps>(T task, Continuation continuation) where T : Task where TOps : IRuntimeAsyncTaskOps<T>
@@ -611,6 +652,41 @@ namespace System.Runtime.CompilerServices
             return new ValueTask(FinalizeTaskReturningThunk(continuation));
         }
 
+        private static Task<T?> TaskFromException<T>(Exception ex)
+        {
+            Task<T?> task = new();
+            bool successfullySet = ex is OperationCanceledException oce ?
+                task.TrySetCanceled(oce.CancellationToken, oce) :
+                task.TrySetException(ex);
+
+            Debug.Assert(successfullySet);
+            return task;
+        }
+
+        private static Task TaskFromException(Exception ex)
+        {
+            Task task = new();
+            // Tail of AsyncTaskMethodBuilderT.SetException
+            bool successfullySet = ex is OperationCanceledException oce ?
+                task.TrySetCanceled(oce.CancellationToken, oce) :
+                task.TrySetException(ex);
+
+            Debug.Assert(successfullySet);
+            return task;
+        }
+
+        private static ValueTask ValueTaskFromException(Exception ex)
+        {
+            // We only come to these methods in the expensive case (exception),
+            // so ValueTask optimization here is not relevant.
+            return new ValueTask(TaskFromException(ex));
+        }
+
+        private static ValueTask<T?> ValueTaskFromException<T>(Exception ex)
+        {
+            return new ValueTask<T?>(TaskFromException<T>(ex));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ExecutionContext? CaptureExecutionContext()
         {
@@ -670,6 +746,17 @@ namespace System.Runtime.CompilerServices
             }
 
             flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
+        }
+
+        internal static T CompletedTaskResult<T>(Task<T> task)
+        {
+            TaskAwaiter.ValidateEnd(task);
+            return task.ResultOnSuccess;
+        }
+
+        internal static void CompletedTask(Task task)
+        {
+            TaskAwaiter.ValidateEnd(task);
         }
     }
 }

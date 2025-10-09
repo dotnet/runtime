@@ -1917,12 +1917,33 @@ public:
         return m_Next;
     }
 
+    PTR_VOID GetOSStackLocation()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return m_osStackLocation;
+#else
+        return dac_cast<PTR_VOID>(this);
+#endif
+    }
+
+#ifdef FEATURE_INTERPRETER
+    void SetOSStackLocation(PTR_VOID osStackLocation)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        m_osStackLocation = osStackLocation;
+    }
+#endif
+
 private:
     PTR_GCFrame   m_Next;
     PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
+#ifdef FEATURE_INTERPRETER
+    PTR_VOID      m_osStackLocation;
+#endif
 };
 
 //-----------------------------------------------------------------------------

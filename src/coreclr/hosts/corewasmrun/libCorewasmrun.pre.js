@@ -1,6 +1,9 @@
-var dotnetInternals = {
-    runtimeApi: {
+var dotnetInternals = [
+    {
         Module: Module,
     },
-    updates: [],
+    [],
+];
+Module.preRun = () => {
+    ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
 };

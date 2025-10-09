@@ -16,7 +16,7 @@ const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
 const nativeModulePromiseController = createPromiseController<EmscriptenModuleInternal>(() => {
-    dotnetUpdateInternals();
+    dotnetUpdateInternals(dotnetGetInternals());
 });
 
 // WASM-TODO: retry logic
