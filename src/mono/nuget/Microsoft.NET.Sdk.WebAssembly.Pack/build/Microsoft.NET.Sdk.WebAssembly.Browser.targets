@@ -570,7 +570,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     BeforeTargets="PrepareForPublish" />
 
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
-  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
          have changed as part of the publish process. We are going to do so as follows:
          * We will update Blazor runtime asset dlls if we are running PublishTrimmed
