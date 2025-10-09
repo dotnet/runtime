@@ -10,6 +10,7 @@ namespace System.IO.Compression
     {
         public BrotliCompressionOptions() { }
         public int Quality { get { throw null; } set { } }
+        public int WindowSize { get { throw null; } set { } }
     }
     public partial struct BrotliDecoder : System.IDisposable
     {
