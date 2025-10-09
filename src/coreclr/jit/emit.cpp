@@ -4840,7 +4840,7 @@ void emitter::emitRemoveJumpToNextInst()
 /*****************************************************************************
  *  Bind targets of relative jumps to choose the smallest possible encoding.
  *  X86 and AMD64 have a small and large encoding.
- *  ARM has a small, medium, and large encoding. The large encoding is a pseudo-op
+ *  ARM and RISC-V have a small, medium, and large encoding. The large encoding is a pseudo-op
  *      to handle greater range than the conditional branch instructions can handle.
  *  ARM64 has a small and large encoding for both conditional branch and loading label addresses.
  *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently

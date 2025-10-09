@@ -1386,21 +1386,14 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     NYI_RISCV64("emitIns_J_R-----unimplemented/unused on RISCV64 yet----");
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 {
     assert(dst != nullptr);
-    //
-    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
-    // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
-
     assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
-    assert((INS_jal <= ins) && (ins <= INS_bgeu));
     id->idIns(ins);
-    id->idReg1((regNumber)(instrCount & 0x1f));
-    id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
-
+    assert(emitIsUncondJump(id));
     id->idAddr()->iiaBBlabel = dst;
 
     if (emitComp->opts.compReloc)
@@ -1429,7 +1422,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     emitTotalIGjmps++;
 #endif
 
-    id->idCodeSize((emitIsUncondJump(id) ? 2 : 3) * sizeof(code_t));
+    // Start from worst case (2 instructions): "auipc; jr"
+    id->idCodeSize(2 * sizeof(code_t));
     id->idInsOpt(INS_OPTS_JALR);
 
     /* Figure out the max. size of the jump/call instruction */
@@ -1442,28 +1436,9 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
         int jmpDist = srcOffs - tgt->igOffs;
         assert(jmpDist >= 0);
 
-        // TODO: separate, unconditional jumps only in emitIns_J, branches in emitIns_J_cond_la.
-        if (emitIsCmpJump(id))
+        if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
         {
-            if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
-            {
-                /* This jump surely will be short */
-                emitSetShortJump(id);
-            }
-            else if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
-            {
-                /* This jump surely will be medium */
-                emitSetMediumJump(id);
-            }
-        }
-        else
-        {
-            assert(emitIsUncondJump(id));
-            if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
-            {
-                /* This jump surely will be short */
-                emitSetShortJump(id);
-            }
+            emitSetShortJump(id);
         }
     }
 
@@ -1472,32 +1447,16 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
 void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
 {
-    // TODO-RISCV64:
-    //   Now the emitIns_J_cond_la() is only the short condition branch.
-    //   There is no long condition branch for RISCV64 so far.
-    //   For RISCV64 , the long condition branch is like this:
-    //     --->  branch_condition  condition_target;     //here is the condition branch, short branch is enough.
-    //     --->  jump jump_target; (this supporting the long jump.)
-    //     condition_target:
-    //     ...
-    //     ...
-    //     jump_target:
-    //
-    //
-    // INS_OPTS_J_cond: placeholders.  1-ins.
-    //   ins  reg1, reg2, dst
-
     assert(dst != nullptr);
     assert(dst->HasFlag(BBF_HAS_LABEL));
+    assert((ins != INS_bnez && ins != INS_beqz) || (reg2 == REG_ZERO));
 
     instrDescJmp* id = emitNewInstrJmp();
-
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idjShort = false;
-
-    id->idInsOpt(INS_OPTS_J_cond);
+    assert(emitIsCmpJump(id));
     id->idAddr()->iiaBBlabel = dst;
 
     id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
@@ -1518,7 +1477,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     emitTotalIGjmps++;
 #endif
 
-    // TODO: estimate jump length, now we're starting from maximum size
+    // Start from worst case (3 instructions): "branch (reversed); auipc; jr"
     id->idCodeSize(3 * sizeof(code_t));
     id->idInsOpt(INS_OPTS_JALR);
 
@@ -1532,28 +1491,13 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
         int jmpDist = srcOffs - tgt->igOffs;
         assert(jmpDist >= 0);
 
-        // TODO: separate, unconditional jumps only in emitIns_J, branches in emitIns_J_cond_la.
-        if (emitIsCmpJump(id))
+        if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
         {
-            if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
-            {
-                /* This jump surely will be short */
-                emitSetShortJump(id);
-            }
-            else if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
-            {
-                /* This jump surely will be medium */
-                emitSetMediumJump(id);
-            }
+            emitSetShortJump(id);
         }
-        else
+        else if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
         {
-            assert(emitIsUncondJump(id));
-            if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
-            {
-                /* This jump surely will be short */
-                emitSetShortJump(id);
-            }
+            emitSetMediumJump(id);
         }
     }
 
