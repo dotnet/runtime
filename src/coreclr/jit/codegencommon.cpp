@@ -6671,28 +6671,26 @@ void CodeGen::genReportAsyncDebugInfo()
     ICorDebugInfo::AsyncInfo asyncInfo;
     asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(suspPoints->size());
 
-    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints =
-        static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(compiler->info.compCompHnd->allocateArray(
-            suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
+    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints = static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(
+        compiler->info.compCompHnd->allocateArray(suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
     for (size_t i = 0; i < suspPoints->size(); i++)
     {
         AsyncSuspensionPoint& suspPoint = (*suspPoints)[i];
         if (suspPoint.nativeLoc.Valid())
         {
-            hostSuspensionPoints[i].NativeOffset = suspPoint.nativeLoc.CodeOffset(GetEmitter());
+            hostSuspensionPoints[i].NativeOffset        = suspPoint.nativeLoc.CodeOffset(GetEmitter());
             hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
         }
         else
         {
-            hostSuspensionPoints[i].NativeOffset = 0;
+            hostSuspensionPoints[i].NativeOffset        = 0;
             hostSuspensionPoints[i].NumContinuationVars = 0;
         }
     }
 
     jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = compiler->compAsyncVars;
-    ICorDebugInfo::AsyncContinuationVarInfo* hostVars =
-        static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(compiler->info.compCompHnd->allocateArray(
-            asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
+    ICorDebugInfo::AsyncContinuationVarInfo* hostVars = static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(
+        compiler->info.compCompHnd->allocateArray(asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
     for (size_t i = 0; i < asyncVars->size(); i++)
         hostVars[i] = (*asyncVars)[i];
 

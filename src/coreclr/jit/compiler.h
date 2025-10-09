@@ -8637,8 +8637,8 @@ public:
     jitstd::list<IPmappingDsc>  genIPmappings;
     jitstd::list<RichIPMapping> genRichIPmappings;
 
-    jitstd::vector<AsyncSuspensionPoint>* compSuspensionPoints = nullptr;
-    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* compAsyncVars = nullptr;
+    jitstd::vector<AsyncSuspensionPoint>*                    compSuspensionPoints = nullptr;
+    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* compAsyncVars        = nullptr;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points

@@ -2347,7 +2347,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
-
 #if defined(TARGET_AMD64)
         case GT_CCMP:
             genCodeForCCMP(treeNode->AsCCMP());

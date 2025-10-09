@@ -132,7 +132,9 @@ class AsyncTransformation
                                     GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
     GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType);
 
-    void CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCall, const ContinuationLayout& layout, BasicBlock* joinBB);
+    void CreateDebugInfoForSuspensionPoint(GenTreeCall*              asyncCall,
+                                           const ContinuationLayout& layout,
+                                           BasicBlock*               joinBB);
 
     unsigned GetDataArrayVar();
     unsigned GetGCDataArrayVar();

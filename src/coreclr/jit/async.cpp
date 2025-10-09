@@ -642,8 +642,10 @@ PhaseStatus AsyncTransformation::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    m_comp->compSuspensionPoints = new (m_comp, CMK_Async) jitstd::vector<AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
-    m_comp->compAsyncVars = new (m_comp, CMK_Async) jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_comp->getAllocator(CMK_Async));
+    m_comp->compSuspensionPoints =
+        new (m_comp, CMK_Async) jitstd::vector<AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
+    m_comp->compAsyncVars = new (m_comp, CMK_Async)
+        jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_comp->getAllocator(CMK_Async));
 
     // Ask the VM to create a resumption stub for this specific version of the
     // code. It is stored in the continuation as a function pointer, so we need
@@ -2216,7 +2218,9 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(GenTree* base, unsigned offs
 //   layout    - Layout of continuation
 //   joinBB    - BB where the synchronous and resumption paths join
 //
-void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCall, const ContinuationLayout& layout, BasicBlock* joinBB)
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall*              asyncCall,
+                                                            const ContinuationLayout& layout,
+                                                            BasicBlock*               joinBB)
 {
     if (!m_comp->opts.compDbgInfo)
     {
@@ -2244,7 +2248,8 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall* asyncCa
     suspensionPoint.numContinuationVars = numLocals;
     m_comp->compSuspensionPoints->push_back(suspensionPoint);
 
-    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_JOIN) GenTreeRecordAsyncJoin((int)(m_comp->compSuspensionPoints->size() - 1));
+    GenTree* recordOffset =
+        new (m_comp, GT_RECORD_ASYNC_JOIN) GenTreeRecordAsyncJoin((int)(m_comp->compSuspensionPoints->size() - 1));
     LIR::AsRange(joinBB).InsertAtBeginning(recordOffset);
 }
 
