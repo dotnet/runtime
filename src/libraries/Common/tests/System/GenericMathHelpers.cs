@@ -25,6 +25,43 @@ namespace System
     {
         public static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) => TSelf.DivRem(left, right);
 
+        public static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, DivisionRounding mode) => TSelf.DivRem(left, right, mode);
+
+        public static TSelf Divide(TSelf left, TSelf right, DivisionRounding mode) => TSelf.Divide(left, right, mode);
+
+        public static TSelf Remainder(TSelf left, TSelf right, DivisionRounding mode) => TSelf.Remainder(left, right, mode);
+
+        public static TSelf DivideRoundingCorrection(TSelf left, TSelf right, DivisionRounding mode) => mode switch
+        {
+            _ when left % right == TSelf.Zero => TSelf.Zero,
+            DivisionRounding.Truncate => TSelf.Zero,
+            DivisionRounding.Floor when right > TSelf.Zero ^ left > TSelf.Zero => -TSelf.One,
+            DivisionRounding.Ceiling when right > TSelf.Zero ^ left < TSelf.Zero => TSelf.One,
+            DivisionRounding.AwayFromZero => (right > TSelf.Zero ^ left > TSelf.Zero) ? -TSelf.One : TSelf.One,
+            DivisionRounding.Euclidean when left < TSelf.Zero => (right > TSelf.Zero) ? -TSelf.One : TSelf.One,
+            _ => TSelf.Zero,
+        };
+
+        public static TSelf RemainderRoundingCorrection(TSelf left, TSelf right, DivisionRounding mode) => mode switch
+        {
+            _ when left % right == TSelf.Zero => TSelf.Zero,
+            DivisionRounding.Truncate => TSelf.Zero,
+            DivisionRounding.Floor when right > TSelf.Zero ^ left > TSelf.Zero => right,
+            DivisionRounding.Ceiling when right > TSelf.Zero ^ left < TSelf.Zero => -right,
+            DivisionRounding.AwayFromZero => (right > TSelf.Zero ^ left > TSelf.Zero) ? right : -right,
+            DivisionRounding.Euclidean when left < TSelf.Zero => (right > TSelf.Zero) ? right : -right,
+            _ => TSelf.Zero,
+        };
+
+        public static (TSelf Quotient, TSelf Remainder) DivRemExpected(TSelf left, TSelf right, DivisionRounding mode) =>
+            (left / right + DivideRoundingCorrection(left, right, mode), left % right + RemainderRoundingCorrection(left, right, mode));
+
+        public static TSelf DivideExpected(TSelf left, TSelf right, DivisionRounding mode)
+            => left / right + DivideRoundingCorrection(left, right, mode);
+
+        public static TSelf RemainderExpected(TSelf left, TSelf right, DivisionRounding mode)
+            => left % right + RemainderRoundingCorrection(left, right, mode);
+
         public static TSelf LeadingZeroCount(TSelf value) => TSelf.LeadingZeroCount(value);
 
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
