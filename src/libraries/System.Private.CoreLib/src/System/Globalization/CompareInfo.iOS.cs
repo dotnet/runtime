@@ -198,17 +198,16 @@ namespace System.Globalization
             /// <param name="input">The input span to filter.</param>
             /// <param name="generateIndexMap">
             /// If <c>true</c>, generates an index map that tracks the position of each character in the filtered
-            /// output back to its original position in the input. The map is accessible via <see cref="IndexMap"/>.
+            /// output back to its original position in the input. The map is accessible via <see cref="GetIndexMap"/>.
             /// </param>
             /// <returns>
             /// A span containing the filtered string with ignorable symbols removed. If no symbols are found,
-            /// returns the original input span without allocating. For short strings (up to 256 characters),
-            /// uses stack allocation. For longer strings, uses a rented array from <see cref="ArrayPool{T}"/>
-            /// that will be returned when <see cref="Dispose"/> is called.
+            /// returns the original input span without allocating. Otherwise, returns a span backed by either
+            /// stack-allocated or pooled memory that will be returned when <see cref="Dispose"/> is called.
             /// </returns>
             public ReadOnlySpan<char> GetFilteredString(ReadOnlySpan<char> input, bool generateIndexMap = false)
             {
-                if (_arrayToReturnToPool is not null)
+                if (_arrayToReturnToPool is not null || _indexMapArrayToReturnToPool is not null)
                 {
                     Dispose();
                 }
