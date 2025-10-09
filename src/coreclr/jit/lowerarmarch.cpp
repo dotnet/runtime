@@ -4061,8 +4061,23 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     // Do this only if op1 was AllTrueMask
-                    MakeSrcContained(node, op3);
-                    LABELEDDISPTREERANGE("Contained false mask op3 in ConditionalSelect", BlockRange(), op3);
+                    switch (op2->AsHWIntrinsic()->GetHWIntrinsicId())
+                    {
+                        case NI_Sve2_AddPairwise:
+                        case NI_Sve2_MaxNumberPairwise:
+                        case NI_Sve2_MaxPairwise:
+                        case NI_Sve2_MinNumberPairwise:
+                        case NI_Sve2_MinPairwise:
+                            // This is an edge case where these instructions have unpredictable behaviour when
+                            // using predicated movprfx, so the unpredicated variant must be used here. This
+                            // prevents us from performing this optimization as we will need the constant vector
+                            // for masking the result.
+                            break;
+
+                        default:
+                            MakeSrcContained(node, op3);
+                            LABELEDDISPTREERANGE("Contained false mask op3 in ConditionalSelect", BlockRange(), op3);
+                    }
                 }
 
                 break;

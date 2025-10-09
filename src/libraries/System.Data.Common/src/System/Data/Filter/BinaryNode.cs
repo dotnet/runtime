@@ -930,7 +930,7 @@ namespace System.Data
 
                         if (vLeft is bool)
                         {
-                            if ((bool)vLeft == false)
+                            if (!(bool)vLeft)
                             {
                                 value = false;
                                 break;

@@ -7268,7 +7268,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         }
         else
 #endif // TARGET_X86
-            if (ctrlExpr->isIndir())
+            if (ctrlExpr->isIndir() && IsSafeToContainMem(call, ctrlExpr))
             {
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
                 // contained we must clear it.

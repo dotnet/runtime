@@ -5,6 +5,7 @@
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
+    <UseWix5>true</UseWix5>
   </PropertyGroup>
 
   <!--
@@ -99,6 +100,8 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />

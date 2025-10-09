@@ -406,13 +406,6 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
     RETURN res;
 }
 
-
-inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *clsRet = NULL)
-{
-    WRAPPER_NO_CONTRACT;
-    return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
-}
-
 enum ConvToJitSigFlags : int
 {
     CONV_TO_JITSIG_FLAGS_NONE       = 0x0,
@@ -2580,7 +2573,7 @@ CorInfoType CEEInfo::asCorInfoType (CORINFO_CLASS_HANDLE clsHnd)
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
-    result = toJitType(VMClsHnd);
+    result = asCorInfoType(VMClsHnd.GetInternalCorElementType(), VMClsHnd);
 
     EE_TO_JIT_TRANSITION();
 
@@ -8611,18 +8604,18 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pObjMT->IsArray())
         {
+            if (pBaseMT->IsSharedByGenericInstantiations())
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
             // Does the array implicitly implement this interface?
             //
             isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
 
             if (!isArrayImplicitInterface)
             {
-                if (pBaseMT->IsSharedByGenericInstantiations())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                    return false;
-                }
-
                 // Ensure we can cast the array to the interface type
                 //
                 if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
@@ -8648,15 +8641,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             {
                 _ASSERTE(pObjMT->IsArray());
 
-                // We cannot devirtualize unless we know the exact array element type
-                //
-                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
-                if (elemType.IsCanonicalSubtype())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                    return false;
-                }
-                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
+                // The instantiation we want is based on the interface element type, not the
+                // array element type.
+                TypeHandle resultElemType = pBaseMT->GetInstantiation()[0];
+                // We should have ruled this out above.
+                _ASSERTE(!resultElemType.IsCanonicalSubtype());
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, resultElemType);
             }
             else if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
@@ -12460,7 +12450,17 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
-    hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
+
+    // Only try instrumenting tiering-eligible methods
+    MethodDesc* pMD = (MethodDesc*)ftnHnd;
+    if (pMD->IsEligibleForTieredCompilation())
+    {
+        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+    }
+    else
+    {
+        hr = E_NOTIMPL;
+    }
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
@@ -12912,7 +12912,6 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
         if (FAILED(ret))
         {
             comp->ResetForJitRetry();
-            ret = CORJIT_SKIPPED;
         }
     }
 
@@ -13409,8 +13408,28 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
+            InterpreterPrecode* pPrecode = NULL;
             AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            if (ftn->IsDynamicMethod())
+            {
+                // For LCG methods, the precode is stashed in the DynamicMethodDesc, and is shared across all future uses of the DynamicMethodDesc
+                DynamicMethodDesc* pDMD = ftn->AsDynamicMethodDesc();
+                if (pDMD->m_interpreterPrecode != NULL)
+                {
+                    pPrecode = pDMD->m_interpreterPrecode;
+                    pPrecode->GetData()->ByteCodeAddr = ret;
+                    FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
+                }
+                else
+                {
+                    pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+                    pDMD->m_interpreterPrecode = pPrecode;
+                }
+            }
+            else
+            {
+                pPrecode = Precode::AllocateInterpreterPrecode(ret, ftn->GetLoaderAllocator(), &amt);
+            }
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
 

@@ -86,11 +86,14 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
-    public virtual bool IsArray(TypeHandle typeHandle, out uint rank);
-    public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
-    public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
-    public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
-    public virtual TargetPointer GetLoaderModule(TypeHandle typeHandle);
+    bool IsArray(TypeHandle typeHandle, out uint rank);
+    TypeHandle GetTypeParam(TypeHandle typeHandle);
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments);
+    TypeHandle GetPrimitiveType(CorElementType typeCode);
+    bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
+    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    bool IsPointer(TypeHandle typeHandle);
+    TargetPointer GetLoaderModule(TypeHandle typeHandle);
 
     #endregion TypeHandle inspection APIs
 }
@@ -155,6 +158,9 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
+    // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
+    public virtual bool HasMDContextArg(MethodDescHandle);
+
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
@@ -182,7 +188,18 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
 }
+```
+
+### FieldDesc
+```csharp
+TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
+uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
+bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
+bool IsFieldDescStatic(TargetPointer fieldDescPointer);
+uint GetFieldDescType(TargetPointer fieldDescPointer);
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
 ```
 
 ## Version 1
@@ -398,6 +415,11 @@ Contracts used:
 | Contract Name |
 | --- |
 | `Thread` |
+
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `TYPE_MASK_OFFSET` | int | The number of bits the type is shifted left in the field desc flags2 | `27` |
 
 
 ```csharp
@@ -713,6 +735,89 @@ Contracts used:
         throw new ArgumentException(nameof(typeHandle));
     }
 
+    // helper functions
+
+    private bool GenericInstantiationMatch(TypeHandle genericType, TypeHandle potentialMatch, ImmutableArray<TypeHandle> typeArguments)
+    {
+        ReadOnlySpan<TypeHandle> instantiation = GetInstantiation(potentialMatch);
+        if (instantiation.Length != typeArguments.Length)
+            return false;
+
+        if (GetTypeDefToken(genericType) != GetTypeDefToken(potentialMatch))
+            return false;
+
+        if (GetModule(genericType) != GetModule(potentialMatch))
+            return false;
+
+        for (int i = 0; i < instantiation.Length; i++)
+        {
+            if (!(instantiation[i].Address == typeArguments[i].Address))
+                return false;
+        }
+        return true;
+    }
+
+    private bool ArrayPtrMatch(TypeHandle elementType, CorElementType corElementType, int rank, TypeHandle potentialMatch)
+    {
+        IsArray(potentialMatch, out uint typeHandleRank);
+        return GetSignatureCorElementType(potentialMatch) == corElementType &&
+                GetTypeParam(potentialMatch).Address == elementType.Address &&
+                (corElementType == CorElementType.SzArray || corElementType == CorElementType.Byref ||
+                corElementType == CorElementType.Ptr || (rank == typeHandleRank));
+
+    }
+
+    private bool IsLoaded(TypeHandle typeHandle)
+    {
+        if (typeHandle.Address == TargetPointer.Null)
+            return false;
+        if (typeHandle.IsTypeDesc())
+        {
+            uint typeAndFlags = _target.Read<uint>(typeHandle.TypeDescAddress() + /* TypeDesc::TypeAndFlags offset */);
+            return (typeAndFlags & (uint)TypeDescFlags.IsNotFullyLoaded) == 0;
+        }
+
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        uint flags = _target.Read<uint>(methodTable.AuxiliaryData + /* AuxiliaryData::Flags offset */);
+        return (flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0;
+    }
+
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    {
+        if (typeHandle.Address == TargetPointer.Null)
+            return new TypeHandle(TargetPointer.Null);
+        ILoader loaderContract = _target.Contracts.Loader;
+        TargetPointer loaderModule = GetLoaderModule(typeHandle);
+        ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
+        TypeHandle potentialMatch = new TypeHandle(TargetPointer.Null);
+        foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
+        {
+            potentialMatch = GetTypeHandle(ptr);
+            if (corElementType == CorElementType.GenericInst)
+            {
+                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
+                {
+                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                    return potentialMatch;
+                }
+            }
+            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
+            {
+                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                return potentialMatch;
+            }
+        }
+        return new TypeHandle(TargetPointer.Null);
+    }
+
+    public TypeHandle GetPrimitiveType(CorElementType typeCode)
+    {
+        TargetPointer coreLib = _target.ReadGlobalPointer("CoreLib");
+        TargetPointer classes = _target.ReadPointer(coreLib + /* CoreLibBinder::Classes offset */);
+        TargetPointer typeHandlePtr = _target.ReadPointer(classes + (ulong)typeCode * (ulong)_target.PointerSize);
+        return GetTypeHandle(typeHandlePtr);
+    }
+
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
     {
         module = TargetPointer.Null;
@@ -744,7 +849,7 @@ Contracts used:
             return false;
 
         int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
-        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
 
         if (elemType != CorElementType.FnPtr)
             return false;
@@ -759,6 +864,16 @@ Contracts used:
         retAndArgTypes = retAndArgTypesArray;
         callConv = (byte) // Read CallConv field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress(), and then ignore all but the low 8 bits.
         return true;
+    }
+
+    public bool IsPointer(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsTypeDesc())
+            return false;
+
+        int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+        CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
+        return elemType == CorElementType.Ptr;
     }
 
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
@@ -881,6 +996,14 @@ And the following enumeration definitions
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     [Flags]
@@ -903,6 +1026,12 @@ And the following enumeration definitions
     {
         Initialized = 0x0001,
         IsInitError = 0x0100,
+        IsNotFullyLoaded = 0x0040,
+    }
+
+    internal enum TypeDescFlags : uint
+    {
+        IsNotFullyLoaded = 0x00001000,
     }
 
 ```
@@ -1152,6 +1281,23 @@ And the various apis are implemented with the following algorithms
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+    }
+
+    public bool HasMDContextArg(MethodDescHandle method)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
+        {
+            return false;
+        }
+
+        uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
+        ILStubType ilStubType = (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        bool isCLRToCOMStub = ilStubType == ILStubType.StubCLRToCOMInterop;
+        bool isPInvokeVarArgStub = ilStubType == ILStubType.StubPInvokeVarArg;
+
+        return isCLRToCOMStub || isPInvokeVarArgStub;
     }
 
     public ushort GetSlotNumber(MethodDescHandle methodDesc) => _methodDescs[methodDesc.Addres]._desc.Slot;
@@ -1502,4 +1648,67 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
         return GetMethodDescForEntrypoint(pCode);
     }
+```
+
+### FieldDesc
+
+The version 1 FieldDesc APIs depend on the following data descriptors:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `FieldDesc` | `MTOfEnclosingClass` | Pointer to method table of enclosing class |
+| `FieldDesc` | `DWord1` | The FD's flags and token |
+| `FieldDesc` | `DWord2` | The FD's kind and offset |
+
+```csharp
+internal enum FieldDescFlags1 : uint
+{
+    TokenMask = 0xffffff,
+    IsStatic = 0x1000000,
+    IsThreadStatic = 0x2000000,
+}
+
+internal enum FieldDescFlags2 : uint
+{
+    TypeMask = 0xf8000000,
+    OffsetMask = 0x07ffffff,
+}
+
+TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer)
+{
+    return target.ReadPointer(fieldDescPointer + /* FieldDesc::MTOfEnclosingClass offset */);
+}
+
+uint GetFieldDescMemberDef(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return EcmaMetadataUtils.CreateFieldDef(DWord1 & (uint)FieldDescFlags1.TokenMask);
+}
+
+bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return (DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
+}
+
+bool IsFieldDescStatic(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return (DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
+}
+
+uint GetFieldDescType(TargetPointer fieldDescPointer)
+{
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
+}
+
+uint GetFieldDescOffset(TargetPointer fieldDescPointer)
+{
+    uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
+    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
+    {
+        return (uint)fieldDef.GetRelativeVirtualAddress();
+    }
+    return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+}
 ```

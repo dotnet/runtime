@@ -36,7 +36,12 @@ endif()
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
 if (CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_options(-fwasm-exceptions)
+    add_compile_options(
+      -fwasm-exceptions 
+      -msimd128)
+    add_link_options(
+      -fwasm-exceptions 
+      )
 endif()
 
 #----------------------------------------------------
@@ -67,7 +72,17 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT C
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
+else()
+    if(CLR_CMAKE_TARGET_BROWSER)
+      # WASM-TODO set GEN_PINVOKE to 1 once we generate them. static entrypoint.c prevents C linker from trimming, when IL trimming trims PInvokes
+      set(GEN_PINVOKE 0)
+      # WASM-TODO should we start using System.Native.Browser and System.Runtime.InteropServices.JavaScript.Native also for Mono ?
+      set(BUILD_LIBS_NATIVE_BROWSER 1)
+      add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost browserhost)
+      add_dependencies(runtime browserhost)
+    endif()
 endif()
+
 #-------------------------
 # Enable C++ EH with SEH
 #-------------------------
@@ -115,7 +130,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
