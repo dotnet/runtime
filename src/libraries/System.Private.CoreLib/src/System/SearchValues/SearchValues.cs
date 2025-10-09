@@ -241,22 +241,21 @@ namespace System.Buffers
             return StringSearchValues.Create(values, ignoreCase: comparisonType == StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
-            where T : struct, INumber<T>, IMinMaxValue<T>
+        private static bool TryGetSingleRange(ReadOnlySpan<char> values, out char minInclusive, out char maxInclusive)
         {
-            T min = T.MaxValue;
-            T max = T.MinValue;
+            char min = (char)ushort.MaxValue;
+            char max = (char)ushort.MinValue;
 
-            foreach (T value in values)
+            foreach (char value in values)
             {
-                min = T.Min(min, value);
-                max = T.Max(max, value);
+                min = (char)ushort.Min(min, value);
+                max = (char)ushort.Max(max, value);
             }
 
             minInclusive = min;
             maxInclusive = max;
 
-            uint range = uint.CreateChecked(max - min) + 1;
+            uint range = (uint)(max - min) + 1;
             if (range > values.Length)
             {
                 return false;
@@ -266,9 +265,47 @@ namespace System.Buffers
             seenValues = seenValues.Slice(0, (int)range);
             seenValues.Clear();
 
-            foreach (T value in values)
+            foreach (char value in values)
             {
-                int offset = int.CreateChecked(value - min);
+                int offset = (int)(value - min);
+                seenValues[offset] = true;
+            }
+
+            if (seenValues.Contains(false))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryGetSingleRange(ReadOnlySpan<byte> values, out byte minInclusive, out byte maxInclusive)
+        {
+            byte min = byte.MaxValue;
+            byte max = byte.MinValue;
+
+            foreach (byte value in values)
+            {
+                min = byte.Min(min, value);
+                max = byte.Max(max, value);
+            }
+
+            minInclusive = min;
+            maxInclusive = max;
+
+            uint range = (uint)(max - min) + 1;
+            if (range > values.Length)
+            {
+                return false;
+            }
+
+            Span<bool> seenValues = range <= 256 ? stackalloc bool[256] : new bool[range];
+            seenValues = seenValues.Slice(0, (int)range);
+            seenValues.Clear();
+
+            foreach (byte value in values)
+            {
+                int offset = (int)(value - min);
                 seenValues[offset] = true;
             }
 
