@@ -11,6 +11,7 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .namespace JitTest_implicit_arg_coercion
 {
   .class public auto ansi beforefieldinit TestClass
@@ -50,7 +51,7 @@
           01 00 00 00
       )
       .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
-          string('Handling of implicit arg coercion rules III.1.6 differs between Mono and CoreCLR, and this tests the CoreCLR behavior, and what we've put in the augments')
+          string('Handling of implicit arg coercion rules III.1.6 differs between Mono and CoreCLR, and this tests the CoreCLR behavior, and what we have put in the augments')
           int32(0xFFFFFFFF) // Any
       }
 
