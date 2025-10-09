@@ -152,16 +152,24 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Theory]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicVirtualEvent))]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicEvent1))]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicEvent2))]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.PublicEvent3))]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string eventName)
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
         {
-            var eventInfoBase = baseType.GetEvent(eventName);
-            var eventInfoSub = subType.GetEvent(eventName);
-            Assert.NotEqual(eventInfoBase.GetHashCode(), eventInfoSub.GetHashCode());
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(BaseClass), typeof(SubClassA), typeof(SubClassB), typeof(SubClassC) })
+            {
+                foreach (var eventInfo in type.GetEvents())
+                {
+                    if (!hashset.Add(eventInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            Assert.Equal(0, numberOfCollisions);
         }
 
         [Theory]
@@ -215,6 +223,9 @@ namespace System.Reflection.Tests
             public new event EventHandler PublicEvent;
             public event EventHandler EventPublicNew;
         }
+        protected class SubClassA : BaseClass { }
+        protected class SubClassB : BaseClass { }
+        protected class SubClassC : BaseClass { }
 #pragma warning restore 0067
     }
 }

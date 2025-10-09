@@ -346,16 +346,24 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, methodInfo.GetHashCode());
         }
 
-        [Theory]
-        [InlineData(typeof(MI_BaseClass), typeof(MI_SubClass), nameof(MI_BaseClass.IMethod))]
-        [InlineData(typeof(MI_BaseClass), typeof(MI_SubClass), nameof(MI_BaseClass.IMethodNew))]
-        [InlineData(typeof(MI_BaseClass), typeof(MI_SubClass), nameof(MI_BaseClass.PublicStructMethod))]
-        [InlineData(typeof(MethodInfoBaseDefinitionBaseClass), typeof(MethodInfoBaseDefinitionSubClass), nameof(MethodInfoBaseDefinitionBaseClass.InterfaceMethod1))]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string methodName)
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
         {
-            var methodInfoBase = baseType.GetMethod(methodName);
-            var methodInfoSub = subType.GetMethod(methodName);
-            Assert.NotEqual(methodInfoBase.GetHashCode(), methodInfoSub.GetHashCode());
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(MI_BaseClass), typeof(MI_SubClassA), typeof(MI_SubClassB), typeof(MI_SubClassC) })
+            {
+                foreach (var methodInfo in type.GetMethods())
+                {
+                    if (!hashset.Add(methodInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            Assert.Equal(0, numberOfCollisions);
         }
 
         public static IEnumerable<object[]> Invoke_TestData()
@@ -819,6 +827,10 @@ namespace System.Reflection.Tests
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
         public void MethodWithAttributes() { }
     }
+
+    public class MI_SubClassA : MI_BaseClass { }
+    public class MI_SubClassB : MI_BaseClass { }
+    public class MI_SubClassC : MI_BaseClass { }
 
     public class MethodInfoDummySubClass : MI_BaseClass
     {

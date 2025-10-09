@@ -292,16 +292,24 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, propertyInfo.GetHashCode());
         }
 
-        [Theory]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.ReadOnlyProperty))]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.WriteOnlyProperty))]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.ReadWriteProperty1))]
-        [InlineData(typeof(BaseClass), typeof(SubClass), nameof(BaseClass.ReadWriteProperty2))]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string propertyName)
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
         {
-            var propertyInfoBase = baseType.GetProperty(propertyName);
-            var propertyInfoSub = subType.GetProperty(propertyName);
-            Assert.NotEqual(propertyInfoBase.GetHashCode(), propertyInfoSub.GetHashCode());
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(BaseClass), typeof(SubClassA), typeof(SubClassB), typeof(SubClassC) })
+            {
+                foreach (var propertyInfo in type.GetProperties())
+                {
+                    if (!hashset.Add(propertyInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            Assert.Equal(0, numberOfCollisions);
         }
 
         [Theory]
@@ -496,6 +504,9 @@ namespace System.Reflection.Tests
                 set { _description = value; }
             }
         }
+        public class SubClassA : BaseClass { }
+        public class SubClassB : BaseClass { }
+        public class SubClassC : BaseClass { }
 
         public class CustomIndexerNameClass
         {

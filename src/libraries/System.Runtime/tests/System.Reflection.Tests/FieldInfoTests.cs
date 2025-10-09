@@ -333,17 +333,24 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, fieldInfo.GetHashCode());
         }
 
-        [Theory]
-        [InlineData(typeof(FI_FieldArray), typeof(FI_FieldArraySubClass), nameof(FI_FieldArray.aArray))]
-        [InlineData(typeof(FI_FieldArray), typeof(FI_FieldArraySubClass), nameof(FI_FieldArray.bArray))]
-        [InlineData(typeof(FI_FieldArray), typeof(FI_FieldArraySubClass), nameof(FI_FieldArray.iArray))]
-        [InlineData(typeof(FI_FieldArray), typeof(FI_FieldArraySubClass), nameof(FI_FieldArray.intArray))]
-        [InlineData(typeof(FI_FieldArray), typeof(FI_FieldArraySubClass), nameof(FI_FieldArray.objectArray))]
-        public void GetHashCode_WithSameBaseClass_ShouldNotEqual(Type baseType, Type subType, string fieldName)
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
         {
-            var fieldInfoBase = baseType.GetField(fieldName);
-            var fieldInfoSub = subType.GetField(fieldName);
-            Assert.NotEqual(fieldInfoBase.GetHashCode(), fieldInfoSub.GetHashCode());
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(FI_FieldArray), typeof(FI_FieldArraySubClassA), typeof(FI_FieldArraySubClassB), typeof(FI_FieldArraySubClassC) })
+            {
+                foreach (var fieldInfo in type.GetFields())
+                {
+                    if (!hashset.Add(fieldInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            Assert.Equal(0, numberOfCollisions);
         }
 
         [Theory]
@@ -749,7 +756,9 @@ namespace System.Reflection.Tests
             public int[] intArray;
             public object[] objectArray;
         }
-        public class FI_FieldArraySubClass : FI_FieldArray { }
+        public class FI_FieldArraySubClassA : FI_FieldArray { }
+        public class FI_FieldArraySubClassB : FI_FieldArray { }
+        public class FI_FieldArraySubClassC : FI_FieldArray { }
 
         public class FI_GenericClass<T> { public FI_GenericClass() { } }
 
