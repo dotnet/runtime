@@ -4356,6 +4356,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return f;
         }
+
         public static float ConvertToSingleEvenRoundToOdd(double[] value, int i)
         {
             if (i % 2 == 0)
@@ -4366,12 +4367,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return 0f;
         }
 
-
         public static float ConvertToSingleOddRoundToOdd(float[] even, double[] op, int i)
         {
             if (i % 2 != 0)
             {
-                return  ConvertToSingleRoundToOdd(op[(i - 1) / 2]);
+                return ConvertToSingleRoundToOdd(op[(i - 1) / 2]);
             }
 
             return even[i];
