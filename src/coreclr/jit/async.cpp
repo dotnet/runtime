@@ -2222,11 +2222,6 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall*        
                                                             const ContinuationLayout& layout,
                                                             BasicBlock*               joinBB)
 {
-    if (!m_comp->opts.compDbgInfo)
-    {
-        return;
-    }
-
     uint32_t numLocals = 0;
     for (const LiveLocalInfo& local : layout.Locals)
     {

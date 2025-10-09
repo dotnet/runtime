@@ -6696,6 +6696,25 @@ void CodeGen::genReportAsyncDebugInfo()
 
     compiler->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
                                                      static_cast<uint32_t>(asyncVars->size()));
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported async suspension points:\n");
+        for (size_t i = 0; i < suspPoints->size(); i++)
+        {
+            printf("  [%zu] Offset = %x, NumAsyncVars = %u\n", i, hostSuspensionPoints[i].NativeOffset,
+                   hostSuspensionPoints[i].NumContinuationVars);
+        }
+
+        printf("Reported async vars:\n");
+        for (size_t i = 0; i < asyncVars->size(); i++)
+        {
+            printf("  [%zu] VarNumber = %u, Offset = %x, GCIndex = %u\n", i, hostVars[i].VarNumber, hostVars[i].Offset,
+                   hostVars[i].GCIndex);
+        }
+    }
+#endif
 }
 
 /*============================================================================
