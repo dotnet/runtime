@@ -71,7 +71,7 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.X86 => Machine.I386,
                 TargetArchitecture.X64 => Machine.Amd64,
                 TargetArchitecture.ARM64 => Machine.Arm64,
-                TargetArchitecture.ARM => Machine.Arm,
+                TargetArchitecture.ARM => Machine.ArmThumb2,
                 TargetArchitecture.LoongArch64 => Machine.LoongArch64,
                 TargetArchitecture.RiscV64 => Machine.RiscV64,
                 _ => throw new NotSupportedException("Unsupported architecture")
