@@ -469,7 +469,8 @@ namespace System.Security.Cryptography.Tests
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8,
                     ecdsa =>
-                        // ECPrivateKey size with parameters and without public key
+                        // ECPrivateKey size with parameters and without public key.
+                        // These are derived using the size table in the spec (Table 4).
                         algorithm.Name switch
                         {
                             "MLDSA44-ECDSA-P256-SHA256" or
@@ -497,7 +498,8 @@ namespace System.Security.Cryptography.Tests
                     algorithm,
                     rsa => (rsa.KeySizeInBits / 8) * 9 / 2 + 101, // Add max ASN.1 overhead
                     ecdsa =>
-                        // ECPrivateKey size with parameters and without public key
+                        // ECPrivateKey size with parameters and without public key.
+                        // These are derived using the size table in the spec (Table 4).
                         algorithm.Name switch
                         {
                             "MLDSA44-ECDSA-P256-SHA256" or
