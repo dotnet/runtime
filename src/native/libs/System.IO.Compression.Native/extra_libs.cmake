@@ -26,4 +26,9 @@ macro(append_extra_compression_libs NativeLibsExtra)
 
     list(APPEND ${NativeLibsExtra} ${BROTLIDEC} ${BROTLIENC})
   endif ()
+
+  if (CLR_CMAKE_USE_SYSTEM_ZSTD)
+    find_library(ZSTD zstd REQUIRED)
+    list(APPEND ${NativeLibsExtra} ${ZSTD})
+  endif ()
 endmacro()

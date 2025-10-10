@@ -1,0 +1,33 @@
+diff --git a/src/native/external/zstd/build/cmake/CMakeLists.txt b/src/native/external/zstd/build/cmake/CMakeLists.txt
+index 347d41c0fd1..6b8f65fc091 100644
+--- a/src/native/external/zstd/build/cmake/CMakeLists.txt
++++ b/src/native/external/zstd/build/cmake/CMakeLists.txt
+@@ -36,7 +36,6 @@ set(ZSTD_FULL_VERSION "${zstd_VERSION_MAJOR}.${zstd_VERSION_MINOR}.${zstd_VERSIO
+ project(zstd
+   VERSION "${ZSTD_FULL_VERSION}"
+   LANGUAGES C   # Main library is in C
+-            ASM # And ASM
+             CXX # Testing contributed code also utilizes CXX
+   )
+ 
+diff --git a/src/native/external/zstd/build/cmake/lib/CMakeLists.txt b/src/native/external/zstd/build/cmake/lib/CMakeLists.txt
+index 4e902a1fb75..aed43245cb4 100644
+--- a/src/native/external/zstd/build/cmake/lib/CMakeLists.txt
++++ b/src/native/external/zstd/build/cmake/lib/CMakeLists.txt
+@@ -7,7 +7,7 @@
+ # in the COPYING file in the root directory of this source tree).
+ # ################################################################
+ 
+-project(libzstd C ASM)
++project(libzstd C)
+ 
+ set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+ option(ZSTD_BUILD_STATIC "BUILD STATIC LIBRARIES" ON)
+@@ -40,6 +40,7 @@ if (MSVC)
+     add_compile_options(-DZSTD_DISABLE_ASM)
+ else ()
+     if(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|AMD64.*|x86_64.*|X86_64.*" AND ${ZSTD_HAS_NOEXECSTACK})
++        enable_language(ASM)
+         set(DecompressSources ${DecompressSources} ${LIBRARY_DIR}/decompress/huf_decompress_amd64.S)
+     else()
+         add_compile_options(-DZSTD_DISABLE_ASM)
