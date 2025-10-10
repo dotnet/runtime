@@ -1886,18 +1886,19 @@ public:
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
+#endif //!DACCESS_COMPILE
 
-#ifdef FEATURE_CODE_VERSIONING
-    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
-    PTR_MethodDescVersioningState GetMethodDescVersionState();
-#endif // FEATURE_CODE_VERSIONING
-
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
     bool SetCallStub(CallStubHeader *pHeader);
     CallStubHeader *GetCallStub();
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
-#endif //!DACCESS_COMPILE
+#ifdef FEATURE_CODE_VERSIONING
+#ifndef DACCESS_COMPILE
+    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#endif // !DACCESS_COMPILE
+    PTR_MethodDescVersioningState GetMethodDescVersionState();
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     inline DWORD GetClassification() const

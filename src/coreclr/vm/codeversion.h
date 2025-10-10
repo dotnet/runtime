@@ -46,14 +46,14 @@ class NativeCodeVersion
 #ifdef FEATURE_CODE_VERSIONING
     friend class MethodDescVersioningState;
     friend class ILCodeVersion;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     NativeCodeVersion();
     NativeCodeVersion(const NativeCodeVersion & rhs);
 #ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode);
-#endif
+#endif // FEATURE_CODE_VERSIONING
     explicit NativeCodeVersion(PTR_MethodDesc pMethod);
 
     BOOL IsNull() const;
@@ -65,7 +65,7 @@ public:
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
     ReJITID GetILCodeVersionId() const;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = 0);

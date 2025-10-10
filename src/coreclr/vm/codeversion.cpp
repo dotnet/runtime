@@ -320,7 +320,7 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
     CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
     return pCodeVersionManager->GetMethodDescVersioningState(pMethodDesc);
 }
-#endif
+#endif // !DACCESS_COMPILE
 
 bool NativeCodeVersion::IsFinalTier() const
 {
