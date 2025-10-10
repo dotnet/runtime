@@ -940,7 +940,12 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 // Method type constraints behave contravariantly
                 // (cf Bounded polymorphism e.g. see
                 //     Cardelli & Wegner, On understanding types, data abstraction and polymorphism, Computing Surveys 17(4), Dec 1985)
-                if (pMT != NULL && pMT->HasVariance() && TypeFromToken(tkConstraintType) == mdtTypeSpec)
+                if (pMT != NULL && pMT->HasVariance() && TypeFromToken(tkConstraintType) == mdtTypeSpec
+#ifdef FEATURE_READYTORUN
+                        // No sanity checks for ready-to-run compiled images if possible
+                        && (!GetModule()->IsReadyToRun() || !GetModule()->GetReadyToRunInfo()->SkipTypeValidation())
+#endif
+                    )
                 {
                     ULONG cSig;
                     PCCOR_SIGNATURE pSig;
