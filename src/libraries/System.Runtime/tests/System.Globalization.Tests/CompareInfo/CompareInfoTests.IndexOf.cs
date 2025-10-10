@@ -128,6 +128,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Tes ting", "Testing", 0, 8, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "'Te st  i ng!", "Testing", 0, 11, CompareOptions.IgnoreSymbols, -1, 0 };
 
+            // Ignore symbols - long strings (over 256 chars) to test ArrayPool buffer allocation on iOS
+            if (PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            {
+                yield return new object[] { s_invariantCompare, new string('a', 100) + new string('b', 50) + "$" + new string('b', 50) + "!" + new string('c', 100), new string('b', 100), 0, 303, CompareOptions.IgnoreSymbols, 100, 102 };
+                yield return new object[] { s_invariantCompare, new string('a', 100) + new string('b', 100) + new string('c', 100), new string('b', 100), 0, 300, CompareOptions.IgnoreSymbols, 100, 100 };
+            }
+
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2, 2 };
 
             // Ordinal should be case-sensitive
