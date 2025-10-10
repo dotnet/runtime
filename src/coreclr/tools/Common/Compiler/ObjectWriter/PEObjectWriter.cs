@@ -76,6 +76,7 @@ namespace ILCompiler.ObjectWriter
         private int _exportSectionIndex = NoSectionIndex;
         private int _baseRelocSectionIndex = NoSectionIndex;
         private int _corMetaSectionIndex = NoSectionIndex;
+        private int _rsrcSectionIndex = NoSectionIndex;
 
         // Base relocation (.reloc) bookkeeping
         private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
@@ -359,6 +360,7 @@ namespace ILCompiler.ObjectWriter
             _pdataSectionIndex = GetOrCreateSection(ObjectNodeSection.PDataSection).SectionIndex;
             _debugSectionIndex = GetOrCreateSection(ObjectNodeSection.DebugDirectorySection).SectionIndex;
             _corMetaSectionIndex = GetOrCreateSection(ObjectNodeSection.CorMetaSection).SectionIndex;
+            _rsrcSectionIndex = GetOrCreateSection(ObjectNodeSection.Win32ResourcesSection).SectionIndex;
             _exportSectionIndex = exportDirectory.SectionIndex;
 
             // Create the reloc section last. We write page offsets into it based on the virtual addresses of other sections
@@ -734,6 +736,10 @@ namespace ILCompiler.ObjectWriter
             // before writing if needed.
             var dataDirs = new OptionalHeaderDataDirectories();
             // Populate data directories if present.
+            if (_rsrcSectionIndex != NoSectionIndex)
+            {
+                dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.Resource, (uint)_outputSectionLayout[_rsrcSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_rsrcSectionIndex].Length);
+            }
             if (_pdataSectionIndex != NoSectionIndex)
             {
                 dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.Exception, (uint)_outputSectionLayout[_pdataSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_pdataSectionIndex].Length);
