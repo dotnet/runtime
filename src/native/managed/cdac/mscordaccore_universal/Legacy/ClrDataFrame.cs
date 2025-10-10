@@ -135,8 +135,7 @@ internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFra
             if (ilHeader == TargetPointer.Null)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            int localToken = HeaderReaderHelpers.GetLocalVarSigToken(_target, ilHeader);
-            if (localToken < 0)
+            if (!HeaderReaderHelpers.TryGetLocalVarSigToken(_target, ilHeader, out int localToken))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
