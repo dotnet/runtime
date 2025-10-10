@@ -4753,6 +4753,8 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             for (DWORD i = 0; i < formalParams.GetNumArgs(); i++)
             {
+                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked 
+                // via the call to GetConstraints which will eventually call EEClass::CheckVarianceInSig
                 BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth);
 
                 TypeVarTypeDesc *pTyVar = formalParams[i].AsGenericVariable();
@@ -4778,7 +4780,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                     {
                         BOOL fHasCircularMethodConstraints = TRUE;
 
-                        pMD->LoadConstraintsForTypicalMethodDefinition(&fHasCircularMethodConstraints, CLASS_DEPENDENCIES_LOADED);
+                        pMD->CheckConstraintMetadataValidity(&fHasCircularMethodConstraints);
 
                         if (fHasCircularMethodConstraints)
                         {

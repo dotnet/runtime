@@ -940,6 +940,9 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 // Method type constraints behave contravariantly
                 // (cf Bounded polymorphism e.g. see
                 //     Cardelli & Wegner, On understanding types, data abstraction and polymorphism, Computing Surveys 17(4), Dec 1985)
+                //
+                // This check is NOT conditional on actually loading the constraint, since we want to run EEClass::CheckVarianceInSig
+                // even if we didn't load the constraint, to cause the TypeLoadException to happen at a predictable time.
                 if (pMT != NULL && pMT->HasVariance() && TypeFromToken(tkConstraintType) == mdtTypeSpec
 #ifdef FEATURE_READYTORUN
                         // No sanity checks for ready-to-run compiled images if possible

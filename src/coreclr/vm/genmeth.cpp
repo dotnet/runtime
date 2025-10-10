@@ -1554,7 +1554,7 @@ BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth) {
     return TRUE;
 }
 
-void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularMethodConstraints, ClassLoadLevel level/* = CLASS_LOADED*/)
+void MethodDesc::CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstraints)
 {
     CONTRACTL {
         THROWS;
@@ -1564,25 +1564,23 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularMe
         PRECONDITION(CheckPointer(pfHasCircularMethodConstraints));
     } CONTRACTL_END;
 
+    // In this function we explicitly check for accessibility of method type parameter constraints as
+    // well as explicitly do a check for circularity among method type parameter constraints.
+    //
+    // For checking the variance of the constraints we rely on the fact that both DoAccessibilityCheckForConstraints
+    // and Bounded will call GetConstraints on the type variables, which will in turn call
+    // LoadConstraints, and LoadConstraints will do the variance checking using EEClass::CheckVarianceInSig
     *pfHasCircularMethodConstraints = FALSE;
 
-    // Force a load of the constraints on the type parameters
-    Instantiation classInst = GetClassInstantiation();
-
     Instantiation methodInst = GetMethodInstantiation();
-    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-    {
-        TypeVarTypeDesc* tyvar = methodInst[i].AsGenericVariable();
-        _ASSERTE(tyvar != NULL);
-        VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy);
-        DoAccessibilityCheckForConstraints(GetMethodTable(), tyvar, E_ACCESSDENIED);
-    }
 
     // reject circular method constraints
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeVarTypeDesc* tyvar = methodInst[i].AsGenericVariable();
         _ASSERTE(tyvar != NULL);
+        VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy);
+        DoAccessibilityCheckForConstraints(GetMethodTable(), tyvar, E_ACCESSDENIED);
         if(!Bounded(tyvar, methodInst.GetNumArgs()))
         {
             *pfHasCircularMethodConstraints = TRUE;

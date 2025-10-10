@@ -476,10 +476,8 @@ public:
     // This method can be called on a non-restored method desc
     BOOL IsTypicalMethodDefinition() const;
 
-    // Force a load of the (typical) constraints on the type parameters of a typical method definition,
-    // detecting cyclic bounds on method type parameters.
-    void LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularMethodConstraints,
-                                                   ClassLoadLevel level = CLASS_LOADED);
+    // Validate accessibility and usage of variant generic parameters and check for cycles in the method constraints
+    void CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstraints);
 
     DWORD IsClassConstructor()
     {
