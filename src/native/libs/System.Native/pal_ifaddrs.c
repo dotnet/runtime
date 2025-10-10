@@ -137,7 +137,9 @@ static int send_netlink_dump_request(struct netlink_session *session, int type)
     session->message_header.msg_iovlen = 1;
     session->message_header.msg_iov = &session->payload_vector;
 
-    if (sendmsg(session->sock_fd, (const struct msghdr*)&session->message_header, 0) < 0) {
+    ssize_t sendmsg_result;
+    while (-1 == (sendmsg_result = sendmsg(session->sock_fd, (const struct msghdr*)&session->message_header, 0)) && errno == EINTR);
+    if (sendmsg_result < 0) {
         LOG_WARN("Failed to send netlink message. %s\n", strerror(errno));
         return -1;
     }
@@ -638,7 +640,7 @@ static int parse_netlink_reply(struct netlink_session *session, struct ifaddrs *
         netlink_reply.msg_iovlen = 1;
         netlink_reply.msg_iov = &reply_vector;
 
-        length = recvmsg(session->sock_fd, &netlink_reply, 0);
+        while ((length = recvmsg(session->sock_fd, &netlink_reply, 0)) < 0 && errno == EINTR);
         LOG_DEBUG("  length == %d\n", (int)length);
 
         if (length < 0) {

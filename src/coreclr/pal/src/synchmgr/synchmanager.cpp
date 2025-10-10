@@ -1811,8 +1811,9 @@ namespace CorUnix
                         iNChanges = 0;
                     }
 
-                    iRet = kevent(m_iKQueue, &keChanges, iNChanges,
-                                  &m_keProcessPipeEvent, 1, pts);
+                    while (-1 == (iRet = kevent(m_iKQueue, &keChanges, iNChanges,
+                                                &m_keProcessPipeEvent, 1, pts))
+                           && errno == EINTR);
 
                     if (0 < iRet)
                     {
@@ -1849,7 +1850,7 @@ namespace CorUnix
                 Poll.events = POLLIN;
                 Poll.revents = 0;
 
-                iRet = poll(&Poll, 1, iTimeout);
+                while (-1 == (iRet = poll(&Poll, 1, iTimeout)) && errno == EINTR) { }
 
                 TRACE("Woken up from poll() with ret=%d [iTimeout=%d]\n",
                        iRet, iTimeout);
@@ -1936,7 +1937,7 @@ namespace CorUnix
                 }
 #endif // HAVE_KQUEUE
 
-                iRet = read(m_iProcessPipeRead, pPos, iBytes - iBytesRead);
+                while (-1 == (iRet = read(m_iProcessPipeRead, pPos, iBytes - iBytesRead)) && errno == EINTR) { }
 
                 if (0 == iRet)
                 {
@@ -2164,9 +2165,10 @@ namespace CorUnix
         {
             sszWritten = write(m_iProcessPipeWrite, &byCmd, sizeof(BYTE));
         } while (-1 == sszWritten &&
-                 EAGAIN == errno &&
+                 ((EAGAIN == errno &&
                  ++iRetryCount < MaxConsecutiveEagains &&
-                 0 == sched_yield());
+                 0 == sched_yield()) ||
+                 EINTR == errno));
 
         if (sszWritten != sizeof(BYTE))
         {
@@ -2718,13 +2720,17 @@ namespace CorUnix
         }
 
         /* create the pipe, with full access to the owner only */
-        if (mkfifo(szPipeFilename, S_IRWXU) == -1)
+        int mkfifo_result;
+        while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR) { }
+        if (mkfifo_result == -1)
         {
             if (errno == EEXIST)
             {
                 /* Some how no one deleted the pipe, perhaps it was left behind
                 from a crash?? Delete the pipe and try again. */
-                if (-1 == unlink(szPipeFilename))
+                int unlink_result;
+                while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR) { }
+                if (-1 == unlink_result)
                 {
                     ERROR( "Unable to delete the process pipe that was left behind.\n" );
                     fRet = false;
@@ -2732,7 +2738,8 @@ namespace CorUnix
                 }
                 else
                 {
-                    if (mkfifo(szPipeFilename, S_IRWXU) == -1)
+                    while (-1 == (mkfifo_result = mkfifo(szPipeFilename, S_IRWXU)) && errno == EINTR) { }
+                    if (mkfifo_result == -1)
                     {
                         ERROR( "Still unable to create the process pipe...giving up!\n" );
                         fRet = false;
@@ -2765,12 +2772,14 @@ namespace CorUnix
         }
 #else // !CORECLR
         int rgiPipe[] = { -1, -1 };
-        int pipeRv =
+        int pipeRv;
+        while (-1 == (pipeRv =
 #if HAVE_PIPE2
-            pipe2(rgiPipe, O_CLOEXEC);
+            pipe2(rgiPipe, O_CLOEXEC)
 #else
-            pipe(rgiPipe);
+            pipe(rgiPipe)
 #endif // HAVE_PIPE2
+        ) && errno == EINTR);
         if (pipeRv == -1)
         {
             ERROR("Unable to create the process pipe\n");
@@ -2778,8 +2787,8 @@ namespace CorUnix
             goto CPP_exit;
         }
 #if !HAVE_PIPE2
-        fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC); // make pipe non-inheritable, if possible
-        fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC);
+        while (-1 == fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC) && errno == EINTR) { } // make pipe non-inheritable, if possible
+        while (-1 == fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC) && errno == EINTR) { }
 #endif // !HAVE_PIPE2
 #endif // !CORECLR
 
@@ -2814,7 +2823,7 @@ namespace CorUnix
             // Failed
             if (0 != szPipeFilename[0])
             {
-                unlink(szPipeFilename);
+                while (-1 == unlink(szPipeFilename) && errno == EINTR) { }
             }
             if (-1 != iPipeRd)
             {
@@ -2862,7 +2871,9 @@ namespace CorUnix
 
         if (GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
-            if (unlink(szPipeFilename) == -1)
+            int unlink_result;
+            while (-1 == (unlink_result = unlink(szPipeFilename)) && errno == EINTR) { }
+            if (unlink_result == -1)
             {
                 ERROR("Unable to unlink the pipe file name errno=%d (%s)\n",
                       errno, strerror(errno));
@@ -3111,7 +3122,7 @@ namespace CorUnix
             ERROR("Failed creating thread synchronization mutex [error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
-                poll(NULL, 0, std::min(100,10*iEagains));
+                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR) { }
                 goto Mutex_retry;
             }
             else if (ENOMEM == iRet)
@@ -3137,7 +3148,7 @@ namespace CorUnix
                   "[error=%d (%s)]\n", iRet, strerror(iRet));
             if (EAGAIN == iRet && MaxUnavailableResourceRetries >= ++iEagains)
             {
-                poll(NULL, 0, std::min(100,10*iEagains));
+                while (-1 == poll(NULL, 0, std::min(100,10*iEagains)) && errno == EINTR) { }
                 goto Cond_retry;
             }
             else if (ENOMEM == iRet)

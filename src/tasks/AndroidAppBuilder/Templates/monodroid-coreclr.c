@@ -113,7 +113,8 @@ external_assembly_probe(const char* relative_assembly_path, void** data, int64_t
     if (res < 0 || res != path_len)
         return false;
 
-    int fd = open(full_path, O_RDONLY);
+    int fd;
+    while (-1 == (fd = open(full_path, O_RDONLY)) && errno == EINTR);
     if (fd == -1)
         return false;
 

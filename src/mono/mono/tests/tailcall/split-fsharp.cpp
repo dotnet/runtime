@@ -42,7 +42,7 @@ CreateDir (const char *a)
 #ifdef _WIN32
 	_mkdir (a);
 #else
-	mkdir (a, 0777);
+	while (-1 == mkdir (a, 0777) && errno == EINTR);
 #endif
 }
 

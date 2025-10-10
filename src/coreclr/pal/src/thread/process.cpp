@@ -452,7 +452,7 @@ PrepareStandardHandle(
         goto PrepareStandardHandleExit;
     }
 
-    iError = fcntl(pLocalData->unix_fd, F_SETFD, 0);
+    while (-1 == (iError = fcntl(pLocalData->unix_fd, F_SETFD, 0)) && errno == EINTR);
     if (-1 == iError)
     {
         ERROR("Unable to remove close-on-exec for file (errno %i)\n", errno);
@@ -761,7 +761,9 @@ CorUnix::InternalCreateProcess(
     {
         int pipe_descs[2];
 
-        if (-1 == pipe(pipe_descs))
+        int pipe_result;
+        while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+        if (-1 == pipe_result)
         {
             ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
             palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -883,19 +885,23 @@ CorUnix::InternalCreateProcess(
                fd to the corresponding standard one.  The API that I use,
                dup2, will copy the source to the destination, automatically
                closing the existing destination, in an atomic way */
-            if (dup2(iFdIn, STDIN_FILENO) == -1)
+            int dup2_result;
+            while (-1 == (dup2_result = dup2(iFdIn, STDIN_FILENO)) && errno == EINTR);
+            if (dup2_result == -1)
             {
                 // Didn't duplicate standard in.
                 _exit(EXIT_FAILURE);
             }
 
-            if (dup2(iFdOut, STDOUT_FILENO) == -1)
+            while (-1 == (dup2_result = dup2(iFdOut, STDOUT_FILENO)) && errno == EINTR);
+            if (dup2_result == -1)
             {
                 // Didn't duplicate standard out.
                 _exit(EXIT_FAILURE);
             }
 
-            if (dup2(iFdErr, STDERR_FILENO) == -1)
+            while (-1 == (dup2_result = dup2(iFdErr, STDERR_FILENO)) && errno == EINTR);
+            if (dup2_result == -1)
             {
                 // Didn't duplicate standard error.
                 _exit(EXIT_FAILURE);
@@ -1003,7 +1009,9 @@ InternalCreateProcessExit:
        their close-on-exec flag */
     if (NULL != pobjFileIn)
     {
-        if(-1 == fcntl(iFdIn, F_SETFD, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(iFdIn, F_SETFD, 1)) && errno == EINTR);
+        if(-1 == fcntl_result)
         {
             WARN("couldn't restore close-on-exec flag to stdin descriptor! "
                  "errno is %d (%s)\n", errno, strerror(errno));
@@ -1013,7 +1021,9 @@ InternalCreateProcessExit:
 
     if (NULL != pobjFileOut)
     {
-        if(-1 == fcntl(iFdOut, F_SETFD, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(iFdOut, F_SETFD, 1)) && errno == EINTR);
+        if(-1 == fcntl_result)
         {
             WARN("couldn't restore close-on-exec flag to stdout descriptor! "
                  "errno is %d (%s)\n", errno, strerror(errno));
@@ -1023,7 +1033,9 @@ InternalCreateProcessExit:
 
     if (NULL != pobjFileErr)
     {
-        if(-1 == fcntl(iFdErr, F_SETFD, 1))
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(iFdErr, F_SETFD, 1)) && errno == EINTR);
+        if(-1 == fcntl_result)
         {
             WARN("couldn't restore close-on-exec flag to stderr descriptor! "
                  "errno is %d (%s)\n", errno, strerror(errno));
@@ -2433,7 +2445,13 @@ PROCCreateCrashDump(
     }
 
     int pipe_descs[4];
-    if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
+    int pipe_result;
+    while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+    if (pipe_result != -1)
+    {
+        while (-1 == (pipe_result = pipe(pipe_descs + 2)) && errno == EINTR);
+    }
+    if (pipe_result == -1)
     {
         if (errorMessageBuffer != nullptr)
         {
@@ -2488,7 +2506,7 @@ PROCCreateCrashDump(
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_write_pipe, STDERR_FILENO);
+            while (-1 == dup2(child_write_pipe, STDERR_FILENO) && errno == EINTR);
         }
         if (g_createdumpCallback != nullptr)
         {
@@ -2548,8 +2566,10 @@ PROCCreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while ((count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            while (true)
             {
+                while (-1 == (count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) && errno == EINTR);
+                if (count <= 0) break;
                 bytesRead += count;
             }
             errorMessageBuffer[bytesRead] = 0;
@@ -2562,7 +2582,8 @@ PROCCreateCrashDump(
 
         // Parent waits until the child process is done
         int wstatus = 0;
-        int result = waitpid(childpid, &wstatus, 0);
+        int result;
+        while (-1 == (result = waitpid(childpid, &wstatus, 0)) && errno == EINTR);
         if (result != childpid)
         {
             fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %08x errno %s (%d)\n",
@@ -3613,7 +3634,8 @@ PROCGetProcessStatusExit:
 #ifdef __APPLE__
 bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicationGroupId, int applicationGroupIdLength)
 {
-    const char *homeDir = getpwuid(getuid())->pw_dir;
+    const char *homeDir;
+    while (nullptr == (homeDir = getpwuid(getuid())->pw_dir) && errno == EINTR);
     int homeDirLength = strlen(homeDir);
 
     // The application group container folder is defined as:
@@ -3832,7 +3854,9 @@ checkFileType( LPCSTR lpFileName)
     }
 
     /* if it's not a PE/COFF file, check if it is executable */
-    if ( -1 != stat( lpFileName, &stat_data ) )
+    int stat_result;
+    while (-1 == (stat_result = stat( lpFileName, &stat_data )) && errno == EINTR);
+    if ( -1 != stat_result )
     {
         if((stat_data.st_mode & S_IFMT) == S_IFDIR )
         {

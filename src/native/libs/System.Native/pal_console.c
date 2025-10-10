@@ -24,7 +24,8 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
     assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCGWINSZ
-    int error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize);
+    int error;
+    while (-1 == (error = ioctl(ToFileDescriptor(fd), TIOCGWINSZ, windowSize)) && errno == EINTR);
 
     if (error != 0)
     {
@@ -54,8 +55,16 @@ static void WriteKeypadXmit(void)
     // write it out to the terminal to enter the mode.
     if (g_keypadXmit != NULL)
     {
-        ssize_t ret;
-        while (CheckInterrupted(ret = write(g_keypadXmitFd, g_keypadXmit, (size_t)(sizeof(char) * strlen(g_keypadXmit)))));
+        ssize_t ret = 0;
+        char* message = g_keypadXmit;
+        size_t messageSize = (size_t)(sizeof(char) * strlen(g_keypadXmit));
+        while (messageSize > 0)
+        {
+            while (CheckInterrupted(ret = write(g_keypadXmitFd, message, messageSize)));
+            if (ret <= 0) break;
+            messageSize -= (size_t)ret;
+            message += ret;
+        }
         assert(ret >= 0 || (errno == EBADF && g_keypadXmitFd == 0)); // failure to change the mode should not prevent app from continuing
     }
 }
@@ -370,7 +379,9 @@ int32_t SystemNative_StdinReady(void)
 {
     SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
-    int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
+    int poll_result;
+    while (-1 == (poll_result = poll(&fd, 1, 0)) && errno == EINTR);
+    int rv = poll_result > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
     return rv;
 }

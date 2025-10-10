@@ -10,6 +10,7 @@
  */
 
 #include "config.h"
+#include <errno.h>
 
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -37,7 +38,8 @@ mono_file_map_open (const char* name)
 	g_free (wname);
 	return result;
 #else
-	int fd = open (name, O_RDONLY);
+	int fd;
+	while (-1 == (fd = open (name, O_RDONLY)) && errno == EINTR);
 	if (fd < 0)
 		return NULL;
 	return (MonoFileMap *)(size_t)fd;
@@ -48,7 +50,9 @@ guint64
 mono_file_map_size (MonoFileMap *fmap)
 {
 	struct stat stat_buf;
-	if (fstat (mono_file_map_fd (fmap), &stat_buf) < 0)
+	int result;
+	while (-1 == (result = fstat (mono_file_map_fd (fmap), &stat_buf)) && errno == EINTR);
+	if (result < 0)
 		return 0;
 	return stat_buf.st_size;
 }
@@ -88,20 +92,29 @@ mono_file_map_set_allocator (mono_file_map_alloc_fn alloc, mono_file_map_release
 void *
 mono_file_map_fileio (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
+	off_t lseek_result;
 	guint64 cur_offset;
 	size_t bytes_read;
 	void *ptr = (*alloc_fn) (length);
 	if (!ptr)
 		return NULL;
-	cur_offset = lseek (fd, 0, SEEK_CUR);
-	if (lseek (fd, offset, SEEK_SET) != offset) {
+	while (-1 == (lseek_result = lseek (fd, 0, SEEK_CUR)) && errno == EINTR);
+	while (-1 == (lseek_result = lseek (fd, offset, SEEK_SET)) && errno == EINTR);
+	cur_offset = lseek_result;
+	if (cur_offset != offset) {
 		(*release_fn) (ptr);
 		return NULL;
 	}
-	bytes_read = read (fd, ptr, length);
-	if (bytes_read != length)
+	size_t readSoFar = 0;
+	while (readSoFar < length)
+	{
+		while (-1 == (bytes_read = read (fd, (unsigned char*)ptr + readSoFar, length - readSoFar)) && errno == EINTR);
+		if (bytes_read <= 0) break;
+		readSoFar += bytes_read;
+	}
+	if (readSoFar != length)
 		return NULL;
-	lseek (fd, cur_offset, SEEK_SET);
+	while (-1 == lseek (fd, cur_offset, SEEK_SET) && errno == EINTR);
 	*ret_handle = NULL;
 	return ptr;
 }

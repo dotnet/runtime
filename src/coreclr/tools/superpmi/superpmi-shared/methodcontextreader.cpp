@@ -43,7 +43,9 @@ bool test_filename_available(const std::string& path)
     return (attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY);
 #else // TARGET_WINDOWS
     struct stat stat_data;
-    if (stat(path.c_str(), &stat_data) != 0)
+    int stat_result;
+    while (-1 == (stat_result = stat(path.c_str(), &stat_data)) && errno == EINTR);
+    if (stat_result != 0)
         return false;
 
     return (stat_data.st_mode & S_IFMT) == S_IFREG;

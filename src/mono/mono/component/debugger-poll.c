@@ -42,7 +42,9 @@ mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)
 int
 mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 {
-	return poll (ufds, nfds, timeout);
+	int result;
+	while (-1 == (result = poll (ufds, nfds, timeout)) && errno == EINTR);
+	return result;
 }
 #else
 

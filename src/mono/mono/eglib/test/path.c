@@ -267,7 +267,9 @@ test_cwd (void)
 		return FAILED ("No current directory?");
 	g_free (dir);
 
-	if (chdir (newdir) == -1)
+	int chdir_result;
+	while (-1 == (chdir_result = chdir (newdir)) && errno == EINTR);
+	if (chdir_result == -1)
 		return FAILED ("No %s?", newdir);
 
 	dir = g_get_current_dir ();

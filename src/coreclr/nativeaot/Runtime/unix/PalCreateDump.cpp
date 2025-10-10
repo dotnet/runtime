@@ -214,7 +214,13 @@ CreateCrashDump(
     int cbErrorMessageBuffer)
 {
     int pipe_descs[4];
-    if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
+    int pipe_result = 0;
+    while (-1 == (pipe_result = pipe(pipe_descs)) && errno == EINTR);
+    if (pipe_result != -1)
+    {
+        while (-1 == (pipe_result = pipe(pipe_descs + 2)) && errno == EINTR);
+    }
+    if (pipe_result == -1)
     {
         if (errorMessageBuffer != nullptr)
         {
@@ -266,7 +272,7 @@ CreateCrashDump(
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_write_pipe, STDERR_FILENO);
+            while (-1 == dup2(child_write_pipe, STDERR_FILENO) && errno == EINTR);
         }
         // Execute the createdump program
         if (execv(argv[0], (char* const *)argv) == -1)
@@ -312,8 +318,10 @@ CreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while ((count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            while (true)
             {
+                while (-1 == (count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) && errno == EINTR);
+                if (count <= 0) break;
                 bytesRead += count;
             }
             errorMessageBuffer[bytesRead] = 0;
@@ -326,7 +334,8 @@ CreateCrashDump(
 
         // Parent waits until the child process is done
         int wstatus = 0;
-        int result = waitpid(childpid, &wstatus, 0);
+        int result;
+        while (-1 == (result = waitpid(childpid, &wstatus, 0)) && errno == EINTR);
         if (result != childpid)
         {
             fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %08x errno %s (%d)\n",
@@ -605,7 +614,9 @@ PalCreateDumpInitialize()
         strncat(program, DumpGeneratorName, programLen);
 
         struct stat fileData;
-        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
+        int stat_result;
+        while (-1 == (stat_result = stat(program, &fileData)) && errno == EINTR);
+        if (stat_result == -1 || !S_ISREG(fileData.st_mode))
         {
             fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
             return true;

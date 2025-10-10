@@ -144,7 +144,9 @@ RemoveDirectoryHelper (
         {
             struct stat stat_data;
 
-            if ( stat( lpPathName, &stat_data) == 0 &&
+            int stat_result;
+            while (-1 == (stat_result = stat( lpPathName, &stat_data)) && stat_result == EINTR);
+            if ( stat_result == 0 &&
                  (stat_data.st_mode & S_IFMT) == S_IFREG )
             {
                 /* Not a directory, it is a file. */
@@ -455,7 +457,9 @@ CreateDirectoryA(
     // Canonicalize the path so we can determine its length.
     FILECanonicalizePath(realPathBuf);
 
-    if ( mkdir(realPathBuf, mode) != 0 )
+    int mkdir_result;
+    while (-1 == (mkdir_result = mkdir(realPathBuf, mode)) && errno == EINTR);
+    if ( mkdir_result != 0 )
     {
         TRACE("Creation of directory [%s] was unsuccessful, errno = %d.\n",
               unixPathName, errno);
@@ -522,7 +526,7 @@ SetCurrentDirectoryA(
     }
 
     TRACE("Attempting to open Unix dir [%s]\n", lpPathName);
-    result = chdir(lpPathName);
+    while (-1 == (result = chdir (lpPathName)) && errno == EINTR);
 
     if ( result == 0 )
     {
@@ -534,7 +538,9 @@ SetCurrentDirectoryA(
         {
             struct stat stat_data;
 
-            if ( stat( lpPathName, &stat_data) == 0 &&
+            int stat_result;
+            while (-1 == (stat_result = stat( lpPathName, &stat_data)) && errno == EINTR);
+            if ( stat_result == 0 &&
                  (stat_data.st_mode & S_IFMT) == S_IFREG )
             {
                 /* Not a directory, it is a file. */

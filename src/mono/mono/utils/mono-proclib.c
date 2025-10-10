@@ -83,16 +83,27 @@ mono_cpu_count (void)
 	 */
 	int count = 0;
 	char buffer[8] = {'\0'};
-	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
+	int present;
+	while (-1 == (present = open ("/sys/devices/system/cpu/present", O_RDONLY)) && errno == EINTR);
 	/* Format of the /sys entry is a cpulist of indexes which in the case
 	 * of present is always of the form "0-(n-1)" when there is more than
 	 * 1 core, n being the number of CPU cores in the system. Otherwise
 	 * the value is simply 0
 	 */
-	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
-		count = strtol (((char*)buffer) + 2, NULL, 10);
 	if (present != -1)
+	{
+		size_t readSoFar = 0;
+		while (readSoFar < sizeof (buffer))
+		{
+			ssize_t numRead;
+			while (-1 == (numRead = read (present, (char*)buffer + readSoFar, sizeof (buffer) - readSoFar)) && errno == EINTR);
+			if (numRead <= 0) break;
+			readSoFar += numRead;
+		}
+		if (readSoFar > 3)
+			count = strtol (((char*)buffer) + 2, NULL, 10);
 		close (present);
+	}
 	if (count > 0)
 		return count + 1;
 #endif

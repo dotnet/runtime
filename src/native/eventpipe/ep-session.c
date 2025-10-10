@@ -898,8 +898,32 @@ session_tracepoint_write_event (
 	payload_rel_loc = ep_event_payload_total_size << 16 | (extension_len & 0xFFFF);
 
 	ssize_t bytes_written;
-	while (((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index)) < 0) && errno == EINTR);
-	if (should_write_metadata && (bytes_written == io_bytes_to_write))
+	ssize_t bytes_written_total = 0;
+	struct iovec *iov = io;
+	int iovcnt = io_index;
+	while (iovcnt > 0)
+	{
+		while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)iov, iovcnt) < 0) && errno == EINTR);
+		if (bytes_written <= 0) break;
+		bytes_written_total += bytes_written;
+		while (iovcnt > 0 && bytes_written > 0)
+		{
+			if (iov->iov_len >= (size_t)bytes_written)
+			{
+				bytes_written -= iov->iov_len;
+				iovcnt--;
+				iov++;
+			}
+			else
+			{
+				iov->iov_len -= bytes_written;
+				iov->iov_base = (unsigned char*)iov->iov_base + bytes_written;
+				break;
+			}
+		}
+	}
+
+	if (should_write_metadata && (bytes_written_total == io_bytes_to_write))
 		ep_event_update_metadata_written_mask (ep_event, session_mask, true);
 
 	if (io != static_io)
