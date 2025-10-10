@@ -779,9 +779,7 @@ namespace System.Data.Common
         // { "a", "A", "a1" } -> { "a", "A2", "a1" }
         internal static void BuildSchemaTableInfoTableNames(string[] columnNameArray)
         {
-            Dictionary<string, int> hash = new Dictionary<string, int>(columnNameArray.Length);
-            var alternate = hash.GetAlternateLookup<ReadOnlySpan<char>>();
-            Span<char> scratch = stackalloc char[32];
+            Dictionary<string, int> hash = new Dictionary<string, int>(columnNameArray.Length, StringComparer.InvariantCultureIgnoreCase);
 
             int startIndex = columnNameArray.Length; // lowest non-unique index
             for (int i = columnNameArray.Length - 1; 0 <= i; --i)
@@ -789,17 +787,12 @@ namespace System.Data.Common
                 string columnName = columnNameArray[i];
                 if ((null != columnName) && (0 < columnName.Length))
                 {
-#pragma warning disable CA2014 // Do not use stackalloc in loops. Justification: Stack allocates only if length exceeds Span size.
-                    scratch = scratch.Length < columnName.Length ? stackalloc char[columnName.Length] : scratch;
-#pragma warning restore CA2014
-                    var length = columnName.AsSpan().ToLowerInvariant(scratch);
-                    ReadOnlySpan<char> columnNameLowered = scratch[..length];
                     int index;
-                    if (alternate.TryGetValue(columnNameLowered, out index))
+                    if (hash.TryGetValue(columnName, out index))
                     {
                         startIndex = Math.Min(startIndex, index);
                     }
-                    alternate[columnNameLowered] = i;
+                    hash[columnName] = i;
                 }
                 else
                 {
@@ -819,10 +812,7 @@ namespace System.Data.Common
                 }
                 else
                 {
-                    // We already know scratch fits the largest columnName
-                    var length = columnName.AsSpan().ToLowerInvariant(scratch);
-                    ReadOnlySpan<char> columnNameLowered = scratch[..length];
-                    if (i != alternate[columnNameLowered])
+                    if (i != hash[columnName])
                     {
                         GenerateUniqueName(hash, ref columnNameArray[i], i, 1);
                     }
