@@ -14,14 +14,12 @@ export function BrowserHost_InitializeCoreCLR():void {
     CoreCLRInitialized = true;
 
     // int BrowserHost_InitializeCoreCLR(const char* tpaArg, const char* appPathArg, const char* searchPathsArg)
-    // Build TPA, app_path, and search_paths from loader config and pass them as UTF-8 encoded arguments
-    // instead of setting them as environment variables.
+    // Get TPA, app_path, and search_paths from config.environmentVariables where they were prepared
+    // during initialization in libBrowserHost.footer.js, and pass them as UTF-8 encoded arguments.
     const config = getLoaderConfig();
-    const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
-    const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
-    const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
-    const appPath = config.virtualWorkingDirectory;
-    const searchPaths = config.virtualWorkingDirectory;
+    const tpa = config.environmentVariables["TRUSTED_PLATFORM_ASSEMBLIES"] || "";
+    const appPath = config.environmentVariables["APP_PATHS"] || "";
+    const searchPaths = config.environmentVariables["NATIVE_DLL_SEARCH_DIRECTORIES"] || "";
 
     // Emscripten's ccall with "string" type handles UTF-8 encoding and memory management automatically
     const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number", ["string", "string", "string"], [tpa, appPath, searchPaths]) as number;

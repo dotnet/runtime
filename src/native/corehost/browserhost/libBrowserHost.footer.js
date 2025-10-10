@@ -31,7 +31,10 @@
                         exports.dotnetInitializeModule(dotnetInternals);
                         BROWSER_HOST.assignExports(exports, BROWSER_HOST);
 
+                        const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
                         const HOST_PROPERTY_ENTRY_ASSEMBLY_NAME = "ENTRY_ASSEMBLY_NAME";
+                        const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
+                        const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
 
                         const config = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
                         if (!config.resources.assembly ||
@@ -42,7 +45,13 @@
                             !config.environmentVariables) {
                             throw new Error("Invalid runtime config, cannot initialize the runtime.");
                         }
-                        // TPA, APP_PATHS, and NATIVE_DLL_SEARCH_DIRECTORIES are now passed directly as arguments to BrowserHost_InitializeCoreCLR
+                        // Build TPA, APP_PATHS, and NATIVE_DLL_SEARCH_DIRECTORIES values and store them in config
+                        // These will be passed as arguments to BrowserHost_InitializeCoreCLR instead of using ENV variables
+                        const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
+                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
+                        config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+                        config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
+                        config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
                         ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
 
                         // WASM-TODO: remove once globalization is loaded via ICU
