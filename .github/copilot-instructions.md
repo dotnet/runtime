@@ -1,6 +1,33 @@
-**Any code you commit SHOULD compile, and new and existing tests related to the change SHOULD pass.**
+# dotnet/runtime — AI Coding Agent Instructions
 
-You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
+## Essential Architecture
+
+The .NET runtime repository builds the complete .NET runtime, libraries, and host installers for all supported platforms. Understanding the major components and their interactions is critical for effective development:
+
+- **CoreCLR**: Main .NET runtime implementation (`src/coreclr/`, `src/tests/`)
+- **Mono**: Alternative runtime with WASM/mobile support (`src/mono/`)
+- **Libraries**: Base Class Library and framework libraries (`src/libraries/`)
+- **Host/Installers**: Native host (`dotnet`) and installer components (`src/native/corehost/`, `src/installer/`)
+
+**Cross-component dependencies**: Changes affecting multiple components require building and testing all affected areas. Use component mapping in [section 1.1](#11-determine-affected-components) to identify impact scope.
+
+## Mandatory Verification Requirements
+
+**All code you commit MUST compile successfully, and all new and existing tests related to the change MUST pass.**
+
+You are REQUIRED to ensure your changes satisfy these criteria before completing any task. You MUST NOT complete a task or claim success unless:
+1. All relevant builds complete successfully with zero errors
+2. All relevant tests pass with zero failures
+3. You have verified both build and test success after your final code changes
+
+If you cannot achieve successful builds and passing tests, you MUST continue working to fix the issues. Only report inability to complete if you have exhausted all reasonable approaches and the fundamental requirements cannot be met.
+
+CRITICAL: You MUST verify that builds succeed and tests pass after making your final edits. Never assume your changes work - always verify through actual build and test execution.
+
+Additionally, you MUST provide evidence—show the successful build and test output in your completion message.
+
+FAILURE TO MEET THESE REQUIREMENTS MEANS THE TASK IS INCOMPLETE—regardless of how much code was written or how close you came to a solution.
+---
 
 You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
 
@@ -21,6 +48,23 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
+
+## Project-Specific Conventions
+
+**Component Integration**:
+- External dependencies are managed via `NuGet.config` and individual project files
+- Cross-component communication uses public APIs and shared contracts; avoid direct internal calls across major component boundaries (CoreCLR ↔ Mono ↔ Libraries ↔ Host)
+- WASM/WASI builds require special workflows; see [WebAssembly workflow](#6-webassembly-wasm-libraries-workflow)
+
+**Build System Patterns**:
+- Always use provided build scripts (`build.cmd`/`build.sh`) from repository root
+- Component detection by file path determines required build/test scope
+- Cross-platform builds may require different target platforms than build platforms
+
+**Testing Workflows**:
+- Establish clean baseline on default branch before making changes
+- Test filtering during development is acceptable, but final verification requires ALL relevant tests to pass
+- Component-specific test commands vary; see workflow sections below
 
 ---
 
@@ -69,63 +113,93 @@ A change is considered WASM/WASI-relevant if:
 
 ### 1.2. Baseline Setup
 
-Before applying any changes, ensure you have a full successful build of the needed runtime+libraries as a baseline.
+**CRITICAL:** You MUST establish a working baseline before making any changes. This ensures you can distinguish between pre-existing issues and problems caused by your changes.
 
-1. Checkout `main` branch
+1. **Checkout `main` branch**
 
-2. From the repository root, run the build depending on the affected component. If multiple components are affected, subsequently run and verify the builds for all of them.
+2. **Execute Baseline Builds:** From the repository root, run the build for affected component(s). If multiple components are affected, build and verify ALL of them:
     - **CoreCLR (CLR):** `./build.sh clr+libs+host`
     - **Mono Runtime:** `./build.sh mono+libs`
     - **Libraries:** `./build.sh clr+libs -rc release`
     - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
     - **Host:** `./build.sh clr+libs+host -rc release -lc release`
 
-3. Verify the build completed without error.
-    - _If the baseline build failed, report the failure and don't proceed with the changes._
+3. **Verify Baseline Success:**
+    - Build MUST complete with exit code 0
+    - NO build errors are acceptable in baseline
+    - If baseline build fails, you MUST report this issue and not proceed with changes
 
-4. From the repository root:
+4. **Environment Setup:** From the repository root:
     - Configure PATH: `export PATH="$(pwd)/.dotnet:$PATH"`
-    - Verify SDK Version: `dotnet --version` should match `sdk.version` in `global.json`.
+    - Verify SDK Version: `dotnet --version` should match `sdk.version` in `global.json`
 
-5. Switch back to the working branch.
+5. **Execute Baseline Tests:** Run the appropriate tests for your component to verify they pass in main branch:
+    - If baseline tests fail, document these failures and ensure your changes don't introduce additional failures
+
+6. **Switch to working branch** only after confirming baseline functionality
+
+**Remember:** A failing baseline means you cannot reliably assess whether your changes introduce problems. Always establish a clean baseline first.
 
 ---
 
 ## 2. Iterative Build and Test Strategy
 
-1. Apply the intended changes
+**MANDATORY WORKFLOW:** You MUST follow this exact sequence for every change:
 
-2. **Attempt Build.** If the build fails, attempt to fix and retry the step (up to 5 attempts).
+1. **Apply Changes:** Make your intended code modifications
 
-3. **Attempt Test.**
-    - If a test _build_ fails, attempt to fix and retry the step (up to 5 attempts).
-    - If a test _run_ fails,
-        - Determine if the problem is in the test or in the source
-        - If the problem is in the test, attempt to fix and retry the step (up to 5 attempts).
-        - If the problem is in the source, reconsider the full changeset, attempt to fix and repeat the workflow.
+2. **Build Verification:**
+   - Execute the appropriate build command for your component
+   - Build MUST complete with zero errors and zero warnings where possible
+   - Any non-zero exit code is a build failure
+   - If build fails, you MUST fix the issues and rebuild until successful
 
-4. **Workflow Iteration:**
-    - Repeat build and test up to 5 cycles.
-    - If issues persist after 5 workflow cycles, report failure.
-    - If the same error persists after each fix attempt, do not repeat the same fix. Instead, escalate or report with full logs.
+3. **Test Verification:**
+   - Execute the appropriate test command for your component
+   - ALL tests MUST pass (zero failures)
+   - Any non-zero exit code from test commands is a test failure
+   - If tests fail, you MUST analyze whether the issue is in your code or the test itself
+   - Fix issues and re-run tests until all pass
 
-When retrying, attempt different fixes and adjust based on the build/test results.
+4. **Final Verification:**
+   - After your last code edit, you MUST re-run both build and test commands
+   - Confirm both succeed before claiming task completion
+   - NEVER assume previous success means current success
+
+**Failure Resolution:**
+- Maximum 3 attempts to fix build failures before escalating
+- Maximum 3 attempts to fix test failures before escalating
+- If the same error persists after 3 fix attempts, you MUST try a different approach
+- If you cannot achieve passing builds and tests after reasonable effort, explain the blocking issues with full diagnostic information
+
+**No Shortcuts:** You cannot skip verification steps or claim success without demonstrated passing builds and tests.
 
 ### 2.1. Success Criteria
 
-- **Build:**
-    - Completes without errors.
-    - Any non-zero exit code from build commands is considered a failure.
+**ABSOLUTE REQUIREMENTS for task completion:**
 
-- **Tests:**
-    - All tests must pass (zero failures).
-    - Any non-zero exit code from test commands is considered a failure.
+- **Build Success:**
+    - ALL builds MUST complete with zero errors
+    - Exit code MUST be 0 for all build commands
+    - Any build warnings should be addressed when possible
+    - Build success MUST be verified after final code changes
 
-- **Workflow:**
-    - On success: Report completion
-    - Otherwise: Report error(s) with logs for diagnostics.
-        - Collect logs from `artifacts/log/` and the console output for both build and test steps.
-        - Attach relevant log files or error snippets when reporting failures.
+- **Test Success:**
+    - ALL tests MUST pass (zero failures, zero errors)
+    - Exit code MUST be 0 for all test commands
+    - Test success MUST be verified after final code changes
+    - Test count verification: Ensure expected tests actually ran
+
+- **Completion Requirements:**
+    - You MUST demonstrate both build and test success before claiming completion
+    - Provide clear evidence of successful build and test execution
+    - Any deviation from these requirements renders the task incomplete
+
+- **Failure Reporting:**
+    - If unable to meet requirements: Provide detailed error analysis with full logs
+    - Include logs from `artifacts/log/` and console output
+    - Explain specific blocking issues and attempted solutions
+    - Do not claim partial success or "best effort" completion
 
 ---
 
@@ -186,6 +260,16 @@ From the repository root:
 - More info can be found in the dedicated workflow docs:
     - [Build Libraries](/docs/workflow/building/libraries/README.md)
     - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
+
+When working on changes limited to a specific library, you MUST complete ALL the following before claiming task completion:
+
+1. **Build the affected library successfully** - zero build errors required
+2. **Run ALL tests for that library** - zero test failures required
+3. **Verify success after final edits** - re-run tests to confirm they still pass
+
+For example, if you are working within "System.Text.RegularExpressions" then you MUST ensure after your final edits that ALL tests under `src\libraries\System.Text.RegularExpressions\tests` pass.
+
+**No exceptions:** You may filter to specific tests during development, but final verification requires ALL library tests to pass.
 
 ### 5.1. How To: Identify Affected Libraries
 
