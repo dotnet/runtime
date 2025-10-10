@@ -78,35 +78,7 @@ enum PrecodeType
 
 class StubPrecode
 {
-public: // static
-    static const BYTE Type = PRECODE_STUB;
-
-public:
-    void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0);
-
-    BYTE GetType();
-
-    void SetTargetUnconditional(TADDR target);
-
-    TADDR GetSecretParam() const;
-
-    MethodDesc* GetMethodDesc();
 };
-
-typedef DPTR(StubPrecode) PTR_StubPrecode;
-
-class FixupPrecode final
-{
-public: // static
-    static const int FixupCodeOffset = 0;
-
-public:
-    PCODE* GetTargetSlot();
-
-    MethodDesc* GetMethodDesc();
-};
-
-class UMEntryThunk;
 
 class Precode
 {
@@ -117,27 +89,13 @@ public: // static
 public:
     PrecodeType GetType();
 
-    UMEntryThunk* AsUMEntryThunk();
-
-    StubPrecode* AsStubPrecode();
-
     MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE);
 
     PCODE GetEntryPoint();
 
-    BOOL IsPointingToNativeCode(PCODE pNativeCode);
-
-    void Reset();
-
-    PCODE GetTarget();
-
     void ResetTargetInterlocked();
 
     BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
-
-    BOOL IsPointingToPrestub();
-
-    BOOL IsPointingToPrestub(PCODE target);
 };
 
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
