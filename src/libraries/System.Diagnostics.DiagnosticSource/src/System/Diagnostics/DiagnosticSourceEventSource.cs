@@ -159,9 +159,11 @@ namespace System.Diagnostics
     ///
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
-    [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+    [EventSource(Name = DiagnosticSourceEventSourceName)]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
+        private const string DiagnosticSourceEventSourceName = "Microsoft-Diagnostics-DiagnosticSource";
+
         public static readonly DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
 
         public static class Keywords
@@ -405,7 +407,7 @@ namespace System.Diagnostics
         private DiagnosticSourceEventSource()
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
-            : base(EventSourceSettings.EtwSelfDescribingEventFormat)
+            : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
 
