@@ -37,7 +37,7 @@ set(ROLLUP_OUTPUTS
 
 add_custom_command(
     OUTPUT ${ROLLUP_OUTPUTS}
-    COMMAND npm run rollup:cmake -- "Configuration:${CMAKE_BUILD_CONFIGURATION},ProductVersion:${CMAKE_PRODUCT_VERSION},ContinuousIntegrationBuild:${CMAKE_CONTINUOUS_INTEGRATION_BUILD},staticLibDestination:${STATIC_LIB_DESTINATION}"
+    COMMAND npm run rollup:cmake -- "Configuration:${CMAKE_BUILD_LIBRARIES_CONFIGURATION},ProductVersion:${CMAKE_PRODUCT_VERSION},ContinuousIntegrationBuild:${CMAKE_CONTINUOUS_INTEGRATION_BUILD},staticLibDestination:${STATIC_LIB_DESTINATION}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
     COMMENT "Running 'npm run rollup' to generate JavaScript bundles"
     DEPENDS ${ROLLUP_TS_SOURCES}

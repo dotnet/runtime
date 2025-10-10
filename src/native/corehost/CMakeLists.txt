@@ -101,9 +101,9 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
     add_subdirectory(test)
 else()
     set(STATIC_LIB_DESTINATION
-        ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_CONFIGURATION}-wasm/)
+        ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_LIBRARIES_CONFIGURATION}-wasm)
     set(STATIC_CLR_DESTINATION
-        ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_CONFIGURATION}/)
+        ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_LIBRARIES_CONFIGURATION}/)
 
     add_subdirectory(hostmisc)
     add_subdirectory(browserhost)
