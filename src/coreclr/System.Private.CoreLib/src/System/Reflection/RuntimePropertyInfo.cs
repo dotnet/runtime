@@ -186,10 +186,11 @@ namespace System.Reflection
             ReferenceEquals(this, obj) ||
             (MetadataUpdater.IsSupported && obj is RuntimePropertyInfo rpi &&
                 rpi.m_token == m_token &&
+                ReferenceEquals(rpi.m_declaringType, m_declaringType) &&
                 ReferenceEquals(rpi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_token, m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
+            HashCode.Combine(m_token, m_declaringType.GetUnderlyingNativeHandle(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
         #endregion
 
         #region PropertyInfo Overrides
