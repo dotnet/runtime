@@ -145,14 +145,9 @@ namespace System.Formats.Tar.Tests
             else
             {
                 // increment the digit at position 150, wrapping around if necessary
-                if (tarData[150] == (byte)'7')
-                {
-                    tarData[150] = (byte)'0';
-                }
-                else
-                {
-                    tarData[150]++;
-                }
+                byte digit = (byte)(tarData[150] - (byte)'0');
+                digit = (byte)((digit + 1) % 8);
+                tarData[150] = (byte)('0' + digit);
             }
 
             // Create a new stream with corrupted data
