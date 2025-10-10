@@ -683,7 +683,7 @@ static void CallPreStub(MethodDesc *pMD)
     if (!pMD->IsPointingToPrestub())
     {
         PCODE entryPoint = pMD->GetTemporaryEntryPoint();
-        if (entryPoint != NULL && !pMD->IsPointingToPrestub())
+        if (entryPoint != (PCODE)NULL && !pMD->IsPointingToPrestub())
         {
             return;
         }
