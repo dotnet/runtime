@@ -22,9 +22,9 @@
 
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"
-#ifdef FEATURE_COMWRAPPERS
-#include "../interop/comwrappers.hpp"
-#endif // FEATURE_COMWRAPPERS
+// #ifdef FEATURE_COMWRAPPERS
+// #include "../interop/comwrappers.hpp"
+// #endif // FEATURE_COMWRAPPERS
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"

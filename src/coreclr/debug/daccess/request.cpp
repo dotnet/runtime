@@ -4364,8 +4364,10 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return (qiAddress == GFN_TADDR(ManagedObjectWrapper_QueryInterface)
-        || qiAddress == GFN_TADDR(TrackerTarget_QueryInterface));
+    PTR_QueryInterfaceMethod methods = dac_cast<PTR_QueryInterfaceMethod>(InteropLib::ABI::g_knownQueryInterfaceImplementations);
+
+    return (qiAddress == (TADDR)methods[0]
+        || qiAddress == (TADDR)methods[1]);
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)

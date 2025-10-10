@@ -40,6 +40,7 @@ Contracts used:
 | --- |
 | `Object` |
 | `RuntimeTypeSystem` |
+| `Loader` |
 
 
 ``` csharp
@@ -97,7 +98,10 @@ public long GetMOWReferenceCount(TargetPointer mow)
 
 public bool IsComWrappersRCW(TargetPointer rcw)
 {
-    // get method table from rcw using Object contract GetMethodTableAddress
-    // and ensure it matches the MT of NativeObjectWrapperClass in the CoreLibBinder with RuntimeTypeSystem.GetPrimitiveType 
+    // Get method table from rcw using Object contract GetMethodTableAddress
+    // Then look up the name and namespace of the native object wrapper class in corelibbinder using RuntimeTypeSystem.GetNameSpaceAndNameFromBinder
+    // Find module from the system assembly
+    // Then use RuntimeTypeSystem contract to look up type handle by name/namespace/module
+    // Then compare the rcw method table with the method table found by name/namespace/module
 }
 ```

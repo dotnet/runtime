@@ -79,6 +79,7 @@ IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
+TargetPointer GetSystemAssembly();
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
@@ -132,6 +133,7 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
@@ -615,7 +617,14 @@ TargetPointer GetGlobalLoaderAllocator()
 {
     TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
     TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
-    return target.ReadPointer(systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */);
+    return systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */;
+}
+
+TargetPointer GetSystemAssembly()
+{
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    return target.ReadPointer(systemDomain + /* SystemDomain::SystemAssembly offset */);
 }
 
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
