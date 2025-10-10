@@ -820,7 +820,7 @@ namespace System.IO.Compression.Tests
         [MemberData(nameof(EmptyFiles))]
         public async Task ReadArchive_WithEmptyDeflatedFile(byte[] fileBytes, bool async)
         {
-            using (var testStream = new MemoryStream(fileBytes))
+            using (var testStream = new MemoryStream(fileBytes.ToArray()))
             {
                 const string ExpectedFileName = "xl/customProperty2.bin";
 
@@ -834,7 +834,7 @@ namespace System.IO.Compression.Tests
                 byte[] fileContent = testStream.ToArray();
 
                 // compression method should not have changed
-                Assert.Equal(firstEntryCompressionMethod, fileBytes[8]);
+                Assert.Equal(firstEntryCompressionMethod, fileContent[8]);
 
                 testStream.Seek(0, SeekOrigin.Begin);
                 // second attempt: open archive with zero-length file that is compressed (Deflate = 0x8)
