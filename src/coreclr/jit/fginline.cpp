@@ -342,7 +342,10 @@ private:
         inlineInfo.setupStatements.InsertIntoBlockBefore(callBlock, callStmt);
 
         GenTree* substExpr = call->gtInlineCandidateInfo->result.substExpr;
-        if ((substExpr != nullptr) && substExpr->IsValue() && m_compiler->gtComplexityExceeds(substExpr, 16))
+        auto     getComplexity = [](GenTree* tree) {
+            return 1;
+        };
+        if ((substExpr != nullptr) && substExpr->IsValue() && m_compiler->gtComplexityExceeds(substExpr, 16, getComplexity))
         {
             JITDUMP("Substitution expression is complex so spilling it to its own statement\n");
             unsigned lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("Complex inlinee substitution expression"));
@@ -439,7 +442,7 @@ private:
         // Insert inlinee's blocks into inliner's block list.
         assert(callBlock->KindIs(BBJ_ALWAYS));
         assert(callBlock->TargetIs(continueBlock));
-        m_compiler->fgRedirectTargetEdge(callBlock, m_compiler->InlineeCompiler->fgFirstBB);
+        m_compiler->fgRedirectEdge(callBlock->TargetEdgeRef(), m_compiler->InlineeCompiler->fgFirstBB);
 
         callBlock->SetNext(m_compiler->InlineeCompiler->fgFirstBB);
         m_compiler->InlineeCompiler->fgFirstBB->SetPrev(callBlock);
@@ -490,7 +493,8 @@ private:
         GenTree* call = *use;
         *use = inlineInfo.inlineCandidateInfo->result.substExpr;
 
-        if (m_compiler->gtComplexityExceeds(m_statement->GetRootNode(), 16))
+        auto getComplexity = [](GenTree* tree) { return 1; };
+        if (m_compiler->gtComplexityExceeds(m_statement->GetRootNode(), 16, getComplexity))
         {
             *use = call;
             return false;
@@ -541,8 +545,7 @@ private:
         noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
         noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
-        // Todo: we may want to exclude other flags here.
-        block->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
+        block->SetFlags(inlineeBlockFlags);
 
         inlineInfo.teardownStatements.InsertIntoBlockBefore(block, stmt);
         return true;
@@ -739,11 +742,11 @@ private:
                     {
                         Statement* newStmt = nullptr;
                         GenTree**  callUse = nullptr;
-                        if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse, true))
+                        if (m_compiler->gtSplitTree(m_block, m_statement, call, &newStmt, &callUse, true, true))
                         {
-                            if (m_firstNewStmt == nullptr)
+                            if (m_nextStatement == nullptr)
                             {
-                                m_firstNewStmt = newStmt;
+                                m_nextStatement = newStmt;
                             }
                         }
 
@@ -752,8 +755,8 @@ private:
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
                             Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                            if (m_firstNewStmt == nullptr)
+                            m_compiler->fgInsertStmtBefore(m_block, m_statement, stmt);
+                            if (m_statement == nullptr)
                             {
                                 m_firstNewStmt = stmt;
                             }

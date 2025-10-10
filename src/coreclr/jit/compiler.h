@@ -6495,6 +6495,9 @@ public:
 #endif
 
 public:
+    //                  Create a new temporary variable to hold the result of *ppTree,
+    //                  and transform the graph accordingly.
+    GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
     Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
@@ -6509,9 +6512,6 @@ public:
 private:
     void fgInsertStmtListAtEnd(BasicBlock* block, Statement* stmtList);
     void fgInsertStmtListBefore(BasicBlock* block, Statement* stmtBefore, Statement* stmtList);
-    //                  Create a new temporary variable to hold the result of *ppTree,
-    //                  and transform the graph accordingly.
-    GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
 
 private:
     Statement* fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAfter, Statement* stmtList);

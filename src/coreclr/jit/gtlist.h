@@ -37,6 +37,7 @@ GTNODE(ASYNC_CONTINUATION, GenTree           ,0,0,GTK_LEAF)            // Access
 GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-target
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
+GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
