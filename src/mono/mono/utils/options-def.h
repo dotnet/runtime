@@ -183,6 +183,8 @@ DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx",
 DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")
 #endif
 
+DEFINE_BOOL(compressed_interface_bitmap, "compressed-interface-bitmap", FALSE, "Use compressed bitmap for storing implemented interfaces in vtables and classes")
+
 #if defined(TARGET_WASI)
 DEFINE_BOOL_READONLY(llvm_emulate_unwind, "emulate-unwind", TRUE, "")
 #else

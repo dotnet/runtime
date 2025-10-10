@@ -338,8 +338,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(2, true, false)]
         [InlineData(2, false, false)]
         [InlineData(4, false, false)]
-        [InlineData(8, false, false)]
-        [InlineData(16, false, false)] // This results a reader\writer depth of 324 which currently works on all test platforms.
+        [InlineData(8, false, false)] // Greater depths have caused failures on some test machine configurations due to memory constraints
         public async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
         {
             const int ListLength = 10;
