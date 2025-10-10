@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
 using System.Threading;
+using Internal;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -333,7 +334,12 @@ namespace Microsoft.Win32.SafeHandles
                     // and for regular files (most common case)
                     // avoid one extra sys call for determining whether file can be seeked
                     _canSeek = NullableBool.True;
-                    Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+                    long result = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR);
+                    if (result < 0)
+                    {
+                        Console.WriteLine("LSeek failed with error: " + Interop.Sys.GetErrNo());
+                    }
+                    Debug.Assert(result >= 0);
                 }
 
                 fileLength = status.Size;
