@@ -78,7 +78,7 @@ By default, packable project (mostly source projects) have APICompat package val
 This also includes _package baseline validation_ which automatically restores a previously produced package version (from the NuGet feeds) of the project and compares the public API to guard against breaking changes.
 
 When adding a brand new library, package baseline validation needs to be disabled temporarily as there's no previously produced package available yet. This should be done
-by setting the `DisablePackageBaselineValidation` property to false: https://github.com/dotnet/runtime/blob/634641c806b129bd6892e071aece3f4916ea519d/src/libraries/System.Linq.AsyncEnumerable/src/System.Linq.AsyncEnumerable.csproj#L14-L17
+by setting the `DisablePackageBaselineValidation` property to true: https://github.com/dotnet/runtime/blob/634641c806b129bd6892e071aece3f4916ea519d/src/libraries/System.Linq.AsyncEnumerable/src/System.Linq.AsyncEnumerable.csproj#L14-L17
 
 ## TargetFramework conditions
 `TargetFramework` conditions should be avoided in the first PropertyGroup as that causes DesignTimeBuild issues: https://github.com/dotnet/project-system/issues/6143
