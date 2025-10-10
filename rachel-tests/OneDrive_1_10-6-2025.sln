@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asyncRecursiveTest", "asyncRecursiveTest\asyncRecursiveTest.csproj", "{CFB42D5E-EEC7-431D-EE9C-A11E7A420350}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asyncv1Assembly", "asyncv1Assembly\asyncv1Assembly.csproj", "{A9B6E874-A0E1-80B8-371E-98977B9DECCD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFB42D5E-EEC7-431D-EE9C-A11E7A420350}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFB42D5E-EEC7-431D-EE9C-A11E7A420350}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFB42D5E-EEC7-431D-EE9C-A11E7A420350}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFB42D5E-EEC7-431D-EE9C-A11E7A420350}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9B6E874-A0E1-80B8-371E-98977B9DECCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9B6E874-A0E1-80B8-371E-98977B9DECCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9B6E874-A0E1-80B8-371E-98977B9DECCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9B6E874-A0E1-80B8-371E-98977B9DECCD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B3AF8E94-B59F-4F8C-9578-AD0780CBAAFD}
+	EndGlobalSection
+EndGlobal
