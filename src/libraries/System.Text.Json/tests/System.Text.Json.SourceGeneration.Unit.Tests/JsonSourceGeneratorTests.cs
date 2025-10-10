@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
@@ -12,7 +13,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
-    public class GeneratorTests
+    public class GeneratorTests(ITestOutputHelper logger)
     {
         [Fact]
         public void TypeDiscoveryPrimitivePOCO()
@@ -54,7 +55,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
@@ -109,7 +110,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(6, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
@@ -169,7 +170,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(6, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
@@ -271,7 +272,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
@@ -312,7 +313,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::MyType");
@@ -362,7 +363,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
@@ -396,7 +397,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::ReferencedAssembly.LibRecord");
@@ -435,7 +436,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
@@ -486,7 +487,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             // Should find the generated type.
             Assert.Equal(2, result.AllGeneratedTypes.Count());
@@ -495,7 +496,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void NoWarningsDueToObsoleteMembers()
+        public void NoWarningsDueToObsoleteMembers()
         {
             string source = """
                 using System;
@@ -518,41 +519,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
-        public static void NoWarningsDueToExperimentalMembers()
-        {
-            string source = """
-                using System;
-                using System.Diagnostics.CodeAnalysis;
-                using System.Text.Json.Serialization;
-
-                namespace Test
-                {
-                #pragma warning disable TEST001
-                    [JsonSerializable(typeof(ClassWithExperimental))]
-                #pragma warning restore TEST001
-                    public partial class JsonContext : JsonSerializerContext { }
-
-                    public class ClassWithExperimental
-                    {
-                        [Experimental("TEST001")]
-                        public bool Test { get; set; }
-
-                        [Experimental("TEST002")]
-                        public bool Test2 { get; set; }
-                    }
-                }
-                """;
-
-            Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
-        }
-
-        [Fact]
-        public static void NoErrorsWhenUsingReservedCSharpKeywords()
+        public void NoErrorsWhenUsingReservedCSharpKeywords()
         {
             string source = """
                 using System.Text.Json.Serialization;
@@ -571,7 +542,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
@@ -594,7 +565,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             // Should find the generated type.
             Assert.Equal(3, result.AllGeneratedTypes.Count());
@@ -604,7 +575,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public static void NoErrorsWhenUsingTypesWithMultipleEqualsOperators()
+        public void NoErrorsWhenUsingTypesWithMultipleEqualsOperators()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/103515
             string source = """
@@ -634,11 +605,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
-        public static void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
+        public void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
         {
             string source = """
                 using System.Text.Json.Serialization;
@@ -657,7 +628,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
@@ -708,7 +679,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::Test.Sample");
@@ -754,7 +725,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::System.Collections.Generic.Dictionary<string, string>");
@@ -801,7 +772,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(languageVersion));
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
@@ -832,7 +803,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
 #if ROSLYN4_4_OR_GREATER && NET
@@ -858,7 +829,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp11));
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 #endif
 
@@ -886,7 +857,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
         [Fact]
@@ -911,7 +882,88 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            CompilationHelper.RunJsonSourceGenerator(compilation);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
+
+#if ROSLYN4_4_OR_GREATER && NET
+        [Fact]
+        public void PropertyWithExperimentalType_JsonIgnore_CompilesSuccessfully()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP001")]
+                public class ExperimentalType
+                {
+                    public int Value { get; set; }
+                }
+
+                public class MyPoco
+                {
+                    [JsonIgnore]
+                #pragma warning disable EXP001
+                    public ExperimentalType ExpType { get; set; }
+                #pragma warning restore EXP001
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
+        public void PocoWithExperimentalProperty_JsonIgnore_CompilesSuccessfully()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    [Experimental("EXP001"), JsonIgnore]
+                    public int ExperimentalProperty { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
+        public void PocoWithExperimentalProperty_NoJsonIgnore_EmitsDiagnostic()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    [Experimental("EXP001")]
+                    public int ExperimentalProperty { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            var result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            Assert.NotEmpty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP001"));
+        }
+#endif
     }
 }

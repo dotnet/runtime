@@ -356,7 +356,7 @@ namespace ILCompiler.IBC
                         foundType = (EcmaType)m.GetType(typeNamespace, typeName, NotFoundBehavior.ReturnNull);
                         if (foundType != null)
                         {
-                            externalModule = foundType.EcmaModule;
+                            externalModule = foundType.Module;
                             break;
                         }
                     }
@@ -403,7 +403,7 @@ namespace ILCompiler.IBC
 
             var ecmaType = (EcmaType)methodMetadataType.GetTypeDefinition();
 
-            EcmaModule ecmaModule = ecmaType.EcmaModule;
+            EcmaModule ecmaModule = ecmaType.Module;
             var lookupClassTokenTypeDef = (int)LookupIbcTypeToken(ref ecmaModule, methodEntry.ClassToken, blobs);
             if (lookupClassTokenTypeDef != ecmaType.MetadataReader.GetToken(ecmaType.Handle))
                 throw new Exception($"Ibc MethodToken {ibcToken:x} incosistent classToken '{ibcToken:x}' with specified exact type '{ecmaType}'");
@@ -475,9 +475,9 @@ namespace ILCompiler.IBC
                     return context.GetWellKnownType(WellKnownType.Boolean);
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return context.GetWellKnownType(WellKnownType.Char);
-                case CorElementType.ELEMENT_TYPE_I: 
-                    return context.GetWellKnownType(WellKnownType.IntPtr); 
-                case CorElementType.ELEMENT_TYPE_U: 
+                case CorElementType.ELEMENT_TYPE_I:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
+                case CorElementType.ELEMENT_TYPE_U:
                     return context.GetWellKnownType(WellKnownType.UIntPtr);
                 case CorElementType.ELEMENT_TYPE_I1:
                     return context.GetWellKnownType(WellKnownType.SByte);
@@ -737,7 +737,7 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                EcmaModule ecmaModuleOfMethod = ((EcmaType)methodMetadataType.GetTypeDefinition()).EcmaModule;
+                EcmaModule ecmaModuleOfMethod = ((EcmaType)methodMetadataType.GetTypeDefinition()).Module;
                 MethodDesc ecmaMethod = ecmaModuleOfMethod.GetMethod(MetadataTokens.EntityHandle((int)methodToken));
                 MethodDesc methodOnType = methodType.FindMethodOnTypeWithMatchingTypicalMethod(ecmaMethod);
 

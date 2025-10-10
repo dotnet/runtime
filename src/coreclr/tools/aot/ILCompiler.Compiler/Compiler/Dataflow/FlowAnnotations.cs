@@ -282,7 +282,7 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
-            } while ((metadataType = metadataType.MetadataBaseType) != null);
+            } while ((metadataType = metadataType.BaseType) != null);
 
             return false;
         }

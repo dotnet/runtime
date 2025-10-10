@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 // The chain should have 3 members
                 Assert.Equal(3, chain.ChainElements.Count);
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Source chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
                 Assert.Equal(3, chain.ChainElements.Count);
 
                 using (var chainHolder2 = new ChainHolder(chain.ChainContext))
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
-                    Assert.True(valid, "Cloned chain built validly");
+                    Assert.True(valid, $"Chain built validly but failed with '{chain2.AllStatusFlags()}'.");
                 }
             }
         }
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 valid = chain.Build(sampleCert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 Assert.Equal(1, chain.ChainElements.Count);
                 chainHolder.DisposeChainElements();
@@ -539,7 +539,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(cert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
             }
         }
 
@@ -588,7 +588,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(cert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
             }
         }
 

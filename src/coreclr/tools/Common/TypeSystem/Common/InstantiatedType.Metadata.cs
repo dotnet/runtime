@@ -8,16 +8,6 @@ namespace Internal.TypeSystem
 {
     public sealed partial class InstantiatedType : MetadataType
     {
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
         // Properties that are passed through from the type definition
         public override ClassLayoutMetadata GetClassLayout()
         {

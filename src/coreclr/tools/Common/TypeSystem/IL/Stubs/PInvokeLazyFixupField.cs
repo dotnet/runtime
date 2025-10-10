@@ -15,11 +15,11 @@ namespace Internal.IL.Stubs
     /// </summary>
     public sealed partial class PInvokeLazyFixupField : FieldDesc
     {
-        private readonly DefType _owningType;
+        private readonly MetadataType _owningType;
         private readonly MethodDesc _targetMethod;
         private readonly MethodSignature _nativeSignature;
 
-        public PInvokeLazyFixupField(DefType owningType, MethodDesc targetMethod, MethodSignature nativeSignature)
+        public PInvokeLazyFixupField(MetadataType owningType, MethodDesc targetMethod, MethodSignature nativeSignature)
         {
             Debug.Assert(targetMethod.IsPInvoke);
             _owningType = owningType;
@@ -111,7 +111,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override DefType OwningType
+        public override MetadataType OwningType
         {
             get
             {

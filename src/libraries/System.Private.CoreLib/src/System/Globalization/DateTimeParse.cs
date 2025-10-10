@@ -4457,16 +4457,14 @@ namespace System
                 case '.':
                     if (!str.Match(ch))
                     {
-                        if (format.GetNext())
+                        // If we encounter the pattern ".F", and the dot is not present, it is an optional
+                        // second fraction and we can skip this format.
+                        if (format.Match('F'))
                         {
-                            // If we encounter the pattern ".F", and the dot is not present, it is an optional
-                            // second fraction and we can skip this format.
-                            if (format.Match('F'))
-                            {
-                                format.GetRepeatCount();
-                                break;
-                            }
+                            format.GetRepeatCount();
+                            break;
                         }
+
                         result.SetBadDateTimeFailure();
                         return false;
                     }

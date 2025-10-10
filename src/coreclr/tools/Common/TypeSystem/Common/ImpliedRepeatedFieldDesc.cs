@@ -9,14 +9,14 @@ namespace Internal.TypeSystem
     {
         private readonly FieldDesc _underlyingFieldDesc;
 
-        public ImpliedRepeatedFieldDesc(DefType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
+        public ImpliedRepeatedFieldDesc(MetadataType owningType, FieldDesc underlyingFieldDesc, int fieldIndex)
         {
             OwningType = owningType;
             _underlyingFieldDesc = underlyingFieldDesc;
             FieldIndex = fieldIndex;
         }
 
-        public override DefType OwningType { get; }
+        public override MetadataType OwningType { get; }
 
         public override TypeDesc FieldType => _underlyingFieldDesc.FieldType;
 

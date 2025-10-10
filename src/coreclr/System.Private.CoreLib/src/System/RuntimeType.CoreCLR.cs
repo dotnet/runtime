@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -605,6 +607,13 @@ namespace System
                                 continue;
                             #endregion
 
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
                             bool isStatic = (methodAttributes & MethodAttributes.Static) != 0;
@@ -615,7 +624,7 @@ namespace System
                             RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                             RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                            instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                             list.Add(runtimeMethodInfo);
                             #endregion
@@ -685,6 +694,14 @@ namespace System
 
                                 #endregion
 
+                                // Filter out deleted method before setting override state, so that a deleted override in a subclass does not hide override in an ancestor.
+                                if (MetadataUpdater.IsSupported &&
+                                    RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                    RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                {
+                                    continue;
+                                }
+
                                 #region Continue if this is a virtual and is already overridden
                                 if (isVirtual)
                                 {
@@ -719,7 +736,7 @@ namespace System
                                 RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                                 RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                    instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                                 list.Add(runtimeMethodInfo);
                                 #endregion
@@ -763,6 +780,13 @@ namespace System
                         Debug.Assert(
                             (methodAttributes & MethodAttributes.Abstract) == 0 &&
                             (methodAttributes & MethodAttributes.Virtual) == 0);
+
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                        {
+                            continue;
+                        }
 
                         #region Calculate Binding Flags
                         bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
@@ -875,6 +899,13 @@ namespace System
                                 continue;
                         }
 
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeFieldHandle.GetToken(handle)))
+                        {
+                            continue;
+                        }
+
                         #region Calculate Binding Flags
                         bool isPublic = fieldAccess == FieldAttributes.Public;
                         bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -885,8 +916,7 @@ namespace System
                         if (needsStaticFieldForGeneric && isStatic)
                             runtimeFieldHandle = RuntimeFieldHandle.GetStaticFieldForGenericType(runtimeFieldHandle, declaringType);
 
-                        RuntimeFieldInfo runtimeFieldInfo =
-                            new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
+                        var runtimeFieldInfo = new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
 
                         list.Add(runtimeFieldInfo);
                     }
@@ -903,8 +933,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -936,6 +966,13 @@ namespace System
                                     continue;
                             }
 
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkField))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = fieldAccess == FieldAttributes.Public;
                             bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -948,7 +985,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private void AddSpecialInterface(
@@ -1144,8 +1181,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1162,6 +1199,13 @@ namespace System
 
                             if (!filter.Match(name))
                                 continue;
+                        }
+
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkEvent))
+                        {
+                            continue;
                         }
 
                         RuntimeEventInfo eventInfo = new RuntimeEventInfo(
@@ -1189,7 +1233,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1249,8 +1293,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1272,6 +1316,14 @@ namespace System
 
                             if (!filter.Match(name))
                                 continue;
+                        }
+
+                        // Filter out deleted property before updating usedSlots, so that a deleted override in a subclass does not hide override in an ancestor.
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkProperty))
+                        {
+                            continue;
                         }
 
                         RuntimePropertyInfo propertyInfo =
@@ -1363,7 +1415,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
                 #endregion
 
@@ -1456,6 +1508,7 @@ namespace System
 
                 return existingCache;
             }
+
             #endregion
 
             #region Internal Members

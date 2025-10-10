@@ -66,7 +66,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override TypeDesc OwningType
+        public override EcmaType OwningType
         {
             get
             {
@@ -98,7 +98,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _type.EcmaModule;
+                return _type.Module;
             }
         }
 
@@ -517,7 +517,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
                 CustomAttributeValue<TypeDesc> decoded = attribute.DecodeValue(
-                    new CustomAttributeTypeProvider(_type.EcmaModule));
+                    new CustomAttributeTypeProvider(_type.Module));
 
                 if (decoded.FixedArguments.Length != 1 || !(decoded.FixedArguments[0].Value is bool))
                     ThrowHelper.ThrowBadImageFormatException();
@@ -581,5 +581,9 @@ namespace Internal.TypeSystem.Ecma
             }
             return null;
         }
+
+        public override EcmaMethod GetMethodDefinition() => this;
+
+        public override EcmaMethod GetTypicalMethodDefinition() => this;
     }
 }

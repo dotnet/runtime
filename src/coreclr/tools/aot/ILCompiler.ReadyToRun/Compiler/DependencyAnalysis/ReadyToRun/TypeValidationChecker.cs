@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (type is EcmaType ecmaType)
                     _tasksThatMustFinish.Enqueue(ValidateType(this, ecmaType));
             }
-            _tasksThatMustFinish.Enqueue(ValidateType(this, (EcmaType)module.GetGlobalModuleType()));
+            _tasksThatMustFinish.Enqueue(ValidateType(this, module.GetGlobalModuleType()));
 
             bool failAtEnd = false;
             while (_tasksThatMustFinish.TryDequeue(out var taskToComplete))
@@ -151,7 +151,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Per method rules
                 foreach (var methodDesc in type.GetMethods())
                 {
-                    var method = (EcmaMethod)methodDesc;
+                    var method = methodDesc;
                     var methodDef = method.MetadataReader.GetMethodDefinition(method.Handle);
                     // Validate that the validateTokenSig algorithm on all methods defined on the type
                     // The validateTokenSig algorithm simply validates the phyical structure of the signature. Getting a MethodSignature object is a more complete check
@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                     }
                     // validate that the global class cannot have instance methods
-                    if (type.EcmaModule.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
+                    if (type.Module.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
                     {
                         AddTypeValidationError(type, $"'{method}' is an instance method defined on the global <module> type");
                         return false;
@@ -310,8 +310,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (var methodImplHandle in typeDef.GetMethodImplementations())
                 {
                     var methodImpl = type.MetadataReader.GetMethodImplementation(methodImplHandle);
-                    var methodBody = type.EcmaModule.GetMethod(methodImpl.MethodBody);
-                    var methodDecl = type.EcmaModule.GetMethod(methodImpl.MethodDeclaration);
+                    var methodBody = type.Module.GetMethod(methodImpl.MethodBody);
+                    var methodDecl = type.Module.GetMethod(methodImpl.MethodDeclaration);
 
                     // Validate that all MethodImpls actually match signatures closely enough
                     if (!methodBody.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(methodDecl.Signature.ApplySubstitution(type.Instantiation)))

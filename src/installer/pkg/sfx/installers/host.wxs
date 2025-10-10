@@ -39,20 +39,22 @@
       </Component>
 
       <?if $(var.Platform)~=x64 ?>
-        <!-- For x64 installer, only add the sharedhost key when actually on native architecture. -->
+        <!-- For x64 installer, only add to PATH when actually on native architecture. -->
         <Component Id="cmpPath" Directory="DOTNETHOME" Condition="NOT NON_NATIVE_ARCHITECTURE">
           <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
           <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
             <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
           </RegistryKey>
+          <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
         </Component>
       <?elseif $(var.Platform)~=x86 ?>
-        <!-- For x86 installer, only add the key when not on 64-bit platform. -->
+        <!-- For x86 installer, only add to PATH when not on 64-bit platform. -->
         <Component Id="cmpPath" Directory="DOTNETHOME" Condition="NOT VersionNT64">
           <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
           <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
             <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
           </RegistryKey>
+          <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
         </Component>
       <?else?>
         <Component Id="cmpPath" Directory="DOTNETHOME">
@@ -60,6 +62,7 @@
           <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
             <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
           </RegistryKey>
+          <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
         </Component>
       <?endif?>
 
@@ -72,7 +75,6 @@
         </File>
       </Component>
 
-      <ComponentRef Id="cmpSetPath" />
     </ComponentGroup>
 
     <Property Id="ProductCPU" Value="$(var.Platform)" />
@@ -85,43 +87,6 @@
     <?if $(var.Platform)~=x64 ?>
     <CustomActionRef Id="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" />
     <?endif?>
-  </Fragment>
-
-  <Fragment>
-    <Property Id="DISABLE_SETTING_HOST_PATH" Secure="yes">
-      <RegistrySearch Id="DisableSettingHostPathSearch" Root="HKLM" Key="SOFTWARE\Microsoft\.NET" Type="raw" Name="DisableSettingHostPath" />
-    </Property>
-
-    <?if $(var.Platform)~=x64 ?>
-      <Component Id="cmpSetPath" Guid="{0B910ED8-0877-473D-8658-647382324433}" Directory="DOTNETHOME" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot; AND NOT NON_NATIVE_ARCHITECTURE">
-        <CreateFolder />
-        <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
-      </Component>
-    <?elseif $(var.Platform)~=x86 ?>
-      <Component Id="cmpSetPath" Guid="{0B910ED8-0877-473D-8658-647382324433}" Directory="DOTNETHOME" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot; AND NOT VersionNT64">
-        <CreateFolder />
-        <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
-      </Component>
-    <?else?>
-      <Component Id="cmpSetPath" Guid="{0B910ED8-0877-473D-8658-647382324433}" Directory="DOTNETHOME">
-        <CreateFolder />
-        <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
-      </Component>
-    <?endif?>
-
-    <util:BroadcastEnvironmentChange Action="set" Sequence="afterInstallFinalize" />
-
-    <InstallExecuteSequence>
-      <?if $(var.Platform)~=x64 ?>
-        <Custom Action="override Wix4BroadcastEnvironmentChange_X64" After="InstallFinalize" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot;"/>
-      <?elseif $(var.Platform)~=x86 ?>
-        <Custom Action="override Wix4BroadcastEnvironmentChange_X86" After="InstallFinalize" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot;"/>
-      <?elseif $(var.Platform)~=arm64 ?>
-        <Custom Action="override Wix4BroadcastEnvironmentChange_A64" After="InstallFinalize" Condition="DISABLE_SETTING_HOST_PATH &lt;&gt; &quot;#1&quot;"/>
-      <?else?>
-        <?error Unknown platform, $(var.Platform) ?>
-      <?endif?>
-    </InstallExecuteSequence>
   </Fragment>
   
   <Fragment>

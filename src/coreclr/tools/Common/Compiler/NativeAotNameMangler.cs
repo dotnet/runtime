@@ -170,7 +170,7 @@ namespace ILCompiler
         {
             if (type is EcmaType ecmaType)
             {
-                string assemblyName = ((EcmaAssembly)ecmaType.EcmaModule).GetName().Name;
+                string assemblyName = ((EcmaAssembly)ecmaType.Module).GetName().Name;
                 bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
 
                 // Abbreviate System.Private to S.P. This might conflict with user defined assembly names,
@@ -190,7 +190,7 @@ namespace ILCompiler
 
                     if (!_mangledTypeNames.ContainsKey(type))
                     {
-                        foreach (MetadataType t in ecmaType.EcmaModule.GetAllTypes())
+                        foreach (MetadataType t in ecmaType.Module.GetAllTypes())
                         {
                             string name = t.GetFullName();
 
