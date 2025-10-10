@@ -211,7 +211,7 @@ namespace Internal.IL
         {
             int _maxStack;
             bool _isInitLocals;
-            MethodDesc _owningMethod;
+            EcmaMethod _owningMethod;
             ILExceptionRegion[] _exceptionRegions;
             byte[] _ilBytes;
             LocalVariableDefinition[] _locals;
@@ -226,7 +226,7 @@ namespace Internal.IL
                 try
                 {
                     Debug.Assert(mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
-                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)wrappedMethod.OwningMethod).Module;
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = wrappedMethod.OwningMethod.Module;
                     var owningMethodHandle = mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
                     if (!owningMethodHandle.HasValue)
                         return false;
@@ -254,7 +254,7 @@ namespace Internal.IL
 
                     ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
 #if DEBUG
-                    Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod) != null);
+                    Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute(_owningMethod) != null);
 #endif // DEBUG
                 }
                 finally

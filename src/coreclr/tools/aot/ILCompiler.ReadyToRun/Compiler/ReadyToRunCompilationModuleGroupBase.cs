@@ -110,7 +110,7 @@ namespace ILCompiler
 
         public sealed override bool ContainsType(TypeDesc type)
         {
-            return type.GetTypeDefinition() is EcmaType ecmaType && IsModuleInCompilationGroup(ecmaType.EcmaModule);
+            return type.GetTypeDefinition() is EcmaType ecmaType && IsModuleInCompilationGroup(ecmaType.Module);
         }
 
         public bool IsModuleInCompilationGroup(EcmaModule module)
@@ -508,7 +508,7 @@ namespace ILCompiler
         {
             if (!_crossModuleInlining)
                 return false;
-            
+
             return CrossModuleInlineableInternal(method);
         }
 
@@ -568,7 +568,7 @@ namespace ILCompiler
             {
 
                 // Validate that there are no tokens in the IL other than tokens associated with the following
-                // instructions with the 
+                // instructions with the
                 // 1. ldfld, ldflda, and stfld to instance fields of NonVersionable structs and NonVersionable classes
                 // 2. cpobj, initobj, ldobj, stobj, ldelem, ldelema or sizeof, to NonVersionable structures, signature variables, pointers, function pointers, byrefs, classes, or arrays
                 // 3. stelem, to NonVersionable structures
@@ -619,7 +619,7 @@ namespace ILCompiler
                                     return false;
                                 if (field.IsStatic)
                                     return false;
-                                MetadataType owningMetadataType = (MetadataType)field.OwningType;
+                                MetadataType owningMetadataType = field.OwningType;
                                 if (!owningMetadataType.IsNonVersionable())
                                     return false;
                                 break;
@@ -689,7 +689,7 @@ namespace ILCompiler
                             return false;
 
                         default:
-                            // Unless its a opcode known to be permitted with a 
+                            // Unless its a opcode known to be permitted with a
                             ilReader.Skip(opcode);
                             break;
                     }
@@ -768,7 +768,7 @@ namespace ILCompiler
             {
                 return false;
             }
-            
+
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return true;
 

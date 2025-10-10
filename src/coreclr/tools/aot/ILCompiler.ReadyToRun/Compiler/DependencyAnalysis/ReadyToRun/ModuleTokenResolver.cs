@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (_compilationModuleGroup.VersionsWithType(type))
             {
-                return new ModuleToken(type.EcmaModule, (mdToken)MetadataTokens.GetToken(type.Handle));
+                return new ModuleToken(type.Module, (mdToken)MetadataTokens.GetToken(type.Handle));
             }
 
             ModuleToken token;
