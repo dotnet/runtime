@@ -3,10 +3,10 @@
 
 import { Module, dotnetAssert } from "./cross-module";
 import { exit } from "./exit";
-import { createPromiseController } from "./promise-controller";
+import { createPromiseCompletionSource } from "./promise-completion-source";
 
 let CoreCLRInitialized = false;
-const runMainPromiseController = createPromiseController<number>();
+const runMainPromiseCompletionSource = createPromiseCompletionSource<number>();
 
 export function BrowserHost_InitializeCoreCLR():void {
     dotnetAssert.check(!CoreCLRInitialized, "CoreCLR should be initialized just once");
@@ -17,19 +17,19 @@ export function BrowserHost_InitializeCoreCLR():void {
     const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number") as number;
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
-        runMainPromiseController.reject(reason);
+        runMainPromiseCompletionSource.reject(reason);
         exit(res, reason);
     }
 }
 
 export function resolveRunMainPromise(exitCode:number):void {
-    runMainPromiseController.resolve(exitCode);
+    runMainPromiseCompletionSource.resolve(exitCode);
 }
 
 export function rejectRunMainPromise(reason:any):void {
-    runMainPromiseController.reject(reason);
+    runMainPromiseCompletionSource.reject(reason);
 }
 
 export function getRunMainPromise():Promise<number> {
-    return runMainPromiseController.promise;
+    return runMainPromiseCompletionSource.promise;
 }
