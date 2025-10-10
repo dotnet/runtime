@@ -8,7 +8,7 @@ In .NET 11, we plan to start adding support beyond the PE format. We will target
 - Runtime using a composite R2R image that is a Mach-O shared library
    - Linking the object files into a shared library is expected to be handled by the SDK and is not covered in this document.
 
-The tentative high-level design is outlined below. As we implement this support, this document should be updated with mare details and the [ReadyToRun overview](./readytorun-overview.md) and [ReadyToRun format](./readytorun-format.md) should be updated to reflect the changes.
+The tentative high-level design is outlined below. As we implement this support, this document should be updated with more details and the [ReadyToRun overview](./readytorun-overview.md) and [ReadyToRun format](./readytorun-format.md) should be updated to reflect the changes.
 
 ## crossgen2: producing Mach-O object files
 
