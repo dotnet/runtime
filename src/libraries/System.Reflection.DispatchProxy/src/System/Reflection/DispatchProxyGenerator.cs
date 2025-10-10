@@ -45,9 +45,15 @@ namespace System.Reflection
         // It is the first field in the class and the first ctor parameter.
         private const int MethodInfosFieldAndCtorParameterIndex = 0;
 
-        // We group AssemblyBuilders by the ALC of the base type's assembly.
-        // This allows us to granularly unload generated proxy types.
-        private static readonly ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly> s_alcProxyAssemblyMap = new();
+        // We group AssemblyBuilders by two levels of AssemblyLoadContext:
+        // 1. The ALC of the interface type's assembly (outer key).
+        // 2. The ALC of the base type's assembly (inner key).
+        // This ensures that proxy types are generated in the correct scope and that
+        // they can be properly unloaded when either AssemblyLoadContext is collectible.
+        private static readonly ConditionalWeakTable<AssemblyLoadContext, ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly>> s_alcProxyAssemblyMap = new();
+
+        private static ProxyAssembly? s_defaultProxyAssembly;
+
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
         private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
@@ -68,12 +74,33 @@ namespace System.Reflection
             Debug.Assert(baseType != null);
             Debug.Assert(interfaceType != null);
 
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
-            Debug.Assert(alc != null);
+            AssemblyLoadContext? alcBaseType = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
+            Debug.Assert(alcBaseType != null);
 
-            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetOrAdd(alc, static x => new ProxyAssembly(x));
-            GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
-            return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
+            AssemblyLoadContext? alcInterfaceType = AssemblyLoadContext.GetLoadContext(interfaceType.Assembly);
+            Debug.Assert(alcInterfaceType != null);
+
+            ProxyAssembly proxyAssembly;
+            using (alcInterfaceType.EnterContextualReflection())
+            {
+                if (alcBaseType == AssemblyLoadContext.Default && alcInterfaceType == AssemblyLoadContext.Default)
+                {
+                    if (s_defaultProxyAssembly == null)
+                    {
+                        Interlocked.CompareExchange(ref s_defaultProxyAssembly, new ProxyAssembly(AssemblyLoadContext.Default), null);
+                    }
+
+                    proxyAssembly = s_defaultProxyAssembly;
+                }
+                else
+                {
+                    var secondLevelMap = s_alcProxyAssemblyMap.GetValue(alcInterfaceType, static x => new ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly>());
+                    proxyAssembly = secondLevelMap.GetValue(alcBaseType, static x => new ProxyAssembly(x));
+                }
+
+                GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
+                return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
+            }
         }
 
         private sealed class GeneratedTypeInfo
@@ -119,6 +146,8 @@ namespace System.Reflection
             public ProxyAssembly(AssemblyLoadContext alc)
             {
                 string name;
+                var currentAlc = AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.Default;
+
                 if (alc == AssemblyLoadContext.Default)
                 {
                     name = "ProxyBuilder";
@@ -130,7 +159,7 @@ namespace System.Reflection
                 }
 
                 AssemblyBuilderAccess builderAccess =
-                    alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
+                    alc.IsCollectible || currentAlc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
                 _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), builderAccess);
                 _mb = _ab.DefineDynamicModule("testmod");
             }
