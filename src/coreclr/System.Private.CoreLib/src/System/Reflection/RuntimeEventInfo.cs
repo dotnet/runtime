@@ -78,11 +78,10 @@ namespace System.Reflection
             (MetadataUpdater.IsSupported &&
                 obj is RuntimeEventInfo ei &&
                 ei.m_token == m_token &&
-                ReferenceEquals(ei.m_declaringType, m_declaringType) &&
                 ReferenceEquals(ei.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_token, m_declaringType.GetUnderlyingNativeHandle(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
+            HashCode.Combine(m_token, m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
         #endregion
 
         #region ICustomAttributeProvider
