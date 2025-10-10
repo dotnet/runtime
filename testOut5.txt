@@ -1,0 +1,9 @@
+  Determining projects to restore...
+  Tool 'coverlet.console' (version '6.0.4') was restored. Available commands: coverlet
+  Tool 'dotnet-reportgenerator-globaltool' (version '5.4.3') was restored. Available commands: reportgenerator
+  Tool 'microsoft.dotnet.xharness.cli' (version '10.0.0-prerelease.25475.1') was restored. Available commands: xharness
+  Tool 'microsoft.visualstudio.slngen.tool' (version '12.0.15') was restored. Available commands: slngen
+  
+  Restore was successful.
+  All projects are up-to-date for restore.
+  Determining projects to restore...
