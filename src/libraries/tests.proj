@@ -36,6 +36,11 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'osx' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'x64')">
+    <!-- https://github.com/dotnet/dnceng/issues/3008 - osx Helix queue doesn't have OpenSSL -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Samples which are too complex for CI -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
