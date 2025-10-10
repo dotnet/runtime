@@ -4,6 +4,7 @@
 import { Module, dotnetAssert } from "./cross-module";
 import { exit } from "./exit";
 import { createPromiseController } from "./promise-controller";
+import { getLoaderConfig } from "./config";
 
 let CoreCLRInitialized = false;
 const runMainPromiseController = createPromiseController<number>();
@@ -12,9 +13,15 @@ export function BrowserHost_InitializeCoreCLR():void {
     dotnetAssert.check(!CoreCLRInitialized, "CoreCLR should be initialized just once");
     CoreCLRInitialized = true;
 
-    // int BrowserHost_InitializeCoreCLR(void)
-    // WASM-TODO: add more formal ccall wrapper like cwraps in Mono
-    const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number") as number;
+    // int BrowserHost_InitializeCoreCLR(const char* tpaArg, const char* appPathArg, const char* searchPathsArg)
+    const config = getLoaderConfig();
+    const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
+    const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
+    const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+    const appPath = config.virtualWorkingDirectory;
+    const searchPaths = config.virtualWorkingDirectory;
+
+    const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number", ["string", "string", "string"], [tpa, appPath, searchPaths]) as number;
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);
