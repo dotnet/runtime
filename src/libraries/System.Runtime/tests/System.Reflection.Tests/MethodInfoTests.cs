@@ -363,6 +363,7 @@ namespace System.Reflection.Tests
                 }
             }
 
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
             Assert.Equal(0, numberOfCollisions);
         }
 
