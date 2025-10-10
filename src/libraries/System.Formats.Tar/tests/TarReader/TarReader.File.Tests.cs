@@ -291,11 +291,20 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void GarbageEntryChecksumZeroReturnNull()
+        public void GarbageEntryChecksumZeroThrowsInvalidDataException()
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
             using TarReader reader = new TarReader(archiveStream);
-            Assert.Null(reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void InvalidChecksum_ThrowsInvalidDataException()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "node-tar", "bad-cksum");
+            using TarReader reader = new TarReader(archiveStream);
+            reader.GetNextEntry(); // first entry is okay
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
 
         [Theory]
