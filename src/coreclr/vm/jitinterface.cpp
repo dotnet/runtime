@@ -14822,7 +14822,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 #endif // FEATURE_TIERED_COMPILATION
 
     char name[256];
-    int numWritten = sprintf_s(name, ARRAY_SIZE(name), "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
+    int numWritten = _snprintf_s(name, ARRAY_SIZE(name), _TRUNCATE, "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
     if (numWritten != -1)
     {
         AllocMemTracker amTracker;
