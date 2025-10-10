@@ -3632,17 +3632,10 @@ namespace System
         /// <param name="comparer">An optional comparer to use for element equality checks.</param>
         /// <typeparam name="T">The type of elements in the span and value.</typeparam>
         /// <returns><see langword="true"/> if <paramref name="span"/> ends with <paramref name="value"/>; otherwise, <see langword="false"/>.</returns>
-        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null)
-        {
-            comparer ??= EqualityComparer<T>.Default;
-            if (value.Length > span.Length) return false;
-            int offset = span.Length - value.Length;
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (!comparer.Equals(span[offset + i], value[i])) return false;
-            }
-            return true;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
+            value.Length <= span.Length &&
+            SequenceEqual(span.Slice(span.Length - value.Length), value, comparer);
 
         /// <summary>
         /// Determines whether the specified value appears at the start of the span.
