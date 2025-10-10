@@ -1411,7 +1411,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
         }
         pCode = (PCODE)pUMEntryThunk->GetCode();
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     GCPROTECT_END();
