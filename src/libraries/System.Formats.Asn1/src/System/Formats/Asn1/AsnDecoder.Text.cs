@@ -444,7 +444,7 @@ namespace System.Formats.Asn1
             bool copied;
             try
             {
-                copied = encoding.TryGetChars(source, destination, out charsWritten);
+                copied = encoding.TryGetChars(contents, destination, out charsWritten);
             }
             catch (DecoderFallbackException e)
             {
