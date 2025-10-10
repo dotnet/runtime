@@ -86,19 +86,23 @@ namespace System.IO.Compression
                 BufferSize = ZipFile.FileStreamBufferSize
             };
 
-            const UnixFileMode OwnershipPermissions =
-                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
-
             // Restore Unix permissions.
             // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
             // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
             // with previous versions of .NET don't include permissions.
-            UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
-            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows())
+            if (!OperatingSystem.IsWindows() && source.CreatedOnUnix)
             {
-                fileStreamOptions.UnixCreateMode = mode;
+                const UnixFileMode OwnershipPermissions =
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+
+                UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
+
+                if (mode != UnixFileMode.None)
+                {
+                    fileStreamOptions.UnixCreateMode = mode;
+                }
             }
         }
 
