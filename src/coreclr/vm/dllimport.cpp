@@ -5651,7 +5651,7 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
         CONSISTENCY_CHECK(pNMD->IsVarArgs());
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        _ASSERTE(false && "Vararg P/Invoke is not supported with portable entrypoints");
+        COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         //
         // varargs goes through vararg PInvoke stub

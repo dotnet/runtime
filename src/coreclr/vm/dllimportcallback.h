@@ -248,7 +248,7 @@ public:
         PCODE entryPoint = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
 
         bool nullEntryPoint;
-#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+#if defined(FEATURE_INTERPRETER)
         // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
         // unmanaged-to-managed invocation in order to populate the TLS variable every time.
         auto stubKind = RangeSectionStubManager::GetStubKind(entryPoint);
@@ -262,10 +262,10 @@ public:
             }
         }
         nullEntryPoint = entryPoint == (PCODE)0;
-#else // !FEATURE_INTERPRETER || FEATURE_PORTABLE_ENTRYPOINTS
-        nullEntryPoint = false;
+#else // !FEATURE_INTERPRETER
         _ASSERTE(entryPoint != (PCODE)0);
-#endif // FEATURE_INTERPRETER && !FEATURE_PORTABLE_ENTRYPOINTS
+        nullEntryPoint = false;
+#endif // FEATURE_INTERPRETER
 
         if (!nullEntryPoint)
         {

@@ -9112,6 +9112,11 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    PORTABILITY_ASSERT("NYI: getFunctionEntryPoint for FEATURE_PORTABLE_ENTRYPOINTS");
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+
     MethodDesc * ftn = GetMethod(ftnHnd);
 #if defined(FEATURE_GDBJIT)
     MethodDesc * orig_ftn = ftn;
@@ -9124,22 +9129,17 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     {
         // FCalls can be called directly
         ret = (void*)ECall::GetFCallImpl(ftn, false /* throwForInvalidFCall */);
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (ret == NULL)
         {
             ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
             accessType = IAT_PVALUE;
         }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-        _ASSERTE(ret != NULL);
     }
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     else if (ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
         ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
     }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     else
     {
         ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
@@ -9160,6 +9160,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     CalledMethod * pCM = new CalledMethod(orig_ftn, ret, m_pCalledMethods);
     m_pCalledMethods = pCM;
 #endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     EE_TO_JIT_TRANSITION();
 
