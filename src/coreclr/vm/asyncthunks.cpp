@@ -591,7 +591,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK__THROW_IF_COMPLETED_UNSUCCESSFULLY);
-            MethodDesc* pMDAsTask = CoreLibBinder::GetMethod(METHOD__VALUETASK__AS_TASK);
+            MethodDesc* pMDAsTask = CoreLibBinder::GetMethod(METHOD__VALUETASK__AS_UNCONFIGURED_TASK);
 
             isCompletedToken = pCode->GetToken(pMDValueTaskIsCompleted);
             completionResultToken = pCode->GetToken(pMDCompletionResult);
@@ -604,7 +604,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_RESULT);
-            MethodDesc* pMDAsTask = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__AS_TASK);
+            MethodDesc* pMDAsTask = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__AS_UNCONFIGURED_TASK);
 
             pMDValueTaskIsCompleted = FindOrCreateAssociatedMethodDesc(pMDValueTaskIsCompleted, pMTValueTask, FALSE, Instantiation(), FALSE);
             pMDCompletionResult = FindOrCreateAssociatedMethodDesc(pMDCompletionResult, pMTValueTask, FALSE, Instantiation(), FALSE);
