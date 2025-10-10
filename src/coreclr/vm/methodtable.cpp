@@ -4328,11 +4328,59 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
         }
         case ELEMENT_TYPE_FNPTR:
         {
-            // Function pointers can't be in constraint signatures
-            COMPlusThrow(kTypeLoadException, IDS_CLASSLOAD_BADFORMAT);
+            uint32_t uCallConv = 0;
+            IfFailThrow(pSigPtr->GetData(&uCallConv));
+
+            if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+            {
+                // Generic function pointers are not allowed.
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
+            // Get the arg count.
+            uint32_t cArgs = 0;
+            IfFailThrow(pSigPtr->GetData(&cArgs));
+
+            // Loop for cArgs + 1 to handle the return type and all the args
+            for (uint32_t i = 0; i <= cArgs; i++)
+            {
+                DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
+            }
+            break;
         }
-        default:
+        case ELEMENT_TYPE_VOID:
+        case ELEMENT_TYPE_BOOLEAN:
+        case ELEMENT_TYPE_CHAR:
+        case ELEMENT_TYPE_I1:
+        case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_I2:
+        case ELEMENT_TYPE_U2:
+        case ELEMENT_TYPE_I4:
+        case ELEMENT_TYPE_U4:
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+        case ELEMENT_TYPE_I:
+        case ELEMENT_TYPE_U:
+        case ELEMENT_TYPE_OBJECT:
+        case ELEMENT_TYPE_STRING:
+        case ELEMENT_TYPE_TYPEDBYREF:
             // Primitive types and such. Nothing to check
+            break;
+        
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
+        {
+            // A generic variable. Its always accessible, but we do need to parse it
+            uint32_t varNumber;
+            IfFailThrow(pSigPtr->GetData(&varNumber));
+            break;
+        }
+
+        default:
+            // Unknown element type, bad format
+            ThrowHR(COR_E_BADIMAGEFORMAT);
             break;
     }
 }
