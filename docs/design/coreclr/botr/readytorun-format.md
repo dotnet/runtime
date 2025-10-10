@@ -30,8 +30,8 @@ The COR header and ECMA 335 metadata pointed to by the COM descriptor data direc
 in the COFF header represent a full copy of the input IL and MSIL metadata it was generated from.
 
 **Composite R2R files** currently conform to Windows PE executable file format as the
-native envelope. Moving forward we plan to gradually add support for platform-native
-executable formats (ELF on Linux, MachO on OSX) as the native envelopes. There is a
+native envelope. Moving forward we [plan to gradually add support for platform-native
+executable formats](./readytorun-platform-native-envelope.md) (ELF on Linux, MachO on OSX) as the native envelopes. There is a
 global CLI / COR header in the file, but it only exists to facilitate pdb generation, and does
 not participate in any usages by the CoreCLR runtime. The ReadyToRun header structure is pointed to
 by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
