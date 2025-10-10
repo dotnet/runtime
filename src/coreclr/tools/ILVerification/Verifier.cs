@@ -158,7 +158,7 @@ namespace ILVerify
         {
             foreach (var methodHandle in methodHandles)
             {
-                var method = (EcmaMethod)module.GetMethod(methodHandle);
+                var method = module.GetMethod(methodHandle);
                 var methodIL = EcmaMethodIL.Create(method);
 
                 if (methodIL != null)

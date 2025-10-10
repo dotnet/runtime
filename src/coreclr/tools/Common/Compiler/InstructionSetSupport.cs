@@ -64,7 +64,7 @@ namespace ILCompiler
             if (potentialType.Name.SequenceEqual("X64"u8) || potentialType.Name.SequenceEqual("Arm64"u8))
             {
                 if (architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)
-                    potentialType = (MetadataType)potentialType.ContainingType;
+                    potentialType = potentialType.ContainingType;
                 else
                     return "";
             }
