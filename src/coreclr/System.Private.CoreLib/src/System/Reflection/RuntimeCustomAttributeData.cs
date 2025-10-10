@@ -1573,19 +1573,42 @@ namespace System.Reflection
                                 }
                             }
 
-                            RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
-                                attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, [])) ??
-                                throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                            RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
+                            RuntimeMethodInfo? setMethod = null;
+                            RuntimeMethodInfo? getMethod = null;
+                            Type baseAttributeType = attributeType;
 
-                            // Public properties may have non-public setter methods
-                            if (!setMethod.IsPublic)
+                            for (; ; )
                             {
-                                continue;
-                            }
+                                RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
+                                    baseAttributeType.GetProperty(name) :
+                                    baseAttributeType.GetProperty(name, type, []));
 
-                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
+                                if (property is not null)
+                                {
+                                    setMethod = property.GetSetMethod(true);
+                                    getMethod = property.GetGetMethod(true);
+
+                                    if (setMethod is not null)
+                                    {
+                                        // Public properties may have non-public setter methods
+                                        if (setMethod.IsPublic)
+                                        {
+                                            setMethod.InvokePropertySetter(attribute, BindingFlags.Default, null, value, null);
+                                        }
+
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    setMethod = null;
+                                    getMethod = null;
+                                }
+
+                                baseAttributeType = baseAttributeType.BaseType is null || (getMethod is not null && !getMethod.IsVirtual)
+                                    ? throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name))
+                                    : baseAttributeType.BaseType;
+                            }
                         }
                         else
                         {

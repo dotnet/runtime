@@ -104,16 +104,37 @@ namespace Internal.Reflection.Extensions.NonPortable
                 else
                 {
                     // Property
+                    MethodInfo? getMethod = null;
+                    MethodInfo? setMethod = null;
+
                     for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
-                        if (propertyInfo != null)
+
+                        if (propertyInfo is not null)
                         {
-                            propertyInfo.SetValue(newAttribute, argumentValue);
-                            break;
+                            getMethod = propertyInfo.GetGetMethod(true);
+                            setMethod = propertyInfo.GetSetMethod(true);
+
+                            if (setMethod is not null)
+                            {
+                                // Public properties may have non-public setter methods
+                                if (setMethod.IsPublic)
+                                {
+                                    propertyInfo.SetValue(newAttribute, argumentValue);
+                                }
+
+                                break;
+                            }
                         }
+                        else
+                        {
+                            getMethod = null;
+                            setMethod = null;
+                        }
+
                         Type? baseType = walk.BaseType;
-                        if (baseType == null)
+                        if (baseType == null || (getMethod is not null && !getMethod.IsVirtual))
                             throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                         walk = baseType;
                     }
