@@ -58,6 +58,7 @@
 #include "excep.h"
 #endif
 #include "exinfo.h"
+#include "exkind.h"
 #include "arraynative.inl"
 
 using std::isfinite;
@@ -934,7 +935,6 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     ResetCurrentContext();
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
-    GetThread()->GetExceptionState()->SetRaisingForeignException();
 
     Thread *pThread = GetThread();
 
@@ -949,7 +949,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     FC_CAN_TRIGGER_GC();
 
 #ifdef FEATURE_EH_FUNCLETS
-    DispatchManagedException(oref, exceptionFrame.GetContext());
+    DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
 #elif defined(TARGET_X86)
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;

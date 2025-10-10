@@ -1608,6 +1608,14 @@ void DebugStackTrace::Element::InitPass2()
 
     bool bRes = false;
 
+    if (this->pFunc->IsAsyncThunkMethod())
+    {
+        if (this->pFunc->IsDynamicMethod())
+        {
+            bRes = false;
+        }
+    }
+
     if (this->flags & STEF_CONTINUATION)
     {
         PCODE addr = this->pFunc->GetNativeCode();

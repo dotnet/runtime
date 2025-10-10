@@ -64,16 +64,6 @@ public:
 
 };
 
-struct Continuation : public Object
-{
-    struct Continuation* next;
-    TADDR resume;  
-    uint32_t state;
-    CorInfoContinuationFlags flags;
-    uint8_t* data;          // byte[] -> byte* (managed arrays are just pointers in native)
-    void** gcData;          // object[] -> void** (object references)
-};
-
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF <StackFrameHelper> STACKFRAMEHELPERREF;
 #else

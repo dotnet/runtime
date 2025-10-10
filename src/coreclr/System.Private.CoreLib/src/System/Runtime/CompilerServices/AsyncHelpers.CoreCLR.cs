@@ -348,6 +348,7 @@ namespace System.Runtime.CompilerServices
 
         private static class ThunkTaskCore
         {
+            [StackTraceHidden]
             public static unsafe void MoveNext<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
@@ -418,15 +419,15 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static Continuation UnwindToPossibleHandler(Continuation continuation, Exception ex)
+            private static unsafe Continuation UnwindToPossibleHandler(Continuation continuation, Exception ex)
             {
                 while (true)
                 {
                     Debug.Assert(continuation.Next != null);
                     continuation = continuation.Next;
+                    if (continuation.Resume != null) AddContinuationToExInternal(continuation, ex);
                     if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
                         return continuation;
-                    AddContinuationToExInternal(continuation, ex);
                 }
             }
 

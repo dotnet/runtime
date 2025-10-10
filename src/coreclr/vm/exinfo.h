@@ -190,20 +190,6 @@ struct RhEHClause
     }
 };
 
-enum class ExKind : uint8_t
-{
-    None = 0,
-    Throw = 1,
-    HardwareFault = 2,
-    KindMask = 3,
-
-    RethrowFlag = 4,
-
-    SupersededFlag = 8,
-
-    InstructionFaultFlag = 0x10
-};
-
 struct PAL_SEHException;
 
 struct LastReportedFuncletInfo
