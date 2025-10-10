@@ -1554,18 +1554,16 @@ BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth) {
     return TRUE;
 }
 
-void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularClassConstraints, BOOL *pfHasCircularMethodConstraints, ClassLoadLevel level/* = CLASS_LOADED*/)
+void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularMethodConstraints, ClassLoadLevel level/* = CLASS_LOADED*/)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(IsTypicalMethodDefinition());
-        PRECONDITION(CheckPointer(pfHasCircularClassConstraints));
         PRECONDITION(CheckPointer(pfHasCircularMethodConstraints));
     } CONTRACTL_END;
 
-    *pfHasCircularClassConstraints = FALSE;
     *pfHasCircularMethodConstraints = FALSE;
 
     // Force a load of the constraints on the type parameters
@@ -1578,17 +1576,6 @@ void MethodDesc::LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularCl
         _ASSERTE(tyvar != NULL);
         VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy);
         DoAccessibilityCheckForConstraints(GetMethodTable(), tyvar, E_ACCESSDENIED);
-    }
-
-    // reject circular class constraints
-    for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-    {
-        TypeVarTypeDesc* tyvar = classInst[i].AsGenericVariable();
-        _ASSERTE(tyvar != NULL);
-        if(!Bounded(tyvar, classInst.GetNumArgs()))
-        {
-            *pfHasCircularClassConstraints = TRUE;
-        }
     }
 
     // reject circular method constraints

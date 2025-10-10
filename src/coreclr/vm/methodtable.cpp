@@ -4776,15 +4776,10 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
                     if (pMD->IsGenericMethodDefinition() && pMD->IsTypicalMethodDefinition())
                     {
-                        BOOL fHasCircularClassConstraints = TRUE;
                         BOOL fHasCircularMethodConstraints = TRUE;
 
-                        pMD->LoadConstraintsForTypicalMethodDefinition(&fHasCircularClassConstraints, &fHasCircularMethodConstraints, CLASS_DEPENDENCIES_LOADED);
+                        pMD->LoadConstraintsForTypicalMethodDefinition(&fHasCircularMethodConstraints, CLASS_DEPENDENCIES_LOADED);
 
-                        if (fHasCircularClassConstraints)
-                        {
-                            COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_VAR_CONSTRAINTS);
-                        }
                         if (fHasCircularMethodConstraints)
                         {
                             COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_MVAR_CONSTRAINTS);

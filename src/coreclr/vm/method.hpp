@@ -477,9 +477,8 @@ public:
     BOOL IsTypicalMethodDefinition() const;
 
     // Force a load of the (typical) constraints on the type parameters of a typical method definition,
-    // detecting cyclic bounds on class and method type parameters.
-    void LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularClassConstraints,
-                                                   BOOL *pfHasCircularMethodConstraints,
+    // detecting cyclic bounds on method type parameters.
+    void LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularMethodConstraints,
                                                    ClassLoadLevel level = CLASS_LOADED);
 
     DWORD IsClassConstructor()

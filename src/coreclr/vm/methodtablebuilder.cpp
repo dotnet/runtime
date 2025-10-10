@@ -12800,7 +12800,12 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
             }
 
             // Check interface for use of variant type parameters
-            if ((genericsInfo.pVarianceInfo != NULL) && (TypeFromToken(crInterface) == mdtTypeSpec))
+            if ((genericsInfo.pVarianceInfo != NULL) && (TypeFromToken(crInterface) == mdtTypeSpec)
+#ifdef FEATURE_READYTORUN
+                // No sanity checks for ready-to-run compiled images if possible
+                && (!pModule->IsReadyToRun() || !pModule->GetReadyToRunInfo()->SkipTypeValidation())
+#endif
+                )
             {
                 ULONG cSig;
                 PCCOR_SIGNATURE pSig;
