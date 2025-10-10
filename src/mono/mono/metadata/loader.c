@@ -79,6 +79,8 @@ static gint32 memberref_sig_cache_size;
 static gint32 methods_size;
 static gint32 signatures_size;
 
+static gboolean mono_enable_dynfree = FALSE;
+
 void
 mono_loader_init (void)
 {
@@ -103,6 +105,11 @@ mono_loader_init (void)
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
 		mono_counters_register ("MonoMethodSignature size",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
+
+		char *env_opt = g_getenv ("MONO_ENABLE_DYNMETHOD_FREE");
+		if (env_opt && env_opt [0] == '1')
+			mono_enable_dynfree = TRUE;
+		g_free (env_opt);
 
 		inited = TRUE;
 	}
@@ -1371,6 +1378,9 @@ mono_free_method  (MonoMethod *method)
 		return;
 
 	MONO_PROFILER_RAISE (method_free, (method));
+
+	if (G_UNLIKELY (mono_profiler_installed () && !mono_enable_dynfree))
+		return;
 
 	// EventPipe might require information about methods to be stored throughout
 	// entire app execution, so stack traces can be resolved at a later time.
