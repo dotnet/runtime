@@ -141,7 +141,9 @@ namespace System.Runtime.CompilerServices
         private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
+            public ICriticalNotifyCompletion? CriticalNotifier;
             public INotifyCompletion? Notifier;
+            public Task? CalledTask;
         }
 
         [ThreadStatic]
@@ -188,7 +190,21 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
         }
 
-        private interface IThunkTaskOps<T>
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [RequiresPreviewFeatures]
+        private static void TransparentAwaitTask(Task t)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation;
+            if (sentinelContinuation == null)
+                state.SentinelContinuation = sentinelContinuation = new Continuation();
+
+            state.CalledTask = t;
+            AsyncSuspend(sentinelContinuation);
+        }
+
+        private interface IRuntimeAsyncTaskOps<T>
         {
             static abstract Action GetContinuationAction(T task);
             static abstract Continuation GetContinuationState(T task);
@@ -198,9 +214,12 @@ namespace System.Runtime.CompilerServices
             static abstract ref byte GetResultStorage(T task);
         }
 
-        private sealed class ThunkTask<T> : Task<T>
+        /// <summary>
+        /// Represents a wrapped runtime async operation.
+        /// </summary>
+        private sealed class RuntimeAsyncTask<T> : Task<T>, ITaskCompletionAction
         {
-            public ThunkTask()
+            public RuntimeAsyncTask()
             {
                 // We use the base Task's state object field to store the Continuation while posting the task around.
                 // Ensure that state object isn't published out for others to see.
@@ -217,46 +236,56 @@ namespace System.Runtime.CompilerServices
 
             private void MoveNext()
             {
-                ThunkTaskCore.MoveNext<ThunkTask<T>, Ops>(this);
+                RuntimeAsyncTaskCore.DispatchContinuations<RuntimeAsyncTask<T>, Ops>(this);
             }
 
             public void HandleSuspended()
             {
-                ThunkTaskCore.HandleSuspended<ThunkTask<T>, Ops>(this);
+                RuntimeAsyncTaskCore.HandleSuspended<RuntimeAsyncTask<T>, Ops>(this);
             }
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                MoveNext();
+            }
+
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
             {
-                Debug.Assert(state is ThunkTask<T>);
-                ((ThunkTask<T>)state).MoveNext();
+                Debug.Assert(state is RuntimeAsyncTask<T>);
+                ((RuntimeAsyncTask<T>)state).MoveNext();
             };
 
-            private struct Ops : IThunkTaskOps<ThunkTask<T>>
+            private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask<T>>
             {
-                public static Action GetContinuationAction(ThunkTask<T> task) => (Action)task.m_action!;
-                public static Continuation GetContinuationState(ThunkTask<T> task) => (Continuation)task.m_stateObject!;
-                public static void SetContinuationState(ThunkTask<T> task, Continuation value)
+                public static Action GetContinuationAction(RuntimeAsyncTask<T> task) => (Action)task.m_action!;
+                public static Continuation GetContinuationState(RuntimeAsyncTask<T> task) => (Continuation)task.m_stateObject!;
+                public static void SetContinuationState(RuntimeAsyncTask<T> task, Continuation value)
                 {
                     task.m_stateObject = value;
                 }
 
-                public static bool SetCompleted(ThunkTask<T> task)
+                public static bool SetCompleted(RuntimeAsyncTask<T> task)
                 {
                     return task.TrySetResult(task.m_result);
                 }
 
-                public static void PostToSyncContext(ThunkTask<T> task, SynchronizationContext syncContext)
+                public static void PostToSyncContext(RuntimeAsyncTask<T> task, SynchronizationContext syncContext)
                 {
                     syncContext.Post(s_postCallback, task);
                 }
 
-                public static ref byte GetResultStorage(ThunkTask<T> task) => ref Unsafe.As<T?, byte>(ref task.m_result);
+                public static ref byte GetResultStorage(RuntimeAsyncTask<T> task) => ref Unsafe.As<T?, byte>(ref task.m_result);
             }
         }
 
-        private sealed class ThunkTask : Task
+        /// <summary>
+        /// Represents a wrapped runtime async operation.
+        /// </summary>
+        private sealed class RuntimeAsyncTask : Task, ITaskCompletionAction
         {
-            public ThunkTask()
+            public RuntimeAsyncTask()
             {
                 // We use the base Task's state object field to store the Continuation while posting the task around.
                 // Ensure that state object isn't published out for others to see.
@@ -273,46 +302,53 @@ namespace System.Runtime.CompilerServices
 
             private void MoveNext()
             {
-                ThunkTaskCore.MoveNext<ThunkTask, Ops>(this);
+                RuntimeAsyncTaskCore.DispatchContinuations<RuntimeAsyncTask, Ops>(this);
             }
 
             public void HandleSuspended()
             {
-                ThunkTaskCore.HandleSuspended<ThunkTask, Ops>(this);
+                RuntimeAsyncTaskCore.HandleSuspended<RuntimeAsyncTask, Ops>(this);
             }
+
+            void ITaskCompletionAction.Invoke(Task completingTask)
+            {
+                MoveNext();
+            }
+
+            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
 
             private static readonly SendOrPostCallback s_postCallback = static state =>
             {
-                Debug.Assert(state is ThunkTask);
-                ((ThunkTask)state).MoveNext();
+                Debug.Assert(state is RuntimeAsyncTask);
+                ((RuntimeAsyncTask)state).MoveNext();
             };
 
-            private struct Ops : IThunkTaskOps<ThunkTask>
+            private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask>
             {
-                public static Action GetContinuationAction(ThunkTask task) => (Action)task.m_action!;
-                public static Continuation GetContinuationState(ThunkTask task) => (Continuation)task.m_stateObject!;
-                public static void SetContinuationState(ThunkTask task, Continuation value)
+                public static Action GetContinuationAction(RuntimeAsyncTask task) => (Action)task.m_action!;
+                public static Continuation GetContinuationState(RuntimeAsyncTask task) => (Continuation)task.m_stateObject!;
+                public static void SetContinuationState(RuntimeAsyncTask task, Continuation value)
                 {
                     task.m_stateObject = value;
                 }
 
-                public static bool SetCompleted(ThunkTask task)
+                public static bool SetCompleted(RuntimeAsyncTask task)
                 {
                     return task.TrySetResult();
                 }
 
-                public static void PostToSyncContext(ThunkTask task, SynchronizationContext syncContext)
+                public static void PostToSyncContext(RuntimeAsyncTask task, SynchronizationContext syncContext)
                 {
                     syncContext.Post(s_postCallback, task);
                 }
 
-                public static ref byte GetResultStorage(ThunkTask task) => ref Unsafe.NullRef<byte>();
+                public static ref byte GetResultStorage(RuntimeAsyncTask task) => ref Unsafe.NullRef<byte>();
             }
         }
 
-        private static class ThunkTaskCore
+        private static class RuntimeAsyncTaskCore
         {
-            public static unsafe void MoveNext<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
+            public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
@@ -399,9 +435,20 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            public static void HandleSuspended<T, TOps>(T task) where T : Task where TOps : IThunkTaskOps<T>
+            public static void HandleSuspended<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
-                Continuation headContinuation = UnlinkHeadContinuation(out INotifyCompletion? notifier);
+                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+                ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
+                INotifyCompletion? notifier = state.Notifier;
+                Task? calledTask = state.CalledTask;
+
+                state.CriticalNotifier = null;
+                state.Notifier = null;
+                state.CalledTask = null;
+
+                Continuation sentinelContinuation = state.SentinelContinuation!;
+                Continuation headContinuation = sentinelContinuation.Next!;
+                sentinelContinuation.Next = null;
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                 // These never have special continuation handling.
@@ -415,9 +462,19 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (notifier is ICriticalNotifyCompletion crit)
+                    if (critNotifier != null)
                     {
-                        crit.UnsafeOnCompleted(TOps.GetContinuationAction(task));
+                        critNotifier.UnsafeOnCompleted(TOps.GetContinuationAction(task));
+                    }
+                    else if (calledTask != null)
+                    {
+                        // Runtime async callable wrapper for task returning
+                        // method. This implements the context transparent
+                        // forwarding and makes these wrappers minimal cost.
+                        if (!calledTask.TryAddCompletionAction(task))
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal: true);
+                        }
                     }
                     else
                     {
@@ -431,19 +488,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static Continuation UnlinkHeadContinuation(out INotifyCompletion? notifier)
-            {
-                ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                notifier = state.Notifier;
-                state.Notifier = null;
-
-                Continuation sentinelContinuation = state.SentinelContinuation!;
-                Continuation head = sentinelContinuation.Next!;
-                sentinelContinuation.Next = null;
-                return head;
-            }
-
-            private static bool QueueContinuationFollowUpActionIfNecessary<T, TOps>(T task, Continuation continuation) where T : Task where TOps : IThunkTaskOps<T>
+            private static bool QueueContinuationFollowUpActionIfNecessary<T, TOps>(T task, Continuation continuation) where T : Task where TOps : IRuntimeAsyncTaskOps<T>
             {
                 if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL) != 0)
                 {
@@ -507,20 +552,20 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // Change return type to ThunkTask<T?> -- no benefit since this is used for Task returning thunks only
+        // Change return type to RuntimeAsyncTask<T?> -- no benefit since this is used for Task returning thunks only
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
         private static Task<T?> FinalizeTaskReturningThunk<T>()
         {
-            ThunkTask<T?> result = new();
+            RuntimeAsyncTask<T?> result = new();
             result.HandleSuspended();
             return result;
         }
 
         private static Task FinalizeTaskReturningThunk()
         {
-            ThunkTask result = new();
+            RuntimeAsyncTask result = new();
             result.HandleSuspended();
             return result;
         }
@@ -631,6 +676,17 @@ namespace System.Runtime.CompilerServices
             }
 
             flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
+        }
+
+        internal static T CompletedTaskResult<T>(Task<T> task)
+        {
+            TaskAwaiter.ValidateEnd(task);
+            return task.ResultOnSuccess;
+        }
+
+        internal static void CompletedTask(Task task)
+        {
+            TaskAwaiter.ValidateEnd(task);
         }
     }
 }
