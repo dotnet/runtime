@@ -365,7 +365,7 @@ namespace System
         /// <summary>
         /// Searches for the specified value and returns true if found. If not found, returns false.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
@@ -448,6 +448,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of the specified <paramref name="value0"/> or <paramref name="value1"/>, and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
@@ -458,6 +459,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of the specified <paramref name="value0"/> or <paramref name="value1"/>, and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
@@ -492,6 +494,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -501,6 +504,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         /// <param name="comparer">The comparer to use. If <see langword="null"/>, <see cref="EqualityComparer{T}.Default"/> is used.</param>
@@ -3574,11 +3578,13 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether a specified sequence appears at the start of a read-only span.
+        /// Determines whether the beginning of this span matches the specified sequence.
         /// </summary>
-        /// <param name="span">The source span.</param>
+        /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to compare to the start of <paramref name="span"/>.</param>
-        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <param name="comparer">An optional comparer to use for element equality checks.</param>
+        /// <typeparam name="T">The type of elements in the span and value.</typeparam>
+        /// <returns><see langword="true"/> if <paramref name="span"/> starts with <paramref name="value"/>; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
             value.Length <= span.Length &&
@@ -3619,15 +3625,24 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether the specified sequence appears at the end of the read-only span.
+        /// Determines whether the end of this span matches the specified sequence.
         /// </summary>
-        /// <param name="span">The source span.</param>
+        /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to compare to the end of <paramref name="span"/>.</param>
-        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
-            value.Length <= span.Length &&
-            SequenceEqual(span.Slice(span.Length - value.Length), value, comparer);
+        /// <param name="comparer">An optional comparer to use for element equality checks.</param>
+        /// <typeparam name="T">The type of elements in the span and value.</typeparam>
+        /// <returns><see langword="true"/> if <paramref name="span"/> ends with <paramref name="value"/>; otherwise, <see langword="false"/>.</returns>
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null)
+        {
+            comparer ??= EqualityComparer<T>.Default;
+            if (value.Length > span.Length) return false;
+            int offset = span.Length - value.Length;
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (!comparer.Equals(span[offset + i], value[i])) return false;
+            }
+            return true;
+        }
 
         /// <summary>
         /// Determines whether the specified value appears at the start of the span.

@@ -45,7 +45,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("Where`1", typeof(Enumerable))]
-        public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
+    public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
@@ -58,7 +58,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("Where`1", typeof(Enumerable))]
-        public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
+    public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(predicate);
@@ -2178,6 +2178,12 @@ namespace System.Linq
         }
 
         [DynamicDependency("Shuffle`1", typeof(Enumerable))]
+        /// <summary>
+        /// Returns an <see cref="IQueryable{TSource}"/> whose ordering of elements is randomized.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">The sequence to shuffle.</param>
+        /// <returns>An <see cref="IQueryable{TSource}"/> representing a randomized ordering of <paramref name="source"/>.</returns>
         public static IQueryable<TSource> Shuffle<TSource>(this IQueryable<TSource> source)
         {
             ArgumentNullException.ThrowIfNull(source);

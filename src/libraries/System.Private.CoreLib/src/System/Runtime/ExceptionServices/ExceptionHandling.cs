@@ -5,6 +5,9 @@ using System.Threading;
 
 namespace System.Runtime.ExceptionServices
 {
+    /// <summary>
+    /// Provides helpers for configuring and raising global unhandled exception handlers.
+    /// </summary>
     public static class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
@@ -14,11 +17,12 @@ namespace System.Runtime.ExceptionServices
             return s_handler?.Invoke(ex) == true;
         }
 
-        /// <summary>
-        /// Sets a handler for unhandled exceptions.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">If handler is null</exception>
-        /// <exception cref="InvalidOperationException">If a handler is already set</exception>
+    /// <summary>
+    /// Sets a handler for unhandled exceptions.
+    /// </summary>
+    /// <param name="handler">A callback that will be invoked for unhandled exceptions. Return <see langword="true"/> if the exception was handled; otherwise <see langword="false"/>.</param>
+    /// <exception cref="ArgumentNullException">If handler is null.</exception>
+    /// <exception cref="InvalidOperationException">If a handler is already set.</exception>
         /// <remarks>
         /// The handler will be called when an unhandled exception occurs.
         /// The handler should return true if the exception was handled, or false if it was not.

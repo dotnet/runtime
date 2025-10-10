@@ -125,6 +125,10 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Asynchronously releases the resources used by the <see cref="ZipArchive"/>.
+    /// </summary>
+    /// <returns>A <see cref="ValueTask"/> that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync() => await DisposeAsyncCore().ConfigureAwait(false);
 
     protected virtual async ValueTask DisposeAsyncCore()

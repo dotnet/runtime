@@ -2090,6 +2090,7 @@ namespace System.Runtime.Serialization.DataContracts
             ImportKnownTypeAttributes(type, typesChecked, ref nameToDataContractTable);
         }
 
+        /// <inheritdoc/>
         public sealed override bool Equals(object? obj)
         {
             if ((object)this == obj)
@@ -2125,6 +2126,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return base.GetHashCode();

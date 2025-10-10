@@ -776,6 +776,7 @@ namespace System.Net.Security
             return bytesRead == 1 ? oneByte : -1;
         }
 
+        /// <inheritdoc />
         public override unsafe int Read(Span<byte> buffer)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -797,6 +798,7 @@ namespace System.Net.Security
             }
         }
 
+        /// <inheritdoc />
         public override int Read(byte[] buffer, int offset, int count)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -806,8 +808,10 @@ namespace System.Net.Security
             return vt.GetAwaiter().GetResult();
         }
 
+        /// <inheritdoc />
         public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));
 
+        /// <inheritdoc />
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -831,6 +835,7 @@ namespace System.Net.Security
 
         public void Write(byte[] buffer) => Write(buffer, 0, buffer.Length);
 
+        /// <inheritdoc />
         public override void Write(byte[] buffer, int offset, int count)
         {
             ThrowIfExceptionalOrNotAuthenticated();

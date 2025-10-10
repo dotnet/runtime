@@ -8,6 +8,12 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        /// <summary>
+        /// Returns a sequence with the elements of <paramref name="source"/> in reverse order.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">The sequence whose elements should be reversed.</param>
+        /// <returns>An <see cref="IEnumerable{TSource}"/> that enumerates the elements of <paramref name="source"/> in reverse.</returns>
         public static IEnumerable<TSource> Reverse<TSource>(this IEnumerable<TSource> source)
         {
             if (source is null)
@@ -23,6 +29,12 @@ namespace System.Linq
             return new ReverseIterator<TSource>(source);
         }
 
+        /// <summary>
+        /// Returns a sequence with the elements of <paramref name="source"/> in reverse order.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">The array whose elements should be reversed.</param>
+        /// <returns>An <see cref="IEnumerable{TSource}"/> that enumerates the elements of <paramref name="source"/> in reverse.</returns>
         public static IEnumerable<TSource> Reverse<TSource>(this TSource[] source)
         {
             if (source is null)
