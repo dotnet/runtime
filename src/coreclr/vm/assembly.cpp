@@ -2127,9 +2127,11 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         DeliverSyncEvents();
         break;
 
+#ifdef FEATURE_IJW
     case FILE_LOAD_VTABLE_FIXUPS:
         VtableFixups();
         break;
+#endif // FEATURE_IJW
 
     case FILE_LOADED:
         FinishLoad();
@@ -2206,12 +2208,14 @@ void Assembly::EagerFixups()
 #endif // FEATURE_READYTORUN
 }
 
+#ifdef FEATURE_IJW
 void Assembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
     GetModule()->FixupVTables();
 }
+#endif // FEATURE_IJW
 
 void Assembly::FinishLoad()
 {

@@ -714,8 +714,6 @@ static void CallPreStub(MethodDesc *pMD)
     PAL_ENDTRY
 }
 
-UMEntryThunkData * GetMostRecentUMEntryThunkData();
-
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -801,10 +799,14 @@ MAIN_LOOP:
                     break;
                 case INTOP_STORESTUBCONTEXT:
                 {
-                    void *thunkData = GetMostRecentUMEntryThunkData();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                    COMPlusThrow(kNotSupportedException);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+                    UMEntryThunkData* thunkData = GetMostRecentUMEntryThunkData();
                     assert(thunkData);
                     LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
                     break;
                 }
                 case INTOP_LDC_I4:

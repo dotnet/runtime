@@ -4,11 +4,10 @@
 // File: DllImportCallback.h
 //
 
-//
-
-
 #ifndef __dllimportcallback_h__
 #define __dllimportcallback_h__
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "object.h"
 #include "stublink.h"
@@ -427,5 +426,12 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
+
+#if defined(FEATURE_INTERPRETER)
+UMEntryThunkData* GetMostRecentUMEntryThunkData();
+#endif // FEATURE_INTERPRETER
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+VOID STDCALL ReversePInvokeBadTransition();
 
 #endif //__dllimportcallback_h__

@@ -1739,6 +1739,10 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else if (pStubMD->IsReverseStub())
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        PORTABILITY_ASSERT("NYI: Reverse P/Invoke stubs with FEATURE_PORTABLE_ENTRYPOINTS.");
+        return FALSE;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (pStubMD->IsStatic())
         {
             // This is reverse P/Invoke stub, the argument is UMEntryThunkData
@@ -1753,6 +1757,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
         }
         trace->InitForManaged(target);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (pStubMD->IsPInvokeDelegateStub())
     {

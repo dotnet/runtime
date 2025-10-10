@@ -2039,8 +2039,6 @@ static InterpThreadContext* GetInterpThreadContext()
     return threadContext;
 }
 
-EXTERN_C void STDCALL ReversePInvokeBadTransition();
-
 extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
@@ -2481,7 +2479,12 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    PORTABILITY_ASSERT("TheUMThunkPreStub not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+    return (PCODE)0;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)

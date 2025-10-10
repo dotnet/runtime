@@ -682,7 +682,6 @@ HRESULT CorHost2::CreateDelegate(
     LPCWSTR wszMethodName,
     INT_PTR* fnPtr)
 {
-
     CONTRACTL
     {
         NOTHROW;
@@ -690,8 +689,6 @@ HRESULT CorHost2::CreateDelegate(
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
-
-    HRESULT hr=S_OK;
 
     EMPTY_STRING_TO_NULL(wszAssemblyName);
     EMPTY_STRING_TO_NULL(wszClassName);
@@ -714,7 +711,13 @@ HRESULT CorHost2::CreateDelegate(
     if (appDomainID != DefaultADID)
         return HOST_E_INVALIDOPERATION;
 
+    HRESULT hr = S_OK;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    hr = E_NOTIMPL;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
     MAKE_UTF8PTR_FROMWIDE(szClassName, wszClassName);
@@ -759,6 +762,7 @@ HRESULT CorHost2::CreateDelegate(
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
         }
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     END_EXTERNAL_ENTRYPOINT;
 

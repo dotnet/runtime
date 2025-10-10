@@ -3145,16 +3145,18 @@ BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
     return *ppVTEntry;
 }
 
+#ifdef FEATURE_IJW
 //======================================================================================
 // Fixup vtables stored in the header to contain pointers to method desc
 // prestubs rather than metadata method tokens.
 void Module::FixupVTables()
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-    } CONTRACTL_END;
-
+    }
+    CONTRACTL_END;
 
     // If we've already fixed up, or this is not an IJW module, just return.
     // NOTE: This relies on ILOnly files not having fixups. If this changes,
@@ -3414,6 +3416,7 @@ void Module::FixupVTables()
         SetIsIJWFixedUp();      // On the module
     } // End of Stage 3
 }
+#endif // FEATURE_IJW
 
 ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 {

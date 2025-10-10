@@ -1344,6 +1344,10 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
     }
     else
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        COMPlusThrow(kNotSupportedException);
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         UMEntryThunkData*   pUMEntryThunk   = NULL;
         SyncBlock*          pSyncBlock      = pDelegate->GetSyncBlock();
 
@@ -1407,6 +1411,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
         }
         pCode = (PCODE)pUMEntryThunk->GetCode();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     GCPROTECT_END();
@@ -1431,9 +1436,9 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Check if this callback was originally a managed method passed out to unmanaged code.
     //
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     UMEntryThunk* pUMEntryThunk = NULL;
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     auto stubKind = RangeSectionStubManager::GetStubKind((PCODE)pCallback);
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
@@ -1443,20 +1448,20 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
             pUMEntryThunk = pPrecode->AsUMEntryThunk();
         }
     }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
-    OBJECTHANDLE DelegateHnd = (pUMEntryThunk != NULL)
+    OBJECTHANDLE delegateHnd = (pUMEntryThunk != NULL)
         ? pUMEntryThunk->GetData()->GetObjectHandle()
         : (OBJECTHANDLE)NULL;
 
-    if (DelegateHnd != (OBJECTHANDLE)NULL)
+    if (delegateHnd != (OBJECTHANDLE)NULL)
     {
         // Found a managed callsite
-        return ObjectFromHandle(DelegateHnd);
+        return ObjectFromHandle(delegateHnd);
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Validate the MethodTable is a delegate type
     // See Marshal.GetDelegateForFunctionPointer() for exception details.

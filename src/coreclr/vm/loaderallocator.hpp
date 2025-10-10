@@ -364,9 +364,11 @@ protected:
     BYTE *              m_pVSDHeapInitialAlloc;
     BYTE *              m_pCodeHeapInitialAlloc;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // U->M thunks that are not associated with a delegate.
     // The cache is keyed by MethodDesc pointers.
     UMEntryThunkCache * m_pUMEntryThunkCache;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // IL stub cache with fabricated MethodTable parented by a random module in this LoaderAllocator.
     ILStubCache         m_ILStubCache;

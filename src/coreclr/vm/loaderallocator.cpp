@@ -83,15 +83,17 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
 #ifdef FEATURE_COMINTEROP
     m_pComCallWrapperCache = NULL;
-#endif
+#endif // FEATURE_COMINTEROP
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pUMEntryThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
 
 #ifdef FEATURE_PGO
     m_pgoManager = NULL;
-#endif
+#endif // FEATURE_PGO
 }
 
 LoaderAllocator::~LoaderAllocator()
@@ -1384,14 +1386,16 @@ void LoaderAllocator::Terminate()
         m_fGCPressure = false;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pUMEntryThunkCache;
     m_pUMEntryThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     m_crstLoaderAllocator.Destroy();
 #ifdef FEATURE_COMINTEROP
     m_ComCallWrapperCrst.Destroy();
     m_InteropDataCrst.Destroy();
-#endif
+#endif // FEATURE_COMINTEROP
     m_LoaderAllocatorReferences.RemoveAll();
 
 #ifdef FEATURE_TIERED_COMPILATION
@@ -1400,7 +1404,7 @@ void LoaderAllocator::Terminate()
         delete m_callCountingManager;
         m_callCountingManager = NULL;
     }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     if (m_onStackReplacementManager != NULL)
@@ -1408,7 +1412,7 @@ void LoaderAllocator::Terminate()
         delete m_onStackReplacementManager;
         m_onStackReplacementManager = NULL;
     }
-#endif
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
     // In collectible types we merge the low frequency and high frequency heaps
     // So don't destroy them twice.
@@ -2153,6 +2157,7 @@ ComCallWrapperCache * LoaderAllocator::GetComCallWrapperCache()
 }
 #endif // FEATURE_COMINTEROP
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 // U->M thunks created in this LoaderAllocator and not associated with a delegate.
 UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
 {
@@ -2178,6 +2183,7 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
     _ASSERTE(m_pUMEntryThunkCache);
     return m_pUMEntryThunkCache;
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 /* static */
 void LoaderAllocator::RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator)

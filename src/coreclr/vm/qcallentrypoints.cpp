@@ -9,6 +9,7 @@
 //
 #include "arraynative.h"
 #include "objectnative.h"
+#include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
