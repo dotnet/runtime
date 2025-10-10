@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119948 -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExtendedLayoutTypes.il" />
