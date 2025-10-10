@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Internal;
 
@@ -337,7 +338,9 @@ namespace Microsoft.Win32.SafeHandles
                     long result = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR);
                     if (result < 0)
                     {
-                        Console.WriteLine("LSeek failed with error: " + Interop.Sys.GetErrNo());
+                        var errno = Interop.Sys.GetErrNo();
+                        Console.WriteLine("LSeek failed with error: " + errno + " message: " + Marshal.GetPInvokeErrorMessage(errno));
+                        Console.WriteLine($"Path '{path}' {(File.Exists(path) ? "exists" : "doesn't exist")}.");
                     }
                     Debug.Assert(result >= 0);
                 }
