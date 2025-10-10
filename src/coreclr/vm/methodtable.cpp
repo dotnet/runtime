@@ -421,7 +421,7 @@ WORD MethodTable::GetNumMethods()
 PTR_MethodTable MethodTable::GetTypicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    if (IsArray())
+    if (IsArray() || IsContinuation())
         return (PTR_MethodTable)this;
 
     PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
@@ -1341,6 +1341,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(!pTargetMT->IsInterface());
+        PRECONDITION(!pTargetMT->IsContinuation());
     }
     CONTRACTL_END
 
@@ -7491,7 +7492,7 @@ CHECK MethodTable::CheckInstanceActivated()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsArray())
+    if (IsArray() || IsContinuation())
         CHECK_OK;
 
 

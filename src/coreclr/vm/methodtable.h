@@ -939,6 +939,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!IsContinuation());
         return m_pModule;
     }
 
