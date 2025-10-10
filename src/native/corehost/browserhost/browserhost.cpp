@@ -100,7 +100,12 @@ static std::vector<const char*> propertyKeys;
 static std::vector<const char*> propertyValues;
 static pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
 
-// TPA, app_path, and search_paths are passed as UTF-8 encoded arguments from JavaScript
+// TPA (Trusted Platform Assemblies), app_path, and search_paths are passed as UTF-8 encoded
+// string arguments from JavaScript instead of being read from environment variables.
+// The JavaScript host constructs these values from the loader configuration and passes them
+// directly via Emscripten's ccall mechanism, which automatically handles string conversion.
+// Memory for these C strings is managed by Emscripten and is valid for the duration of this call.
+// We copy the values into pal::string_t (std::string) to ensure they remain valid after the call returns.
 extern "C" int BrowserHost_InitializeCoreCLR(const char* tpaArg, const char* appPathArg, const char* searchPathsArg)
 {
     if (tpaArg != nullptr)
