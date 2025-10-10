@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -405,7 +406,7 @@ namespace System.Net.ServerSentEvents
             else if (fieldName.SequenceEqual("event"u8))
             {
                 // Spec: "Set the event type buffer to field value."
-                _eventType = SseParser.Utf8GetString(fieldValue);
+                _eventType = Encoding.UTF8.GetString(fieldValue);
             }
             else if (fieldName.SequenceEqual("id"u8))
             {
@@ -413,7 +414,7 @@ namespace System.Net.ServerSentEvents
                 if (fieldValue.IndexOf((byte)'\0') < 0)
                 {
                     // Note that fieldValue might be empty, in which case LastEventId will naturally be reset to the empty string. This is per spec.
-                    LastEventId = _eventId = SseParser.Utf8GetString(fieldValue);
+                    LastEventId = _eventId = Encoding.UTF8.GetString(fieldValue);
                 }
             }
             else if (fieldName.SequenceEqual("retry"u8))
@@ -424,7 +425,7 @@ namespace System.Net.ServerSentEvents
 #if NET
                     fieldValue,
 #else
-                    SseParser.Utf8GetString(fieldValue),
+                    Encoding.UTF8.GetString(fieldValue),
 #endif
                     NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds) &&
                     0 <= milliseconds && milliseconds <= TimeSpan_MaxValueMilliseconds)

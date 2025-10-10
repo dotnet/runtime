@@ -9,6 +9,7 @@
 
 Commonly Used Types:
 System.BinaryData</PackageDescription>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
