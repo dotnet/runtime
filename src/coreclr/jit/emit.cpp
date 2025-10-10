@@ -5042,6 +5042,7 @@ AGAIN:
 #ifdef TARGET_RISCV64
         /* Figure out the smallest size we can end up with */
 
+        // TODO-RISC64-RVC: add compressed branches and jumps
         if (emitIsCmpJump(jmp))
         {
             ssz = sizeof(code_t);
