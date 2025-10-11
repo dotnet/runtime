@@ -44,14 +44,14 @@ namespace System.Text.Json
                 if (jsonTypeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                 {
                     Debug.Assert(jsonTypeInfo.ExtensionDataProperty is null, "jsonTypeInfo.Configure() should have caught conflicting configuration.");
-                    string stringPropertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    string stringPropertyName = Encoding.UTF8.GetString(unescapedPropertyName);
                     ThrowHelper.ThrowJsonException_UnmappedJsonProperty(jsonTypeInfo.Type, stringPropertyName);
                 }
 
                 // Determine if we should use the extension property.
                 if (jsonTypeInfo.ExtensionDataProperty is JsonPropertyInfo { HasGetter: true, HasSetter: true } dataExtProperty)
                 {
-                    state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    state.Current.JsonPropertyNameAsString = Encoding.UTF8.GetString(unescapedPropertyName);
 
                     if (createExtensionProperty)
                     {
