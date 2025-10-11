@@ -145,8 +145,36 @@ namespace System.Reflection.Tests
             Assert.Fail("Expected to find MyAttribute");
         }
 
+        [Fact]
+        [MyEnumArray(MyTestEnum.Value1, null)]
+        public static void Test_CustomAttributeData_NullEnumArray()
+        {
+            MethodInfo m = (MethodInfo)MethodBase.GetCurrentMethod();
+            foreach (CustomAttributeData cad in m.CustomAttributes)
+            {
+                if (cad.AttributeType == typeof(MyEnumArrayAttribute))
+                {
+                    Assert.Equal(2, cad.ConstructorArguments.Count);
+                    Assert.Equal(typeof(MyTestEnum), cad.ConstructorArguments[0].ArgumentType);
+                    Assert.Equal((int)MyTestEnum.Value1, cad.ConstructorArguments[0].Value);
+                    Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[1].ArgumentType);
+                    Assert.Null(cad.ConstructorArguments[1].Value);
+                    return;
+                }
+            }
+
+            Assert.Fail("Expected to find MyEnumArrayAttribute");
+        }
+
         [Flags]
         private enum MyEnum { }
+
+        private enum MyTestEnum
+        {
+            Value1 = 1,
+            Value2 = 2,
+            Value3 = 3
+        }
 
         private class MyAttribute : Attribute
         {
@@ -156,6 +184,18 @@ namespace System.Reflection.Tests
             internal MyAttribute(int i, int j) { }
 
             static MyAttribute() { }
+        }
+
+        private class MyEnumArrayAttribute : Attribute
+        {
+            internal MyEnumArrayAttribute(MyTestEnum value, MyTestEnum[] arrayValue)
+            {
+                Value = value;
+                ArrayValue = arrayValue;
+            }
+
+            public MyTestEnum Value { get; }
+            public MyTestEnum[] ArrayValue { get; }
         }
 
         [StructLayout(LayoutKind.Explicit)]
