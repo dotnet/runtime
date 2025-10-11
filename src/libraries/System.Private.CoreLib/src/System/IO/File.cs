@@ -1077,7 +1077,7 @@ namespace System.IO
         // we will have asynchronous file access faked by the thread pool. We want the real thing.
         private static StreamReader AsyncStreamReader(string path, Encoding encoding)
             => new StreamReader(
-                new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan),
+                new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.Asynchronous | FileOptions.SequentialScan),
                 encoding, detectEncodingFromByteOrderMarks: true);
 
         public static Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
@@ -1339,7 +1339,7 @@ namespace System.IO
             try
             {
                 writer = new StreamWriter(
-                    new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
+                    new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1, FileOptions.Asynchronous),
                     encoding);
             }
             catch (Exception e)

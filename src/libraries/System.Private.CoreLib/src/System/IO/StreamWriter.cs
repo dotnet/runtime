@@ -189,7 +189,7 @@ namespace System.IO
                 ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             }
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileStream.DefaultBufferSize);
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1);
         }
 
         public override void Close()
