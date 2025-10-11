@@ -18,6 +18,7 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.Diagnostics;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.PEWriter
 {
@@ -197,12 +198,12 @@ namespace ILCompiler.PEWriter
             WriteTitle(writer, "INDEX | FILEOFFSET | RVA        | END_RVA    | LENGTH     | NAME");
             for (int sectionIndex = 0; sectionIndex < _outputInfoBuilder.Sections.Count; sectionIndex++)
             {
-                Section section = _outputInfoBuilder.Sections[sectionIndex];
+                OutputSection section = _outputInfoBuilder.Sections[sectionIndex];
                 writer.Write($"{sectionIndex,5} | ");
-                writer.Write($"0x{section.FilePosWhenPlaced:X8} | ");
-                writer.Write($"0x{section.RVAWhenPlaced:X8} | ");
-                writer.Write($"0x{(section.RVAWhenPlaced + section.Content.Count):X8} | ");
-                writer.Write($"0x{section.Content.Count:X8} | ");
+                writer.Write($"0x{section.FilePosition:X8} | ");
+                writer.Write($"0x{section.VirtualAddress:X8} | ");
+                writer.Write($"0x{(section.VirtualAddress + section.Length):X8} | ");
+                writer.Write($"0x{section.Length:X8} | ");
                 writer.WriteLine(section.Name);
             }
         }
@@ -223,8 +224,8 @@ namespace ILCompiler.PEWriter
                 {
                     // No more nodes or next symbol is below next node - emit symbol
                     OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
-                    Section section = _outputInfoBuilder.Sections[symbol.SectionIndex];
-                    writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8} | ");
+                    OutputSection section = _outputInfoBuilder.Sections[symbol.SectionIndex];
+                    writer.Write($"0x{symbol.Offset + section.VirtualAddress:X8} | ");
                     writer.Write("         | ");
                     writer.Write("       | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
@@ -234,9 +235,9 @@ namespace ILCompiler.PEWriter
                 {
                     // Emit node and optionally symbol
                     OutputNode node = _outputInfoBuilder.Nodes[nodeIndex++];
-                    Section section = _outputInfoBuilder.Sections[node.SectionIndex];
+                    OutputSection section = _outputInfoBuilder.Sections[node.SectionIndex];
 
-                    writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8} | ");
+                    writer.Write($"0x{node.Offset + section.VirtualAddress:X8} | ");
                     writer.Write($"0x{node.Length:X6} | ");
                     writer.Write($"{node.Relocations,6} | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
@@ -265,8 +266,8 @@ namespace ILCompiler.PEWriter
                 {
                     // No more nodes or next symbol is below next node - emit symbol
                     OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
-                    Section section = _outputInfoBuilder.Sections[symbol.SectionIndex];
-                    writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8},");
+                    OutputSection section = _outputInfoBuilder.Sections[symbol.SectionIndex];
+                    writer.Write($"0x{symbol.Offset + section.VirtualAddress:X8},");
                     writer.Write(",");
                     writer.Write(",");
                     writer.Write($"{section.Name},");
@@ -277,9 +278,9 @@ namespace ILCompiler.PEWriter
                 {
                     // Emit node and optionally symbol
                     OutputNode node = _outputInfoBuilder.Nodes[nodeIndex++];
-                    Section section = _outputInfoBuilder.Sections[node.SectionIndex];
+                    OutputSection section = _outputInfoBuilder.Sections[node.SectionIndex];
 
-                    writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8},");
+                    writer.Write($"0x{node.Offset + section.VirtualAddress:X8},");
                     writer.Write($"{node.Length},");
                     writer.Write($"{node.Relocations},");
                     writer.Write($"{section.Name},");
@@ -294,7 +295,7 @@ namespace ILCompiler.PEWriter
             }
         }
 
-        private static string GetNameHead(Section section)
+        private static string GetNameHead(OutputSection section)
         {
             string sectionNameHead = section.Name;
             if (sectionNameHead.Length > SectionNameHeadLength)

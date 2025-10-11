@@ -14,22 +14,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// They are emitted in a contiguous run of object nodes. This symbol is used in the object writer to represent the range
     /// of bytes containing all the thunks. 
     /// </summary>
-    public class DelayLoadMethodCallThunkNodeRange : DependencyNodeCore<NodeFactory>, ISymbolDefinitionNode
+    public class DelayLoadMethodCallThunkNodeRange : DependencyNodeCore<NodeFactory>, ISymbolRangeNode
     {
+        private ImportThunk _startNode;
+        private ImportThunk _endNode;
+
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
         public int Offset => 0;
         public bool RepresentsIndirectionCell => false;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
         protected override string GetName(NodeFactory context) => "DelayLoadMethodCallThunkNodeRange";
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(GetName(null));
         }
+
+        public void OnNodeMarked(DependencyNodeCore<NodeFactory> node)
+        {
+            if (node is ImportThunk thunk)
+            {
+                if (_startNode is null
+                    || CompilerComparer.Instance.Compare(thunk, _startNode) <= 0)
+                {
+                    _startNode = thunk;
+                }
+
+                if (_endNode is null
+                    || CompilerComparer.Instance.Compare(thunk, _endNode) > 0)
+                {
+                    _endNode = thunk;
+                }
+            }
+        }
+
+        public ISymbolNode StartNode(NodeFactory factory) => _startNode;
+        public ISymbolNode EndNode(NodeFactory factory) => _endNode;
     }
 }

@@ -150,6 +150,14 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             if (symbol.RepresentsIndirectionCell)
             {
+                Builder.RequireInitialPointerAlignment();
+
+                if (Builder.CountBytes % Builder.TargetPointerSize == 0)
+                {
+                    // Emit a NOP instruction to align the 64-bit reloc below.
+                    EmitNOP();
+                }
+
                 // ldr x12, [PC+0xc]
                 EmitLDR(Register.X12, 0xc);
 
@@ -157,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis.ARM64
                 EmitLDR(Register.X12, Register.X12);
 
                 // br x12
-                Builder.EmitUInt(0xd61f0180);
+                EmitJMP(Register.X12);
 
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
@@ -213,6 +221,11 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             Builder.EmitUInt(0b01010100_0000000000000000000_0_0000u | offset << 5);
 
             EmitJMP(symbol);
+        }
+
+        public void EmitNOP()
+        {
+            Builder.EmitUInt(0xD503201F);
         }
 
         private static bool InSignedByteRange(int i)

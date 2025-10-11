@@ -34,6 +34,12 @@
     <Platform Solution="*|x86" Project="x86" />
     <Build Solution="*|Any CPU" Project="false" />
   </Project>
+  <Project Path="ILCompiler.Diagnostics/ILCompiler.Diagnostics.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
   <Project Path="ILCompiler.MetadataTransform/ILCompiler.MetadataTransform.csproj">
     <Platform Solution="*|Any CPU" Project="x86" />
     <Platform Solution="*|x64" Project="x64" />

@@ -209,7 +209,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         bool isFilterFunclet = (frameInfo.Flags & FrameInfoFlags.Filter) != 0;
                         ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
-                        yield return new GCInfoComponent(personalityRoutine, factory.Target.CodeDelta);
+                        yield return new GCInfoComponent(personalityRoutine, 0);
                     }
 
                     if (frameInfoIndex == 0 && _methodNode.GCInfo != null)

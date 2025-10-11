@@ -5,19 +5,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-
+using System.Security.Cryptography;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Diagnostics;
+using ILCompiler.ObjectWriter;
 using ILCompiler.PEWriter;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using System.Security.Cryptography;
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -54,10 +54,10 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Nodes to emit into the output executable as collected by the dependency analysis.
         /// </summary>
-        private readonly IEnumerable<DependencyNode> _nodes;
+        private readonly IReadOnlyCollection<DependencyNode> _nodes;
 
         /// <summary>
-        /// Set to non-null when the executable generator should output a map or symbol file.
+        /// Set to non-null when generating symbol info or profile info.
         /// </summary>
         private readonly OutputInfoBuilder _outputInfoBuilder;
 
@@ -139,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis
             string objectFilePath,
             EcmaModule componentModule,
             IEnumerable<string> inputFiles,
-            IEnumerable<DependencyNode> nodes,
+            IReadOnlyCollection<DependencyNode> nodes,
             NodeFactory factory,
             bool generateMapFile,
             bool generateMapCsvFile,
@@ -172,7 +172,6 @@ namespace ILCompiler.DependencyAnalysis
             if (generateMap || generateSymbols || generateProfileFile)
             {
                 _outputInfoBuilder = new OutputInfoBuilder();
-
                 if (generateMap)
                 {
                     _mapFileBuilder = new MapFileBuilder(_outputInfoBuilder);
@@ -186,6 +185,118 @@ namespace ILCompiler.DependencyAnalysis
                 if (generateProfileFile)
                 {
                     _profileFileBuilder = new ProfileFileBuilder(_outputInfoBuilder, callChainProfile, _nodeFactory.Target);
+                }
+            }
+        }
+
+        public void EmitReadyToRunObjects(ReadyToRunContainerFormat format, Logger logger)
+        {
+            bool succeeded = false;
+
+            try
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                Debug.Assert(format == ReadyToRunContainerFormat.PE);
+
+                int? timeDateStamp;
+
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                {
+                    timeDateStamp = null;
+                }
+                else
+                {
+                    PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
+                    timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
+                }
+
+                PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, _objectFilePath, _customPESectionAlignment, timeDateStamp);
+
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                {
+                    objectWriter.AddExportedSymbol("RTR_HEADER");
+                }
+
+                using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
+                objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
+
+                if (_outputInfoBuilder is not null)
+                {
+                    foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
+                        _outputInfoBuilder.AddMethod(methodNode, methodNode);
+                }
+
+                if (_mapFileBuilder != null)
+                {
+                    _mapFileBuilder.SetFileSize(stream.Length);
+                }
+
+                if (_outputInfoBuilder is not null)
+                {
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                    }
+                }
+
+                if (_generateMapFile)
+                {
+                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                    _mapFileBuilder.SaveMap(mapFileName);
+                }
+
+                if (_generateMapCsvFile)
+                {
+                    string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
+                    string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
+                    _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                }
+
+                if (_generatePdbFile)
+                {
+                    string path = _pdbPath;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        path = Path.GetDirectoryName(_objectFilePath);
+                    }
+                    _symbolFileBuilder.SavePdb(path, _objectFilePath);
+                }
+
+                if (_generatePerfMapFile)
+                {
+                    string path = _perfMapPath;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        path = Path.GetDirectoryName(_objectFilePath);
+                    }
+                    _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
+                }
+
+                if (_profileFileBuilder != null)
+                {
+                    string path = Path.ChangeExtension(_objectFilePath, ".profile");
+                    _profileFileBuilder.SaveProfile(path);
+                }
+
+                stopwatch.Stop();
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
+                succeeded = true;
+            }
+            finally
+            {
+                if (!succeeded)
+                {
+                    // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
+                    // object file around.
+                    try
+                    {
+                        File.Delete(_objectFilePath);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
         }
@@ -235,23 +346,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
                 PerfMapDebugDirectoryEntryNode perfMapDebugDirectoryEntryNode = null;
-                ISymbolDefinitionNode firstImportThunk = null;
-                ISymbolDefinitionNode lastImportThunk = null;
                 ObjectNode lastWrittenObjectNode = null;
-
-                // Save cold method nodes here, and emit them to execution section last.
-                List<ObjectNode> methodColdCodeNodes = new List<ObjectNode>();
 
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
-
-                    if (node is MethodColdCodeNode)
-                    {
-                        methodColdCodeNodes.Add(node);
-                        continue;
-                    }
 
                     ++nodeIndex;
 
@@ -279,18 +379,6 @@ namespace ILCompiler.DependencyAnalysis
                         perfMapDebugDirectoryEntryNode = pmdeNode;
                     }
 
-                    if (node is ImportThunk importThunkNode)
-                    {
-                        Debug.Assert(firstImportThunk == null || lastWrittenObjectNode is ImportThunk,
-                            "All the import thunks must be in single contiguous run");
-
-                        if (firstImportThunk == null)
-                        {
-                            firstImportThunk = importThunkNode;
-                        }
-                        lastImportThunk = importThunkNode;
-                    }
-
                     string name = GetDependencyNodeName(depNode);
 
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
@@ -303,27 +391,13 @@ namespace ILCompiler.DependencyAnalysis
                         _outputInfoBuilder.AddMethod(methodNode, methodNode);
                 }
 
-                // Emit cold method nodes to end of execution section.
-                foreach (ObjectNode node in methodColdCodeNodes)
-                {
-                    ++nodeIndex;
-
-                    if (node == null)
-                    {
-                        continue;
-                    }
-
-                    ObjectData nodeContents = node.GetData(_nodeFactory);
-                    string name = GetDependencyNodeName(node);
-
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
-                }
-
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
                 r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
-                if (firstImportThunk != null)
+
+                ISymbolNode firstImportThunk = _nodeFactory.DelayLoadMethodCallThunks.StartNode(_nodeFactory);
+                if (firstImportThunk is not null)
                 {
-                    r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, lastImportThunk);
+                    r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, _nodeFactory.DelayLoadMethodCallThunks.EndNode(_nodeFactory));
                 }
 
 
@@ -364,17 +438,6 @@ namespace ILCompiler.DependencyAnalysis
                             peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
                             peStream.Write(rsdsEntry);
                         }
-                    }
-
-                    if (perfMapDebugDirectoryEntryNode is not null)
-                    {
-                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
-                        byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
-                        byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
-
-                        int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(perfMapDebugDirectoryEntryNode);
-                        peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
-                        peStream.Write(perfMapEntry);
                     }
                 }
 
@@ -515,7 +578,7 @@ namespace ILCompiler.DependencyAnalysis
             string objectFilePath,
             EcmaModule componentModule,
             IEnumerable<string> inputFiles,
-            IEnumerable<DependencyNode> nodes,
+            IReadOnlyCollection<DependencyNode> nodes,
             NodeFactory factory,
             bool generateMapFile,
             bool generateMapCsvFile,
@@ -526,7 +589,9 @@ namespace ILCompiler.DependencyAnalysis
             int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
-            int customPESectionAlignment)
+            ReadyToRunContainerFormat format,
+            int customPESectionAlignment,
+            Logger logger)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(
@@ -545,7 +610,15 @@ namespace ILCompiler.DependencyAnalysis
                 generateProfileFile: generateProfileFile,
                 callChainProfile,
                 customPESectionAlignment);
-            objectWriter.EmitPortableExecutable();
+
+            if (format == ReadyToRunContainerFormat.LegacyPE)
+            {
+                objectWriter.EmitPortableExecutable();
+            }
+            else
+            {
+                objectWriter.EmitReadyToRunObjects(format, logger);
+            }
         }
     }
 }

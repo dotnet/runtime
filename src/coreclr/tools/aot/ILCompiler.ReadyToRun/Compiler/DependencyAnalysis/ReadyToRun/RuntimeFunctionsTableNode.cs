@@ -23,6 +23,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nodeFactory = nodeFactory;
         }
 
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            return ObjectNodeSection.PDataSection;
+        }
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
@@ -119,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + _nodeFactory.Target.CodeDelta);
+                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset);
                         if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
                         {
                             // On Amd64, the 2nd word contains the EndOffset of the runtime function

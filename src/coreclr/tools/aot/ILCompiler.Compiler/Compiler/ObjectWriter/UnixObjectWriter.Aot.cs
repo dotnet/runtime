@@ -18,14 +18,8 @@ namespace ILCompiler.ObjectWriter
     /// Base implementation for ELF and Mach-O object file format writers. Implements
     /// the common code for DWARF debugging and exception handling information.
     /// </summary>
-    internal abstract class UnixObjectWriter : ObjectWriter
+    internal abstract partial class UnixObjectWriter : ObjectWriter
     {
-        private sealed record UnixSectionDefinition(string SymbolName, Stream SectionStream);
-
-        // Debugging
-        private DwarfBuilder _dwarfBuilder;
-        private readonly List<UnixSectionDefinition> _sections = new();
-
         // Exception handling sections
         private SectionWriter _lsdaSectionWriter;
         private int _ehFrameSectionIndex;
@@ -34,8 +28,9 @@ namespace ILCompiler.ObjectWriter
 
         protected int EhFrameSectionIndex => _ehFrameSectionIndex;
 
-        private static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
-        private static readonly ObjectNodeSection EhFrameSection = new ObjectNodeSection(".eh_frame", SectionType.UnwindData);
+        // Debugging
+        private DwarfBuilder _dwarfBuilder;
+
         private static readonly ObjectNodeSection DebugInfoSection = new ObjectNodeSection(".debug_info", SectionType.Debug);
         private static readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
         private static readonly ObjectNodeSection DebugAbbrevSection = new ObjectNodeSection(".debug_abbrev", SectionType.Debug);
@@ -44,30 +39,32 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection DebugLineSection = new ObjectNodeSection(".debug_line", SectionType.Debug);
         private static readonly ObjectNodeSection DebugARangesSection = new ObjectNodeSection(".debug_aranges", SectionType.Debug);
 
-        protected UnixObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
-        {
-        }
-
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
-        {
-            if (section.Type != SectionType.Debug &&
-                section != LsdaSection &&
-                section != EhFrameSection &&
-                (comdatName is null || Equals(comdatName, symbolName)))
-            {
-                // Record code and data sections that can be referenced from debugging information
-                _sections.Add(new UnixSectionDefinition(symbolName, sectionStream));
-            }
-            else
-            {
-                _sections.Add(null);
-            }
-        }
+        private protected virtual bool UseFrameNames => false;
 
         private protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
 
-        private protected virtual bool UseFrameNames => false;
+        private protected override void CreateEhSections()
+        {
+            SectionWriter ehFrameSectionWriter;
+
+            // Create sections for exception handling
+            _lsdaSectionWriter = GetOrCreateSection(LsdaSection);
+            ehFrameSectionWriter = GetOrCreateSection(EhFrameSection);
+            _lsdaSectionWriter.EmitAlignment(8);
+            ehFrameSectionWriter.EmitAlignment(8);
+            _ehFrameSectionIndex = ehFrameSectionWriter.SectionIndex;
+
+            // We always use the same CIE in DWARF EH frames, so create and emit it now
+            bool is64Bit = _nodeFactory.Target.Architecture switch
+            {
+                TargetArchitecture.X86 => false,
+                TargetArchitecture.ARM => false,
+                _ => true
+            };
+            _dwarfCie = new DwarfCie(_nodeFactory.Target.Architecture);
+            _dwarfEhFrame = new DwarfEhFrame(ehFrameSectionWriter, is64Bit);
+            _dwarfEhFrame.AddCie(_dwarfCie);
+        }
 
         private protected void EmitLsda(
             INodeWithCodeInfo nodeWithCodeInfo,
@@ -318,29 +315,6 @@ namespace ILCompiler.ObjectWriter
                 });
         }
 
-        private protected override void CreateEhSections()
-        {
-            SectionWriter ehFrameSectionWriter;
-
-            // Create sections for exception handling
-            _lsdaSectionWriter = GetOrCreateSection(LsdaSection);
-            ehFrameSectionWriter = GetOrCreateSection(EhFrameSection);
-            _lsdaSectionWriter.EmitAlignment(8);
-            ehFrameSectionWriter.EmitAlignment(8);
-            _ehFrameSectionIndex = ehFrameSectionWriter.SectionIndex;
-
-            // We always use the same CIE in DWARF EH frames, so create and emit it now
-            bool is64Bit = _nodeFactory.Target.Architecture switch
-            {
-                TargetArchitecture.X86 => false,
-                TargetArchitecture.ARM => false,
-                _ => true
-            };
-            _dwarfCie = new DwarfCie(_nodeFactory.Target.Architecture);
-            _dwarfEhFrame = new DwarfEhFrame(ehFrameSectionWriter, is64Bit);
-            _dwarfEhFrame.AddCie(_dwarfCie);
-        }
-
         private protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
         {
             return _dwarfBuilder = new DwarfBuilder(
@@ -348,5 +322,6 @@ namespace ILCompiler.ObjectWriter
                 _nodeFactory.Target,
                 _options.HasFlag(ObjectWritingOptions.UseDwarf5));
         }
+
     }
 }

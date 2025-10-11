@@ -5,7 +5,7 @@ using System.Text;
 
 using Internal.TypeSystem;
 
-namespace ILCompiler.PEWriter
+namespace ILCompiler.ObjectWriter
 {
     // This is a very rough equivalent of typestring.cpp in the CLR with only
     // basic formatting options. Only used to format type names for map
