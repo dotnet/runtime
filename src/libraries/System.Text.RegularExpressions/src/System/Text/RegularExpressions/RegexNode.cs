@@ -3149,6 +3149,15 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the node is a Notone/Notoneloop/Notoneloopatomic/Notonelazy node.</summary>
         public bool IsNotoneFamily => Kind is RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy;
 
+        /// <summary>Gets whether the node is an anchor (a zero-width assertion that cannot be quantified).</summary>
+        public bool IsAnchor => Kind is
+            RegexNodeKind.Beginning or RegexNodeKind.Start or
+            RegexNodeKind.Bol or RegexNodeKind.Eol or
+            RegexNodeKind.End or RegexNodeKind.EndZ or
+            RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+            RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary or
+            RegexNodeKind.UpdateBumpalong;
+
 #if DEBUG
         [ExcludeFromCodeCoverage] // Used only for debugging assistance
         public override string ToString()

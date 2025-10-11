@@ -494,7 +494,12 @@ namespace System.Text.RegularExpressions
                         throw MakeException(RegexParseError.ReversedQuantifierRange, SR.ReversedQuantifierRange);
                     }
 
-                    _concatenation!.AddChild(_unit!.MakeQuantifier(lazy, min, max));
+                    if (_unit!.IsAnchor)
+                    {
+                        throw MakeException(RegexParseError.QuantifierAfterNothing, SR.Format(SR.QuantifierAfterNothing, ch));
+                    }
+
+                    _concatenation!.AddChild(_unit.MakeQuantifier(lazy, min, max));
                     _unit = null;
                 }
 
