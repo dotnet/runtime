@@ -1414,7 +1414,7 @@ namespace System.IO
         /// Establishes a hard link between an existing file and a new file.
         /// </summary>
         /// <param name="path">The path of the new file.</param>
-        /// <param name="pathToTarget">The path of the existing file.</param>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
         /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
