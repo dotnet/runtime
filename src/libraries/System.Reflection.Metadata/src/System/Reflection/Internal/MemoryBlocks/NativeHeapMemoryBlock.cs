@@ -29,7 +29,7 @@ namespace System.Reflection.Internal
                 finally
 #endif
                 {
-                    _pointer = Marshal.AllocHGlobal(size);
+                    _pointer = (IntPtr)NativeMemory.Alloc((nuint)size);
                 }
             }
 
@@ -46,7 +46,7 @@ namespace System.Reflection.Internal
                     IntPtr ptr = Interlocked.Exchange(ref _pointer, IntPtr.Zero);
                     if (ptr != IntPtr.Zero)
                     {
-                        Marshal.FreeHGlobal(ptr);
+                        NativeMemory.Free((void*)ptr);
                     }
                 }
             }

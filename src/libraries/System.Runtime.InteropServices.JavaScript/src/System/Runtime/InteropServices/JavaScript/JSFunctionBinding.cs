@@ -417,7 +417,7 @@ namespace System.Runtime.InteropServices.JavaScript
             exc.slot.ReceiverShouldFree = true;
 
             var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-            void* cpy = (void*)Marshal.AllocHGlobal(bytes);
+            void* cpy = NativeMemory.Alloc((nuint)bytes);
             arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));
             var sig = (nint)signature.Header;
 
@@ -480,7 +480,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 // this copy is freed in SystemInteropJS_ResolveOrRejectPromise
                 var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-                void* cpy = (void*)Marshal.AllocHGlobal(bytes);
+                void* cpy = NativeMemory.Alloc((nuint)bytes);
                 arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));
 
                 // async
