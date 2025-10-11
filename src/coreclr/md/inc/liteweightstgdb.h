@@ -69,6 +69,21 @@ protected:
 template <class MiniMd>
 void CLiteWeightStgdb<MiniMd>::Uninit()
 {
+    // Clean up allocated column definitions (same logic as CMiniMdBase destructor)
+    for (ULONG i = 0; i < m_MiniMd.m_TblCount; i++)
+    {
+        if (m_MiniMd.m_TableDefs[i].m_pColDefs != NULL)
+        {
+            // Check if memory was allocated (same logic as UsesAllocatedMemory)
+            BYTE *pMem = COLDES_TO_BYTEARRAY(m_MiniMd.m_TableDefs[i].m_pColDefs);
+            if (*pMem == ALLOCATED_MEMORY_MARKER)
+            {
+                delete[] pMem;
+                m_MiniMd.m_TableDefs[i].m_pColDefs = NULL;
+            }
+        }
+    }
+    
     m_MiniMd.m_StringHeap.Delete();
     m_MiniMd.m_UserStringHeap.Delete();
     m_MiniMd.m_GuidHeap.Delete();
