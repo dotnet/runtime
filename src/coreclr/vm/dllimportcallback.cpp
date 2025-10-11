@@ -4,8 +4,7 @@
 // File: DllImportCallback.cpp
 //
 
-//
-
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "common.h"
 
@@ -164,20 +163,6 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     RETURN pThunk;
 }
 
-// FailFast if a method marked UnmanagedCallersOnlyAttribute is
-// invoked directly from managed code. UMThunkStub.asm check the
-// mode and call this function to failfast.
-extern "C" VOID STDCALL ReversePInvokeBadTransition()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    // Fail
-    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-                                             COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
-                                            );
-}
-
 //-------------------------------------------------------------------------
 // This function is used to report error when we call collected delegate.
 // But memory that was allocated for thunk can be reused, due to it this
@@ -210,20 +195,20 @@ VOID CallbackOnCollectedDelegate(UMEntryThunkData* pEntryThunkData)
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER)
 PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
 
-UMEntryThunkData * GetMostRecentUMEntryThunkData()
+UMEntryThunkData* GetMostRecentUMEntryThunkData()
 {
     LIMITED_METHOD_CONTRACT;
 
-    UMEntryThunkData * result = t_MostRecentUMEntryThunkData;
+    UMEntryThunkData* result = t_MostRecentUMEntryThunkData;
     t_MostRecentUMEntryThunkData = nullptr;
     return result;
 }
-#endif
+#endif // FEATURE_INTERPRETER
 
-PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunkData)
+PCODE TheUMEntryPrestubWorker(UMEntryThunkData* pUMEntryThunkData)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -448,4 +433,19 @@ VOID UMThunkMarshInfo::RunTimeInit()
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
+}
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+// FailFast if a method marked UnmanagedCallersOnlyAttribute is
+// invoked directly from managed code. UMThunkStub.asm check the
+// mode and call this function to failfast.
+VOID STDCALL ReversePInvokeBadTransition()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    // Fail
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                                             COR_E_EXECUTIONENGINE,
+                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
+                                            );
 }

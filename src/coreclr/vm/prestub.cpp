@@ -66,7 +66,7 @@ void MethodDesc::Init()
 
 //==========================================================================
 
-PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BOOL fFullBackPatch)
+PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bool fFullBackPatch)
 {
     CONTRACTL
     {
@@ -138,8 +138,10 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
                 }
             }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
             // Patch the fake entrypoint if necessary
             Precode::GetPrecodeFromEntryPoint(pExpected)->SetTargetInterlocked(pTarget);
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         }
 
         if (HasNonVtableSlot())
@@ -363,6 +365,8 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
     if (shouldTier && !nativeCodeVersion.IsDefaultVersion())
     {
@@ -372,6 +376,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
             shouldTier = false;
         }
     }
+#endif // FEATURE_CODE_VERSIONING
 
     if (pConfig->MayUsePrecompiledCode())
     {
@@ -743,6 +748,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // JITCompilationStarted. It isn't clear if this is the ideal policy for these
         // notifications yet.
         NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+#ifdef FEATURE_CODE_VERSIONING
         ReJITID rejitId = nativeCodeVersion.GetILCodeVersionId();
         if (rejitId != 0)
         {
@@ -752,14 +758,14 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 TRUE);
         }
         else
+#endif // FEATURE_CODE_VERSIONING
+        {
             // If profiling, need to give a chance for a tool to examine and modify
             // the IL before it gets to the JIT.  This allows one to add probe calls for
             // things like code coverage, performance, or whatever.
-        {
             if (!IsNoMetadata())
             {
                 (&g_profControlBlock)->JITCompilationStarted((FunctionID)this, TRUE);
-
             }
             else
             {
@@ -770,10 +776,12 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
 
+#ifdef FEATURE_CODE_VERSIONING
             if (nativeCodeVersion.IsDefaultVersion())
             {
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
+#endif // FEATURE_CODE_VERSIONING
         }
         END_PROFILER_CALLBACK();
     }
@@ -833,6 +841,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // JITCompilationFinished. It isn't clear if this is the ideal policy for these
         // notifications yet.
         NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+#ifdef FEATURE_CODE_VERSIONING
         ReJITID rejitId = nativeCodeVersion.GetILCodeVersionId();
         if (rejitId != 0)
         {
@@ -843,10 +852,11 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 TRUE);
         }
         else
+#endif // FEATURE_CODE_VERSIONING
+        {
             // Notify the profiler that JIT completed.
             // Must do this after the address has been set.
             // @ToDo: Why must we set the address before notifying the profiler ??
-        {
             if (!IsNoMetadata())
             {
                 (&g_profControlBlock)->
@@ -859,10 +869,12 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 (&g_profControlBlock)->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
             }
 
+#ifdef FEATURE_CODE_VERSIONING
             if (nativeCodeVersion.IsDefaultVersion())
             {
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
+#endif // FEATURE_CODE_VERSIONING
         }
         END_PROFILER_CALLBACK();
     }
@@ -2027,8 +2039,6 @@ static InterpThreadContext* GetInterpThreadContext()
     return threadContext;
 }
 
-EXTERN_C void STDCALL ReversePInvokeBadTransition();
-
 extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
@@ -2253,14 +2263,14 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         _ASSERTE(pCode != (PCODE)NULL);
         goto Return;
     }
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
     if (!IsPointingToPrestub())
     {
         LOG((LF_CLASSLOADER, LL_INFO10000,
             "    In PreStubWorker, method already jitted, backpatching call point\n"));
 
-        pCode = DoBackpatch(pMT, pDispatchingMT, TRUE);
+        pCode = DoBackpatch(pMT, pDispatchingMT, true /* doFullBackpatch */);
         goto Return;
     }
 
@@ -2277,10 +2287,12 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
     else if (IsIL() || IsNoMetadata())
     {
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (!IsNativeCodeStableAfterInit())
         {
             GetOrCreatePrecode();
         }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsPInvoke())
@@ -2418,7 +2430,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     _ASSERTE(!IsPointingToPrestub());
     _ASSERTE(HasStableEntryPoint());
 
-    pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
+    pCode = DoBackpatch(pMT, pDispatchingMT, false /* doFullBackpatch */);
 
 Return:
 // Interpreter-FIXME: Call stubs are not yet supported on WASM
@@ -2467,7 +2479,11 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    UNREACHABLE_MSG("TheUMThunkPreStub not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)

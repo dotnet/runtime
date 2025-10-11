@@ -971,6 +971,7 @@ BOOL ThePreStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 // Stub manager functions & globals
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 SPTR_IMPL(PrecodeStubManager, PrecodeStubManager, g_pManager);
 
 #ifndef DACCESS_COMPILE
@@ -1159,6 +1160,7 @@ BOOL PrecodeStubManager::TraceManager(Thread *thread,
     return FALSE;
 }
 #endif
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // -------------------------------------------------------
 // StubLinkStubManager
@@ -1737,6 +1739,9 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else if (pStubMD->IsReverseStub())
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        UNREACHABLE_MSG("Reverse P/Invoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS.");
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (pStubMD->IsStatic())
         {
             // This is reverse P/Invoke stub, the argument is UMEntryThunkData
@@ -1751,6 +1756,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
         }
         trace->InitForManaged(target);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (pStubMD->IsPInvokeDelegateStub())
     {
@@ -2146,6 +2152,7 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
 
 #ifdef DACCESS_COMPILE
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 void
 PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2154,6 +2161,7 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 void
 StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

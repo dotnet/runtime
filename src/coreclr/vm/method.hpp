@@ -234,7 +234,9 @@ enum MethodDescFlags
 // Used for storing additional items related to native code
 struct MethodDescCodeData final
 {
+#ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDescVersioningState VersioningState;
+#endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
     CallStubHeader *CallStub;
@@ -379,6 +381,7 @@ public:
         return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     inline Precode* GetPrecode()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -388,6 +391,7 @@ public:
         _ASSERTE(pPrecode != NULL);
         return pPrecode;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     inline bool MayHavePrecode()
     {
@@ -412,7 +416,9 @@ public:
         return result;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     Precode* GetOrCreatePrecode();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     void MarkPrecodeAsStableEntrypoint();
 
     static MethodDesc *  GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative = FALSE);
@@ -1412,9 +1418,13 @@ private:
     bool TryBackpatchEntryPointSlots(PCODE entryPoint, bool isPrestubEntryPoint, bool onlyFromPrestubEntryPoint);
 
 public:
+#ifdef FEATURE_CODE_VERSIONING
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
+#endif // FEATURE_CODE_VERSIONING
     void SetCodeEntryPoint(PCODE entryPoint);
+#ifdef FEATURE_TIERED_COMPILATION
     void ResetCodeEntryPoint();
+#endif // FEATURE_TIERED_COMPILATION
     void ResetCodeEntryPointForEnC();
 
 
@@ -1443,6 +1453,25 @@ public:
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
+    BOOL IsPointingToNativeCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        return FALSE;
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        if (!HasStableEntryPoint())
+            return FALSE;
+
+        if (!HasPrecode())
+            return TRUE;
+
+        return GetPrecode()->IsPointingToNativeCode(GetNativeCode());
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     //Is this method currently pointing to native code that will never change?
     BOOL IsPointingToStableNativeCode()
     {
@@ -1453,22 +1482,7 @@ public:
 
         return IsPointingToNativeCode();
     }
-
-    // Note: We are skipping the prestub based on addition information from the JIT.
-    // (e.g. that the call is on same this ptr or that the this ptr is not null).
-    // Thus we can end up with a running NGENed method for which IsPointingToNativeCode is false!
-    BOOL IsPointingToNativeCode()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (!HasStableEntryPoint())
-            return FALSE;
-
-        if (!HasPrecode())
-            return TRUE;
-
-        return GetPrecode()->IsPointingToNativeCode(GetNativeCode());
-    }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Be careful about races with profiler when using this method. The profiler can
     // replace preimplemented code of the method with jitted code.
@@ -1746,7 +1760,7 @@ public:
     // Return value:
     //     stable entry point (code:MethodDesc::GetStableEntryPoint())
     //
-    PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
+    PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, bool fFullBackPatch);
 
     PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
@@ -1866,16 +1880,19 @@ public:
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
-
-    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
-#ifdef FEATURE_INTERPRETER
-    bool SetCallStub(CallStubHeader *pHeader);
-    CallStubHeader *GetCallStub();
-#endif // FEATURE_INTERPRETER
-
 #endif //!DACCESS_COMPILE
 
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    bool SetCallStub(CallStubHeader *pHeader);
+    CallStubHeader *GetCallStub();
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
+
+#ifdef FEATURE_CODE_VERSIONING
+#ifndef DACCESS_COMPILE
+    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     inline DWORD GetClassification() const

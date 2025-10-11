@@ -740,15 +740,17 @@ private:
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
 
-    // Linear mapping from MethodDef token to ILCodeVersioningState *
-    // This is used for Code Versioning logic
-    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
-
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
+
+#ifdef FEATURE_CODE_VERSIONING
+    // Linear mapping from MethodDef token to ILCodeVersioningState *
+    // This is used for Code Versioning logic
+    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
+#endif // FEATURE_CODE_VERSIONING
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -871,7 +873,9 @@ protected:
 
     void ApplyMetaData();
 
+#ifdef FEATURE_IJW
     void FixupVTables();
+#endif // FEATURE_IJW
 
     void FreeClassTables();
 
@@ -1252,6 +1256,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_CODE_VERSIONING
     PTR_ILCodeVersioningState LookupILCodeVersioningState(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
@@ -1270,6 +1275,7 @@ public:
         m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     FieldDesc *LookupFieldDef(mdFieldDef token)
@@ -1714,7 +1720,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
     static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
     static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+#ifdef FEATURE_CODE_VERSIONING
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
+#endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
 };
 

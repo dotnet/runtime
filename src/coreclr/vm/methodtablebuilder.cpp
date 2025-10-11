@@ -1365,7 +1365,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (g_pConfig->ShouldBreakOnClassBuild(className))
     {
-        CONSISTENCY_CHECK_MSGF(false, ("BreakOnClassBuild: typename '%s' ", className));
         GetHalfBakedClass()->m_fDebuggingClass = TRUE;
     }
 

@@ -719,7 +719,9 @@ void SystemDomain::Attach()
     CONTRACTL_END;
 
     // Initialize stub managers
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();
