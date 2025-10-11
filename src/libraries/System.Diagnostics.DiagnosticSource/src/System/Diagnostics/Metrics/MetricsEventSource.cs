@@ -48,9 +48,11 @@ namespace System.Diagnostics.Metrics
     ///         not counting the special zero bucket. The default value is 160.
     ///       o reportDeltas - If true, the histogram will report deltas instead of whole accumulated values. The default value is false.
     /// </summary>
-    [EventSource(Name = "System.Diagnostics.Metrics")]
+    [EventSource(Name = MetricsEventSourceName)]
     internal sealed class MetricsEventSource : EventSource
     {
+        private const string MetricsEventSourceName = "System.Diagnostics.Metrics";
+
         public static readonly MetricsEventSource Log = new();
 
         // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
@@ -96,7 +98,10 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private MetricsEventSource() { }
+        private MetricsEventSource()
+            : base(MetricsEventSourceName, EventSourceSettings.EtwManifestEventFormat)
+        {
+        }
 
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.
@@ -108,7 +113,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(2, Keywords = Keywords.TimeSeriesValues)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -118,7 +123,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(3, Keywords = Keywords.TimeSeriesValues)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -128,7 +133,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -138,7 +143,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(5, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -148,7 +153,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -161,7 +166,7 @@ namespace System.Diagnostics.Metrics
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
         [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 3)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -186,7 +191,7 @@ namespace System.Diagnostics.Metrics
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
         [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 3)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -221,7 +226,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 3)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -268,7 +273,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 2)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -278,7 +283,7 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -300,7 +305,7 @@ namespace System.Diagnostics.Metrics
         /// Used to send the value of a base 2 exponential histogram.
         /// </summary>
         [Event(19, Keywords = Keywords.TimeSeriesValues, Version = 1)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif

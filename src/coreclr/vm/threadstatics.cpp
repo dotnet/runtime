@@ -3,22 +3,16 @@
 #include "common.h"
 #include "threadstatics.h"
 
-struct InFlightTLSData
-{
 #ifndef DACCESS_COMPILE
-    InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
-    ~InFlightTLSData()
+InFlightTLSData::InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
+InFlightTLSData::~InFlightTLSData()
     {
         if (!IsHandleNullUnchecked(hTLSData))
         {
             DestroyTypedHandle(hTLSData);
         }
     }
-#endif // !DACCESS_COMPILE
-    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
-    TLSIndex tlsIndex; // The TLS index for the static
-    OBJECTHANDLE hTLSData; // The TLS data for the static
-};
+#endif
 
 
 struct ThreadLocalLoaderAllocator

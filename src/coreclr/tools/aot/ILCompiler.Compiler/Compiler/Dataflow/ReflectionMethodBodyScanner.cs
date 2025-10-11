@@ -109,26 +109,26 @@ namespace ILCompiler.Dataflow
             TrimAnalysisPatterns = new TrimAnalysisPatternStore(MultiValueLattice, logger);
         }
 
-        public override void InterproceduralScan(MethodIL methodBody)
+        public override void InterproceduralScan(MethodIL methodIL)
         {
-            base.InterproceduralScan(methodBody);
+            base.InterproceduralScan(methodIL);
 
             // Replace the reflection marker with one which actually marks
             _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
             TrimAnalysisPatterns.MarkAndProduceDiagnostics(_reflectionMarker);
         }
 
-        protected override void Scan(MethodIL methodBody, ref InterproceduralState interproceduralState)
+        protected override void Scan(MethodIL methodIL, ref InterproceduralState interproceduralState)
         {
-            _origin = new MessageOrigin(methodBody.OwningMethod);
-            base.Scan(methodBody, ref interproceduralState);
+            _origin = new MessageOrigin(methodIL.OwningMethod);
+            base.Scan(methodIL, ref interproceduralState);
         }
 
-        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
+        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
         {
-            var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodBody.OwningMethod));
+            var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodIL.OwningMethod));
 
-            scanner.InterproceduralScan(methodBody);
+            scanner.InterproceduralScan(methodIL);
 
             runtimeDependencies = scanner._reflectionMarker.RuntimeDeterminedDependencies;
             return scanner._reflectionMarker.Dependencies;
@@ -171,7 +171,7 @@ namespace ILCompiler.Dataflow
                 // Apply any annotations that didn't exist on the base type to the base type.
                 // This may produce redundant warnings when the annotation is DAMT.All or DAMT.PublicConstructors and the base already has a
                 // subset of those annotations.
-                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type.GetDisplayName(), declaredOnly: false);
+                reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, type.BaseType, annotationToApplyToBase, type, declaredOnly: false);
             }
 
             // Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
@@ -186,14 +186,14 @@ namespace ILCompiler.Dataflow
 
                     // Apply All or Interfaces to the interface type.
                     // DAMT.All may produce redundant warnings from implementing types, when the interface type already had some annotations.
-                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type.GetDisplayName(), declaredOnly: false);
+                    reflectionMarker.MarkTypeForDynamicallyAccessedMembers(origin, iface, annotationToApplyToInterfaces, type, declaredOnly: false);
                 }
             }
 
             // The annotations this type inherited from its base types or interfaces should not produce
             // warnings on the respective base/interface members, since those are already covered by applying
             // the annotations to those types. So we only need to handle the members directly declared on this type.
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName(), declaredOnly: true);
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type, declaredOnly: true);
             return reflectionMarker.Dependencies;
         }
 
@@ -221,9 +221,9 @@ namespace ILCompiler.Dataflow
         /// either as a source or target. It is not called when just a reference to field is created,
         /// But if such reference is dereferenced then it will get called.
         /// </summary>
-        protected override MultiValue HandleGetField(MethodIL methodBody, int offset, FieldDesc field)
+        protected override MultiValue HandleGetField(MethodIL methodIL, int offset, FieldDesc field)
         {
-            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            _origin = _origin.WithInstructionOffset(methodIL, offset);
 
             if (field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
@@ -235,58 +235,58 @@ namespace ILCompiler.Dataflow
             return _annotations.GetFieldValue(field);
         }
 
-        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, int? parameterIndex, string reason)
+        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodIL, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, int? parameterIndex, TypeSystemEntity reason)
         {
             if (targetValue.DynamicallyAccessedMemberTypes != 0)
             {
-                _origin = _origin.WithInstructionOffset(methodBody, offset);
+                _origin = _origin.WithInstructionOffset(methodIL, offset);
                 TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(sourceValue, targetValue, _origin, parameterIndex, reason));
             }
         }
 
-        protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore, int? parameterIndex)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, parameterIndex, field.Field.GetDisplayName());
+        protected override void HandleStoreField(MethodIL methodIL, int offset, FieldValue field, MultiValue valueToStore, int? parameterIndex)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, field, valueToStore, parameterIndex, field.Field);
 
-        protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore, int? parameterIndex)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameterIndex, parameter.Parameter.Method.GetDisplayName());
+        protected override void HandleStoreParameter(MethodIL methodIL, int offset, MethodParameterValue parameter, MultiValue valueToStore, int? parameterIndex)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, parameter, valueToStore, parameterIndex, parameter.Parameter.Method.Method);
 
-        protected override void HandleReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, null, returnValue.Method.GetDisplayName());
+        protected override void HandleReturnValue(MethodIL methodIL, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodIL, offset, returnValue, valueToStore, null, returnValue.Method.Method);
 
-        protected override void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
+        protected override void HandleTypeTokenAccess(MethodIL methodIL, int offset, TypeDesc accessedType)
         {
             // Note that ldtoken alone is technically a reflection access to the type
             // it doesn't lead to full reflection marking of the type
             // since we implement full dataflow for type values and accesses to them.
-            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            _origin = _origin.WithInstructionOffset(methodIL, offset);
 
             // Only check for generic instantiations.
             ProcessGenericArgumentDataFlow(accessedType);
         }
 
-        protected override void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        protected override void HandleMethodTokenAccess(MethodIL methodIL, int offset, MethodDesc accessedMethod)
         {
-            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            _origin = _origin.WithInstructionOffset(methodIL, offset);
 
             TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedMethod, _origin));
 
             ProcessGenericArgumentDataFlow(accessedMethod);
         }
 
-        protected override void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
+        protected override void HandleFieldTokenAccess(MethodIL methodIL, int offset, FieldDesc accessedField)
         {
-            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            _origin = _origin.WithInstructionOffset(methodIL, offset);
 
             TrimAnalysisPatterns.Add(new TrimAnalysisTokenAccessPattern(accessedField, _origin));
 
             ProcessGenericArgumentDataFlow(accessedField);
         }
 
-        public override MultiValue HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams)
+        public override MultiValue HandleCall(MethodIL callingMethodIL, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams)
         {
-            Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);
+            Debug.Assert(callingMethodIL.OwningMethod == _origin.MemberDefinition);
 
-            _origin = _origin.WithInstructionOffset(callingMethodBody, offset);
+            _origin = _origin.WithInstructionOffset(callingMethodIL, offset);
 
             MultiValue instanceValue;
             ImmutableArray<MultiValue> arguments;
@@ -302,7 +302,7 @@ namespace ILCompiler.Dataflow
             }
 
             TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
-                callingMethodBody,
+                callingMethodIL,
                 operation,
                 offset,
                 calledMethod,
@@ -315,7 +315,7 @@ namespace ILCompiler.Dataflow
 
             var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: false, _logger);
             return HandleCall(
-                callingMethodBody,
+                callingMethodIL,
                 calledMethod,
                 operation,
                 instanceValue,
@@ -342,7 +342,7 @@ namespace ILCompiler.Dataflow
                 RequiresReflectionMethodBodyScannerForCallSite(reflectionMarker.Annotations, calledMethod) ||
                 annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
-            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
+            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
             if (!handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
                 throw new NotImplementedException($"Unhandled intrinsic {intrinsicId}");

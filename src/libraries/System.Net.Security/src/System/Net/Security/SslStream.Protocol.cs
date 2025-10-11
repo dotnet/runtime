@@ -444,7 +444,7 @@ namespace System.Net.Security
                                 for (int ii = 0; ii < elementsCount; ++ii)
                                 {
                                     string issuer = chain.ChainElements[ii].Certificate!.Issuer;
-                                    found = Array.IndexOf(issuers, issuer) != -1;
+                                    found = Array.IndexOf(issuers, issuer) >= 0;
                                     if (found)
                                     {
                                         if (NetEventSource.Log.IsEnabled())
@@ -913,11 +913,11 @@ namespace System.Net.Security
 
                         if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                         {
-                            refreshCredentialNeeded = true;
-                            cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
-
                             if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Info(this, "InitializeSecurityContext() returned 'CredentialsNeeded'.");
+
+                            refreshCredentialNeeded = true;
+                            cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
 
                             token = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,

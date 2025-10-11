@@ -1,5 +1,7 @@
 # Build WebAssembly
 
+This document covers building .NET for WebAssembly in the browser. For WebAssembly documentation including testing, debugging, and deployment, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
 If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\browser\emsdk` directory.
 
 ### Windows
@@ -393,7 +395,7 @@ Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 - V8: the version used is from `eng/testing/BrowserVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
 - Chrome: Same as V8.
 - Node: fixed version from emsdk
-- wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
+- wasmtime - fixed version in `src/mono/wasi/wasmtime-version.txt`.
 
 ### `eng/testing/BrowserVersions.props`
 

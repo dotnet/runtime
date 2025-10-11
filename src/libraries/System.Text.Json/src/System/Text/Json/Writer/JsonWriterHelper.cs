@@ -254,20 +254,17 @@ namespace System.Text.Json
             }
         }
 
-#if !NET8_0_OR_GREATER
+#if !NET
         private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 #endif
 
         public static bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return Utf8.IsValid(bytes);
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(bytes);
-#else
                 if (!bytes.IsEmpty)
                 {
                     unsafe
@@ -278,7 +275,7 @@ namespace System.Text.Json
                         }
                     }
                 }
-#endif
+
                 return true;
             }
             catch (DecoderFallbackException)

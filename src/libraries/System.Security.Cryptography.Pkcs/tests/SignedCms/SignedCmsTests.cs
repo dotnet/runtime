@@ -511,10 +511,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void AddFirstSigner_DSA(SubjectIdentifierType identifierType, bool detached)
         {
 #if NET
@@ -1126,8 +1125,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 cms = new SignedCms();
 
-                // DSA is not supported on mobile Apple platforms, so use ECDsa signed document instead
-                if (PlatformDetection.UsesMobileAppleCrypto)
+                // DSA is not supported, so use ECDsa signed document instead
+                if (!PlatformSupport.IsDSASupported)
                 {
                     cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
                 }
@@ -1501,7 +1500,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(" 1.1", "010100", null)]
         [InlineData("1.1 ", "010100", null)]
         [InlineData("1 1", "010100", null)]
-        public static void SignIdentifiedContent_BadOid(string oidValueIn, string contentHex, string oidValueOut)
+        public static void SignIdentifiedContent_BadOid(string? oidValueIn, string contentHex, string? oidValueOut)
         {
             SignedCms signedCms = new SignedCms(
                 new ContentInfo(new Oid(oidValueIn, "Some Friendly Name"), contentHex.HexToByteArray()));

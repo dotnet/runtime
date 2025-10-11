@@ -95,23 +95,18 @@ namespace System.IO.Tests
                     (10, 0),
                     (10, 5),
                     (10, 10),
-                    (Array.MaxLength, 0),
-                    (Array.MaxLength, Array.MaxLength)
                 }
             select new object[] {mode, bufferContext.bufferSize, bufferContext.origin};
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [Theory]
         [MemberData(nameof(MemoryStream_PositionOverflow_Throws_MemberData))]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/92467")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100225", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX64Process))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100558", TestPlatforms.Linux)]
         public void MemoryStream_SeekOverflow_Throws(SeekMode mode, int bufferSize, int origin)
         {
             byte[] buffer = new byte[bufferSize];
             using (MemoryStream ms = new MemoryStream(buffer, origin, buffer.Length - origin, true))
             {
-                Seek(mode, ms, int.MaxValue - origin);
-                Assert.Throws<ArgumentOutOfRangeException>(() => Seek(mode, ms, (long)int.MaxValue - origin + 1));
+                Seek(mode, ms, Array.MaxLength - origin);
+                Assert.Throws<ArgumentOutOfRangeException>(() => Seek(mode, ms, (long)Array.MaxLength - origin + 1));
                 Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MinValue + 1));
                 Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MaxValue - 1));
             }
@@ -149,6 +144,26 @@ namespace System.IO.Tests
             await s.ReadAsync((Memory<byte>)new byte[1]);
             Assert.True(s.WriteArrayInvoked);
             Assert.True(s.ReadArrayInvoked);
+        }
+
+        [Fact]
+        [SkipOnCI("Skipping on CI due to large memory allocation")]
+        public void MemoryStream_CapacityBoundaryChecks()
+        {
+            int MaxSupportedLength = Array.MaxLength;
+
+            using (var ms = new MemoryStream())
+            {
+                ms.Capacity = MaxSupportedLength - 1;
+                Assert.Equal(MaxSupportedLength - 1, ms.Capacity);
+
+                ms.Capacity = MaxSupportedLength;
+                Assert.Equal(MaxSupportedLength, ms.Capacity);
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => ms.Capacity = MaxSupportedLength + 1);
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => ms.Capacity = int.MaxValue);
+            }
         }
 
         private class ReadWriteOverridingMemoryStream : MemoryStream

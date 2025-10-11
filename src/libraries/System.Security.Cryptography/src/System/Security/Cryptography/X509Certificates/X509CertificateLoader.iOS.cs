@@ -112,11 +112,11 @@ namespace System.Security.Cryptography.X509Certificates
                 case Oids.Rsa or Oids.RsaPss:
                     return new AsymmetricAlgorithmPkcs12PrivateKey(
                         pkcs8,
-                        static () => new RSAImplementation.RSASecurityTransforms());
+                        static () => new RSAImplementation.RSAAppleCrypto());
                 case Oids.EcPublicKey or Oids.EcDiffieHellman:
                     return new AsymmetricAlgorithmPkcs12PrivateKey(
                         pkcs8,
-                        static () => new ECDsaImplementation.ECDsaSecurityTransforms());
+                        static () => new ECDsaImplementation.ECDsaAppleCrypto());
 
                 default:
                     // No DSA or PQC support on iOS / tvOS.

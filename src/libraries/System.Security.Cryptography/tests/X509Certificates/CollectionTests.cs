@@ -907,7 +907,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Precondition: Chain built validly");
+                Assert.True(valid, $"Precondition: Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 ICollection collection = chain.ChainElements;
                 Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
@@ -1322,7 +1322,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Precondition: Chain built validly");
+                Assert.True(valid, $"Precondition: Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 int position = 0;
 
@@ -1805,7 +1805,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData((PbeEncryptionAlgorithm)(-1), nameof(HashAlgorithmName.SHA1))]
         public static void ExportPkcs12_PbeParameters_ArgValidation(
             PbeEncryptionAlgorithm encryptionAlgorithm,
-            string hashAlgorithm)
+            string? hashAlgorithm)
         {
             X509Certificate2Collection collection = [];
             PbeParameters badParameters = new(encryptionAlgorithm, new HashAlgorithmName(hashAlgorithm), 1);

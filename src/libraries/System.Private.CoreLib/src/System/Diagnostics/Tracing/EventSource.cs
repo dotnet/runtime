@@ -3898,7 +3898,9 @@ namespace System.Diagnostics.Tracing
             if (IsMeterSupported)
             {
                 const string name = "System.Diagnostics.Metrics";
-                Guid id = new Guid("20752bc4-c151-50f5-f27b-df92d8af5a61");
+
+                // 20752bc4-c151-50f5-f27b-df92d8af5a61
+                Guid id = new Guid(0x20752BC4, 0xC151, 0x50F5, 0xF2, 0x7B, 0xDF, 0x92, 0xD8, 0xAF, 0x5A, 0x61);
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
@@ -4458,7 +4460,7 @@ namespace System.Diagnostics.Tracing
                     {
                         if (cur.m_Listener == listenerToRemove)
                         {
-                            CallDisableEventsIfNecessary(cur!, eventSource);
+                            CallDisableEventsIfNecessary(cur, eventSource);
                         }
 
                         cur = cur.m_Next;

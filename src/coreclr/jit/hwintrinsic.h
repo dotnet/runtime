@@ -1277,6 +1277,8 @@ struct HWIntrinsicInfo
             }
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
             case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             {
                 assert(sig->numArgs == 5);
