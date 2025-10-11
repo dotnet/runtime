@@ -147,21 +147,71 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\u0000', '\u0000')); // Non-surrogate, non-surrogate
         }
 
-        [Theory]
-        [InlineData('a', 'a', true)]
-        [InlineData('a', 'A', false)]
-        [InlineData('a', 'b', false)]
-        [InlineData('a', (int)'a', false)]
-        [InlineData('a', "a", false)]
-        [InlineData('a', null, false)]
-        public static void EqualsTest(char c, object? obj, bool expected)
+        public static IEnumerable<object[]> EqualsTest_TestData()
         {
-            if (obj is char)
+            yield return new object[] { 'a', 'a', StringComparison.Ordinal, null, true };
+            yield return new object[] { 'a', 'A', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', 'b', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', (int)'a', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', "a", StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', null, StringComparison.Ordinal, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.OrdinalIgnoreCase, null, true };
+            yield return new object[] { 'F', 'f', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.CurrentCultureIgnoreCase, null, true };
+            yield return new object[] { 'F', 'f', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.InvariantCultureIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.OrdinalIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.CurrentCultureIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.InvariantCultureIgnoreCase, null, true };
+            yield return new object[] { 'ı', 'I', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.OrdinalIgnoreCase, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.CurrentCultureIgnoreCase, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.InvariantCultureIgnoreCase, null, false };
+
+            // Android has different results with "tr-TR" culture
+            // See https://github.com/dotnet/runtime/issues/106560
+            if (PlatformDetection.IsNotAndroid)
             {
-                Assert.Equal(expected, c.Equals((char)obj));
-                Assert.Equal(expected, c.GetHashCode().Equals(obj.GetHashCode()));
+                yield return new object[] { 'ı', 'I', StringComparison.Ordinal, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.OrdinalIgnoreCase, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.CurrentCulture, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.CurrentCultureIgnoreCase, "tr-TR", true };
+                yield return new object[] { 'ı', 'I', StringComparison.InvariantCulture, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.InvariantCultureIgnoreCase, "tr-TR", false };
             }
-            Assert.Equal(expected, c.Equals(obj));
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualsTest_TestData))]
+        public static void EqualsTest(char c, object? other, StringComparison comparisonType, string? cultureName, bool expected)
+        {
+            using (new ThreadCultureChange(cultureName))
+            {
+                if (other is char otherChar)
+                {
+                    if (comparisonType is StringComparison.Ordinal)
+                    {
+                        Assert.Equal(expected, c.Equals(otherChar));
+                        Assert.Equal(expected, c.ToString().Equals(otherChar.ToString()));
+
+                        Assert.Equal(expected, c.GetHashCode().Equals(other.GetHashCode()));
+                    }
+
+                    Assert.Equal(expected, c.Equals(otherChar, comparisonType));
+                    Assert.Equal(expected, c.ToString().Equals(otherChar.ToString(), comparisonType));
+                }
+
+                if (comparisonType is StringComparison.Ordinal)
+                {
+                    Assert.Equal(expected, c.Equals(other));
+                }
+            }
         }
 
         [Theory]
