@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -39,8 +40,10 @@ namespace System.Text.RegularExpressions
         /// capture group number and the value is the index into <see cref="CaptureNames"/> for that capture group.
         /// </remarks>
         public readonly Hashtable? CaptureNumberSparseMapping;
+        /// <summary>A mapping of RegexNode to its associated comments from the pattern (for source generator use only).</summary>
+        public readonly Dictionary<RegexNode, List<string>>? NodeComments;
 
-        internal RegexTree(RegexNode root, int captureCount, string[]? captureNames, Hashtable? captureNameToNumberMapping, Hashtable? captureNumberSparseMapping, RegexOptions options, CultureInfo? culture)
+        internal RegexTree(RegexNode root, int captureCount, string[]? captureNames, Hashtable? captureNameToNumberMapping, Hashtable? captureNumberSparseMapping, RegexOptions options, CultureInfo? culture, Dictionary<RegexNode, List<string>>? nodeComments = null)
         {
 #if DEBUG
             // Asserts to both demonstrate and validate the relationships between the various capture data structures.
@@ -77,6 +80,7 @@ namespace System.Text.RegularExpressions
             CaptureNameToNumberMapping = captureNameToNumberMapping;
             CaptureNames = captureNames;
             Options = options;
+            NodeComments = nodeComments;
             FindOptimizations = RegexFindOptimizations.Create(root, options);
         }
     }

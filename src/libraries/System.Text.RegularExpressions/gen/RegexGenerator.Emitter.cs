@@ -5804,6 +5804,16 @@ namespace System.Text.RegularExpressions.Generator
 
                     string nodeDescription = DescribeNode(node, rm);
 
+                    // Write out any comments associated with this node.
+                    if (rm.Tree.NodeComments?.TryGetValue(node, out List<string>? comments) == true)
+                    {
+                        string indent = new string(' ', depth * 4);
+                        foreach (string comment in comments)
+                        {
+                            writer.WriteLine($"/// {indent}// {EscapeXmlComment(comment)}<br/>");
+                        }
+                    }
+
                     // Write out the line for the node.
                     const char BulletPoint = '\u25CB';
                     writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{EscapeXmlComment(nodeDescription)}<br/>");
