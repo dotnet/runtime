@@ -22,62 +22,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void ShutdownTimeout_CanBeSet()
-        {
-            var options = new HostOptions
-            {
-                ShutdownTimeout = TimeSpan.FromSeconds(60)
-            };
-
-            Assert.Equal(TimeSpan.FromSeconds(60), options.ShutdownTimeout);
-        }
-
-        [Fact]
-        public void StartupTimeout_CanBeSet()
-        {
-            var options = new HostOptions
-            {
-                StartupTimeout = TimeSpan.FromSeconds(90)
-            };
-
-            Assert.Equal(TimeSpan.FromSeconds(90), options.StartupTimeout);
-        }
-
-        [Fact]
-        public void ServicesStartConcurrently_CanBeSet()
-        {
-            var options = new HostOptions
-            {
-                ServicesStartConcurrently = true
-            };
-
-            Assert.True(options.ServicesStartConcurrently);
-        }
-
-        [Fact]
-        public void ServicesStopConcurrently_CanBeSet()
-        {
-            var options = new HostOptions
-            {
-                ServicesStopConcurrently = true
-            };
-
-            Assert.True(options.ServicesStopConcurrently);
-        }
-
-        [Fact]
-        public void BackgroundServiceExceptionBehavior_CanBeSet()
-        {
-            var options = new HostOptions();
-
-            options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
-            Assert.Equal(BackgroundServiceExceptionBehavior.Ignore, options.BackgroundServiceExceptionBehavior);
-
-            options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
-            Assert.Equal(BackgroundServiceExceptionBehavior.StopHost, options.BackgroundServiceExceptionBehavior);
-        }
-
-        [Fact]
         public void Properties_CanBeSetDirectly()
         {
             var options = new HostOptions

@@ -8,33 +8,10 @@ namespace Microsoft.Extensions.Hosting.Tests
     public class BackgroundServiceExceptionBehaviorTests
     {
         [Fact]
-        public void StopHost_HasExpectedValue()
+        public void EnumValues_HaveExpectedValues()
         {
             Assert.Equal(0, (int)BackgroundServiceExceptionBehavior.StopHost);
-        }
-
-        [Fact]
-        public void Ignore_HasExpectedValue()
-        {
             Assert.Equal(1, (int)BackgroundServiceExceptionBehavior.Ignore);
-        }
-
-        [Fact]
-        public void EnumValues_AreUnique()
-        {
-            Assert.NotEqual(
-                (int)BackgroundServiceExceptionBehavior.StopHost,
-                (int)BackgroundServiceExceptionBehavior.Ignore);
-        }
-
-        [Fact]
-        public void CanAssignToVariable()
-        {
-            BackgroundServiceExceptionBehavior behavior = BackgroundServiceExceptionBehavior.StopHost;
-            Assert.Equal(BackgroundServiceExceptionBehavior.StopHost, behavior);
-
-            behavior = BackgroundServiceExceptionBehavior.Ignore;
-            Assert.Equal(BackgroundServiceExceptionBehavior.Ignore, behavior);
         }
 
         [Fact]

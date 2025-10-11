@@ -9,6 +9,8 @@ using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
 {
+    using AssertExtensions = System.AssertExtensions;
+
     public class HostBuilderContextTests
     {
         [Fact]
@@ -23,7 +25,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void Constructor_WithNullProperties_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new HostBuilderContext(null));
+            AssertExtensions.Throws<ArgumentNullException>("properties", () => new HostBuilderContext(null));
         }
 
         [Fact]

@@ -8,36 +8,6 @@ namespace Microsoft.Extensions.Hosting.Tests
     public class ConsoleLifetimeOptionsTests
     {
         [Fact]
-        public void DefaultValue_IsFalse()
-        {
-            var options = new ConsoleLifetimeOptions();
-
-            Assert.False(options.SuppressStatusMessages);
-        }
-
-        [Fact]
-        public void SuppressStatusMessages_CanBeSetToTrue()
-        {
-            var options = new ConsoleLifetimeOptions
-            {
-                SuppressStatusMessages = true
-            };
-
-            Assert.True(options.SuppressStatusMessages);
-        }
-
-        [Fact]
-        public void SuppressStatusMessages_CanBeSetToFalse()
-        {
-            var options = new ConsoleLifetimeOptions
-            {
-                SuppressStatusMessages = false
-            };
-
-            Assert.False(options.SuppressStatusMessages);
-        }
-
-        [Fact]
         public void SuppressStatusMessages_CanBeToggled()
         {
             var options = new ConsoleLifetimeOptions();

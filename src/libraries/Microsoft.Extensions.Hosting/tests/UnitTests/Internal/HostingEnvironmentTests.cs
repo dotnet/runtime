@@ -19,50 +19,6 @@ namespace Microsoft.Extensions.Hosting.Internal.Tests
         }
 
         [Fact]
-        public void EnvironmentName_CanBeSet()
-        {
-            var environment = new HostingEnvironment
-            {
-                EnvironmentName = "Development"
-            };
-
-            Assert.Equal("Development", environment.EnvironmentName);
-        }
-
-        [Fact]
-        public void ApplicationName_CanBeSet()
-        {
-            var environment = new HostingEnvironment
-            {
-                ApplicationName = "MyApp"
-            };
-
-            Assert.Equal("MyApp", environment.ApplicationName);
-        }
-
-        [Fact]
-        public void ContentRootPath_CanBeSet()
-        {
-            var environment = new HostingEnvironment
-            {
-                ContentRootPath = "/app"
-            };
-
-            Assert.Equal("/app", environment.ContentRootPath);
-        }
-
-        [Fact]
-        public void ContentRootFileProvider_CanBeSet()
-        {
-            var environment = new HostingEnvironment();
-            var fileProvider = new PhysicalFileProvider("/");
-
-            environment.ContentRootFileProvider = fileProvider;
-
-            Assert.Same(fileProvider, environment.ContentRootFileProvider);
-        }
-
-        [Fact]
         public void AllProperties_CanBeSetTogether()
         {
             var fileProvider = new PhysicalFileProvider("/");
