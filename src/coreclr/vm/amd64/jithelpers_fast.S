@@ -224,14 +224,6 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
         .text
 #endif
 
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
-.balign 16
-LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
-    // JIT_WriteBarrier(Object** dst, Object* src)
-    jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
 
 // The following helper will access ("probe") a word on each page of the stack
 // starting with the page right beneath rsp down to the one pointed to by r11.
