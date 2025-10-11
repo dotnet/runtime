@@ -146,19 +146,27 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [MyEnumArray(MyTestEnum.Value1, null)]
-        public static void Test_CustomAttributeData_NullEnumArray()
+        [MyEnumArray(MyTestEnum.Value, null, [], [MyTestEnum.Value, MyTestEnum.Value])]
+        public static void Test_CustomAttributeData_EnumArray()
         {
             MethodInfo m = (MethodInfo)MethodBase.GetCurrentMethod();
             foreach (CustomAttributeData cad in m.CustomAttributes)
             {
                 if (cad.AttributeType == typeof(MyEnumArrayAttribute))
                 {
-                    Assert.Equal(2, cad.ConstructorArguments.Count);
+                    Assert.Equal(4, cad.ConstructorArguments.Count);
                     Assert.Equal(typeof(MyTestEnum), cad.ConstructorArguments[0].ArgumentType);
-                    Assert.Equal((int)MyTestEnum.Value1, cad.ConstructorArguments[0].Value);
+                    Assert.Equal((long)MyTestEnum.Value, cad.ConstructorArguments[0].Value);
                     Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[1].ArgumentType);
                     Assert.Null(cad.ConstructorArguments[1].Value);
+                    Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[2].ArgumentType);
+                    ReadOnlyCollection<CustomAttributeTypedArgument> emptyArrayValue = (ReadOnlyCollection<CustomAttributeTypedArgument>)cad.ConstructorArguments[2].Value;
+                    Assert.Equal(0, emptyArrayValue.Count);
+                    Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[3].ArgumentType);
+                    ReadOnlyCollection<CustomAttributeTypedArgument> arrayValue = (ReadOnlyCollection<CustomAttributeTypedArgument>)cad.ConstructorArguments[3].Value;
+                    Assert.Equal(2, arrayValue.Count);
+                    Assert.Equal((long)MyTestEnum.Value, arrayValue[0].Value);
+                    Assert.Equal((long)MyTestEnum.Value, arrayValue[1].Value);
                     return;
                 }
             }
@@ -169,11 +177,9 @@ namespace System.Reflection.Tests
         [Flags]
         private enum MyEnum { }
 
-        private enum MyTestEnum
+        private enum MyTestEnum : long
         {
-            Value1 = 1,
-            Value2 = 2,
-            Value3 = 3
+            Value = 0x1234567890
         }
 
         private class MyAttribute : Attribute
@@ -188,13 +194,17 @@ namespace System.Reflection.Tests
 
         private class MyEnumArrayAttribute : Attribute
         {
-            internal MyEnumArrayAttribute(MyTestEnum value, MyTestEnum[] arrayValue)
+            internal MyEnumArrayAttribute(MyTestEnum value, MyTestEnum[] nullArrayValue, MyTestEnum[] emptyArrayValue, MyTestEnum[] arrayValue)
             {
                 Value = value;
+                NullArrayValue = nullArrayValue;
+                EmptyArrayValue = emptyArrayValue;
                 ArrayValue = arrayValue;
             }
 
             public MyTestEnum Value { get; }
+            public MyTestEnum[] NullArrayValue { get; }
+            public MyTestEnum[] EmptyArrayValue { get; }
             public MyTestEnum[] ArrayValue { get; }
         }
 
