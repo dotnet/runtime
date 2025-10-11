@@ -1483,7 +1483,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // Find the minterm, handling the special case for the last \n for states that start with a relevant anchor
                     int c = input[pos];
-                    return c == '\n' && pos == input.Length - 1 ?
+                    return c == '\n' && pos == input.Length - 1 && matcher._containsEndZAnchor ?
                         matcher._minterms.Length : // mintermId = minterms.Length represents an \n at the very end of input
                         matcher._mintermClassifier.GetMintermID(c);
                 }

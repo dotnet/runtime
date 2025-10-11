@@ -461,6 +461,13 @@ namespace System.Text.RegularExpressions.Tests
             yield return (enUS, @"^(cat)\s+(dog)", "cat   \n\n\n   dog", RegexOptions.None, new string[] { "cat   \n\n\n   dog", "cat", "dog" });
             yield return (enUS, @"^(cat)\s+(dog)", "cat   \n\n\n   dog", RegexOptions.Multiline, new string[] { "cat   \n\n\n   dog", "cat", "dog" });
             yield return (enUS, @"(mouse)\s\n^(cat)\s+(dog)", "mouse\n\ncat   \n\n\n   dog", RegexOptions.Multiline, new string[] { "mouse\n\ncat   \n\n\n   dog", "mouse", "cat", "dog" });
+            
+            // Regression test for https://github.com/dotnet/runtime/issues/110604
+            // Capture groups with beginning anchor and newline at end should work correctly  
+            yield return (enUS, @"^(A)(\s)", "A\n", RegexOptions.None, new string[] { "A\n", "A", "\n" });
+            yield return (enUS, @"^(A)(\s)", "A\n", RegexOptions.Multiline, new string[] { "A\n", "A", "\n" });
+            yield return (enUS, @"^(A)(\s)", "A ", RegexOptions.None, new string[] { "A ", "A", " " });
+            
             if (!RegexHelpers.IsNonBacktracking(engine)) // ECMAScript not supported
             {
                 yield return (enUS, @"^cat\s+dog", "cat   \n\n\n   dog", RegexOptions.ECMAScript, new string[] { "cat   \n\n\n   dog" });
