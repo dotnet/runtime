@@ -1483,5 +1483,74 @@ namespace System.Text.Json.Serialization.Tests
             [JsonExtensionData]
             public IDictionary<string, JsonElement> MyOverflow { get; set; }
         }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_ObjectExtensionPropertyRoundTrip()
+        {
+            string json = @"{""MyIntMissing"":2, ""MyInt"":1}";
+            ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty>(json);
+            
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+            Assert.IsType<JsonElement>(obj.MyOverflow["MyIntMissing"]);
+            Assert.Equal(2, ((JsonElement)obj.MyOverflow["MyIntMissing"]).GetInt32());
+
+            string jsonSerialized = await Serializer.SerializeWrapper(obj);
+            Assert.Contains("\"MyIntMissing\"", jsonSerialized);
+            Assert.Contains("\"MyInt\"", jsonSerialized);
+            Assert.DoesNotContain(nameof(ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty.MyOverflow), jsonSerialized);
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_JsonElementExtensionPropertyRoundTrip()
+        {
+            string json = @"{""MyIntMissing"":2, ""MyInt"":1}";
+            ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty>(json);
+            
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+            Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+
+            string jsonSerialized = await Serializer.SerializeWrapper(obj);
+            Assert.Contains("\"MyIntMissing\"", jsonSerialized);
+            Assert.Contains("\"MyInt\"", jsonSerialized);
+            Assert.DoesNotContain(nameof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty.MyOverflow), jsonSerialized);
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_ExtensionPropertyIgnoredWhenWritingDefault()
+        {
+            string expected = @"{}";
+            string actual = await Serializer.SerializeWrapper(new ClassWithIReadOnlyDictionaryExtensionPropertyAsObject());
+            Assert.Equal(expected, actual);
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsObject
+        {
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElement
+        {
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsObjectWithProperty
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
     }
 }

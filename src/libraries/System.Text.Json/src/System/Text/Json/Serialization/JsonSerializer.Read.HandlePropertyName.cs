@@ -114,7 +114,9 @@ namespace System.Text.Json
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
-                Type underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
+                Type? underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))
+                    ?? jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>));
+                Debug.Assert(underlyingIDictionaryType is not null);
                 Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
 
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
@@ -135,6 +137,22 @@ namespace System.Text.Json
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
                         ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
+                    }
+                    // For IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement>,
+                    // create a Dictionary<TKey, TValue> instance
+                    else if (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(jsonPropertyInfo.PropertyType))
+                    {
+                        extensionData = new Dictionary<string, object>();
+                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        jsonPropertyInfo.Set(obj, extensionData);
+                        return;
+                    }
+                    else if (typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(jsonPropertyInfo.PropertyType))
+                    {
+                        extensionData = new Dictionary<string, JsonElement>();
+                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        jsonPropertyInfo.Set(obj, extensionData);
+                        return;
                     }
                     else
                     {
