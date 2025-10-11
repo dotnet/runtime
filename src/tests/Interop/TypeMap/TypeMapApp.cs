@@ -61,11 +61,15 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMap<InvalidTypeNameKey>(null!, typeof(object))]
 [assembly: TypeMapAssociation<InvalidTypeNameKey>(null!, typeof(object))]
 
-[assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
-[assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
+[assembly: TypeMap<ValidDuplicateTypeNameKey>("1", typeof(object))]
+[assembly: TypeMap<ValidDuplicateTypeNameKey>("1", typeof(object), typeof(object))]
+[assembly: TypeMap<ValidDuplicateTypeNameKey>("1", typeof(object), typeof(string))]
 
-[assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
-[assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapString), typeof(string))]
+[assembly: TypeMap<InvalidDuplicateTypeNameKey>("1", typeof(object))]
+[assembly: TypeMap<InvalidDuplicateTypeNameKey>("1", typeof(string))]
+
+[assembly: TypeMapAssociation<InvalidDuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
+[assembly: TypeMapAssociation<InvalidDuplicateTypeNameKey>(typeof(DupType_MapString), typeof(string))]
 
 // Redefine the same type as in the TypeMapLib2 assembly
 // This is testing the duplicate type name key for the
@@ -178,19 +182,28 @@ public class TypeMap
     }
 
     [Fact]
-    public static void Validate_ExternalTypeMapping_DuplicateTypeKey()
+    public static void Validate_ExternalTypeMapping_InvalidDuplicateTypeKey()
     {
-        Console.WriteLine(nameof(Validate_ExternalTypeMapping_DuplicateTypeKey));
+        Console.WriteLine(nameof(Validate_ExternalTypeMapping_InvalidDuplicateTypeKey));
 
-        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidDuplicateTypeNameKey>());
     }
 
+    [Fact]
+    public static void Validate_ExternalTypeMapping_ValidDuplicateTypeKey()
+    {
+        Console.WriteLine(nameof(Validate_ExternalTypeMapping_ValidDuplicateTypeKey));
+
+        var mapping = TypeMapping.GetOrCreateExternalTypeMapping<ValidDuplicateTypeNameKey>();
+        Assert.Equal(typeof(object), mapping["1"]);
+    }
     [Fact]
     public static void Validate_ProxyTypeMapping_DuplicateTypeKey()
     {
         Console.WriteLine(nameof(Validate_ProxyTypeMapping_DuplicateTypeKey));
 
-        IReadOnlyDictionary<Type, Type> map = TypeMapping.GetOrCreateProxyTypeMapping<DuplicateTypeNameKey>();
+        // Invalid external mapping shouldn't impact proxy mapping
+        IReadOnlyDictionary<Type, Type> map = TypeMapping.GetOrCreateProxyTypeMapping<InvalidDuplicateTypeNameKey>();
 
         Assert.Equal(typeof(object), map[typeof(DupType_MapObject)]);
         Assert.Equal(typeof(string), map[typeof(DupType_MapString)]);
