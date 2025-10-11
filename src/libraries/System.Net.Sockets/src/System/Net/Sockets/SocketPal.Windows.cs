@@ -295,8 +295,64 @@ namespace System.Net.Sockets
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
             {
-                bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
-                return success ? SocketError.Success : GetLastSocketError();
+                // Get file length if we have a file
+                long fileLength = 0;
+                if (fileHandle is not null)
+                {
+                    fileLength = RandomAccess.GetLength(fileHandle);
+                }
+
+                // If file length exceeds int.MaxValue, we need to partition the sends
+                if (fileLength > int.MaxValue)
+                {
+                    // Send preBuffer if present
+                    if (preBuffer.Length > 0)
+                    {
+                        bool success = TransmitFileHelper(handle, null, null, (IntPtr)prePinnedBuffer, preBuffer.Length, IntPtr.Zero, 0, TransmitFileOptions.UseDefaultWorkerThread);
+                        if (!success)
+                        {
+                            return GetLastSocketError();
+                        }
+                    }
+
+                    // Send file in chunks of int.MaxValue bytes
+                    long offset = 0;
+                    long remaining = fileLength;
+                    while (remaining > 0)
+                    {
+                        int chunkSize = (int)Math.Min(remaining, int.MaxValue);
+                        
+                        // Set the file pointer to the current offset
+                        RandomAccess.Seek(fileHandle, offset, SeekOrigin.Begin);
+                        
+                        bool success = TransmitFileHelper(handle, fileHandle, null, IntPtr.Zero, 0, IntPtr.Zero, 0, TransmitFileOptions.UseDefaultWorkerThread, chunkSize);
+                        if (!success)
+                        {
+                            return GetLastSocketError();
+                        }
+                        
+                        offset += chunkSize;
+                        remaining -= chunkSize;
+                    }
+
+                    // Send postBuffer if present
+                    if (postBuffer.Length > 0)
+                    {
+                        bool success = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                        if (!success)
+                        {
+                            return GetLastSocketError();
+                        }
+                    }
+
+                    return SocketError.Success;
+                }
+                else
+                {
+                    // File is small enough, use single call
+                    bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                    return success ? SocketError.Success : GetLastSocketError();
+                }
             }
         }
 
@@ -1004,7 +1060,8 @@ namespace System.Net.Sockets
             int preBufferLength,
             IntPtr pinnedPostBuffer,
             int postBufferLength,
-            TransmitFileOptions flags)
+            TransmitFileOptions flags,
+            int numberOfBytesToWrite = 0)
         {
             bool needTransmitFileBuffers = false;
             Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default;
@@ -1027,14 +1084,14 @@ namespace System.Net.Sockets
             IntPtr fileHandlePtr = IntPtr.Zero;
             try
             {
-                if (fileHandle != null)
+                if (fileHandle is not null)
                 {
                     fileHandle.DangerousAddRef(ref releaseRef);
                     fileHandlePtr = fileHandle.DangerousGetHandle();
                 }
 
                 return Interop.Mswsock.TransmitFile(
-                    socket, fileHandlePtr, 0, 0, overlapped,
+                    socket, fileHandlePtr, numberOfBytesToWrite, 0, overlapped,
                     needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
             }
             finally
