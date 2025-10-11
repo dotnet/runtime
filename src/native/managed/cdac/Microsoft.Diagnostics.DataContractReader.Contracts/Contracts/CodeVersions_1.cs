@@ -408,4 +408,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
         return ilAddress;
     }
+
+    bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle iLCodeVersionHandle)
+    {
+        return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+    }
 }

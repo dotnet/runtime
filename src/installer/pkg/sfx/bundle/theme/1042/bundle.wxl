@@ -1,79 +1,79 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
-  <String Id="Caption" Value="[WixBundleName] Installer"/>
+  <String Id="Caption" Value="[WixBundleName] 설치 관리자"/>
   <String Id="Title" Value="[BUNDLEMONIKER]"/>
-  <String Id="Motto" Value="You just need a shell, a text editor and 10 minutes of your time.
+  <String Id="Motto" Value="셸, 텍스트 편집기, 10분의 시간만 있으면 됩니다.
 
-Ready? Set? Let's go!"/>
-  <String Id="ConfirmCancelMessage" Value="Are you sure you want to cancel?"/>
-  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Previous version"/>
-  <String Id="HelpHeader" Value="Setup Help"/>
-  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - installs, repairs, uninstalls or
-   creates a complete local copy of the bundle in directory. Install is the default.
+준비되셨나요? 준비하시고, 시작!"/>
+  <String Id="ConfirmCancelMessage" Value="취소하시겠습니까?"/>
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="이전 버전"/>
+  <String Id="HelpHeader" Value="설치 도움말"/>
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - 설치, 복구, 제거 또는
+   디렉터리에 번들의 전체 로컬 복사본을 만듭니다. 설치가 기본값입니다.
 
-/passive | /quiet -  displays minimal UI with no prompts or displays no UI and
-   no prompts. By default UI and all prompts are displayed.
+/passive | /quiet - 프롬프트 없이 최소 UI를 표시하거나 UI와
+   프롬프트를 표시하지 않습니다. 기본적으로 UI와 모든 프롬프트가 표시됩니다.
 
-/norestart   - suppress any attempts to restart. By default UI will prompt before restart.
-/log log.txt - logs to a specific file. By default a log file is created in %TEMP%."/>
-  <String Id="HelpCloseButton" Value="&amp;Close"/>
-  <String Id="InstallAcceptCheckbox" Value="I &amp;agree to the license terms and conditions"/>
-  <String Id="InstallOptionsButton" Value="&amp;Options"/>
-  <String Id="InstallInstallButton" Value="&amp;Install"/>
-  <String Id="InstallCloseButton" Value="&amp;Close"/>
-  <String Id="OptionsHeader" Value="Setup Options"/>
-  <String Id="OptionsLocationLabel" Value="Install location:"/>
-  <String Id="OptionsBrowseButton" Value="&amp;Browse"/>
-  <String Id="OptionsOkButton" Value="&amp;OK"/>
-  <String Id="OptionsCancelButton" Value="&amp;Cancel"/>
-  <String Id="ProgressHeader" Value="Setup Progress"/>
-  <String Id="ProgressLabel" Value="Processing:"/>
-  <String Id="OverallProgressPackageText" Value="Initializing..."/>
-  <String Id="ProgressCancelButton" Value="&amp;Cancel"/>
-  <String Id="ModifyHeader" Value="Modify Setup"/>
-  <String Id="ModifyRepairButton" Value="&amp;Repair"/>
-  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it."/>
-  <String Id="ModifyUninstallButton" Value="&amp;Uninstall"/>
-  <String Id="ModifyCloseButton" Value="&amp;Close"/>
-  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed"/>
-  <String Id="SuccessRepairHeader" Value="Repair Successfully Completed"/>
-  <String Id="SuccessUninstallHeader" Value="Uninstall Successfully Completed"/>
-  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed"/>
-  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed"/>
-  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed"/>
-  <String Id="SuccessInstallHeader" Value="Installation was successful"/>
-  <String Id="SuccessHeader" Value="Setup Successful"/>
-  <String Id="SuccessLaunchButton" Value="&amp;Launch"/>
-  <String Id="SuccessRestartText" Value="You must restart your computer before you can use the software."/>
-  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software."/>
-  <String Id="SuccessRestartButton" Value="&amp;Restart"/>
-  <String Id="SuccessCloseButton" Value="&amp;Close"/>
-  <String Id="FailureHeader" Value="Setup Failed"/>
-  <String Id="FailureInstallHeader" Value="Setup Failed"/>
-  <String Id="FailureUninstallHeader" Value="Uninstall Failed"/>
-  <String Id="FailureRepairHeader" Value="Repair Failed"/>
-  <String Id="FailureHyperlinkLogText" Value="One or more issues caused the setup to fail. Please fix the issues and then retry setup. For more information, see the &lt;a href=&quot;#&quot;&gt;log file&lt;/a&gt;."/>
-  <String Id="FailureRestartText" Value="You must restart your computer to complete the rollback of the software."/>
-  <String Id="FailureRestartButton" Value="&amp;Restart"/>
-  <String Id="FailureCloseButton" Value="&amp;Close"/>
-  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="The [PRODUCT_NAME] is not supported on this operating system. For more information, see [LINK_PREREQ_PAGE]."/>
-  <String Id="FailureNotSupportedX86OperatingSystem" Value="The [PRODUCT_NAME] isn't supported on x86 operating systems. Please install using the corresponding x86 installer."/>
-  <String Id="FilesInUseHeader" Value="Files In Use"/>
-  <String Id="FilesInUseLabel" Value="The following applications are using files that need to be updated:"/>
-  <String Id="FilesInUseCloseRadioButton" Value="Close the &amp;applications and attempt to restart them."/>
-  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Do not close applications. A reboot will be required."/>
-  <String Id="FilesInUseOkButton" Value="&amp;OK"/>
-  <String Id="FilesInUseCancelButton" Value="&amp;Cancel"/>
-  <String Id="WelcomeHeaderMessage" Value=".NET Runtime"/>
-  <String Id="WelcomeDescription" Value="The .NET Runtime is used to run .NET applications, on your Windows computer. .NET is open source, cross platform, and supported by Microsoft. We hope you enjoy it!"/>
-  <String Id="LearnMoreTitle" Value="Learn more about .NET"/>
-  <String Id="SuccessInstallLocation" Value="The following was installed at [DOTNETHOME]"/>
+/norestart   - 다시 시작 시도를 억제합니다. 기본적으로 UI는 다시 시작하기 전에 메시지를 표시합니다.
+/log log.txt - 특정 파일에 로그합니다. 기본적으로 로그 파일은 %TEMP%에 만들어집니다."/>
+  <String Id="HelpCloseButton" Value="닫기(&amp;C)"/>
+  <String Id="InstallAcceptCheckbox" Value="라이선스 사용 약관에 동의합니다(&amp;A)."/>
+  <String Id="InstallOptionsButton" Value="옵션(&amp;O)"/>
+  <String Id="InstallInstallButton" Value="설치(&amp;I)"/>
+  <String Id="InstallCloseButton" Value="닫기(&amp;C)"/>
+  <String Id="OptionsHeader" Value="설치 옵션"/>
+  <String Id="OptionsLocationLabel" Value="설치 위치:"/>
+  <String Id="OptionsBrowseButton" Value="찾아보기(&amp;B)"/>
+  <String Id="OptionsOkButton" Value="확인(&amp;O)"/>
+  <String Id="OptionsCancelButton" Value="취소(&amp;C)"/>
+  <String Id="ProgressHeader" Value="설치 진행률"/>
+  <String Id="ProgressLabel" Value="처리하는 중:"/>
+  <String Id="OverallProgressPackageText" Value="초기화하는 중..."/>
+  <String Id="ProgressCancelButton" Value="취소(&amp;C)"/>
+  <String Id="ModifyHeader" Value="설치 수정"/>
+  <String Id="ModifyRepairButton" Value="복구(&amp;R)"/>
+  <String Id="ModifyText" Value="제품을 다시 설치하려면 복구를 선택하고, 제거하려면 제거를 선택하세요."/>
+  <String Id="ModifyUninstallButton" Value="제거(&amp;U)"/>
+  <String Id="ModifyCloseButton" Value="닫기(&amp;C)"/>
+  <String Id="SuccessCacheHeader" Value="캐시가 완료됨"/>
+  <String Id="SuccessRepairHeader" Value="복구 완료됨"/>
+  <String Id="SuccessUninstallHeader" Value="제거 완료됨"/>
+  <String Id="SuccessLayoutHeader" Value="레이아웃 완료됨"/>
+  <String Id="SuccessModifyHeader" Value="수정 완료됨"/>
+  <String Id="SuccessUnsafeUninstallHeader" Value="제거 완료됨"/>
+  <String Id="SuccessInstallHeader" Value="설치가 완료되었습니다."/>
+  <String Id="SuccessHeader" Value="설치 완료"/>
+  <String Id="SuccessLaunchButton" Value="시작(&amp;L)"/>
+  <String Id="SuccessRestartText" Value="소프트웨어를 사용하려면 먼저 컴퓨터를 다시 시작해야 합니다."/>
+  <String Id="SuccessUninstallRestartText" Value="소프트웨어 제거를 완료하려면 컴퓨터를 다시 시작해야 합니다."/>
+  <String Id="SuccessRestartButton" Value="다시 시작(&amp;R)"/>
+  <String Id="SuccessCloseButton" Value="닫기(&amp;C)"/>
+  <String Id="FailureHeader" Value="설치 실패"/>
+  <String Id="FailureInstallHeader" Value="설치 실패"/>
+  <String Id="FailureUninstallHeader" Value="제거 실패"/>
+  <String Id="FailureRepairHeader" Value="복구 실패"/>
+  <String Id="FailureHyperlinkLogText" Value="하나 이상의 문제로 인해 설치가 실패했습니다. 문제를 해결한 후 설치를 다시 시도하세요. 자세한 내용은 &lt;a href=&quot;#&quot;&gt;로그 파일&lt;/a&gt;을 참조하세요."/>
+  <String Id="FailureRestartText" Value="소프트웨어 롤백을 완료하려면 먼저 컴퓨터를 다시 시작해야 합니다."/>
+  <String Id="FailureRestartButton" Value="다시 시작(&amp;R)"/>
+  <String Id="FailureCloseButton" Value="닫기(&amp;C)"/>
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="이 운영 체제에서는 [PRODUCT_NAME]이(가) 지원되지 않습니다. 자세한 내용은 [LINK_PREREQ_PAGE]을(를) 참조하세요."/>
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="x86 운영 체제에서는 [PRODUCT_NAME]이(가) 지원되지 않습니다. 해당 x86 설치 관리자를 사용하여 설치하세요."/>
+  <String Id="FilesInUseHeader" Value="사용 중인 파일"/>
+  <String Id="FilesInUseLabel" Value="다음의 응용 프로그램이 업데이트해야 할 파일을 사용 중입니다."/>
+  <String Id="FilesInUseCloseRadioButton" Value="애플리케이션을 닫고 다시 시작합니다(&amp;A)."/>
+  <String Id="FilesInUseDontCloseRadioButton" Value="애플리케이션을 닫지 마세요(&amp;D). 다시 부팅해야 합니다."/>
+  <String Id="FilesInUseOkButton" Value="확인(&amp;O)"/>
+  <String Id="FilesInUseCancelButton" Value="취소(&amp;C)"/>
+  <String Id="WelcomeHeaderMessage" Value=".NET 런타임"/>
+  <String Id="WelcomeDescription" Value=".NET 런타임은 Windows 컴퓨터에서 .NET 애플리케이션을 실행하는 데 사용됩니다. .NET은 오픈 소스 및 플랫폼 간이며 Microsoft에서 지원합니다. .NET을 유용하게 사용하시길 바랍니다."/>
+  <String Id="LearnMoreTitle" Value=".NET에 대한 자세한 정보"/>
+  <String Id="SuccessInstallLocation" Value="다음이 [DOTNETHOME]에 설치되었습니다."/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
-  <String Id="ResourcesHeader" Value="Resources"/>
-  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentation&lt;/A&gt;"/>
-  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Release Notes&lt;/A&gt;"/>
-  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;"/>
-  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET Telemetry&lt;/A&gt;"/>
-  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Privacy Statement&lt;/A&gt;"/>
-  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Licensing Information for .NET&lt;/A&gt;"/>
-  <String Id="LicenseAssent" Value="By clicking Install, you agree to the following terms."/>
+  <String Id="ResourcesHeader" Value="리소스"/>
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;설명서&lt;/A&gt;"/>
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;릴리스 정보&lt;/A&gt;"/>
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;자습서&lt;/A&gt;"/>
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET 원격 분석&lt;/A&gt;"/>
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;개인정보처리방침&lt;/A&gt;"/>
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;.NET에 대한 라이선싱 정보&lt;/A&gt;"/>
+  <String Id="LicenseAssent" Value="설치를 클릭하면 다음 사용 약관에 동의하는 것입니다."/>
 </WixLocalization>

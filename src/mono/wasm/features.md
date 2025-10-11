@@ -1,5 +1,7 @@
 # Configuring and hosting .NET WebAssembly applications
 
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
 ## Table of contents
 - [Configuring browser features](#Configuring-browser-features)
 - [Project folder structure](#Project-folder-structure)

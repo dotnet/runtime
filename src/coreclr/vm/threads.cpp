@@ -972,6 +972,8 @@ DWORD GetRuntimeId()
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
 
+#ifndef FEATURE_PORTABLE_HELPERS
+
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
@@ -1023,6 +1025,20 @@ extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#else // FEATURE_PORTABLE_HELPERS
+
+BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
+{
+    return FALSE;
+}
+
+PCODE AdjustWriteBarrierIP(PCODE controlPc)
+{
+    UNREACHABLE();
+}
+
+#endif // FEATURE_PORTABLE_HELPERS
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -4625,9 +4641,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // This method can be called on current thread only
     _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
 
-    // Reset any bits that request for CoInitialize
-    ResetRequiresCoInitialize();
-
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
     if (state == AS_Unknown)
@@ -4787,10 +4800,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
             _ASSERTE(!"Unexpected HRESULT From RoInitialize");
         }
     }
-
-    // Since we've just called CoInitialize, COM has effectively been started up.
-    // To ensure the CLR is aware of this, we need to call EnsureComStarted.
-    EnsureComStarted(FALSE);
 
     return GetApartment();
 }
@@ -6036,13 +6045,11 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     {
         m_CacheStackBase  = GetStackUpperBound();
         m_CacheStackLimit = GetStackLowerBound();
-#if !defined(TARGET_WASM) // WASM-TODO: stack can start at address 0 on wasm/emscripten and usually does in Debug builds
         if (m_CacheStackLimit == NULL)
         {
             _ASSERTE(!"Failed to set stack limits");
             return FALSE;
         }
-#endif
 
         // Compute the limit used by TryEnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
@@ -6663,14 +6670,7 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
                 SetIP(pctx, 0);
 #ifdef TARGET_X86
                 SetRegdisplayPCTAddr(pRD, (TADDR)&(pctx->Eip));
-#elif defined(TARGET_AMD64)
-                // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#elif defined(TARGET_ARM)
-                // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#else
-                PORTABILITY_ASSERT("NYI for platform Thread::InitRegDisplay");
 #endif
-
                 return false;
             }
 #endif // DACCESS_COMPILE
@@ -7685,6 +7685,7 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
+    UNREACHABLE();
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -7756,6 +7757,23 @@ BOOL Thread::IsAddressInStack (PTR_VOID addr) const
     }
 #endif // FEATURE_INTERPRETER
     return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
+}
+
+PTR_GCFrame Thread::GetGCFrame()
+{
+    SUPPORTS_DAC;
+
+#ifdef _DEBUG_IMPL
+    WRAPPER_NO_CONTRACT;
+    if (this == GetThreadNULLOk())
+    {
+        void* curSP;
+        curSP = (void *)GetCurrentSP();
+        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+    }
+#endif
+
+    return m_pGCFrame;
 }
 
 #ifdef DACCESS_COMPILE

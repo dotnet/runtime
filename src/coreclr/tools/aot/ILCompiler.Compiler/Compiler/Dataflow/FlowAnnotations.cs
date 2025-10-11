@@ -282,7 +282,7 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
-            } while ((metadataType = metadataType.MetadataBaseType) != null);
+            } while ((metadataType = metadataType.BaseType) != null);
 
             return false;
         }
@@ -503,6 +503,13 @@ namespace ILLink.Shared.TrimAnalysis
                         continue;
 
                     PropertyPseudoDesc property = new PropertyPseudoDesc(ecmaType, propertyHandle);
+
+                    if (CompilerGeneratedNames.IsExtensionType(ecmaType.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
 
                     if (!IsTypeInterestingForDataflow(property.Signature.ReturnType))
                     {
