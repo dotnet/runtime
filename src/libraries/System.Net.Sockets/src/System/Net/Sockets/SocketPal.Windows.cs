@@ -338,10 +338,19 @@ namespace System.Net.Sockets
                         remaining -= chunkSize;
                     }
 
-                    // Send postBuffer if present
+                    // Send postBuffer if present, or apply disconnect/reuse flags to last operation
                     if (postBuffer.Length > 0)
                     {
                         bool success = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                        if (!success)
+                        {
+                            return GetLastSocketError();
+                        }
+                    }
+                    else if ((flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
+                    {
+                        // If no postBuffer but disconnect/reuse flags are set, send an empty buffer with the flags
+                        bool success = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, IntPtr.Zero, 0, flags);
                         if (!success)
                         {
                             return GetLastSocketError();
