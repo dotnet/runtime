@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
-
 public class Async2FibonacciWithYields
 {
     const int iterations = 3;
