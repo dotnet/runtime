@@ -19,7 +19,7 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-bool isRedundantSignExtend(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);
+bool isRedundantSignExtend(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
 #ifdef DEBUG
 
