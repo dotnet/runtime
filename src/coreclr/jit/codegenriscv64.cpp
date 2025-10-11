@@ -3188,7 +3188,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     regOp1 = tmpRegOp1;
                 }
             }
- 
             if (tree->OperIs(GT_EQ, GT_NE))
             {
                 if ((imm != 0) || (cmpSize == EA_4BYTE))
