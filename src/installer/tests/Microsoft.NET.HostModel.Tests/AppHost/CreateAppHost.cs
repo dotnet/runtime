@@ -231,8 +231,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecificFact(TestPlatforms.AnyUnix)]
         public void ExecutableImage()
         {
             using TestArtifact artifact = CreateTestDirectory();
@@ -261,10 +260,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 .Be(expectedPermissions);
         }
 
-        [Theory]
+        [PlatformSpecificTheory(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSignMachOAppHost(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
@@ -286,10 +284,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [Theory]
+        [PlatformSpecificTheory(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void SigningExistingAppHostCreatesNewInode(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
@@ -437,9 +434,11 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        [Fact]
         public void CetCompat_ProductHosts()
         {
+            Assert.SkipUnless(Binaries.CetCompat.IsSupported, "CET not supported on this platform");
+
             using (TestArtifact artifact = CreateTestDirectory())
             {
                 string[] hosts = [Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath];

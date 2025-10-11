@@ -11,13 +11,14 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
-    [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
     public class ComhostSideBySide : IClassFixture<ComhostSideBySide.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
         public ComhostSideBySide(SharedTestState sharedTestState)
         {
+            Assert.SkipUnless(OperatingSystem.IsWindows(), "COM activation is only supported on Windows");
+
             sharedState = sharedTestState;
         }
 
@@ -31,7 +32,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -49,7 +50,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -69,7 +70,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             TestApp app = selfContained ? sharedState.ManagedHost_SelfContained : sharedState.ManagedHost_FrameworkDependent;
             CommandResult result = Command.Create(app.AppExe, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -8,13 +9,14 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
-    [PlatformSpecific(TestPlatforms.Windows)] // IJW is only supported on Windows
     public class Ijwhost : IClassFixture<Ijwhost.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
         public Ijwhost(SharedTestState sharedTestState)
         {
+            Assert.SkipUnless(OperatingSystem.IsWindows(), "IJW is only supported on Windows");
+
             sharedState = sharedTestState;
         }
 
@@ -37,7 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     File.Delete(app.RuntimeConfigJson);
                 }
 
-                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 if (no_runtimeconfig)
@@ -72,7 +74,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .WithProperty("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext", load_isolated.ToString())
                     .Save();
 
-                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -104,15 +106,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     sharedState.IjwApp.AppDll,
                     "NativeEntryPoint"
                 };
-                sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .WorkingDirectory(cwd.Location)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
                     .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
-                    .And.ResolveHostFxr(TestContext.BuiltDotNet)
-                    .And.ResolveHostPolicy(TestContext.BuiltDotNet)
-                    .And.ResolveCoreClr(TestContext.BuiltDotNet);
+                    .And.ResolveHostFxr(HostTestContext.BuiltDotNet)
+                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
             }
         }
 
@@ -128,13 +130,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     "ijwhost",
                     app.AppDll,
                     "NativeEntryPoint",
-                    TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath, // optional 4th and 5th arguments that tell nativehost to start the runtime before loading the C++/CLI library
+                    HostTestContext.BuiltDotNet.GreatestVersionHostFxrFilePath, // optional 4th and 5th arguments that tell nativehost to start the runtime before loading the C++/CLI library
                     startupConfigPath
                 };
 
                 File.Move(app.RuntimeConfigJson, startupConfigPath);
 
-                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -156,7 +158,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             TestApp app = selfContained ? sharedState.ManagedHost_SelfContained : sharedState.ManagedHost_FrameworkDependent;
             CommandResult result = Command.Create(app.AppExe, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -174,6 +176,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
+                if (!OperatingSystem.IsWindows())
+                {
+                    // IJW is only supported on Windows, these tests are skipped in the constructor
+                    return;
+                }
+
                 string folder = Path.Combine(BaseDirectory, "ijw");
                 IjwApp = new TestApp(folder, "ijw");
                 // Copy over ijwhost
@@ -194,7 +202,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 // Create a runtimeconfig.json for the C++/CLI test library
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))
-                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion))
+                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion))
                     .Save();
 
                 ManagedHost_FrameworkDependent = TestApp.CreateFromBuiltAssets("ManagedHost");
