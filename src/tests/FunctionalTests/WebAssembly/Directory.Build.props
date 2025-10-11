@@ -19,6 +19,8 @@
     <Content Include="index.html" CopyToOutputDirectory="Always" />
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="main.js" />
+    <Content Include="index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="main.js" Link="wwwroot\main.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

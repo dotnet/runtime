@@ -2,7 +2,6 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
-    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
@@ -90,9 +89,11 @@
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
 
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
-    <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" />
+  <ItemGroup Condition="'$(_UseWasmSymbolicator)' == 'true'">
+    <WasmExtraFilesToDeploy Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
+    <WasmExtraFilesToDeploy Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" />
+    <Content Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" Link="wwwroot\wasm-symbol-patterns.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" Link="wwwroot\WasmSymbolicator.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" >
