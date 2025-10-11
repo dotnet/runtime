@@ -1407,7 +1407,7 @@ namespace System.Reflection
             return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, null, attributeCtorToken, false);
         }
 
-        private static bool IsCustomAttributeDefined(
+        internal static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType)
         {
             return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, attributeFilterType, 0, false);
