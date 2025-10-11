@@ -85,7 +85,7 @@ public static partial class MountHelper
     });
 
     /// <summary>Creates a hard link using command line tools.</summary>
-    public static bool CreateHardLink(string linkPath, string targetPath)
+    private static bool CreateHardLink(string linkPath, string targetPath)
     {
         // It's easy to get the parameters backwards.
         Assert.EndsWith(".link", linkPath);
