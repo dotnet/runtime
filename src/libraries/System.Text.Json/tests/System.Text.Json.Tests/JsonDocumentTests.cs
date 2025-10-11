@@ -2269,6 +2269,28 @@ namespace System.Text.Json.Tests
             });
         }
 
+        [Fact]
+        public static void TestJsonDocumentOptionsProperties()
+        {
+            var options = new JsonDocumentOptions();
+            Assert.True(options.AllowDuplicateProperties);
+            Assert.False(options.AllowTrailingCommas);
+            Assert.Equal(JsonCommentHandling.Disallow, options.CommentHandling);
+            Assert.Equal(0, options.MaxDepth);
+
+            options.AllowDuplicateProperties = false;
+            Assert.False(options.AllowDuplicateProperties);
+
+            options.AllowTrailingCommas = true;
+            Assert.True(options.AllowTrailingCommas);
+
+            options.CommentHandling = JsonCommentHandling.Skip;
+            Assert.Equal(JsonCommentHandling.Skip, options.CommentHandling);
+
+            options.MaxDepth = 128;
+            Assert.Equal(128, options.MaxDepth);
+        }
+
         [Theory]
         [InlineData("{ \"object\": { \"1-1\": null, \"1-2\": \"12\", }, \"array\": [ 4, 8, 1, 9, 2 ] }")]
         [InlineData("[ 5, 4, 3, 2, 1, ]")]
