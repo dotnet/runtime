@@ -53,20 +53,7 @@ public:
 
     static OBJECTREF GetNextFinalizableObject();
 
-    static void RaiseShutdownEvents()
-    {
-        WRAPPER_NO_CONTRACT;
-        fQuitFinalizer = TRUE;
-        EnableFinalization();
-
-        // Do not wait for FinalizerThread if the current one is FinalizerThread.
-        if (GetThreadNULLOk() != GetFinalizerThread())
-        {
-            // This wait must be alertable to handle cases where the current
-            // thread's context is needed (i.e. RCW cleanup)
-            hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
-        }
-    }
+    static void RaiseShutdownEvents();
 
     static void WaitForFinalizerThreadStart();
 

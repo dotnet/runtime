@@ -56,7 +56,7 @@ namespace System.Tests
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, -1)]
         [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0)]
         [InlineData(float.PositiveInfinity, float.NegativeInfinity, 1)]
-        public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(float f1, object? value, int expected)
         {
             if (value is float f2)
             {
@@ -128,7 +128,7 @@ namespace System.Tests
         [InlineData(float.NaN, -float.NaN, true)]
         [InlineData(789.0f, 789.0, false)]
         [InlineData(789.0f, "789", false)]
-        public static void EqualsTest(float f1, object value, bool expected)
+        public static void EqualsTest(float f1, object? value, bool expected)
         {
             if (value is float f2)
             {

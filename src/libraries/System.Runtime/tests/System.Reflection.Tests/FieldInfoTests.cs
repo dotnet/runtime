@@ -333,6 +333,27 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, fieldInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
+        {
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(FI_FieldArray), typeof(FI_FieldArraySubClassA), typeof(FI_FieldArraySubClassB), typeof(FI_FieldArraySubClassC) })
+            {
+                foreach (var fieldInfo in type.GetFields())
+                {
+                    if (!hashset.Add(fieldInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
+            Assert.Equal(0, numberOfCollisions);
+        }
+
         [Theory]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.intField), typeof(int))]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), typeof(string))]
@@ -736,6 +757,9 @@ namespace System.Reflection.Tests
             public int[] intArray;
             public object[] objectArray;
         }
+        public class FI_FieldArraySubClassA : FI_FieldArray { }
+        public class FI_FieldArraySubClassB : FI_FieldArray { }
+        public class FI_FieldArraySubClassC : FI_FieldArray { }
 
         public class FI_GenericClass<T> { public FI_GenericClass() { } }
 
@@ -777,7 +801,7 @@ namespace System.Reflection.Tests
         [InlineData(long.MaxValue)]
         [InlineData(byte.MaxValue)]
         [InlineData(null)]
-        public static void SetValueDirect_GetValueDirectRoundDataTest(object value)
+        public static void SetValueDirect_GetValueDirectRoundDataTest(object? value)
         {
             FieldData testField = new FieldData { inner = new Inner() { field = -1 } };
             FieldInfo innerFieldInfo = typeof(FieldData).GetField(nameof(FieldData.inner));

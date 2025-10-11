@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
   <?include "$(var.SharedWixDir)\variables.wxi" ?>
 
@@ -20,38 +20,51 @@
         1. the legacy SDK can be subsequently installed
         2. the user runs 'dotnet' commands directly against 'ProgramFiles'\dotnet\dotnet.exe -->
 
-      <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
+      <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}">
         <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe">
           <CopyFile Id="copyFileCoreHostExe" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
       </Component>
         
-      <Component Id="cmpSharedHostVersionRegistry" Directory="DOTNETHOME" Guid="*">
+      <Component Id="cmpSharedHostVersionRegistry" Directory="DOTNETHOME">
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
           <RegistryValue KeyPath="yes" Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
         </RegistryKey>
       </Component>
 
-      <Component Id="cmpInstallLocation" Directory="TARGETDIR" Guid="*" Win64="no">
+      <Component Id="cmpInstallLocation" Directory="TARGETDIR" Bitness="always32">
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)">
           <RegistryValue Action="write" Name="InstallLocation" Type="string" Value="[DOTNETHOME]" KeyPath="yes"/>
         </RegistryKey>
       </Component>
 
-      <Component Id="cmpPath" Directory="DOTNETHOME" Guid="*">
-        <?if $(var.Platform)~=x64 ?>
-        <!-- For x64 installer, only add the sharedhost key when actually on native architecture. -->
-        <Condition>NOT NON_NATIVE_ARCHITECTURE</Condition>
-        <?elseif $(var.Platform)~=x86 ?>
-        <!-- For x86 installer, only add the key when not on 64-bit platform. -->
-        <Condition>NOT VersionNT64</Condition>
-        <?endif?>
-
-        <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
-        <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
-          <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
-        </RegistryKey>
-      </Component>
+      <?if $(var.Platform)~=x64 ?>
+        <!-- For x64 installer, only add to PATH when actually on native architecture. -->
+        <Component Id="cmpPath" Directory="DOTNETHOME" Condition="NOT NON_NATIVE_ARCHITECTURE">
+          <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
+          <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+            <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
+          </RegistryKey>
+          <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
+        </Component>
+      <?elseif $(var.Platform)~=x86 ?>
+        <!-- For x86 installer, only add to PATH when not on 64-bit platform. -->
+        <Component Id="cmpPath" Directory="DOTNETHOME" Condition="NOT VersionNT64">
+          <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
+          <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+            <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
+          </RegistryKey>
+          <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
+        </Component>
+      <?else?>
+        <Component Id="cmpPath" Directory="DOTNETHOME">
+          <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
+          <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+            <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
+          </RegistryKey>
+          <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
+        </Component>
+      <?endif?>
 
       <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
         <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt">
@@ -62,51 +75,22 @@
         </File>
       </Component>
 
-      <ComponentRef Id="cmpSetPath" />
     </ComponentGroup>
 
     <Property Id="ProductCPU" Value="$(var.Platform)" />
     <Property Id="RTM_ProductVersion" Value="$(var.Dotnet_ProductVersion)" />
 
-    <DirectoryRef Id="$(var.Program_Files)">
+    <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="PROGRAMFILES_DOTNET" Name="dotnet" />
-    </DirectoryRef>
+    </StandardDirectory>
     
     <?if $(var.Platform)~=x64 ?>
     <CustomActionRef Id="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" />
     <?endif?>
   </Fragment>
-
-  <Fragment>
-    <Property Id="DISABLE_SETTING_HOST_PATH" Secure="yes">
-      <RegistrySearch Id="DisableSettingHostPathSearch" Root="HKLM" Key="SOFTWARE\Microsoft\.NET" Type="raw" Name="DisableSettingHostPath"/>
-    </Property>
-
-    <Component Id="cmpSetPath" Guid="{0B910ED8-0877-473D-8658-647382324433}" Directory="DOTNETHOME">
-      <CreateFolder />
-      <!-- Always set the SYSTEM PATH, unless DisableSettingHostPath is 1. -->
-      <?if $(var.Platform)~=x64 ?>
-      <!-- For x64 installer, only add to PATH when actually on native architecture. -->
-      <Condition><![CDATA[DISABLE_SETTING_HOST_PATH <> "#1" AND NOT NON_NATIVE_ARCHITECTURE]]></Condition>
-      <?elseif $(var.Platform)~=x86 ?>
-      <!-- For x86 installer, only add to PATH when not on 64-bit platform. -->
-      <Condition><![CDATA[DISABLE_SETTING_HOST_PATH <> "#1" AND NOT VersionNT64]]></Condition>
-      <?endif?>
-      <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
-    </Component>
-
-    <InstallExecuteSequence>
-      <!-- Only broadcast the change if the component is enabled. -->
-      <Custom Action="WixBroadcastEnvironmentChange" After="InstallFinalize">
-        <![CDATA[DISABLE_SETTING_HOST_PATH <> "#1"]]>
-      </Custom>
-    </InstallExecuteSequence>
-  </Fragment>
   
   <Fragment>
     <!-- Unlike DOTNETHOME which gives precedence to a user specified value over an x64 suffix, here we always want the suffixed path -->
-    <SetProperty Action="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" Id="PROGRAMFILES_DOTNET" Value="[$(var.Program_Files)]dotnet\x64\" After="Set_NON_NATIVE_ARCHITECTURE">
-      NON_NATIVE_ARCHITECTURE
-    </SetProperty>
+    <SetProperty Action="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" Id="PROGRAMFILES_DOTNET" Value="[ProgramFiles64Folder]dotnet\x64\" After="Set_NON_NATIVE_ARCHITECTURE" Condition="NON_NATIVE_ARCHITECTURE" />
   </Fragment>
 </Wix>

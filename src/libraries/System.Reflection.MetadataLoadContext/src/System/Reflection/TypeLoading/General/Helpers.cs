@@ -12,11 +12,7 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-#if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("\\[]+*&,");
-#else
-        private static ReadOnlySpan<char> s_charsToEscape => "\\[]+*&,".AsSpan();
-#endif
 
         [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
@@ -120,16 +116,12 @@ namespace System.Reflection.TypeLoading
 
         public static bool TypeNameContainsTypeParserMetacharacters(this string identifier)
         {
-            return identifier.AsSpan().IndexOfAny(s_charsToEscape) >= 0;
+            return identifier.AsSpan().ContainsAny(s_charsToEscape);
         }
 
         public static bool NeedsEscapingInTypeName(this char c)
         {
-#if NET8_0_OR_GREATER
             return s_charsToEscape.Contains(c);
-#else
-            return s_charsToEscape.IndexOf(c) >= 0;
-#endif
         }
 
         public static string UnescapeTypeNameIdentifier(this string identifier)

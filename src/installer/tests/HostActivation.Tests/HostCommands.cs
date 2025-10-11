@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace HostActivation.Tests
@@ -169,6 +170,65 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Info_GlobalJson_InvalidJson()
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidJson)))
+            {
+                string globalJsonPath = GlobalJson.Write(workingDir.Location, "{ \"sdk\": { }");
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining("JSON parsing exception:")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9")]
+        [InlineData("9.0")]
+        [InlineData("9.0.x")]
+        [InlineData("invalid")]
+        public void Info_GlobalJson_InvalidData(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidData)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
+                    .And.HaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9.0.0")]
+        [InlineData("9.1.99")]
+        public void Info_GlobalJson_NonExistentFeatureBand(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_NonExistentFeatureBand)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                var result = TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, {Version.Parse(version).ToString(2)}.100")
+                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Fact]
         public void ListRuntimes()
         {
             // Verify exact match of command output. The output of --list-runtimes is intended to be machine-readable
@@ -176,6 +236,22 @@ namespace HostActivation.Tests
             string expectedOutput = GetListRuntimesOutput(SharedState.DotNet.BinPath, SharedState.InstalledVersions);
             SharedState.DotNet.Exec("--list-runtimes")
                 .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOut(expectedOutput);
+        }
+
+        [Fact]
+        public void ListRuntimes_DisabledVersions()
+        {
+            // Verify exact match of command output. The output of --list-runtimes is intended to be machine-readable
+            // and must not change in a way that breaks existing parsing.
+            string disabledVersion = SharedState.InstalledVersions[0];
+            string[] expectedVersions = SharedState.InstalledVersions[1..];
+            string expectedOutput = GetListRuntimesOutput(SharedState.DotNet.BinPath, expectedVersions);
+            SharedState.DotNet.Exec("--list-runtimes")
+                .CaptureStdOut()
+                .EnvironmentVariable(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersion)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOut(expectedOutput);

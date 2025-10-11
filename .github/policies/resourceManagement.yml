@@ -1064,7 +1064,6 @@ configuration:
             - tarekgh
             - tommcdon
             - steveisok
-            - pjanotti
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1772,6 +1771,7 @@ configuration:
       - mentionUsers:
           mentionees:
           - lewing
+          - pavelsavara
           replyTemplate: >-
             Tagging subscribers to 'arch-wasm': ${mentionees}
 

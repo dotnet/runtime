@@ -41,8 +41,8 @@ public unsafe class Program
             TestPInvokeMarkedWithUnmanagedCallersOnly();
             TestUnmanagedCallersOnlyWithGeneric();
 
-            // Exception handling is only supported on CoreCLR Windows.
-            if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime)
+            // Exception handling interop is only supported on CoreCLR Windows.
+            if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsCoreClrInterpreter)
             {
                 TestUnmanagedCallersOnlyValid_ThrowException();
                 TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
@@ -139,7 +139,7 @@ public unsafe class Program
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&GenericClass<int>.CallbackMethod, n); });
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     public static int CallbackViaUnmanagedCalli(int val)
     {
         return DoubleImpl(val);
@@ -155,7 +155,7 @@ public unsafe class Program
         Assert.Equal(expected, nativeMethod(n));
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     public static int CallbackViaUnmanagedCalliThrows(int val)
     {
         throw new Exception() { HResult = CallbackThrowsErrorCode };

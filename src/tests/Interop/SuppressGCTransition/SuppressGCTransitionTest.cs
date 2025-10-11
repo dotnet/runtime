@@ -248,7 +248,7 @@ public unsafe class SuppressGCTransitionTest
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReturnInt(int value)
     {
         return value;
@@ -288,6 +288,7 @@ public unsafe class SuppressGCTransitionTest
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled pinvoke calli", RuntimeTestModes.InterpreterActive)]
     public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);

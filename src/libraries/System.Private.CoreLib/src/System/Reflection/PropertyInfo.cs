@@ -34,8 +34,8 @@ namespace System.Reflection
         public abstract MethodInfo? GetSetMethod(bool nonPublic);
 
         public virtual Type GetModifiedPropertyType() => throw new NotSupportedException();
-        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
-        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetOptionalCustomModifiers() => [];
+        public virtual Type[] GetRequiredCustomModifiers() => [];
 
         [DebuggerHidden]
         [DebuggerStepThrough]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
 using Xunit.Sdk;
 
@@ -20,6 +21,8 @@ namespace System.Security.Cryptography.Tests
             internal byte[] Pkcs8 { get; }
             internal byte[] Signature { get; }
 
+            internal byte[] Spki { get; }
+
             internal CompositeMLDsaTestVector(string tcId, CompositeMLDsaAlgorithm algo, string pk, string x5c, string sk, string sk_pkcs8, string m, string s)
             {
                 Id = tcId;
@@ -30,6 +33,19 @@ namespace System.Security.Cryptography.Tests
                 Pkcs8 = Convert.FromBase64String(sk_pkcs8);
                 Message = Convert.FromBase64String(m);
                 Signature = Convert.FromBase64String(s);
+
+                AsnReader reader = new AsnReader(Certificate, AsnEncodingRules.DER);
+                AsnReader certificate = reader.ReadSequence();
+                AsnReader tbsCertificate = certificate.ReadSequence();
+
+                tbsCertificate.ReadEncodedValue(); // Version
+                tbsCertificate.ReadEncodedValue(); // SerialNumber
+                tbsCertificate.ReadEncodedValue(); // Signature
+                tbsCertificate.ReadEncodedValue(); // Issuer
+                tbsCertificate.ReadEncodedValue(); // Validity
+                tbsCertificate.ReadEncodedValue(); // Subject
+
+                Spki = tbsCertificate.ReadEncodedValue().ToArray();
             }
 
             public override string ToString() => Id;
@@ -43,8 +59,13 @@ namespace System.Security.Cryptography.Tests
         internal static CompositeMLDsaTestVector[] SupportedAlgorithmIetfVectors =>
             field ??= AllIetfVectors.Where(v => CompositeMLDsa.IsAlgorithmSupported(v.Algorithm)).ToArray();
 
-        public static IEnumerable<object[]>SupportedAlgorithmIetfVectorsTestData =>
+        public static IEnumerable<object[]> SupportedAlgorithmIetfVectorsTestData =>
             SupportedAlgorithmIetfVectors.Select(v => new object[] { v });
+
+        public static IEnumerable<object[]> SupportedECDsaAlgorithmIetfVectorsTestData =>
+            SupportedAlgorithmIetfVectors
+                .Where(vector => CompositeMLDsa.IsAlgorithmSupported(vector.Algorithm) && CompositeMLDsaTestHelpers.IsECDsa(vector.Algorithm))
+                .Select(v => new object[] { v });
 
         internal static CompositeMLDsaAlgorithm[] AllAlgorithms => field ??=
         [
@@ -95,5 +116,8 @@ namespace System.Security.Cryptography.Tests
                 throw new XunitException($"Algorithm '{algorithm.Name}' doesn't have ML-DSA component.");
             }
         }
+
+        internal static CompositeMLDsaTestVector GetIetfTestVector(CompositeMLDsaAlgorithm algorithm) =>
+            AllIetfVectors.Single(v => v.Algorithm == algorithm);
     }
 }

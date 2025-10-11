@@ -170,7 +170,7 @@ namespace System.Reflection
             if (type.IsClass)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsInterface)
+            if (type.IsActualInterface)
                 return CustomAttributeEncoding.Object;
 
             if (type.IsActualValueType)
@@ -253,10 +253,10 @@ namespace System.Reflection
             m_scope = scope;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
-            if (m_ctor!.DeclaringType!.IsGenericType)
+            if (m_ctor.DeclaringType!.IsGenericType)
             {
                 MetadataImport metadataScope = m_scope.MetadataImport;
-                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null);
                 m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
@@ -1407,7 +1407,7 @@ namespace System.Reflection
             return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, null, attributeCtorToken, false);
         }
 
-        private static bool IsCustomAttributeDefined(
+        internal static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType)
         {
             return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, attributeFilterType, 0, false);
@@ -1575,7 +1575,7 @@ namespace System.Reflection
 
                             RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                 attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes)) ??
+                                attributeType.GetProperty(name, type, [])) ??
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 
@@ -2263,7 +2263,7 @@ namespace System.Reflection
 
         internal static StructLayoutAttribute? GetStructLayoutCustomAttribute(RuntimeType type)
         {
-            if (type.IsInterface || type.HasElementType || type.IsGenericParameter)
+            if (type.IsActualInterface || type.HasElementType || type.IsGenericParameter)
                 return null;
 
             LayoutKind layoutKind = LayoutKind.Auto;
@@ -2272,6 +2272,7 @@ namespace System.Reflection
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                 default: Debug.Fail("Unreachable code"); break;
             }
 

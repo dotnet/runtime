@@ -186,7 +186,6 @@ DEFINE_METASIG(SM(Obj_IntPtr_IntPtr_Int_RetIntPtr, j I I i, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_RefIntPtr_RetObj, I I r(I), j))
 DEFINE_METASIG_T(SM(Obj_RefExInfo_RetVoid, j r(g(EXINFO)), v))
 DEFINE_METASIG_T(SM(UInt_RefExInfo_RetVoid, K r(g(EXINFO)), v))
-DEFINE_METASIG_T(SM(RefExInfo_UIntPtr_RetVoid, r(g(EXINFO)) U, v))
 DEFINE_METASIG_T(SM(RefExInfo_RefExInfo_RetVoid, r(g(EXINFO)) r(g(EXINFO)), v))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
@@ -330,7 +329,6 @@ DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
 DEFINE_METASIG(SM(Int_RetIntPtr, i, I))
-DEFINE_METASIG(SM(Int_IntPtr_RetIntPtr, i I, I))
 
 DEFINE_METASIG_T(SM(DateTime_RetDbl, g(DATE_TIME), d))
 DEFINE_METASIG(SM(Dbl_RetLong, d, l))
@@ -561,14 +559,8 @@ DEFINE_METASIG_T(IM(Dec_RetVoid, g(DECIMAL), v))
 DEFINE_METASIG_T(IM(Currency_RetVoid, g(CURRENCY), v))
 DEFINE_METASIG_T(SM(RefDec_RetVoid, r(g(DECIMAL)), v))
 
-DEFINE_METASIG_T(IM(Exception_RetTaskOfT, C(EXCEPTION), GI(C(TASK_1), 1, G(0))))
-DEFINE_METASIG_T(IM(T_RetTaskOfT, G(0), GI(C(TASK_1), 1, G(0))))
-
-DEFINE_METASIG_T(IM(Exception_RetTask, C(EXCEPTION), C(TASK)))
+DEFINE_METASIG_T(IM(RetTaskOfT, _, GI(C(TASK_1), 1, G(0))))
 DEFINE_METASIG_T(IM(RetTask, _, C(TASK)))
-
-DEFINE_METASIG_T(IM(Exception_RetValueTaskOfT, C(EXCEPTION), GI(g(VALUETASK_1), 1, G(0))))
-DEFINE_METASIG_T(IM(T_RetValueTaskOfT, G(0), GI(g(VALUETASK_1), 1, G(0))))
 
 DEFINE_METASIG_T(IM(Exception_RetValueTask, C(EXCEPTION), g(VALUETASK)))
 DEFINE_METASIG_T(IM(RetValueTask, _, g(VALUETASK)))

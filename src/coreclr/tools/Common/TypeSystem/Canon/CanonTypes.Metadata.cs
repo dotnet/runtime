@@ -17,8 +17,6 @@ namespace Internal.TypeSystem
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MetadataType MetadataBaseType => (MetadataType)BaseType;
-
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
         public override bool IsAbstract => false;
@@ -29,11 +27,15 @@ namespace Internal.TypeSystem
 
         public override bool IsExplicitLayout => false;
 
+        public override bool IsExtendedLayout => false;
+
+        public override bool IsAutoLayout => true;
+
         public override ModuleDesc Module => _context.SystemModule;
 
         public override bool IsModuleType => false;
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
         {
             return null;
         }
@@ -56,12 +58,6 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
         }
     }
 

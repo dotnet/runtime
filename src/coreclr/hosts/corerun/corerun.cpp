@@ -9,6 +9,10 @@
 #include "corerun.hpp"
 #include "dotenv.hpp"
 
+#ifdef TARGET_WASM
+#include <pinvoke_override.hpp>
+#endif // TARGET_WASM
+
 #include <fstream>
 
 using char_t = pal::char_t;
@@ -75,6 +79,7 @@ namespace envvar
     // - PROPERTY: corerun will pass the paths vias the TRUSTED_PLATFORM_ASSEMBLIES property
     // - EXTERNAL: corerun will pass an external assembly probe to the runtime for app assemblies
     // - Not set: same as PROPERTY
+    // - The TPA list as a platform delimited list of paths. The same format as the system's PATH env var.
     const char_t* appAssemblies = W("APP_ASSEMBLIES");
 }
 
@@ -158,10 +163,26 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
 
 static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
 {
+#ifndef TARGET_WASM
     assert(mod != nullptr && symbol != nullptr && fptr != nullptr);
     *fptr = pal::get_module_symbol(mod, symbol);
     if (*fptr != nullptr)
         return true;
+#else // !TARGET_WASM
+    if (!strcmp(symbol, "coreclr_initialize")){
+        *fptr = (void*)coreclr_initialize;
+        return true;
+    } else if (!strcmp(symbol, "coreclr_execute_assembly")){
+        *fptr = (void*)coreclr_execute_assembly;
+        return true;
+    } else if (!strcmp(symbol, "coreclr_shutdown_2")){
+        *fptr = (void*)coreclr_shutdown_2;
+        return true;
+    } else if (!strcmp(symbol, "coreclr_set_error_writer")){
+        *fptr = (void*)coreclr_set_error_writer;
+        return true;
+    }
+#endif // !TARGET_WASM
 
     pal::fprintf(stderr, W("Export '%s' not found.\n"), symbol);
     return false;
@@ -360,8 +381,7 @@ static int run(const configuration& config)
     }
     else
     {
-        pal::fprintf(stderr, W("Unknown value for APP_ASSEMBLIES environment variable: %s\n"), app_assemblies_env.c_str());
-        return -1;
+        tpa_list = std::move(app_assemblies_env);
     }
 
     {
@@ -469,6 +489,11 @@ static int run(const configuration& config)
     {
         coreclr_set_error_writer_func(log_error_info);
     }
+
+#ifdef TARGET_WASM
+    // install the pinvoke override callback to resolve p/invokes to statically linked libraries
+    add_pinvoke_override();
+#endif // TARGET_WASM
 
     int result;
     result = coreclr_init_func(

@@ -57,7 +57,7 @@ inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
 {
     SUPPORTS_DAC;
 #ifndef HOST_64BIT
-    static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
+    static_assert(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
     {
@@ -74,7 +74,7 @@ inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutT
 {
     SUPPORTS_DAC;
 #ifndef HOST_64BIT
-    static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
+    static_assert(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
     {
@@ -91,7 +91,7 @@ inline TADDR CORDB_ADDRESS_TO_TADDR(CORDB_ADDRESS cdbAddr)
 {
     SUPPORTS_DAC;
 #ifndef HOST_64BIT
-    static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
+    static_assert(sizeof(TADDR)==sizeof(UINT));
     if (cdbAddr > UINT_MAX)
     {
         _ASSERTE_MSG(false, "CORDB_ADDRESS out of range for this platform");
@@ -1356,7 +1356,6 @@ public:
 
     void ClearDumpStats();
     JITNotification* GetHostJitNotificationTable();
-    GcNotification*  GetHostGcNotificationTable();
 
     void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
@@ -1471,7 +1470,6 @@ private:
     ICLRDataLoggingCallback* m_logMessageCb;
     CLRDataEnumMemoryFlags m_enumMemFlags;
     JITNotification* m_jitNotificationTable;
-    GcNotification*  m_gcNotificationTable;
     TSIZE_T m_cbMemoryReported;
     DumpMemoryReportStatics m_dumpStats;
 
