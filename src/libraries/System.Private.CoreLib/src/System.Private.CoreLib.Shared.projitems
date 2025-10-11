@@ -1753,9 +1753,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.Windows.cs">
-      <Link>Common\System\Sha1ForNonSecretPurposes.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs</Link>
     </Compile>
@@ -2238,6 +2235,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.Windows.cs">
+      <Link>Common\System\Sha1ForNonSecretPurposes.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\AsyncOverSyncWithIoCancellation.cs">
       <Link>Common\System\Threading\AsyncOverSyncWithIoCancellation.cs</Link>
