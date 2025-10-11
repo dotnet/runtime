@@ -35,7 +35,7 @@ for line in $(<$2); do
   fi
 done
 
-diffList=$(echo -n ${entriesList[@]} ${dllList[@]} | tr " " "\n" | sort | uniq -u)
+diffList=$(echo -n "${entriesList[@]}" "${dllList[@]}" | tr " " "\n" | sort | uniq -u)
 
 if [ -n "$diffList" ]; then
   echo "ERROR: $2 file did not match entries exported from $1" >&2
