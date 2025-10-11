@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public readonly Hashtable? CaptureNumberSparseMapping;
         /// <summary>A mapping of RegexNode to its associated comments from the pattern (for source generator use only).</summary>
-        public readonly Dictionary<RegexNode, List<string>>? NodeComments;
+        internal readonly Dictionary<RegexNode, List<string>>? NodeComments;
 
         internal RegexTree(RegexNode root, int captureCount, string[]? captureNames, Hashtable? captureNameToNumberMapping, Hashtable? captureNumberSparseMapping, RegexOptions options, CultureInfo? culture, Dictionary<RegexNode, List<string>>? nodeComments = null)
         {
