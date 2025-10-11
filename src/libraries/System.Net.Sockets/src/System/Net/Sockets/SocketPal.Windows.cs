@@ -321,16 +321,19 @@ namespace System.Net.Sockets
                     while (remaining > 0)
                     {
                         int chunkSize = (int)Math.Min(remaining, int.MaxValue);
-                        
+
                         // Set the file pointer to the current offset
-                        RandomAccess.Seek(fileHandle, offset, SeekOrigin.Begin);
-                        
+                        if (!Interop.Kernel32.SetFilePointerEx(fileHandle!, offset, out _, 0 /* FILE_BEGIN */))
+                        {
+                            return GetLastSocketError();
+                        }
+
                         bool success = TransmitFileHelper(handle, fileHandle, null, IntPtr.Zero, 0, IntPtr.Zero, 0, TransmitFileOptions.UseDefaultWorkerThread, chunkSize);
                         if (!success)
                         {
                             return GetLastSocketError();
                         }
-                        
+
                         offset += chunkSize;
                         remaining -= chunkSize;
                     }
