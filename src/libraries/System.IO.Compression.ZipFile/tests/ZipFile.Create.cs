@@ -153,5 +153,23 @@ namespace System.IO.Compression.Tests
 
             await DisposeZipArchive(async, archive);
         }
+
+        [Theory]
+        [MemberData(nameof(Utf8_Encoded_Test_Pairs))]
+        public void CheckUtf8Encoding(string entryName, Encoding? encoding, string comment, bool expected)
+        {
+            using var ms = new MemoryStream();
+            ZipArchive archive = encoding is null
+                ? new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true)
+                : new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: encoding);
+
+            using (archive)
+            {
+                var entry = archive.CreateEntry(entryName);
+                if (comment is not null)
+                    entry.Comment = comment;
+                Assert.Equal(expected, entry.IsUtf8Encoded);
+            }
+        }
     }
 }

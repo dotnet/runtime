@@ -225,6 +225,14 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Returns true if the entry's general purpose bit flag indicates UTF-8 encoding is used for the entry name and comment.
+        /// </summary>
+        public bool IsUtf8Encoded
+        {
+            get => (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
+        }
+
+        /// <summary>
         /// The relative path of the entry as stored in the Zip archive. Note that Zip archives allow any string to be the path of the entry, including invalid and absolute paths.
         /// </summary>
         public string FullName
