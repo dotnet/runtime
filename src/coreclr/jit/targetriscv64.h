@@ -275,6 +275,9 @@
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
 
+  #define J_DIST_SMALL_MAX_NEG  (-(1 << 20))
+  #define J_DIST_SMALL_MAX_POS  (+(1 << 20) - 1)
+
   #define B_DIST_SMALL_MAX_NEG  (-4096)
   #define B_DIST_SMALL_MAX_POS  (+4095)
 
