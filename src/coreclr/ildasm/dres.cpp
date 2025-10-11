@@ -240,7 +240,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                 ret = 1;
 #ifdef RES_FILE_DUMP_ENABLED
 
-                _wfopen_s(&pF,wzFileName,L"wb");
+                u16_fopen_s(&pF,wzFileName,L"wb");
                 if(pF)
                 {
                     // Dump them to pF

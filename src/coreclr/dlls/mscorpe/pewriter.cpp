@@ -4,6 +4,7 @@
 
 #include "blobfetcher.h"
 #include "pedecoder.h"
+#include <dn-stdio.h>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -547,7 +548,7 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags)
     headers = NULL;
     headersEnd = NULL;
 
-    m_file = INVALID_HANDLE_VALUE;
+    m_file = NULL;
 
     return S_OK;
 }
@@ -626,21 +627,15 @@ HRESULT PEWriter::setDirectoryEntry(PEWriterSection *section, ULONG entry, ULONG
     return S_OK;
 }
 
-//-----------------------------------------------------------------------------
-// These 2 write functions must be implemented here so that they're in the same
-// .obj file as whoever creates the FILE struct. We can't pass a FILE struct
-// across a dll boundary and use it.
-//-----------------------------------------------------------------------------
-
-HRESULT PEWriterSection::write(HANDLE file)
+HRESULT PEWriterSection::write(FILE* file)
 {
     return m_blobFetcher.Write(file);
 }
 
 //-----------------------------------------------------------------------------
-// Write out the section to the stream
+// Write out the section to the file
 //-----------------------------------------------------------------------------
-HRESULT CBlobFetcher::Write(HANDLE file)
+HRESULT CBlobFetcher::Write(FILE* file)
 {
 // Must write out each pillar (including idx = m_nIndexUsed), one after the other
     unsigned idx;
@@ -648,10 +643,10 @@ HRESULT CBlobFetcher::Write(HANDLE file)
         if (m_pIndex[idx].GetDataLen() > 0)
         {
             ULONG length = m_pIndex[idx].GetDataLen();
-            DWORD dwWritten = 0;
-            if (!WriteFile(file, m_pIndex[idx].GetRawDataStart(), length, &dwWritten, NULL))
+            size_t dwWritten = 0;
+            if ((dwWritten = fwrite(m_pIndex[idx].GetRawDataStart(), 1, length, file)) <= 0)
             {
-                return HRESULT_FROM_GetLastError();
+                return HRESULTFromErrno();
             }
             _ASSERTE(dwWritten == length);
         }
@@ -1336,37 +1331,32 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
 
 HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
 {
-    _ASSERTE(m_file == INVALID_HANDLE_VALUE);
+    _ASSERTE(m_file == NULL);
     HRESULT hr = NOERROR;
 
-    m_file = WszCreateFile(fileName,
-                           GENERIC_WRITE,
-                           0, // No sharing.  Was: FILE_SHARE_READ | FILE_SHARE_WRITE,
-                           NULL,
-                           CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL,
-                           NULL );
-    if (m_file == INVALID_HANDLE_VALUE)
-        hr = HRESULT_FROM_GetLastErrorNA();
+    int err = fopen_lp(&m_file, fileName, W("wb"));
+
+    if (err != 0)
+        hr = HRESULTFromErrno();
 
     return hr;
 }
 
 HRESULT PEWriter::Seek(int offset)
 {
-    _ASSERTE(m_file != INVALID_HANDLE_VALUE);
-    if (SetFilePointer(m_file, offset, 0, FILE_BEGIN))
+    _ASSERTE(m_file != NULL);
+    if (fseek(m_file, offset, SEEK_SET) == 0)
         return S_OK;
     else
-        return HRESULT_FROM_GetLastError();
+        return HRESULTFromErrno();
 }
 
 HRESULT PEWriter::Write(const void *data, int size)
 {
-    _ASSERTE(m_file != INVALID_HANDLE_VALUE);
+    _ASSERTE(m_file != NULL);
 
     HRESULT hr = S_OK;
-    DWORD dwWritten = 0;
+    size_t dwWritten = 0;
     if (size)
     {
         CQuickBytes zero;
@@ -1379,13 +1369,13 @@ HRESULT PEWriter::Write(const void *data, int size)
                 data = zero.Ptr();
             }
         }
-
-        if (WriteFile(m_file, data, size, &dwWritten, NULL))
+        _ASSERTE(data != NULL);
+        if ((dwWritten = fwrite(data, 1, size, m_file)) >= 0)
         {
-            _ASSERTE(dwWritten == (DWORD)size);
+            _ASSERTE(dwWritten == (size_t)size);
         }
         else
-            hr = HRESULT_FROM_GetLastError();
+            hr = HRESULTFromErrno();
     }
 
     return hr;
@@ -1393,7 +1383,7 @@ HRESULT PEWriter::Write(const void *data, int size)
 
 HRESULT PEWriter::Pad(int align)
 {
-    DWORD offset = SetFilePointer(m_file, 0, NULL, FILE_CURRENT);
+    DWORD offset = (DWORD)ftell(m_file);
     int pad = padLen(offset, align);
     if (pad > 0)
         return Write(NULL, pad);
@@ -1403,16 +1393,17 @@ HRESULT PEWriter::Pad(int align)
 
 HRESULT PEWriter::Close()
 {
-    if (m_file == INVALID_HANDLE_VALUE)
+    if (m_file == NULL)
         return S_OK;
 
+    int err = fclose(m_file);
     HRESULT hr;
-    if (CloseHandle(m_file))
+    if (err == 0)
         hr = S_OK;
     else
-        hr = HRESULT_FROM_GetLastError();
+        hr = HRESULTFromErrno();
 
-    m_file = INVALID_HANDLE_VALUE;
+    m_file = NULL;
 
     return hr;
 }
