@@ -10390,6 +10390,7 @@ namespace System.IO
         public System.IO.FileInfo CopyTo(string destFileName) { throw null; }
         public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
         public System.IO.FileStream Create() { throw null; }
+        public void CreateAsHardLink(string pathToTarget) { }
         public System.IO.StreamWriter CreateText() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Decrypt() { }
@@ -10407,7 +10408,6 @@ namespace System.IO
         public System.IO.FileStream OpenWrite() { throw null; }
         public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
         public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
-        public void CreateAsHardLink(string pathToTarget) { }
     }
     public partial class FileLoadException : System.IO.IOException
     {
