@@ -264,6 +264,24 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
+        /// Returns true iff the Vector256 represents 32 ASCII UTF-8 characters in machine endianness.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool AllBytesInVector256AreAscii(Vector256<byte> vec)
+        {
+            return (vec & Vector256.Create(unchecked((byte)(~0x7F)))) == Vector256<byte>.Zero;
+        }
+
+        /// <summary>
+        /// Returns true iff the Vector512 represents 64 ASCII UTF-8 characters in machine endianness.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool AllBytesInVector512AreAscii(Vector512<byte> vec)
+        {
+            return (vec & Vector512.Create(unchecked((byte)(~0x7F)))) == Vector512<byte>.Zero;
+        }
+
+        /// <summary>
         /// Given two Vector128 that represent 16 ASCII UTF-8 characters each, returns true iff
         /// the two inputs are equal using an ordinal case-insensitive comparison.
         /// </summary>
@@ -290,6 +308,64 @@ namespace System.Text.Unicode
 
             // Compare two lowercased vectors
             return (lcVec1 ^ lcVec2) == Vector128<sbyte>.Zero;
+        }
+
+        /// <summary>
+        /// Given two Vector256 that represent 32 ASCII UTF-8 characters each, returns true iff
+        /// the two inputs are equal using an ordinal case-insensitive comparison.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool Vector256OrdinalIgnoreCaseAscii(Vector256<byte> vec1, Vector256<byte> vec2)
+        {
+            // ASSUMPTION: Caller has validated that input values are ASCII.
+
+            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
+            Vector256<sbyte> lowIndicator1 = Vector256.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
+            Vector256<sbyte> lowIndicator2 = Vector256.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
+
+            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
+            Vector256<sbyte> combIndicator1 =
+                Vector256.LessThan(Vector256.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator1);
+            Vector256<sbyte> combIndicator2 =
+                Vector256.LessThan(Vector256.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator2);
+
+            // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
+            Vector256<sbyte> lcVec1 =
+                Vector256.AndNot(Vector256.Create((sbyte)0x20), combIndicator1) + vec1.AsSByte();
+            Vector256<sbyte> lcVec2 =
+                Vector256.AndNot(Vector256.Create((sbyte)0x20), combIndicator2) + vec2.AsSByte();
+
+            // Compare two lowercased vectors
+            return (lcVec1 ^ lcVec2) == Vector256<sbyte>.Zero;
+        }
+
+        /// <summary>
+        /// Given two Vector512 that represent 64 ASCII UTF-8 characters each, returns true iff
+        /// the two inputs are equal using an ordinal case-insensitive comparison.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool Vector512OrdinalIgnoreCaseAscii(Vector512<byte> vec1, Vector512<byte> vec2)
+        {
+            // ASSUMPTION: Caller has validated that input values are ASCII.
+
+            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
+            Vector512<sbyte> lowIndicator1 = Vector512.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
+            Vector512<sbyte> lowIndicator2 = Vector512.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
+
+            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
+            Vector512<sbyte> combIndicator1 =
+                Vector512.LessThan(Vector512.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator1);
+            Vector512<sbyte> combIndicator2 =
+                Vector512.LessThan(Vector512.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator2);
+
+            // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
+            Vector512<sbyte> lcVec1 =
+                Vector512.AndNot(Vector512.Create((sbyte)0x20), combIndicator1) + vec1.AsSByte();
+            Vector512<sbyte> lcVec2 =
+                Vector512.AndNot(Vector512.Create((sbyte)0x20), combIndicator2) + vec2.AsSByte();
+
+            // Compare two lowercased vectors
+            return (lcVec1 ^ lcVec2) == Vector512<sbyte>.Zero;
         }
 #endif
     }

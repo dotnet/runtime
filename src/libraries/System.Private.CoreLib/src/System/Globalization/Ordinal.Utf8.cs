@@ -102,6 +102,136 @@ namespace System.Globalization
             return true;
         }
 
+        private static bool EqualsIgnoreCaseUtf8_Vector512(ref byte charA, int lengthA, ref byte charB, int lengthB)
+        {
+            Debug.Assert(lengthA >= Vector512<byte>.Count);
+            Debug.Assert(lengthB >= Vector512<byte>.Count);
+            Debug.Assert(Vector512.IsHardwareAccelerated);
+
+            nuint lengthU = Math.Min((uint)lengthA, (uint)lengthB);
+            nuint lengthToExamine = lengthU - (nuint)Vector512<byte>.Count;
+
+            nuint i = 0;
+
+            Vector512<byte> vec1;
+            Vector512<byte> vec2;
+
+            do
+            {
+                vec1 = Vector512.LoadUnsafe(ref charA, i);
+                vec2 = Vector512.LoadUnsafe(ref charB, i);
+
+                if (!Utf8Utility.AllBytesInVector512AreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                if (!Utf8Utility.Vector512OrdinalIgnoreCaseAscii(vec1, vec2))
+                {
+                    return false;
+                }
+
+                i += (nuint)Vector512<byte>.Count;
+            }
+            while (i <= lengthToExamine);
+
+            if (i == lengthU)
+            {
+                // success if we reached the end of both sequences
+                return lengthA == lengthB;
+            }
+
+            // Use Vector256 path for trailing elements if possible
+            if (Vector256.IsHardwareAccelerated && (lengthU - i) >= (nuint)Vector256<byte>.Count)
+            {
+                return EqualsIgnoreCaseUtf8_Vector256(ref Unsafe.Add(ref charA, i), (int)(lengthU - i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+            }
+
+            // Use Vector128 path for trailing elements if possible
+            if (Vector128.IsHardwareAccelerated && (lengthU - i) >= (nuint)Vector128<byte>.Count)
+            {
+                return EqualsIgnoreCaseUtf8_Vector128(ref Unsafe.Add(ref charA, i), (int)(lengthU - i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+            }
+
+            // Use scalar path for trailing elements
+            return EqualsIgnoreCaseUtf8_Scalar(ref Unsafe.Add(ref charA, i), (int)(lengthU - i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+
+        NON_ASCII:
+            if (Utf8Utility.AllBytesInVector512AreAscii(vec1) || Utf8Utility.AllBytesInVector512AreAscii(vec2))
+            {
+                // No need to use the fallback if one of the inputs is full-ASCII
+                return false;
+            }
+
+            // Fallback for Non-ASCII inputs
+            return EqualsStringIgnoreCaseUtf8(
+                ref Unsafe.Add(ref charA, i), lengthA - (int)i,
+                ref Unsafe.Add(ref charB, i), lengthB - (int)i
+            );
+        }
+
+        private static bool EqualsIgnoreCaseUtf8_Vector256(ref byte charA, int lengthA, ref byte charB, int lengthB)
+        {
+            Debug.Assert(lengthA >= Vector256<byte>.Count);
+            Debug.Assert(lengthB >= Vector256<byte>.Count);
+            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+            nuint lengthU = Math.Min((uint)lengthA, (uint)lengthB);
+            nuint lengthToExamine = lengthU - (nuint)Vector256<byte>.Count;
+
+            nuint i = 0;
+
+            Vector256<byte> vec1;
+            Vector256<byte> vec2;
+
+            do
+            {
+                vec1 = Vector256.LoadUnsafe(ref charA, i);
+                vec2 = Vector256.LoadUnsafe(ref charB, i);
+
+                if (!Utf8Utility.AllBytesInVector256AreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                if (!Utf8Utility.Vector256OrdinalIgnoreCaseAscii(vec1, vec2))
+                {
+                    return false;
+                }
+
+                i += (nuint)Vector256<byte>.Count;
+            }
+            while (i <= lengthToExamine);
+
+            if (i == lengthU)
+            {
+                // success if we reached the end of both sequences
+                return lengthA == lengthB;
+            }
+
+            // Use Vector128 path for trailing elements if possible
+            if (Vector128.IsHardwareAccelerated && (lengthU - i) >= (nuint)Vector128<byte>.Count)
+            {
+                return EqualsIgnoreCaseUtf8_Vector128(ref Unsafe.Add(ref charA, i), (int)(lengthU - i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+            }
+
+            // Use scalar path for trailing elements
+            return EqualsIgnoreCaseUtf8_Scalar(ref Unsafe.Add(ref charA, i), (int)(lengthU - i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+
+        NON_ASCII:
+            if (Utf8Utility.AllBytesInVector256AreAscii(vec1) || Utf8Utility.AllBytesInVector256AreAscii(vec2))
+            {
+                // No need to use the fallback if one of the inputs is full-ASCII
+                return false;
+            }
+
+            // Fallback for Non-ASCII inputs
+            return EqualsStringIgnoreCaseUtf8(
+                ref Unsafe.Add(ref charA, i), lengthA - (int)i,
+                ref Unsafe.Add(ref charB, i), lengthB - (int)i
+            );
+        }
+
         private static bool EqualsIgnoreCaseUtf8_Vector128(ref byte charA, int lengthA, ref byte charB, int lengthB)
         {
             Debug.Assert(lengthA >= Vector128<byte>.Count);
@@ -161,12 +291,22 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsIgnoreCaseUtf8(ref byte charA, int lengthA, ref byte charB, int lengthB)
         {
-            if (!Vector128.IsHardwareAccelerated || (lengthA < Vector128<byte>.Count) || (lengthB < Vector128<byte>.Count))
+            if (Vector512.IsHardwareAccelerated && (lengthA >= Vector512<byte>.Count) && (lengthB >= Vector512<byte>.Count))
             {
-                return EqualsIgnoreCaseUtf8_Scalar(ref charA, lengthA, ref charB, lengthB);
+                return EqualsIgnoreCaseUtf8_Vector512(ref charA, lengthA, ref charB, lengthB);
             }
 
-            return EqualsIgnoreCaseUtf8_Vector128(ref charA, lengthA, ref charB, lengthB);
+            if (Vector256.IsHardwareAccelerated && (lengthA >= Vector256<byte>.Count) && (lengthB >= Vector256<byte>.Count))
+            {
+                return EqualsIgnoreCaseUtf8_Vector256(ref charA, lengthA, ref charB, lengthB);
+            }
+
+            if (Vector128.IsHardwareAccelerated && (lengthA >= Vector128<byte>.Count) && (lengthB >= Vector128<byte>.Count))
+            {
+                return EqualsIgnoreCaseUtf8_Vector128(ref charA, lengthA, ref charB, lengthB);
+            }
+
+            return EqualsIgnoreCaseUtf8_Scalar(ref charA, lengthA, ref charB, lengthB);
         }
 
         internal static bool EqualsIgnoreCaseUtf8_Scalar(ref byte charA, int lengthA, ref byte charB, int lengthB)
@@ -412,6 +552,136 @@ namespace System.Globalization
             return true;
         }
 
+        private static bool StartsWithIgnoreCaseUtf8_Vector512(ref byte source, int sourceLength, ref byte prefix, int prefixLength)
+        {
+            Debug.Assert(sourceLength >= Vector512<byte>.Count);
+            Debug.Assert(prefixLength >= Vector512<byte>.Count);
+            Debug.Assert(Vector512.IsHardwareAccelerated);
+
+            nuint lengthU = Math.Min((uint)sourceLength, (uint)prefixLength);
+            nuint lengthToExamine = lengthU - (nuint)Vector512<byte>.Count;
+
+            nuint i = 0;
+
+            Vector512<byte> vec1;
+            Vector512<byte> vec2;
+
+            do
+            {
+                vec1 = Vector512.LoadUnsafe(ref source, i);
+                vec2 = Vector512.LoadUnsafe(ref prefix, i);
+
+                if (!Utf8Utility.AllBytesInVector512AreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                if (!Utf8Utility.Vector512OrdinalIgnoreCaseAscii(vec1, vec2))
+                {
+                    return false;
+                }
+
+                i += (nuint)Vector512<byte>.Count;
+            }
+            while (i <= lengthToExamine);
+
+            if (i == (uint)prefixLength)
+            {
+                // success if we reached the end of the prefix
+                return true;
+            }
+
+            // Use Vector256 path for trailing elements if possible
+            if (Vector256.IsHardwareAccelerated && (lengthU - i) >= (nuint)Vector256<byte>.Count)
+            {
+                return StartsWithIgnoreCaseUtf8_Vector256(ref Unsafe.Add(ref source, i), (int)(lengthU - i), ref Unsafe.Add(ref prefix, i), (int)(lengthU - i));
+            }
+
+            // Use Vector128 path for trailing elements if possible
+            if (Vector128.IsHardwareAccelerated && (lengthU - i) >= (nuint)Vector128<byte>.Count)
+            {
+                return StartsWithIgnoreCaseUtf8_Vector128(ref Unsafe.Add(ref source, i), (int)(lengthU - i), ref Unsafe.Add(ref prefix, i), (int)(lengthU - i));
+            }
+
+            // Use scalar path for trailing elements
+            return StartsWithIgnoreCaseUtf8_Scalar(ref Unsafe.Add(ref source, i), (int)(lengthU - i), ref Unsafe.Add(ref prefix, i), (int)(lengthU - i));
+
+        NON_ASCII:
+            if (Utf8Utility.AllBytesInVector512AreAscii(vec1) || Utf8Utility.AllBytesInVector512AreAscii(vec2))
+            {
+                // No need to use the fallback if one of the inputs is full-ASCII
+                return false;
+            }
+
+            // Fallback for Non-ASCII inputs
+            return StartsWithStringIgnoreCaseUtf8(
+                ref Unsafe.Add(ref source, i), sourceLength - (int)i,
+                ref Unsafe.Add(ref prefix, i), prefixLength - (int)i
+            );
+        }
+
+        private static bool StartsWithIgnoreCaseUtf8_Vector256(ref byte source, int sourceLength, ref byte prefix, int prefixLength)
+        {
+            Debug.Assert(sourceLength >= Vector256<byte>.Count);
+            Debug.Assert(prefixLength >= Vector256<byte>.Count);
+            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+            nuint lengthU = Math.Min((uint)sourceLength, (uint)prefixLength);
+            nuint lengthToExamine = lengthU - (nuint)Vector256<byte>.Count;
+
+            nuint i = 0;
+
+            Vector256<byte> vec1;
+            Vector256<byte> vec2;
+
+            do
+            {
+                vec1 = Vector256.LoadUnsafe(ref source, i);
+                vec2 = Vector256.LoadUnsafe(ref prefix, i);
+
+                if (!Utf8Utility.AllBytesInVector256AreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                if (!Utf8Utility.Vector256OrdinalIgnoreCaseAscii(vec1, vec2))
+                {
+                    return false;
+                }
+
+                i += (nuint)Vector256<byte>.Count;
+            }
+            while (i <= lengthToExamine);
+
+            if (i == (uint)prefixLength)
+            {
+                // success if we reached the end of the prefix
+                return true;
+            }
+
+            // Use Vector128 path for trailing elements if possible
+            if (Vector128.IsHardwareAccelerated && (lengthU - i) >= (nuint)Vector128<byte>.Count)
+            {
+                return StartsWithIgnoreCaseUtf8_Vector128(ref Unsafe.Add(ref source, i), (int)(lengthU - i), ref Unsafe.Add(ref prefix, i), (int)(lengthU - i));
+            }
+
+            // Use scalar path for trailing elements
+            return StartsWithIgnoreCaseUtf8_Scalar(ref Unsafe.Add(ref source, i), (int)(lengthU - i), ref Unsafe.Add(ref prefix, i), (int)(lengthU - i));
+
+        NON_ASCII:
+            if (Utf8Utility.AllBytesInVector256AreAscii(vec1) || Utf8Utility.AllBytesInVector256AreAscii(vec2))
+            {
+                // No need to use the fallback if one of the inputs is full-ASCII
+                return false;
+            }
+
+            // Fallback for Non-ASCII inputs
+            return StartsWithStringIgnoreCaseUtf8(
+                ref Unsafe.Add(ref source, i), sourceLength - (int)i,
+                ref Unsafe.Add(ref prefix, i), prefixLength - (int)i
+            );
+        }
+
         private static bool StartsWithIgnoreCaseUtf8_Vector128(ref byte source, int sourceLength, ref byte prefix, int prefixLength)
         {
             Debug.Assert(sourceLength >= Vector128<byte>.Count);
@@ -471,12 +741,22 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool StartsWithIgnoreCaseUtf8(ref byte source, int sourceLength, ref byte prefix, int prefixLength)
         {
-            if (!Vector128.IsHardwareAccelerated || (sourceLength < Vector128<byte>.Count) || (prefixLength < Vector128<byte>.Count))
+            if (Vector512.IsHardwareAccelerated && (sourceLength >= Vector512<byte>.Count) && (prefixLength >= Vector512<byte>.Count))
             {
-                return StartsWithIgnoreCaseUtf8_Scalar(ref source, sourceLength, ref prefix, prefixLength);
+                return StartsWithIgnoreCaseUtf8_Vector512(ref source, sourceLength, ref prefix, prefixLength);
             }
 
-            return StartsWithIgnoreCaseUtf8_Vector128(ref source, sourceLength, ref prefix, prefixLength);
+            if (Vector256.IsHardwareAccelerated && (sourceLength >= Vector256<byte>.Count) && (prefixLength >= Vector256<byte>.Count))
+            {
+                return StartsWithIgnoreCaseUtf8_Vector256(ref source, sourceLength, ref prefix, prefixLength);
+            }
+
+            if (Vector128.IsHardwareAccelerated && (sourceLength >= Vector128<byte>.Count) && (prefixLength >= Vector128<byte>.Count))
+            {
+                return StartsWithIgnoreCaseUtf8_Vector128(ref source, sourceLength, ref prefix, prefixLength);
+            }
+
+            return StartsWithIgnoreCaseUtf8_Scalar(ref source, sourceLength, ref prefix, prefixLength);
         }
 
         internal static bool StartsWithIgnoreCaseUtf8_Scalar(ref byte source, int sourceLength, ref byte prefix, int prefixLength)
