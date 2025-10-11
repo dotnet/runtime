@@ -13375,15 +13375,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
 #ifdef FEATURE_INTERPRETER
     InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
-    if (!interpreterMgr->IsInterpreterLoaded())
+    if (!interpreterMgr->IsInterpreterLoaded() && g_pConfig->EnableInterpreter())
     {
-        LPWSTR interpreterConfig;
-        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
         if (
-#ifdef FEATURE_JIT
-            // If both JIT and interpret are available, load the interpreter for testing purposes only if the config switch is set
-            (interpreterConfig != NULL) &&
-#endif
             !interpreterMgr->LoadInterpreter())
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
