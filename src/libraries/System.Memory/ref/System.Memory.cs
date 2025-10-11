@@ -574,6 +574,8 @@ namespace System.Buffers.Binary
 {
     public static partial class BinaryPrimitives
     {
+        public static System.Numerics.BFloat16 ReadBFloat16BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Numerics.BFloat16 ReadBFloat16LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Half ReadHalfBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
@@ -643,6 +645,8 @@ namespace System.Buffers.Binary
         public static void ReverseEndianness(System.ReadOnlySpan<ulong> source, System.Span<ulong> destination) { }
         [System.CLSCompliant(false)]
         public static void ReverseEndianness(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
+        public static bool TryReadBFloat16BigEndian(System.ReadOnlySpan<byte> source, out System.Numerics.BFloat16 value) { throw null; }
+        public static bool TryReadBFloat16LittleEndian(System.ReadOnlySpan<byte> source, out System.Numerics.BFloat16 value) { throw null; }
         public static bool TryReadDoubleBigEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadDoubleLittleEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadHalfBigEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }
@@ -679,6 +683,8 @@ namespace System.Buffers.Binary
         public static bool TryReadUIntPtrBigEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryReadUIntPtrLittleEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
+        public static bool TryWriteBFloat16BigEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
+        public static bool TryWriteBFloat16LittleEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
         public static bool TryWriteDoubleBigEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteDoubleLittleEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteHalfBigEndian(System.Span<byte> destination, System.Half value) { throw null; }
@@ -715,6 +721,8 @@ namespace System.Buffers.Binary
         public static bool TryWriteUIntPtrBigEndian(System.Span<byte> destination, nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteUIntPtrLittleEndian(System.Span<byte> destination, nuint value) { throw null; }
+        public static void WriteBFloat16BigEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { }
+        public static void WriteBFloat16LittleEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { }
         public static void WriteDoubleBigEndian(System.Span<byte> destination, double value) { }
         public static void WriteDoubleLittleEndian(System.Span<byte> destination, double value) { }
         public static void WriteHalfBigEndian(System.Span<byte> destination, System.Half value) { }
