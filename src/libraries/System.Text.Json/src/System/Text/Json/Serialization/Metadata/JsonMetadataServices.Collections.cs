@@ -211,6 +211,27 @@ namespace System.Text.Json.Serialization.Metadata
                 collectionInfo,
                 new ISetOfTConverter<TCollection, TElement>());
 
+        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+#if NET
+        /// <summary>
+        /// Creates serialization metadata for types assignable to <see cref="IReadOnlySet{T}"/>.
+        /// </summary>
+        /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
+        /// <typeparam name="TElement">The generic definition of the element type.</typeparam>
+        /// <param name="options"></param>
+        /// <param name="collectionInfo">Provides serialization metadata about the collection type.</param>
+        /// <returns>Serialization metadata for the given type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<TCollection> CreateIReadOnlySetInfo<TCollection, TElement>(
+            JsonSerializerOptions options,
+            JsonCollectionInfoValues<TCollection> collectionInfo)
+            where TCollection : IReadOnlySet<TElement>
+            => CreateCore(
+                options,
+                collectionInfo,
+                new IReadOnlySetOfTConverter<TCollection, TElement>());
+#endif
+
         /// <summary>
         /// Creates serialization metadata for types assignable to <see cref="ICollection{T}"/>.
         /// </summary>
