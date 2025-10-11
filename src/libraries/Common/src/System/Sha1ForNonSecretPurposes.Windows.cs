@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -14,16 +15,32 @@ namespace System
     /// </summary>
     internal struct Sha1ForNonSecretPurposes
     {
-        private byte[]? _buffer;
-        private int _bufferPos;
+        private SafeBCryptHashHandle? _hashHandle;
 
         /// <summary>
         /// Call Start() to initialize the hash object.
         /// </summary>
         public void Start()
         {
-            _buffer = null;
-            _bufferPos = 0;
+            _hashHandle?.Dispose();
+            
+            Interop.BCrypt.NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(
+                (nuint)Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA1_ALG_HANDLE,
+                out SafeBCryptHashHandle hHash,
+                IntPtr.Zero,
+                0,
+                ReadOnlySpan<byte>.Empty,
+                0,
+                Interop.BCrypt.BCryptCreateHashFlags.None);
+
+            if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
+            {
+                hHash.Dispose();
+                int hr = unchecked((int)ntStatus) | 0x01000000;
+                throw new CryptographicException(hr);
+            }
+
+            _hashHandle = hHash;
         }
 
         /// <summary>
@@ -32,16 +49,7 @@ namespace System
         /// <param name="input">Data to include in the hash.</param>
         public void Append(byte input)
         {
-            _buffer ??= new byte[256];
-
-            if (_bufferPos == _buffer.Length)
-            {
-                byte[] newBuffer = new byte[_buffer.Length * 2];
-                _buffer.CopyTo(newBuffer, 0);
-                _buffer = newBuffer;
-            }
-
-            _buffer[_bufferPos++] = input;
+            Append(new ReadOnlySpan<byte>(in input));
         }
 
         /// <summary>
@@ -57,23 +65,22 @@ namespace System
                 return;
             }
 
-            _buffer ??= new byte[256];
-
-            int requiredSize = _bufferPos + input.Length;
-            if (requiredSize > _buffer.Length)
+            if (_hashHandle is null)
             {
-                int newSize = _buffer.Length;
-                while (newSize < requiredSize)
-                {
-                    newSize *= 2;
-                }
-                byte[] newBuffer = new byte[newSize];
-                _buffer.AsSpan(0, _bufferPos).CopyTo(newBuffer);
-                _buffer = newBuffer;
+                throw new InvalidOperationException();
             }
 
-            input.CopyTo(_buffer.AsSpan(_bufferPos));
-            _bufferPos += input.Length;
+            Interop.BCrypt.NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(
+                _hashHandle,
+                input,
+                input.Length,
+                0);
+
+            if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
+            {
+                int hr = unchecked((int)ntStatus) | 0x01000000;
+                throw new CryptographicException(hr);
+            }
         }
 
         /// <summary>
@@ -92,32 +99,25 @@ namespace System
         /// </param>
         public void Finish(Span<byte> output)
         {
-            ReadOnlySpan<byte> source = _buffer is null ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_buffer, 0, _bufferPos);
-            
-            unsafe
+            if (_hashHandle is null)
             {
-                fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
-                fixed (byte* pDest = &MemoryMarshal.GetReference(output))
-                {
-                    Interop.BCrypt.NTSTATUS ntStatus = Interop.BCrypt.BCryptHash(
-                        (uint)Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA1_ALG_HANDLE,
-                        null,
-                        0,
-                        pSrc,
-                        source.Length,
-                        pDest,
-                        Math.Min(output.Length, 20));
-
-                    if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
-                    {
-                        int hr = unchecked((int)ntStatus) | 0x01000000;
-                        throw new CryptographicException(hr);
-                    }
-                }
+                throw new InvalidOperationException();
             }
 
-            _buffer = null;
-            _bufferPos = 0;
+            Interop.BCrypt.NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(
+                _hashHandle,
+                output,
+                Math.Min(output.Length, 20),
+                0);
+
+            if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
+            {
+                int hr = unchecked((int)ntStatus) | 0x01000000;
+                throw new CryptographicException(hr);
+            }
+
+            _hashHandle.Dispose();
+            _hashHandle = null;
         }
     }
 }
