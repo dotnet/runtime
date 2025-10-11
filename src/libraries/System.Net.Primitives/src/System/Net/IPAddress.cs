@@ -496,7 +496,7 @@ namespace System.Net
             // format and provider are explicitly ignored
             TryFormatCore(utf8Destination, out bytesWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private bool TryFormatCore(Span<char> destination, out int charsWritten)
         {
             if (IsIPv4)
             {
@@ -515,7 +515,43 @@ namespace System.Net
                 }
             }
 
-            Span<TChar> tmpDestination = stackalloc TChar[IPAddressParser.MaxIPv6StringLength];
+            Span<char> tmpDestination = stackalloc char[IPAddressParser.MaxIPv6StringLength];
+            Debug.Assert(tmpDestination.Length >= IPAddressParser.MaxIPv4StringLength);
+
+            int written = IsIPv4 ?
+                IPAddressParser.FormatIPv4Address(PrivateAddress, tmpDestination) :
+                IPAddressParser.FormatIPv6Address(_numbers, PrivateScopeId, tmpDestination);
+
+            if (tmpDestination.Slice(0, written).TryCopyTo(destination))
+            {
+                charsWritten = written;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        private bool TryFormatCore(Span<byte> destination, out int charsWritten)
+        {
+            if (IsIPv4)
+            {
+                if (destination.Length >= IPAddressParser.MaxIPv4StringLength)
+                {
+                    charsWritten = IPAddressParser.FormatIPv4Address(_addressOrScopeId, destination);
+                    return true;
+                }
+            }
+            else
+            {
+                if (destination.Length >= IPAddressParser.MaxIPv6StringLength)
+                {
+                    charsWritten = IPAddressParser.FormatIPv6Address(_numbers, _addressOrScopeId, destination);
+                    return true;
+                }
+            }
+
+            Span<byte> tmpDestination = stackalloc byte[IPAddressParser.MaxIPv6StringLength];
             Debug.Assert(tmpDestination.Length >= IPAddressParser.MaxIPv4StringLength);
 
             int written = IsIPv4 ?
