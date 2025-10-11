@@ -909,17 +909,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
             List<string> unexpectedMessageWarnings = [];
             foreach (var attrProvider in GetAttributeProviders(original))
             {
-                if (attrProvider is IMemberDefinition attrMember &&
-                    attrMember is not TypeDefinition &&
-                    attrMember.DeclaringType is TypeDefinition declaringType &&
+                if (attrProvider is MethodDefinition attrMethod &&
+                    attrMethod.DeclaringType is TypeDefinition declaringType &&
                     declaringType.Name.StartsWith("<G>"))
                 {
-                    // Workaround: C# 14 extension members result in a compiler-generated type
-                    // that has a member for each extension member (this is in addition to the type
-                    // which contains the actual extension member implementation).
-                    // The generated members inherit attributes from the extension members, but
+                    // Workaround: C# 14 extension methods result in a compiler-generated type
+                    // that has a method for each extension method (this is in addition to the type
+                    // which contains the actual extension method implementation).
+                    // The generated methods inherit attributes from the extension methods, but
                     // have empty implementations. We don't want to check inherited ExpectedWarningAttributes
-                    // for these members.
+                    // for these methods.
+
+                    // ExpectedWarnings for extension properties are still included, because those
+                    // are only included once in the generated output (and the user type doesn't have any properties).
                     continue;
                 }
 
@@ -998,7 +1000,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             string expectedOrigin = null;
                             bool expectedWarningFound = false;
 
-                            foreach (var loggedMessage in unmatchedMessages)
+                            foreach (var loggedMessage in unmatchedMessages.ToList())
                             {
 
                                 if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
@@ -1073,7 +1075,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                             unmatchedMessages.Remove(loggedMessage);
                                             break;
                                         }
-                                        if (memberDefinition is not MethodDefinition)
+                                        if (memberDefinition is not (MethodDefinition or PropertyDefinition))
                                             continue;
                                         if (actualName.StartsWith(expectedMember.DeclaringType.FullName))
                                         {
@@ -1086,6 +1088,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                             }
                                             if (memberDefinition.Name == ".ctor" &&
                                                 (expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName))
+                                            {
+                                                expectedWarningFound = true;
+                                                unmatchedMessages.Remove(loggedMessage);
+                                                break;
+                                            }
+                                            if (memberDefinition.DeclaringType.Name.StartsWith("<G>") && memberDefinition.Name == expectedMember.Name)
                                             {
                                                 expectedWarningFound = true;
                                                 unmatchedMessages.Remove(loggedMessage);
@@ -1182,8 +1190,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 missingMessageWarnings.Add("Unmatched Messages:" + Environment.NewLine);
                 missingMessageWarnings.AddRange(unmatchedMessages.Select(m => m.ToString()));
-                missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
-                missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
+                // Uncomment to show all messages when diagnosing test infrastructure issues
+                // missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
+                // missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
                 Assert.Fail(string.Join(Environment.NewLine, missingMessageWarnings));
             }
 
