@@ -1411,7 +1411,7 @@ namespace System.IO
             WriteAllLinesAsync(path, contents, encoding, append: true, cancellationToken);
 
         /// <summary>
-        /// Establishes a hard link between an existing file and a new file.
+        /// Creates a hard link located in <paramref name="path"/> that refers to the same file content as <paramref name="pathToTarget"/>.
         /// </summary>
         /// <param name="path">The path where the hard link should be created.</param>
         /// <param name="pathToTarget">The path of the hard link target.</param>
