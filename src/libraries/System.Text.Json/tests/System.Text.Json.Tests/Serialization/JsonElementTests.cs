@@ -95,6 +95,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("0.000000000000000000000000000000000000000001", "1e-42")]
         [InlineData("1000000000000000000000000000000000000000000", "1e42")]
         [InlineData("-1.1e3", "-1100")]
+        [InlineData("1000", "1e3")] // Trailing zeros in integral part
+        [InlineData("100", "1e2")] // Trailing zeros in integral part
+        [InlineData("0.0001", "1e-4")] // Leading zeros in fractional part
+        [InlineData("0.00100", "0.001")] // Leading and trailing zeros
         [InlineData("79228162514264337593543950336", "792281625142643375935439503360e-1")] // decimal.MaxValue + 1
         [InlineData("79228162514.264337593543950336", "792281625142643375935439503360e-19")]
         [InlineData("1.75e+300", "1.75E+300")] // Variations in exponent casing
