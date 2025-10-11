@@ -827,13 +827,27 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
+            // Check for undefined flags
+            if ((style & InvalidNumberStyles) != 0)
             {
-                ThrowInvalid(style);
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+            }
 
-                static void ThrowInvalid(NumberStyles value) =>
-                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+            // Binary specifier is not supported for floating point
+            if ((style & NumberStyles.AllowBinarySpecifier) != 0)
+            {
+                throw new ArgumentException(SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+            }
+
+            // When AllowHexSpecifier is used, only specific flags are allowed
+            if ((style & NumberStyles.AllowHexSpecifier) != 0)
+            {
+                // HexFloat allows: AllowLeadingWhite, AllowTrailingWhite, AllowLeadingSign, AllowHexSpecifier, AllowDecimalPoint, AllowExponent
+                NumberStyles invalidFlags = style & ~NumberStyles.HexFloat;
+                if (invalidFlags != 0)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidHexBinaryStyle, nameof(style));
+                }
             }
         }
     }
