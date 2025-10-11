@@ -440,7 +440,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (exceptionPtr != IntPtr.Zero)
             {
                 var message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
+                NativeMemory.Free((void*)exceptionPtr);
                 throw new JSException(message);
             }
 
