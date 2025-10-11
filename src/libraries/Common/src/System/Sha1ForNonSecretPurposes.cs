@@ -134,8 +134,8 @@ namespace System
             
             unsafe
             {
-                fixed (byte* pSrc = source)
-                fixed (byte* pDest = output)
+                fixed (byte* pSrc = &System.Runtime.InteropServices.MemoryMarshal.GetReference(source))
+                fixed (byte* pDest = &System.Runtime.InteropServices.MemoryMarshal.GetReference(output))
                 {
                     Interop.BCrypt.NTSTATUS ntStatus = Interop.BCrypt.BCryptHash(
                         (uint)Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA1_ALG_HANDLE,
