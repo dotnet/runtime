@@ -2154,14 +2154,14 @@ namespace Internal.JitInterface
         private void* LongLifetimeMalloc(UIntPtr sz)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return (void*)Marshal.AllocCoTaskMem((int)sz);
+            return NativeMemory.Alloc((nuint)sz);
         }
 
 #pragma warning disable CA1822 // Mark members as static
         private void LongLifetimeFree(void* obj)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeCoTaskMem((IntPtr)obj);
+            NativeMemory.Free(obj);
         }
 
         private UIntPtr getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
@@ -3211,8 +3211,8 @@ namespace Internal.JitInterface
         private void reportRichMappings(InlineTreeNode* inlineTree, uint numInlineTree, RichOffsetMapping* mappings, uint numMappings)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)inlineTree);
-            Marshal.FreeHGlobal((IntPtr)mappings);
+            NativeMemory.Free(inlineTree);
+            NativeMemory.Free(mappings);
         }
 
 #pragma warning disable CA1822 // Mark members as static
