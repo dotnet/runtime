@@ -268,8 +268,6 @@ namespace System.Text.Json.Nodes
                 if (exchangedDictionary is null)
                 {
                     // We won the race and published our dictionary
-                    // Ensure _jsonElement is written to after _dictionary
-                    Interlocked.MemoryBarrier();
                     _jsonElement = null;
                     dictionary = newDictionary;
                 }
