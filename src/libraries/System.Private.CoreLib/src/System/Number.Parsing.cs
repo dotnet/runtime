@@ -979,10 +979,328 @@ namespace System
             }
         }
 
+        private static bool TryParseHexFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            result = TFloat.Zero;
+
+            if (value.IsEmpty)
+            {
+                return false;
+            }
+
+            int index = 0;
+
+            // Skip leading whitespace
+            if ((styles & NumberStyles.AllowLeadingWhite) != 0)
+            {
+                while (index < value.Length && IsWhite(TChar.CastToUInt32(value[index])))
+                {
+                    index++;
+                }
+            }
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse optional sign
+            bool isNegative = false;
+            if ((styles & NumberStyles.AllowLeadingSign) != 0)
+            {
+                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                if (value.Slice(index).StartsWith(negativeSign))
+                {
+                    isNegative = true;
+                    index += negativeSign.Length;
+                }
+                else if (value.Slice(index).StartsWith(positiveSign))
+                {
+                    index += positiveSign.Length;
+                }
+            }
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse "0x" or "0X" prefix
+            if (index + 1 >= value.Length ||
+                TChar.CastToUInt32(value[index]) != '0' ||
+                (TChar.CastToUInt32(value[index + 1]) != 'x' && TChar.CastToUInt32(value[index + 1]) != 'X'))
+            {
+                return false;
+            }
+            index += 2;
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse hex significand (mantissa)
+            ulong integerPart = 0;
+            int integerDigits = 0;
+            bool hasIntegerPart = false;
+
+            // Parse integer part before decimal point
+            while (index < value.Length && HexConverter.IsHexChar((int)TChar.CastToUInt32(value[index])))
+            {
+                hasIntegerPart = true;
+                if (integerDigits < 16) // Avoid overflow, we only need the significant bits
+                {
+                    integerPart = (integerPart << 4) | (uint)HexConverter.FromChar((int)TChar.CastToUInt32(value[index]));
+                    integerDigits++;
+                }
+                index++;
+            }
+
+            // Parse fractional part after decimal point
+            ulong fractionalPart = 0;
+            int fractionalDigits = 0;
+            bool hasFractionalPart = false;
+
+            if ((styles & NumberStyles.AllowDecimalPoint) != 0 &&
+                index < value.Length &&
+                TChar.CastToUInt32(value[index]) == '.')
+            {
+                index++;
+
+                while (index < value.Length && HexConverter.IsHexChar((int)TChar.CastToUInt32(value[index])))
+                {
+                    hasFractionalPart = true;
+                    if (fractionalDigits < 16)
+                    {
+                        fractionalPart = (fractionalPart << 4) | (uint)HexConverter.FromChar((int)TChar.CastToUInt32(value[index]));
+                        fractionalDigits++;
+                    }
+                    index++;
+                }
+            }
+
+            // Must have at least one hex digit
+            if (!hasIntegerPart && !hasFractionalPart)
+            {
+                return false;
+            }
+
+            // Parse binary exponent (p or P)
+            if ((styles & NumberStyles.AllowExponent) == 0 || index >= value.Length ||
+                (TChar.CastToUInt32(value[index]) != 'p' && TChar.CastToUInt32(value[index]) != 'P'))
+            {
+                return false;
+            }
+            index++;
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse exponent sign
+            bool exponentIsNegative = false;
+            if (TChar.CastToUInt32(value[index]) == '-')
+            {
+                exponentIsNegative = true;
+                index++;
+            }
+            else if (TChar.CastToUInt32(value[index]) == '+')
+            {
+                index++;
+            }
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse exponent value (decimal digits)
+            int exponent = 0;
+            bool hasExponentDigits = false;
+            while (index < value.Length && IsDigit(TChar.CastToUInt32(value[index])))
+            {
+                hasExponentDigits = true;
+                int digit = (int)(TChar.CastToUInt32(value[index]) - '0');
+
+                // Prevent overflow
+                if (exponent <= (int.MaxValue - digit) / 10)
+                {
+                    exponent = exponent * 10 + digit;
+                }
+                else
+                {
+                    exponent = int.MaxValue;
+                }
+                index++;
+            }
+
+            if (!hasExponentDigits)
+            {
+                return false;
+            }
+
+            if (exponentIsNegative)
+            {
+                exponent = -exponent;
+            }
+
+            // Skip trailing whitespace
+            if ((styles & NumberStyles.AllowTrailingWhite) != 0)
+            {
+                while (index < value.Length && IsWhite(TChar.CastToUInt32(value[index])))
+                {
+                    index++;
+                }
+            }
+
+            // Must have consumed entire string
+            if (index != value.Length)
+            {
+                return false;
+            }
+
+            // Convert to floating point
+            result = HexFloatToFloat<TFloat>(integerPart, fractionalPart, fractionalDigits, exponent, isNegative);
+            return true;
+        }
+
+        private static TFloat HexFloatToFloat<TFloat>(ulong integerPart, ulong fractionalPart, int fractionalDigits, int binaryExponent, bool isNegative)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            // Handle zero
+            if (integerPart == 0 && fractionalPart == 0)
+            {
+                return isNegative ? -TFloat.Zero : TFloat.Zero;
+            }
+
+            // Combine integer and fractional parts into a single significand
+            // The hex significand represents: integerPart + fractionalPart * 16^(-fractionalDigits)
+            // We need to normalize this and adjust the exponent
+
+            ulong significand;
+
+            if (integerPart != 0)
+            {
+                // Normalize integer part
+                int shift = 64 - BitOperations.LeadingZeroCount(integerPart);
+                significand = integerPart;
+
+                // Add fractional part if space allows
+                if (fractionalDigits > 0 && shift < 64)
+                {
+                    int fractionalShift = fractionalDigits * 4;
+                    if (fractionalShift < 64 - shift)
+                    {
+                        significand = (significand << fractionalShift) | fractionalPart;
+                        shift += fractionalShift;
+                    }
+                    else
+                    {
+                        // Partial fractional part
+                        int availableShift = 64 - shift;
+                        int usedFractionalDigits = availableShift / 4;
+                        significand = (significand << (usedFractionalDigits * 4)) | (fractionalPart >> ((fractionalDigits - usedFractionalDigits) * 4));
+                        shift = 64;
+                    }
+                }
+
+                binaryExponent += shift - (fractionalDigits * 4);
+            }
+            else
+            {
+                // Only fractional part
+                int shift = 64 - BitOperations.LeadingZeroCount(fractionalPart);
+                significand = fractionalPart << (64 - shift);
+                binaryExponent += -((fractionalDigits * 4) - (64 - shift));
+            }
+
+            // Convert to IEEE 754 representation
+            int mantissaBits = TFloat.NormalMantissaBits;
+            int exponentBias = TFloat.ExponentBias;
+
+            // Normalize significand to have the MSB set
+            if (significand == 0)
+            {
+                return isNegative ? -TFloat.Zero : TFloat.Zero;
+            }
+
+            int leadingZeros = BitOperations.LeadingZeroCount(significand);
+            if (leadingZeros > 0)
+            {
+                significand <<= leadingZeros;
+                binaryExponent -= leadingZeros;
+            }
+
+            // Adjust exponent for the hidden bit in IEEE 754
+            int actualExponent = binaryExponent + exponentBias;
+
+            // Handle overflow to infinity
+            if (actualExponent >= TFloat.InfinityExponent)
+            {
+                return isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+            }
+
+            // Handle underflow to zero or denormal
+            if (actualExponent <= 0)
+            {
+                // Denormal number
+                int denormalShift = 1 - actualExponent;
+                if (denormalShift >= 64)
+                {
+                    return isNegative ? -TFloat.Zero : TFloat.Zero;
+                }
+                significand >>= denormalShift;
+                actualExponent = 0;
+            }
+
+            // Round to nearest, ties to even
+            int roundBit = 64 - mantissaBits - 1;
+            ulong mask = (1UL << roundBit) - 1;
+            ulong roundingBits = significand & mask;
+            significand >>= roundBit;
+
+            // Round to nearest, ties to even
+            if (roundingBits > (1UL << (roundBit - 1)) ||
+                (roundingBits == (1UL << (roundBit - 1)) && (significand & 1) == 1))
+            {
+                significand++;
+                if ((significand >> (mantissaBits + 1)) != 0)
+                {
+                    // Overflow in rounding
+                    significand >>= 1;
+                    actualExponent++;
+                    if (actualExponent >= TFloat.InfinityExponent)
+                    {
+                        return isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+                    }
+                }
+            }
+
+            // Remove the implicit leading bit
+            ulong mantissa = significand & TFloat.NormalMantissaMask;
+
+            // Construct the final bit representation
+            ulong bits = ((ulong)actualExponent << mantissaBits) | mantissa;
+
+            TFloat result = TFloat.BitsToFloat(bits);
+            return isNegative ? -result : result;
+        }
+
         internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
+            // Check if we should parse as hex float
+            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
+            {
+                return TryParseHexFloat(value, styles, info, out result);
+            }
+
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
