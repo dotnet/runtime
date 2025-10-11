@@ -6992,6 +6992,37 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
     return user;
 }
 
+bool GenTree::IsNotGcDef(Compiler* comp) const
+{
+    GenTree* tree = const_cast<GenTree*>(this);
+
+    target_ssize_t offset = 0;
+    FieldSeq*      fldSeq = nullptr;
+    comp->gtPeelOffsets(&tree, &offset, &fldSeq);
+    if (comp->fgIsBigOffset(offset))
+    {
+        return false;
+    }
+
+    if (tree->IsIntegralConst(0) || tree->OperIs(GT_LCL_ADDR) || tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        return true;
+    }
+
+    if (tree->IsCnsIntOrI())
+    {
+        fldSeq = comp->m_fieldSeqStore->Append(fldSeq, tree->AsIntCon()->gtFieldSeq);
+    }
+
+    if ((fldSeq != nullptr) && fldSeq->IsStaticField() &&
+        comp->info.compCompHnd->canOmitPinning(fldSeq->GetFieldHandle()))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.

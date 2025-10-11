@@ -1662,6 +1662,48 @@ bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return res;
 }
 
+bool CEEInfo::canOmitPinning(CORINFO_FIELD_HANDLE fldHnd)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = reinterpret_cast<FieldDesc*>(fldHnd);
+    _ASSERT(field != NULL);
+
+    if (field->IsStatic() && !field->IsThreadStatic())
+    {
+        TypeHandle fieldOwnerType(field->GetEnclosingMethodTable());
+        if (!fieldOwnerType.GetLoaderAllocator()->CanUnload() && !fieldOwnerType.IsCanonicalSubtype())
+        {
+            if (field->IsRVA())
+            {
+                result = true;
+            }
+            else
+            {
+                GCX_COOP();
+                void* pFieldAddr = field->GetCurrentStaticAddress();
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(static_cast<Object*>(pFieldAddr)) ||
+                    !GCHeapUtilities::GetGCHeap()->IsHeapPointer(pFieldAddr))
+                {
+                    result = true;
+                }
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
     CONTRACTL {

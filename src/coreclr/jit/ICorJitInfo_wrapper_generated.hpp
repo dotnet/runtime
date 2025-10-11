@@ -1005,6 +1005,15 @@ bool WrapICorJitInfo::isFieldStatic(
     return temp;
 }
 
+bool WrapICorJitInfo::canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd)
+{
+    API_ENTER(canOmitPinning);
+    bool temp = wrapHnd->canOmitPinning(fldHnd);
+    API_LEAVE(canOmitPinning);
+    return temp;
+}
+
 int WrapICorJitInfo::getArrayOrStringLength(
           CORINFO_OBJECT_HANDLE objHnd)
 {

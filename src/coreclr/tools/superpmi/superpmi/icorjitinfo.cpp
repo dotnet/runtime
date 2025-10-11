@@ -938,6 +938,12 @@ bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return jitInstance->mc->repIsFieldStatic(fldHnd);
 }
 
+bool MyICJI::canOmitPinning(CORINFO_FIELD_HANDLE fldHnd)
+{
+    jitInstance->mc->cr->AddCall("canOmitPinning");
+    return jitInstance->mc->repCanOmitPinning(fldHnd);
+}
+
 int MyICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
     jitInstance->mc->cr->AddCall("getArrayOrStringLength");

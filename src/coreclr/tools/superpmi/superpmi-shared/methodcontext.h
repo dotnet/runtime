@@ -891,6 +891,10 @@ public:
     void dmpIsFieldStatic(DWORDLONG key, DWORD value);
     bool repIsFieldStatic(CORINFO_FIELD_HANDLE fhld);
 
+    void recCanOmitPinning(CORINFO_FIELD_HANDLE fhld, bool result);
+    void dmpCanOmitPinning(DWORDLONG key, DWORD value);
+    bool repCanOmitPinning(CORINFO_FIELD_HANDLE fhld);
+
     void recGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd, int result);
     void dmpGetArrayOrStringLength(DWORDLONG key, DWORD value);
     int repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd);
@@ -1208,6 +1212,7 @@ enum mcPackets
     Packet_GetAsyncResumptionStub = 231,
     Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
+    Packet_CanOmitPinning = 234,
 };
 
 void SetDebugDumpVariables();

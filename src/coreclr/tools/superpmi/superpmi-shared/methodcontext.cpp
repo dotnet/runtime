@@ -7126,6 +7126,28 @@ bool MethodContext::repIsFieldStatic(CORINFO_FIELD_HANDLE fhld)
     return value != 0;
 }
 
+void MethodContext::recCanOmitPinning(CORINFO_FIELD_HANDLE fhld, bool result)
+{
+    if (CanOmitPinning == nullptr)
+        CanOmitPinning = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(fhld);
+    DWORD value = result ? 1 : 0;
+    CanOmitPinning->Add(key, value);
+    DEBUG_REC(dmpCanOmitPinning(key, value));
+}
+void MethodContext::dmpCanOmitPinning(DWORDLONG key, DWORD value)
+{
+    printf("CanOmitPinning key %016" PRIX64 ", value %u", key, value);
+}
+bool MethodContext::repCanOmitPinning(CORINFO_FIELD_HANDLE fhld)
+{
+    DWORDLONG key = CastHandle(fhld);
+    DWORD value = LookupByKeyOrMiss(CanOmitPinning, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpCanOmitPinning(key, value));
+    return value != 0;
+}
+
 void MethodContext::recGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHandle, int result)
 {
     if (GetArrayOrStringLength == nullptr)

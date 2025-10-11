@@ -3504,7 +3504,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         {
             GenTree* value = tree->AsLclVar()->Data();
 
-            if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
+            if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef(this))
             {
                 varDsc->lvAllDefsAreNoGc = false;
             }

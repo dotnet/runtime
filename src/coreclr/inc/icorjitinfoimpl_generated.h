@@ -422,6 +422,9 @@ void getThreadLocalStaticInfo_NativeAOT(
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
+bool canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd) override;
+
 int getArrayOrStringLength(
           CORINFO_OBJECT_HANDLE objHnd) override;
 
