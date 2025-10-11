@@ -60,7 +60,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-tls-inline.h>
-#include <mono/utils/lifo-semaphore.h>
 #include <mono/utils/w32subset.h>
 
 #ifdef HAVE_SYS_WAIT_H
@@ -4882,31 +4881,4 @@ guint64
 ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 {
 	return mono_native_thread_os_id_get ();
-}
-
-gpointer
-ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
-{
-	return (gpointer)mono_lifo_semaphore_init ();
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
-}
-
-gint32
-ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
 }

@@ -447,6 +447,32 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     return res;
 }
 
+extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    // Set the state bits.
+    thread->SetThreadState(Thread::TS_Interruptible);
+    thread->SetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    // Clear the state bits.
+    thread->ResetThreadState(Thread::TS_Interruptible);
+    thread->ResetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
+
+    END_QCALL;
+}
+
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 // Return whether the thread hosts an STA, is a member of the MTA or is not
@@ -587,7 +613,7 @@ static BOOL DoJoin(THREADBASEREF dyingThread, INT32 timeout)
                    ? INFINITE
                    : (DWORD) timeout);
 
-    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
+    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/));
     switch(rv)
     {
         case WAIT_OBJECT_0:
@@ -817,17 +843,6 @@ extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GetThread()->UserSleep(iTime);
-
-    END_QCALL;
-}
-
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread)
 {
@@ -893,3 +908,32 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
     FC_RETURN_BOOL(IsFinalizerThread());
 }
 FCIMPLEND
+
+
+extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles)
+{
+    QCALL_CONTRACT;
+
+    INT32 retVal = 0;
+
+    BEGIN_QCALL;
+
+    Thread *pThread = GetThread();
+    WaitMode mode = alertable ? WaitMode_Alertable : WaitMode_None;
+    retVal = pThread->DoReentrantWaitAny(count, handles, timeout, mode);
+
+    END_QCALL;
+
+    return retVal;
+}
+
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    thread->HandleThreadInterrupt();
+
+    END_QCALL;
+}
