@@ -1486,9 +1486,6 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs">
       <Link>Common\System\Obsoletions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs">
-      <Link>Common\System\Sha1ForNonSecretPurposes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\SR.cs">
       <Link>Common\System\SR.cs</Link>
     </Compile>
@@ -1755,6 +1752,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.Windows.cs">
+      <Link>Common\System\Sha1ForNonSecretPurposes.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs</Link>
@@ -2355,6 +2355,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.Unix.cs">
+      <Link>Common\System\Sha1ForNonSecretPurposes.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>

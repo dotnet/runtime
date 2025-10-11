@@ -831,8 +831,10 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Libraries.cs"
              Link="Common\Interop\Browser\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
-             Link="Common\System\Sha1ForNonSecretPurposes.cs" />
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.Windows.cs"
+             Link="Common\System\Sha1ForNonSecretPurposes.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.Unix.cs"
+             Link="Common\System\Sha1ForNonSecretPurposes.Unix.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
