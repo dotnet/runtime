@@ -473,23 +473,67 @@ namespace System.Security.Cryptography
             //   publicKey  [1] BIT STRING OPTIONAL
             // }
 
+            // version
+
             int versionSizeInBytes =
                 1 + // Tag for INTEGER
                 1 + // Length field
                 1;  // Value (always 1)
+
+            // privateKey
 
             int privateKeySizeInBytes =
                 1 +                                     // Tag for OCTET STRING
                 GetDerLengthLength(keySizeInBytes) +    // Length field
                 keySizeInBytes;                         // Value
 
-            // parameters and publicKey must be omitted for Composite ML-DSA
+            // parameters
+
+            int namedCurveSizeInBytes =
+                oid switch
+                {
+                    Oids.MLDsa44WithECDsaP256PreHashSha256 or
+                    Oids.MLDsa65WithECDsaP256PreHashSha512 =>
+                        // 1.2.840.10045.3.1.7
+                        // 06 08 2A 86 48 CE 3D 03 01 07
+                        10,
+                    Oids.MLDsa65WithECDsaP384PreHashSha512 or
+                    Oids.MLDsa87WithECDsaP384PreHashSha512 =>
+                        // 1.3.132.0.34
+                        // 06 05 2B 81 04 00 22
+                        7,
+                    Oids.MLDsa87WithECDsaP521PreHashSha512 =>
+                        // 1.3.132.0.35
+                        // 06 05 2B 81 04 00 23
+                        7,
+                    Oids.MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 =>
+                        // 1.3.36.3.3.2.8.1.1.7
+                        // 06 09 2B 24 03 03 02 08 01 01 07
+                        11,
+                    Oids.MLDsa87WithECDsaBrainpoolP384r1PreHashSha512 =>
+                        // 1.3.36.3.3.2.8.1.1.11
+                        // 06 09 2B 24 03 03 02 08 01 01 0B
+                        11,
+                    _ => AssertAndThrow(oid),
+                };
+
+            static int AssertAndThrow(string oid)
+            {
+                Debug.Fail($"Unsupported OID: {oid}.");
+                throw new CryptographicException();
+            }
+
+            int parametersSizeInBytes =
+                1 +                                         // Context-specific tag for [0]
+                GetDerLengthLength(namedCurveSizeInBytes) + // Length field
+                namedCurveSizeInBytes;                      // Value
+
+            // publicKey must be omitted for Composite ML-DSA
 
             int ecPrivateKeySizeInBytes =
-                1 +                                                                 // Tag for SEQUENCE
-                GetDerLengthLength(versionSizeInBytes + privateKeySizeInBytes) +    // Length field
-                versionSizeInBytes +                                                // Version
-                privateKeySizeInBytes;
+                1 +                                                                                         // Tag for SEQUENCE
+                GetDerLengthLength(versionSizeInBytes + privateKeySizeInBytes + parametersSizeInBytes) +    // Length field
+                versionSizeInBytes + privateKeySizeInBytes + parametersSizeInBytes;                         // Value
 
             return new CompositeMLDsaAlgorithm(
                 name,
