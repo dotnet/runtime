@@ -91,6 +91,13 @@ BOOL TypeHandle::IsString() const
     return !IsTypeDesc() && AsMethodTable()->IsString();
 }
 
+BOOL TypeHandle::IsContinuation() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsContinuation();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -318,6 +325,12 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 {
+    if (IsContinuation())
+    {
+        *pDest = OBJECTREFToObject(GetParent().GetManagedClassObject());
+        return;
+    }
+
     REFLECTCLASSBASEREF refClass = NULL;
 
     PTR_LoaderAllocator allocator = GetLoaderAllocator();

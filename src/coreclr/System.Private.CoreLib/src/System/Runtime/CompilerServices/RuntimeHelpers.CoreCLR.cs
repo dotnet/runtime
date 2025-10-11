@@ -739,6 +739,9 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(ElementTypeOffset)]
         public MethodTable*** PerInstInfo;
 
+        [FieldOffset(ElementTypeOffset)]
+        public CORINFO_CONTINUATION_DATA_OFFSETS* ContinuationOffsets;
+
         /// <summary>
         /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
@@ -896,6 +899,8 @@ namespace System.Runtime.CompilerServices
         public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
 
         public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
+
+        public bool IsContinuation => ParentMethodTable == (MethodTable*)typeof(Continuation).TypeHandle.Value;
 
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 

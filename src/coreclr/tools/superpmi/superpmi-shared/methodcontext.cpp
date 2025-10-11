@@ -4457,8 +4457,6 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationResumeFldHnd = CastHandle(pAsyncInfo->continuationResumeFldHnd);
     value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
     value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
-    value.continuationDataFldHnd = CastHandle(pAsyncInfo->continuationDataFldHnd);
-    value.continuationGCDataFldHnd = CastHandle(pAsyncInfo->continuationGCDataFldHnd);
     value.continuationsNeedMethodHandle = pAsyncInfo->continuationsNeedMethodHandle ? 1 : 0;
     value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
     value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
@@ -4472,10 +4470,9 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
 void MethodContext::dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value)
 {
     printf("GetAsyncInfo key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
-           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64 " contsNeedMethodHandle-%d",
+           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contsNeedMethodHandle-%d",
         key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
-        value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationDataFldHnd,
-        value.continuationGCDataFldHnd, value.continuationsNeedMethodHandle);
+        value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationsNeedMethodHandle);
 }
 void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
 {
@@ -4485,8 +4482,6 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationResumeFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeFldHnd;
     pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
     pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
-    pAsyncInfoOut->continuationDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationDataFldHnd;
-    pAsyncInfoOut->continuationGCDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationGCDataFldHnd;
     pAsyncInfoOut->continuationsNeedMethodHandle = value.continuationsNeedMethodHandle != 0;
     pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
     pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
@@ -6944,6 +6939,56 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAsyncResumptionStub()
 {
     DWORDLONG hnd = LookupByKeyOrMissNoMessage(GetAsyncResumptionStub, 0);
     return (CORINFO_METHOD_HANDLE)hnd;
+}
+
+void MethodContext::recGetContinuationType(size_t dataSize,
+                                           bool* objRefs,
+                                           const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets,
+                                           CORINFO_CLASS_HANDLE result)
+{
+    if (GetContinuationType == nullptr)
+    {
+        GetContinuationType = new LightWeightMap<Agnostic_GetContinuationTypeIn, DWORDLONG>();
+    }
+
+    Agnostic_GetContinuationTypeIn key;
+    ZeroMemory(&key, sizeof(key));
+    key.dataSize = (DWORDLONG)dataSize;
+    key.objRefs = (objRefs != nullptr) ? (*objRefs ? 1 : 0) : 0; // TODO add buffer
+    key.result = (DWORD)dataOffsets.Result;
+    key.exception = (DWORD)dataOffsets.Exception;
+    key.continuationContext = (DWORD)dataOffsets.ContinuationContext;
+
+    DWORDLONG value = CastHandle(result);
+
+    GetContinuationType->Add(key, value);
+    DEBUG_REC(dmpGetContinuationType(key, value));
+}
+
+void MethodContext::dmpGetContinuationType(const Agnostic_GetContinuationTypeIn& key, DWORDLONG value)
+{
+    printf("GetContinuationType dataSize-%016" PRIX64 ", objRefs-%u, result-%d, exception-%d, handle-%016" PRIX64,
+           key.dataSize, key.objRefs, key.result, key.exception, value);
+}
+
+CORINFO_CLASS_HANDLE MethodContext::repGetContinuationType(size_t dataSize,
+                                                            bool* objRefs,
+                                                            const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    Agnostic_GetContinuationTypeIn key;
+    ZeroMemory(&key, sizeof(key));
+    key.dataSize = (DWORDLONG)dataSize;
+    key.objRefs = (objRefs != nullptr) ? (*objRefs ? 1 : 0) : 0;
+    key.result = (DWORD)dataOffsets.Result;
+    key.exception = (DWORD)dataOffsets.Exception;
+    key.continuationContext = (DWORD)dataOffsets.ContinuationContext;
+
+    DWORDLONG value = LookupByKeyOrMiss(GetContinuationType, key,
+        ": dataSize %016" PRIX64 ", objRefs %u, result %d, exception %d",
+        key.dataSize, key.objRefs, key.result, key.exception);
+    DEBUG_REP(dmpGetContinuationType(key, value));
+
+    return (CORINFO_CLASS_HANDLE)value;
 }
 
 void MethodContext::recUpdateEntryPointForTailCall(

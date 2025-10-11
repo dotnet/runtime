@@ -3361,6 +3361,11 @@ namespace Internal.JitInterface
             throw new NotImplementedException();
         }
 
+        private CORINFO_CLASS_STRUCT_* getContinuationType(UIntPtr dataSize, ref bool objRefs, ref CORINFO_CONTINUATION_DATA_OFFSETS dataOffsets)
+        {
+            throw new NotImplementedException("getContinuationType");
+        }
+
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);

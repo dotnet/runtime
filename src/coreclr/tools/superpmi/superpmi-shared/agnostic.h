@@ -200,8 +200,6 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG continuationResumeFldHnd;
     DWORDLONG continuationStateFldHnd;
     DWORDLONG continuationFlagsFldHnd;
-    DWORDLONG continuationDataFldHnd;
-    DWORDLONG continuationGCDataFldHnd;
     DWORD continuationsNeedMethodHandle;
     DWORDLONG captureExecutionContextMethHnd;
     DWORDLONG restoreExecutionContextMethHnd;
@@ -660,6 +658,15 @@ struct Agnostic_GetFpStructLowering
     DWORD loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     DWORD offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     DWORD numLoweredElements;
+};
+
+struct Agnostic_GetContinuationTypeIn
+{
+    DWORDLONG dataSize;
+    DWORD     objRefs;
+    DWORD     result;
+    DWORD     exception;
+    DWORD     continuationContext;
 };
 
 struct Agnostic_ResolveVirtualMethodKey

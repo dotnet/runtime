@@ -1,23 +1,23 @@
 ---
 mode: 'agent'
-tools: ['githubRepo', 'codebase', 'terminalLastCommand']
+tools: ['fetch', 'codebase', 'runCommands', 'usages', 'search', 'think']
 description: 'Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.'
 ---
 
 #### 1 — Goal
 
-Implement **one** new JIT-VM (also known as JIT-EE) API and all supporting glue. 
+Implement **one** new JIT-VM (also known as JIT-EE) API and all supporting glue.
 The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
 
 #### 2 — Prerequisites for the model
 
 * You have full repo access
-* You may run scripts (e.g., `.sh` or `.bat`) 
+* You may run scripts (e.g., `.sh` or `.bat`)
 * Ask **clarifying questions** before the first code change if anything (signature, types, platform constraints) is unclear.
 
 #### 3 — Required user inputs
 
-Ask the user for a C-like signature of the new API if it's not provided. 
+Ask the user for a C-like signature of the new API if it's not provided.
 Suggest `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference. Example:
 
 ```
@@ -83,8 +83,8 @@ Use the correct directory for the script to run.
 +}
 ```
 
-6. Now implement the most complex part - SuperPMI. SuperPMI acts as a (de)serializer for JIT-VM queries in order 
-to then replay them without the actual VM to speed up jit-diffs and other scenarios. All parameters and return 
+6. Now implement the most complex part - SuperPMI. SuperPMI acts as a (de)serializer for JIT-VM queries in order
+to then replay them without the actual VM to speed up jit-diffs and other scenarios. All parameters and return
 values recorded/restored using special primitve types and helpers. We need to update the following files:
 
 * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
@@ -96,7 +96,7 @@ Go through each of them one by one.
 
 * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
 Define two `Agnostic_*` types for input arguments and another one for output parameters (return value, output arguments).
- Do not create them if one of the generics ones can be re-used such as `DLD`, `DD`, `DLDL`, etc. Use `DWORD*` 
+ Do not create them if one of the generics ones can be re-used such as `DLD`, `DD`, `DLDL`, etc. Use `DWORD*`
  like types for integers. Inspect the whole file to see how other APIs are defined.
 
 * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
@@ -126,7 +126,7 @@ Now add a new element to `enum mcPackets` enum in the same file. Example:
 ```
 
 * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
-Add the implementation of the 3 methods to `methodcontext.cpp` at the end of it. 
+Add the implementation of the 3 methods to `methodcontext.cpp` at the end of it.
 Consider other similar methods in the file for reference. Do not change implementations of other methods in the file. Example:
 
 ```diff

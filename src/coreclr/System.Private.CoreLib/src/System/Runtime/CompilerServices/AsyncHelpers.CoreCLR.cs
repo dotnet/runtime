@@ -49,81 +49,82 @@ namespace System.Runtime.CompilerServices
     [Flags]
     internal enum CorInfoContinuationFlags
     {
-        // Whether or not the continuation expects the result to be boxed and
-        // placed in the GCData array at index 0. Not set if the callee is void.
-        CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
         // If this bit is set the continuation resumes inside a try block and thus
         // if an exception is being propagated, needs to be resumed. The exception
         // should be placed at index 0 or 1 depending on whether the continuation
         // also expects a result.
-        CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
-        // If this bit is set the continuation has the IL offset that inspired the
-        // OSR method saved in the beginning of 'Data', or -1 if the continuation
-        // belongs to a tier 0 method.
-        CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+        CORINFO_CONTINUATION_NEEDS_EXCEPTION = 1,
         // If this bit is set the continuation should continue on the thread
         // pool.
-        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
+        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 2,
         // If this bit is set the continuation has a SynchronizationContext
         // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
+        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 4,
         // If this bit is set the continuation has a TaskScheduler
         // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
+        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 8,
     }
 
-    internal sealed unsafe class Continuation
+    internal struct CORINFO_CONTINUATION_DATA_OFFSETS
+    {
+        public uint Result;
+        public uint Exception;
+        public uint ContinuationContext;
+        public uint KeepAlive;
+    }
+
+#pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically
+    internal unsafe class Continuation
     {
         public Continuation? Next;
-        public delegate*<Continuation, Continuation?> Resume;
-        public uint State;
+        public delegate*<Continuation, ref byte, Continuation?> Resume;
         public CorInfoContinuationFlags Flags;
+        public int State;
 
-        // Data and GCData contain the state of the continuation.
-        // Note: The JIT is ultimately responsible for laying out these arrays.
-        // However, other parts of the system depend on the layout to
-        // know where to locate or place various pieces of data:
-        //
-        // 1. Resumption stubs need to know where to place the return value
-        // inside the next continuation. If the return value has GC references
-        // then it is boxed and placed at GCData[0]; otherwise, it is placed
-        // inside Data at offset 0 if
-        // CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA is NOT set and otherwise
-        // at offset 4.
-        //
-        // 2. Likewise, Finalize[Value]TaskReturningThunk needs to know from
-        // where to extract the return value.
-        //
-        // 3. The dispatcher needs to know where to place the exception inside
-        // the next continuation with a handler. Continuations with handlers
-        // have CORINFO_CONTINUATION_NEEDS_EXCEPTION set. The exception is
-        // placed at GCData[0] if CORINFO_CONTINUATION_RESULT_IN_GCDATA is NOT
-        // set, and otherwise at GCData[1].
-        //
-        public byte[]? Data;
-        public object?[]? GCData;
-
-        public object GetContinuationContext()
+        public unsafe object GetContinuationContext()
         {
-            int index = 0;
-            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
-                index++;
-            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
-                index++;
-            Debug.Assert(GCData != null && GCData.Length > index);
-            object? continuationContext = GCData[index];
-            Debug.Assert(continuationContext != null);
-            return continuationContext;
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
+
+            // Only the special continuation sub types have continuation offsets.
+            Debug.Assert(mt->IsContinuation);
+            Debug.Assert(mt->ContinuationOffsets->ContinuationContext != uint.MaxValue);
+
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->ContinuationContext));
         }
 
         public void SetException(Exception ex)
         {
-            int index = 0;
-            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA) != 0)
-                index++;
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
 
-            Debug.Assert(GCData != null && GCData.Length > index);
-            GCData[index] = ex;
+            // Only the special continuation sub types have continuation offsets.
+            Debug.Assert(mt->IsContinuation);
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->Exception)) = ex;
+        }
+
+        public ref byte GetResultStorageOrNull()
+        {
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
+            // Only the special continuation sub types have continuation offsets.
+            Debug.Assert(mt->IsContinuation);
+
+            if (mt->ContinuationOffsets->Result == uint.MaxValue)
+                return ref Unsafe.NullRef<byte>();
+
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            return ref Unsafe.Add(ref data, mt->ContinuationOffsets->Result);
+        }
+
+        public void SetKeepAlive(object? obj)
+        {
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
+            // Only the special continuation sub types have continuation offsets.
+            Debug.Assert(mt->IsContinuation);
+            Debug.Assert(mt->ContinuationOffsets->KeepAlive != uint.MaxValue);
+
+            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            Unsafe.As<byte, object?>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->KeepAlive)) = obj;
         }
     }
 
@@ -148,48 +149,32 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
-        private static Continuation AllocContinuation(Continuation prevContinuation, nuint numGCRefs, nuint dataSize)
+        private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
-            Continuation newContinuation = new Continuation { Data = new byte[dataSize], GCData = new object[numGCRefs] };
+            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
-        private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, nuint numGCRefs, nuint dataSize, MethodDesc* method)
+        private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
-            object?[] gcData;
-            if (loaderAllocator != null)
-            {
-                gcData = new object[numGCRefs + 1];
-                gcData[numGCRefs] = loaderAllocator;
-            }
-            else
-            {
-                gcData = new object[numGCRefs];
-            }
-
-            Continuation newContinuation = new Continuation { Data = new byte[dataSize], GCData = gcData };
+            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
+            newContinuation.SetKeepAlive(loaderAllocator);
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
-        private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, nuint numGCRefs, nuint dataSize, MethodTable* methodTable)
+        private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, MethodTable* contMT, MethodTable* methodTable)
         {
             IntPtr loaderAllocatorHandle = methodTable->GetLoaderAllocatorHandle();
-            object?[] gcData;
+
+            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
+            prevContinuation.Next = newContinuation;
             if (loaderAllocatorHandle != IntPtr.Zero)
             {
-                gcData = new object[numGCRefs + 1];
-                gcData[numGCRefs] = GCHandle.FromIntPtr(loaderAllocatorHandle).Target;
+                newContinuation.SetKeepAlive(GCHandle.FromIntPtr(loaderAllocatorHandle).Target);
             }
-            else
-            {
-                gcData = new object[numGCRefs];
-            }
-
-            Continuation newContinuation = new Continuation { Data = new byte[dataSize], GCData = gcData };
-            prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
@@ -224,8 +209,9 @@ namespace System.Runtime.CompilerServices
             static abstract Action GetContinuationAction(T task);
             static abstract Continuation GetContinuationState(T task);
             static abstract void SetContinuationState(T task, Continuation value);
-            static abstract bool SetCompleted(T task, Continuation continuation);
+            static abstract bool SetCompleted(T task);
             static abstract void PostToSyncContext(T task, SynchronizationContext syncCtx);
+            static abstract ref byte GetResultStorage(T task);
         }
 
         /// <summary>
@@ -274,39 +260,23 @@ namespace System.Runtime.CompilerServices
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask<T>>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask<T> task) => (Action)task.m_action!;
-                public static void MoveNext(RuntimeAsyncTask<T> task) => task.MoveNext();
                 public static Continuation GetContinuationState(RuntimeAsyncTask<T> task) => (Continuation)task.m_stateObject!;
                 public static void SetContinuationState(RuntimeAsyncTask<T> task, Continuation value)
                 {
                     task.m_stateObject = value;
                 }
 
-                public static bool SetCompleted(RuntimeAsyncTask<T> task, Continuation continuation)
+                public static bool SetCompleted(RuntimeAsyncTask<T> task)
                 {
-                    T result;
-                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    {
-                        if (typeof(T).IsValueType)
-                        {
-                            result = Unsafe.As<byte, T>(ref continuation.GCData![0]!.GetRawData());
-                        }
-                        else
-                        {
-                            result = Unsafe.As<object, T>(ref continuation.GCData![0]!);
-                        }
-                    }
-                    else
-                    {
-                        result = Unsafe.As<byte, T>(ref continuation.Data![0]);
-                    }
-
-                    return task.TrySetResult(result);
+                    return task.TrySetResult(task.m_result);
                 }
 
                 public static void PostToSyncContext(RuntimeAsyncTask<T> task, SynchronizationContext syncContext)
                 {
                     syncContext.Post(s_postCallback, task);
                 }
+
+                public static ref byte GetResultStorage(RuntimeAsyncTask<T> task) => ref Unsafe.As<T?, byte>(ref task.m_result);
             }
         }
 
@@ -356,14 +326,13 @@ namespace System.Runtime.CompilerServices
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask task) => (Action)task.m_action!;
-                public static void MoveNext(RuntimeAsyncTask task) => task.MoveNext();
                 public static Continuation GetContinuationState(RuntimeAsyncTask task) => (Continuation)task.m_stateObject!;
                 public static void SetContinuationState(RuntimeAsyncTask task, Continuation value)
                 {
                     task.m_stateObject = value;
                 }
 
-                public static bool SetCompleted(RuntimeAsyncTask task, Continuation continuation)
+                public static bool SetCompleted(RuntimeAsyncTask task)
                 {
                     return task.TrySetResult();
                 }
@@ -372,6 +341,8 @@ namespace System.Runtime.CompilerServices
                 {
                     syncContext.Post(s_postCallback, task);
                 }
+
+                public static ref byte GetResultStorage(RuntimeAsyncTask task) => ref Unsafe.NullRef<byte>();
             }
         }
 
@@ -381,13 +352,15 @@ namespace System.Runtime.CompilerServices
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
-                Continuation continuation = TOps.GetContinuationState(task);
+                Continuation? continuation = TOps.GetContinuationState(task);
 
                 while (true)
                 {
+                    Debug.Assert(continuation != null);
                     try
                     {
-                        Continuation? newContinuation = continuation.Resume(continuation);
+                        ref byte resultLoc = ref continuation.Next != null ? ref continuation.Next.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
+                        Continuation? newContinuation = continuation.Resume(continuation, ref resultLoc);
 
                         if (newContinuation != null)
                         {
@@ -397,13 +370,13 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        Debug.Assert(continuation.Next != null);
                         continuation = continuation.Next;
                     }
                     catch (Exception ex)
                     {
-                        Continuation nextContinuation = UnwindToPossibleHandler(continuation);
-                        if (nextContinuation.Resume == null)
+                        Debug.Assert(continuation != null);
+                        Continuation? nextContinuation = UnwindToPossibleHandler(continuation);
+                        if (nextContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             bool successfullySet = ex is OperationCanceledException oce ?
@@ -425,9 +398,9 @@ namespace System.Runtime.CompilerServices
                         continuation = nextContinuation;
                     }
 
-                    if (continuation.Resume == null)
+                    if (continuation == null)
                     {
-                        bool successfullySet = TOps.SetCompleted(task, continuation);
+                        bool successfullySet = TOps.SetCompleted(task);
 
                         contexts.Pop();
 
@@ -447,14 +420,18 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private static Continuation UnwindToPossibleHandler(Continuation continuation)
+            private static Continuation? UnwindToPossibleHandler(Continuation continuation)
             {
                 while (true)
                 {
-                    Debug.Assert(continuation.Next != null);
-                    continuation = continuation.Next;
-                    if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
-                        return continuation;
+                    Continuation? nextContinuation = continuation.Next;
+                    if (nextContinuation == null)
+                        return null;
+
+                    if ((nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                        return nextContinuation;
+
+                    continuation = nextContinuation;
                 }
             }
 
@@ -575,58 +552,34 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // Change return type to ThunkTask<T?> -- no benefit since this is used for Task returning thunks only
+        // Change return type to RuntimeAsyncTask<T?> -- no benefit since this is used for Task returning thunks only
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
-        private static Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation)
+        private static Task<T?> FinalizeTaskReturningThunk<T>()
         {
-            Continuation finalContinuation = new Continuation();
-
-            // Note that the exact location the return value is placed is tied
-            // into getAsyncResumptionStub in the VM, so do not change this
-            // without also changing that code (and the JIT).
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_RESULT_IN_GCDATA | CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-                finalContinuation.GCData = new object[1];
-            }
-            else
-            {
-                finalContinuation.Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-                finalContinuation.Data = new byte[Unsafe.SizeOf<T>()];
-            }
-
-            continuation.Next = finalContinuation;
-
             RuntimeAsyncTask<T?> result = new();
             result.HandleSuspended();
             return result;
         }
 
-        private static Task FinalizeTaskReturningThunk(Continuation continuation)
+        private static Task FinalizeTaskReturningThunk()
         {
-            Continuation finalContinuation = new Continuation
-            {
-                Flags = CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION,
-            };
-            continuation.Next = finalContinuation;
-
             RuntimeAsyncTask result = new();
             result.HandleSuspended();
             return result;
         }
 
-        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
+        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>()
         {
             // We only come to these methods in the expensive case (already
             // suspended), so ValueTask optimization here is not relevant.
-            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>(continuation));
+            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>());
         }
 
-        private static ValueTask FinalizeValueTaskReturningThunk(Continuation continuation)
+        private static ValueTask FinalizeValueTaskReturningThunk()
         {
-            return new ValueTask(FinalizeTaskReturningThunk(continuation));
+            return new ValueTask(FinalizeTaskReturningThunk());
         }
 
         private static Task<T?> TaskFromException<T>(Exception ex)

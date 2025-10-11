@@ -1536,6 +1536,17 @@ bool WrapICorJitInfo::getTailCallHelpers(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    API_ENTER(getContinuationType);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getContinuationType(dataSize, objRefs, dataOffsets);
+    API_LEAVE(getContinuationType);
+    return temp;
+}
+
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub()
 {
     API_ENTER(getAsyncResumptionStub);

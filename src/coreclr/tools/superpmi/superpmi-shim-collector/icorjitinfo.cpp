@@ -1782,6 +1782,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
     return stub;
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+{
+    mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getContinuationType(dataSize, objRefs, dataOffsets);
+    mc->recGetContinuationType(dataSize, objRefs, dataOffsets, result);
+    return result;
+}
+
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
 {
     mc->cr->AddCall("updateEntryPointForTailCall");
