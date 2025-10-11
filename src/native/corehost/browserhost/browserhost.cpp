@@ -100,14 +100,20 @@ static std::vector<const char*> propertyKeys;
 static std::vector<const char*> propertyValues;
 static pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
 
-// WASM-TODO: pass TPA via argument, not env
-// WASM-TODO: pass app_path via argument, not env
-// WASM-TODO: pass search_paths via argument, not env
-extern "C" int BrowserHost_InitializeCoreCLR(void)
+// TPA (Trusted Platform Assemblies), app_path, and search_paths are passed as UTF-8 encoded
+// string arguments from JavaScript instead of being read from environment variables.
+// The JavaScript host constructs these values from the loader configuration and passes them
+// directly via Emscripten's ccall mechanism, which automatically handles string conversion.
+// Memory for these C strings is managed by Emscripten and is valid for the duration of this call.
+// We copy the values into pal::string_t (std::string) to ensure they remain valid after the call returns.
+extern "C" int BrowserHost_InitializeCoreCLR(const char* tpaArg, const char* appPathArg, const char* searchPathsArg)
 {
-    pal::getenv(HOST_PROPERTY_APP_PATHS, &app_path);
-    pal::getenv(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, &search_paths);
-    pal::getenv(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, &tpa);
+    if (tpaArg != nullptr)
+        tpa = tpaArg;
+    if (appPathArg != nullptr)
+        app_path = appPathArg;
+    if (searchPathsArg != nullptr)
+        search_paths = searchPathsArg;
 
     // Set base initialization properties.
     propertyKeys.push_back(HOST_PROPERTY_APP_PATHS);
