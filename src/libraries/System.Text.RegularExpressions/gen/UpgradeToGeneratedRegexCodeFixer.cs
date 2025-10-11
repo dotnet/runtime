@@ -317,7 +317,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 // Use verbatim string syntax if the string contains backslashes or newlines
                 // to preserve readability, especially for patterns with RegexOptions.IgnorePatternWhitespace
-                return str.Contains('\\') || str.Contains('\n') || str.Contains('\r');
+                return str.IndexOfAny(['\\', '\n', '\r']) >= 0;
             }
 
             static string Literal(string stringifiedRegexOptions)
