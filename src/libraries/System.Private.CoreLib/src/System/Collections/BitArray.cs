@@ -738,7 +738,7 @@ namespace System.Collections
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
-                if (Avx512BW.IsSupported && (uint)_bitLength >= Vector512<byte>.Count)
+                if (Vector512.IsHardwareAccelerated && (uint)_bitLength >= Vector512<byte>.Count)
                 {
                     Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
                                                                                              0x06060606_06060606, 0x07070707_07070707).AsByte();
@@ -753,17 +753,17 @@ namespace System.Collections
                         {
                             ulong bits = (ulong)(uint)in32Span[(int)(i / (uint)BitsPerInt32)] + ((ulong)in32Span[(int)(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
                             Vector512<ulong> scalar = Vector512.Create(bits);
-                            Vector512<byte> shuffled = Avx512BW.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
+                            Vector512<byte> shuffled = Vector512.Shuffle(scalar.AsByte(), shuffleMask);
+                            Vector512<byte> extracted = shuffled & bitMask;
 
                             // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
                             // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector512<byte> normalized = Avx512BW.Min(extracted, ones);
-                            Avx512F.Store((byte*)destination + i, normalized);
+                            Vector512<byte> normalized = Vector512.Min(extracted, ones);
+                            normalized.Store((byte*)destination + i);
                         }
                     }
                 }
-                else if (Avx2.IsSupported && (uint)_bitLength >= Vector256<byte>.Count)
+                else if (Vector256.IsHardwareAccelerated && (uint)_bitLength >= Vector256<byte>.Count)
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
@@ -775,13 +775,13 @@ namespace System.Collections
                         {
                             int bits = in32Span[(int)(i / (uint)BitsPerInt32)];
                             Vector256<int> scalar = Vector256.Create(bits);
-                            Vector256<byte> shuffled = Avx2.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector256<byte> extracted = Avx2.And(shuffled, bitMask);
+                            Vector256<byte> shuffled = Vector256.Shuffle(scalar.AsByte(), shuffleMask);
+                            Vector256<byte> extracted = shuffled & bitMask;
 
                             // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
                             // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector256<byte> normalized = Avx2.Min(extracted, ones);
-                            Avx.Store((byte*)destination + i, normalized);
+                            Vector256<byte> normalized = Vector256.Min(extracted, ones);
+                            normalized.Store((byte*)destination + i);
                         }
                     }
                 }
