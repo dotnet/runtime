@@ -49,7 +49,7 @@ namespace System.Configuration
 
             // Don't bother to look around if we've already got something that
             // is clearly not a simple type name.
-            if (string.IsNullOrEmpty(typeString) || typeString.IndexOf(',') != -1) // string.Contains(char) is .NetCore2.1+ specific
+            if (string.IsNullOrEmpty(typeString) || typeString.Contains(','))
                 return null;
 
             // Ignore all exceptions, otherwise callers will get unexpected
