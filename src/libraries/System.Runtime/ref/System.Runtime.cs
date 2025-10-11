@@ -10407,6 +10407,7 @@ namespace System.IO
         public System.IO.FileStream OpenWrite() { throw null; }
         public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
         public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
+        public void CreateAsHardLink(string pathToTarget) { }
     }
     public partial class FileLoadException : System.IO.IOException
     {
@@ -10575,7 +10576,6 @@ namespace System.IO
         public string? LinkTarget { get { throw null; } }
         public abstract string Name { get; }
         public System.IO.UnixFileMode UnixFileMode { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
-        public void CreateAsHardLink(string pathToTarget) { }
         public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

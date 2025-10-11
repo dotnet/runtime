@@ -10,7 +10,7 @@ namespace System.IO.Tests
     [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
     public class FileInfo_HardLinks : BaseHardLinks_FileSystem
     {
-        private FileSystemInfo GetFileSystemInfo(string path) =>
+        private FileInfo GetFileSystemInfo(string path) =>
             new FileInfo(path);
 
         protected override void CreateFile(string path) =>
@@ -21,7 +21,7 @@ namespace System.IO.Tests
 
         protected override FileSystemInfo CreateHardLink(string path, string pathToTarget)
         {
-            FileSystemInfo link = GetFileSystemInfo(path);
+            FileInfo link = GetFileSystemInfo(path);
             link.CreateAsHardLink(pathToTarget);
             return link;
         }
