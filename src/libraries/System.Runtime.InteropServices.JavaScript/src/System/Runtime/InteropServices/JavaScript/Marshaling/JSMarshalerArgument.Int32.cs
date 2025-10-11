@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public void ToManaged(out int[]? value)
+        public unsafe void ToManaged(out int[]? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public void ToJS(int[]? value)
+        public unsafe void ToJS(int[]? value)
         {
             if (value == null)
             {

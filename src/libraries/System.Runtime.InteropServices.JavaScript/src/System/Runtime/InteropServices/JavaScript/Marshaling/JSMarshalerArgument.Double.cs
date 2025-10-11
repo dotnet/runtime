@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public void ToManaged(out double[]? value)
+        public unsafe void ToManaged(out double[]? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public void ToJS(double[] value)
+        public unsafe void ToJS(double[] value)
         {
             if (value == null)
             {
