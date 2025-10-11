@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !TARGET_WINDOWS
 using System.Numerics;
+#else
+using System.Security.Cryptography;
+#endif
 
 namespace System
 {
@@ -13,15 +17,24 @@ namespace System
     /// </summary>
     internal struct Sha1ForNonSecretPurposes
     {
+#if TARGET_WINDOWS
+        private byte[]? _buffer;
+        private int _bufferPos;
+#else
         private long _length; // Total message length in bits
         private uint[] _w; // Workspace
         private int _pos; // Length of current chunk in bytes
+#endif
 
         /// <summary>
         /// Call Start() to initialize the hash object.
         /// </summary>
         public void Start()
         {
+#if TARGET_WINDOWS
+            _buffer = null;
+            _bufferPos = 0;
+#else
             _w ??= new uint[85];
 
             _length = 0;
@@ -31,6 +44,7 @@ namespace System
             _w[82] = 0x98BADCFE;
             _w[83] = 0x10325476;
             _w[84] = 0xC3D2E1F0;
+#endif
         }
 
         /// <summary>
@@ -39,12 +53,25 @@ namespace System
         /// <param name="input">Data to include in the hash.</param>
         public void Append(byte input)
         {
+#if TARGET_WINDOWS
+            _buffer ??= new byte[256];
+
+            if (_bufferPos == _buffer.Length)
+            {
+                byte[] newBuffer = new byte[_buffer.Length * 2];
+                _buffer.CopyTo(newBuffer, 0);
+                _buffer = newBuffer;
+            }
+
+            _buffer[_bufferPos++] = input;
+#else
             int idx = _pos >> 2;
             _w[idx] = (_w[idx] << 8) | input;
             if (64 == ++_pos)
             {
                 Drain();
             }
+#endif
         }
 
         /// <summary>
@@ -55,10 +82,35 @@ namespace System
         /// </param>
         public void Append(ReadOnlySpan<byte> input)
         {
+#if TARGET_WINDOWS
+            if (input.IsEmpty)
+            {
+                return;
+            }
+
+            _buffer ??= new byte[256];
+
+            int requiredSize = _bufferPos + input.Length;
+            if (requiredSize > _buffer.Length)
+            {
+                int newSize = _buffer.Length;
+                while (newSize < requiredSize)
+                {
+                    newSize *= 2;
+                }
+                byte[] newBuffer = new byte[newSize];
+                _buffer.AsSpan(0, _bufferPos).CopyTo(newBuffer);
+                _buffer = newBuffer;
+            }
+
+            input.CopyTo(_buffer.AsSpan(_bufferPos));
+            _bufferPos += input.Length;
+#else
             foreach (byte b in input)
             {
                 Append(b);
             }
+#endif
         }
 
         /// <summary>
@@ -77,6 +129,34 @@ namespace System
         /// </param>
         public void Finish(Span<byte> output)
         {
+#if TARGET_WINDOWS
+            ReadOnlySpan<byte> source = _buffer is null ? ReadOnlySpan<byte>.Empty : new ReadOnlySpan<byte>(_buffer, 0, _bufferPos);
+            
+            unsafe
+            {
+                fixed (byte* pSrc = source)
+                fixed (byte* pDest = output)
+                {
+                    Interop.BCrypt.NTSTATUS ntStatus = Interop.BCrypt.BCryptHash(
+                        (uint)Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA1_ALG_HANDLE,
+                        null,
+                        0,
+                        pSrc,
+                        source.Length,
+                        pDest,
+                        Math.Min(output.Length, 20));
+
+                    if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
+                    {
+                        int hr = unchecked((int)ntStatus) | 0x01000000;
+                        throw new CryptographicException(hr);
+                    }
+                }
+            }
+
+            _buffer = null;
+            _bufferPos = 0;
+#else
             long l = _length + 8 * _pos;
             Append(0x80);
             while (_pos != 56)
@@ -100,11 +180,13 @@ namespace System
                 output[i] = (byte)(temp >> 24);
                 _w[80 + i / 4] = temp << 8;
             }
+#endif
         }
 
         /// <summary>
         /// Called when pos reaches 64.
         /// </summary>
+#if !TARGET_WINDOWS
         private void Drain()
         {
             for (int i = 16; i != 80; i++)
@@ -155,5 +237,6 @@ namespace System
             _length += 512; // 64 bytes == 512 bits
             _pos = 0;
         }
+#endif
     }
 }
