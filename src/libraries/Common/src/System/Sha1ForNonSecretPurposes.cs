@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Numerics;
 
 namespace System
@@ -18,19 +20,76 @@ namespace System
         private int _pos; // Length of current chunk in bytes
 
         /// <summary>
+        /// Computes the SHA1 hash of the provided data.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == 20);
+
+            Span<uint> w = stackalloc uint[85];
+
+            Start(w);
+
+            int originalLength = source.Length;
+
+            while (source.Length >= 64)
+            {
+                for (int i = 0; i < 16; i++)
+                {
+                    w[i] = BinaryPrimitives.ReadUInt32BigEndian(source);
+                    source = source.Slice(4);
+                }
+                Drain(w);
+            }
+
+            Span<byte> tail = stackalloc byte[2 * 64];
+            source.CopyTo(tail);
+            int pos = source.Length;
+            tail[pos++] = 0x80;
+            while ((pos & 63) != 56)
+            {
+                tail[pos++] = 0x00;
+            }
+            BinaryPrimitives.WriteUInt64BigEndian(tail.Slice(pos), (ulong)originalLength * 8);
+            tail = tail.Slice(0, pos + 8);
+
+            while (tail.Length > 0)
+            {
+                for (int i = 0; i < 16; i++)
+                {
+                    w[i] = BinaryPrimitives.ReadUInt32BigEndian(tail);
+                    tail = tail.Slice(4);
+                }
+                Drain(w);
+            }
+
+            for (int i = 80; i < 85; i++)
+            {
+                BinaryPrimitives.WriteUInt32BigEndian(destination, w[i]);
+                destination = destination.Slice(4);
+            }
+        }
+
+        /// <summary>
         /// Call Start() to initialize the hash object.
         /// </summary>
         public void Start()
         {
-            _w ??= new uint[85];
+            Start(_w ??= new uint[85]);
 
             _length = 0;
             _pos = 0;
-            _w[80] = 0x67452301;
-            _w[81] = 0xEFCDAB89;
-            _w[82] = 0x98BADCFE;
-            _w[83] = 0x10325476;
-            _w[84] = 0xC3D2E1F0;
+        }
+
+        private static void Start(Span<uint> w)
+        {
+            w[80] = 0x67452301;
+            w[81] = 0xEFCDAB89;
+            w[82] = 0x98BADCFE;
+            w[83] = 0x10325476;
+            w[84] = 0xC3D2E1F0;
         }
 
         /// <summary>
@@ -77,6 +136,8 @@ namespace System
         /// </param>
         public void Finish(Span<byte> output)
         {
+            Debug.Assert(output.Length == 20);
+
             long l = _length + 8 * _pos;
             Append(0x80);
             while (_pos != 56)
@@ -93,12 +154,10 @@ namespace System
             Append((byte)(l >> 8));
             Append((byte)l);
 
-            int end = output.Length < 20 ? output.Length : 20;
-            for (int i = 0; i != end; i++)
+            for (int i = 80; i < 85; i++)
             {
-                uint temp = _w[80 + i / 4];
-                output[i] = (byte)(temp >> 24);
-                _w[80 + i / 4] = temp << 8;
+                BinaryPrimitives.WriteUInt32BigEndian(output, _w[i]);
+                output = output.Slice(4);
             }
         }
 
@@ -107,53 +166,59 @@ namespace System
         /// </summary>
         private void Drain()
         {
-            for (int i = 16; i != 80; i++)
+            Drain(_w);
+            _length += 512; // 64 bytes == 512 bits
+            _pos = 0;
+        }
+
+        private static void Drain(Span<uint> w)
+        {
+            var _ = w[84]; // Hint to eliminate bounds checks
+
+            for (int i = 16; i < 80; i++)
             {
-                _w[i] = BitOperations.RotateLeft(_w[i - 3] ^ _w[i - 8] ^ _w[i - 14] ^ _w[i - 16], 1);
+                w[i] = BitOperations.RotateLeft(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
             }
 
-            uint a = _w[80];
-            uint b = _w[81];
-            uint c = _w[82];
-            uint d = _w[83];
-            uint e = _w[84];
+            uint a = w[80];
+            uint b = w[81];
+            uint c = w[82];
+            uint d = w[83];
+            uint e = w[84];
 
-            for (int i = 0; i != 20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 const uint k = 0x5A827999;
                 uint f = (b & c) | ((~b) & d);
-                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + _w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
+                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
             }
 
-            for (int i = 20; i != 40; i++)
+            for (int i = 20; i < 40; i++)
             {
                 uint f = b ^ c ^ d;
                 const uint k = 0x6ED9EBA1;
-                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + _w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
+                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
             }
 
-            for (int i = 40; i != 60; i++)
+            for (int i = 40; i < 60; i++)
             {
                 uint f = (b & c) | (b & d) | (c & d);
                 const uint k = 0x8F1BBCDC;
-                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + _w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
+                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
             }
 
-            for (int i = 60; i != 80; i++)
+            for (int i = 60; i < 80; i++)
             {
                 uint f = b ^ c ^ d;
                 const uint k = 0xCA62C1D6;
-                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + _w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
+                uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
             }
 
-            _w[80] += a;
-            _w[81] += b;
-            _w[82] += c;
-            _w[83] += d;
-            _w[84] += e;
-
-            _length += 512; // 64 bytes == 512 bits
-            _pos = 0;
+            w[80] += a;
+            w[81] += b;
+            w[82] += c;
+            w[83] += d;
+            w[84] += e;
         }
     }
 }

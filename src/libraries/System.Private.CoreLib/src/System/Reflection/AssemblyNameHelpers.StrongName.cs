@@ -20,11 +20,7 @@ namespace System.Reflection
                 throw new SecurityException(SR.Security_InvalidAssemblyPublicKey);
 
             Span<byte> hash = stackalloc byte[20];
-
-            Sha1ForNonSecretPurposes sha1 = default;
-            sha1.Start();
-            sha1.Append(publicKey);
-            sha1.Finish(hash);
+            Sha1ForNonSecretPurposes.HashData(publicKey, hash);
 
             byte[] publicKeyToken = new byte[PublicKeyTokenLength];
             for (int i = 0; i < publicKeyToken.Length; i++)
