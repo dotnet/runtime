@@ -75,10 +75,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(?m)(?:^[a-z]{3}\n?)*", "abc\ndef\nxyz", new[] { (0, 11), (11, 11) });
             yield return (@"(?m)(?:\n?[a-z]{3}$)+", "abc\ndef\nxyz", new[] { (0, 11) });
             yield return (@"(?m)(?:\n?[a-z]{3}$)*", "abc\ndef\nxyz", new[] { (0, 11), (11, 11) });
-            yield return (@"(?m)^*", "\naa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 3), (4, 4) });
-            yield return (@"(?m)^+", "\naa\n", new[] { (0, 0), (1, 1), (4, 4) });
-            yield return (@"(?m)$*", "\naa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 3), (4, 4) });
-            yield return (@"(?m)$+", "\naa\n", new[] { (0, 0), (3, 3), (4, 4) });
+            // The following patterns with quantified anchors are now invalid in .NET
+            // yield return (@"(?m)^*", "\naa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 3), (4, 4) });
+            // yield return (@"(?m)^+", "\naa\n", new[] { (0, 0), (1, 1), (4, 4) });
+            // yield return (@"(?m)$*", "\naa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 3), (4, 4) });
+            // yield return (@"(?m)$+", "\naa\n", new[] { (0, 0), (3, 3), (4, 4) });
             yield return (@"(?m)(?:$\n)+", "\n\naaa\n\n", new[] { (0, 2), (5, 7) });
             yield return (@"(?m)(?:$\n)*", "\n\naaa\n\n", new[] { (0, 2), (2, 2), (3, 3), (4, 4), (5, 7), (7, 7) });
             yield return (@"(?m)(?:$\n^)+", "\n\naaa\n\n", new[] { (0, 2), (5, 7) });

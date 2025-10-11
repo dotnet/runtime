@@ -1504,6 +1504,14 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (DataSetExpression exp in s_patternsDataSet.Value)
             {
+                // Skip patterns with quantified anchors (now invalid)
+                if (exp.Pattern.Contains(@"\b*") || exp.Pattern.Contains(@"\b+") || exp.Pattern.Contains(@"\b?") ||
+                    exp.Pattern.Contains(@"\B*") || exp.Pattern.Contains(@"\B+") || exp.Pattern.Contains(@"\B?") ||
+                    exp.Pattern.Contains(@"^*") || exp.Pattern.Contains(@"^+") || exp.Pattern.Contains(@"^?") ||
+                    exp.Pattern.Contains(@"$*") || exp.Pattern.Contains(@"$+") || exp.Pattern.Contains(@"$?"))
+                {
+                    continue;
+                }
                 await RegexHelpers.GetRegexAsync(engine, exp.Pattern, exp.Options);
             }
         }

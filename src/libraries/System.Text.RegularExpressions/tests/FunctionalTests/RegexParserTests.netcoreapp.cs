@@ -164,9 +164,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"*abc", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData(@"\12", RegexOptions.None, null)] // Nim: "Invalid octal literal. Expected 3 octal digits, but found 2"
         [InlineData(@"\12@", RegexOptions.None, null)] // Nim: "Invalid octal literal. Expected octal digit, but found @"
-        [InlineData(@"\b?", RegexOptions.None, null)]
-        [InlineData(@"\b*", RegexOptions.None, null)]
-        [InlineData(@"\b+", RegexOptions.None, null)]
+        [InlineData(@"\b?", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 3)]
+        [InlineData(@"\b*", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 3)]
+        [InlineData(@"\b+", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 3)]
         [InlineData(@"\p{11", RegexOptions.None, RegexParseError.InvalidUnicodePropertyEscape, 5)]
         [InlineData(@"\p{11}", RegexOptions.None, RegexParseError.UnrecognizedUnicodeProperty, 6)]
         [InlineData(@"\p{Bb}", RegexOptions.None, RegexParseError.UnrecognizedUnicodeProperty, 6)]
@@ -234,7 +234,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"abc(?Pabc)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 6)]
         [InlineData(@"abc(?q)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 6)]
         [InlineData(@"abc[]", RegexOptions.None, RegexParseError.UnterminatedBracket, 5)]
-        [InlineData(@"abc\A{10}", RegexOptions.None, null)] // Nim error:  "Invalid repetition range, either char, shorthand (i.e: \\w), group, or set expected before repetition range"
+        [InlineData(@"abc\A{10}", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 9)] // Nim error:  "Invalid repetition range, either char, shorthand (i.e: \\w), group, or set expected before repetition range"
         [InlineData(@"\uD87E\uDC94(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 15)]
         [InlineData(@"\uD87E\uDC94aaa(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 18)]
         [InlineData(@"\uD87E\uDC94\uD87E\uDC94\uD87E\uDC94(?Pabc", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 39)]
