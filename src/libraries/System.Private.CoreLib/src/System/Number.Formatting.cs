@@ -526,6 +526,132 @@ namespace System
             return maxDigits;
         }
 
+        private static void FormatFloatAsHex<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, char fmt, int precision, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            // Get the raw bits
+            ulong bits = TNumber.FloatToBits(value);
+            int mantissaBits = TNumber.NormalMantissaBits;
+            int exponentBias = TNumber.ExponentBias;
+
+            // Extract sign, exponent, and mantissa
+            bool isNegative = (bits >> (mantissaBits + TNumber.ExponentBits)) != 0;
+            int biasedExponent = (int)((bits >> mantissaBits) & ((1UL << TNumber.ExponentBits) - 1));
+            ulong mantissa = bits & TNumber.NormalMantissaMask;
+
+            // Add sign
+            if (isNegative)
+            {
+                vlb.Append(TChar.CastFrom('-'));
+            }
+
+            // Add "0x" prefix
+            vlb.Append(TChar.CastFrom('0'));
+            vlb.Append(TChar.CastFrom(fmt)); // 'x' or 'X'
+
+            // Handle special cases
+            if (biasedExponent == TNumber.InfinityExponent)
+            {
+                // Infinity or NaN - just output  as 0
+                vlb.Append(TChar.CastFrom('0'));
+                vlb.Append(TChar.CastFrom('p'));
+                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(TChar.CastFrom('0'));
+                return;
+            }
+
+            if (biasedExponent == 0 && mantissa == 0)
+            {
+                // Zero
+                vlb.Append(TChar.CastFrom('0'));
+                if (precision > 0)
+                {
+                    vlb.Append(TChar.CastFrom('.'));
+                    for (int i = 0; i < precision; i++)
+                    {
+                        vlb.Append(TChar.CastFrom('0'));
+                    }
+                }
+                vlb.Append(TChar.CastFrom('p'));
+                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(TChar.CastFrom('0'));
+                return;
+            }
+
+            // Normalize: add implicit leading 1 for normal numbers
+            int actualExponent;
+            if (biasedExponent == 0)
+            {
+                // Denormal number
+                actualExponent = 1 - exponentBias;
+            }
+            else
+            {
+                // Normal number - add implicit leading bit
+                mantissa |= (1UL << mantissaBits);
+                actualExponent = biasedExponent - exponentBias;
+            }
+
+            // Normalize mantissa so the leading bit is in the MSB position
+            int shift = 64 - mantissaBits - 1;
+            mantissa <<= shift;
+
+            // Output integer part (always "1" for normalized)
+            char hexBase = fmt == 'X' ? 'A' : 'a';
+            int firstNibble = (int)(mantissa >> 60);
+            vlb.Append(TChar.CastFrom((char)('0' + (firstNibble > 9 ? 0 : firstNibble))));
+            if (firstNibble > 9)
+            {
+                vlb.Append(TChar.CastFrom((char)(hexBase + firstNibble - 10)));
+            }
+
+            // Remove the first nibble
+            mantissa = (mantissa << 4) & 0xFFFFFFFFFFFFFFFF;
+
+            // Determine how many hex digits to output
+            int hexDigits = precision >= 0 ? precision : (mantissaBits + 3) / 4;
+
+            if (hexDigits > 0)
+            {
+                vlb.Append(TChar.CastFrom('.'));
+
+                for (int i = 0; i < hexDigits; i++)
+                {
+                    int nibble = (int)(mantissa >> 60);
+                    char hexChar = nibble < 10 ? (char)('0' + nibble) : (char)(hexBase + nibble - 10);
+                    vlb.Append(TChar.CastFrom(hexChar));
+                    mantissa = (mantissa << 4) & 0xFFFFFFFFFFFFFFFF;
+                }
+            }
+
+            // Output exponent
+            vlb.Append(TChar.CastFrom('p'));
+            if (actualExponent >= 0)
+            {
+                vlb.Append(TChar.CastFrom('+'));
+            }
+
+            // Format exponent as decimal
+            FormatInt32(ref vlb, actualExponent, 0, null, info);
+        }
+
+        private static void FormatInt32<TChar>(ref ValueListBuilder<TChar> vlb, int value, int precision, string? format, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (value < 0)
+            {
+                vlb.Append(TChar.CastFrom('-'));
+                value = -value;
+            }
+
+            string numStr = ((uint)value).ToString();
+            foreach (char c in numStr)
+            {
+                vlb.Append(TChar.CastFrom(c));
+            }
+        }
+
         public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
@@ -596,6 +722,13 @@ namespace System
             if (fmt == '\0')
             {
                 precision = TNumber.MaxPrecisionCustomFormat;
+            }
+
+            // Handle hex float formatting (X or x)
+            if (fmt == 'X' || fmt == 'x')
+            {
+                FormatFloatAsHex(ref vlb, value, fmt, precision, info);
+                return null;
             }
 
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, TNumber.NumberBufferLength);

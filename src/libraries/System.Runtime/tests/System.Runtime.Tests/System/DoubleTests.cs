@@ -331,6 +331,16 @@ namespace System.Tests
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, double.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, double.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, double.NegativeInfinity };
+
+            // Hex float tests
+            yield return new object[] { "0x1.0p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
+            yield return new object[] { "0x1.8p0", NumberStyles.HexFloat, invariantFormat, 1.5 };
+            yield return new object[] { "0x1.0p1", NumberStyles.HexFloat, invariantFormat, 2.0 };
+            yield return new object[] { "0x1.0p-1", NumberStyles.HexFloat, invariantFormat, 0.5 };
+            yield return new object[] { "0x0.8p0", NumberStyles.HexFloat, invariantFormat, 0.5 };
+            yield return new object[] { "-0x1.0p0", NumberStyles.HexFloat, invariantFormat, -1.0 };
+            yield return new object[] { "+0x1.0p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
+            yield return new object[] { "0x1.921fb54442d18p+1", NumberStyles.HexFloat, invariantFormat, Math.PI };
         }
 
         [Theory]
