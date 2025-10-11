@@ -138,16 +138,19 @@ namespace System.Text.Json
                     {
                         ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
                     }
-                    // For IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement>,
-                    // create a Dictionary<TKey, TValue> instance
-                    else if (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(jsonPropertyInfo.PropertyType))
+                    // For IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement> interface types,
+                    // create a Dictionary<TKey, TValue> instance. We only do this if Dictionary can be assigned back
+                    // to the property (i.e., the property is the interface type itself, not a concrete implementation).
+                    else if (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(jsonPropertyInfo.PropertyType) &&
+                             jsonPropertyInfo.PropertyType.IsAssignableFrom(typeof(Dictionary<string, object>)))
                     {
                         extensionData = new Dictionary<string, object>();
                         Debug.Assert(jsonPropertyInfo.Set != null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
                     }
-                    else if (typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(jsonPropertyInfo.PropertyType))
+                    else if (typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(jsonPropertyInfo.PropertyType) &&
+                             jsonPropertyInfo.PropertyType.IsAssignableFrom(typeof(Dictionary<string, JsonElement>)))
                     {
                         extensionData = new Dictionary<string, JsonElement>();
                         Debug.Assert(jsonPropertyInfo.Set != null);
