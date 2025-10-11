@@ -581,6 +581,9 @@ namespace System.Text.RegularExpressions.Tests
             // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return ("\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      ");
 
+            // "x" option. Vertical tab should be ignored as whitespace
+            yield return ("a\vb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
             // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
             if ("i".ToUpper() == "I")
             {
