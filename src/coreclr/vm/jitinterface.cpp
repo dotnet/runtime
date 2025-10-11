@@ -1624,7 +1624,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldTypeForSecurity.GetAssembly(),
                 fieldAttribs,
                 NULL,
-                (flags & CORINFO_ACCESS_INIT_ARRAY) ? NULL : pField, // For InitializeArray, we don't need tocheck the type of the field.
                 accessCheckOptions);
 
             if (!canAccess)
@@ -5450,7 +5449,6 @@ void CEEInfo::getCallInfo(
                                                      calleeTypeForSecurity.GetAssembly(),
                                                      pCalleeForSecurity->GetAttrs(),
                                                      pCalleeForSecurity,
-                                                     NULL,
                                                      accessCheckOptions
                                                     );
 
@@ -13107,7 +13105,6 @@ static TADDR UnsafeJitFunctionWorker(
                                     ownerTypeForSecurity.GetAssembly(),
                                     pMethodForSecurity->GetAttrs(),
                                     pMethodForSecurity,
-                                    NULL,
                                     accessCheckOptions))
         {
             EX_THROW(EEMethodException, (pMethodForSecurity));

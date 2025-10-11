@@ -4748,8 +4748,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             pStubClassMT,
             stubClassType.GetAssembly(),
             pStubMD->GetAttrs(),
-            pStubMD,
-            NULL))
+            pStubMD))
     {
         StackSString interopMethodName(SString::Utf8, pTargetMD->GetName());
 

@@ -996,25 +996,11 @@ ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD)
+bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)

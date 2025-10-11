@@ -827,7 +827,6 @@ public:
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
         MethodDesc*             pOptionalTargetMethod,
-        FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
 private:
@@ -847,7 +846,6 @@ private:
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
         MethodDesc*             pOptionalTargetMethod,
-        FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
 

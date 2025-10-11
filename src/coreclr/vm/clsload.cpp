@@ -4068,9 +4068,6 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
 // Arguments:
 //    pAccessingAssembly    - The assembly requesting access to the internal member
 //    pTargetAssembly       - The assembly which contains the target member
-//    pOptionalTargetField  - Internal field being accessed OR
-//    pOptionalTargetMethod - Internal type being accessed OR
-//    pOptionalTargetType   - Internal type being accessed
 //
 // Return Value:
 //    TRUE if pTargetAssembly is pAccessingAssembly, or if pTargetAssembly allows
@@ -4078,10 +4075,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
 //
 
 static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
-                                          Assembly       *pTargetAssembly,
-                                          FieldDesc      *pOptionalTargetField,
-                                          MethodDesc     *pOptionalTargetMethod,
-                                          MethodTable    *pOptionalTargetType)
+                                          Assembly       *pTargetAssembly)
 {
     CONTRACTL
     {
@@ -4089,8 +4083,6 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pAccessingAssembly));
         PRECONDITION(CheckPointer(pTargetAssembly));
-        PRECONDITION(pOptionalTargetField != NULL || pOptionalTargetMethod != NULL || pOptionalTargetType != NULL);
-        PRECONDITION(pOptionalTargetField == NULL || pOptionalTargetMethod == NULL);
     }
     CONTRACTL_END;
 
@@ -4103,18 +4095,9 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
     {
         return TRUE;
     }
-
-    else if (pOptionalTargetField != NULL)
-    {
-        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetField);
-    }
-    else if (pOptionalTargetMethod != NULL)
-    {
-        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetMethod);
-    }
     else
     {
-        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetType);
+        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly);
     }
 }
 
@@ -4247,10 +4230,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             _ASSERTE(pCurrentAssembly != NULL);
 
             if (AssemblyOrFriendAccessAllowed(pCurrentAssembly,
-                                              pTargetAssembly,
-                                              NULL,
-                                              NULL,
-                                              pTargetClass))
+                                              pTargetAssembly))
             {
                 return TRUE;
             }
@@ -4290,7 +4270,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             // protection, we can fail the request now.  Otherwise we can check to make sure a public member
             // of the outer class is allowed, since we have satisfied the target's accessibility rules.
 
-            if (AssemblyOrFriendAccessAllowed(pContext->GetCallerAssembly(), pTargetAssembly, NULL, NULL, pTargetClass))
+            if (AssemblyOrFriendAccessAllowed(pContext->GetCallerAssembly(), pTargetAssembly))
                 dwProtection = (dwProtection == tdNestedFamANDAssem) ? mdFamily : mdPublic;
             else if (dwProtection == tdNestedFamORAssem)
                 dwProtection = mdFamily;
@@ -4314,7 +4294,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         pTargetAssembly,
         dwProtection,
         NULL,
-        NULL,
         accessCheckOptions);
 } // BOOL ClassLoader::CanAccessClass()
 
@@ -4331,7 +4310,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
     DWORD               dwMemberAccess,                 // Member access flags of the desired target member (as method bits).
     MethodDesc*         pOptionalTargetMethod,          // The target method; NULL if the target is a not a method or
                                                         // there is no need to check the method's instantiation.
-    FieldDesc*          pOptionalTargetField,           // or The desired field; if NULL, return TRUE
     const AccessCheckOptions & accessCheckOptions)      // = s_NormalAccessChecks
 {
     CONTRACT(BOOL)
@@ -4351,7 +4329,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
                            pTargetAssembly,
                            dwMemberAccess,
                            pOptionalTargetMethod,
-                           pOptionalTargetField,
                            // Suppress exceptions for nested classes since this is not a hard-failure,
                            // and we can do additional checks
                            accessCheckOptionsNoThrow))
@@ -4384,7 +4361,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
                                  pTargetAssembly,
                                  dwMemberAccess,
                                  pOptionalTargetMethod,
-                                 pOptionalTargetField,
                                  accessCheckOptionsNoThrow);
         }
 
@@ -4414,7 +4390,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     DWORD                   dwMemberAccess,         // Member access flags of the desired target member (as method bits).
     MethodDesc*             pOptionalTargetMethod,  // The target method; NULL if the target is a not a method or
                                                     // there is no need to check the method's instantiation.
-    FieldDesc*              pOptionalTargetField,   // target field, NULL if there is no Target field
     const AccessCheckOptions & accessCheckOptions
     )
 {
@@ -4448,9 +4423,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     {
         return FALSE;
     }
-
-    // pOptionalTargetMethod and pOptionalTargetField can never be NULL at the same time.
-    _ASSERTE(pOptionalTargetMethod == NULL || pOptionalTargetField == NULL);
 
     // Perform transparency checks
     // We don't need to do transparency check against pTargetMT here because
@@ -4503,10 +4475,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
         _ASSERTE(pCurrentAssembly != NULL);
 
         const BOOL fAssemblyOrFriendAccessAllowed = AssemblyOrFriendAccessAllowed(pCurrentAssembly,
-                                                                                  pTargetAssembly,
-                                                                                  pOptionalTargetField,
-                                                                                  pOptionalTargetMethod,
-                                                                                  pTargetMT);
+                                                                                  pTargetAssembly);
 
         if ((pTargetMT == NULL || IsMdAssem(dwMemberAccess) || IsMdFamORAssem(dwMemberAccess)) &&
             fAssemblyOrFriendAccessAllowed)
