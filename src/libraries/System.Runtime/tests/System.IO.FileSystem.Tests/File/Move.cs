@@ -394,5 +394,78 @@ namespace System.IO.Tests
             Assert.True(File.Exists(destPath));
             Assert.Equal(destContents, File.ReadAllBytes(destPath));
         }
+
+        [Theory]
+        [InlineData(" leading", "destination")]
+        [InlineData("source", " leading")]
+        [InlineData(" leading", " moved")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixMoveWithLeadingSpaces(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [InlineData(".leading", "destination")]
+        [InlineData("source", ".leading")]
+        [InlineData("-", "destination")]
+        [InlineData("source", "--")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixMoveWithProblematicNames(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [InlineData("file\tname", "destination")]
+        [InlineData("source", "file\rname")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixMoveWithEmbeddedControlCharacters(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [InlineData(" leading", "destination")]
+        [InlineData("source", " leading")]
+        [InlineData(".leading", "destination")]
+        [InlineData("source", ".leading")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsMoveWithProblematicNames(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
     }
 }

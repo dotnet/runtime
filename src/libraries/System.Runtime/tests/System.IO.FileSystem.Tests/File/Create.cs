@@ -341,6 +341,96 @@ namespace System.IO.Tests
             }
         }
 
+        [Theory]
+        [InlineData(" leading")]
+        [InlineData("  leading")]
+        [InlineData("   leading")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixLeadingSpace(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [InlineData(".leading")]
+        [InlineData("..leading")]
+        [InlineData("...leading")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixLeadingDot(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [InlineData("-")]
+        [InlineData("--")]
+        [InlineData("-filename")]
+        [InlineData("--filename")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixDashPrefixedNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [InlineData("file\tname")]
+        [InlineData("file\rname")]
+        [InlineData("file\vname")]
+        [InlineData("file\fname")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixEmbeddedControlCharacters(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [InlineData(" leading")]
+        [InlineData("  leading")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsLeadingSpace(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [InlineData(".leading")]
+        [InlineData("..leading")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsLeadingDot(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
         #endregion
     }
 

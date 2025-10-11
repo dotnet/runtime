@@ -230,6 +230,49 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        [Theory]
+        [InlineData(" leading")]
+        [InlineData("  leading")]
+        [InlineData(".leading")]
+        [InlineData("..leading")]
+        [InlineData("-")]
+        [InlineData("--")]
+        [InlineData("-filename")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixExistsProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(Exists(filePath));
+        }
+
+        [Theory]
+        [InlineData("file\tname")]
+        [InlineData("file\rname")]
+        [InlineData("file\vname")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixExistsEmbeddedControlCharacters(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(Exists(filePath));
+        }
+
+        [Theory]
+        [InlineData(" leading")]
+        [InlineData(".leading")]
+        [InlineData("..leading")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsExistsProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(Exists(filePath));
+        }
+
         #endregion
     }
 

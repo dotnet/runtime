@@ -201,6 +201,55 @@ namespace System.IO.Tests
             Assert.True(testFile.Exists);
         }
 
+        [Theory]
+        [InlineData(" leading")]
+        [InlineData("  leading")]
+        [InlineData(".leading")]
+        [InlineData("..leading")]
+        [InlineData("-")]
+        [InlineData("--")]
+        [InlineData("-filename")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixDeleteProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(File.Exists(filePath));
+            Delete(filePath);
+            Assert.False(File.Exists(filePath));
+        }
+
+        [Theory]
+        [InlineData("file\tname")]
+        [InlineData("file\rname")]
+        [InlineData("file\vname")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixDeleteEmbeddedControlCharacters(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(File.Exists(filePath));
+            Delete(filePath);
+            Assert.False(File.Exists(filePath));
+        }
+
+        [Theory]
+        [InlineData(" leading")]
+        [InlineData(".leading")]
+        [InlineData("..leading")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsDeleteProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(File.Exists(filePath));
+            Delete(filePath);
+            Assert.False(File.Exists(filePath));
+        }
+
         #endregion
     }
 }
