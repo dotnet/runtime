@@ -582,8 +582,8 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
     {
         TypeVarTypeDesc* varFromParam = AsGenericVariable();
 
-        if (!varFromParam->ConstraintsLoaded())
-            varFromParam->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+        if (!varFromParam->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+            varFromParam->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
         // A generic type parameter cannot be compatible with another type
         // as it could be substitued with a valuetype. However, if it is
@@ -1381,8 +1381,6 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
         TypeVarTypeDesc* tyvar = typicalInst[i].AsGenericVariable();
         _ASSERTE(tyvar != NULL);
         _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtTypeDef);
-
-        tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical class?
 
         if (!tyvar->SatisfiesConstraints(&typeContext, thArg))
         {

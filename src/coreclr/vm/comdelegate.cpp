@@ -2403,16 +2403,16 @@ static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, boo
                 // We need to check whether constraints of fromHandle have been loaded, because the
                 // CanCastTo operation might have made its decision without enumerating constraints
                 // (e.g. when toHandle is System.Object).
-                if (!fromHandleVar->ConstraintsLoaded())
-                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                if (!fromHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                 if (toHandle.IsGenericVariable())
                 {
                     TypeVarTypeDesc *toHandleVar = toHandle.AsGenericVariable();
 
                     // Constraints of toHandleVar were not touched by CanCastTo.
-                    if (!toHandleVar->ConstraintsLoaded())
-                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                    if (!toHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                     // Both handles are type variables. The following table lists all possible combinations.
                     //
