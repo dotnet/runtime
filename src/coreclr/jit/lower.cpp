@@ -4511,7 +4511,18 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             cmp->gtFlags |= GTF_UNSIGNED;
         }
     }
-#endif // TARGET_XARCH
+#elif defined(TARGET_RISCV64)
+    if (varTypeUsesIntReg(cmp->gtGetOp1()))
+    {
+        if (GenTree* next = LowerSavedIntegerCompare(cmp); next != cmp)
+            return next;
+
+        // Integer comparisons are full-register only.
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp1);
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp2);
+    }
+#endif // TARGET_RISCV64
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -7789,7 +7800,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         {
             divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
-            ContainCheckNode(divMod);
+            LowerNode(divMod);
             return true;
         }
     }
