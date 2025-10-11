@@ -4522,6 +4522,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:

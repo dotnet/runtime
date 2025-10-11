@@ -1506,11 +1506,7 @@ namespace Internal.JitInterface
             if (cVars == 0)
                 return;
 
-            _debugVarInfos = new NativeVarInfo[cVars];
-            for (int i = 0; i < cVars; i++)
-            {
-                _debugVarInfos[i] = vars[i];
-            }
+            _debugVarInfos = new Span<NativeVarInfo>(vars, (int)cVars).ToArray();
 
             // JIT gave the ownership of this to us, so need to free this.
             freeArray(vars);
@@ -1523,11 +1519,7 @@ namespace Internal.JitInterface
         {
             Debug.Assert(_debugLocInfos == null);
 
-            _debugLocInfos = new OffsetMapping[cMap];
-            for (int i = 0; i < cMap; i++)
-            {
-                _debugLocInfos[i] = pMap[i];
-            }
+            _debugLocInfos = new Span<OffsetMapping>(pMap, (int)cMap).ToArray();
 
             // JIT gave the ownership of this to us, so need to free this.
             freeArray(pMap);

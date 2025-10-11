@@ -2201,6 +2201,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genReportRichDebugInfo();
 
+    genReportAsyncDebugInfo();
+
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
@@ -6652,6 +6654,67 @@ void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
     mapping.nativeLoc.CaptureLocation(GetEmitter());
     mapping.debugInfo = di;
     compiler->genRichIPmappings.push_back(mapping);
+}
+
+//------------------------------------------------------------------------
+// genReportAsyncDebugInfo:
+//   Report async debug info back to EE.
+//
+void CodeGen::genReportAsyncDebugInfo()
+{
+    jitstd::vector<AsyncSuspensionPoint>* suspPoints = compiler->compSuspensionPoints;
+    if (suspPoints == nullptr)
+    {
+        return;
+    }
+
+    ICorDebugInfo::AsyncInfo asyncInfo;
+    asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(suspPoints->size());
+
+    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints = static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(
+        compiler->info.compCompHnd->allocateArray(suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
+    for (size_t i = 0; i < suspPoints->size(); i++)
+    {
+        AsyncSuspensionPoint& suspPoint = (*suspPoints)[i];
+        if (suspPoint.nativeLoc.Valid())
+        {
+            hostSuspensionPoints[i].NativeOffset        = suspPoint.nativeLoc.CodeOffset(GetEmitter());
+            hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
+        }
+        else
+        {
+            hostSuspensionPoints[i].NativeOffset        = 0;
+            hostSuspensionPoints[i].NumContinuationVars = 0;
+        }
+    }
+
+    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = compiler->compAsyncVars;
+    ICorDebugInfo::AsyncContinuationVarInfo* hostVars = static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(
+        compiler->info.compCompHnd->allocateArray(asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
+    for (size_t i = 0; i < asyncVars->size(); i++)
+        hostVars[i] = (*asyncVars)[i];
+
+    compiler->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
+                                                     static_cast<uint32_t>(asyncVars->size()));
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported async suspension points:\n");
+        for (size_t i = 0; i < suspPoints->size(); i++)
+        {
+            printf("  [%zu] Offset = %x, NumAsyncVars = %u\n", i, hostSuspensionPoints[i].NativeOffset,
+                   hostSuspensionPoints[i].NumContinuationVars);
+        }
+
+        printf("Reported async vars:\n");
+        for (size_t i = 0; i < asyncVars->size(); i++)
+        {
+            printf("  [%zu] VarNumber = %u, Offset = %x, GCIndex = %u\n", i, hostVars[i].VarNumber, hostVars[i].Offset,
+                   hostVars[i].GCIndex);
+        }
+    }
+#endif
 }
 
 /*============================================================================

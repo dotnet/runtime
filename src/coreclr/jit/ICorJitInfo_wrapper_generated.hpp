@@ -1067,6 +1067,17 @@ void WrapICorJitInfo::reportRichMappings(
     API_LEAVE(reportRichMappings);
 }
 
+void WrapICorJitInfo::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    API_ENTER(reportAsyncDebugInfo);
+    wrapHnd->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
+    API_LEAVE(reportAsyncDebugInfo);
+}
+
 void WrapICorJitInfo::reportMetadata(
           const char* key,
           const void* value,

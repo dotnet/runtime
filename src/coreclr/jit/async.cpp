@@ -642,6 +642,11 @@ PhaseStatus AsyncTransformation::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    m_comp->compSuspensionPoints =
+        new (m_comp, CMK_Async) jitstd::vector<AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
+    m_comp->compAsyncVars = new (m_comp, CMK_Async)
+        jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_comp->getAllocator(CMK_Async));
+
     // Ask the VM to create a resumption stub for this specific version of the
     // code. It is stored in the continuation as a function pointer, so we need
     // the fixed entry point here.
@@ -818,6 +823,8 @@ void AsyncTransformation::Transform(
     BasicBlock* resumeBB = CreateResumption(block, *remainder, call, callDefInfo, stateNum, layout);
 
     m_resumptionBBs.push_back(resumeBB);
+
+    CreateDebugInfoForSuspensionPoint(call, layout, *remainder);
 }
 
 //------------------------------------------------------------------------
@@ -2200,6 +2207,45 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(GenTree* base, unsigned offs
     GenTree*         addr     = m_comp->gtNewOperNode(GT_ADD, addrType, base, cns);
     GenTreeStoreInd* store    = m_comp->gtNewStoreIndNode(storeType, addr, value, GTF_IND_NONFAULTING);
     return store;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateDebugInfoForSuspensionPoint:
+//   Create debug info for the specific suspension point we just created.
+//
+// Parameters:
+//   asyncCall - Call node resulting in the suspension point
+//   layout    - Layout of continuation
+//   joinBB    - BB where the synchronous and resumption paths join
+//
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall*              asyncCall,
+                                                            const ContinuationLayout& layout,
+                                                            BasicBlock*               joinBB)
+{
+    uint32_t numLocals = 0;
+    for (const LiveLocalInfo& local : layout.Locals)
+    {
+        unsigned ilVarNum = m_comp->compMap2ILvarNum(local.LclNum);
+        if (ilVarNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
+        {
+            continue;
+        }
+
+        ICorDebugInfo::AsyncContinuationVarInfo varInf;
+        varInf.VarNumber = ilVarNum;
+        varInf.Offset    = local.DataSize > 0 ? local.DataOffset : UINT_MAX;
+        varInf.GCIndex   = local.GCDataCount > 0 ? local.GCDataIndex : UINT_MAX;
+        m_comp->compAsyncVars->push_back(varInf);
+        numLocals++;
+    }
+
+    AsyncSuspensionPoint suspensionPoint;
+    suspensionPoint.numContinuationVars = numLocals;
+    m_comp->compSuspensionPoints->push_back(suspensionPoint);
+
+    GenTree* recordOffset =
+        new (m_comp, GT_RECORD_ASYNC_JOIN) GenTreeRecordAsyncJoin((int)(m_comp->compSuspensionPoints->size() - 1));
+    LIR::AsRange(joinBB).InsertAtBeginning(recordOffset);
 }
 
 //------------------------------------------------------------------------

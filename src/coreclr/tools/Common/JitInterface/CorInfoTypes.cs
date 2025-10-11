@@ -1319,6 +1319,34 @@ namespace Internal.JitInterface
         public SourceTypes Source;
     }
 
+    public struct AsyncContinuationVarInfo
+    {
+        // IL number of variable (or one of the special IL numbers, like UNKNOWN_ILNUM)
+        public uint VarNumber;
+        // Offset in continuation's data where this variable is stored
+        public uint Offset;
+        public uint GCIndex;
+    }
+
+    public struct AsyncSuspensionPoint
+    {
+        // IL offset in the root method that resulted in the creation of this suspension point.
+        public uint RootILOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        public uint Inlinee;
+        // IL offset that resulted in the creation of the suspension point.
+        public uint ILOffset;
+        public uint NumVars;
+        // Count of AsyncContinuationVarInfo
+        public uint NumContinuationVars;
+    }
+
+    public struct AsyncInfo
+    {
+        // Number of suspension points in the method.
+        public uint NumSuspensionPoints;
+    }
+
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or
     // return different types of handles (e.g. boxed vs. regular entrypoints)

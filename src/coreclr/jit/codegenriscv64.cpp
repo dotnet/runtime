@@ -4381,6 +4381,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
