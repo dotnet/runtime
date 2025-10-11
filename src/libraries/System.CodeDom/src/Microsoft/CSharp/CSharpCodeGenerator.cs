@@ -3020,7 +3020,7 @@ namespace Microsoft.CSharp
 
                 ResolveReferencedAssemblies(options, ea[i]);
                 filenames[i] = options.TempFiles.AddExtension(i + FileExtension);
-                using (var fs = new FileStream(filenames[i], FileMode.Create, FileAccess.Write, FileShare.Read))
+                using (var fs = new FileStream(filenames[i], FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1))
                 using (StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                 {
                     ((ICodeGenerator)this).GenerateCodeFromCompileUnit(ea[i], sw, _options);
@@ -3055,7 +3055,7 @@ namespace Microsoft.CSharp
             for (int i = 0; i < sources.Length; i++)
             {
                 string name = options.TempFiles.AddExtension(i + FileExtension);
-                using (var fs = new FileStream(name, FileMode.Create, FileAccess.Write, FileShare.Read))
+                using (var fs = new FileStream(name, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1))
                 using (var sw = new StreamWriter(fs, Encoding.UTF8))
                 {
                     sw.Write(sources[i]);

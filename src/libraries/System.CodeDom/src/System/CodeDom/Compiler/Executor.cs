@@ -13,7 +13,7 @@ namespace System.CodeDom.Compiler
         private const int ProcessTimeOut = 600000;
 
         private static FileStream CreateInheritedFile(string file) =>
-            new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.Read | FileShare.Inheritable);
+            new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.Read | FileShare.Inheritable, bufferSize: 1);
 
         public static void ExecWait(string cmd, TempFileCollection tempFiles)
         {

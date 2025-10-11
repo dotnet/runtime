@@ -84,7 +84,7 @@ namespace System.ComponentModel
                         Debug.WriteLine($"Looking for license in: {licenseFile}");
                         if (File.Exists(licenseFile))
                         {
-                            Stream licStream = new FileStream(licenseFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            Stream licStream = new FileStream(licenseFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
                             StreamReader sr = new StreamReader(licStream);
                             string? s = sr.ReadLine();
                             sr.Close();

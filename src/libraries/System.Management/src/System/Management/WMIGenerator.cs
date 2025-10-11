@@ -182,7 +182,7 @@ namespace System.Management
             InitializeCodeGeneration();
 
             //Now create the filestream (output file)
-            tw = new StreamWriter(new FileStream(filePath, FileMode.Create), System.Text.Encoding.UTF8);
+            tw = new StreamWriter(new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1), System.Text.Encoding.UTF8);
 
             return GenerateAndWriteCode(lang);
 

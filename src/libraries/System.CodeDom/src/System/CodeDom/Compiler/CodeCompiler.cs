@@ -144,7 +144,7 @@ namespace System.CodeDom.Compiler
 
                 ResolveReferencedAssemblies(options, ea[i]);
                 filenames[i] = options.TempFiles.AddExtension(i + FileExtension);
-                using (var fs = new FileStream(filenames[i], FileMode.Create, FileAccess.Write, FileShare.Read))
+                using (var fs = new FileStream(filenames[i], FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1))
                 using (var sw = new StreamWriter(fs, Encoding.UTF8))
                 {
                     ((ICodeGenerator)this).GenerateCodeFromCompileUnit(ea[i], sw, Options);
@@ -185,7 +185,7 @@ namespace System.CodeDom.Compiler
         {
             string responseFileName = options.TempFiles.AddExtension("cmdline");
 
-            using (var fs = new FileStream(responseFileName, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (var fs = new FileStream(responseFileName, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1))
             using (var sw = new StreamWriter(fs, Encoding.UTF8))
             {
                 sw.Write(cmdArgs);
@@ -205,7 +205,7 @@ namespace System.CodeDom.Compiler
             for (int i = 0; i < sources.Length; i++)
             {
                 string name = options.TempFiles.AddExtension(i + FileExtension);
-                using (var fs = new FileStream(name, FileMode.Create, FileAccess.Write, FileShare.Read))
+                using (var fs = new FileStream(name, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1))
                 using (var sw = new StreamWriter(fs, Encoding.UTF8))
                 {
                     sw.Write(sources[i]);

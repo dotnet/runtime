@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation
         {
             try
             {
-                return new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false));
+                return new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false));
             }
             catch (Exception e)
             {
