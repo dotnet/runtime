@@ -3225,14 +3225,14 @@ namespace Internal.JitInterface
         private void* allocateArray(UIntPtr cBytes)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return (void*)Marshal.AllocHGlobal((IntPtr)(void*)cBytes);
+            return NativeMemory.Alloc((nuint)cBytes);
         }
 
 #pragma warning disable CA1822 // Mark members as static
         private void freeArray(void* array)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)array);
+            NativeMemory.Free(array);
         }
 
 #pragma warning disable CA1822 // Mark members as static
