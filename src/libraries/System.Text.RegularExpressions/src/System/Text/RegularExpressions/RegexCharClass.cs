@@ -245,6 +245,7 @@ namespace System.Text.RegularExpressions
             ["IsGeorgianExtended", "\u1C90\u1CC0"],
             ["IsGeorgianSupplement", "\u2D00\u2D30"],
             ["IsGlagolitic", "\u2C00\u2C60"],
+            ["IsGreek", "\u0370\u0400"],
             ["IsGreekExtended", "\u1F00\u2000"],
             ["IsGreekandCoptic", "\u0370\u0400"],
             ["IsGujarati", "\u0A80\u0B00"],
