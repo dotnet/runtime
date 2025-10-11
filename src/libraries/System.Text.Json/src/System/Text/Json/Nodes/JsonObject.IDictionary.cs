@@ -250,7 +250,7 @@ namespace System.Text.Json.Nodes
 
             if (dictionary is null)
             {
-                dictionary = CreateDictionary(Options);
+                OrderedDictionary<string, JsonNode?> newDictionary = CreateDictionary(Options);
 
                 if (jsonElement.HasValue)
                 {
@@ -259,14 +259,25 @@ namespace System.Text.Json.Nodes
                         JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
                         node?.Parent = this;
 
-                        dictionary.Add(jElementProperty.Name, node);
+                        newDictionary.Add(jElementProperty.Name, node);
                     }
                 }
 
-                // Ensure _jsonElement is written to after _dictionary
-                _dictionary = dictionary;
-                Interlocked.MemoryBarrier();
-                _jsonElement = null;
+                // Ensure only one dictionary instance is published using CompareExchange
+                OrderedDictionary<string, JsonNode?>? exchangedDictionary = Interlocked.CompareExchange(ref _dictionary, newDictionary, null);
+                if (exchangedDictionary is null)
+                {
+                    // We won the race and published our dictionary
+                    // Ensure _jsonElement is written to after _dictionary
+                    Interlocked.MemoryBarrier();
+                    _jsonElement = null;
+                    dictionary = newDictionary;
+                }
+                else
+                {
+                    // Another thread won the race, use their dictionary
+                    dictionary = exchangedDictionary;
+                }
             }
 
             return dictionary;
