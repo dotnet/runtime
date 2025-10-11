@@ -130,8 +130,7 @@
   #define RBM_ENC_CALLEE_SAVED     0
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_IP0
-  #define REG_GSCOOKIE_TMP_1       REG_IP1
+  #define RBM_GSCOOKIE_TMP         (RBM_IP0 | RBM_IP1)
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
