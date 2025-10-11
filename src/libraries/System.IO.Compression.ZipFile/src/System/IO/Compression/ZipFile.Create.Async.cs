@@ -32,6 +32,7 @@ public static partial class ZipFile
     /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on. The path is permitted
     /// to specify relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is an opened <see cref="ZipArchive"/> in <see cref="ZipArchiveMode.Read"/> mode.</returns>
     public static Task<ZipArchive> OpenReadAsync(string archiveFileName, CancellationToken cancellationToken = default) => OpenAsync(archiveFileName, ZipArchiveMode.Read, cancellationToken);
 
     /// <summary>
@@ -71,6 +72,7 @@ public static partial class ZipFile
     /// If the file exists and is empty or does not exist, a new Zip file will be created.
     /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is an opened <see cref="ZipArchive"/> in the requested <paramref name="mode"/>.</returns>
     public static Task<ZipArchive> OpenAsync(string archiveFileName, ZipArchiveMode mode, CancellationToken cancellationToken = default) => OpenAsync(archiveFileName, mode, entryNameEncoding: null, cancellationToken);
 
     /// <summary>
@@ -149,6 +151,7 @@ public static partial class ZipFile
     ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
     /// </param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is an opened <see cref="ZipArchive"/> in the requested <paramref name="mode"/>.</returns>
     public static async Task<ZipArchive> OpenAsync(string archiveFileName, ZipArchiveMode mode, Encoding? entryNameEncoding, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -212,6 +215,7 @@ public static partial class ZipFile
     /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived. </param>
     /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to disk.</returns>
     public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, CancellationToken cancellationToken = default) =>
         DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null, cancellationToken);
 

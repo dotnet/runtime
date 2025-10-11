@@ -62,6 +62,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
     /// <exception cref="ArgumentOutOfRangeException">mode specified an invalid value.</exception>
     /// <exception cref="InvalidDataException">The contents of the stream could not be interpreted as a Zip file. -or- mode is Update and an entry is missing from the archive or is corrupt and cannot be read. -or- mode is Update and an entry is too large to fit into memory.</exception>
     /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
+    /// <returns>A task that represents the asynchronous initialization. The task result is a <see cref="ZipArchive"/> instance opened on the provided stream.</returns>
     public static async Task<ZipArchive> CreateAsync(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
