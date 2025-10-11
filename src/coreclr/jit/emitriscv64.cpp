@@ -648,7 +648,7 @@ void emitter::emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, boo
 //
 bool emitter::emitInsIsSignExtend(instruction ins)
 {
-    switch(ins)
+    switch (ins)
     {
         case INS_sext_w: // R_R
         case INS_lui: // R_I
