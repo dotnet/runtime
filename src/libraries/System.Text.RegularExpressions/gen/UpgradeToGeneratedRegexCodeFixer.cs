@@ -295,9 +295,9 @@ namespace System.Text.RegularExpressions.Generator
                         return SyntaxFactory.ParseExpression(optionsLiteral);
 
                     case UpgradeToGeneratedRegexAnalyzer.PatternArgumentName:
-                        if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
+                        if (argument.Value.ConstantValue.Value is string str && ShouldUseVerbatimString(str))
                         {
-                            // Special handling for string patterns with escaped characters
+                            // Special handling for string patterns with escaped characters or newlines
                             string escapedVerbatimText = str.Replace("\"", "\"\"");
                             return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
                         }
@@ -311,6 +311,13 @@ namespace System.Text.RegularExpressions.Generator
                         Debug.Fail($"Unknown parameter: {parameterName}");
                         return argument.Syntax;
                 }
+            }
+
+            static bool ShouldUseVerbatimString(string str)
+            {
+                // Use verbatim string syntax if the string contains backslashes or newlines
+                // to preserve readability, especially for patterns with RegexOptions.IgnorePatternWhitespace
+                return str.Contains('\\') || str.Contains('\n') || str.Contains('\r');
             }
 
             static string Literal(string stringifiedRegexOptions)

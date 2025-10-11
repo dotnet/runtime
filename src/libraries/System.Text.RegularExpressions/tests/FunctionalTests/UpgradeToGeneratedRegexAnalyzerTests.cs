@@ -1337,6 +1337,70 @@ partial class Program
         }
 
         [Fact]
+        public async Task MultilineVerbatimStringPreservedByFixer()
+        {
+            string test = """
+                using System.Text.RegularExpressions;
+
+                static class Class
+                {
+                    private static Regex r = [|new Regex(@"a
+                             b
+                             c", RegexOptions.IgnorePatternWhitespace)|];
+                }
+                """;
+
+            string expectedFixedCode = """
+                using System.Text.RegularExpressions;
+
+                static partial class Class
+                {
+                    private static Regex r = MyRegex();
+
+                    [GeneratedRegex(@"a
+                             b
+                             c", RegexOptions.IgnorePatternWhitespace)]
+                    private static partial Regex MyRegex();
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task MultilineStringConcatenationPreservedByFixer()
+        {
+            string test = """
+                using System.Text.RegularExpressions;
+
+                static class Class
+                {
+                    private const string foo = "bar";
+                    private static Regex r1 = [|new Regex(@"a        " + foo + @"
+                                                        b
+                                                        c", RegexOptions.IgnorePatternWhitespace)|];
+                }
+                """;
+
+            string expectedFixedCode = """
+                using System.Text.RegularExpressions;
+
+                static partial class Class
+                {
+                    private const string foo = "bar";
+                    private static Regex r1 = MyRegex();
+
+                    [GeneratedRegex(@"a        bar
+                                                        b
+                                                        c", RegexOptions.IgnorePatternWhitespace)]
+                    private static partial Regex MyRegex();
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
         public async Task TestAsArgument()
         {
             string test = @"using System.Text.RegularExpressions;
