@@ -16,7 +16,13 @@ include_directories(${CLR_SRC_NATIVE_DIR})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if (STATIC_LIBS_ONLY)
+if (BUILD_LIBS_NATIVE_BROWSER)
+    set(STATIC_LIBS_ONLY 1)
+    set(GEN_SHARED_LIB 0)
+    if (NOT STATIC_LIB_DESTINATION)
+        set(STATIC_LIB_DESTINATION $ENV{__CMakeBinDir}/lib)
+    endif ()
+elseif (STATIC_LIBS_ONLY)
     # Suppress exporting of the PAL APIs
     add_definitions(-DPALEXPORT=EXTERN_C)
 
@@ -46,7 +52,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         set(GEN_SHARED_LIB 0)
-        set(STATIC_LIB_DESTINATION .)
+        if (NOT STATIC_LIB_DESTINATION)
+            set(STATIC_LIB_DESTINATION .)
+        endif ()
     endif ()
 
     if (CLR_CMAKE_TARGET_WASI)
@@ -108,12 +116,16 @@ else ()
     add_subdirectory(System.Globalization.Native)
 endif ()
 
-add_subdirectory(System.IO.Compression.Native)
+if (NOT CLR_CORE_RUN_ONLY)
+    add_subdirectory(System.IO.Compression.Native)
+endif ()
 
 # Only when Browser for CoreCLR
 if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
     add_subdirectory(System.Native.Browser)
-    add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+    if (NOT CLR_CORE_RUN_ONLY)
+        add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+    endif ()
 endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
