@@ -46,6 +46,18 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void CreateHardLink_LinkPathAlreadyExists_Throws()
+        {
+            string targetPath = GetRandomFilePath();
+            string linkPath = GetRandomFilePath();
+
+            CreateFile(targetPath);
+            CreateFile(linkPath);
+
+            Assert.Throws<IOException>(() => CreateHardLink(linkPath, targetPath));
+        }
+
+        [Fact]
         public void CreateHardLink_TargetExists_Succeeds()
         {
             string targetPath = GetRandomFilePath();
