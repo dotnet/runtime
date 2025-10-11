@@ -246,7 +246,7 @@ public:
 
         PCODE entryPoint = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
 
-        bool nullEntryPoint;
+        bool setTarget = true;
 #if defined(FEATURE_INTERPRETER)
         // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
         // unmanaged-to-managed invocation in order to populate the TLS variable every time.
@@ -257,16 +257,12 @@ public:
             if (pPrecode->GetType() == PRECODE_INTERPRETER)
             {
                 m_pInterpretedTarget = entryPoint;
-                entryPoint = (PCODE)0;
+                setTarget = false;
             }
         }
-        nullEntryPoint = entryPoint == (PCODE)0;
-#else // !FEATURE_INTERPRETER
-        _ASSERTE(entryPoint != (PCODE)0);
-        nullEntryPoint = false;
 #endif // FEATURE_INTERPRETER
 
-        if (!nullEntryPoint)
+        if (setTarget)
         {
             m_pUMEntryThunk->SetTargetUnconditional(entryPoint);
         }

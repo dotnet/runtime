@@ -1453,9 +1453,6 @@ public:
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
-    // Note: We are skipping the prestub based on addition information from the JIT.
-    // (e.g. that the call is on same this ptr or that the this ptr is not null).
-    // Thus we can end up with a running NGENed method for which IsPointingToNativeCode is false!
     BOOL IsPointingToNativeCode()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1474,21 +1471,18 @@ public:
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     //Is this method currently pointing to native code that will never change?
     BOOL IsPointingToStableNativeCode()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        return FALSE;
-
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (!IsNativeCodeStableAfterInit())
             return FALSE;
 
         return IsPointingToNativeCode();
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Be careful about races with profiler when using this method. The profiler can
     // replace preimplemented code of the method with jitted code.

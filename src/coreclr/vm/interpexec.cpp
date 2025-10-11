@@ -797,18 +797,16 @@ MAIN_LOOP:
                     MemoryBarrier();
                     ip++;
                     break;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
                 case INTOP_STORESTUBCONTEXT:
                 {
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                    COMPlusThrow(kNotSupportedException);
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
                     UMEntryThunkData* thunkData = GetMostRecentUMEntryThunkData();
                     assert(thunkData);
                     LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
                     break;
                 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
                 case INTOP_LDC_I4:
                     LOCAL_VAR(ip[1], int32_t) = ip[2];
                     ip += 3;

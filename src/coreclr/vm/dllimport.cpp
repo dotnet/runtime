@@ -572,7 +572,6 @@ public:
         {
         default:
             UNREACHABLE_MSG("Unexpected element type found on native return type.");
-            break;
         case ELEMENT_TYPE_VOID:
             _ASSERTE(retvalLocalNum == (DWORD)-1);
             pcsExceptionHandler->EmitPOP();

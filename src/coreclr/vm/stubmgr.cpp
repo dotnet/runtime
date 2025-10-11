@@ -1740,8 +1740,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     else if (pStubMD->IsReverseStub())
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        PORTABILITY_ASSERT("NYI: Reverse P/Invoke stubs with FEATURE_PORTABLE_ENTRYPOINTS.");
-        return FALSE;
+        UNREACHABLE_MSG("Reverse P/Invoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS.");
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (pStubMD->IsStatic())
         {

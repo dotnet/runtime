@@ -759,7 +759,7 @@ public:
 
 private:
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    void*               m_pUMEntryThunk; // Dummy field
+    void*               m_pUMEntryThunk; // Dummy field to make using the C++ initializer list syntax easier to use.
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     // If this is a delegate marshalled out to unmanaged code, this points
     // to the thunk generated for unmanaged code to call back on.

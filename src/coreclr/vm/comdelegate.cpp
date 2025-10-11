@@ -1345,7 +1345,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
     else
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        COMPlusThrow(kNotSupportedException);
+        COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_DynamicEntrypoint"));
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         UMEntryThunkData*   pUMEntryThunk   = NULL;
