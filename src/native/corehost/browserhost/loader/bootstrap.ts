@@ -7,7 +7,7 @@ import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdat
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
-import { createPromiseController } from "./promise-controller";
+import { createPromiseCompletionSource } from "./promise-completion-source";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
 const queryIndex = scriptUrlQuery.indexOf("?");
@@ -15,7 +15,7 @@ const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex)
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
-const nativeModulePromiseController = createPromiseController<EmscriptenModuleInternal>(() => {
+const nativeModulePromiseCompletionSource = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetGetInternals());
 });
 
@@ -38,12 +38,12 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
 
     const nativeModule = await nativeModulePromise;
     const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetGetInternals());
-    nativeModulePromiseController.propagateFrom(modulePromise);
+    nativeModulePromiseCompletionSource.propagateFrom(modulePromise);
 
     const runtimeModule = await runtimeModulePromise;
     const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetGetInternals());
 
-    await nativeModulePromiseController.promise;
+    await nativeModulePromiseCompletionSource.promise;
     await coreAssembliesPromise;
 
     if (!downloadOnly) {
@@ -68,7 +68,7 @@ async function fetchDll(asset: AssemblyAsset): Promise<void> {
         asset.resolvedUrl = locateFile(asset.name);
     }
     const bytes = await fetchBytes(asset);
-    await nativeModulePromiseController.promise;
+    await nativeModulePromiseCompletionSource.promise;
 
     dotnetBrowserHostExports.registerDllBytes(bytes, asset);
 }

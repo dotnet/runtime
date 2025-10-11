@@ -93,7 +93,7 @@ export interface ControllablePromise<T = any> extends Promise<T> {
 }
 
 /// Just a pair of a promise and its controller
-export interface PromiseController<T> {
+export interface PromiseCompletionSource<T> {
     readonly promise: ControllablePromise<T>;
     isDone: boolean;
     resolve: (value: T | PromiseLike<T>) => void;
