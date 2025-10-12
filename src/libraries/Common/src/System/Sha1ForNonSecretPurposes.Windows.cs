@@ -47,7 +47,7 @@ namespace System
                         else
                         {
                             throw new InvalidOperationException();
-                        }                        
+                        }
                     }
                 }
             }
