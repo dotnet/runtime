@@ -1775,7 +1775,7 @@ namespace System.Diagnostics.Tracing
             Sha1ForNonSecretPurposes.HashData(source, bytes);
 
             bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
-            return new Guid(bytes);
+            return new Guid(bytes.Slice(0, 16));
         }
 
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
