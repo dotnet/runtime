@@ -379,6 +379,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"\p{IsMeeteiMayek}", new[] { 0xABC0, 0xABFF } };
                 yield return new object[] { engine, @"\p{IsHangulSyllables}", new[] { 0xAC00, 0xD7AF } };
                 yield return new object[] { engine, @"\p{IsHangulJamoExtended-B}", new[] { 0xD7B0, 0xD7FF } };
+                yield return new object[] { engine, @"\p{IsHighSurrogates}", new[] { 0xD800, 0xDB7F } };
+                yield return new object[] { engine, @"\p{IsHighPrivateUseSurrogates}", new[] { 0xDB80, 0xDBFF } };
+                yield return new object[] { engine, @"\p{IsLowSurrogates}", new[] { 0xDC00, 0xDFFF } };
+                yield return new object[] { engine, @"\p{IsPrivateUse}", new[] { 0xE000, 0xF8FF } };
                 yield return new object[] { engine, @"\p{IsCJKCompatibilityIdeographs}", new[] { 0xF900, 0xFAFF } };
                 yield return new object[] { engine, @"\p{IsAlphabeticPresentationForms}", new[] { 0xFB00, 0xFB4F } };
                 yield return new object[] { engine, @"\p{IsArabicPresentationForms-A}", new[] { 0xFB50, 0xFDFF } };
