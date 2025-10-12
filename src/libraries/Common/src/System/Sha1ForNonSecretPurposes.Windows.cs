@@ -21,6 +21,8 @@ namespace System
         /// <param name="destination">The buffer to receive the hash value.</param>
         public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
+            Debug.Assert(destination.Length == 20);
+
             unsafe
             {
                 fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
@@ -33,7 +35,7 @@ namespace System
                         pSrc,
                         source.Length,
                         pDest,
-                        Math.Min(destination.Length, 20));
+                        destination.Length);
 
                     if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
                     {

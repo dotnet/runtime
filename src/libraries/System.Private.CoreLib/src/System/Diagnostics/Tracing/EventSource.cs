@@ -1771,7 +1771,7 @@ namespace System.Diagnostics.Tracing
             namespaceBytes.CopyTo(source);
             Encoding.BigEndianUnicode.GetBytes(name, source.Slice(namespaceBytes.Length));
 
-            Span<byte> bytes = stackalloc byte[16];
+            Span<byte> bytes = stackalloc byte[20];
             Sha1ForNonSecretPurposes.HashData(source, bytes);
 
             bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
