@@ -40,7 +40,7 @@ namespace System
 
                     if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
                     {
-                        if (status == BCrypt.NTSTATUS.STATUS_NO_MEMORY)
+                        if (ntStatus == Interop.BCrypt.NTSTATUS.STATUS_NO_MEMORY)
                         {
                             throw new OutOfMemoryException();
                         }
