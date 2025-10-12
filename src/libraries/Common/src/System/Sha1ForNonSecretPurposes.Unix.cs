@@ -18,6 +18,19 @@ namespace System
         private int _pos; // Length of current chunk in bytes
 
         /// <summary>
+        /// Computes the SHA1 hash of the provided data.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            Sha1ForNonSecretPurposes hash = default;
+            hash.Start();
+            hash.Append(source);
+            hash.Finish(destination);
+        }
+
+        /// <summary>
         /// Call Start() to initialize the hash object.
         /// </summary>
         public void Start()
