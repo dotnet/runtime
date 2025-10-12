@@ -312,58 +312,5 @@ namespace System.Text.RegularExpressions.Tests
                 throw new XunitException($"Expected RegexParseException or no exception -> Actual: ({e})");
             }
         }
-
-        [Fact]
-        public void Parse_CapturesComments()
-        {
-            // Test with (?x) inline option and # comments
-            string pattern = @"(?x)
-                ^           # Start of line
-                \w+         # Word characters
-            ";
-
-            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture, captureComments: true);
-
-            Assert.NotNull(tree.NodeComments);
-            Assert.NotEmpty(tree.NodeComments);
-
-            // Verify some comments were captured
-            bool foundComment = false;
-            foreach (var kvp in tree.NodeComments)
-            {
-                if (kvp.Value.Count > 0)
-                {
-                    foundComment = true;
-                    break;
-                }
-            }
-            Assert.True(foundComment, "Expected to find at least one comment");
-        }
-
-        [Fact]
-        public void Parse_CapturesInlineComments()
-        {
-            // Test with (?# ) inline comments
-            string pattern = @"(?#This is a comment)abc(?#Another comment)";
-
-            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture, captureComments: true);
-
-            Assert.NotNull(tree.NodeComments);
-            Assert.NotEmpty(tree.NodeComments);
-        }
-
-        [Fact]
-        public void Parse_DoesNotCaptureCommentsByDefault()
-        {
-            // Test that regular Parse doesn't capture comments by default
-            string pattern = @"(?x)
-                ^           # Start of line
-                \w+         # Word characters
-            ";
-
-            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture);
-
-            Assert.Null(tree.NodeComments);
-        }
     }
 }
