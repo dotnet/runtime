@@ -234,10 +234,10 @@ namespace Internal.JitInterface
         public bool testForNull { get { return _testForNull != 0; } set { _testForNull = value ? (byte)1 : (byte)0; } }
 
         public ushort sizeOffset;
-        public IntPtr offset0;
-        public IntPtr offset1;
-        public IntPtr offset2;
-        public IntPtr offset3;
+        public nint offset0;
+        public nint offset1;
+        public nint offset2;
+        public nint offset3;
 
         public byte _indirectFirstOffset;
         public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
