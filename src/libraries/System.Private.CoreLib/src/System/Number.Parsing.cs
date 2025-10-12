@@ -1032,7 +1032,7 @@ namespace System
             // Parse "0x" or "0X" prefix
             if (index + 1 >= value.Length ||
                 TChar.CastToUInt32(value[index]) != '0' ||
-                (TChar.CastToUInt32(value[index + 1]) != 'x' && TChar.CastToUInt32(value[index + 1]) != 'X'))
+                (TChar.CastToUInt32(value[index + 1]) | 0x20) != 'x')
             {
                 return false;
             }

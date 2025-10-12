@@ -526,7 +526,7 @@ namespace System
             return maxDigits;
         }
 
-        private static void FormatFloatAsHex<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, char fmt, int precision, NumberFormatInfo info)
+        private static void FormatFloatAsHex<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, char fmt, int precision)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -553,7 +553,7 @@ namespace System
             // Handle special cases
             if (biasedExponent == TNumber.InfinityExponent)
             {
-                // Infinity or NaN - just output  as 0
+                // Infinity or NaN - just output as 0
                 vlb.Append(TChar.CastFrom('0'));
                 vlb.Append(TChar.CastFrom('p'));
                 vlb.Append(TChar.CastFrom('+'));
@@ -579,35 +579,43 @@ namespace System
                 return;
             }
 
-            // Normalize: add implicit leading 1 for normal numbers
+            // Normalize mantissa for hex output (leading digit should be 1.xxx in range [1, 2))
             int actualExponent;
+            ulong significand;
+
             if (biasedExponent == 0)
             {
-                // Denormal number
-                actualExponent = 1 - exponentBias;
+                // Denormal number - normalize by shifting until we get leading 1
+                significand = mantissa;
+                int lz = BitOperations.LeadingZeroCount(significand) - (64 - mantissaBits);
+                significand <<= lz;
+                actualExponent = 1 - exponentBias - lz;
             }
             else
             {
                 // Normal number - add implicit leading bit
-                mantissa |= (1UL << mantissaBits);
+                significand = (1UL << mantissaBits) | mantissa;
                 actualExponent = biasedExponent - exponentBias;
             }
 
-            // Normalize mantissa so the leading bit is in the MSB position
-            int shift = 64 - mantissaBits - 1;
-            mantissa <<= shift;
+            // Shift significand so the leading 1 is at bit 60 (first nibble position)
+            // This ensures the integer part is 1.xxx
+            int shift = 63 - mantissaBits;
+            significand <<= shift;
 
-            // Output integer part (always "1" for normalized)
+            // Adjust exponent for the shift (we divided by 2^shift, so add shift to exponent)
+            // But we also want the leading nibble at bit 60, so shift right by 3 more
+            significand >>= 3;
+            actualExponent += 3;
+
+            // Output integer part (should always be 1 for normalized form)
             char hexBase = fmt == 'X' ? 'A' : 'a';
-            int firstNibble = (int)(mantissa >> 60);
-            vlb.Append(TChar.CastFrom((char)('0' + (firstNibble > 9 ? 0 : firstNibble))));
-            if (firstNibble > 9)
-            {
-                vlb.Append(TChar.CastFrom((char)(hexBase + firstNibble - 10)));
-            }
+            int firstNibble = (int)(significand >> 60);
+            char firstHexChar = firstNibble < 10 ? (char)('0' + firstNibble) : (char)(hexBase + firstNibble - 10);
+            vlb.Append(TChar.CastFrom(firstHexChar));
 
             // Remove the first nibble
-            mantissa = (mantissa << 4) & 0xFFFFFFFFFFFFFFFF;
+            significand <<= 4;
 
             // Determine how many hex digits to output
             int hexDigits = precision >= 0 ? precision : (mantissaBits + 3) / 4;
@@ -618,10 +626,10 @@ namespace System
 
                 for (int i = 0; i < hexDigits; i++)
                 {
-                    int nibble = (int)(mantissa >> 60);
+                    int nibble = (int)(significand >> 60);
                     char hexChar = nibble < 10 ? (char)('0' + nibble) : (char)(hexBase + nibble - 10);
                     vlb.Append(TChar.CastFrom(hexChar));
-                    mantissa = (mantissa << 4) & 0xFFFFFFFFFFFFFFFF;
+                    significand <<= 4;
                 }
             }
 
@@ -632,11 +640,11 @@ namespace System
                 vlb.Append(TChar.CastFrom('+'));
             }
 
-            // Format exponent as decimal
-            FormatInt32(ref vlb, actualExponent, 0, null, info);
+            // Format exponent as decimal without allocating string
+            FormatInt32ToValueListBuilder(ref vlb, actualExponent);
         }
 
-        private static void FormatInt32<TChar>(ref ValueListBuilder<TChar> vlb, int value, int precision, string? format, NumberFormatInfo info)
+        private static void FormatInt32ToValueListBuilder<TChar>(ref ValueListBuilder<TChar> vlb, int value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             if (value < 0)
@@ -645,10 +653,32 @@ namespace System
                 value = -value;
             }
 
-            string numStr = ((uint)value).ToString();
-            foreach (char c in numStr)
+            // Handle zero specially
+            if (value == 0)
             {
-                vlb.Append(TChar.CastFrom(c));
+                vlb.Append(TChar.CastFrom('0'));
+                return;
+            }
+
+            // Format digits in reverse, then reverse the span
+            int startIndex = vlb.Length;
+            uint uvalue = (uint)value;
+
+            while (uvalue > 0)
+            {
+                vlb.Append(TChar.CastFrom((char)('0' + (uvalue % 10))));
+                uvalue /= 10;
+            }
+
+            // Reverse the digits
+            int endIndex = vlb.Length - 1;
+            while (startIndex < endIndex)
+            {
+                TChar temp = vlb[startIndex];
+                vlb[startIndex] = vlb[endIndex];
+                vlb[endIndex] = temp;
+                startIndex++;
+                endIndex--;
             }
         }
 
@@ -727,7 +757,7 @@ namespace System
             // Handle hex float formatting (X or x)
             if (fmt == 'X' || fmt == 'x')
             {
-                FormatFloatAsHex(ref vlb, value, fmt, precision, info);
+                FormatFloatAsHex(ref vlb, value, fmt, precision);
                 return null;
             }
 

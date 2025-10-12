@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -830,13 +831,13 @@ namespace System.Globalization
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+                ThrowInvalidStyle();
             }
 
             // Binary specifier is not supported for floating point
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                throw new ArgumentException(SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+                ThrowHexBinaryStylesNotSupported();
             }
 
             // When AllowHexSpecifier is used, only specific flags are allowed
@@ -846,9 +847,21 @@ namespace System.Globalization
                 NumberStyles invalidFlags = style & ~NumberStyles.HexFloat;
                 if (invalidFlags != 0)
                 {
-                    throw new ArgumentException(SR.Arg_InvalidHexBinaryStyle, nameof(style));
+                    ThrowInvalidHexBinaryStyle();
                 }
             }
+
+            [DoesNotReturn]
+            static void ThrowInvalidStyle() =>
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+
+            [DoesNotReturn]
+            static void ThrowHexBinaryStylesNotSupported() =>
+                throw new ArgumentException(SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+
+            [DoesNotReturn]
+            static void ThrowInvalidHexBinaryStyle() =>
+                throw new ArgumentException(SR.Arg_InvalidHexBinaryStyle, nameof(style));
         }
     }
 }
