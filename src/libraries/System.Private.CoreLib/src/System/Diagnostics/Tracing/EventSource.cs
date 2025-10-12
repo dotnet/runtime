@@ -1764,12 +1764,12 @@ namespace System.Diagnostics.Tracing
                 0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
             ];
 
-            byte[] nameBytes = Encoding.BigEndianUnicode.GetBytes(name);
-            int totalLength = namespaceBytes.Length + nameBytes.Length;
+            int nameByteCount = Encoding.BigEndianUnicode.GetByteCount(name);
+            int totalLength = namespaceBytes.Length + nameByteCount;
             Span<byte> source = totalLength <= 256 ? stackalloc byte[totalLength] : new byte[totalLength];
 
             namespaceBytes.CopyTo(source);
-            nameBytes.CopyTo(source.Slice(namespaceBytes.Length));
+            Encoding.BigEndianUnicode.GetBytes(name, source.Slice(namespaceBytes.Length));
 
             Span<byte> bytes = stackalloc byte[16];
             Sha1ForNonSecretPurposes.HashData(source, bytes);
