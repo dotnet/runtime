@@ -40,8 +40,14 @@ namespace System
 
                     if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
                     {
-                        int hr = unchecked((int)ntStatus) | 0x01000000;
-                        throw new CryptographicException(hr);
+                        if (status == BCrypt.NTSTATUS.STATUS_NO_MEMORY)
+                        {
+                            throw new OutOfMemoryException();
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException();
+                        }                        
                     }
                 }
             }
