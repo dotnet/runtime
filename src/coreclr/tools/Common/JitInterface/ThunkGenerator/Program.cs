@@ -349,7 +349,7 @@ namespace Internal.JitInterface
             tw.WriteLine(@"
         private static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)NativeMemory.Alloc(sizeof(IntPtr) * " + total + @");
+            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * " + total + @"));
 ");
 
             int index = 0;
