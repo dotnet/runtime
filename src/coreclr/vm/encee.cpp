@@ -606,7 +606,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 
     // get the code address (may jit the fcn if not already jitted)
     EX_TRY {
-        if (pMD->IsPointingToNativeCode())
+        if (!pMD->IsPointingToPrestub())
         {
             LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction %p already JITed\n", pMD));
         }

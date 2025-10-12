@@ -2014,7 +2014,7 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
         if (SF_IsDelegateStub(dwStubFlags))
         {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            COMPlusThrow(kNotSupportedException);
+            _ASSERTE(!"Delegate reverse pinvoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS");
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
             //
@@ -2191,7 +2191,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     else // native-to-managed
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        COMPlusThrow(kNotSupportedException);
+        _ASSERTE(!"Delegate reverse pinvoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS");
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate

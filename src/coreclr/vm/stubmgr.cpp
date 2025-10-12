@@ -1737,26 +1737,24 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         _ASSERTE(!"We should never get here. Multicast Delegates should not invoke TraceManager.");
         return FALSE;
     }
-    else if (pStubMD->IsReverseStub())
+    else if (pStubMD->IsReversePInvokeStub())
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         UNREACHABLE_MSG("Reverse P/Invoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS.");
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        if (pStubMD->IsStatic())
-        {
-            // This is reverse P/Invoke stub, the argument is UMEntryThunkData
-            UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
-            target = pEntryThunk->GetManagedTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
-        }
-        else
-        {
-            // This is COM-to-CLR stub, the argument is the target
-            target = (PCODE)arg;
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
-        }
+        // This is reverse P/Invoke stub, the argument is UMEntryThunkData
+        UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
+        target = pEntryThunk->GetManagedTarget();
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
         trace->InitForManaged(target);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
+    else if (pStubMD->IsCOMToCLRStub())
+    {
+        // This is COM-to-CLR stub, the argument is the target
+        target = (PCODE)arg;
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
+        trace->InitForManaged(target);
     }
     else if (pStubMD->IsPInvokeDelegateStub())
     {

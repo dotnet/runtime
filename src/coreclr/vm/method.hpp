@@ -1453,14 +1453,11 @@ public:
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     BOOL IsPointingToNativeCode()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        return FALSE;
-
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (!HasStableEntryPoint())
             return FALSE;
 
@@ -1468,10 +1465,8 @@ public:
             return TRUE;
 
         return GetPrecode()->IsPointingToNativeCode(GetNativeCode());
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     //Is this method currently pointing to native code that will never change?
     BOOL IsPointingToStableNativeCode()
     {
@@ -2884,12 +2879,12 @@ public:
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
 
-    bool IsReverseStub() const
+    bool IsReversePInvokeStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         ILStubType type = GetILStubType();
-        return type == StubCOMToCLRInterop || type == StubReversePInvoke;
+        return type == StubReversePInvoke;
     }
 
     bool IsStepThroughStub() const
