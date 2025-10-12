@@ -198,7 +198,9 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? StringJsonElementDictionaryType => _StringJsonElementDictionaryType.HasValue
             ? _StringJsonElementDictionaryType.Value
-            : (_StringJsonElementDictionaryType = new(DictionaryOfTKeyTValueType?.Construct(StringType, JsonElementType))).Value;
+            : (_StringJsonElementDictionaryType = new(DictionaryOfTKeyTValueType is { } dictType && JsonElementType is { } jsonElemType
+                ? dictType.Construct(StringType, jsonElemType)
+                : null)).Value;
         private Option<INamedTypeSymbol?> _StringJsonElementDictionaryType;
 
         public INamedTypeSymbol? JsonNodeType => GetOrResolveType("System.Text.Json.Nodes.JsonNode", ref _JsonNodeType);
