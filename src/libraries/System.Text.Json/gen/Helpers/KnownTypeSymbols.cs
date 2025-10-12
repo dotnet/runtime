@@ -191,6 +191,16 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonElementType => GetOrResolveType("System.Text.Json.JsonElement", ref _JsonElementType);
         private Option<INamedTypeSymbol?> _JsonElementType;
 
+        public INamedTypeSymbol? StringObjectDictionaryType => _StringObjectDictionaryType.HasValue
+            ? _StringObjectDictionaryType.Value
+            : (_StringObjectDictionaryType = new(DictionaryOfTKeyTValueType?.Construct(StringType, ObjectType))).Value;
+        private Option<INamedTypeSymbol?> _StringObjectDictionaryType;
+
+        public INamedTypeSymbol? StringJsonElementDictionaryType => _StringJsonElementDictionaryType.HasValue
+            ? _StringJsonElementDictionaryType.Value
+            : (_StringJsonElementDictionaryType = new(DictionaryOfTKeyTValueType?.Construct(StringType, JsonElementType))).Value;
+        private Option<INamedTypeSymbol?> _StringJsonElementDictionaryType;
+
         public INamedTypeSymbol? JsonNodeType => GetOrResolveType("System.Text.Json.Nodes.JsonNode", ref _JsonNodeType);
         private Option<INamedTypeSymbol?> _JsonNodeType;
 
