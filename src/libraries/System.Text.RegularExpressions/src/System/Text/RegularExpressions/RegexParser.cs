@@ -52,7 +52,6 @@ namespace System.Text.RegularExpressions
 
         private bool _ignoreNextParen; // flag to skip capturing a parentheses group
 
-        private bool _captureComments; // flag to enable comment capture for source generator
         private Dictionary<RegexNode, List<string>>? _nodeComments; // side-channel for storing comments associated with nodes
         private List<string>? _pendingComments; // comments waiting to be associated with the next node
 
@@ -84,9 +83,11 @@ namespace System.Text.RegularExpressions
             _capnamelist = null;
             _ignoreNextParen = false;
 
-            _captureComments = captureComments;
-            _nodeComments = captureComments ? new Dictionary<RegexNode, List<string>>() : null;
-            _pendingComments = captureComments ? new List<string>() : null;
+            if (captureComments)
+            {
+                _nodeComments = new Dictionary<RegexNode, List<string>>();
+                _pendingComments = new List<string>();
+            }
         }
 
         /// <summary>Gets the culture to use based on the specified options.</summary>
@@ -108,43 +109,9 @@ namespace System.Text.RegularExpressions
             return foundOptionsInPattern;
         }
 
-        public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
+        public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture, bool captureComments = false)
         {
-            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize], captureComments: false);
-
-            parser.CountCaptures(out _);
-            parser.Reset(options);
-            RegexNode root = parser.ScanRegex();
-
-            int[]? captureNumberList = parser._capnumlist;
-            Hashtable? sparseMapping = parser._caps;
-            int captop = parser._captop;
-
-            int captureCount;
-            if (captureNumberList == null || captop == captureNumberList.Length)
-            {
-                // The capture list isn't sparse.  Null out the capture mapping as it's not necessary,
-                // and store the number of captures.
-                captureCount = captop;
-                sparseMapping = null;
-            }
-            else
-            {
-                // The capture list is sparse.  Store the number of captures, and populate the number-to-names-list.
-                captureCount = captureNumberList.Length;
-                for (int i = 0; i < captureNumberList.Length; i++)
-                {
-                    sparseMapping[captureNumberList[i]] = i;
-                }
-            }
-
-            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackreferenceNodes ? culture : null);
-        }
-
-        /// <summary>Parses a regular expression and captures comments for source generation.</summary>
-        public static RegexTree ParseForSourceGenerator(string pattern, RegexOptions options, CultureInfo culture)
-        {
-            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize], captureComments: true);
+            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize], captureComments);
 
             parser.CountCaptures(out _);
             parser.Reset(options);
@@ -1107,12 +1074,12 @@ namespace System.Text.RegularExpressions
                         _pos = _pattern.Length;
                     }
 
-                    if (_captureComments && commentStart < _pos)
+                    if (_pendingComments is not null && commentStart < _pos)
                     {
                         string comment = _pattern.Substring(commentStart, _pos - commentStart).Trim();
                         if (!string.IsNullOrEmpty(comment))
                         {
-                            _pendingComments!.Add(comment);
+                            _pendingComments.Add(comment);
                         }
                     }
                 }
@@ -1126,12 +1093,12 @@ namespace System.Text.RegularExpressions
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                     }
 
-                    if (_captureComments && commentStart < _pos)
+                    if (_pendingComments is not null && commentStart < _pos)
                     {
                         string comment = _pattern.Substring(commentStart, _pos - commentStart).Trim();
                         if (!string.IsNullOrEmpty(comment))
                         {
-                            _pendingComments!.Add(comment);
+                            _pendingComments.Add(comment);
                         }
                     }
 
@@ -1147,7 +1114,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Attaches any pending comments to the specified node.</summary>
         private void AttachCommentsToNode(RegexNode node)
         {
-            if (_captureComments && _pendingComments!.Count > 0)
+            if (_pendingComments is not null && _pendingComments.Count > 0)
             {
                 if (!_nodeComments!.TryGetValue(node, out List<string>? comments))
                 {

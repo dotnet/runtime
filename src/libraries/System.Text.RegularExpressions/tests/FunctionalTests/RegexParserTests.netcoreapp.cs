@@ -314,7 +314,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ParseForSourceGenerator_CapturesComments()
+        public void Parse_CapturesComments()
         {
             // Test with (?x) inline option and # comments
             string pattern = @"(?x)
@@ -322,7 +322,7 @@ namespace System.Text.RegularExpressions.Tests
                 \w+         # Word characters
             ";
 
-            RegexTree tree = RegexParser.ParseForSourceGenerator(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture);
+            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture, captureComments: true);
 
             Assert.NotNull(tree.NodeComments);
             Assert.NotEmpty(tree.NodeComments);
@@ -341,21 +341,21 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ParseForSourceGenerator_CapturesInlineComments()
+        public void Parse_CapturesInlineComments()
         {
             // Test with (?# ) inline comments
             string pattern = @"(?#This is a comment)abc(?#Another comment)";
 
-            RegexTree tree = RegexParser.ParseForSourceGenerator(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture);
+            RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, System.Globalization.CultureInfo.InvariantCulture, captureComments: true);
 
             Assert.NotNull(tree.NodeComments);
             Assert.NotEmpty(tree.NodeComments);
         }
 
         [Fact]
-        public void Parse_DoesNotCaptureComments()
+        public void Parse_DoesNotCaptureCommentsByDefault()
         {
-            // Test that regular Parse doesn't capture comments
+            // Test that regular Parse doesn't capture comments by default
             string pattern = @"(?x)
                 ^           # Start of line
                 \w+         # Word characters
