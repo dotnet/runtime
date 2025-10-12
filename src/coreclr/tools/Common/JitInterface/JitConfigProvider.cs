@@ -164,7 +164,7 @@ namespace Internal.JitInterface
 
             const int numCallbacks = 2;
 
-            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(IntPtr) * numCallbacks));
+            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * numCallbacks));
 
             callbacks[0] = (delegate* unmanaged<IntPtr, byte*, int, int>)&getIntConfigValue;
             callbacks[1] = (delegate* unmanaged<IntPtr, byte*, byte*, int, int>)&getStringConfigValue;
