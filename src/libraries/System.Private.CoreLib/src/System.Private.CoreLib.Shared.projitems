@@ -2242,6 +2242,9 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs</Link>
     </Compile>
