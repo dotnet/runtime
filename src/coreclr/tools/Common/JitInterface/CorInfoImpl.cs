@@ -2154,7 +2154,7 @@ namespace Internal.JitInterface
         private void* LongLifetimeMalloc(UIntPtr sz)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return NativeMemory.Alloc((nuint)sz);
+            return NativeMemory.Alloc(sz);
         }
 
 #pragma warning disable CA1822 // Mark members as static
