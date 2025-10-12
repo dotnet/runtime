@@ -38,13 +38,13 @@ void
 void*
 const void *,void*
 JITINTERFACE_HRESULT,HRESULT
-size_t*,UIntPtr*
+size_t*,nuint*
 int
 int32_t,int
 uint32_t,uint
 unsigned,uint
 unsigned int, uint
-size_t,UIntPtr
+size_t,nuint
 uint16_t,ushort
 bool,[MarshalAs(UnmanagedType.I1)]bool
 const char *,byte*

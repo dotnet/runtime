@@ -860,10 +860,10 @@ namespace Internal.JitInterface
         public uint sizeOfReversePInvokeFrame;
 
         // OS Page size
-        public UIntPtr osPageSize;
+        public nuint osPageSize;
 
         // Null object offset
-        public UIntPtr maxUncheckedOffsetForNullObject;
+        public nuint maxUncheckedOffsetForNullObject;
 
         // Target ABI. Combined with target architecture and OS to determine
         // GC, EH, and unwind styles.
