@@ -3225,7 +3225,7 @@ namespace Internal.JitInterface
         private void* allocateArray(UIntPtr cBytes)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return NativeMemory.Alloc((nuint)cBytes);
+            return NativeMemory.Alloc(cBytes);
         }
 
 #pragma warning disable CA1822 // Mark members as static
