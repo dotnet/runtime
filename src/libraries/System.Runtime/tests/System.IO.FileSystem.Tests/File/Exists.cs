@@ -273,6 +273,38 @@ namespace System.IO.Tests
             Assert.True(Exists(filePath));
         }
 
+        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [InlineData("trailing ")]
+        [InlineData("trailing  ")]
+        [InlineData("trailing.")]
+        [InlineData("trailing..")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsExistsTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        {
+            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            string extendedPath = @"\\?\" + filePath;
+            
+            File.Create(extendedPath).Dispose();
+            Assert.True(Exists(extendedPath));
+            
+            // Without extended syntax, the trailing space/period is trimmed
+            Assert.False(Exists(filePath));
+        }
+
+        [Theory]
+        [InlineData("name with spaces")]
+        [InlineData("name.with.periods")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsExistsEmbeddedSpacesPeriods(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(Exists(filePath));
+        }
+
         #endregion
     }
 

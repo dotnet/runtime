@@ -431,6 +431,63 @@ namespace System.IO.Tests
             }
         }
 
+        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [InlineData("trailing ")]
+        [InlineData("trailing  ")]
+        [InlineData("trailing.")]
+        [InlineData("trailing..")]
+        [InlineData("trailing .")]
+        [InlineData("trailing. ")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsTrailingSpacePeriod_CreateViaExtendedSyntax(string fileName)
+        {
+            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            string extendedPath = @"\\?\" + filePath;
+            
+            using (Create(extendedPath))
+            {
+                Assert.True(File.Exists(extendedPath));
+            }
+            
+            // Verify we can find it via enumeration
+            string[] files = Directory.GetFiles(testDir.FullName);
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+        }
+
+        [Theory]
+        [InlineData("name with spaces")]
+        [InlineData("name  with  multiple  spaces")]
+        [InlineData("name.with.periods")]
+        [InlineData("name with spaces.txt")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsEmbeddedSpacesPeriods(string fileName)
+        {
+            // Embedded spaces and periods should work fine
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [InlineData("name with spaces")]
+        [InlineData("name.with.periods")]
+        [InlineData("name\twith\ttabs")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixEmbeddedSpecialChars(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
         #endregion
     }
 

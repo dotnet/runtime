@@ -467,5 +467,49 @@ namespace System.IO.Tests
             Assert.False(File.Exists(srcPath));
             Assert.True(File.Exists(destPath));
         }
+
+        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [InlineData("trailing ", "destination")]
+        [InlineData("source", "trailing ")]
+        [InlineData("trailing.", "destination")]
+        [InlineData("source", "trailing.")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsMoveWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
+        {
+            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+            
+            // Create source with extended syntax if needed
+            string sourceToCreate = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + srcPath : srcPath;
+            File.Create(sourceToCreate).Dispose();
+            
+            // Move with extended syntax if needed
+            string sourceToMove = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + srcPath : srcPath;
+            string destToMove = destFileName.TrimEnd(' ', '.') != destFileName ? @"\\?\" + destPath : destPath;
+            
+            Move(sourceToMove, destToMove);
+            
+            Assert.False(File.Exists(sourceToMove));
+            Assert.True(File.Exists(destToMove));
+        }
+
+        [Theory]
+        [InlineData("name with spaces", "dest with spaces")]
+        [InlineData("name.with.periods", "dest.with.periods")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsMoveEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
     }
 }
