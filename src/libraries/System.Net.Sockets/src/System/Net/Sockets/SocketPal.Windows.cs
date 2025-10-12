@@ -305,10 +305,15 @@ namespace System.Net.Sockets
                 // If file length exceeds int.MaxValue, we need to partition the sends
                 if (fileLength > int.MaxValue)
                 {
+                    // Separate behavior/performance flags from terminal flags
+                    // Behavior flags (WriteBehind, UseSystemThread, UseKernelApc) apply to all operations
+                    // Terminal flags (Disconnect, ReuseSocket) apply only to the final operation
+                    TransmitFileOptions behaviorFlags = flags & ~(TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket);
+
                     // Send preBuffer if present
                     if (preBuffer.Length > 0)
                     {
-                        bool success = TransmitFileHelper(handle, null, null, (IntPtr)prePinnedBuffer, preBuffer.Length, IntPtr.Zero, 0, TransmitFileOptions.UseDefaultWorkerThread);
+                        bool success = TransmitFileHelper(handle, null, null, (IntPtr)prePinnedBuffer, preBuffer.Length, IntPtr.Zero, 0, behaviorFlags);
                         if (!success)
                         {
                             return GetLastSocketError();
@@ -328,7 +333,7 @@ namespace System.Net.Sockets
                             return GetLastSocketError();
                         }
 
-                        bool success = TransmitFileHelper(handle, fileHandle, null, IntPtr.Zero, 0, IntPtr.Zero, 0, TransmitFileOptions.UseDefaultWorkerThread, chunkSize);
+                        bool success = TransmitFileHelper(handle, fileHandle, null, IntPtr.Zero, 0, IntPtr.Zero, 0, behaviorFlags, chunkSize);
                         if (!success)
                         {
                             return GetLastSocketError();
@@ -338,23 +343,11 @@ namespace System.Net.Sockets
                         remaining -= chunkSize;
                     }
 
-                    // Send postBuffer if present, or apply disconnect/reuse flags to last operation
-                    if (postBuffer.Length > 0)
+                    // Send postBuffer with all flags (behavior + terminal flags apply to last operation)
+                    bool finalSuccess = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                    if (!finalSuccess)
                     {
-                        bool success = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
-                        if (!success)
-                        {
-                            return GetLastSocketError();
-                        }
-                    }
-                    else if ((flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
-                    {
-                        // If no postBuffer but disconnect/reuse flags are set, send an empty buffer with the flags
-                        bool success = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, IntPtr.Zero, 0, flags);
-                        if (!success)
-                        {
-                            return GetLastSocketError();
-                        }
+                        return GetLastSocketError();
                     }
 
                     return SocketError.Success;
