@@ -147,6 +147,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/119292", TestRuntimes.Mono)]
         [MyEnumArray(MyTestEnum.Value, null, [], [MyTestEnum.Value, MyTestEnum.Value])]
         public static void Test_CustomAttributeData_EnumArray()
         {
