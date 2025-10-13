@@ -2367,7 +2367,13 @@ void Compiler::optFindLoops()
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
 
-    optFindSCCs();
+    // If we saw anything unusual when finding loops,
+    // find the SCCs.
+    if (m_loops->ImproperLoopHeaders() > 0)
+    {
+        JITDUMP("Improper headers detected, finding SCCs\n");
+        optFindSCCs();
+    }
 }
 
 //-----------------------------------------------------------------------------
