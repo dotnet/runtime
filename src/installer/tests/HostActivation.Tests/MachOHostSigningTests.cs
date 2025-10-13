@@ -15,7 +15,8 @@ namespace HostActivation.Tests
 {
     public class MachOHostSigningTests
     {
-        [PlatformSpecificFact(TestPlatforms.OSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void SignedAppHostRuns()
         {
             using var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns));

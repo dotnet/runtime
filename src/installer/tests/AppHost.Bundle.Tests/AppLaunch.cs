@@ -110,13 +110,11 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void DisableCetCompat(bool selfContained)
         {
-            Assert.SkipUnless(Binaries.CetCompat.IsSupported, "CET not supported on this platform");
-
             SingleFileTestApp app = selfContained
                 ? sharedTestState.SelfContainedApp.Copy()
                 : sharedTestState.FrameworkDependentApp.Copy();
@@ -178,7 +176,8 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void FrameworkDependent_GUI_DownlevelHostFxr_ErrorDialog()
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle();

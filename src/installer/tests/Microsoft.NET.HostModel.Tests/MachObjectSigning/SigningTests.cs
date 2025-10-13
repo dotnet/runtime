@@ -77,7 +77,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
         }
 
-        [PlatformSpecificTheory(TestPlatforms.OSX)]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         public void MatchesCodesignOutput(string filePath, TestArtifact _)
         {
@@ -100,7 +101,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
         }
 
-        [PlatformSpecificFact(TestPlatforms.OSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         void SignedMachOExecutableRuns()
         {
             using var testArtifact = TestArtifact.Create(nameof(SignedMachOExecutableRuns));
@@ -138,7 +140,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.OSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void OverwritingExistingBundleClearsMacOsSignatureCache()
         {
             // Bundle to a single-file and ensure it is signed

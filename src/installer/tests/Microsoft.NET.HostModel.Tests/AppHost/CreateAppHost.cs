@@ -231,7 +231,8 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.AnyUnix)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void ExecutableImage()
         {
             using TestArtifact artifact = CreateTestDirectory();
@@ -260,7 +261,8 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 .Be(expectedPermissions);
         }
 
-        [PlatformSpecificTheory(TestPlatforms.OSX)]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
         public void CodeSignMachOAppHost(string subdir)
@@ -284,7 +286,8 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [PlatformSpecificTheory(TestPlatforms.OSX)]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
         public void SigningExistingAppHostCreatesNewInode(string subdir)

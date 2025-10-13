@@ -162,8 +162,9 @@ namespace HostActivation.Tests
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)]
-        public void DevicePath()
+                [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Exe_activation_of_GUI_App()
         {
             string appExe = $@"\\?\{sharedTestState.App.AppExe}";
             Command.Create(appExe)

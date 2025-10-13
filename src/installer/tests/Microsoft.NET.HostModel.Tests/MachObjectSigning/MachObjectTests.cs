@@ -148,7 +148,8 @@ public class MachObjectTests
     }
 
     // test all the binaries compared to codesinginfo from codesign output
-    [PlatformSpecificTheory(TestPlatforms.OSX)]
+    [Theory]
+    [PlatformSpecific(TestPlatforms.OSX)]
     [MemberData(nameof(GetTestFilePaths), nameof(EmbeddedSignatureBlobMatchesCodesignInfo))]
     public void EmbeddedSignatureBlobMatchesCodesignInfo(string filePath, TestArtifact _)
     {

@@ -219,7 +219,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AppHost_DotNetRoot_DevicePath()
         {
             string appExe = sharedTestState.App.AppExe;
@@ -414,7 +415,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_GUI_MissingRuntimeFramework_ErrorReportedInDialog()
         {
             TestApp app = sharedTestState.App.Copy();
@@ -450,7 +452,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AppHost_GUI_MissingRuntime_ErrorReportedInDialog()
         {
             TestApp app = sharedTestState.App.Copy();
@@ -478,7 +481,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_GUI_NoCustomErrorWriter_FrameworkMissing_ErrorReportedInDialog()
         {
             TestApp app = sharedTestState.App.Copy();
@@ -512,7 +516,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [PlatformSpecificFact(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void AppHost_GUI_DisabledGUIErrors_DialogNotShown()
         {
             TestApp app = sharedTestState.App.Copy();
