@@ -109,6 +109,12 @@ struct ArgLocDesc
     }
 };
 
+#ifdef TARGET_WASM
+#define TARGET_REGISTER_SIZE INTERP_STACK_SLOT_SIZE
+#else
+#define TARGET_REGISTER_SIZE TARGET_POINTER_SIZE
+#endif
+
 //
 // TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not
 // all fields are used all the time, we use uniform form for simplicity.
@@ -243,7 +249,10 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
         int offs;
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
+        // on wasm we don't have registers, so instead we put the arguments
+        // which would be in registers on other architectures
+        // on the stack right after the transition block
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
         offs = sizeof(TransitionBlock);
 #else
         offs = offsetof(TransitionBlock, m_argumentRegisters);
@@ -281,15 +290,15 @@ struct TransitionBlock
         _ASSERTE(offset != TransitionBlock::StructInRegsOffset);
 #endif
         offset -= GetOffsetOfArgumentRegisters();
-        _ASSERTE((offset % TARGET_POINTER_SIZE) == 0);
-        return offset / TARGET_POINTER_SIZE;
+        _ASSERTE((offset % TARGET_REGISTER_SIZE) == 0);
+        return offset / TARGET_REGISTER_SIZE;
     }
 
     static UINT GetStackArgumentIndexFromOffset(int offset)
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (offset - TransitionBlock::GetOffsetOfArgs()) / TARGET_POINTER_SIZE;
+        return (offset - TransitionBlock::GetOffsetOfArgs()) / TARGET_REGISTER_SIZE;
     }
 
     static UINT GetStackArgumentByteIndexFromOffset(int offset)
@@ -1082,7 +1091,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
 #else
     if (this->HasThis())
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
 #endif
 
     return ret;
@@ -1104,12 +1113,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetVASigCookieOffset()
 
     if (this->HasThis())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     return ret;
@@ -1157,12 +1166,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
 
     if (this->HasThis())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     return ret;
@@ -1214,17 +1223,17 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetAsyncContinuationArgOffset()
 
     if (this->HasThis())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     if (this->HasParamType())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     return ret;
