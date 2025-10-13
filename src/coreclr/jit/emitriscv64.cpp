@@ -651,7 +651,7 @@ bool emitter::emitInsIsSignExtend(instruction ins)
     switch (ins)
     {
         case INS_sext_w: // R_R
-        case INS_lui: // R_I
+        case INS_lui:    // R_I
 
         // R_R_I
         case INS_lb:
@@ -717,15 +717,15 @@ bool emitter::isRedundantSignExtend(instruction ins, emitAttr size, regNumber ds
         return false;
     }
 
-    regNumber prevDst = emitLastIns->idReg1();
-    regNumber prevSrc = emitLastIns->idReg2();
+    regNumber prevDst  = emitLastIns->idReg1();
+    regNumber prevSrc  = emitLastIns->idReg2();
     emitAttr  prevSize = emitLastIns->idOpSize();
 
     bool isPrevInsSignExtend = emitInsIsSignExtend(emitLastIns->idIns());
 
     if (isPrevInsSignExtend && (prevDst == src))
     {
-        JITDUMP("\n -- suppressing 'sext.w reg%u, reg%u' as previous instruction already sign-extended " 
+        JITDUMP("\n -- suppressing 'sext.w reg%u, reg%u' as previous instruction already sign-extended "
                 "the register reg%u.\n",
                 dst, src, prevDst);
 

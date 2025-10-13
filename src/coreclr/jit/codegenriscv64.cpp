@@ -3454,13 +3454,13 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             // But due to the safety reason, only a peephole optimization is done now.
             bool signExtOp1 = !(emit->isRedundantSignExtend(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1));
             bool signExtOp2 = !(emit->isRedundantSignExtend(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2));
-            
+
             if (signExtOp1)
             {
                 emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                 regOp1 = tmpRegOp1;
             }
-            
+
             if (signExtOp2)
             {
                 emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
