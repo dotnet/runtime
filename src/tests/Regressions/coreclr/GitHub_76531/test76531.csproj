@@ -5,6 +5,7 @@
     <!-- This test removes one of its dependencies at runtime, so it is not compatible with AOT  -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test76531.cs" />
