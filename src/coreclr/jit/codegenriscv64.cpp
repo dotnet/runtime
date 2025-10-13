@@ -4381,6 +4381,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
@@ -4563,10 +4564,10 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         case NI_System_Math_Sqrt:
             instr = is4 ? INS_fsqrt_s : INS_fsqrt_d;
             break;
-        case NI_System_Math_MinNumber:
+        case NI_System_Math_MinNative:
             instr = is4 ? INS_fmin_s : INS_fmin_d;
             break;
-        case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxNative:
             instr = is4 ? INS_fmax_s : INS_fmax_d;
             break;
         case NI_System_Math_Min:

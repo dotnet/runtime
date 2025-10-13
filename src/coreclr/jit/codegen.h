@@ -646,13 +646,14 @@ protected:
     void genAddRichIPMappingHere(const DebugInfo& di);
 
     void genReportRichDebugInfo();
-
     void genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* tree);
 
 #ifdef DEBUG
     void genReportRichDebugInfoToFile();
     void genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
 #endif
+
+    void genReportAsyncDebugInfo();
 
     void genEnsureCodeEmitted(const DebugInfo& di);
 

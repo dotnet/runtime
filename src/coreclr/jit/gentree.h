@@ -4400,9 +4400,6 @@ struct AsyncCallInfo
     bool                        SaveAndRestoreSynchronizationContextField = false;
     bool                        HasSuspensionIndicatorDef                 = false;
     unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
-
-    // Exact debug info of call IL instruction
-    DebugInfo DebugInfo;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -8282,6 +8279,26 @@ struct GenTreeILOffset : public GenTree
 #if DEBUGGABLE_GENTREE
     GenTreeILOffset()
         : GenTree(GT_IL_OFFSET, TYP_VOID)
+    {
+    }
+#endif
+};
+
+// No-op node that records the native offset into async debug info during
+// codegen/emit.
+struct GenTreeRecordAsyncJoin : public GenTree
+{
+    int gtSuspensionPointIndex;
+
+    GenTreeRecordAsyncJoin(int suspensionPointIndex)
+        : GenTree(GT_RECORD_ASYNC_JOIN, TYP_VOID)
+        , gtSuspensionPointIndex(suspensionPointIndex)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeRecordAsyncJoin()
+        : GenTree(GT_RECORD_ASYNC_JOIN, TYP_VOID)
     {
     }
 #endif

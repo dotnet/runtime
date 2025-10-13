@@ -10,6 +10,8 @@ public struct StructJustInt128
 {
     public StructJustInt128(Int128 val) { value = val; }
     public Int128 value;
+
+    public override string ToString() => $"StructJustInt128(value={value:X32})";
 }
 
 public struct StructWithInt128
@@ -17,6 +19,8 @@ public struct StructWithInt128
     public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x10; }
     public byte messUpPadding;
     public Int128 value;
+
+    public override string ToString() => $"StructWithInt128(messUpPadding={messUpPadding}, value={value:X32})";
 }
 
 unsafe partial class Int128Native
@@ -111,6 +115,7 @@ public unsafe partial class Int128Native
         StructWithInt128 rhs = new StructWithInt128(new Int128(13, 14));
 
         Int128Native.AddStructWithInt128_ByRef(ref lhs, ref rhs);
+        // Interpreter-FIXME: Incorrect result. Tracked by https://github.com/dotnet/runtime/issues/118618
         Assert.Equal(new StructWithInt128(new Int128(24, 26)), lhs);
 
         Int128 value2;

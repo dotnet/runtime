@@ -467,21 +467,13 @@ static void DoAsyncSuspensionPoints(
     ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints)
 {
     // Loop through and transfer each Entry in the Mapping.
-    uint32_t lastRootILOffset = 0;
-    uint32_t lastInlinee = 0;
-    uint32_t lastILOffset = 0;
+    uint32_t lastNativeOffset = 0;
     for (uint32_t i = 0; i < cSuspensionPoints; i++)
     {
         ICorDebugInfo::AsyncSuspensionPoint* sp = &suspensionPoints[i];
 
-        trans.DoEncodedDeltaU32NonMonotonic(sp->RootILOffset, lastRootILOffset);
-        lastRootILOffset = sp->RootILOffset;
-
-        trans.DoEncodedDeltaU32NonMonotonic(sp->Inlinee, lastInlinee);
-        lastInlinee = sp->Inlinee;
-
-        trans.DoEncodedDeltaU32NonMonotonic(sp->ILOffset, lastILOffset);
-        lastILOffset = sp->ILOffset;
+        trans.DoEncodedDeltaU32NonMonotonic(sp->NativeOffset, lastNativeOffset);
+        lastNativeOffset = sp->NativeOffset;
 
         trans.DoEncodedU32(sp->NumContinuationVars);
     }
@@ -495,21 +487,13 @@ static void DoAsyncVars(
     ULONG32 cVars,
     ICorDebugInfo::AsyncContinuationVarInfo* vars)
 {
-    uint32_t varIndex = 0;
-    for (uint32_t i = 0; i < cSuspensionPoints; i++)
+    for (uint32_t i = 0; i < cVars; i++)
     {
-        uint32_t lastOffset = 0;
-        uint32_t numVars = suspensionPoints[i].NumContinuationVars;
-        for (uint32_t j = 0; j < numVars; j++)
-        {
-            ICorDebugInfo::AsyncContinuationVarInfo* var = &vars[varIndex++];
-            trans.DoEncodedAdjustedU32(var->VarNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
-            trans.DoEncodedDeltaU32(var->Offset, lastOffset);
-            lastOffset = var->Offset;
-        }
+        ICorDebugInfo::AsyncContinuationVarInfo* var = &vars[i];
+        trans.DoEncodedAdjustedU32(var->VarNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
+        trans.DoEncodedAdjustedU32(var->Offset, UINT_MAX);
+        trans.DoEncodedAdjustedU32(var->GCIndex, UINT_MAX);
     }
-
-    _ASSERTE(varIndex == cVars);
 }
 
 #ifndef DACCESS_COMPILE

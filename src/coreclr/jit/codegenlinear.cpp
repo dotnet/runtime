@@ -462,6 +462,14 @@ void CodeGen::genCodeForBBlist()
 
 #endif // DEBUG
             }
+            else if (node->OperIs(GT_RECORD_ASYNC_JOIN))
+            {
+                int index = node->AsRecordAsyncJoin()->gtSuspensionPointIndex;
+                assert(compiler->compSuspensionPoints != nullptr);
+                assert(index >= 0 && (size_t)index < compiler->compSuspensionPoints->size());
+
+                (*compiler->compSuspensionPoints)[index].nativeLoc.CaptureLocation(GetEmitter());
+            }
 
             genCodeForTreeNode(node);
             if (node->gtHasReg(compiler) && node->IsUnusedValue())

@@ -7,11 +7,14 @@ import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         getAssemblyExports,
         setModuleImports,
     };
-    Object.assign(internals[InternalExchangeIndex.RuntimeAPI], runtimeApiLocal);
+    const runtimeApi = internals[InternalExchangeIndex.RuntimeAPI];
+    if (typeof runtimeApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+    Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
     });

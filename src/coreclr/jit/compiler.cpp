@@ -132,15 +132,6 @@ const BYTE genActualTypes[] = {
 };
 
 #endif // FEATURE_JIT_METHOD_PERF
-/*****************************************************************************/
-inline unsigned getCurTime()
-{
-    SYSTEMTIME tim;
-
-    GetSystemTime(&tim);
-
-    return (((tim.wHour * 60) + tim.wMinute) * 60 + tim.wSecond) * 1000 + tim.wMilliseconds;
-}
 
 /*****************************************************************************/
 #ifdef DEBUG

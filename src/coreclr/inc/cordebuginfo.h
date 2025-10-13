@@ -436,18 +436,18 @@ public:
     {
         // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
         uint32_t VarNumber;
-        // Offset in continuation's data where this variable is stored
+        // Index in continuation's byte[] data where this variable is stored, or 0xFFFFFFFF if the
+        // variable does not have any byte[] data
         uint32_t Offset;
+        // Index in continuation's object[] data where this variable's GC pointers are stored, or 0xFFFFFFFF
+        // if the variable does not have any GC pointers
+        uint32_t GCIndex;
     };
 
     struct AsyncSuspensionPoint
     {
-        // IL offset in the root method that resulted in the creation of this suspension point.
-        uint32_t RootILOffset;
-        // Index of inline tree node containing the IL offset (0 for root)
-        uint32_t Inlinee;
-        // IL offset that resulted in the creation of the suspension point.
-        uint32_t ILOffset;
+        // Logical return address of the async call (join point of synchronous and resuming paths)
+        uint32_t NativeOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.
         uint32_t NumContinuationVars;
