@@ -170,10 +170,12 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
                     {
                         trace::error(_X("No space left on device (ENOSPC). Error: %s"), errMsg);
                     }
+#ifdef EDQUOT
                     else if (err == EDQUOT)
                     {
                         trace::error(_X("Disk quota exceeded (EDQUOT). Error: %s"), errMsg);
                     }
+#endif
                     else if (err == EIO)
                     {
                         trace::error(_X("I/O error (EIO). Error: %s"), errMsg);
@@ -216,10 +218,12 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
             {
                 trace::error(_X("No space left on device (ENOSPC). Error: %s"), errMsg);
             }
+#ifdef EDQUOT
             else if (err == EDQUOT)
             {
                 trace::error(_X("Disk quota exceeded (EDQUOT). Error: %s"), errMsg);
             }
+#endif
             else if (err == EIO)
             {
                 trace::error(_X("I/O error (EIO). Error: %s"), errMsg);
@@ -246,10 +250,12 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
         {
             trace::error(_X("No space left on device (ENOSPC). Error: %s"), errMsg);
         }
+#ifdef EDQUOT
         else if (err == EDQUOT)
         {
             trace::error(_X("Disk quota exceeded (EDQUOT). Error: %s"), errMsg);
         }
+#endif
         else if (err == EIO)
         {
             trace::error(_X("I/O error (EIO). Error: %s"), errMsg);
