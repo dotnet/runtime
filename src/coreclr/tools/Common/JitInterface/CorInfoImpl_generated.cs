@@ -718,7 +718,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static nuint _getClassThreadStaticDynamicInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clr)
+        private static void* _getClassThreadStaticDynamicInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clr)
         {
             var _this = GetThis(thisHandle);
             try
@@ -733,7 +733,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static nuint _getClassStaticDynamicInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clr)
+        private static void* _getClassStaticDynamicInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clr)
         {
             var _this = GetThis(thisHandle);
             try
@@ -2656,8 +2656,8 @@ namespace Internal.JitInterface
             callbacks[45] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, void*>)&_LongLifetimeMalloc;
             callbacks[46] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_LongLifetimeFree;
             callbacks[47] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CONST_LOOKUP*, int*, byte>)&_getIsClassInitedFlagAddress;
-            callbacks[48] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, nuint>)&_getClassThreadStaticDynamicInfo;
-            callbacks[49] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, nuint>)&_getClassStaticDynamicInfo;
+            callbacks[48] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void*>)&_getClassThreadStaticDynamicInfo;
+            callbacks[49] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void*>)&_getClassStaticDynamicInfo;
             callbacks[50] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, CORINFO_CONST_LOOKUP*, byte>)&_getStaticBaseAddress;
             callbacks[51] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassSize;
             callbacks[52] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getHeapClassSize;

@@ -2164,9 +2164,9 @@ namespace Internal.JitInterface
             NativeMemory.Free(obj);
         }
 
-        private nuint getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void* getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassStaticDynamicInfo"); }
-        private nuint getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassThreadStaticDynamicInfo"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
