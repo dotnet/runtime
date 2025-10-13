@@ -290,13 +290,10 @@ namespace Mono.Linker
                                 var nextAssemblyName = AssemblyNameReference.Parse(str);
                                 if (context.TryResolve(nextAssemblyName) is AssemblyDefinition nextAssembly)
                                 {
-#pragma warning disable CA1868 // Unnecessary call to 'Contains(item)'
-                                    if (!seen.Contains(nextAssembly))
+                                    if (seen.Add(nextAssembly))
                                     {
-                                        seen.Add(nextAssembly);
                                         toVisit.Enqueue(nextAssembly);
                                     }
-#pragma warning restore CA1868 // Unnecessary call to 'Contains(item)'
                                 }
                             }
                         }
