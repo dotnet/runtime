@@ -484,6 +484,19 @@ namespace ILCompiler.ObjectWriter
                 ISymbolNode startNode = range.StartNode(_nodeFactory);
                 ISymbolNode endNode = range.EndNode(_nodeFactory);
 
+                if (startNode is null != endNode is null)
+                {
+                    throw new InvalidOperationException("Both or neither of the symbols that define a symbol range must be non-null.");
+                }
+
+                if (startNode is null)
+                {
+                    // Emit empty symbol ranges as an empty symbol at the end of the text section.
+                    var writer = GetOrCreateSection(ObjectNodeSection.TextSection);
+                    writer.EmitSymbolDefinition(GetMangledName(range));
+                    continue;
+                }
+
 #if !READYTORUN
                 startNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, startNode);
                 endNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, endNode);
@@ -504,12 +517,8 @@ namespace ILCompiler.ObjectWriter
                     throw new InvalidOperationException("The symbols that define a symbol range must be in the same section.");
                 }
 
-                SectionWriter sectionWriter = new SectionWriter(
-                    this,
-                    startSymbol.SectionIndex,
-                    _sectionIndexToData[startSymbol.SectionIndex]);
-
-                sectionWriter.EmitSymbolDefinition(rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
+                // Don't use SectionWriter here as it emits symbols relative to the current writing position.
+                EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
             }
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)

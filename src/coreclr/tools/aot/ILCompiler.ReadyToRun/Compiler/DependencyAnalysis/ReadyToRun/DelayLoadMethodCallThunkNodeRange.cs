@@ -16,6 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class DelayLoadMethodCallThunkNodeRange : DependencyNodeCore<NodeFactory>, ISymbolRangeNode
     {
+        private const string NodeName = "DelayLoadMethodCallThunkNodeRange";
         private ImportThunk _startNode;
         private ImportThunk _endNode;
 
@@ -28,11 +29,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
-        protected override string GetName(NodeFactory context) => "DelayLoadMethodCallThunkNodeRange";
+        protected override string GetName(NodeFactory context) => NodeName;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetName(null));
+            sb.Append($"__{NodeName}");
         }
 
         public void OnNodeMarked(DependencyNodeCore<NodeFactory> node)
