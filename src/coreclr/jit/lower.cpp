@@ -4555,11 +4555,27 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use tbnz or tbz in codegen which do not affect the flag register
+            var_types op1Type = genActualType(relopOp1);
+
+            // Remove cast to sbyte or short and instead check negative bit for those types.
+            if (relopOp1->OperIs(GT_CAST))
+            {
+                GenTreeCast* cast = relopOp1->AsCast();
+                if ((cast->gtCastType == TYP_BYTE || cast->gtCastType == TYP_SHORT) && !cast->gtOverflow())
+                {
+                    LIR::Use use;
+                    op1Type         = cast->gtCastType;
+                    GenTree* castOp = cast->CastOp();
+                    BlockRange().TryGetUse(cast, &use);
+                    use.ReplaceWith(castOp);
+                    BlockRange().Remove(cast);
+                    relopOp1 = castOp;
+                }
+            }
             newOper = GT_JTEST;
             cc      = cond->OperIs(GT_LT) ? GenCondition(GenCondition::NE) : GenCondition(GenCondition::EQ);
             // x < 0 => (x & signBit) != 0. Update the constant to be the sign bit.
-            relopOp2->AsIntConCommon()->SetIntegralValue(
-                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
+            relopOp2->AsIntConCommon()->SetIntegralValue((static_cast<INT64>(1) << (8 * genTypeSize(op1Type) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
