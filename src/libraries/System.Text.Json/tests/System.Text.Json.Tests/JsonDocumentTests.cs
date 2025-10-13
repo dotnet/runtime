@@ -2371,16 +2371,16 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestJsonDocumentWithMaxDepth()
         {
-            var options = new JsonDocumentOptions { MaxDepth = 2 };
+            var options = new JsonDocumentOptions { MaxDepth = 3 };
             
-            // Should succeed with depth of 2
+            // Should succeed with depth of 3
             string validJson = @"{""level1"":{""level2"":{}}}";
             using JsonDocument doc = JsonDocument.Parse(validJson, options);
             Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
             
-            // Should fail with depth of 3
-            string tooDeepJson = @"{""level1"":{""level2"":{""level3"" :{}}}}";
-            Assert.Throws<JsonException>(() => JsonDocument.Parse(tooDeepJson, options));
+            // Should fail with depth of 4
+            string tooDeepJson = @"{""level1"":{""level2"":{""level3"":{}}}}";
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(tooDeepJson, options));
         }
 
         [Fact]
@@ -2400,7 +2400,7 @@ namespace System.Text.Json.Tests
                 sb.Append("}");
             }
             
-            Assert.Throws<JsonException>(() => JsonDocument.Parse(sb.ToString(), options));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(sb.ToString(), options));
         }
 
         [Theory]
