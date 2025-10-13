@@ -31,7 +31,7 @@ namespace ILCompiler
         public Option<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = SR.OutputFilePath };
         public Option<ReadyToRunContainerFormat> OutputFormat { get; } =
-            new("--format") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
+            new("--obj-format", "-f") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
         public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
         public Option<bool> Optimize { get; } =
@@ -414,7 +414,6 @@ namespace ILCompiler
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "legacype" => ReadyToRunContainerFormat.LegacyPE,
                 "pe" => ReadyToRunContainerFormat.PE,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
             };

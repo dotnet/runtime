@@ -303,9 +303,6 @@
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="JitInterface\UnboxingMethodDescFactory.cs" />
-    <Compile Include="ObjectWriter\SectionBuilder.cs" />
-    <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
-    <Compile Include="ObjectWriter\RelocationHelper.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.Sorting.cs" />

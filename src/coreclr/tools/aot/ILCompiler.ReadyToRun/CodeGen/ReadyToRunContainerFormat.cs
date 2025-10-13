@@ -9,7 +9,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum ReadyToRunContainerFormat
     {
-        LegacyPE,
         PE
     }
 }

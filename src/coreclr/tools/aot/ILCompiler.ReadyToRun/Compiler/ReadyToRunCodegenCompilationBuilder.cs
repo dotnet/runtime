@@ -45,7 +45,7 @@ namespace ILCompiler
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
-        private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.LegacyPE;
+        private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
 
         private string _jitPath;
         private string _outputFile;
