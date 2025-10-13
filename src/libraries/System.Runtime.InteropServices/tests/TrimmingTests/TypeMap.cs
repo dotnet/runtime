@@ -36,7 +36,7 @@ if (args.Length > 1 && args[0] == "instantiate")
 
 IReadOnlyDictionary<string, Type> usedTypeMap = TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap>();
 
-if (!usedTypeMap.TryGetValue("TrimTargetIsTarget", out Type? targetAndTrimTargetType))
+if (!usedTypeMap.TryGetValue("TrimTargetIsTarget", out Type targetAndTrimTargetType))
 {
     Console.WriteLine("TrimTargetIsTarget not found in used type map.");
     return 1;
@@ -48,7 +48,7 @@ if (targetAndTrimTargetType != GetTypeWithoutTrimAnalysis(nameof(TargetAndTrimTa
     return 2;
 }
 
-if (!usedTypeMap.TryGetValue("TrimTargetIsUnrelated", out Type? targetType))
+if (!usedTypeMap.TryGetValue("TrimTargetIsUnrelated", out Type targetType))
 {
     Console.WriteLine("TrimTargetIsUnrelated not found in used type map.");
     return 3;
@@ -73,7 +73,7 @@ if (usedTypeMap.TryGetValue("TrimTargetIsUnreferenced", out _))
 }
 
 IReadOnlyDictionary<Type, Type> usedProxyTypeMap = TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap>();
-if (!usedProxyTypeMap.TryGetValue(typeof(SourceClass), out Type? proxyType))
+if (!usedProxyTypeMap.TryGetValue(typeof(SourceClass), out Type proxyType))
 {
     Console.WriteLine("SourceClass not found in used proxy type map.");
     return 7;
@@ -97,7 +97,7 @@ if (GetTypeWithoutTrimAnalysis(nameof(UnusedProxyType)) is not null)
     return 10;
 }
 
-if (!usedTypeMap.TryGetValue("DuplicateMappingWithDifferentTrimTargets", out Type? duplicatedTarget))
+if (!usedTypeMap.TryGetValue("DuplicateMappingWithDifferentTrimTargets", out Type duplicatedTarget))
 {
     Console.WriteLine("Could not find duplicated target type");
     return 11;
