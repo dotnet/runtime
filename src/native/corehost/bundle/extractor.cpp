@@ -7,6 +7,8 @@
 #include "pal.h"
 #include "utils.h"
 #include <cinttypes>
+#include <cerrno>
+#include <cstring>
 
 #ifdef __sun
 #include <alloca.h>
@@ -160,6 +162,31 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
             {
                 CompressionNative_InflateEnd(&zStream);
                 trace::error(_X("I/O failure when writing decompressed file."));
+                if (ferror(file))
+                {
+                    int err = errno;
+                    const char* errMsg = strerror(err);
+                    if (err == ENOSPC)
+                    {
+                        trace::error(_X("No space left on device (ENOSPC). Error: %s"), errMsg);
+                    }
+                    else if (err == EDQUOT)
+                    {
+                        trace::error(_X("Disk quota exceeded (EDQUOT). Error: %s"), errMsg);
+                    }
+                    else if (err == EIO)
+                    {
+                        trace::error(_X("I/O error (EIO). Error: %s"), errMsg);
+                    }
+                    else if (err == EFBIG)
+                    {
+                        trace::error(_X("File too large (EFBIG). Error: %s"), errMsg);
+                    }
+                    else
+                    {
+                        trace::error(_X("Write error. errno=%d, Error: %s"), err, errMsg);
+                    }
+                }
                 throw StatusCode::BundleExtractionIOError;
             }
 
@@ -181,10 +208,58 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
     {
         trace::error(_X("Failure extracting contents of the application bundle. Expected size:%" PRId64 " Actual size:%zu"), size, extracted_size);
         trace::error(_X("I/O failure when writing extracted files."));
+        if (ferror(file))
+        {
+            int err = errno;
+            const char* errMsg = strerror(err);
+            if (err == ENOSPC)
+            {
+                trace::error(_X("No space left on device (ENOSPC). Error: %s"), errMsg);
+            }
+            else if (err == EDQUOT)
+            {
+                trace::error(_X("Disk quota exceeded (EDQUOT). Error: %s"), errMsg);
+            }
+            else if (err == EIO)
+            {
+                trace::error(_X("I/O error (EIO). Error: %s"), errMsg);
+            }
+            else if (err == EFBIG)
+            {
+                trace::error(_X("File too large (EFBIG). Error: %s"), errMsg);
+            }
+            else
+            {
+                trace::error(_X("Write error. errno=%d, Error: %s"), err, errMsg);
+            }
+        }
+        fclose(file);
         throw StatusCode::BundleExtractionIOError;
     }
 
-    fclose(file);
+    if (fclose(file) != 0)
+    {
+        int err = errno;
+        const char* errMsg = strerror(err);
+        trace::error(_X("Failure closing extracted file."));
+        if (err == ENOSPC)
+        {
+            trace::error(_X("No space left on device (ENOSPC). Error: %s"), errMsg);
+        }
+        else if (err == EDQUOT)
+        {
+            trace::error(_X("Disk quota exceeded (EDQUOT). Error: %s"), errMsg);
+        }
+        else if (err == EIO)
+        {
+            trace::error(_X("I/O error (EIO). Error: %s"), errMsg);
+        }
+        else
+        {
+            trace::error(_X("Close error. errno=%d, Error: %s"), err, errMsg);
+        }
+        throw StatusCode::BundleExtractionIOError;
+    }
 }
 
 void extractor_t::begin()
