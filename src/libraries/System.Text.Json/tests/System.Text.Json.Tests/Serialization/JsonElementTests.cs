@@ -242,6 +242,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(JsonElement.DeepEquals(element, element));
         }
 
+        [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public static async Task DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
         {
