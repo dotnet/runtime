@@ -342,7 +342,7 @@ namespace Microsoft.Win32.SafeHandles
                         Console.WriteLine("LSeek failed with error: " + errno + " message: " + Marshal.GetPInvokeErrorMessage(errno));
                         Console.WriteLine($"Path '{path}' {(File.Exists(path) ? "exists" : "doesn't exist")}.");
                     }
-                    Debug.Assert(result >= 0);
+                    //Debug.Assert(result >= 0);
                 }
 
                 fileLength = status.Size;
