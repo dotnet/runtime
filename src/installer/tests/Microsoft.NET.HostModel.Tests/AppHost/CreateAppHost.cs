@@ -437,11 +437,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
         public void CetCompat_ProductHosts()
         {
-            Assert.SkipUnless(Binaries.CetCompat.IsSupported, "CET not supported on this platform");
-
             using (TestArtifact artifact = CreateTestDirectory())
             {
                 string[] hosts = [Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath];
