@@ -2,17 +2,29 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>corewasmrun</title>
+    <title>corerun-wasm</title>
 </head>
 <body>
-    <h1>corewasmrun</h1>
+    <h1>corerun-wasm</h1>
     <pre id="log"></pre>
     <script>
         Module = {
+            arguments: [
+                "HelloWorld.dll"
+            ],
             preRun: [ function () {
-                ENV.PAL_DBG_CHANNELS="+all.all";
-                // ENV.PAL_DBG_CHANNELS="+all.ERROR";
-            }],
+                // Build the TPA list and set the APP_ASSEMBLIES environment variable.
+                const path = "/";
+                let tpaList = "";
+                let files = FS.readdir(path);
+                files.forEach(function(file) {
+                    if (file.endsWith(".dll")) {
+                        tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
+                    }
+                });
+
+                ENV["APP_ASSEMBLIES"] = tpaList;
+            } ],
             onExit: function (code) {
                 console.log("onExit, code: " + code);
             },
@@ -21,7 +33,7 @@
         const originalConsoleLog = console.log;
         console.log = function(message) {
             originalConsoleLog(message);
-            fetch('/log=corewasmrun-log.txt', {
+            fetch('/log=corerun-wasm-log.txt', {
                 method: 'POST',
                 body: ('stdout: ' + message),
                 headers: {
@@ -35,7 +47,7 @@
         const originalConsoleError = console.error;
         console.error = function(message) {
             originalConsoleError(message);
-            fetch('/log=corewasmrun-log.txt', {
+            fetch('/log=corerun-wasm-log.txt', {
                 method: 'POST',
                 body: ('stderr: ' + message),
                 headers: {
@@ -48,5 +60,5 @@
             document.querySelector("#log").appendChild(elt);
         };
     </script>
-    <script src="corewasmrun.js"></script>
+    <script src="corerun.js"></script>
 </body>

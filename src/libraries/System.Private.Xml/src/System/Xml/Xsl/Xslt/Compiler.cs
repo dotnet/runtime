@@ -96,10 +96,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void AddModule(string baseUri)
         {
-            if (!_moduleOrder.ContainsKey(baseUri))
-            {
-                _moduleOrder[baseUri] = _moduleOrder.Count;
-            }
+            _moduleOrder.TryAdd(baseUri, _moduleOrder.Count);
         }
 
         public void ApplyNsAliases(ref string? prefix, ref string nsUri)

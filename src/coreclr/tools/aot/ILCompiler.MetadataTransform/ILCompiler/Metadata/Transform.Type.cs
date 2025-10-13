@@ -336,14 +336,14 @@ namespace ILCompiler.Metadata
 
                 foreach (var e in ecmaRecord.GetEvents())
                 {
-                    Event evt = HandleEvent(ecmaEntity.EcmaModule, e);
+                    Event evt = HandleEvent(ecmaEntity.Module, e);
                     if (evt != null)
                         record.Events.Add(evt);
                 }
 
                 foreach (var property in ecmaRecord.GetProperties())
                 {
-                    Property prop = HandleProperty(ecmaEntity.EcmaModule, property);
+                    Property prop = HandleProperty(ecmaEntity.Module, property);
                     if (prop != null)
                         record.Properties.Add(prop);
                 }
@@ -351,21 +351,21 @@ namespace ILCompiler.Metadata
                 Ecma.CustomAttributeHandleCollection customAttributes = ecmaRecord.GetCustomAttributes();
                 if (customAttributes.Count > 0)
                 {
-                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.EcmaModule, customAttributes);
+                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.Module, customAttributes);
                 }
 
                 /* COMPLETENESS
                 foreach (var miHandle in ecmaRecord.GetMethodImplementations())
                 {
-                    Ecma.MetadataReader reader = ecmaEntity.EcmaModule.MetadataReader;
+                    Ecma.MetadataReader reader = ecmaEntity.Module.MetadataReader;
 
                     Ecma.MethodImplementation miDef = reader.GetMethodImplementation(miHandle);
 
-                    Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodBody);
+                    Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.Module.GetObject(miDef.MethodBody);
                     if (_policy.IsBlocked(methodBody))
                         continue;
 
-                    Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodDeclaration);
+                    Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.Module.GetObject(miDef.MethodDeclaration);
                     if (_policy.IsBlocked(methodDecl.GetTypicalMethodDefinition()))
                         continue;
 

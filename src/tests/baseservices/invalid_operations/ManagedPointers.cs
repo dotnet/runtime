@@ -29,6 +29,7 @@ public unsafe class ManagedPointers
     }
 
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void Validate_GeneratedILStubs_NullByRef()
     {
         Console.WriteLine($"Running {nameof(Validate_GeneratedILStubs_NullByRef)}...");

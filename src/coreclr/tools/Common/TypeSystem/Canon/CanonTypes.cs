@@ -8,6 +8,10 @@ using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -51,7 +55,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType ContainingType => null;
+        public override MetadataType ContainingType => null;
     }
 
     /// <summary>
@@ -87,11 +91,11 @@ namespace Internal.TypeSystem
         // consumer-specific initialization.
         partial void Initialize();
 
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {
-                return Context.GetWellKnownType(WellKnownType.Object);
+                return (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             }
         }
 
@@ -171,12 +175,12 @@ namespace Internal.TypeSystem
         // consumer-specific initialization.
         partial void Initialize();
 
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {
                 // UniversalCanon is "a struct of indeterminate size and GC layout"
-                return Context.GetWellKnownType(WellKnownType.ValueType);
+                return (MetadataType)Context.GetWellKnownType(WellKnownType.ValueType);
             }
         }
 

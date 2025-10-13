@@ -109,15 +109,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override ModuleDesc Module
-        {
-            get
-            {
-                return _module;
-            }
-        }
-
-        public EcmaModule EcmaModule
+        public override EcmaModule Module
         {
             get
             {
@@ -160,17 +152,7 @@ namespace Internal.TypeSystem.Ecma
             return type;
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -306,7 +288,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override IEnumerable<MethodDesc> GetMethods()
+        public override IEnumerable<EcmaMethod> GetMethods()
         {
             foreach (var handle in _typeDefinition.GetMethods())
             {
@@ -314,7 +296,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override IEnumerable<MethodDesc> GetVirtualMethods()
+        public override IEnumerable<EcmaMethod> GetVirtualMethods()
         {
             MetadataReader reader = _module.MetadataReader;
             foreach (var handle in _typeDefinition.GetMethods())
@@ -325,7 +307,18 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. Returns null if method not found.
+        /// </summary>
+        public new EcmaMethod GetMethod(ReadOnlySpan<byte> name, MethodSignature signature)
+        {
+            return GetMethod(name, signature, default(Instantiation));
+        }
+
+        public override EcmaMethod GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -342,7 +335,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public override EcmaMethod GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -359,7 +352,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetStaticConstructor()
+        public override EcmaMethod GetStaticConstructor()
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -378,7 +371,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetDefaultConstructor()
+        public override EcmaMethod GetDefaultConstructor()
         {
             if (IsAbstract)
                 return null;
@@ -441,7 +434,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override IEnumerable<FieldDesc> GetFields()
+        public override IEnumerable<EcmaField> GetFields()
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
@@ -468,7 +461,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override FieldDesc GetField(ReadOnlySpan<byte> name)
+        public override EcmaField GetField(ReadOnlySpan<byte> name)
         {
             var metadataReader = this.MetadataReader;
 
@@ -484,7 +477,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override IEnumerable<MetadataType> GetNestedTypes()
+        public override IEnumerable<EcmaType> GetNestedTypes()
         {
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
@@ -492,7 +485,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override EcmaType GetNestedType(string name)
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -513,7 +506,7 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 if (nameMatched)
-                    return (EcmaType)_module.GetObject(handle);
+                    return _module.GetType(handle);
             }
 
             return null;
@@ -527,7 +520,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override DefType ContainingType
+        public override EcmaType ContainingType
         {
             get
             {
@@ -535,7 +528,7 @@ namespace Internal.TypeSystem.Ecma
                     return null;
 
                 var handle = _typeDefinition.GetDeclaringType();
-                return (DefType)_module.GetType(handle);
+                return _module.GetType(handle);
             }
         }
 
