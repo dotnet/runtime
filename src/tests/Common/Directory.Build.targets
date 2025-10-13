@@ -142,7 +142,6 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <Crossgen2Dir />
       <Crossgen2Dir Condition="('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64') or '$(EnableNativeSanitizers)' != ''">$(CoreCLRArtifactsPath)x64/crossgen2</Crossgen2Dir>
     </PropertyGroup>
 
