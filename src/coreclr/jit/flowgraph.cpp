@@ -777,8 +777,9 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
              helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR ||
              helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
     {
-        result = gtNewHelperCallNode(helper, type,
-                                     gtNewIconNode(info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
+        result =
+            gtNewHelperCallNode(helper, type,
+                                gtNewIconNode((size_t)info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
     }
     else
     {

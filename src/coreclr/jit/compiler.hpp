@@ -3605,7 +3605,7 @@ inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
 #endif
 }
 
-__forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
+FORCEINLINE regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
 {
     if (varTypeUsesFloatArgReg(type))
     {
@@ -3642,7 +3642,7 @@ inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
 #endif
 }
 
-__forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
+FORCEINLINE regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 {
     regMaskTP result;
     if (varTypeUsesFloatArgReg(type))

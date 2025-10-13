@@ -79,7 +79,6 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
 
     [Theory]
     [MemberData(nameof(Get_Booleans_Data))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/72951", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public async Task ExtractToDirectoryUnicode(bool async)
     {
         FileStream source = CreateFileStreamRead(async, zfile("unicode.zip"));

@@ -465,13 +465,13 @@ void MyICJI::LongLifetimeFree(void* obj)
     DebugBreakorAV(33);
 }
 
-size_t MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassThreadStaticDynamicInfo");
     return jitInstance->mc->repGetClassThreadStaticDynamicInfo(cls);
 }
 
-size_t MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassStaticDynamicInfo");
     return jitInstance->mc->repGetClassStaticDynamicInfo(cls);

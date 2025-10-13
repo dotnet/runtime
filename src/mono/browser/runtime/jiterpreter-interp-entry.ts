@@ -405,7 +405,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
         if (trace > 0)
             mono_log_info(`jit queue generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
-        const traceModule = new WebAssembly.Module(buffer);
+        const traceModule = new WebAssembly.Module(buffer as BufferSource);
         const wasmImports = builder.getWasmImports();
 
         const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
@@ -448,7 +448,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
                     builder.endSection();
             } catch {
                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                ;
+
             }
 
             const buf = builder.getArrayView(false, true);
