@@ -2373,6 +2373,6 @@ ucrtbase!wmemcpy_s
 ucrtbase!wmemmove_s
 
 #
-# Windows 8+
+# Windows 10+
 #
 bcrypt!BCryptHash
