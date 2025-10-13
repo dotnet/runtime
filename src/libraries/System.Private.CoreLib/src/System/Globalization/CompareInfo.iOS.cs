@@ -255,10 +255,10 @@ namespace System.Globalization
         /// populated if index mapping is needed. This method does not modify the original input.</remarks>
         /// <param name="input">The input string to be filtered, represented as a read-only span of UTF-16 characters.</param>
         /// <param name="filteredStackBuffer">A stack-allocated buffer to receive the filtered characters. If this buffer is not long enough to hold the filtered result,
-        /// the method may fall to use the ArrayPool.
+        /// the method may fall back to using the ArrayPool.
         /// </param>
         /// <param name="indexMapStackBuffer">A stack-allocated buffer to receive the mapping from filtered character positions to their original indices
-        /// in the input. if this span is empty, means ni need to create the index mapping.</param>
+        /// in the input. if this span is empty, means no need to create the index mapping.</param>
         /// <returns>true if the string is filtered removing symbols from there. false if there is no symbols found in the input.</returns>
         internal bool TryFilterString(
             ReadOnlySpan<char> input,
