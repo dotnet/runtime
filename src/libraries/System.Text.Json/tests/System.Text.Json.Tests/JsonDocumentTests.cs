@@ -2341,6 +2341,68 @@ namespace System.Text.Json.Tests
             Assert.True(doc.RootElement.GetProperty("flagC").GetBoolean());
         }
 
+        [Fact]
+        public static void TestAllowDuplicatePropertiesFalseThrowsException()
+        {
+            string jsonWithDuplicates = @"{""name"":""first"",""name"":""second""}";
+            var options = new JsonDocumentOptions
+            {
+                AllowDuplicateProperties = false
+            };
+
+            Assert.Throws<JsonException>(() => JsonDocument.Parse(jsonWithDuplicates, options));
+        }
+
+        [Fact]
+        public static void TestAllowDuplicatePropertiesTrueAllowsDuplicates()
+        {
+            string jsonWithDuplicates = @"{""name"":""first"",""name"":""second""}";
+            var options = new JsonDocumentOptions
+            {
+                AllowDuplicateProperties = true
+            };
+
+            using JsonDocument doc = JsonDocument.Parse(jsonWithDuplicates, options);
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+            // The last value wins
+            Assert.Equal("second", doc.RootElement.GetProperty("name").GetString());
+        }
+
+        [Fact]
+        public static void TestJsonDocumentWithMaxDepth()
+        {
+            var options = new JsonDocumentOptions { MaxDepth = 2 };
+            
+            // Should succeed with depth of 2
+            string validJson = @"{""level1"":{""level2"":{}}}";
+            using JsonDocument doc = JsonDocument.Parse(validJson, options);
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+            
+            // Should fail with depth of 3
+            string tooDeepJson = @"{""level1"":{""level2"":{""level3"" :{}}}}";
+            Assert.Throws<JsonException>(() => JsonDocument.Parse(tooDeepJson, options));
+        }
+
+        [Fact]
+        public static void TestJsonDocumentWithDefaultMaxDepth()
+        {
+            var options = new JsonDocumentOptions { MaxDepth = 0 }; // Default is 64
+            
+            // Build a JSON with depth of 65 (should fail with default)
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < 65; i++)
+            {
+                sb.Append("{\"a\":");
+            }
+            sb.Append("1");
+            for (int i = 0; i < 65; i++)
+            {
+                sb.Append("}");
+            }
+            
+            Assert.Throws<JsonException>(() => JsonDocument.Parse(sb.ToString(), options));
+        }
+
         [Theory]
         [InlineData("{ \"object\": { \"1-1\": null, \"1-2\": \"12\", }, \"array\": [ 4, 8, 1, 9, 2 ] }")]
         [InlineData("[ 5, 4, 3, 2, 1, ]")]
