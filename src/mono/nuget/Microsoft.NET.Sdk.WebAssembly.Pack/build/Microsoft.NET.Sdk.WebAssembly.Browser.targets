@@ -191,7 +191,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
       <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
-      <WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</WasmEmitTypeScriptDefinitions>
+      <_WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</_WasmEmitTypeScriptDefinitions>
 
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
@@ -861,12 +861,12 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
   <Target Name="_EnsureDotnetTypeScriptDefinitions" 
           AfterTargets="_ResolveWasmConfiguration" 
-          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
+          Condition="'$(_WasmEmitTypeScriptDefinitions)' == 'true'">
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
       <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
-      <_DotnetTypesSourcePath>$(_RuntimePackNativeDir)dotnet.d.ts</_DotnetTypesSourcePath>
+      <_DotnetTypesSourcePath>$([MSBuild]::NormalizeDirectory($(_RuntimePackNativeDir), 'dotnet.d.ts'))</_DotnetTypesSourcePath>
       <_DotnetTypesDestPath>$(MSBuildProjectDirectory)\wwwroot\dotnet.d.ts</_DotnetTypesDestPath>
     </PropertyGroup>
     

@@ -319,24 +319,35 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData(Configuration.Debug)]
-        [InlineData(Configuration.Release)]
-        public void TypeScriptDefinitionsCopiedToWwwrootOnBuild(Configuration config)
+        [InlineData(Configuration.Debug, true)]
+        [InlineData(Configuration.Release, true)]
+        [InlineData(Configuration.Debug, false)]
+        [InlineData(Configuration.Release, false)]
+        public void TypeScriptDefinitionsCopiedToWwwrootOnBuild(Configuration config, bool emitTypeScriptDts)
         {
-            string emitTypeScriptDts = "<WasmEmitTypeScriptDefinitions>true</WasmEmitTypeScriptDefinitions>";
+            string shouldEmit = emitTypeScriptDts ? "true" : "false";
+            string emitTypeScriptDts = $"<WasmEmitTypeScriptDefinitions>{shouldEmit}</WasmEmitTypeScriptDefinitions>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDts);
 
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
 
             // Verify dotnet.d.ts is not in wwwroot after creation
-            Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation when WasmEmitTypeScriptDefinitions is used");
+            Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation of the project");
 
-            // Build to trigger the _EnsureDotnetTypeScriptDefinitions target on restore
+            // Build to trigger the _EnsureDotnetTypeScriptDefinitions target during the build phase
             BuildProject(info, config, new BuildOptions());
 
-            // Verify dotnet.d.ts is created in the project's wwwroot directory after build
-            Assert.True(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions=true");
+            // Verify dotnet.d.ts presence in the project's wwwroot directory after build
+            bool fileExists = File.Exists(dotnetDtsWwwrootPath);
+            if (emitTypeScriptDts)
+            {
+                Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
+            else
+            {
+                Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
         }
     }
 }

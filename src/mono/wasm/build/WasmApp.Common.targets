@@ -191,7 +191,6 @@
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
     <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
-    <WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</WasmEmitTypeScriptDefinitions>
 
     <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
          So, we need to escape it here, so the paths don't get split up when converting
