@@ -176,10 +176,12 @@ EXTERN_C FCDECL2(void, JITutil_MonReliableContention, AwareLock* awarelock, BYTE
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 
-EXTERN_C void DoJITFailFast ();
+EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
 FCDECL0(int, JIT_GetCurrentManagedThreadId);
+
+EXTERN_C void ReversePInvokeBadTransition();
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 // Extra argument for the classification of the checked barriers.

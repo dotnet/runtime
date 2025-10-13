@@ -435,17 +435,3 @@ VOID UMThunkMarshInfo::RunTimeInit()
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
 }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-// FailFast if a method marked UnmanagedCallersOnlyAttribute is
-// invoked directly from managed code. UMThunkStub.asm check the
-// mode and call this function to failfast.
-VOID STDCALL ReversePInvokeBadTransition()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    // Fail
-    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-                                             COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
-                                            );
-}

@@ -428,6 +428,4 @@ UMEntryThunkData* GetMostRecentUMEntryThunkData();
 #endif // FEATURE_INTERPRETER
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
-VOID STDCALL ReversePInvokeBadTransition();
-
 #endif //__dllimportcallback_h__
