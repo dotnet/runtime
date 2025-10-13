@@ -55,6 +55,7 @@
       CopyToPublishDirectory="PreserveNewest"
       ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
+      Condition="'$(TargetsWasm)' != 'true'"
       />
 
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"

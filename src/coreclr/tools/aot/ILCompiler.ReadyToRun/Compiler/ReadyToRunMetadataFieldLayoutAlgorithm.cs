@@ -56,7 +56,7 @@ namespace ILCompiler
             if (defType.GetTypeDefinition() is EcmaType ecmaType)
             {
                 // ECMA types are the only ones that can have statics
-                ModuleFieldLayout moduleFieldLayout = _moduleFieldLayoutMap.GetOrCreateValue(ecmaType.EcmaModule);
+                ModuleFieldLayout moduleFieldLayout = _moduleFieldLayoutMap.GetOrCreateValue(ecmaType.Module);
                 layout.Offsets = _moduleFieldLayoutMap.GetOrAddDynamicLayout(defType, moduleFieldLayout);
             }
             return layout;
@@ -114,7 +114,7 @@ namespace ILCompiler
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                     }
-                    if (moduleLayout && fieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
+                    if (moduleLayout && fieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.Module != module)
                     {
                         // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
                         // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L1006">here</a>
@@ -215,7 +215,7 @@ namespace ILCompiler
                         {
                             ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                         }
-                        if (moduleLayout && fieldDesc.FieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
+                        if (moduleLayout && fieldDesc.FieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.Module != module)
                         {
                             // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
                             // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L1006">here</a>
@@ -614,7 +614,7 @@ namespace ILCompiler
                     return ComputeCStructFieldLayout(type, numInstanceFields);
                 case MetadataLayoutKind.Explicit:
                     // Works around https://github.com/dotnet/runtime/issues/102868
-                    if (type is { IsValueType: false, MetadataBaseType.IsSequentialLayout: true })
+                    if (type is { IsValueType: false, BaseType.IsSequentialLayout: true })
                     {
                         ThrowHelper.ThrowTypeLoadException(type);
                     }
@@ -622,7 +622,7 @@ namespace ILCompiler
                     return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
                 case MetadataLayoutKind.Sequential when !type.ContainsGCPointers:
                     // Works around https://github.com/dotnet/runtime/issues/102868
-                    if (type is { IsValueType: false, MetadataBaseType.IsExplicitLayout: true })
+                    if (type is { IsValueType: false, BaseType.IsExplicitLayout: true })
                     {
                         ThrowHelper.ThrowTypeLoadException(type);
                     }

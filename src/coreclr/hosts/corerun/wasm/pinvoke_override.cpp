@@ -11,7 +11,7 @@ extern "C" const void* SystemResolveDllImport(const char* name);
 
 // pinvoke_override:
 // Check if given function belongs to one of statically linked libraries and return a pointer if found.
-const void* pinvoke_override(const char* library_name, const char* entry_point_name)
+static const void* pinvoke_override(const char* library_name, const char* entry_point_name)
 {
     // This function is only called with the library name specified for a p/invoke, not any variations.
     // It must handle exact matches to the names specified. See Interop.Libraries.cs for each platform.
@@ -23,7 +23,7 @@ const void* pinvoke_override(const char* library_name, const char* entry_point_n
     return nullptr;
 }
 
-void wasm_add_pinvoke_override()
+void add_pinvoke_override()
 {
     PInvokeOverride::SetPInvokeOverride(pinvoke_override, PInvokeOverride::Source::RuntimeConfiguration);
 }

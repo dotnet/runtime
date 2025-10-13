@@ -20,16 +20,20 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteExtracted = true)
+        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteApp = true)
         {
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
-            if (deleteExtracted)
+            if (deleteApp)
             {
                 DeleteExtractionDirectory(result);
+
+                // Delete the bundled app itself. It would already be cleaned up after all tests in this class run, but
+                // we do this early for test environments that may not have enough space for all the bundled apps at once.
+                FileUtils.DeleteFileIfPossible(path);
             }
 
             return result.Should().Pass()
@@ -65,7 +69,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: false, deleteExtracted: !shouldExtract)
+            RunTheApp(singleFile, selfContained: false, deleteApp: !shouldExtract)
                 .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
@@ -87,7 +91,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: true, deleteExtracted: !shouldExtract)
+            RunTheApp(singleFile, selfContained: true, deleteApp: !shouldExtract)
                 .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
@@ -107,7 +111,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: true, deleteExtracted: !shouldExtract)
+            RunTheApp(singleFile, selfContained: true, deleteApp: !shouldExtract)
                 .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)
@@ -127,7 +131,7 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: false, deleteExtracted: !shouldExtract)
+            RunTheApp(singleFile, selfContained: false, deleteApp: !shouldExtract)
                 .And.CreateExtraction(shouldExtract);
 
             if (shouldExtract)

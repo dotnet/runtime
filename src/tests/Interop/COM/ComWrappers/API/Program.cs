@@ -1125,6 +1125,7 @@ namespace ComWrappersTests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // COM apartments are Windows-specific
+        [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
         public unsafe void CrossApartmentQueryInterface_NoDeadlock()
         {
             Console.WriteLine($"Running {nameof(CrossApartmentQueryInterface_NoDeadlock)}...");
