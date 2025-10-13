@@ -1405,11 +1405,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif // _DEBUG
 
     // If this is CoreLib, then don't perform some sanity checks on the layout
-    bmtProp->fNoSanityChecks = pModule->IsSystem() ||
-#ifdef FEATURE_READYTORUN
-        // No sanity checks for ready-to-run compiled images if possible
-        (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()) ||
-#endif
+    bmtProp->fNoSanityChecks =
+        pModule->SkipTypeValidation() ||
         // No sanity checks for real generic instantiations
         !bmtGenerics->IsTypicalTypeDefinition();
 
@@ -12801,11 +12798,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
 
             // Check interface for use of variant type parameters
             if ((genericsInfo.pVarianceInfo != NULL) && (TypeFromToken(crInterface) == mdtTypeSpec)
-#ifdef FEATURE_READYTORUN
-                // No sanity checks for ready-to-run compiled images if possible
-                && (!pModule->IsReadyToRun() || !pModule->GetReadyToRunInfo()->SkipTypeValidation())
-#endif
-                )
+                && !pModule->SkipTypeValidation())
             {
                 ULONG cSig;
                 PCCOR_SIGNATURE pSig;

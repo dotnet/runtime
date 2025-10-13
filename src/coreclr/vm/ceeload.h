@@ -686,6 +686,8 @@ private:
         RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
         //If runtime marshalling is enabled for this assembly
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
+
+        SKIP_TYPE_VALIDATION = 0x00020000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -1500,6 +1502,12 @@ public:
 #endif
     }
 
+    bool SkipTypeValidation() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_dwPersistedFlags & SKIP_TYPE_VALIDATION) != 0;
+    }
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {

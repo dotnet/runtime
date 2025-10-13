@@ -4218,12 +4218,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
 
 VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thConstraint, UINT resIDWhy)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (thConstraint.IsArray())
     {
@@ -4259,12 +4254,7 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
 
 VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSigPtr, MethodTable *pAskingMT, UINT resIDWhy)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CorElementType elemType;
     IfFailThrow(pSigPtr->GetElemType(&elemType));
@@ -4388,12 +4378,7 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
 
 VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD numConstraints;
     TypeHandle *pthConstraints = pTyVar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
@@ -4609,13 +4594,11 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     bool fNeedsSanityChecks = true;
 
-#ifdef FEATURE_READYTORUN
     Module * pModule = GetModule();
 
     // No sanity checks for ready-to-run compiled images if possible
-    if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
+    if (pModule->SkipTypeValidation())
         fNeedsSanityChecks = false;
-#endif
 
     bool fNeedAccessChecks = (level == CLASS_LOADED) &&
                              fNeedsSanityChecks &&

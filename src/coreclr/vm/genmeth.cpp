@@ -1557,9 +1557,7 @@ BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth) {
 void MethodDesc::CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstraints)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(IsTypicalMethodDefinition());
         PRECONDITION(CheckPointer(pfHasCircularMethodConstraints));
     } CONTRACTL_END;
