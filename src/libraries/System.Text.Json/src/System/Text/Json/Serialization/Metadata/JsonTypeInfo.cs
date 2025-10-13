@@ -1326,11 +1326,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             return typeof(IDictionary<string, object>).IsAssignableFrom(propertyType) ||
                 typeof(IDictionary<string, JsonElement>).IsAssignableFrom(propertyType) ||
-                // IReadOnlyDictionary is supported only if a Dictionary can be assigned to it (e.g., the interface itself)
-                (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(propertyType) &&
-                 propertyType.IsAssignableFrom(typeof(Dictionary<string, object>))) ||
-                (typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(propertyType) &&
-                 propertyType.IsAssignableFrom(typeof(Dictionary<string, JsonElement>))) ||
+                propertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                propertyType == typeof(IReadOnlyDictionary<string, JsonElement>) ||
                 // Avoid a reference to typeof(JsonNode) to support trimming.
                 (propertyType.FullName == JsonObjectTypeName && ReferenceEquals(propertyType.Assembly, typeof(JsonTypeInfo).Assembly));
         }
