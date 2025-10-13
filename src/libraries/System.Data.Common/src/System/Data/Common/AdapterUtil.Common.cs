@@ -825,8 +825,7 @@ namespace System.Data.Common
             for (; ; ++uniqueIndex)
             {
                 string uniqueName = columnName + uniqueIndex.ToString(CultureInfo.InvariantCulture);
-                string lowerName = uniqueName.ToLowerInvariant();
-                if (hash.TryAdd(lowerName, index))
+                if (hash.TryAdd(uniqueName, index))
                 {
                     columnName = uniqueName;
                     break;
