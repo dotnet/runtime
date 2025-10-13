@@ -154,7 +154,7 @@ namespace System
             Append((byte)(l >> 8));
             Append((byte)l);
 
-            for (int i = 80; i < 85; i++)
+            for (int i = 80; _w.Length < 85; i++)
             {
                 BinaryPrimitives.WriteUInt32BigEndian(output, _w[i]);
                 output = output.Slice(4);
