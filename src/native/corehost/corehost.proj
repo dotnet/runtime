@@ -5,6 +5,7 @@
     package's targets into the build.
   -->
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)native.props" />
 
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
@@ -44,8 +45,8 @@
   <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
        since the build produced artifacts should always version the same (even if they may not get used).
   -->
-  <Target Name="BuildCoreHostUnix"
-          Condition="'$(TargetOS)' != 'windows'"
+  <Target Name="BuildCoreHostOnUnix"
+          Condition="'$(HostOS)' != 'windows'"
           AfterTargets="Build"
           DependsOnTargets="$(BuildCoreHostDependsOn)">
     <PropertyGroup>
@@ -87,8 +88,8 @@
       Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
       upgrading compiler warnings to errors in release branches.
     -->
-    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs)" Importance="High"/>
-    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" Importance="High"/>
+    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <!-- 
@@ -107,8 +108,8 @@
     </PropertyGroup>
   </Target>
   
-  <Target Name="BuildCoreHostWindows"
-          Condition="'$(TargetOS)' == 'windows'"
+  <Target Name="BuildCoreHostOnWindows"
+          Condition="'$(HostOS)' == 'windows'"
           AfterTargets="Build"
           DependsOnTargets="$(BuildCoreHostDependsOn)">
     <!-- Generate Version files -->
@@ -147,7 +148,7 @@
     <PropertyGroup>
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.cmd'))</BuildScript>
 
-      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) targetrid $(TargetRid)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) -os $(TargetOS) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) targetrid $(TargetRid)</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
@@ -163,8 +164,8 @@
       IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
       upgrading compiler warnings to errors in release branches.
     -->
-    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs)" Importance="High"/>
-    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" Importance="High"/>
+    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"

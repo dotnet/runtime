@@ -63,9 +63,9 @@ else()
             target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
             set(JS_CORE_RUN_PRE
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.pre.js")
             set_target_properties(corerun PROPERTIES

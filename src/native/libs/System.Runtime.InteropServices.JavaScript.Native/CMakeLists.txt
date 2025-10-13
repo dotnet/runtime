@@ -12,3 +12,4 @@ add_library(System.Runtime.InteropServices.JavaScript.Native-Static
 )
 set_target_properties(System.Runtime.InteropServices.JavaScript.Native-Static PROPERTIES OUTPUT_NAME System.Runtime.InteropServices.JavaScript.Native CLEAN_DIRECT_OUTPUT 1)
 install(TARGETS System.Runtime.InteropServices.JavaScript.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+install(TARGETS System.Runtime.InteropServices.JavaScript.Native-Static DESTINATION sharedFramework COMPONENT runtime)

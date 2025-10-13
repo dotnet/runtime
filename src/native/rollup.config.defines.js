@@ -15,9 +15,10 @@ if (process.env.ProductVersion === undefined) {
     throw new Error("ProductVersion environment variable is not defined");
 }
 
-export const configuration = process.env.Configuration;
+export const configuration = process.env.Configuration !== "Release" && process.env.Configuration !== "RELEASE" ? "Debug" : "Release";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
+export const staticLibDestination = process.env.StaticLibDestination;
 
 console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 

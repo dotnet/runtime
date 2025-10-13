@@ -54,7 +54,7 @@
 
     <!-- Determine if we support running the .NET SDK on the target platform -->
     <_SdkToolsSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_SdkToolsSupportedOS>
-    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel' and '$(TargetsWasm)' != 'true'">true</_SdkToolsSupportedArch>
+    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
@@ -365,7 +365,7 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetsWasm)' != 'true'">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetArchitecture)' != 'wasm'">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>

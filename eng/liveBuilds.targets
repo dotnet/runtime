@@ -215,7 +215,21 @@
         $(LibrariesNativeArtifactsPath)*.dex;
         $(LibrariesNativeArtifactsPath)*.jar;"
         IsNative="true" />
-      <!-- WASM-TODO build this also as part of coreCLR host.native -->
+
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                             Include="
+        $(CoreCLRSharedFrameworkDir)dotnet.d.ts;
+        $(CoreCLRSharedFrameworkDir)dotnet.js;
+        $(CoreCLRSharedFrameworkDir)dotnet.js.map;
+        $(CoreCLRSharedFrameworkDir)dotnet.runtime.js;
+        $(CoreCLRSharedFrameworkDir)dotnet.runtime.js.map;
+        $(CoreCLRSharedFrameworkDir)*.dat;
+        $(CoreCLRSharedFrameworkDir)dotnet.diagnostics.js;
+        $(CoreCLRSharedFrameworkDir)dotnet.native.js;
+        $(CoreCLRSharedFrameworkDir)dotnet.native.wasm;
+        $(CoreCLRSharedFrameworkDir)package.json;"
+        IsNative="true" />
+
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
@@ -223,10 +237,7 @@
         $(LibrariesNativeArtifactsPath)dotnet.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
-        $(LibrariesNativeArtifactsPath)*.dat;"
-        IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
-                             Include="
+        $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)dotnet.diagnostics.js;
         $(LibrariesNativeArtifactsPath)dotnet.native.js;
         $(LibrariesNativeArtifactsPath)dotnet.native.wasm;

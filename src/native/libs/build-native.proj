@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <Import Project="$(RepositoryEngineeringDir)native.props" />
+
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
@@ -11,27 +13,14 @@
     <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
 
-    <_RuntimeVariant />
-    <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
-    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
-
     <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
-    <_CMakeArgs Condition="'$(_IcuDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_ICU_DIR=$(_IcuDir)"</_CMakeArgs>
-    <_CMakeArgs Condition="'$(_TzdDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_TZD_DIR=$(_TzdDir)"</_CMakeArgs>
-    <_CMakeArgs Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">$(_CMakeArgs) -cmakeargs "-DBUILD_LIBS_NATIVE_BROWSER=1"</_CMakeArgs>
 
-    <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs) @(_NativeCMakeArg, ' ')</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
