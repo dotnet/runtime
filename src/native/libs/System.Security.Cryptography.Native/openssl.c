@@ -1371,6 +1371,7 @@ static int32_t EnsureOpenSsl10Initialized(void)
     int numLocks = 0;
     int locksInitialized = 0;
     int randPollResult = 0;
+    size_t allocationSize = 0;
 
     pthread_mutex_lock(&g_initLock);
 
@@ -1390,7 +1391,6 @@ static int32_t EnsureOpenSsl10Initialized(void)
     }
 
     // Create the locks array
-    size_t allocationSize = 0;
     if (!multiply_s(sizeof(pthread_mutex_t), (size_t)numLocks, &allocationSize))
     {
         ret = 2;
