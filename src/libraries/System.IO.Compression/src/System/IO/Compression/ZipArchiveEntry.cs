@@ -309,9 +309,9 @@ namespace System.IO.Compression
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
         /// <summary>
-        /// Checks if the entry was created on a Unix platform.
+        /// Return the byte that specifies the platform on which the zip was created.
         /// </summary>
-        public bool CreatedOnUnix => _versionMadeByPlatform == ZipVersionMadeByPlatform.Unix;
+        public ZipVersionMadeByPlatform VersionMadeByPlatform => _versionMadeByPlatform;
 
         internal ZipArchive.ChangeState Changes { get; private set; }
 
