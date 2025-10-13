@@ -252,7 +252,7 @@ struct TransitionBlock
         // on wasm we don't have registers, so instead we put the arguments
         // which would be in registers on other architectures
         // on the stack right after the transition block
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI) || defined(TARGET_WASM)
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
         offs = sizeof(TransitionBlock);
 #else
         offs = offsetof(TransitionBlock, m_argumentRegisters);
