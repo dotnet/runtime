@@ -105,16 +105,16 @@ jobs:
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.1200.ARM64.Open
+        - OSX.13.ARM64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.1200.ARM64
+        - OSX.13.ARM64
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.1200.Amd64.Open
+        - OSX.13.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.1200.Amd64
+        - OSX.13.Amd64
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
