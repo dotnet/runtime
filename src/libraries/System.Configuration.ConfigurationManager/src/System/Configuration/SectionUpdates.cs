@@ -205,7 +205,7 @@ namespace System.Configuration
         // Return a sorted list of the names of groups with unretrieved sections.
         internal string[] GetUnretrievedGroupNames()
         {
-            ArrayList unretrievedGroups = new ArrayList();
+            List<string> List unretrievedGroups = new List<string>();
 
             foreach (DictionaryEntry de in _groups)
             {
