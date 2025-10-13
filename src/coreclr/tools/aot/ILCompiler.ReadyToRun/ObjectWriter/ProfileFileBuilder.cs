@@ -170,15 +170,18 @@ namespace ILCompiler.PEWriter
                         calleeRVA = _outputInfoBuilder.Sections[calleeNode.SectionIndex].VirtualAddress + calleeNode.Offset;
                     }
 
+                    int callerRVA32Bit = checked((int)callerRVA);
+                    int calleeRVA32Bit = checked((int)calleeRVA);
+
                     _callInfo.Add(new CallInfo(
                         caller: kvpCallerCalleeCount.Key,
                         callerNode: callerNode,
-                        callerRVA: (int)callerRVA,
+                        callerRVA: callerRVA32Bit,
                         callee: kvpCalleeCount.Key,
                         calleeNode: calleeNode,
-                        calleeRVA: (int)calleeRVA,
+                        calleeRVA: calleeRVA32Bit,
                         callCount: kvpCalleeCount.Value,
-                        callType: GetCallType(callerNode, (int)callerRVA, calleeNode, (int)calleeRVA)));
+                        callType: GetCallType(callerNode, callerRVA32Bit, calleeNode, calleeRVA32Bit)));
                 }
             }
         }

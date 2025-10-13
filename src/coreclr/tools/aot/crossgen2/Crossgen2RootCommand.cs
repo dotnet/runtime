@@ -415,7 +415,7 @@ namespace ILCompiler
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
                 "pe" => ReadyToRunContainerFormat.PE,
-                _ => throw new CommandLineException(SR.InvalidFileLayout)
+                _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
         }
 

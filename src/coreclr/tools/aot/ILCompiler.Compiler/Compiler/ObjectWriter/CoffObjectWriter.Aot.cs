@@ -60,7 +60,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void CreateEhSections()
         {
             // Create .pdata
-            _pdataSectionWriter = GetOrCreateSection(PDataSection);
+            _pdataSectionWriter = GetOrCreateSection(ObjectNodeSection.PDataSection);
         }
 
         private protected override void EmitUnwindInfo(

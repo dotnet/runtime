@@ -244,6 +244,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public void EmitChecksum(ReadOnlySpan<byte> outputBlob, Span<byte> checksumLocation)
             {
                 Debug.Assert(checksumLocation.Length == ChecksumSize);
+                // Take the first 16 bytes of the SHA256 hash as the RSDS checksum.
                 SHA256.HashData(outputBlob)[0..ChecksumSize].CopyTo(checksumLocation);
             }
 

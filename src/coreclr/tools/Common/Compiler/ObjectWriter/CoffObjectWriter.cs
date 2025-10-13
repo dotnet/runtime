@@ -57,8 +57,6 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
         private readonly HashSet<string> _referencedMethods = new();
 
-        private static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
-
         private static readonly ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);

@@ -76,13 +76,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return base.Offset + _symbolOffset;
-            }
-        }
+        int ISymbolNode.Offset => base.Offset + _symbolOffset;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

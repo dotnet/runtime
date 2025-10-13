@@ -429,4 +429,7 @@
   <data name="OutputFormat" xml:space="preserve">
     <value>Target output format for the ReadyToRun image</value>
   </data>
+  <data name="InvalidOutputFormat" xml:space="preserve">
+    <value>Format must be PE</value>
+  </data>
 </root>
