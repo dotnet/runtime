@@ -23,6 +23,7 @@
   <!-- Set up artifact subpaths. -->
   <PropertyGroup>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
+    <CoreCLRCoreHostDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corehost'))</CoreCLRCoreHostDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
     <CoreCLRCrossILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
@@ -218,15 +219,14 @@
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
+        $(CoreCLRCoreHostDir)dotnet.native.js;
+        $(CoreCLRCoreHostDir)dotnet.native.wasm;
         $(CoreCLRSharedFrameworkDir)dotnet.d.ts;
         $(CoreCLRSharedFrameworkDir)dotnet.js;
         $(CoreCLRSharedFrameworkDir)dotnet.js.map;
         $(CoreCLRSharedFrameworkDir)dotnet.runtime.js;
         $(CoreCLRSharedFrameworkDir)dotnet.runtime.js.map;
         $(CoreCLRSharedFrameworkDir)*.dat;
-        $(CoreCLRSharedFrameworkDir)dotnet.diagnostics.js;
-        $(CoreCLRSharedFrameworkDir)dotnet.native.js;
-        $(CoreCLRSharedFrameworkDir)dotnet.native.wasm;
         $(CoreCLRSharedFrameworkDir)package.json;"
         IsNative="true" />
 
