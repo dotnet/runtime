@@ -7,6 +7,7 @@
 #include "pal.h"
 #include "utils.h"
 #include <cinttypes>
+#include <cerrno>
 
 #ifdef __sun
 #include <alloca.h>
@@ -156,10 +157,20 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
             }
 
             int produced = bufSize - zStream.availOut;
-            if (fwrite(buf, 1, produced, file) != (size_t)produced)
+            size_t written = fwrite(buf, 1, produced, file);
+            if (written != (size_t)produced)
             {
                 CompressionNative_InflateEnd(&zStream);
                 trace::error(_X("I/O failure when writing decompressed file."));
+                if (ferror(file))
+                {
+                    int err = errno;
+                    trace::error(_X("I/O error detected. errno: %d, %s"), err, pal::strerror(err).c_str());
+                }
+                else
+                {
+                    trace::error(_X("Short write detected. Expected: %d bytes, Written: %zu bytes"), produced, written);
+                }
                 throw StatusCode::BundleExtractionIOError;
             }
 
@@ -181,10 +192,26 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
     {
         trace::error(_X("Failure extracting contents of the application bundle. Expected size:%" PRId64 " Actual size:%zu"), size, extracted_size);
         trace::error(_X("I/O failure when writing extracted files."));
+        if (ferror(file))
+        {
+            int err = errno;
+            trace::error(_X("I/O error detected. errno: %d, %s"), err, pal::strerror(err).c_str());
+        }
+        else
+        {
+            trace::error(_X("Short write detected. Expected: %zu bytes, Written: %zu bytes"), cast_size, extracted_size);
+        }
+        fclose(file);
         throw StatusCode::BundleExtractionIOError;
     }
 
-    fclose(file);
+    if (fclose(file) != 0)
+    {
+        int err = errno;
+        trace::error(_X("Failure extracting contents of the application bundle."));
+        trace::error(_X("Failed to close file after extraction. errno: %d, %s"), err, pal::strerror(err).c_str());
+        throw StatusCode::BundleExtractionIOError;
+    }
 }
 
 void extractor_t::begin()
