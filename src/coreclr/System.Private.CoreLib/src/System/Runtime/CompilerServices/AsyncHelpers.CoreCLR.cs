@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.Runtime.CompilerServices
 {
@@ -491,6 +492,49 @@ namespace System.Runtime.CompilerServices
                     }
                     else if (calledTask != null)
                     {
+                        if (calledTask is IValueTaskAsTask vtTask)
+                        {
+                            if (!vtTask.IsConfigured)
+                            {
+                                // ValueTaskSource can be configured to use scheduling context or to ignore it.
+                                // The awaiter must inform the source whether it wants to continue on a context,
+                                // but the source may decide to ignore the suggestion. Since the behavior of
+                                // the source takes precedence, we clear the context flags from the awaiting
+                                // continuation (so it will run transparently on what source decides) and tell
+                                // the source that awaiting frame prefers to continue on a context.
+                                // The reason why we do it here is because the continuation chain builds from the
+                                // innermost frame out and when the leaf thunk links the head continuation,
+                                // it does not know if the caller wants to continue in a context. Thus the thunk
+                                // creates an "unconfigured" IValueTaskAsTask and we configure it here.
+                                ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
+                                CorInfoContinuationFlags continuationFlags = headContinuation.Next!.Flags;
+
+                                const CorInfoContinuationFlags continueOnContextFlags =
+                                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT |
+                                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+
+                                if ((continuationFlags & continueOnContextFlags) != 0)
+                                {
+                                    // effectively move context flags from headContinuation to the source config.
+                                    configFlags |= ValueTaskSourceOnCompletedFlags.UseSchedulingContext;
+                                    headContinuation.Next!.Flags &= ~continueOnContextFlags;
+                                }
+
+                                vtTask.Configure(configFlags);
+
+                                if (!calledTask.TryAddCompletionAction(task))
+                                {
+                                    // calledTask has already completed and we need to schedule
+                                    // our code for execution ourselves.
+                                    // Restore the continuation flags before doing that.
+                                    headContinuation.Next!.Flags = continuationFlags;
+                                    ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal: true);
+                                }
+
+                                return;
+                            }
+                        }
+
                         // Runtime async callable wrapper for task returning
                         // method. This implements the context transparent
                         // forwarding and makes these wrappers minimal cost.
