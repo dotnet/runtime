@@ -353,6 +353,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
+                // Validate that generic variance is properly respected in interface signatures
+                if (type.HasInstantiation && type.IsInterface)
+                {
+                    foreach (var interfaceType in type.ExplicitlyImplementedInterfaces)
+                    {
+                        if (interfaceType.HasInstantiation)
+                        {
+                            // Interfaces behave covariantly
+                            if (!ValidateVarianceInType(type.Instantiation, interfaceType, Internal.TypeSystem.GenericVariance.Covariant))
+                            {
+                                AddTypeValidationError(type, $"'{type}' has invalid variance in in interface impl of {interfaceType}");
+                                return false;
+                            }
+                        }
+                    }
+                }
+
                 // Validate that there are no cyclical class or method constraints, and that constraints are all acccessible to the type using them
                 if (!BoundedCheckForInstantiation(type.Instantiation))
                 {
