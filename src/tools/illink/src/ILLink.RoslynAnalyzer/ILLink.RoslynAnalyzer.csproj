@@ -24,6 +24,7 @@
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System/Index.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup>

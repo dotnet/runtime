@@ -164,7 +164,7 @@ static void do_track_entry(header_t* entry, int32_t add)
 
 static void* mallocFunction(size_t size, const char *file, int line)
 {
-    header_t* entry = malloc(size + sizeof(header_t));
+    header_t* entry = (header_t*)malloc(size + sizeof(header_t));
     if (entry != NULL)
     {
         init_memory_entry(entry, size, file, line);
@@ -187,7 +187,7 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
     }
 
     void* toReturn = NULL;
-    header_t* newEntry = (header_t*) realloc((void*)entry, size + sizeof(header_t));
+    header_t* newEntry = (header_t*)realloc((void*)entry, size + sizeof(header_t));
     if (newEntry != NULL)
     {
         entry = newEntry;
@@ -279,7 +279,7 @@ void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, uint64_t 
 
 static void init_tracking_lists(void)
 {
-    g_trackedMemory = malloc(kPartitionCount * sizeof(list_t));
+    g_trackedMemory = (list_t*)malloc(kPartitionCount * sizeof(list_t));
     for (uint32_t i = 0; i < kPartitionCount; i++)
     {
         list_init(&g_trackedMemory[i]);
