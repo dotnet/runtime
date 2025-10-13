@@ -35,6 +35,7 @@ public static class Runtime_101731
 
     [Theory]
     [InlineData(float.MaxValue)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557")]
     public static void TestConvertToInt64NativeSingle(float value)
     {
         Func<float, long> func = float.ConvertToIntegerNative<long>;
