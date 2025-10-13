@@ -242,7 +242,7 @@ namespace System.Reflection.Emit
 
             if (type.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length > 0)
             {
-                foreach (Type conv in type.GetFunctionPointerCallingConventions())
+                foreach (Type conv in conventions)
                 {
                     if (conv == typeof(CallConvCdecl))
                         callConv = SignatureCallingConvention.CDecl;
