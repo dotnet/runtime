@@ -291,11 +291,11 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void GarbageEntryChecksumZeroThrowsInvalidDataException()
+        public void GarbageEntryChecksumZeroReturnNull()
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
             using TarReader reader = new TarReader(archiveStream);
-            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+            Assert.Null(reader.GetNextEntry());
         }
 
         [Fact]
