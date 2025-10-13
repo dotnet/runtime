@@ -119,7 +119,7 @@ namespace Internal.TypeSystem
         {
             EffectiveVisibility visibility = method.Attributes.ToEffectiveVisibility();
 
-            for (EcmaType type = (EcmaType)method.OwningType; type is not null; type = (EcmaType)type.ContainingType)
+            for (EcmaType type = method.OwningType; type is not null; type = type.ContainingType)
             {
                 visibility = visibility.ConstrainToVisibility(type.Attributes.ToEffectiveVisibility());
             }
@@ -129,8 +129,8 @@ namespace Internal.TypeSystem
         public static EffectiveVisibility GetEffectiveVisibility(this EcmaType type)
         {
             EffectiveVisibility visibility = type.Attributes.ToEffectiveVisibility();
-            type = (EcmaType)type.ContainingType;
-            for (; type is not null; type = (EcmaType)type.ContainingType)
+            type = type.ContainingType;
+            for (; type is not null; type = type.ContainingType)
             {
                 visibility = visibility.ConstrainToVisibility(type.Attributes.ToEffectiveVisibility());
             }
@@ -159,7 +159,7 @@ namespace Internal.TypeSystem
             // Treat all non-Ecma fields as always having public visibility
             EffectiveVisibility visibility = field.Attributes.ToEffectiveVisibility();
 
-            for (EcmaType type = (EcmaType)field.OwningType; type is not null; type = (EcmaType)type.ContainingType)
+            for (EcmaType type = field.OwningType; type is not null; type = type.ContainingType)
             {
                 visibility = visibility.ConstrainToVisibility(type.Attributes.ToEffectiveVisibility());
             }

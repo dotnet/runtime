@@ -826,7 +826,7 @@ namespace System.Text.RegularExpressions
                             return s1Frequency.CompareTo(s2Frequency);
                         }
 
-                        if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                        if (!Ascii.IsValid(s1Chars) && !Ascii.IsValid(s2Chars))
                         {
                             // Prefer the set with fewer values.
                             return s1CharsLength.CompareTo(s2CharsLength);
