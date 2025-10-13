@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119948 -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExtendedLayoutTypes.il" />
