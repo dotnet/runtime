@@ -1,6 +1,6 @@
 project(Common.JavaScript C)
 
-set(NATIVE_JAVASCRIPT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../../../)
+set(NATIVE_JAVASCRIPT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 if (NOT STATIC_LIB_DESTINATION)
     message(FATAL_ERROR "please set STATIC_LIB_DESTINATION")
 endif()
@@ -14,9 +14,9 @@ file(GLOB_RECURSE ROLLUP_TS_SOURCES
     "${NATIVE_JAVASCRIPT_SRC}/libs/System.Runtime.InteropServices.JavaScript.Native/*.js"
     "${NATIVE_JAVASCRIPT_SRC}/corehost/browserhost/*.ts"
     "${NATIVE_JAVASCRIPT_SRC}/corehost/browserhost/*.js"
-    "${NATIVE_JAVASCRIPT_SRC}package.json"
-    "${NATIVE_JAVASCRIPT_SRC}tsconfig.json"
-    "${NATIVE_JAVASCRIPT_SRC}node_modules/.npm-stamp"
+    "${NATIVE_JAVASCRIPT_SRC}/package.json"
+    "${NATIVE_JAVASCRIPT_SRC}/tsconfig.json"
+    "${NATIVE_JAVASCRIPT_SRC}/node_modules/.npm-stamp"
 )
 
 set(ROLLUP_OUTPUTS
