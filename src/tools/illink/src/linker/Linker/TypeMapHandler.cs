@@ -312,8 +312,7 @@ namespace Mono.Linker
                 return self.Attribute.AttributeType.Name switch
                 {
                     "TypeMapAttribute`1" =>
-                        sourceType is null || context.Annotations.IsRelevantToVariantCasting(sourceType)
-                        || context.Annotations.IsInstantiated(sourceType), // Or target of an IsInst instruction
+                        sourceType is null || context.Annotations.IsMarked(sourceType),
                     "TypeMapAssociationAttribute`1" =>
                         context.Annotations.IsInstantiated(sourceType),
                     _ => false,
