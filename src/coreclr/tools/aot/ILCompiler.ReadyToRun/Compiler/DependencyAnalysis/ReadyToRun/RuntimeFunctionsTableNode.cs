@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             symbol = method;
                         }
 
-                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset);
+                        runtimeFunctionsBuilder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: frameInfo.StartOffset + _nodeFactory.Target.CodeDelta);
                         if (!relocsOnly && _nodeFactory.Target.Architecture == TargetArchitecture.X64)
                         {
                             // On Amd64, the 2nd word contains the EndOffset of the runtime function

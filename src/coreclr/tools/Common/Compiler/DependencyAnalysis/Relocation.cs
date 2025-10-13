@@ -579,12 +579,10 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4,
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 4,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 16,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 16,
                 RelocType.IMAGE_REL_BASED_RISCV64_PC => 16,
-                // This relocation edits values across 8 bytes,
-                // but it semantically represents a 12-byte instruction sequence.
-                RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 12,
                 _ => throw new NotSupportedException(),
             };
         }
