@@ -54,9 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            if (factory.Target.IsWindows)
-                return ObjectNodeSection.DebugDirectorySection;
-            return ObjectNodeSection.TextSection;
+            return ObjectNodeSection.DebugDirectorySection;
         }
 
         public override bool IsShareable => false;

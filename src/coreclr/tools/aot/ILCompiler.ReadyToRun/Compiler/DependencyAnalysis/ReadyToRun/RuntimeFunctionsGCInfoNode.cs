@@ -18,9 +18,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            if (factory.Target.IsWindows)
-                return ObjectNodeSection.XDataSection;
-            return ObjectNodeSection.ReadOnlyDataSection;
+            return ObjectNodeSection.XDataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;
