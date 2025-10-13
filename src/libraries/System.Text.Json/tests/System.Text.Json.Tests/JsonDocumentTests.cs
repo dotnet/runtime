@@ -2313,6 +2313,34 @@ namespace System.Text.Json.Tests
             Assert.Equal(3, doc.RootElement.GetProperty("values").GetArrayLength());
         }
 
+        [Fact]
+        public static void TestJsonDocumentWithEscapedPropertyNames()
+        {
+            string json = @"{""prop\u0041"":""value1"",""prop\u0042"":""value2"",""prop\u0043"":123}";
+            
+            using JsonDocument doc = JsonDocument.Parse(json);
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+            Assert.Equal("value1", doc.RootElement.GetProperty("propA").GetString());
+            Assert.Equal("value2", doc.RootElement.GetProperty("propB").GetString());
+            Assert.Equal(123, doc.RootElement.GetProperty("propC").GetInt32());
+        }
+
+        [Fact]
+        public static void TestJsonDocumentWithMultiSegmentEscapedPropertyNames()
+        {
+            string json = @"{""name\u0041"":""test"",""value\u0042"":42,""flag\u0043"":true}";
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            
+            // Create multi-segment buffer to exercise HasValueSequence path
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
+            
+            using JsonDocument doc = JsonDocument.Parse(sequence);
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+            Assert.Equal("test", doc.RootElement.GetProperty("nameA").GetString());
+            Assert.Equal(42, doc.RootElement.GetProperty("valueB").GetInt32());
+            Assert.True(doc.RootElement.GetProperty("flagC").GetBoolean());
+        }
+
         [Theory]
         [InlineData("{ \"object\": { \"1-1\": null, \"1-2\": \"12\", }, \"array\": [ 4, 8, 1, 9, 2 ] }")]
         [InlineData("[ 5, 4, 3, 2, 1, ]")]
