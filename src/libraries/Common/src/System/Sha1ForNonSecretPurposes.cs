@@ -65,7 +65,7 @@ namespace System
                 Drain(w);
             }
 
-            for (int i = 80; i < 85; i++)
+            for (int i = 80; i < w.Length; i++)
             {
                 BinaryPrimitives.WriteUInt32BigEndian(destination, w[i]);
                 destination = destination.Slice(4);
