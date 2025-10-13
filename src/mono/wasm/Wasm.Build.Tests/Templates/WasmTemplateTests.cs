@@ -326,8 +326,8 @@ namespace Wasm.Build.Tests
         public void TypeScriptDefinitionsCopiedToWwwrootOnBuild(Configuration config, bool emitTypeScriptDts)
         {
             string shouldEmit = emitTypeScriptDts ? "true" : "false";
-            string emitTypeScriptDts = $"<WasmEmitTypeScriptDefinitions>{shouldEmit}</WasmEmitTypeScriptDefinitions>";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDts);
+            string emitTypeScriptDtsProp = $"<WasmEmitTypeScriptDefinitions>{shouldEmit}</WasmEmitTypeScriptDefinitions>";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDtsProp);
 
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
