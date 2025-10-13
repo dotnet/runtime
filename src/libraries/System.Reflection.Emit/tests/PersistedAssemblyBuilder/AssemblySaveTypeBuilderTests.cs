@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -788,6 +790,76 @@ namespace System.Reflection.Emit.Tests
             Assert.False(fields[0].FieldType.GetGenericArguments()[0].IsValueType);
             Assert.Equal("ValueTypeChildren", fields[1].Name);
             Assert.True(fields[1].FieldType.GetGenericArguments()[0].IsValueType);
+        }
+
+        [Fact]
+        public void SaveFunctionPointerFields()
+        {
+            using TempFile file = TempFile.Create();
+            using MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver());
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+            TypeBuilder tb = mb.DefineType("TestType", TypeAttributes.Public | TypeAttributes.Class);
+
+            // delegate*<int, int>
+            Type funcPtr1 = typeof(delegate*<int, int>);
+            tb.DefineField("FuncPtr1", funcPtr1, FieldAttributes.Public | FieldAttributes.Static);
+
+            // delegate* unmanaged[Cdecl]<int, float, double>
+            Type funcPtr4 = new ModifiedTypeHelpers.FunctionPointer(
+                typeof(delegate* unmanaged[Cdecl]<int, float, double>),
+                [typeof(CallConvCdecl)]);
+            tb.DefineField("FuncPtr2", funcPtr4, FieldAttributes.Public | FieldAttributes.Static);
+
+            // delegate* unmanaged[Stdcall]<string, in int, void>
+            Type funcPtr5 = new ModifiedTypeHelpers.FunctionPointer(
+                typeof(delegate* unmanaged[Stdcall]<string, in int, void>),
+                [typeof(CallConvStdcall)],
+                customParameterTypes: [typeof(string), new ModifiedTypeHelpers.ModifiedType(typeof(int).MakeByRefType(), [typeof(InAttribute)], [])]);
+            tb.DefineField("FuncPtr3", funcPtr5, FieldAttributes.Public | FieldAttributes.Static);
+
+            tb.CreateType();
+            ab.Save(file.Path);
+
+            Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+            Type testType = assemblyFromDisk.Modules.First().GetType("TestType");
+            Assert.NotNull(testType);
+
+            FieldInfo field1 = testType.GetField("FuncPtr1");
+            Assert.NotNull(field1);
+            Assert.True(field1.FieldType.IsFunctionPointer);
+            Assert.False(field1.FieldType.IsUnmanagedFunctionPointer);
+            Type[] paramTypes1 = field1.FieldType.GetFunctionPointerParameterTypes();
+            Assert.Equal(1, paramTypes1.Length);
+            Assert.Equal(typeof(int).FullName, paramTypes1[0].FullName);
+            Assert.Equal(typeof(int).FullName, field1.FieldType.GetFunctionPointerReturnType().FullName);
+
+            FieldInfo field2 = testType.GetField("FuncPtr2");
+            Type field2Type = field2.GetModifiedFieldType();
+            Assert.NotNull(field2);
+            Assert.True(field2Type.IsFunctionPointer);
+            Assert.True(field2Type.IsUnmanagedFunctionPointer);
+            Type[] paramTypes2 = field2Type.GetFunctionPointerParameterTypes();
+            Assert.Equal(2, paramTypes2.Length);
+            Assert.Equal(typeof(int).FullName, paramTypes2[0].FullName);
+            Assert.Equal(typeof(float).FullName, paramTypes2[1].FullName);
+            Assert.Equal(typeof(double).FullName, field2Type.GetFunctionPointerReturnType().FullName);
+            Type[] callingConventions2 = field2Type.GetFunctionPointerCallingConventions();
+            Assert.Contains(callingConventions2, t => t.FullName == typeof(CallConvCdecl).FullName);
+
+            FieldInfo field3 = testType.GetField("FuncPtr3");
+            Type field3Type = field3.GetModifiedFieldType();
+            Assert.NotNull(field3);
+            Assert.True(field3Type.IsFunctionPointer);
+            Assert.True(field3Type.IsUnmanagedFunctionPointer);
+            Type[] paramTypes3 = field3Type.GetFunctionPointerParameterTypes();
+            Assert.Equal(2, paramTypes3.Length);
+            Assert.Equal(typeof(string).FullName, paramTypes3[0].FullName);
+            Assert.Equal(typeof(int).MakeByRefType().FullName, paramTypes3[1].FullName);
+            Assert.Contains(paramTypes3[1].GetRequiredCustomModifiers(), t => t.FullName == typeof(InAttribute).FullName);
+            Assert.Equal(typeof(void).FullName, field3Type.GetFunctionPointerReturnType().FullName);
+            Type[] callingConventions3 = field3Type.GetFunctionPointerCallingConventions();
+            Assert.Contains(callingConventions3, t => t.FullName == typeof(CallConvStdcall).FullName);
         }
     }
 
