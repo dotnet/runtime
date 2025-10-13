@@ -1038,7 +1038,7 @@ HCIMPLEND
 // FailFast if a method marked UnmanagedCallersOnlyAttribute is
 // invoked directly from managed code. UMThunkStub.asm check the
 // mode and call this function to failfast.
-VOID STDCALL ReversePInvokeBadTransition()
+void ReversePInvokeBadTransition()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
