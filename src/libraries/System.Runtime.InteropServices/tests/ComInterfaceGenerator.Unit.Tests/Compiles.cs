@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using Xunit;
@@ -344,7 +345,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeTwoLevelShadows};
             yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
-            yield return new object[] { ID(), codeSnippets.DocumentedComInterface };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref readonly") };
             yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
@@ -428,6 +428,15 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 var project = solution.GetProject(projectId);
                 if (project is null) return solution;
+                
+                // Set parse options to enable documentation mode which is required for CS1591 validation
+                var parseOptions = (CSharpParseOptions?)project.ParseOptions;
+                if (parseOptions is not null)
+                {
+                    parseOptions = parseOptions.WithDocumentationMode(DocumentationMode.Diagnose);
+                    solution = solution.WithProjectParseOptions(projectId, parseOptions);
+                    project = solution.GetProject(projectId)!;
+                }
                 
                 var compilationOptions = project.CompilationOptions!
                     .WithSpecificDiagnosticOptions(new Dictionary<string, ReportDiagnostic>
