@@ -219,6 +219,7 @@
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
+        $(CoreCLRCoreHostDir)package.json;
         $(CoreCLRCoreHostDir)dotnet.native.js;
         $(CoreCLRCoreHostDir)dotnet.native.wasm;
         $(CoreCLRSharedFrameworkDir)dotnet.d.ts;
@@ -226,8 +227,7 @@
         $(CoreCLRSharedFrameworkDir)dotnet.js.map;
         $(CoreCLRSharedFrameworkDir)dotnet.runtime.js;
         $(CoreCLRSharedFrameworkDir)dotnet.runtime.js.map;
-        $(CoreCLRSharedFrameworkDir)*.dat;
-        $(CoreCLRSharedFrameworkDir)package.json;"
+        $(CoreCLRSharedFrameworkDir)*.dat;"
         IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
