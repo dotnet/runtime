@@ -2291,6 +2291,28 @@ namespace System.Text.Json.Tests
             Assert.Equal(128, options.MaxDepth);
         }
 
+        [Fact]
+        public static void TestJsonDocumentOptionsWithTrailingCommasAndComments()
+        {
+            var options = new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+                MaxDepth = 32
+            };
+
+            string json = @"
+            {
+                ""name"": ""test"", // comment
+                ""values"": [1, 2, 3,], /* trailing comma */
+            }";
+
+            using JsonDocument doc = JsonDocument.Parse(json, options);
+            Assert.Equal(JsonValueKind.Object, doc.RootElement.ValueKind);
+            Assert.Equal("test", doc.RootElement.GetProperty("name").GetString());
+            Assert.Equal(3, doc.RootElement.GetProperty("values").GetArrayLength());
+        }
+
         [Theory]
         [InlineData("{ \"object\": { \"1-1\": null, \"1-2\": \"12\", }, \"array\": [ 4, 8, 1, 9, 2 ] }")]
         [InlineData("[ 5, 4, 3, 2, 1, ]")]

@@ -97,8 +97,12 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-1.1e3", "-1100")]
         [InlineData("1000", "1e3")] // Trailing zeros in integral part
         [InlineData("100", "1e2")] // Trailing zeros in integral part
+        [InlineData("10000", "1e4")] // More trailing zeros in integral part
         [InlineData("0.0001", "1e-4")] // Leading zeros in fractional part
         [InlineData("0.00100", "0.001")] // Leading and trailing zeros
+        [InlineData("0.00000", "0")] // Zero with fractional zeros
+        [InlineData("0e10", "0e-5")] // Zero with different exponents
+        [InlineData("5000", "5e3")] // Non-1 with trailing zeros
         [InlineData("79228162514264337593543950336", "792281625142643375935439503360e-1")] // decimal.MaxValue + 1
         [InlineData("79228162514.264337593543950336", "792281625142643375935439503360e-19")]
         [InlineData("1.75e+300", "1.75E+300")] // Variations in exponent casing
