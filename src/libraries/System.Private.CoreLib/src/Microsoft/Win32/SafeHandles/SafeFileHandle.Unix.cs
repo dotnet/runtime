@@ -341,6 +341,7 @@ namespace Microsoft.Win32.SafeHandles
                         var errno = Interop.Sys.GetErrNo();
                         Console.WriteLine("LSeek failed with error: " + errno + " message: " + Marshal.GetPInvokeErrorMessage(errno));
                         Console.WriteLine($"Path '{path}' {(File.Exists(path) ? "exists" : "doesn't exist")}.");
+                        Console.WriteLine($"Path '{path}' = {new FileInfo(path).Attributes}.")
                     }
                     //Debug.Assert(result >= 0);
                 }
