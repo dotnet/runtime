@@ -5049,9 +5049,11 @@ AGAIN:
             nsd = B_DIST_SMALL_MAX_NEG;
             psd = B_DIST_SMALL_MAX_POS;
 
+            // 2 instructions: "reverse cmp-and-branch; jal offset;"
+            // Move bounds to the right by 'ssz' to account for the reversed branch instruction size.
             msz = sizeof(code_t) * 2;
-            nmd = J_DIST_SMALL_MAX_NEG;
-            pmd = J_DIST_SMALL_MAX_POS;
+            nmd = J_DIST_SMALL_MAX_NEG + ssz;
+            pmd = J_DIST_SMALL_MAX_POS + ssz;
         }
         else if (emitIsUncondJump(jmp))
         {
