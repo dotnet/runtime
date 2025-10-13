@@ -1359,7 +1359,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         return;
 
     // Step 1: Validate compatibility of return types on overriding methods
-    if (pMT->GetClass()->HasCovariantOverride() && (!pMT->GetModule()->IsReadyToRun() || !pMT->GetModule()->GetReadyToRunInfo()->SkipTypeValidation()))
+    if (pMT->GetClass()->HasCovariantOverride() && !pMT->GetModule()->SkipTypeValidation())
     {
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {

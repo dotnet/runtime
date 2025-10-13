@@ -944,11 +944,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 // This check is NOT conditional on actually loading the constraint, since we want to run EEClass::CheckVarianceInSig
                 // even if we didn't load the constraint, to cause the TypeLoadException to happen at a predictable time.
                 if (pMT != NULL && pMT->HasVariance() && TypeFromToken(tkConstraintType) == mdtTypeSpec
-#ifdef FEATURE_READYTORUN
-                        // No sanity checks for ready-to-run compiled images if possible
-                        && (!GetModule()->IsReadyToRun() || !GetModule()->GetReadyToRunInfo()->SkipTypeValidation())
-#endif
-                    )
+                        && !GetModule()->SkipTypeValidation())
                 {
                     ULONG cSig;
                     PCCOR_SIGNATURE pSig;
