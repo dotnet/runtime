@@ -50,4 +50,6 @@ add_library(minipal_sanitizer_support OBJECT
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
 
-install(TARGETS minipal DESTINATION sharedFramework COMPONENT runtime)
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    install(TARGETS minipal DESTINATION sharedFramework COMPONENT runtime)
+endif(CLR_CMAKE_TARGET_ARCH_WASM)
