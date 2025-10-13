@@ -69,25 +69,25 @@ namespace System.Globalization
 
             bool ignoreSymbols = (options & CompareOptions.IgnoreSymbols) != 0;
 
-            using SymbolFilteringBuffer buffer1 = new SymbolFilteringBuffer();
-            using SymbolFilteringBuffer buffer2 = new SymbolFilteringBuffer();
+            using SymbolFilteringBuffer targetBuffer = new SymbolFilteringBuffer();
+            using SymbolFilteringBuffer sourceBuffer = new SymbolFilteringBuffer();
 
-            Span<char> stackBuffer1 = stackalloc char[StackAllocThreshold];
-            Span<char> stackBuffer2 = stackalloc char[StackAllocThreshold];
-            Span<int> stackIndexMap = stackalloc int[StackAllocThreshold];
+            Span<char> stackTargetBuffer = stackalloc char[StackAllocThreshold];
+            Span<char> stackSourceBuffer = stackalloc char[StackAllocThreshold];
+            Span<int> stackSourceIndexMap = stackalloc int[StackAllocThreshold];
 
             // If we are ignoring symbols, preprocess the strings by removing specified Unicode categories.
             if (ignoreSymbols)
             {
-                target = !buffer1.TryFilterString(target, stackBuffer1, Span<int>.Empty) ? target :
-                    buffer1.RentedFilteredBuffer is not null ?
-                    buffer1.RentedFilteredBuffer.AsSpan(0, buffer1.FilteredLength) :
-                    stackBuffer1.Slice(0, buffer1.FilteredLength);
+                target = !targetBuffer.TryFilterString(target, stackTargetBuffer, Span<int>.Empty) ? target :
+                    targetBuffer.RentedFilteredBuffer is not null ?
+                    targetBuffer.RentedFilteredBuffer.AsSpan(0, targetBuffer.FilteredLength) :
+                    stackTargetBuffer.Slice(0, targetBuffer.FilteredLength);
 
-                source = !buffer2.TryFilterString(source, stackBuffer2, stackIndexMap) ? source :
-                    buffer2.RentedFilteredBuffer is not null ?
-                    buffer2.RentedFilteredBuffer.AsSpan(0, buffer2.FilteredLength) :
-                    stackBuffer2.Slice(0, buffer2.FilteredLength);
+                source = !sourceBuffer.TryFilterString(source, stackSourceBuffer, stackSourceIndexMap) ? source :
+                    sourceBuffer.RentedFilteredBuffer is not null ?
+                    sourceBuffer.RentedFilteredBuffer.AsSpan(0, sourceBuffer.FilteredLength) :
+                    stackSourceBuffer.Slice(0, sourceBuffer.FilteredLength);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
@@ -107,17 +107,17 @@ namespace System.Globalization
             int nativeLength = result.Length;
 
             // If not ignoring symbols / nothing found / an error code / no index map (no symbols found in source), just propagate.
-            // buffer2.FilteredLength == 0 means no symbols were found in source, so no index map was created.
-            if (!ignoreSymbols || buffer2.FilteredLength == 0 || nativeLocation < 0)
+            // sourceBuffer.FilteredLength == 0 means no symbols were found in source, so no index map was created.
+            if (!ignoreSymbols || sourceBuffer.FilteredLength == 0 || nativeLocation < 0)
             {
                 if (matchLengthPtr != null)
                     *matchLengthPtr = nativeLength;
                 return nativeLocation;
             }
 
-            Span<int> rentedIndexMap = buffer2.RentedIndexMapBuffer is not null ?
-                                        buffer2.RentedIndexMapBuffer.AsSpan(0, buffer2.FilteredLength) :
-                                        stackIndexMap.Slice(0, buffer2.FilteredLength);
+            Span<int> rentedIndexMap = sourceBuffer.RentedIndexMapBuffer is not null ?
+                                        sourceBuffer.RentedIndexMapBuffer.AsSpan(0, sourceBuffer.FilteredLength) :
+                                        stackSourceIndexMap.Slice(0, sourceBuffer.FilteredLength);
 
             // If ignoring symbols, map filtered indices back to original indices, expanding match length to include removed symbol chars inside the span.
             int originalStart = rentedIndexMap[nativeLocation];
@@ -153,24 +153,24 @@ namespace System.Globalization
         {
             AssertComparisonSupported(options);
 
-            using SymbolFilteringBuffer buffer1 = new SymbolFilteringBuffer();
-            using SymbolFilteringBuffer buffer2 = new SymbolFilteringBuffer();
+            using SymbolFilteringBuffer prefixBuffer = new SymbolFilteringBuffer();
+            using SymbolFilteringBuffer sourceBuffer = new SymbolFilteringBuffer();
 
-            Span<char> stackBuffer1 = stackalloc char[StackAllocThreshold];
-            Span<char> stackBuffer2 = stackalloc char[StackAllocThreshold];
+            Span<char> stackPrefixBuffer = stackalloc char[StackAllocThreshold];
+            Span<char> stackSourceBuffer = stackalloc char[StackAllocThreshold];
 
             // Handle IgnoreSymbols preprocessing
             if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                prefix = !buffer1.TryFilterString(prefix, stackBuffer1, Span<int>.Empty) ? prefix :
-                    buffer1.RentedFilteredBuffer is not null ?
-                    buffer1.RentedFilteredBuffer.AsSpan(0, buffer1.FilteredLength) :
-                    stackBuffer1.Slice(0, buffer1.FilteredLength);
+                prefix = !prefixBuffer.TryFilterString(prefix, stackPrefixBuffer, Span<int>.Empty) ? prefix :
+                    prefixBuffer.RentedFilteredBuffer is not null ?
+                    prefixBuffer.RentedFilteredBuffer.AsSpan(0, prefixBuffer.FilteredLength) :
+                    stackPrefixBuffer.Slice(0, prefixBuffer.FilteredLength);
 
-                source = !buffer2.TryFilterString(source, stackBuffer2, Span<int>.Empty) ? source :
-                    buffer2.RentedFilteredBuffer is not null ?
-                    buffer2.RentedFilteredBuffer.AsSpan(0, buffer2.FilteredLength) :
-                    stackBuffer2.Slice(0, buffer2.FilteredLength);
+                source = !sourceBuffer.TryFilterString(source, stackSourceBuffer, Span<int>.Empty) ? source :
+                    sourceBuffer.RentedFilteredBuffer is not null ?
+                    sourceBuffer.RentedFilteredBuffer.AsSpan(0, sourceBuffer.FilteredLength) :
+                    stackSourceBuffer.Slice(0, sourceBuffer.FilteredLength);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
@@ -189,24 +189,24 @@ namespace System.Globalization
         {
             AssertComparisonSupported(options);
 
-            using SymbolFilteringBuffer buffer1 = new SymbolFilteringBuffer();
-            using SymbolFilteringBuffer buffer2 = new SymbolFilteringBuffer();
+            using SymbolFilteringBuffer suffixBuffer = new SymbolFilteringBuffer();
+            using SymbolFilteringBuffer sourceBuffer = new SymbolFilteringBuffer();
 
-            Span<char> stackBuffer1 = stackalloc char[StackAllocThreshold];
-            Span<char> stackBuffer2 = stackalloc char[StackAllocThreshold];
+            Span<char> stackSuffixBuffer = stackalloc char[StackAllocThreshold];
+            Span<char> stackSourceBuffer = stackalloc char[StackAllocThreshold];
 
             // Handle IgnoreSymbols preprocessing
             if ((options & CompareOptions.IgnoreSymbols) != 0)
             {
-                suffix = !buffer1.TryFilterString(suffix, stackBuffer1, Span<int>.Empty) ? suffix :
-                    buffer1.RentedFilteredBuffer is not null ?
-                    buffer1.RentedFilteredBuffer.AsSpan(0, buffer1.FilteredLength) :
-                    stackBuffer1.Slice(0, buffer1.FilteredLength);
+                suffix = !suffixBuffer.TryFilterString(suffix, stackSuffixBuffer, Span<int>.Empty) ? suffix :
+                    suffixBuffer.RentedFilteredBuffer is not null ?
+                    suffixBuffer.RentedFilteredBuffer.AsSpan(0, suffixBuffer.FilteredLength) :
+                    stackSuffixBuffer.Slice(0, suffixBuffer.FilteredLength);
 
-                source = !buffer2.TryFilterString(source, stackBuffer2, Span<int>.Empty) ? source :
-                    buffer2.RentedFilteredBuffer is not null ?
-                    buffer2.RentedFilteredBuffer.AsSpan(0, buffer2.FilteredLength) :
-                    stackBuffer2.Slice(0, buffer2.FilteredLength);
+                source = !sourceBuffer.TryFilterString(source, stackSourceBuffer, Span<int>.Empty) ? source :
+                    sourceBuffer.RentedFilteredBuffer is not null ?
+                    sourceBuffer.RentedFilteredBuffer.AsSpan(0, sourceBuffer.FilteredLength) :
+                    stackSourceBuffer.Slice(0, sourceBuffer.FilteredLength);
 
                 // Remove the flag before passing to native since we handled it here
                 options &= ~CompareOptions.IgnoreSymbols;
