@@ -283,11 +283,11 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public async Task GarbageEntryChecksumZeroThrowsInvalidDataException()
+        public async Task GarbageEntryChecksumZeroReturnNullAsync()
         {
             await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
             await using TarReader reader = new TarReader(archiveStream);
-            await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
+            Assert.Null(await reader.GetNextEntryAsync());
         }
 
         [Fact]

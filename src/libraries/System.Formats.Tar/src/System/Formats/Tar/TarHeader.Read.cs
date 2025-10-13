@@ -372,17 +372,17 @@ namespace System.Formats.Tar
             }
             int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
 
+            // Zero checksum means the whole header is empty
+            if (checksum == 0)
+            {
+                return null;
+            }
+
             // Verify checksum by calculating it from the buffer
             int calculatedChecksum = CalculateHeaderChecksum(buffer);
             if (calculatedChecksum != checksum)
             {
                 throw new InvalidDataException(SR.TarInvalidChecksum);
-            }
-
-            // Zero checksum means the whole header is empty
-            if (checksum == 0)
-            {
-                return null;
             }
 
             long size = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
