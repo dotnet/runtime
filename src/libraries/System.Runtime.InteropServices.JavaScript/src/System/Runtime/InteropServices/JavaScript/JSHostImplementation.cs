@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             // this is never unallocated
-            IntPtr buffer = Marshal.AllocHGlobal(size);
+            IntPtr buffer = (IntPtr)NativeMemory.Alloc((nuint)size);
 
             var signature = new JSFunctionBinding
             {
@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static unsafe void FreeMethodSignatureBuffer(JSFunctionBinding signature)
         {
-            Marshal.FreeHGlobal((nint)signature.Header);
+            NativeMemory.Free(signature.Header);
             signature.Header = null;
             signature.Sigs = null;
         }

@@ -38,13 +38,13 @@ void
 void*
 const void *,void*
 JITINTERFACE_HRESULT,HRESULT
-size_t*,UIntPtr*
+size_t*,nuint*
 int
 int32_t,int
 uint32_t,uint
 unsigned,uint
 unsigned int, uint
-size_t,UIntPtr
+size_t,nuint
 uint16_t,ushort
 bool,[MarshalAs(UnmanagedType.I1)]bool
 const char *,byte*
@@ -214,8 +214,8 @@ FUNCTIONS
     void* LongLifetimeMalloc(size_t sz)
     void LongLifetimeFree(void* obj)
     bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, REF_CORINFO_CONST_LOOKUP addr, int* offset)
-    size_t getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
-    size_t getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
+    void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
+    void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
     bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, REF_CORINFO_CONST_LOOKUP addr)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)

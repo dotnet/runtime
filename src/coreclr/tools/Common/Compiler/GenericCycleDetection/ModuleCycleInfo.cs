@@ -217,7 +217,7 @@ namespace ILCompiler
 
             private bool FormsCycle(TypeSystemEntity entity, out ModuleCycleInfo cycleInfo)
             {
-                EcmaModule ownerModule = (entity as EcmaType)?.EcmaModule ?? (entity as EcmaMethod)?.Module;
+                EcmaModule ownerModule = (entity as EcmaType)?.Module ?? (entity as EcmaMethod)?.Module;
                 if (ownerModule != null)
                 {
                     cycleInfo = _hashtable.GetOrCreateValue(ownerModule);

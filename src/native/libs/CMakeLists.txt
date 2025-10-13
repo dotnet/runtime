@@ -86,6 +86,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
                 # -O2 optimization generates faster/smaller code on Android
                 # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
                 add_compile_options (-O2)
+            elseif (CLR_CMAKE_TARGET_BROWSER)
+                add_compile_options (-Oz)
             else()
                 add_compile_options (-O3)
             endif ()
@@ -107,6 +109,12 @@ else ()
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)
+
+# Only when Browser for CoreCLR
+if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
+    add_subdirectory(System.Native.Browser)
+    add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)

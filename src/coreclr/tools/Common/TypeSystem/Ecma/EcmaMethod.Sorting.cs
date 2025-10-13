@@ -14,8 +14,8 @@ namespace Internal.TypeSystem.Ecma
         {
             var otherMethod = (EcmaMethod)other;
 
-            EcmaModule module = _type.EcmaModule;
-            EcmaModule otherModule = otherMethod._type.EcmaModule;
+            EcmaModule module = _type.Module;
+            EcmaModule otherModule = otherMethod._type.Module;
 
             // Sort by module in preference to by token. This will place methods of the same type near each other
             // even when working with several modules

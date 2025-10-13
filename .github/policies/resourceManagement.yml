@@ -1064,7 +1064,6 @@ configuration:
             - tarekgh
             - tommcdon
             - steveisok
-            - pjanotti
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

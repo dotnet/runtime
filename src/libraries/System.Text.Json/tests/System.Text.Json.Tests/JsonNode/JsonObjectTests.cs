@@ -1789,5 +1789,26 @@ namespace System.Text.Json.Nodes.Tests
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonObject>(json));
         }
+
+        [Fact]
+        public static void GetPath_IsThreadSafe()
+        {
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                var tree = (JsonNode.Parse(
+                    """
+                    {
+                      "oh": "noes"
+                    }
+                    """
+                ) as JsonObject)!;
+
+                Parallel.ForEach(Enumerable.Range(0, 100), new ParallelOptions { MaxDegreeOfParallelism = 16 }, _ =>
+                {
+                    string path = tree.First().Value!.GetPath();
+                    Assert.Equal("$.oh", path);
+                });
+            }
+        }
     }
 }

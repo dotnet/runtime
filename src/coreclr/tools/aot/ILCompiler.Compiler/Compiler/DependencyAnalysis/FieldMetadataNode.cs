@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.TypeMetadata((MetadataType)_field.OwningType), "Owning type metadata");
+            dependencies.Add(factory.TypeMetadata(_field.OwningType), "Owning type metadata");
 
             if (_field is EcmaField ecmaField)
             {
