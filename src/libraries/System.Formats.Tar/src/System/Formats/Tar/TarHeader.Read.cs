@@ -370,8 +370,8 @@ namespace System.Formats.Tar
             {
                 return null;
             }
+            
             int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
-
             // Zero checksum means the whole header is empty
             if (checksum == 0)
             {
