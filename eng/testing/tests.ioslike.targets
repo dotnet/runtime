@@ -30,13 +30,10 @@
     <_AppleBuildCommand Condition="'$(IncludesTestRunner)' != 'true'">apple run</_AppleBuildCommand>
 
     <_AppleExpectedExitCode Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</_AppleExpectedExitCode>
-    <_DotNetCIEnvSwitch>$${DOTNET_CI:+--set-env=DOTNET_CI=&quot;$DOTNET_CI&quot;}</_DotNetCIEnvSwitch>
-    <_HelixWorkItemRootEnvSwitch>$${HELIX_WORKITEM_ROOT:+--set-env=HELIX_WORKITEM_ROOT=&quot;$HELIX_WORKITEM_ROOT&quot;}</_HelixWorkItemRootEnvSwitch>
-    <_AgentOSEnvSwitch>$${AGENT_OS:+--set-env=AGENT_OS=&quot;$AGENT_OS&quot;}</_AgentOSEnvSwitch>
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
       $(_AppleSignCommand)
-      xharness $(_AppleBuildCommand) --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) $(_AppleExpectedExitCode) $(_DotNetCIEnvSwitch) $(_HelixWorkItemRootEnvSwitch) $(_AgentOSEnvSwitch) -- </_AfterBuildCommands>
+      xharness $(_AppleBuildCommand) --app &quot;$app&quot; --output-directory &quot;$output_directory&quot; --target &quot;$target&quot; --timeout &quot;$timeout&quot; --xcode &quot;$xcode_path&quot; -v --launch-timeout &quot;$launch_timeout&quot; $(_ResetSimulatorSwitch) $(_SignalAppEndSwitch) $(_AppleExpectedExitCode) --set-env=DOTNET_CI=&quot;$DOTNET_CI&quot; --set-env=HELIX_WORKITEM_ROOT=&quot;$HELIX_WORKITEM_ROOT&quot; --set-env=AGENT_OS=&quot;$AGENT_OS&quot; -- </_AfterBuildCommands>
 
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
   </PropertyGroup>
