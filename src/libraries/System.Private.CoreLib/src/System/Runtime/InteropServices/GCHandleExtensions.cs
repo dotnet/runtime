@@ -46,7 +46,6 @@ namespace System.Runtime.InteropServices
         /// or <see langword="null"/> if the handle doesn't point to any object.
         /// </returns>
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
-        /// <typeparam name="T">The element type of the string data (char).</typeparam>
         [CLSCompliant(false)]
         public static unsafe char* GetAddressOfStringData(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>

@@ -6,8 +6,6 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Java
 {
-    [CLSCompliant(false)]
-    [SupportedOSPlatform("android")]
     /// <summary>
     /// Provides helpers to create and manage GC handles used for tracking references
     /// between the managed runtime and a Java VM. These APIs allow managed objects
@@ -15,6 +13,8 @@ namespace System.Runtime.InteropServices.Java
     /// cross-reference processing and correctly control object lifetime across
     /// the managed/native boundary.
     /// </summary>
+    [CLSCompliant(false)]
+    [SupportedOSPlatform("android")]
     public static partial class JavaMarshal
     {
         /// <summary>
@@ -33,6 +33,7 @@ namespace System.Runtime.InteropServices.Java
         /// Only a single initialization is supported for the process. The runtime
         /// stores the provided function pointer and will invoke it from internal
         /// runtime code when cross-reference marking is required.
+        /// Additionally, this callback must be implemented in unmanaged code.
         /// </remarks>
         public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences)
         {
@@ -58,13 +59,6 @@ namespace System.Runtime.InteropServices.Java
         /// <returns>A <see cref="GCHandle"/> that represents the allocated reference-tracking handle.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="obj"/> is null.</exception>
         /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
-        /// <remarks>
-        /// The CoreCLR implementation allocates the handle via an internal runtime
-        /// call and returns it as a <see cref="GCHandle"/>. Consumers must free or
-        /// otherwise release the handle as required by the runtime's handle management
-        /// policy on the native side (for example, when the corresponding Java reference
-        /// is released).
-        /// </remarks>
         public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -77,7 +71,7 @@ namespace System.Runtime.InteropServices.Java
         /// </summary>
         /// <param name="obj">The <see cref="GCHandle"/> whose context should be returned.</param>
         /// <returns>The opaque context pointer associated with the handle.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the provided handle is invalid or does not represent a reference-tracking handle.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the provided handle is null or does not represent a reference-tracking handle.</exception>
         /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
         /// <remarks>
         /// The returned pointer is the exact value that was originally provided as
@@ -96,19 +90,13 @@ namespace System.Runtime.InteropServices.Java
 
         /// <summary>
         /// Completes processing of cross references after the runtime has invoked the
-        /// provided <c>markCrossReferences</c> callback. This notifies the runtime of
+        /// callback provided to <see cref="Initialize" />. This notifies the runtime of
         /// handles that are no longer reachable from native Java code so the runtime
         /// can release or update them accordingly.
         /// </summary>
         /// <param name="crossReferences">A pointer to the structure containing cross-reference information produced during marking.</param>
         /// <param name="unreachableObjectHandles">A span of <see cref="GCHandle"/> values that were determined to be unreachable from the native side.</param>
         /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
-        /// <remarks>
-        /// The runtime will process the list of unreachable handles and take appropriate
-        /// action (for example, releasing internal references). The overload that accepts
-        /// a <see cref="ReadOnlySpan{GCHandle}"/> is a convenience helper that pins the
-        /// span and forwards a pointer and length to the internal runtime bridge call.
-        /// </remarks>
         public static unsafe void FinishCrossReferenceProcessing(
             MarkCrossReferencesArgs* crossReferences,
             ReadOnlySpan<GCHandle> unreachableObjectHandles)
