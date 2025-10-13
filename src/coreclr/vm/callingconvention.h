@@ -1303,8 +1303,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxFPReg = 0;
 #elif defined(TARGET_WASM)
         // we put everything on the stack, we don't have registers
-        // WASM_TODO find out whether we can use implicit stack here
-        m_ofsStack = 0;
+        // so we put the this and retbuf arguments first, based on the numRegistersUsed count calculated above
+        m_ofsStack = numRegistersUsed * INTERP_STACK_SLOT_SIZE;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
 #endif

@@ -188,6 +188,14 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\ExceptionPolyfills.cs" Link="System\ExceptionPolyfills.cs" />
   </ItemGroup>
 
+  <!-- Adds polyfills for Span-related functionality on non-.NETCoreApp builds -->
+  <ItemGroup Condition="'$(IncludeSpanPolyfills)' == 'true' and
+                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\MemoryExtensionsPolyfills.cs" Link="System\MemoryExtensionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" Link="System\Buffers\SearchValuesPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\AsciiPolyfills.cs" Link="System\Text\AsciiPolyfills.cs" />
+  </ItemGroup>
+
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the
        System.Runtime.Versioning*Platform* annotation attribute classes in the project as internal.
 

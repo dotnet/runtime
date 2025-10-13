@@ -69,13 +69,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract ModuleDesc Module { get; }
 
-        /// <summary>
-        /// Same as <see cref="TypeDesc.BaseType"/>, but the result is a MetadataType (avoids casting).
-        /// </summary>
-        public abstract MetadataType MetadataBaseType { get; }
-
-        // Make sure children remember to override both MetadataBaseType and BaseType.
-        public abstract override DefType BaseType { get; }
+        /// <inheritdoc />
+        public abstract override MetadataType BaseType { get; }
 
         /// <summary>
         /// If true, the type cannot be used as a base type of any other type.
@@ -92,7 +87,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
-        public abstract override DefType ContainingType { get; }
+        public abstract override MetadataType ContainingType { get; }
 
         /// <summary>
         /// Get all of the types nested in this type.

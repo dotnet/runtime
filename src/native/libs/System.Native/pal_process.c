@@ -254,7 +254,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     if (setCredentials && groupsLength > 0)
     {
-        getGroupsBuffer = malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength));
+        getGroupsBuffer = (uint32_t*)(malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength)));
         if (getGroupsBuffer == NULL)
         {
             success = false;
