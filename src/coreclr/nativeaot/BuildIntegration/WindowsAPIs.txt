@@ -2371,3 +2371,8 @@ ucrtbase!memset
 ucrtbase!realloc
 ucrtbase!wmemcpy_s
 ucrtbase!wmemmove_s
+
+#
+# Windows 8+
+#
+bcrypt!BCryptHash
