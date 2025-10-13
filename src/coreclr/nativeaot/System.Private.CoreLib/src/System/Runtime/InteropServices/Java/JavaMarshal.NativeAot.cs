@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.Java
         /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
         /// <remarks>
         /// The returned pointer is the exact value that was originally provided as
-        /// the <paramref name="context"/> parameter when the handle was created.
+        /// the context parameter when the handle was created.
         /// </remarks>
         public static unsafe void* GetContext(GCHandle obj)
         {

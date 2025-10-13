@@ -18,14 +18,15 @@ namespace System.Runtime.CompilerServices
         // "BypassReadyToRun" is until AOT/R2R typesystem has support for MethodImpl.Async
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
         // It will not capture/restore any local state that is live across it.
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
+
         /// <summary>
         /// Awaits the specified awaiter and returns when the awaiter has completed.
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [RequiresPreviewFeatures]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -39,14 +40,15 @@ namespace System.Runtime.CompilerServices
 
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
         // It will not capture/restore any local state that is live across it.
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
+
         /// <summary>
         /// Awaits the specified awaiter without capturing the execution context and returns when the awaiter has completed.
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [RequiresPreviewFeatures]
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -118,14 +120,14 @@ namespace System.Runtime.CompilerServices
             return awaiter.GetResult();
         }
 
-        [Intrinsic]
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         /// <summary>
         /// Awaits the specified <see cref="Task"/> and throws any exception produced by the task.
         /// </summary>
         /// <param name="task">The task to await.</param>
+        [Intrinsic]
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        [RequiresPreviewFeatures]
         public static void Await(ValueTask task)
         {
             ValueTaskAwaiter awaiter = task.GetAwaiter();
