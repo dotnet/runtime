@@ -1190,13 +1190,25 @@ namespace
             return false;
         }
 
-        // Handle generic param count
-        DWORD declGenericCount = 0;
-        DWORD methodGenericCount = 0;
+        // Handle generic signature
         if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            if (!(callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC))
+                return false;
+
+            DWORD declGenericCount = 0;
+            DWORD methodGenericCount = 0;
             IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declGenericCount));
-        if (callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC)
             IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &methodGenericCount));
+
+            if (declGenericCount != methodGenericCount)
+                return false;
+        }
+        else if (callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            // Method is generic but declaration is not
+            return false;
+        }
 
         DWORD declArgCount;
         DWORD methodArgCount;
@@ -3541,7 +3553,7 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
     bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
     CorInfoHelpFunc helper;
-    
+
     if (threadStatic)
     {
         if (GCStatic)
