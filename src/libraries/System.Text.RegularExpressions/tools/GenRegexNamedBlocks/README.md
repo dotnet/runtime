@@ -4,7 +4,7 @@
 
 This tool generates the named Unicode blocks for `RegexCharClass.cs` based on the Unicode Character Database (UCD) `Blocks.txt` file. Named blocks allow regex patterns to match characters in specific Unicode blocks using syntax like `\p{IsBasicLatin}` or `\p{IsGreek}`.
 
-The current implementation is based on **Unicode 16.0**.
+The current implementation is based on **Unicode 17.0**.
 
 ## Usage
 
