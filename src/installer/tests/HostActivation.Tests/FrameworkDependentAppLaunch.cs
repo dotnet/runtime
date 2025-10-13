@@ -199,11 +199,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
         public void AppHost_DisableCetCompat()
         {
-            Assert.SkipUnless(Binaries.CetCompat.IsSupported, "CET not supported on this platform");
-
             TestApp app = sharedTestState.App.Copy();
             app.CreateAppHost(disableCetCompat: true);
             Assert.False(Binaries.CetCompat.IsMarkedCompatible(app.AppExe));

@@ -56,11 +56,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(LongPathsEnabled))]
         public void DotNet_LongPath_Succeeds()
         {
-            Assert.SkipUnless(LongPathsEnabled(), "Long paths not enabled on this machine");
-
             HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "long_path", sharedTestState.App.Location)
                 .CaptureStdErr()
                 .CaptureStdOut()
