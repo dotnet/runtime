@@ -50,8 +50,8 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     bool doInterpret = false;
 
-    if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
-        doInterpret = true;
+    // if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
+    //    doInterpret = true;
 
     {
         switch (InterpConfig.InterpMode())
