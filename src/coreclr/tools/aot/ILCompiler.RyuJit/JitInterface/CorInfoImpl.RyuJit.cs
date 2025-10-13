@@ -286,10 +286,10 @@ namespace Internal.JitInterface
                     }
 
                     lookup.runtimeLookup.indirections = (ushort)genericLookup.NumberOfIndirections;
-                    lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
+                    lookup.runtimeLookup.offset0 = genericLookup[0];
                     if (genericLookup.NumberOfIndirections > 1)
                     {
-                        lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
+                        lookup.runtimeLookup.offset1 = genericLookup[1];
                     }
                     lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
                     lookup.runtimeLookup.testForNull = false;
