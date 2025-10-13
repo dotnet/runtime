@@ -1353,7 +1353,7 @@ namespace System.Runtime.InteropServices
                         // No entry in the cache.
                         return null;
                     }
-                    else if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
+                    if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
                     {
                         // The target exists and is still alive. Return it.
                         return cachedProxy;
