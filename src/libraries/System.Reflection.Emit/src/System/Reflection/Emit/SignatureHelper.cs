@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Emit
 {
@@ -225,23 +226,62 @@ namespace System.Reflection.Emit
             }
             else if (type.IsFunctionPointer)
             {
-                SignatureCallingConvention callConv = SignatureCallingConvention.Default;
-                // TODO: Support other calling conventions
-                // TODO: Support custom modifiers
-
-                MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv);
-                sigEncoder.Parameters(type.GetFunctionPointerParameterTypes().Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
-                WriteSignatureForType(retTypeEncoder.Type(), type.GetFunctionPointerReturnType(), module);
-
-                foreach (Type paramType in type.GetFunctionPointerParameterTypes())
-                {
-                    ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
-                    WriteSignatureForType(paramEncoder.Type(), paramType, module);
-                }
+                WriteSignatureForFunctionPointerType(signature, type, module);
             }
             else
             {
                 WriteSimpleSignature(signature, type, module);
+            }
+        }
+
+        private static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        {
+            SignatureCallingConvention callConv = SignatureCallingConvention.Default;
+            FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
+            List<Type> retModOpts = [.. type.GetFunctionPointerReturnType().GetOptionalCustomModifiers()];
+
+            if (type.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length > 0)
+            {
+                foreach (Type conv in type.GetFunctionPointerCallingConventions())
+                {
+                    if (conv == typeof(CallConvCdecl))
+                        callConv = SignatureCallingConvention.CDecl;
+                    else if (conv == typeof(CallConvStdcall))
+                        callConv = SignatureCallingConvention.StdCall;
+                    else if (conv == typeof(CallConvThiscall))
+                        callConv = SignatureCallingConvention.ThisCall;
+                    else if (conv == typeof(CallConvFastcall))
+                        callConv = SignatureCallingConvention.FastCall;
+                    else
+                        retModOpts.Add(conv);
+                }
+            }
+
+            MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv, attribs);
+            sigEncoder.Parameters(type.GetFunctionPointerParameterTypes().Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
+
+            CustomModifiersEncoder retModifiersEncoder = retTypeEncoder.CustomModifiers();
+
+            if (retModOpts.Count > 0)
+                WriteCustomModifiers(retModifiersEncoder, [.. retModOpts], isOptional: true, module);
+
+            if (type.GetFunctionPointerReturnType().GetRequiredCustomModifiers() is Type[] retModReqs)
+                WriteCustomModifiers(retModifiersEncoder, retModReqs, isOptional: false, module);
+
+            WriteSignatureForType(retTypeEncoder.Type(), type.GetFunctionPointerReturnType(), module);
+
+            foreach (Type paramType in type.GetFunctionPointerParameterTypes())
+            {
+                ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
+                CustomModifiersEncoder paramModifiersEncoder = paramEncoder.CustomModifiers();
+
+                if (paramType.GetOptionalCustomModifiers() is Type[] paramModOpts)
+                    WriteCustomModifiers(paramModifiersEncoder, paramModOpts, isOptional: true, module);
+
+                if (paramType.GetRequiredCustomModifiers() is Type[] paramModReqs)
+                    WriteCustomModifiers(paramModifiersEncoder, paramModReqs, isOptional: false, module);
+
+                WriteSignatureForType(paramEncoder.Type(), paramType, module);
             }
         }
 
