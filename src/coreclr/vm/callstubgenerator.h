@@ -149,6 +149,16 @@ private:
         return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
+
+    enum class RoutineType
+    {
+        None,
+        GPReg,
+        FPReg,
+        Stack
+    };
+
+    void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };
 
 void InitCallStubGenerator();
