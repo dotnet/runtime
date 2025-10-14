@@ -11,6 +11,7 @@ EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElem
 
 static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numElements)
 {
+    FCALL_CONTRACT;
     Object* obj = RhpGcAlloc(pMT, uFlags, numElements, nullptr);
     if (obj == NULL)
     {
@@ -22,6 +23,7 @@ static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numElem
 
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements)
 {
+    WRAPPER_NO_CONTRACT;
     return AllocateObject(pMT, 0, numElements);
 }
 
