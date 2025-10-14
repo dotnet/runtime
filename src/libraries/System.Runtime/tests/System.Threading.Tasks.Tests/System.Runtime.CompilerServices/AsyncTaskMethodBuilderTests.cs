@@ -670,8 +670,12 @@ namespace System.Threading.Tasks.Tests
                     t.Wait();
                 }
 
-                int activeCount = ((dynamic)typeof(Task).GetField("s_currentActiveTasks", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
-                Assert.InRange(activeCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
+                object activeTasks = typeof(Task).GetField("s_currentActiveTasks", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                if (activeTasks is not null)
+                {
+                    int activeCount = ((dynamic)activeTasks).Count;
+                    Assert.InRange(activeCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
+                }
             }).Dispose();
         }
 
