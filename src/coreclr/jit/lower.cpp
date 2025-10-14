@@ -4563,11 +4563,9 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
                 GenTreeCast* cast = relopOp1->AsCast();
                 if ((cast->gtCastType == TYP_BYTE || cast->gtCastType == TYP_SHORT) && !cast->gtOverflow())
                 {
-                    LIR::Use use;
                     op1Type         = cast->gtCastType;
                     GenTree* castOp = cast->CastOp();
-                    BlockRange().TryGetUse(cast, &use);
-                    use.ReplaceWith(castOp);
+                    cond->AsOp()->gtOp1 = castOp;
                     BlockRange().Remove(cast);
                     relopOp1 = castOp;
                 }
