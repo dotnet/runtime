@@ -170,7 +170,7 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("tvos")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
