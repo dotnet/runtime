@@ -235,7 +235,6 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void ChangeCaseCommon<TConversion>(TextInfo? instance, ReadOnlySpan<char> source, Span<char> destination) where TConversion : struct
         {
-            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
 
             if (source.IsEmpty)
@@ -288,7 +287,6 @@ namespace System.Globalization
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
 
-            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(source != null);
 
             // If the string is empty, we're done.
