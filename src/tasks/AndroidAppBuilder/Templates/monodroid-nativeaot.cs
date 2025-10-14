@@ -54,14 +54,17 @@ internal static unsafe partial class MonoDroidExports
         for (int i = 0; i < argc; i++)
         {
             JObject j_arg = env->GetObjectArrayElement(j_args, i);
-            args[i] = env->GetStringUTFChars((JString)j_arg);
+            args[i] = env->GetStringUTFChars((JString)j_arg)!;
         }
 
 #if SINGLE_FILE_TEST_RUNNER
-        string excludesFile = Path.Combine(Environment.GetEnvironmentVariable("HOME"), "xunit-excludes.txt");
-        if (File.Exists(excludesFile))
+        if (Environment.GetEnvironmentVariable("HOME") is string homeDir)
         {
-            args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+            string excludesFile = Path.Combine(homeDir, "xunit-excludes.txt");
+            if (File.Exists(excludesFile))
+            {
+                args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+            }
         }
         // SingleFile unit tests
         return SingleFileTestRunner.Main(args);
@@ -93,7 +96,7 @@ internal unsafe struct JNIEnv
             if (chars is null)
                 return null;
 
-            string result = Marshal.PtrToStringUTF8((nint)chars);
+            string result = Marshal.PtrToStringUTF8((nint)chars)!;
             if (isCopy != 0)
                 NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
 
