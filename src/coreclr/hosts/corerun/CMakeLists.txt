@@ -53,7 +53,7 @@ else()
         target_link_libraries(corerun PRIVATE
             coreclr_static
             System.Native-Static
-            System.Native.TimeZoneData)
+            System.Native.TimeZoneData.Invariant)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE
