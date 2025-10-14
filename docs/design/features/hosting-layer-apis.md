@@ -61,7 +61,6 @@ If the application is successfully executed, this value will return the exit cod
 enum hostfxr_resolve_sdk2_flags_t
 {
     disallow_prerelease = 0x1,
-    do_not_print_errors = 0x2,
 };
 
 enum hostfxr_resolve_sdk2_result_key_t

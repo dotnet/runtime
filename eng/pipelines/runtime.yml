@@ -105,17 +105,28 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          buildConfig: Debug
           platforms:
           - browser_wasm
           - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr.runtime+libs -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                parameters:
+                  testBuildArgs: test JIT/interpreter/Interpreter.csproj
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['wasmDarcDependenciesChanged'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #

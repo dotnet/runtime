@@ -254,9 +254,9 @@ internal sealed class FrameIterator
 
     private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
     {
-        if (target.PointerSize == 4)
+        if (target.PointerSize == sizeof(ulong))
         {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
+            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) == 0;
         }
         else
         {

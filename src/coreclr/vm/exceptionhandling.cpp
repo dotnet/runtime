@@ -513,7 +513,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     if (popGCFrames)
     {
         GCFrame* pGCFrame = pThread->GetGCFrame();
-        while ((pGCFrame != GCFRAME_TOP) && pGCFrame < targetSp)
+        while ((pGCFrame != GCFRAME_TOP) && pGCFrame->GetOSStackLocation() < targetSp)
         {
             pGCFrame->Pop();
             pGCFrame = pThread->GetGCFrame();
@@ -3899,6 +3899,8 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     bool doingFuncletUnwind = pThis->m_crawl.IsFunclet();
     PCODE preUnwindControlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
 
+    bool isNativeTransition;
+
     retVal = pThis->Next();
     if (retVal == SWA_FAILED)
     {
@@ -3906,8 +3908,10 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         goto Exit;
     }
 
+    isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
+
 #ifdef FEATURE_INTERPRETER
-    if ((pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME) &&
+    if (isNativeTransition &&
         (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == InterpreterFrame::DummyCallerIP))
     {
         // The callerIP is InterpreterFrame::DummyCallerIP when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
@@ -3931,15 +3935,16 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
             }
         }
+        else
+        {
+            // The caller of the interpreted code is managed.
+            isNativeTransition = false;
+        }
     }
 #endif // FEATURE_INTERPRETER
 
     // Check for reverse pinvoke or CallDescrWorkerInternal.
-    if ((pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
-#ifdef FEATURE_INTERPRETER
-         || (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE)
-#endif // FEATURE_INTERPRETER
-        )
+    if (isNativeTransition)
     {
         EECodeInfo codeInfo(preUnwindControlPC);
 #ifdef USE_GC_INFO_DECODER

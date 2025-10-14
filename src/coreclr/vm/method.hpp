@@ -2126,7 +2126,6 @@ private:
     bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
-    int GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType);
 public:
     static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);

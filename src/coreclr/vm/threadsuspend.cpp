@@ -2728,7 +2728,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         RestoreContextSimulated(pThread, pCtx, &frame, dwLastError);
 
         // we never return to the caller.
-        __UNREACHABLE();
+        UNREACHABLE();
     }
 #endif // TARGET_X86
 
@@ -2774,7 +2774,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 #endif
 
     // we never return to the caller.
-    __UNREACHABLE();
+    UNREACHABLE();
 }
 
 //****************************************************************************************

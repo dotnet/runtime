@@ -11204,6 +11204,245 @@ namespace System.Net
 }
 namespace System.Numerics
 {
+    public readonly partial struct BFloat16 : System.IComparable, System.IComparable<System.Numerics.BFloat16>, System.IEquatable<System.Numerics.BFloat16>, System.IFormattable, System.IParsable<System.Numerics.BFloat16>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BFloat16>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.BFloat16>, System.Numerics.IAdditionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IBinaryFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IBinaryNumber<System.Numerics.BFloat16>, System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IComparisonOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IDecrementOperators<System.Numerics.BFloat16>, System.Numerics.IDivisionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IEqualityOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IExponentialFunctions<System.Numerics.BFloat16>, System.Numerics.IFloatingPoint<System.Numerics.BFloat16>, System.Numerics.IFloatingPointConstants<System.Numerics.BFloat16>, System.Numerics.IFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IHyperbolicFunctions<System.Numerics.BFloat16>, System.Numerics.IIncrementOperators<System.Numerics.BFloat16>, System.Numerics.ILogarithmicFunctions<System.Numerics.BFloat16>, System.Numerics.IMinMaxValue<System.Numerics.BFloat16>, System.Numerics.IModulusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplyOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.INumber<System.Numerics.BFloat16>, System.Numerics.INumberBase<System.Numerics.BFloat16>, System.Numerics.IPowerFunctions<System.Numerics.BFloat16>, System.Numerics.IRootFunctions<System.Numerics.BFloat16>, System.Numerics.ISignedNumber<System.Numerics.BFloat16>, System.Numerics.ISubtractionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.ITrigonometricFunctions<System.Numerics.BFloat16>, System.Numerics.IUnaryNegationOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IUnaryPlusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Numerics.BFloat16 E { get { throw null; } }
+        public static System.Numerics.BFloat16 Epsilon { get { throw null; } }
+        public static System.Numerics.BFloat16 MaxValue { get { throw null; } }
+        public static System.Numerics.BFloat16 MinValue { get { throw null; } }
+        public static System.Numerics.BFloat16 MultiplicativeIdentity { get { throw null; } }
+        public static System.Numerics.BFloat16 NaN { get { throw null; } }
+        public static System.Numerics.BFloat16 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.BFloat16 NegativeOne { get { throw null; } }
+        public static System.Numerics.BFloat16 NegativeZero { get { throw null; } }
+        public static System.Numerics.BFloat16 One { get { throw null; } }
+        public static System.Numerics.BFloat16 Pi { get { throw null; } }
+        public static System.Numerics.BFloat16 PositiveInfinity { get { throw null; } }
+        static System.Numerics.BFloat16 System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BFloat16 System.Numerics.IBinaryNumber<System.Numerics.BFloat16>.AllBitsSet { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Numerics.BFloat16>.Radix { get { throw null; } }
+        public static System.Numerics.BFloat16 Tau { get { throw null; } }
+        public static System.Numerics.BFloat16 Zero { get { throw null; } }
+        public static System.Numerics.BFloat16 Abs(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 Acos(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Acosh(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 AcosPi(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Asin(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Asinh(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 AsinPi(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Atan(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Atan2(System.Numerics.BFloat16 y, System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Atan2Pi(System.Numerics.BFloat16 y, System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Atanh(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 AtanPi(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 BitDecrement(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 BitIncrement(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Cbrt(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Ceiling(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Clamp(System.Numerics.BFloat16 value, System.Numerics.BFloat16 min, System.Numerics.BFloat16 max) { throw null; }
+        public int CompareTo(System.Numerics.BFloat16 other) { throw null; }
+        public int CompareTo(object? obj) { throw null; }
+        public static System.Numerics.BFloat16 CopySign(System.Numerics.BFloat16 value, System.Numerics.BFloat16 sign) { throw null; }
+        public static System.Numerics.BFloat16 Cos(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Cosh(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 CosPi(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.BFloat16 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.BFloat16 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.BFloat16 DegreesToRadians(System.Numerics.BFloat16 degrees) { throw null; }
+        public bool Equals(System.Numerics.BFloat16 other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public static System.Numerics.BFloat16 Exp(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Exp10(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Exp10M1(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Exp2(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Exp2M1(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 ExpM1(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Floor(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 FusedMultiplyAdd(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right, System.Numerics.BFloat16 addend) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.Numerics.BFloat16 Hypot(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 Ieee754Remainder(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static int ILogB(System.Numerics.BFloat16 x) { throw null; }
+        public static bool IsEvenInteger(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsFinite(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsInfinity(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsInteger(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsNaN(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsNegative(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsNegativeInfinity(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsNormal(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsOddInteger(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsPositive(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsPositiveInfinity(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsPow2(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsRealNumber(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsSubnormal(System.Numerics.BFloat16 value) { throw null; }
+        public static bool IsZero(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 Lerp(System.Numerics.BFloat16 value1, System.Numerics.BFloat16 value2, System.Numerics.BFloat16 amount) { throw null; }
+        public static System.Numerics.BFloat16 Log(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Log(System.Numerics.BFloat16 x, System.Numerics.BFloat16 newBase) { throw null; }
+        public static System.Numerics.BFloat16 Log10(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Log10P1(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Log2(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 Log2P1(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 LogP1(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Max(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 MaxMagnitude(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 MaxMagnitudeNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 MaxNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 Min(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 MinMagnitude(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 MinMagnitudeNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 MinNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 operator +(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static explicit operator checked byte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked char(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked short(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked int(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked long(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked System.Int128(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked nint(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 operator --(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 operator /(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator ==(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(char value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(decimal value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(double value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.Half value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.Int128 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(short value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(int value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(long value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(nint value) { throw null; }
+        public static explicit operator byte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator char(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator decimal(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator double(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Half(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Int128(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator short(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator int(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator long(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator nint(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator float(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ulong(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.BFloat16(System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.BFloat16(ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.BFloat16(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.BFloat16(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Numerics.BFloat16(nuint value) { throw null; }
+        public static bool operator >(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator >=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static implicit operator System.Numerics.BFloat16(byte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.BFloat16(sbyte value) { throw null; }
+        public static System.Numerics.BFloat16 operator ++(System.Numerics.BFloat16 value) { throw null; }
+        public static bool operator !=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator <(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator <=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static System.Numerics.BFloat16 operator %(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static System.Numerics.BFloat16 operator *(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static System.Numerics.BFloat16 operator -(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static System.Numerics.BFloat16 operator -(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 operator +(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.BFloat16 Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BFloat16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.BFloat16 Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BFloat16 Parse(string s) { throw null; }
+        public static System.Numerics.BFloat16 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static System.Numerics.BFloat16 Parse(string s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.BFloat16 Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BFloat16 Pow(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
+        public static System.Numerics.BFloat16 RadiansToDegrees(System.Numerics.BFloat16 radians) { throw null; }
+        public static System.Numerics.BFloat16 ReciprocalEstimate(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 ReciprocalSqrtEstimate(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 RootN(System.Numerics.BFloat16 x, int n) { throw null; }
+        public static System.Numerics.BFloat16 Round(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Round(System.Numerics.BFloat16 x, int digits) { throw null; }
+        public static System.Numerics.BFloat16 Round(System.Numerics.BFloat16 x, int digits, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.BFloat16 Round(System.Numerics.BFloat16 x, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.BFloat16 ScaleB(System.Numerics.BFloat16 x, int n) { throw null; }
+        public static int Sign(System.Numerics.BFloat16 value) { throw null; }
+        public static System.Numerics.BFloat16 Sin(System.Numerics.BFloat16 x) { throw null; }
+        public static (System.Numerics.BFloat16 Sin, System.Numerics.BFloat16 Cos) SinCos(System.Numerics.BFloat16 x) { throw null; }
+        public static (System.Numerics.BFloat16 SinPi, System.Numerics.BFloat16 CosPi) SinCosPi(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Sinh(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 SinPi(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Sqrt(System.Numerics.BFloat16 x) { throw null; }
+        static System.Numerics.BFloat16 System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>.operator &(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        static System.Numerics.BFloat16 System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>.operator |(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        static System.Numerics.BFloat16 System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>.operator ^(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        static System.Numerics.BFloat16 System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>.operator ~(System.Numerics.BFloat16 value) { throw null; }
+        int System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.GetExponentByteCount() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.GetSignificandBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.GetSignificandByteCount() { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.TryWriteExponentBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.TryWriteExponentLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.TryWriteSignificandBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Numerics.BFloat16>.TryWriteSignificandLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.IsCanonical(System.Numerics.BFloat16 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.IsComplexNumber(System.Numerics.BFloat16 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.IsImaginaryNumber(System.Numerics.BFloat16 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.IsZero(System.Numerics.BFloat16 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.BFloat16 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.BFloat16 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.BFloat16 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.TryConvertToChecked<TOther>(System.Numerics.BFloat16 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.TryConvertToSaturating<TOther>(System.Numerics.BFloat16 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BFloat16>.TryConvertToTruncating<TOther>(System.Numerics.BFloat16 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        public static System.Numerics.BFloat16 Tan(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 Tanh(System.Numerics.BFloat16 x) { throw null; }
+        public static System.Numerics.BFloat16 TanPi(System.Numerics.BFloat16 x) { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BFloat16 Truncate(System.Numerics.BFloat16 x) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Numerics.BFloat16 result) { throw null; }
+    }
     public static partial class BitOperations
     {
         [System.CLSCompliantAttribute(false)]

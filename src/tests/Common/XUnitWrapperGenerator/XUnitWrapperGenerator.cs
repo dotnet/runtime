@@ -936,6 +936,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsHeapVerify");
         }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.InterpreterActive))
+        {
+            conditions.Add($"!{ConditionClass}.IsCoreClrInterpreter");
+        }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))
         {

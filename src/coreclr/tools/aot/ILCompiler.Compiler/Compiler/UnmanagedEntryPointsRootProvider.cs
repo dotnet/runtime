@@ -36,13 +36,15 @@ namespace ILCompiler
                     if (ca.Parent.Kind != HandleKind.MethodDefinition)
                         continue;
 
+                    var parent = (MethodDefinitionHandle)ca.Parent;
+
                     if (!reader.GetAttributeNamespaceAndName(caHandle, out StringHandle nsHandle, out StringHandle nameHandle))
                         continue;
 
                     if (comparer.Equals(nameHandle, "RuntimeExportAttribute")
                         && comparer.Equals(nsHandle, "System.Runtime"))
                     {
-                        var method = (EcmaMethod)_module.GetMethod(ca.Parent);
+                        EcmaMethod method = _module.GetMethod(parent);
                         if (method.GetRuntimeExportName() != null)
                             yield return method;
                     }
@@ -50,7 +52,7 @@ namespace ILCompiler
                     if (comparer.Equals(nameHandle, "UnmanagedCallersOnlyAttribute")
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
-                        var method = (EcmaMethod)_module.GetMethod(ca.Parent);
+                        EcmaMethod method = _module.GetMethod(parent);
                         if (method.GetUnmanagedCallersOnlyExportName() != null)
                             yield return method;
                     }

@@ -152,7 +152,6 @@ set(SOURCES
   exception/signal.cpp
   file/directory.cpp
   file/file.cpp
-  file/filetime.cpp
   file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp

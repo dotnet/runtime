@@ -27,7 +27,8 @@ enum FileLoadLevel
     // Note that semantics here are description is the LAST step done, not what is
     // currently being done.
 
-    FILE_LOAD_CREATE,
+    FILE_LOAD_CREATE,            // List entry + FileLoadLock created, no Assembly/DomainAssembly yet
+    FILE_LOAD_ALLOCATE,          // DomainAssembly & Assembly object allocated and associated with the lock
     FILE_LOAD_BEGIN,
     FILE_LOAD_BEFORE_TYPE_LOAD,
     FILE_LOAD_EAGER_FIXUPS,

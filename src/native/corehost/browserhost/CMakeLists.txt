@@ -21,6 +21,9 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 add_executable(browserhost ${SOURCES})
 set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
+add_dependencies(browserhost System.Native.Browser-Rollup)
+add_dependencies(browserhost System.Native.Browser-Static)
+add_dependencies(browserhost System.Runtime.InteropServices.JavaScript.Native-Static)
 
 install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
@@ -90,7 +93,6 @@ target_link_options(browserhost PRIVATE
     -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
     -sEXPORT_NAME=createDotnetRuntime
     -fwasm-exceptions
-    -msimd128
     -lnodefs.js
     -Wno-unused-command-line-argument
     -Wl,-error-limit=0)

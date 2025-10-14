@@ -1044,7 +1044,7 @@ protected:
     //
     // Return Value:
     //     None.
-    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    FORCEINLINE void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
     {
         if (targetReg != REG_NA)
         {

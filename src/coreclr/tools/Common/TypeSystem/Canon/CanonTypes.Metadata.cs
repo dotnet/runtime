@@ -17,8 +17,6 @@ namespace Internal.TypeSystem
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MetadataType MetadataBaseType => (MetadataType)BaseType;
-
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
         public override bool IsAbstract => false;

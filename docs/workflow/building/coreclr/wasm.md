@@ -48,12 +48,12 @@ dotnet tool install --global dotnet-serve
 
 **Linux/macOS:**
 ```bash
-dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun"
+dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug"
 ```
 
 **Windows:**
 ```cmd
-dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug\corewasmrun"
+dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug"
 ```
 
 This will start a local HTTP server and you can open the provided URL in your browser.
@@ -155,7 +155,7 @@ Note that for `corerun` path in the `args` and `CORE_ROOT` need to be **absolute
 
 3. **Copy managed DLLs** `System.Runtime.dll` and `helloworld.dll` into `artifacts/bin/coreclr/browser.wasm.Debug/IL/`.
 
-4. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
+4. **Set breakpoints** in `corerun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
 
 5. **Start debugging** and step through the WebAssembly code using the call stack
 
