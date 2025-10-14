@@ -1,22 +1,75 @@
 project(Common.JavaScript C)
 
-set(NATIVE_JAVASCRIPT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 if (NOT STATIC_LIB_DESTINATION)
     message(FATAL_ERROR "please set STATIC_LIB_DESTINATION")
 endif()
 
-file(GLOB_RECURSE ROLLUP_TS_SOURCES 
-    "${NATIVE_JAVASCRIPT_SRC}/libs/Common/JavaScript/*.ts"
-    "${NATIVE_JAVASCRIPT_SRC}/libs/Common/JavaScript/*.js"
-    "${NATIVE_JAVASCRIPT_SRC}/libs/System.Native.Browser/*.ts"
-    "${NATIVE_JAVASCRIPT_SRC}/libs/System.Native.Browser/*.js"
-    "${NATIVE_JAVASCRIPT_SRC}/libs/System.Runtime.InteropServices.JavaScript.Native/*.ts"
-    "${NATIVE_JAVASCRIPT_SRC}/libs/System.Runtime.InteropServices.JavaScript.Native/*.js"
-    "${NATIVE_JAVASCRIPT_SRC}/corehost/browserhost/*.ts"
-    "${NATIVE_JAVASCRIPT_SRC}/corehost/browserhost/*.js"
-    "${NATIVE_JAVASCRIPT_SRC}/package.json"
-    "${NATIVE_JAVASCRIPT_SRC}/tsconfig.json"
-    "${NATIVE_JAVASCRIPT_SRC}/node_modules/.npm-stamp"
+set(ROLLUP_TS_SOURCES
+    "${CLR_SRC_NATIVE_DIR}/package.json"
+    "${CLR_SRC_NATIVE_DIR}/tsconfig.json"
+    "${CLR_SRC_NATIVE_DIR}/node_modules/.package-lock.json"
+    "${CLR_SRC_NATIVE_DIR}/rollup.config.js"
+    "${CLR_SRC_NATIVE_DIR}/rollup.config.defines.js"
+    "${CLR_SRC_NATIVE_DIR}/rollup.config.plugins.js"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/libBrowserHost.footer.js"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.extpost.js"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.footer.js"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.footer.js"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/cross-linked.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/host.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/bootstrap.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/config.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/dotnet.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/dotnet.d.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/exit.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/host-builder.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/lib-initializers.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/logging.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/polyfills.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/promise-controller.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/run.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/runtime-list.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/cross-linked/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/cross-module/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/per-module/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/consts.d.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/emscripten.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/emsdk.d.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/exchange.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/export-api.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/internal.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/node.d.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/public-api.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/v8.d.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/cross-linked.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/crypto.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/globalization-locale.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/host.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/memory.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/strings.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/native/cross-linked.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/native/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/types.ts"
 )
 
 set(ROLLUP_OUTPUTS
@@ -49,11 +102,11 @@ add_custom_target(System.Native.Browser-Rollup
 )
 
 set(NPM_INSTALL_OUTPUTS
-    "${NATIVE_JAVASCRIPT_SRC}/node_modules/.package-lock.json"
+    "${CLR_SRC_NATIVE_DIR}/node_modules/.package-lock.json"
 )
 
 set(NPM_INSTALL_SOURCES
-    "${NATIVE_JAVASCRIPT_SRC}/package.json"
+    "${CLR_SRC_NATIVE_DIR}/package.json"
 )
 
 add_dependencies(System.Native.Browser-Rollup System.Native.Browser-NpmInstall)
@@ -61,7 +114,7 @@ add_dependencies(System.Native.Browser-Rollup System.Native.Browser-NpmInstall)
 add_custom_command(
     OUTPUT ${NPM_INSTALL_OUTPUTS}
     COMMAND npm ci
-    WORKING_DIRECTORY "${NATIVE_JAVASCRIPT_SRC}"
+    WORKING_DIRECTORY "${CLR_SRC_NATIVE_DIR}"
     COMMENT "Running 'npm ci' to install npm packages"
     DEPENDS ${NPM_INSTALL_SOURCES}
     VERBATIM
