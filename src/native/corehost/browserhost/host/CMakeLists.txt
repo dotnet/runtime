@@ -28,10 +28,6 @@ target_compile_options(BrowserHost-Static PRIVATE
     )
 target_link_libraries(BrowserHost-Static PRIVATE
     hostmisc
-
-    ${START_WHOLE_ARCHIVE}
-    # WASM-TODO: runtimeinfo
-    ${END_WHOLE_ARCHIVE}
 )
 
 install(TARGETS BrowserHost-Static DESTINATION corehost COMPONENT runtime)
