@@ -168,9 +168,8 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
     ContinuationLayoutKeyData keyData(dataSize, objRefs, adjustedDataOffsets);
     {
         CrstHolder lock(&m_layoutsLock);
-        ContinuationLayoutKey key(&keyData);
         MethodTable* lookupResult;
-        if (m_layouts.GetValue(key, (HashDatum*)&lookupResult))
+        if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
         {
             return lookupResult;
         }
@@ -180,9 +179,8 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
     MethodTable* result = CreateNewContinuationMethodTable(dataSize, objRefs, adjustedDataOffsets, asyncMethod, &amTracker);
     {
         CrstHolder lock(&m_layoutsLock);
-        ContinuationLayoutKey key(&keyData);
         MethodTable* lookupResult;
-        if (m_layouts.GetValue(key, (HashDatum*)&lookupResult))
+        if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
         {
             result = lookupResult;
         }
@@ -217,7 +215,7 @@ EEHashEntry_t* ContinuationLayoutKeyHashTableHelper::AllocateEntry(ContinuationL
     CONTRACTL_END
 
     EEHashEntry_t* pEntry = (EEHashEntry_t*)new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(ContinuationLayoutKey)];
-    if (!pEntry)
+    if (pEntry == NULL)
         return NULL;
     memcpy(pEntry->Key, &key, sizeof(ContinuationLayoutKey));
     return pEntry;
