@@ -21,11 +21,11 @@ namespace System.Runtime.ExceptionServices
         /// Sets a handler for unhandled exceptions.
         /// </summary>
         /// <param name="handler">A callback that will be invoked for unhandled exceptions. Return <see langword="true"/> if the exception was handled; otherwise <see langword="false"/>.</param>
-        /// <exception cref="ArgumentNullException">If handler is null.</exception>
-        /// <exception cref="InvalidOperationException">If a handler is already set.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="handler" /> is null.</exception>
+        /// <exception cref="InvalidOperationException">A handler is already set.</exception>
         /// <remarks>
-        /// The handler will be called when an unhandled exception occurs.
-        /// The handler should return true if the exception was handled, or false if it was not.
+        /// The handler is called when an unhandled exception occurs.
+        /// The handler should return <see langword="true" /> if the exception was handled, or <see langword="false" /> if it was not.
         /// If the handler returns false, the exception will continue to propagate as unhandled.
         ///
         /// The intent of this handler is to allow the user to handle unhandled exceptions

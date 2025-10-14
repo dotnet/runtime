@@ -8,11 +8,13 @@ namespace System.Runtime.InteropServices.Java
 {
     /// <summary>
     /// Provides helpers to create and manage GC handles used for tracking references
-    /// between the managed runtime and a Java VM. These APIs allow managed objects
-    /// to be referenced from native Java code so the runtime can participate in
-    /// cross-reference processing and correctly control object lifetime across
-    /// the managed/native boundary.
+    /// between the managed runtime and a Java VM.
     /// </summary>
+    /// <remarks>
+    /// The APIs provided by this type allow managed objects to be referenced from native
+    /// Java code so the runtime can participate in cross-reference processing and
+    /// correctly control object lifetime across the managed/native boundary.
+    /// </remarks>
     [CLSCompliant(false)]
     [SupportedOSPlatform("android")]
     public static partial class JavaMarshal
@@ -26,9 +28,9 @@ namespace System.Runtime.InteropServices.Java
         /// will be invoked to enumerate or mark managed objects referenced from Java
         /// during a cross-reference sweep. The callback is expected to accept a
         /// <see cref="MarkCrossReferencesArgs"/> pointer describing the objects to mark.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="markCrossReferences"/> is null.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when the subsystem cannot be initialized or is reinitialized.</exception>
-        /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="markCrossReferences"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">The subsystem cannot be initialized or is reinitialized.</exception>
+        /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
         /// <remarks>
         /// Only a single initialization is supported for the process. The runtime
         /// stores the provided function pointer and will invoke it from internal
@@ -54,11 +56,11 @@ namespace System.Runtime.InteropServices.Java
         /// <param name="obj">The managed object to be referenced from native code.</param>
         /// <param name="context">An opaque pointer-sized value that will be associated
         /// with the handle and can be retrieved by the runtime via <see cref="GetContext(GCHandle)"/>.
-        /// Callers may use this to store native-side state or identifiers alongside
+        /// Callers can use this to store native-side state or identifiers alongside
         /// the handle.</param>
         /// <returns>A <see cref="GCHandle"/> that represents the allocated reference-tracking handle.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="obj"/> is null.</exception>
-        /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="obj"/> is null.</exception>
+        /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
         public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -73,8 +75,8 @@ namespace System.Runtime.InteropServices.Java
         /// </summary>
         /// <param name="obj">The <see cref="GCHandle"/> whose context should be returned.</param>
         /// <returns>The opaque context pointer associated with the handle.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the provided handle is null or does not represent a reference-tracking handle.</exception>
-        /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
+        /// <exception cref="InvalidOperationException">The provided handle is null or does not represent a reference-tracking handle.</exception>
+        /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
         /// <remarks>
         /// The returned pointer is the exact value that was originally provided as
         /// the context parameter when the handle was created.
@@ -99,7 +101,7 @@ namespace System.Runtime.InteropServices.Java
         /// </summary>
         /// <param name="crossReferences">A pointer to the structure containing cross-reference information produced during marking.</param>
         /// <param name="unreachableObjectHandles">A span of <see cref="GCHandle"/> values that were determined to be unreachable from the native side.</param>
-        /// <exception cref="PlatformNotSupportedException">Thrown when the runtime or platform does not support Java cross-reference marshalling.</exception>
+        /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
         public static unsafe void FinishCrossReferenceProcessing(
             MarkCrossReferencesArgs* crossReferences,
             ReadOnlySpan<GCHandle> unreachableObjectHandles)

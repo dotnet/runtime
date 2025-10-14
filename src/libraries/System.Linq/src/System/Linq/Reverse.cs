@@ -34,7 +34,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The array whose elements should be reversed.</param>
-        /// <returns>An <see cref="IEnumerable{TSource}"/> that enumerates the elements of <paramref name="source"/> in reverse.</returns>
+        /// <returns>A sequence whose elements correspond to those of the input sequence in reverse order.</returns>
         public static IEnumerable<TSource> Reverse<TSource>(this TSource[] source)
         {
             if (source is null)

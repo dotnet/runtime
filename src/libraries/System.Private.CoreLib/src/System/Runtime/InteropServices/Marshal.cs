@@ -667,7 +667,7 @@ namespace System.Runtime.InteropServices
         /// Converts an HRESULT value that is associated with a COM interface call into a CLR <see cref="Exception"/>, using extended COM error information if the provided COM object supports it.
         /// </summary>
         /// <param name="errorCode">The HRESULT value to convert.</param>
-        /// <param name="iid">The interface ID that was involved in the failing call. This may be used when probing for additional error info.</param>
+        /// <param name="iid">The interface ID that was involved in the failing call. This ID can be used when probing for additional error information.</param>
         /// <param name="pUnk">A pointer to the COM object involved in the failing call, or <see cref="IntPtr.Zero"/> if unavailable.</param>
         /// <returns>
         /// An <see cref="Exception"/> that represents the supplied HRESULT and COM context, or
