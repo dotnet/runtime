@@ -77,9 +77,7 @@ namespace System.Security.Cryptography
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
-                        if (ecPrivateKey.Parameters is not ECDomainParameters domainParameters ||
-                            domainParameters.Named is not string curveOid ||
-                            curveOid != algorithm.CurveOidValue)
+                        if (ecPrivateKey?.Parameters?.Named != algorithm.CurveOidValue)
                         {
                             // The curve specified must be named and match the required curve for the Composite ML-DSA algorithm.
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
