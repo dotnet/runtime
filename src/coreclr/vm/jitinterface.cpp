@@ -1177,7 +1177,7 @@ static CorInfoHelpFunc getGenericStaticsHelper(FieldDesc * pField)
     return (CorInfoHelpFunc)helper;
 }
 
-size_t CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -1185,20 +1185,20 @@ size_t CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    size_t result;
+    void* result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
-    result = (size_t)pMT->GetThreadStaticsInfo();
+    result = pMT->GetThreadStaticsInfo();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
 }
 
-size_t CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -1206,13 +1206,13 @@ size_t CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    size_t result;
+    void* result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
-    result = (size_t)pMT->GetDynamicStaticsInfo();
+    result = pMT->GetDynamicStaticsInfo();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
