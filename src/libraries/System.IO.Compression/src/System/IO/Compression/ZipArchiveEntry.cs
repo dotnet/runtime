@@ -702,14 +702,24 @@ namespace System.IO.Compression
         {
             // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
 
-            // By default we compress with deflate, except if compression level is set to NoCompression then stored is used.
-            // Stored is also used for empty files, but we don't actually call through this function for that - we just write the stored value in the header
-            // Deflate64 is not supported on all platforms
+            // By default we compress with deflate, except if compression level
+            // is set to NoCompression then stored is used.
+            // 
+            // Stored is also used for empty files, but we can't know at this
+            // point if user will write anything to the stream or not. For that
+            // reason, we defer the instantiation of the compression stream
+            // until the first write to the CheckSumAndSizeWriteStream happens.
+            // If the user never writes anything, this will be detected during
+            // saving and the compression method in the file header will be
+            // changed to Stored.
+            //
+            // Note: Deflate64 is not supported on all platforms
             Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate
                 || CompressionMethod == CompressionMethodValues.Stored);
+            Func<Stream> compressorStreamFactory;
 
             bool isIntermediateStream = true;
-            Func<Stream> compressorStreamFactory;
+
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Stored:
