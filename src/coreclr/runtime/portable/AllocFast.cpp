@@ -9,7 +9,7 @@
 extern void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow);
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
-static Object* _AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numElements)
+static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numElements)
 {
     Object* obj = RhpGcAlloc(pMT, uFlags, numElements, nullptr);
     if (obj == NULL)
@@ -22,10 +22,10 @@ static Object* _AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numEle
 
 EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements)
 {
-    return _AllocateObject(pMT, 0, numElements);
+    return AllocateObject(pMT, 0, numElements);
 }
 
-static Object* _RhpNewArrayFastCore(MethodTable* pMT, INT_PTR size)
+static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -48,10 +48,10 @@ static Object* _RhpNewArrayFastCore(MethodTable* pMT, INT_PTR size)
         return pObject;
     }
 
-    return _AllocateObject(pMT, 0, size);
+    return AllocateObject(pMT, 0, size);
 }
 
-static Object* _RhpNewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
+static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -87,7 +87,7 @@ static Object* _RhpNewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
         return pObject;
     }
 
-    return _AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
@@ -101,11 +101,11 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return _AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
+        return AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
     }
 #endif // !HOST_64BIT
 
-    return _RhpNewArrayFastAlign8Core(pMT, size);
+    return NewArrayFastAlign8Core(pMT, size);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
@@ -119,11 +119,11 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return _AllocateObject(pMT, 0, size);
+        return AllocateObject(pMT, 0, size);
     }
 #endif // !HOST_64BIT
 
-    return _RhpNewArrayFastCore(pMT, size);
+    return NewArrayFastCore(pMT, size);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
@@ -162,5 +162,5 @@ EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
         RhExceptionHandling_FailedAllocation(pMT, false);
     }
 
-    return _RhpNewArrayFastCore(pMT, stringLength);
+    return NewArrayFastCore(pMT, stringLength);
 }
