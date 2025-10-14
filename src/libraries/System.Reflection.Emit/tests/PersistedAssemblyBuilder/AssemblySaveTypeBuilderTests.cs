@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ObjectiveC;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -860,6 +862,73 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(void).FullName, field3Type.GetFunctionPointerReturnType().FullName);
             Type[] callingConventions3 = field3Type.GetFunctionPointerCallingConventions();
             Assert.Contains(callingConventions3, t => t.FullName == typeof(CallConvStdcall).FullName);
+        }
+
+        [Fact]
+        public void ConsumeFunctionPointerFields()
+        {
+            // public unsafe class Container
+            // {
+            //     public static delegate*<int, int, int> Method;
+            // 
+            //     public static int Add(int a, int b) => a + b;
+            //     public static void Init() => Method = &Add;
+            // }
+
+            TempFile assembly1Path = TempFile.Create();
+            PersistedAssemblyBuilder assembly1 = new(new AssemblyName("Assembly1"), typeof(object).Assembly);
+            ModuleBuilder mod1 = assembly1.DefineDynamicModule("Module1");
+            TypeBuilder containerType = mod1.DefineType("Container", TypeAttributes.Public | TypeAttributes.Class);
+            FieldBuilder methodField = containerType.DefineField("Method", typeof(delegate*<int, int, int>), FieldAttributes.Public | FieldAttributes.Static);
+            MethodBuilder addMethod = containerType.DefineMethod("Add", MethodAttributes.Public | MethodAttributes.Static);
+            addMethod.SetParameters(typeof(int), typeof(int));
+            addMethod.SetReturnType(typeof(int));
+            ILGenerator addMethodIL = addMethod.GetILGenerator();
+            addMethodIL.Emit(OpCodes.Ldarg_0);
+            addMethodIL.Emit(OpCodes.Ldarg_1);
+            addMethodIL.Emit(OpCodes.Add);
+            addMethodIL.Emit(OpCodes.Ret);
+            MethodBuilder initMethod = containerType.DefineMethod("Init", MethodAttributes.Public | MethodAttributes.Static);
+            initMethod.SetReturnType(typeof(void));
+            ILGenerator initMethodIL = initMethod.GetILGenerator();
+            initMethodIL.Emit(OpCodes.Ldftn, addMethod);
+            initMethodIL.Emit(OpCodes.Stsfld, methodField);
+            initMethodIL.Emit(OpCodes.Ret);
+            containerType.CreateType();
+            assembly1.Save(assembly1Path.Path);
+
+            // class Program
+            // {
+            //     public static int Main()
+            //     {
+            //         Container.Init();
+            //         return Container.Method(2, 3);
+            //     }
+            // }
+
+            TempFile assembly2Path = TempFile.Create();
+            Assembly assembly1FromDisk = Assembly.LoadFile(assembly1Path.Path);
+            PersistedAssemblyBuilder assembly2 = new(new AssemblyName("Assembly2"), typeof(object).Assembly);
+            ModuleBuilder mod2 = assembly2.DefineDynamicModule("Module2");
+            TypeBuilder programType = mod2.DefineType("Program");
+            MethodBuilder mainMethod = programType.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+            mainMethod.SetReturnType(typeof(int));
+            ILGenerator il = mainMethod.GetILGenerator();
+            il.Emit(OpCodes.Call, assembly1FromDisk.GetType("Container").GetMethod("Init"));
+            il.Emit(OpCodes.Ldc_I4_2);
+            il.Emit(OpCodes.Ldc_I4_3);
+            il.Emit(OpCodes.Ldsfld, assembly1FromDisk.GetType("Container").GetField("Method"));
+            il.EmitCalli(OpCodes.Calli, CallingConvention.Winapi, typeof(int), [typeof(int), typeof(int)]);
+            il.Emit(OpCodes.Ret);
+            programType.CreateType();
+            assembly2.Save(assembly2Path.Path);
+
+            Assembly assembly2FromDisk = Assembly.LoadFile(assembly2Path.Path);
+            int result = (int)assembly2FromDisk.GetType("Program").GetMethod("Main").Invoke(null, null);
+            Assert.Equal(5, result);
+
+            assembly1Path.Dispose();
+            assembly2Path.Dispose();
         }
     }
 
