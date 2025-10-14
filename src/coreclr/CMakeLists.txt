@@ -36,7 +36,12 @@ endif()
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
 if (CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_options(-fwasm-exceptions)
+    add_compile_options(
+      -fwasm-exceptions 
+      -msimd128)
+    add_link_options(
+      -fwasm-exceptions 
+      )
 endif()
 
 #----------------------------------------------------

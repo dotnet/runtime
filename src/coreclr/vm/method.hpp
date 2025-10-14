@@ -476,11 +476,8 @@ public:
     // This method can be called on a non-restored method desc
     BOOL IsTypicalMethodDefinition() const;
 
-    // Force a load of the (typical) constraints on the type parameters of a typical method definition,
-    // detecting cyclic bounds on class and method type parameters.
-    void LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularClassConstraints,
-                                                   BOOL *pfHasCircularMethodConstraints,
-                                                   ClassLoadLevel level = CLASS_LOADED);
+    // Validate accessibility and usage of variant generic parameters and check for cycles in the method constraints
+    void CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstraints);
 
     DWORD IsClassConstructor()
     {
@@ -2126,7 +2123,6 @@ private:
     bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
-    int GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType);
 public:
     static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);

@@ -3,7 +3,6 @@
 
 # this is just a incomplete sample app deployment
 # WASM-TODO: implement proper in-tree project via MSBuild and WASM SDK
-# WASM-TODO: deploy *.js.map when available
 set(SAMPLE_ASSETS
     index.html
     main.mjs

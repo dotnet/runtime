@@ -354,13 +354,13 @@ bool interceptor_ICJI::getIsClassInitedFlagAddress(
     return original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
 }
 
-size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(
+void* interceptor_ICJI::getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     return original_ICorJitInfo->getClassThreadStaticDynamicInfo(clr);
 }
 
-size_t interceptor_ICJI::getClassStaticDynamicInfo(
+void* interceptor_ICJI::getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     return original_ICorJitInfo->getClassStaticDynamicInfo(clr);
