@@ -378,7 +378,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        return FALSE;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -419,7 +423,7 @@ public:
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     Precode* GetOrCreatePrecode();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-    void MarkPrecodeAsStableEntrypoint();
+    void MarkStableEntryPoint();
 
     static MethodDesc *  GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative = FALSE);
 
@@ -1784,15 +1788,17 @@ private:
     // The actual data stored in a MethodDesc follows.
 
 protected:
-    enum {
+    enum
+    {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
         enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
-        // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set.
+        // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set in non-portable entrypoint scenarios.
         enum_flag3_HasStableEntryPoint                      = 0x1000,   // The method entrypoint is stable (either precode or actual code)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag3_HasPrecode                               = 0x2000,   // Precode has been allocated for this method
-
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag3_IsUnboxingStub                           = 0x4000,
         enum_flag3_IsEligibleForTieredCompilation           = 0x8000,
     };

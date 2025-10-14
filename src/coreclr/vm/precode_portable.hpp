@@ -13,6 +13,7 @@ class PortableEntryPoint final
 {
 public: // static
     static bool HasNativeEntryPoint(PCODE addr);
+    static bool HasInterpreterData(PCODE addr);
 
     static void* GetActualCode(PCODE addr);
     static void SetActualCode(PCODE addr, PCODE actualCode);

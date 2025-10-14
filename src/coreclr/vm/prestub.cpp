@@ -2404,7 +2404,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         _ASSERTE(ilStubInterpData != NULL);
         SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
         SetCodeEntryPoint(pCode);
-#else
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
             if (pStub->HasExternalEntryPoint())
@@ -2424,7 +2424,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     _ASSERTE(!IsPointingToPrestub());

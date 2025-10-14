@@ -20,6 +20,13 @@ bool PortableEntryPoint::HasNativeEntryPoint(PCODE addr)
     return portableEntryPoint->HasNativeCode();
 }
 
+bool PortableEntryPoint::HasInterpreterData(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    return portableEntryPoint->HasInterpreterCode();
+}
+
 void* PortableEntryPoint::GetActualCode(PCODE addr)
 {
     STANDARD_VM_CONTRACT;

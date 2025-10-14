@@ -2382,18 +2382,22 @@ BOOL MethodDesc::IsPointingToPrestub()
     }
     CONTRACTL_END;
 
+    PCODE methodEntryPoint;
     if (!HasStableEntryPoint())
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            PCODE methodEntrypoint = GetMethodEntryPointIfExists();
-            return methodEntrypoint == GetTemporaryEntryPointIfExists() && methodEntrypoint != (PCODE)NULL;
+            methodEntryPoint = GetMethodEntryPointIfExists();
+            return methodEntryPoint == GetTemporaryEntryPointIfExists() && methodEntryPoint != (PCODE)NULL;
         }
         return TRUE;
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    return FALSE;
+    methodEntryPoint = GetStableEntryPoint();
+    return methodEntryPoint == (PCODE)NULL
+        || (!PortableEntryPoint::HasInterpreterData(methodEntryPoint)
+            && !PortableEntryPoint::HasNativeEntryPoint(methodEntryPoint));
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (!HasPrecode())
@@ -2430,7 +2434,12 @@ void MethodDesc::Reset()
         // We should go here only for the rental methods
         _ASSERTE(GetLoaderModule()->IsReflectionEmit());
 
-        InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
+        DWORD flagsToSet = enum_flag3_HasStableEntryPoint;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+        flagsToSet |= enum_flag3_HasPrecode;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+        InterlockedUpdateFlags3(flagsToSet, FALSE);
 
         *GetAddrOfSlot() = GetTemporaryEntryPoint();
     }
@@ -2728,7 +2737,7 @@ void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
     {
         // The rest of the system assumes that certain methods always have stable entrypoints.
         // Mark the precode as such
-        MarkPrecodeAsStableEntrypoint();
+        MarkStableEntryPoint();
     }
 }
 
@@ -2907,7 +2916,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
 }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
-void MethodDesc::MarkPrecodeAsStableEntrypoint()
+void MethodDesc::MarkStableEntryPoint()
 {
 #if _DEBUG
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
@@ -2918,12 +2927,17 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
+    _ASSERTE(!HasPrecode());
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 #endif // _DEBUG
-    _ASSERTE(!HasPrecode());
     _ASSERTE(RequiresStableEntryPoint());
 
-    InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
+    DWORD flagsToSet = enum_flag3_HasStableEntryPoint;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    flagsToSet |= enum_flag3_HasPrecode;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+    InterlockedUpdateFlags3(flagsToSet, TRUE);
 }
 
 bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk()
@@ -3163,7 +3177,10 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(entryPoint != (PCODE)NULL);
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    SetStableEntryPointInterlocked(entryPoint);
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchEntryPointSlots(entryPoint);
@@ -3189,13 +3206,13 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
         return;
     }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (!HasStableEntryPoint())
     {
         SetStableEntryPointInterlocked(entryPoint);
         return;
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 #ifdef FEATURE_TIERED_COMPILATION
