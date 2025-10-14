@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Security;
+using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -182,6 +183,12 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ConnectWithCertificateChain()
         {
+            FileStream file = new FileStream("/proc/net/route", FileMode.Open, FileAccess.Read);
+
+            System.Console.WriteLine($"FileStream is of type: {file.GetType()}");
+            System.Console.WriteLine($"Seekable: {file.CanSeek}");
+            System.Console.WriteLine($"Current Position: {file.Seek(1, SeekOrigin.Current)}");
+
             X509Certificate2 certificate = _certificates.ServerCert;
             X509Certificate2Collection chain = _certificates.ServerChain;
 
