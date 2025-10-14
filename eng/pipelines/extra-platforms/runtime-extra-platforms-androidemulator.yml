@@ -125,6 +125,7 @@ jobs:
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             buildAllTestsAsStandalone: true
+            runtimeFlavor: coreclr
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
