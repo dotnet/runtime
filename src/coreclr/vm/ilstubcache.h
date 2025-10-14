@@ -74,7 +74,8 @@ public:
         DWORD cbSig,
         SigTypeContext *pTypeContext,
         ILStubLinker* pStubLinker,
-        BOOL isAsync = FALSE);
+        BOOL isAsync = FALSE,
+        class ILStubResolver* pResolver = NULL);
 
     MethodTable * GetStubMethodTable()
     {
@@ -100,7 +101,8 @@ private: // static
         DWORD cbSig,
         BOOL isAsync,
         SigTypeContext *pTypeContext,
-        AllocMemTracker* pamTracker);
+        AllocMemTracker* pamTracker,
+        class ILStubResolver* pResolver = NULL);
 
 private: // Inner classes
     struct ILStubCacheEntry

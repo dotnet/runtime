@@ -61,6 +61,7 @@
 
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
+#include "ilstubresolver.h"
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -11061,10 +11062,34 @@ void CEEJitInfo::PublishFinalCodeAddress(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_finalCodeAddressSlot != NULL)
+    if (m_resumptionStubResolver == NULL)
     {
-        *m_finalCodeAddressSlot = addr;
+        return;
     }
+
+    m_resumptionStubResolver->SetFinalResumeMethodStartAddress(addr);
+    m_resumptionStubResolver->SetResumeMethodStartAddress(addr);
+
+#ifdef FEATURE_TIERED_COMPILATION
+    // Resumption stubs are uniquely coupled to the code version (since the
+    // continuation is), so we need to make sure we always keep calling the
+    // same version here.
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
+    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+    {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        // The OSR version needs to resume in the tier0 version. The tier0
+        // version will handle setting up the frame that the OSR version
+        // expects and then delegating back into the OSR version (knowing to do
+        // so through information stored in the continuation).
+        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
+        m_resumptionStubResolver->SetResumeMethodStartAddress((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+#else // !FEATURE_ON_STACK_REPLACEMENT
+        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
+#endif // FEATURE_ON_STACK_REPLACEMENT
+    }
+#endif
 }
 
 template<class TCodeHeader>
@@ -14667,35 +14692,10 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     numArgs++;
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-    // Resumption stubs are uniquely coupled to the code version (since the
-    // continuation is), so we need to make sure we always keep calling the
-    // same version here.
-    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
-    NativeCodeVersion ncv = config->GetCodeVersion();
-    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
-    {
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-        // The OSR version needs to resume in the tier0 version. The tier0
-        // version will handle setting up the frame that the OSR version
-        // expects and then delegating back into the OSR version (knowing to do
-        // so through information stored in the continuation).
-        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
-        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
-#else // !FEATURE_ON_STACK_REPLACEMENT
-        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
-#endif // FEATURE_ON_STACK_REPLACEMENT
-    }
-    else
-#endif // FEATURE_TIERED_COMPILATION
-    {
-        {
-            m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
-        }
-
-        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
-        pCode->EmitLDIND_I();
-    }
+    void* resolverMem = amTracker.Track(loaderAlloc->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(AsyncResumeILStubResolver))));
+    m_resumptionStubResolver = new (resolverMem) AsyncResumeILStubResolver();
+    pCode->EmitLDC((DWORD_PTR)m_resumptionStubResolver->GetAddrOfResumeMethodStartAddress());
+    pCode->EmitLDIND_I();
 
     pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
 
@@ -14821,15 +14821,18 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
             md->GetModule(),
             stubSig.GetRawSig(), stubSig.GetRawSigLen(),
             &emptyCtx,
-            &sl);
+            &sl,
+            FALSE, /* isAsync */
+            m_resumptionStubResolver);
 
     amTracker.SuppressRelease();
 
-    ILStubResolver *pResolver = result->AsDynamicMethodDesc()->GetILStubResolver();
-    pResolver->SetStubTargetMethodDesc(m_pMethodBeingCompiled);
+    m_resumptionStubResolver->SetStubTargetMethodDesc(m_pMethodBeingCompiled);
 
     const char* optimizationTierName = "UnknownTier";
 #ifdef FEATURE_TIERED_COMPILATION
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
     switch (ncv.GetOptimizationTier())
     {
     case NativeCodeVersion::OptimizationTier0: optimizationTierName = "Tier0"; break;
