@@ -36,6 +36,7 @@
       <TfmSpecificPackageFile Include="@(ReferenceAssemblyFile);
                                        @(CompilerGeneratedXmlDocFile)"
                               PackagePath="ref\$(NetCoreAppCurrent)\" />
+      <NoDocPackages Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithoutMetadataValue('UseCompilerGeneratedDocXmlFile', 'true')->WithMetadataValue('IsPackable', 'true')->'%(PackageId)'->Distinct())" />
     </ItemGroup>
 
     <ItemGroup>
@@ -44,6 +45,13 @@
       <PlatformNotSupportedCompilerGeneratedXmlDocFile Include="@(CompilerGeneratedXmlDocFile->WithMetadataValue('IsPlatformNotSupportedAssembly', 'true'))" />
       <!-- Allow libraries to temporarily suppress the PNSE error. -->
       <PlatformNotSupportedCompilerGeneratedXmlDocFile Remove="@(PlatformNotSupportedCompilerGeneratedXmlDocFile->WithMetadataValue('SuppressPlatformNotSupportedAssemblyDocXmlError', 'true'))" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(NoDocPackages)"
+                      File="$(OutputPath)NoDocPackages.txt"
+                      Overwrite="true" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)NoDocPackages.txt" PackagePath="ref\$(NetCoreAppCurrent)\" />
     </ItemGroup>
 
     <Error Text="Compiler generated XML documentation files are missing data because partial facade assemblies aren't supported by the repo infrastructure. Consider removing the partial facade feature. Assemblies: @(PartialFacadeCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
