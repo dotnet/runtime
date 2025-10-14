@@ -2298,7 +2298,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_CLASS_STRUCT_* _getContinuationType(IntPtr thisHandle, IntPtr* ppException, UIntPtr dataSize, bool* objRefs, CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets)
+        private static CORINFO_CLASS_STRUCT_* _getContinuationType(IntPtr thisHandle, IntPtr* ppException, nuint dataSize, bool* objRefs, CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets)
         {
             var _this = GetThis(thisHandle);
             try
@@ -2621,7 +2621,7 @@ namespace Internal.JitInterface
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * 176));
+            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * 177));
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_notifyMethodInfoUsage;
@@ -2778,8 +2778,7 @@ namespace Internal.JitInterface
             callbacks[152] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, DelegateCtorArgs*, CORINFO_METHOD_STRUCT_*>)&_GetDelegateCtor;
             callbacks[153] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void>)&_MethodCompileComplete;
             callbacks[154] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_SIG_INFO*, CORINFO_GET_TAILCALL_HELPERS_FLAGS, CORINFO_TAILCALL_HELPERS*, byte>)&_getTailCallHelpers;
-<<<<<<< HEAD
-            callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, bool*, CORINFO_CONTINUATION_DATA_OFFSETS*, CORINFO_CLASS_STRUCT_*>)&_getContinuationType;
+            callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, bool*, CORINFO_CONTINUATION_DATA_OFFSETS*, CORINFO_CLASS_STRUCT_*>)&_getContinuationType;
             callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*>)&_getAsyncResumptionStub;
             callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
             callbacks[158] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;
@@ -2787,7 +2786,7 @@ namespace Internal.JitInterface
             callbacks[160] = (delegate* unmanaged<IntPtr, IntPtr*, AllocMemArgs*, void>)&_allocMem;
             callbacks[161] = (delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void>)&_reserveUnwindInfo;
             callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void>)&_allocUnwindInfo;
-            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocGCInfo;
+            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, void*>)&_allocGCInfo;
             callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, uint, void>)&_setEHcount;
             callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_EH_CLAUSE*, void>)&_setEHinfo;
             callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, uint, byte*, IntPtr, byte>)&_logMsg;
@@ -2801,51 +2800,6 @@ namespace Internal.JitInterface
             callbacks[174] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[175] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
             callbacks[176] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
-||||||| 337fea7e187
-            callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*>)&_getAsyncResumptionStub;
-            callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
-            callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;
-            callbacks[158] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void>)&_updateEntryPointForTailCall;
-            callbacks[159] = (delegate* unmanaged<IntPtr, IntPtr*, AllocMemArgs*, void>)&_allocMem;
-            callbacks[160] = (delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void>)&_reserveUnwindInfo;
-            callbacks[161] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void>)&_allocUnwindInfo;
-            callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocGCInfo;
-            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, uint, void>)&_setEHcount;
-            callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_EH_CLAUSE*, void>)&_setEHinfo;
-            callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, uint, byte*, IntPtr, byte>)&_logMsg;
-            callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, int, byte*, int>)&_doAssert;
-            callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, CorJitResult, void>)&_reportFatalError;
-            callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, PgoSource*, bool*, HRESULT>)&_getPgoInstrumentationResults;
-            callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT>)&_allocPgoInstrumentationBySchema;
-            callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
-            callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, ushort, int, void>)&_recordRelocation;
-            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
-            callbacks[173] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
-            callbacks[174] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
-            callbacks[175] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
-=======
-            callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*>)&_getAsyncResumptionStub;
-            callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
-            callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;
-            callbacks[158] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void>)&_updateEntryPointForTailCall;
-            callbacks[159] = (delegate* unmanaged<IntPtr, IntPtr*, AllocMemArgs*, void>)&_allocMem;
-            callbacks[160] = (delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void>)&_reserveUnwindInfo;
-            callbacks[161] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void>)&_allocUnwindInfo;
-            callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, void*>)&_allocGCInfo;
-            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, uint, void>)&_setEHcount;
-            callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_EH_CLAUSE*, void>)&_setEHinfo;
-            callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, uint, byte*, IntPtr, byte>)&_logMsg;
-            callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, int, byte*, int>)&_doAssert;
-            callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, CorJitResult, void>)&_reportFatalError;
-            callbacks[168] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, PgoSource*, bool*, HRESULT>)&_getPgoInstrumentationResults;
-            callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT>)&_allocPgoInstrumentationBySchema;
-            callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
-            callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, void*, ushort, int, void>)&_recordRelocation;
-            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, void*, ushort>)&_getRelocTypeHint;
-            callbacks[173] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
-            callbacks[174] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
-            callbacks[175] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*>)&_getSpecialCopyHelper;
->>>>>>> 8aad2ab6331322b510786cee457deb992c19b9ad
 
             return (IntPtr)callbacks;
         }
