@@ -65,5 +65,7 @@ namespace TestLibrary
         public static bool PlatformDoesNotSupportNativeTestAssets =>
             OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
+        public static bool IsRuntimeAsyncSupported => !Utilities.IsCoreClrInterpreter && !IsMonoRuntime && !IsMonoMINIFULLAOT && !IsMonoLLVMFULLAOT
+            && !IsMonoLLVMAOT && !IsMonoInterpreter && !IsMonoFULLAOT && Utilities.IsNotNativeAot;
     }
 }
