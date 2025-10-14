@@ -709,23 +709,23 @@ namespace System.IO.Compression
                 || CompressionMethod == CompressionMethodValues.Stored);
 
             bool isIntermediateStream = true;
-            Stream compressorStream;
+            Func<Stream> compressorStreamFactory;
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Stored:
-                    compressorStream = backingStream;
+                    compressorStreamFactory = () => backingStream;
                     isIntermediateStream = false;
                     break;
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen, writeOnEmpty: false);
+                    compressorStreamFactory = () => new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
                     break;
 
             }
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
             var checkSumStream = new CheckSumAndSizeWriteStream(
-                compressorStream,
+                compressorStreamFactory,
                 backingStream,
                 leaveCompressorStreamOpenOnClose,
                 this,
