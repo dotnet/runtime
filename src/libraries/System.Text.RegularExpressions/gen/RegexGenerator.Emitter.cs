@@ -524,7 +524,7 @@ namespace System.Text.RegularExpressions.Generator
             // - There are more than 5 characters in the needle, or
             // - There are only 4 or 5 characters in the needle and they're all ASCII.
 
-            return chars.Length > 5 || RegexCharClass.IsAscii(chars)
+            return chars.Length > 5 || Ascii.IsValid(chars)
                 ? EmitSearchValues(chars, requiredHelpers)
                 : Literal(chars.ToString());
         }
@@ -538,7 +538,7 @@ namespace System.Text.RegularExpressions.Generator
 
             if (fieldName is null)
             {
-                if (RegexCharClass.IsAscii(chars))
+                if (Ascii.IsValid(chars))
                 {
                     // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
                     var bitmap = new byte[16];

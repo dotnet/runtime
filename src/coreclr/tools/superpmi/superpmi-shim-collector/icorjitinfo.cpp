@@ -1656,18 +1656,18 @@ void interceptor_ICJI::getCallInfo(
     });
 }
 
-size_t interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassStaticDynamicInfo");
-    size_t temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
+    void* temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
     mc->recGetClassStaticDynamicInfo(cls, temp);
     return temp;
 }
 
-size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassThreadStaticDynamicInfo");
-    size_t temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
+    void* temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
     mc->recGetClassThreadStaticDynamicInfo(cls, temp);
     return temp;
 }
