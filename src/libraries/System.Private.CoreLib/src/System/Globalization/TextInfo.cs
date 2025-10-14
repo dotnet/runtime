@@ -368,7 +368,6 @@ namespace System.Globalization
                 {
                     if (GlobalizationMode.Invariant)
                     {
-                        Debug.Assert(instance == null);
                         return toUpper ? InvariantModeCasing.ToUpper(source) : InvariantModeCasing.ToLower(source);
                     }
 
