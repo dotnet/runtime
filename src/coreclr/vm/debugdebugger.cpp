@@ -312,9 +312,10 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     MethodDesc* methodDesc = NonVirtualEntry2MethodDesc((PCODE)resume);
     ILStubResolver *pResolver = methodDesc->AsDynamicMethodDesc()->GetILStubResolver();
     MethodDesc* pTargetMethodDesc = pResolver->GetStubTargetMethodDesc();
+    AsyncResumeILStubResolver* pAsyncResumeResolver = (AsyncResumeILStubResolver*)pResolver;
     StackTraceInfo::AppendElement(
         handle,
-        (UINT_PTR)resume,
+        (UINT_PTR)pAsyncResumeResolver->GetFinalResumeMethodStartAddress(),
         state,
         pTargetMethodDesc,
         NULL);
@@ -999,24 +1000,18 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 UINT_PTR ip = cur.ip;
                 if (cur.flags & STEF_CONTINUATION)
                 {
-                    PCODE addr = 0;
                     if (ip != (PCODE)NULL)
                     {
-                        EECodeInfo codeInfo(ip);
-                        addr = codeInfo.GetStartAddress();
-                        if (codeInfo.IsValid())
-                        {
-                            DebugInfoRequest request;
-                            request.InitFromStartingAddr(pMD, addr);
-                            ICorDebugInfo::AsyncInfo asyncInfo = {};
-                            NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
-                            NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
-                            ULONG32 cAsyncVars = 0;
-                            DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew2, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
-                            dwNativeOffset = asyncSuspensionPoints[cur.sp].NativeOffset;
-                        }
+                        DebugInfoRequest request;
+                        request.InitFromStartingAddr(pMD, ip);
+                        ICorDebugInfo::AsyncInfo asyncInfo = {};
+                        NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
+                        NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
+                        ULONG32 cAsyncVars = 0;
+                        DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew2, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
+                        dwNativeOffset = asyncSuspensionPoints[cur.sp].NativeOffset;
+                        ip += dwNativeOffset;
                     }
-                    ip = addr + dwNativeOffset;
                 }
 
                 else
