@@ -29,7 +29,7 @@ namespace System.IO.Compression
         // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
         // took dependencies on it. Thus, if we are opened from ZipArchiveEntry, we make
         // sure to only "flush" when we actually had some input.
-        private bool _noFlushOnEmpty;
+        private bool _writeOnEmpty = true;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -54,9 +54,9 @@ namespace System.IO.Compression
         }
 
         // internal constructor to use from ZipArchiveEntry
-        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, bool noFlushOnEmpty) : this(stream, compressionLevel, leaveOpen)
+        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, bool writeOnEmpty) : this(stream, compressionLevel, leaveOpen)
         {
-            _noFlushOnEmpty = noFlushOnEmpty;
+            _writeOnEmpty = writeOnEmpty;
         }
 
         /// <summary>
@@ -636,7 +636,7 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            if (_wroteBytes || !_noFlushOnEmpty)
+            if (_wroteBytes || _writeOnEmpty)
             {
                 // Compress any bytes left
                 WriteDeflaterOutput();
@@ -678,7 +678,7 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            if (_wroteBytes || !_noFlushOnEmpty)
+            if (_wroteBytes || _writeOnEmpty)
             {
                 // Compress any bytes left
                 await WriteDeflaterOutputAsync(default).ConfigureAwait(false);

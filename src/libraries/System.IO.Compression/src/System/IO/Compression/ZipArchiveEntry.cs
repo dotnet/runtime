@@ -719,7 +719,7 @@ namespace System.IO.Compression
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen, true);
+                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen, writeOnEmpty: false);
                     break;
 
             }
