@@ -95,6 +95,9 @@ target_link_libraries(browserhost PUBLIC
     BrowserHost-Static
 )
 target_link_libraries(browserhost PRIVATE
+	${START_WHOLE_ARCHIVE}
+    ${RUNTIMEINFO_LIB}
+    ${END_WHOLE_ARCHIVE}
     ${NATIVE_LIBS}
 )
 
