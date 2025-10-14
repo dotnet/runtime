@@ -20,7 +20,6 @@ add_executable(browserhost ${BROWSERHOST_SOURCES})
 set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
 
-add_dependencies(browserhost BrowserHost-Static)
 add_dependencies(browserhost System.Native.Browser-Rollup)
 add_dependencies(browserhost System.Native.Browser-Static)
 add_dependencies(browserhost System.Runtime.InteropServices.JavaScript.Native-Static)
