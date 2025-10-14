@@ -51,6 +51,9 @@ class AsyncContinuationsManager
 
     MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod, AllocMemTracker* pamTracker);
 
+    static MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, EEClass* eeClass, LoaderAllocator* allocator, Module* loaderModule, AllocMemTracker* pamTracker);
+    static PTR_EEClass GetOrCreateSingletonSubContinuationEEClass();
+    static PTR_EEClass CreateSingletonSubContinuationEEClass();
 public:
     AsyncContinuationsManager(LoaderAllocator* allocator);
     MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod);

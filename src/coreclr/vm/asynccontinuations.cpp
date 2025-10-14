@@ -24,6 +24,47 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
     m_layouts.Init(16, &lock, m_allocator->GetLowFrequencyHeap());
 }
 
+static EEClass* volatile g_singletonContinuationEEClass;
+
+EEClass* AsyncContinuationsManager::GetOrCreateSingletonSubContinuationEEClass()
+{
+    if (g_singletonContinuationEEClass != NULL)
+        return g_singletonContinuationEEClass;
+
+    return CreateSingletonSubContinuationEEClass();
+}
+
+EEClass* AsyncContinuationsManager::CreateSingletonSubContinuationEEClass()
+{
+    AllocMemTracker amTracker;
+
+    Module* spc = SystemDomain::SystemModule();
+    LoaderAllocator* allocator = SystemDomain::GetGlobalLoaderAllocator();
+
+    EEClass* pClass = EEClass::CreateMinimalClass(allocator->GetHighFrequencyHeap(), &amTracker);
+
+    CORINFO_CONTINUATION_DATA_OFFSETS offsets;
+    offsets.Result = UINT_MAX;
+    offsets.Exception = UINT_MAX;
+    offsets.ContinuationContext = UINT_MAX;
+    offsets.KeepAlive = UINT_MAX;
+    MethodTable* pMT = CreateNewContinuationMethodTable(0, NULL, offsets, pClass, allocator, spc, &amTracker);
+
+    pClass->SetMethodTable(pMT);
+
+#ifdef _DEBUG
+    pClass->SetDebugClassName("dynamicContinuation");
+    pMT->SetDebugClassName("dynamicContinuation");
+#endif
+
+    if (InterlockedCompareExchangeT(&g_singletonContinuationEEClass, pClass, NULL) == NULL)
+    {
+        amTracker.SuppressRelease();
+    }
+
+    return g_singletonContinuationEEClass;
+}
+
 template<typename TFunc>
 static bool EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc func)
 {
@@ -50,7 +91,14 @@ static bool EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc fun
     return true;
 }
 
-MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod, AllocMemTracker* pamTracker)
+MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
+    unsigned dataSize,
+    const bool* objRefs,
+    const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets,
+    EEClass* pClass,
+    LoaderAllocator* allocator,
+    Module* loaderModule,
+    AllocMemTracker* pamTracker)
 {
     STANDARD_VM_CONTRACT;
 
@@ -81,7 +129,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
 
     size_t cbGC = numPointerSeries == 0 ? 0 : CGCDesc::ComputeSize(numPointerSeries);
 
-    BYTE* pMemory = (BYTE*)pamTracker->Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(CORINFO_CONTINUATION_DATA_OFFSETS)) + S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
+    BYTE* pMemory = (BYTE*)pamTracker->Track(allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(CORINFO_CONTINUATION_DATA_OFFSETS)) + S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
 
     CORINFO_CONTINUATION_DATA_OFFSETS* allocatedDataOffsets = new (pMemory) CORINFO_CONTINUATION_DATA_OFFSETS(dataOffsets);
 
@@ -89,13 +137,13 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
     unsigned startOfDataInObject = OBJECT_SIZE + startOfDataInInstance;
 
     MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
-    pMT->AllocateAuxiliaryData(m_allocator, asyncMethod->GetLoaderModule(), pamTracker, MethodTableStaticsFlags::None);
+    pMT->AllocateAuxiliaryData(allocator, loaderModule, pamTracker, MethodTableStaticsFlags::None);
     pMT->SetParentMethodTable(pParentClass);
     pMT->SetContinuationDataOffsets(allocatedDataOffsets);
-    pMT->SetLoaderAllocator(m_allocator);
+    pMT->SetLoaderAllocator(allocator);
     pMT->SetModule(pParentClass->GetModule());
     pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
-    pMT->SetClass(pParentClass->GetClass()); // EEClass of System.Runtime.CompilerServices.Continuation
+    pMT->SetClass(pClass);
     pMT->SetBaseSize(OBJECT_BASESIZE + startOfDataInInstance + dataSize);
 
     if (numPointerSeries > 0)
@@ -126,6 +174,28 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
         _ASSERTE(curIndex == 0);
     }
 
+    pMT->SetClassInited();
+    INDEBUG(pMT->GetAuxiliaryDataForWrite()->SetIsPublished());
+
+    return pMT;
+}
+
+MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
+    unsigned dataSize,
+    const bool* objRefs,
+    const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets,
+    MethodDesc* asyncMethod,
+    AllocMemTracker* pamTracker)
+{
+    MethodTable* pMT = CreateNewContinuationMethodTable(
+        dataSize,
+        objRefs,
+        dataOffsets,
+        GetOrCreateSingletonSubContinuationEEClass(),
+        m_allocator,
+        asyncMethod->GetLoaderModule(),
+        pamTracker);
+
 #ifdef DEBUG
     size_t numObjRefs = 0;
     EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count) {
@@ -133,15 +203,13 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(unsigne
         return true;
         });
     StackSString debugName;
-    debugName.Printf("Continuation_%s_%u_%zu", asyncMethod->m_pszDebugMethodName, dataSize, numObjRefs);
+    debugName.Printf("dynamicContinuation_%s_%u_%zu", asyncMethod->m_pszDebugMethodName, dataSize, numObjRefs);
     const char* debugNameUTF8 = debugName.GetUTF8();
     size_t len = strlen(debugNameUTF8) + 1;
     char* name = (char*)pamTracker->Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
     strcpy_s(name, len, debugNameUTF8);
     pMT->SetDebugClassName(name);
 #endif
-
-    pMT->SetClassInited();
 
     return pMT;
 }
