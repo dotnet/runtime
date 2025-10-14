@@ -110,7 +110,9 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        [Theory(
+            SkipType = typeof(Binaries.CetCompat),
+            SkipUnless = nameof(Binaries.CetCompat.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void DisableCetCompat(bool selfContained)
