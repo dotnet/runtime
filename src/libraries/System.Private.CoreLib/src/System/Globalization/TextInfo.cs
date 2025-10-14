@@ -171,19 +171,12 @@ namespace System.Globalization
         public string ToLower(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToLower(str);
-            }
-
             return ChangeCaseCommon<ToLowerConversion>(this, str);
         }
 
         internal static string ToLowerInvariant(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-
             return ChangeCaseCommon<ToLowerConversion>(null, str);
         }
 
@@ -480,14 +473,12 @@ namespace System.Globalization
         public string ToUpper(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-
             return ChangeCaseCommon<ToUpperConversion>(this, str);
         }
 
         internal static string ToUpperInvariant(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-
             return ChangeCaseCommon<ToUpperConversion>(null, str);
         }
 
