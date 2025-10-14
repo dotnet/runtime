@@ -12,6 +12,11 @@ struct LiveLocalInfo
         : LclNum(lclNum)
     {
     }
+
+    unsigned HeapAlignment() const
+    {
+        return std::min(Alignment, (unsigned)TARGET_POINTER_SIZE);
+    }
 };
 
 struct ContinuationLayout
@@ -30,6 +35,11 @@ struct ContinuationLayout
     explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)
         : Locals(locals)
     {
+    }
+
+    unsigned ReturnHeapAlignment() const
+    {
+        return std::min(ReturnAlignment, (unsigned)TARGET_POINTER_SIZE);
     }
 };
 
@@ -119,7 +129,11 @@ class AsyncTransformation
                                     unsigned     offset,
                                     var_types    type,
                                     GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
-    GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType);
+    GenTreeStoreInd* StoreAtOffset(GenTree*     base,
+                                   unsigned     offset,
+                                   GenTree*     value,
+                                   var_types    storeType,
+                                   GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
     unsigned GetResultBaseVar();
     unsigned GetExceptionVar();

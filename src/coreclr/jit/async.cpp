@@ -1112,7 +1112,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
     if (layout.ReturnSize > 0)
     {
-        layout.ReturnValOffset = allocLayout(layout.ReturnAlignment, layout.ReturnSize);
+        layout.ReturnValOffset = allocLayout(layout.ReturnHeapAlignment(), layout.ReturnSize);
 
         JITDUMP("  Will store return of type %s, size %u at offset %u\n",
                 call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
@@ -1149,7 +1149,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
     for (LiveLocalInfo& inf : liveLocals)
     {
-        inf.Offset = allocLayout(inf.Alignment, inf.Size);
+        inf.Offset = allocLayout(inf.HeapAlignment(), inf.Size);
     }
 
     layout.Size = roundUp(layout.Size, TARGET_POINTER_SIZE);
@@ -1560,16 +1560,19 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
             value = m_comp->gtNewLclVarNode(inf.LclNum);
         }
 
+        GenTreeFlags indirFlags =
+            GTF_IND_NONFAULTING | (inf.HeapAlignment() < inf.Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
+
         GenTree* store;
         if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
             GenTree* cns  = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
             GenTree* addr = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, cns);
-            store         = m_comp->gtNewStoreValueNode(dsc->GetLayout(), addr, value, GTF_IND_NONFAULTING);
+            store         = m_comp->gtNewStoreValueNode(dsc->GetLayout(), addr, value, indirFlags);
         }
         else
         {
-            store = StoreAtOffset(newContinuation, offset, value, dsc->TypeGet());
+            store = StoreAtOffset(newContinuation, offset, value, dsc->TypeGet(), indirFlags);
         }
 
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
@@ -1805,14 +1808,16 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
         GenTree* cns          = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
         GenTree* addr         = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, cns);
 
+        GenTreeFlags indirFlags =
+            GTF_IND_NONFAULTING | (inf.HeapAlignment() < inf.Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
         GenTree* value;
         if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
-            value = m_comp->gtNewLoadValueNode(dsc->GetLayout(), addr, GTF_IND_NONFAULTING);
+            value = m_comp->gtNewLoadValueNode(dsc->GetLayout(), addr, indirFlags);
         }
         else
         {
-            value = m_comp->gtNewIndir(dsc->TypeGet(), addr, GTF_IND_NONFAULTING);
+            value = m_comp->gtNewIndir(dsc->TypeGet(), addr, indirFlags);
         }
 
         GenTree* store;
@@ -1930,6 +1935,9 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
     assert(callDefInfo.DefinitionNode != nullptr);
     LclVarDsc* resultLcl = m_comp->lvaGetDesc(callDefInfo.DefinitionNode);
 
+    GenTreeFlags indirFlags =
+        GTF_IND_NONFAULTING | (layout.ReturnHeapAlignment() < layout.ReturnAlignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
+
     // TODO-TP: We can use liveness to avoid generating a lot of this IR.
     if (call->gtReturnType == TYP_STRUCT)
     {
@@ -1937,8 +1945,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
         {
             GenTree* resultOffsetNode = m_comp->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
             GenTree* resultAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
-            GenTree* resultData =
-                m_comp->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, GTF_IND_NONFAULTING);
+            GenTree* resultData       = m_comp->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, indirFlags);
             GenTree* storeResult;
             if ((callDefInfo.DefinitionNode->GetLclOffs() == 0) &&
                 ClassLayout::AreCompatible(resultLcl->GetLayout(), layout.ReturnStructLayout))
@@ -1977,7 +1984,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
                 LclVarDsc* fieldDsc    = m_comp->lvaGetDesc(fieldLclNum);
 
                 unsigned fldOffset = resultOffset + fieldDsc->lvFldOffset;
-                GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), GTF_IND_NONFAULTING);
+                GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), indirFlags);
                 GenTree* store     = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
                 LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
 
@@ -1990,7 +1997,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
     }
     else
     {
-        GenTree* value = LoadFromOffset(resultBase, resultOffset, call->gtReturnType, GTF_IND_NONFAULTING);
+        GenTree* value = LoadFromOffset(resultBase, resultOffset, call->gtReturnType, indirFlags);
 
         GenTree* storeResult;
         if (callDefInfo.DefinitionNode->OperIs(GT_STORE_LCL_VAR))
@@ -2043,17 +2050,19 @@ GenTreeIndir* AsyncTransformation::LoadFromOffset(GenTree*     base,
 //   offset     - Offset to add on top of the base address
 //   value      - Value to store
 //   storeType  - Type of store
+//   indirFlags - Indirection flags
 //
 // Returns:
 //   IR node of the store.
 //
-GenTreeStoreInd* AsyncTransformation::StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType)
+GenTreeStoreInd* AsyncTransformation::StoreAtOffset(
+    GenTree* base, unsigned offset, GenTree* value, var_types storeType, GenTreeFlags indirFlags)
 {
     assert(base->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL));
     GenTree*         cns      = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
     var_types        addrType = base->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
     GenTree*         addr     = m_comp->gtNewOperNode(GT_ADD, addrType, base, cns);
-    GenTreeStoreInd* store    = m_comp->gtNewStoreIndNode(storeType, addr, value, GTF_IND_NONFAULTING);
+    GenTreeStoreInd* store    = m_comp->gtNewStoreIndNode(storeType, addr, value, indirFlags);
     return store;
 }
 
