@@ -562,7 +562,7 @@ void ILStubResolver::StubGenFailed(ILStubResolver* pResolver)
 
 PCODE AsyncResumeILStubResolver::GetFinalResumeMethodStartAddress()
 {
-    return m_resumeIP;
+    return m_finalResumeIP;
 }
 
 #ifndef DACCESS_COMPILE
