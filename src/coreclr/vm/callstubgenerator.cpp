@@ -1117,7 +1117,7 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 #endif
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
 #ifdef TARGET_ARM
-    _ASSERTE(!"Not supported FP reg in ARMEL");
+    _ASSERTE(!"Not support FP reg yet");
     return NULL;
 #else
     return m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];

@@ -898,6 +898,7 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     EPILOG_BRANCH_REG r12
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+#ifdef FEATURE_INTERPRETER
 LEAF_ENTRY Load_R0
     ldr r0, [r7], #4
     ldr r5, [r6], #4
@@ -1184,3 +1185,4 @@ NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetBuffR1, _TEXT
 
+#endif // FEATURE_INTERPRETER
