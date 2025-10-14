@@ -21,8 +21,6 @@ set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
 
 add_dependencies(browserhost System.Native.Browser-Rollup)
-add_dependencies(browserhost System.Native.Browser-Static)
-add_dependencies(browserhost System.Runtime.InteropServices.JavaScript.Native-Static)
 
 LIST(APPEND NATIVE_LIBS
     hostmisc
@@ -95,10 +93,10 @@ target_link_libraries(browserhost PUBLIC
     BrowserHost-Static
 )
 target_link_libraries(browserhost PRIVATE
+    ${NATIVE_LIBS}
 	${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
-    ${NATIVE_LIBS}
 )
 
 install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
