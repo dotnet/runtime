@@ -267,6 +267,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // Default debug info format for the current platform.
             DebugInformationFormat debugType = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? DebugInformationFormat.Pdb : DebugInformationFormat.PortablePdb;
             bool emitPdb = false;
+            Dictionary<string, string> features = [];
             if (options.AdditionalArguments != null)
             {
                 foreach (var option in options.AdditionalArguments)
@@ -303,11 +304,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 compilationOptions = compilationOptions.WithMainTypeName(mainTypeName);
                                 break;
                             }
+                            else if (splitIndex != -1 && option[..splitIndex] == "/features")
+                            {
+                                var feature = option[(splitIndex + 1)..];
+                                var featureSplit = feature.IndexOf('=');
+                                if (featureSplit == -1)
+                                    throw new InvalidOperationException($"Argument is malformed: '{option}'");
+                                features.Add(feature[..featureSplit], feature[(featureSplit + 1)..]);
+                                break;
+                            }
+                            else if(splitIndex != -1 && option[..splitIndex] == "/nowarn")
+                            {
+                                var nowarn = option[(splitIndex + 1)..];
+                                var withNoWarn = compilationOptions.SpecificDiagnosticOptions.SetItem(nowarn, ReportDiagnostic.Suppress);
+                                compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(withNoWarn);
+                                break;
+                            }
                             throw new NotImplementedException(option);
                     }
                 }
             }
-            var parseOptions = new CSharpParseOptions(preprocessorSymbols: options.Defines, languageVersion: languageVersion);
+            var parseOptions = new CSharpParseOptions(preprocessorSymbols: options.Defines, languageVersion: languageVersion).WithFeatures(features);
             var emitOptions = new EmitOptions(debugInformationFormat: debugType);
             var pdbPath = (!emitPdb || debugType == DebugInformationFormat.Embedded) ? null : options.OutputPath.ChangeExtension(".pdb").ToString();
 
