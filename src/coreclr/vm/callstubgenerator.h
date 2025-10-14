@@ -145,8 +145,8 @@ private:
         int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
 
         // The size of the temporary storage is the size of the CallStubHeader plus the size of the routines array.
-        // The size of the routines array is twice the number of arguments plus one slot for the target method pointer.
-        return sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE);
+        // The size of the routines array is three the number of arguments plus one slot for the target method pointer.
+        return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
 };
