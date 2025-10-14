@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 #if NET
     [SetupLinkAttributesFile("DynamicDependencyFromAttributeXmlOnNonReferencedAssembly.netcore.Attributes.xml")]
 #else
-	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXmlOnNonReferencedAssembly.mono.Attributes.xml")]
+    [SetupLinkAttributesFile("DynamicDependencyFromAttributeXmlOnNonReferencedAssembly.mono.Attributes.xml")]
 #endif
     public class DynamicDependencyFromAttributeXmlOnNonReferencedAssembly
     {

@@ -22,6 +22,14 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
 
 namespace
 {
+    void file_printf(FILE* fallbackFileHandle, const pal::char_t* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        pal::file_vprintf(fallbackFileHandle, format, args);
+        va_end(args);
+    }
+    
     void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
         // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
         // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
@@ -33,7 +41,7 @@ namespace
         {
             // We use file_vprintf to handle UTF-8 formatting. The WriteFile api will output the bytes directly with Unicode bytes,
             // while pal::file_vprintf will convert the characters to UTF-8.
-            pal::file_vprintf(fallbackFileHandle, message, va_list());
+            file_printf(fallbackFileHandle, _X("%s"), message);
         }
         else {
             ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
@@ -712,6 +720,28 @@ bool pal::getenv(const char_t* name, string_t* recv)
 
     recv->assign(buffer.data());
     return true;
+}
+
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    LPWCH env_strings = ::GetEnvironmentStringsW();
+    if (env_strings == nullptr)
+        return;
+
+    LPWCH current = env_strings;
+    while (*current != L'\0')
+    {
+        LPWCH eq_ptr = ::wcschr(current, L'=');
+        if (eq_ptr != nullptr && eq_ptr != current)
+        {
+            pal::string_t name(current, eq_ptr - current);
+            callback(name.c_str(), eq_ptr + 1);
+        }
+
+        current += pal::strlen(current) + 1; // Move to next string
+    }
+
+    ::FreeEnvironmentStringsW(env_strings);
 }
 
 int pal::xtoi(const char_t* input)

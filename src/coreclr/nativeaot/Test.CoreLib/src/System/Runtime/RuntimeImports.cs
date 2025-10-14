@@ -82,7 +82,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
+        internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
 
         [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);

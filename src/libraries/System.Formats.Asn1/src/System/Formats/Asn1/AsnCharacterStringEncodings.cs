@@ -234,7 +234,7 @@ namespace System.Formats.Asn1
                     throw new ArgumentOutOfRangeException(nameof(allowedChars));
                 }
 
-                Debug.Assert(isAllowed[c] == false);
+                Debug.Assert(!isAllowed[c]);
                 isAllowed[c] = true;
             }
 

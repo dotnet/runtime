@@ -50,13 +50,13 @@ namespace Internal.IL
         {
             if (method.Instantiation.Length == 1
                 && method.Signature.Length == 0
-                && method.Name == "CreateInstance")
+                && method.Name.SequenceEqual("CreateInstance"u8))
             {
                 TypeDesc type = method.Instantiation[0];
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)
                 {
                     // Replace the body with implementation that just returns "default"
-                    MethodDesc createDefaultInstance = method.OwningType.GetKnownMethod("CreateDefaultInstance", method.GetTypicalMethodDefinition().Signature);
+                    MethodDesc createDefaultInstance = method.OwningType.GetKnownMethod("CreateDefaultInstance"u8, method.GetTypicalMethodDefinition().Signature);
                     return GetMethodIL(createDefaultInstance.MakeInstantiatedMethod(type));
                 }
             }
@@ -75,17 +75,17 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name == "RuntimeHelpers" && mdType.Namespace == "System.Runtime.CompilerServices")
+            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "Unsafe" && mdType.Namespace == "System.Runtime.CompilerServices")
+            if (mdType.Name.SequenceEqual("Unsafe"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
             {
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "InstanceCalliHelper" && mdType.Namespace == "System.Reflection")
+            if (mdType.Name.SequenceEqual("InstanceCalliHelper"u8) && mdType.Namespace.SequenceEqual("System.Reflection"u8))
             {
                 return InstanceCalliHelperIntrinsics.EmitIL(method);
             }
@@ -104,17 +104,17 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name == "RuntimeHelpers" && mdType.Namespace == "System.Runtime.CompilerServices")
+            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "Activator" && mdType.Namespace == "System")
+            if (mdType.Name.SequenceEqual("Activator"u8) && mdType.Namespace.SequenceEqual("System"u8))
             {
                 return TryGetIntrinsicMethodILForActivator(method);
             }
 
-            if (mdType.Name == "Interlocked" && mdType.Namespace == "System.Threading")
+            if (mdType.Name.SequenceEqual("Interlocked"u8) && mdType.Namespace.SequenceEqual("System.Threading"u8))
             {
                 return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
             }
@@ -211,7 +211,7 @@ namespace Internal.IL
         {
             int _maxStack;
             bool _isInitLocals;
-            MethodDesc _owningMethod;
+            EcmaMethod _owningMethod;
             ILExceptionRegion[] _exceptionRegions;
             byte[] _ilBytes;
             LocalVariableDefinition[] _locals;
@@ -226,7 +226,7 @@ namespace Internal.IL
                 try
                 {
                     Debug.Assert(mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
-                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)wrappedMethod.OwningMethod).Module;
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = wrappedMethod.OwningMethod.Module;
                     var owningMethodHandle = mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
                     if (!owningMethodHandle.HasValue)
                         return false;
@@ -254,7 +254,7 @@ namespace Internal.IL
 
                     ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
 #if DEBUG
-                    Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod) != null);
+                    Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute(_owningMethod) != null);
 #endif // DEBUG
                 }
                 finally

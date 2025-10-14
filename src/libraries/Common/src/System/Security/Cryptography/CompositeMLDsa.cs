@@ -89,8 +89,15 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   <see langword="true"/> if the algorithm is supported; otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool IsAlgorithmSupported(CompositeMLDsaAlgorithm algorithm) =>
-            CompositeMLDsaImplementation.IsAlgorithmSupportedImpl(algorithm);
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> is <see langword="null"/>.
+        /// </exception>
+        public static bool IsAlgorithmSupported(CompositeMLDsaAlgorithm algorithm)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+
+            return CompositeMLDsaImplementation.IsAlgorithmSupportedImpl(algorithm);
+        }
 
         /// <summary>
         ///   Signs the specified data.
@@ -136,23 +143,32 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            // TODO If we know exact size of signature, then we can allocate instead of renting and copying.
-            byte[] rented = CryptoPool.Rent(Algorithm.MaxSignatureSizeInBytes);
-
-            try
+            if (Algorithm.MinSignatureSizeInBytes == Algorithm.MaxSignatureSizeInBytes)
             {
-                if (!TrySignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), rented, out int written))
+                byte[] signature = new byte[Algorithm.MaxSignatureSizeInBytes];
+                int bytesWritten = SignDataCore(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(context), signature);
+
+                if (signature.Length != bytesWritten)
                 {
-                    Debug.Fail($"Signature exceeds {nameof(Algorithm.MaxSignatureSizeInBytes)} ({Algorithm.MaxSignatureSizeInBytes}).");
                     throw new CryptographicException();
                 }
 
-                return rented.AsSpan(0, written).ToArray();
+                return signature;
             }
-            finally
+
+            using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxSignatureSizeInBytes, skipClear: true))
             {
-                // Signature does not contain sensitive information.
-                CryptoPool.Return(rented, clearSize: 0);
+                int bytesWritten = SignDataCore(
+                    new ReadOnlySpan<byte>(data),
+                    new ReadOnlySpan<byte>(context),
+                    lease.Span);
+
+                if (!Algorithm.IsValidSignatureSize(bytesWritten))
+                {
+                    throw new CryptographicException();
+                }
+
+                return lease.Span.Slice(0, bytesWritten).ToArray();
             }
         }
 
@@ -163,20 +179,18 @@ namespace System.Security.Cryptography
         ///   The data to sign.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature.
+        ///   The buffer to receive the signature. Its length must be at least <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/>.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        ///   This parameter is treated as uninitialized.
-        /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is less than <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/> in length.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
         ///   255 bytes.
@@ -189,10 +203,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        /// <remarks>
-        ///   The signature will be at most <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes"/> in length.
-        /// </remarks>
-        public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten, ReadOnlySpan<byte> context = default)
+        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
             if (context.Length > MaxContextLength)
             {
@@ -202,15 +213,23 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            ThrowIfDisposed();
-
-            if (destination.Length < Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (destination.Length < Algorithm.MaxSignatureSizeInBytes)
             {
-                bytesWritten = 0;
-                return false;
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            return TrySignDataCore(data, context, destination, out bytesWritten);
+            ThrowIfDisposed();
+
+            int bytesWritten = SignDataCore(data, context, destination.Slice(0, Algorithm.MaxSignatureSizeInBytes));
+
+            if (!Algorithm.IsValidSignatureSize(bytesWritten))
+            {
+                CryptographicOperations.ZeroMemory(destination);
+
+                throw new CryptographicException();
+            }
+
+            return bytesWritten;
         }
 
         /// <summary>
@@ -224,20 +243,15 @@ namespace System.Security.Cryptography
         ///   The signature context.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature, whose length will be at least the ML-DSA component's signature size.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        ///   This parameter is treated as uninitialized.
+        ///   The buffer to receive the signature, whose length will be exactly <see cref="CompositeMLDsaAlgorithm.MaxSignatureSizeInBytes" />.
         /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   An error occurred while signing the data.
         /// </exception>
-        protected abstract bool TrySignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination, out int bytesWritten);
+        protected abstract int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
 
         /// <summary>
         ///   Verifies that the specified signature is valid for this key and the provided data.
@@ -316,7 +330,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            if (signature.Length < Algorithm.MLDsaAlgorithm.SignatureSizeInBytes)
+            if (!Algorithm.IsValidSignatureSize(signature.Length))
             {
                 return false;
             }
@@ -660,9 +674,9 @@ namespace System.Security.Cryptography
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
-                if (key.Length < algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
+                if (!algorithm.IsValidPublicKeySize(key.Length))
                 {
-                    throw new CryptographicException(SR.Argument_PublicKeyTooShortForAlgorithm);
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
                 dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key.Span);
@@ -852,20 +866,26 @@ namespace System.Security.Cryptography
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-                AsnValueReader reader = new AsnValueReader(privateKeyContents.Span, AsnEncodingRules.BER);
 
-                if (!reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> key) || reader.HasData)
+                if (!algorithm.IsValidPrivateKeySize(privateKeyContents.Length))
                 {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                 }
 
-                if (key.Length < algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
-                {
-                    throw new CryptographicException(SR.Argument_PrivateKeyTooShortForAlgorithm);
-                }
-
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, key);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents.Span);
             }
+        }
+
+        /// <inheritdoc cref="ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static CompositeMLDsa ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportCompositeMLDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -882,7 +902,7 @@ namespace System.Security.Cryptography
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <paramref name="source"/> length is too small for the specified algorithm.
+        ///     <paramref name="source"/> length is the wrong size for the specified algorithm.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -895,15 +915,29 @@ namespace System.Security.Cryptography
         /// </exception>
         public static CompositeMLDsa ImportCompositeMLDsaPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported(algorithm);
 
-            if (source.Length < algorithm.MLDsaAlgorithm.PublicKeySizeInBytes)
+            if (!algorithm.IsValidPublicKeySize(source.Length))
             {
-                throw new CryptographicException(SR.Argument_PublicKeyTooShortForAlgorithm);
+                throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
             }
 
             return CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, source);
         }
+
+        /// <inheritdoc cref="ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static CompositeMLDsa ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm algorithm, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(source);
+
+            return ImportCompositeMLDsaPrivateKey(algorithm, new ReadOnlySpan<byte>(source));
+        }
+
         /// <summary>
         ///   Imports a Composite ML-DSA private key.
         /// </summary>
@@ -918,7 +952,7 @@ namespace System.Security.Cryptography
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///     <paramref name="source"/> length is too small for the specified algorithm.
+        ///     <paramref name="source"/> length is the wrong size for the specified algorithm.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -931,11 +965,12 @@ namespace System.Security.Cryptography
         /// </exception>
         public static CompositeMLDsa ImportCompositeMLDsaPrivateKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported(algorithm);
 
-            if (source.Length < algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes)
+            if (!algorithm.IsValidPrivateKeySize(source.Length))
             {
-                throw new CryptographicException(SR.Argument_PrivateKeyTooShortForAlgorithm);
+                throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
             }
 
             return CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, source);
@@ -1344,9 +1379,9 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // The bound can be tightened but private key length of some traditional algorithms,
+            // The bound can be tightened but private key length of some traditional algorithms
             // can vary and aren't worth the complex calculation.
-            int minimumPossiblePkcs8Key = Algorithm.MLDsaAlgorithm.PrivateSeedSizeInBytes;
+            int minimumPossiblePkcs8Key = Algorithm.MinPrivateKeySizeInBytes;
 
             if (destination.Length < minimumPossiblePkcs8Key)
             {
@@ -1465,7 +1500,54 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            return ExportPublicKeyCallback(static publicKey => publicKey.ToArray());
+            byte[] publicKey = new byte[Algorithm.MaxPublicKeySizeInBytes];
+
+            if (!TryExportCompositeMLDsaPublicKey(publicKey, out int bytesWritten))
+            {
+                Debug.Fail("Max sized buffer was not large enough.");
+                throw new CryptographicException();
+            }
+
+            if (bytesWritten < publicKey.Length)
+            {
+                Array.Resize(ref publicKey, bytesWritten);
+            }
+
+            return publicKey;
+        }
+
+        /// <summary>
+        ///   Exports the public-key portion of the current key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the Composite ML-DSA public key value.
+        /// </param>
+        /// <returns>
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="destination"/> was too not large enough to hold the result.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        public int ExportCompositeMLDsaPublicKey(Span<byte> destination)
+        {
+            ThrowIfDisposed();
+
+            if (destination.Length < Algorithm.MinPublicKeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            if (!TryExportCompositeMLDsaPublicKey(destination, out int bytesWritten))
+            {
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            return bytesWritten;
         }
 
         /// <summary>
@@ -1492,9 +1574,36 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO short-circuit based on known required length lower bounds
+            if (destination.Length < Algorithm.MinPublicKeySizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-            return TryExportCompositeMLDsaPublicKeyCore(destination, out bytesWritten);
+            using (CryptoPoolLease lease = CryptoPoolLease.RentConditionally(Algorithm.MaxPublicKeySizeInBytes, destination, skipClear: true))
+            {
+                int localBytesWritten = ExportCompositeMLDsaPublicKeyCore(lease.Span);
+
+                if (!Algorithm.IsValidPublicKeySize(localBytesWritten))
+                {
+                    bytesWritten = 0;
+                    throw new CryptographicException();
+                }
+
+                if (lease.IsRented)
+                {
+                    if (localBytesWritten > destination.Length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    lease.Span.Slice(0, localBytesWritten).CopyTo(destination);
+                }
+
+                bytesWritten = localBytesWritten;
+                return true;
+            }
         }
 
         /// <summary>
@@ -1513,13 +1622,57 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO The private key has a max size so add it as CompositeMLDsaAlgorithm.MaxPrivateKeySize and use it here.
-            int initalSize = 1;
+            byte[] privateKey = new byte[Algorithm.MaxPrivateKeySizeInBytes];
 
-            return ExportWithCallback(
-                initalSize,
-                static (key, dest, out written) => key.TryExportCompositeMLDsaPrivateKeyCore(dest, out written),
-                static privateKey => privateKey.ToArray());
+            if (!TryExportCompositeMLDsaPrivateKey(privateKey, out int bytesWritten))
+            {
+                Debug.Fail("Max sized buffer was not large enough.");
+                throw new CryptographicException();
+            }
+
+            if (bytesWritten < privateKey.Length)
+            {
+                byte[] temp = new byte[bytesWritten];
+                Array.Copy(privateKey, temp, bytesWritten);
+                CryptographicOperations.ZeroMemory(privateKey);
+                privateKey = temp;
+            }
+
+            return privateKey;
+        }
+
+        /// <summary>
+        ///   Exports the private-key portion of the current key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the Composite ML-DSA private key value.
+        /// </param>
+        /// <returns>
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="destination"/> was too not large enough to hold the result.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        public int ExportCompositeMLDsaPrivateKey(Span<byte> destination)
+        {
+            ThrowIfDisposed();
+
+            if (destination.Length < Algorithm.MinPrivateKeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            if (!TryExportCompositeMLDsaPrivateKey(destination, out int bytesWritten))
+            {
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            return bytesWritten;
         }
 
         /// <summary>
@@ -1546,23 +1699,51 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // TODO short-circuit based on known required length lower bounds
+            if (destination.Length < Algorithm.MinPrivateKeySizeInBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
 
-            return TryExportCompositeMLDsaPrivateKeyCore(destination, out bytesWritten);
+            using (CryptoPoolLease lease = CryptoPoolLease.RentConditionally(Algorithm.MaxPrivateKeySizeInBytes, destination, skipClearIfNotRented: true))
+            {
+                int localBytesWritten = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
+
+                if (!Algorithm.IsValidPrivateKeySize(localBytesWritten))
+                {
+                    if (!lease.IsRented)
+                    {
+                        CryptographicOperations.ZeroMemory(destination);
+                    }
+
+                    bytesWritten = 0;
+                    throw new CryptographicException();
+                }
+
+                if (lease.IsRented)
+                {
+                    if (localBytesWritten > destination.Length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    lease.Span.Slice(0, localBytesWritten).CopyTo(destination);
+                }
+
+                bytesWritten = localBytesWritten;
+                return true;
+            }
         }
 
         /// <summary>
-        ///   When overridden in a derived class, attempts to export the public key portion of the current key.
+        ///   When overridden in a derived class, exports the public key portion of the current key.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the public key value.
         /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1570,20 +1751,16 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination);
 
         /// <summary>
-        ///   When overridden in a derived class, attempts to export the private key portion of the current key.
+        ///   When overridden in a derived class, exports the private key portion of the current key.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the private key value.
         /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   The number of bytes written to the <paramref name="destination"/> buffer.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1591,7 +1768,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(ReadOnlySpan<byte> destination, out int bytesWritten);
+        protected abstract int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination);
 
         /// <summary>
         ///   Releases all resources used by the <see cref="CompositeMLDsa"/> class.
@@ -1668,72 +1845,49 @@ namespace System.Security.Cryptography
             });
         }
 
-        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ProcessExportedContent<TResult> func)
-        {
-            // TODO Pick a good estimate for the initial size of the buffer.
-            int initialSize = 1;
-
-            return ExportWithCallback(
-                initialSize,
-                static (key, dest, out written) => key.TryExportPkcs8PrivateKeyCore(dest, out written),
-                func);
-        }
-
         private AsnWriter WriteSubjectPublicKeyToAsnWriter()
         {
-            return ExportPublicKeyCallback(publicKey =>
+            byte[] buffer = new byte[Algorithm.MaxPublicKeySizeInBytes];
+            int written = ExportCompositeMLDsaPublicKeyCore(buffer);
+
+            if (!Algorithm.IsValidPublicKeySize(written))
             {
-                // TODO verify overhead
+                throw new CryptographicException();
+            }
 
-                // TODO: The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
-                // Round it off to 32. This checked operation should never throw because the inputs are not
-                // user provided.
-                int capacity = checked(32 + publicKey.Length);
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+            ReadOnlySpan<byte> publicKey = buffer.AsSpan(0, written);
 
+            // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is around 24 bytes.
+            // Round it off to 32. This checked operation should never throw because the inputs are not
+            // user provided.
+            int capacity = checked(32 + publicKey.Length);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+
+            using (writer.PushSequence())
+            {
                 using (writer.PushSequence())
                 {
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteObjectIdentifier(Algorithm.Oid);
-                    }
-
-                    writer.WriteBitString(publicKey);
+                    writer.WriteObjectIdentifier(Algorithm.Oid);
                 }
 
-                Debug.Assert(writer.GetEncodedLength() <= capacity);
-                return writer;
-            });
+                writer.WriteBitString(publicKey);
+            }
+
+            Debug.Assert(writer.GetEncodedLength() <= capacity);
+            return writer;
         }
 
-        private TResult ExportPublicKeyCallback<TResult>(ProcessExportedContent<TResult> func)
-        {
-            // TODO RSA is the only algo without a strict max size. The exponent can be arbitrarily large,
-            // but in practice it is always 65537. Add an internal CompositeMLDsaAlgorithm.EstimatedMaxPublicKeySizeInBytes and use that here.
-            int initialSize = 1;
-
-            return ExportWithCallback(
-                initialSize,
-                static (key, dest, out written) => key.TryExportCompositeMLDsaPublicKeyCore(dest, out written),
-                func);
-        }
-
-        private delegate bool TryExportFunc(CompositeMLDsa compositeMLDsa, Span<byte> destination, out int written);
         private delegate TResult ProcessExportedContent<TResult>(ReadOnlySpan<byte> exportedContent);
 
-        private TResult ExportWithCallback<TResult>(
-            int initialSize,
-            TryExportFunc tryExportFunc,
-            ProcessExportedContent<TResult> callbackFunc)
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ProcessExportedContent<TResult> func)
         {
-            Debug.Assert(initialSize > 0);
-
-            int size = initialSize;
+            int size = Algorithm.MaxPrivateKeySizeInBytes;
             byte[] buffer = CryptoPool.Rent(size);
             int written;
 
-            while (!tryExportFunc(this, buffer, out written))
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
+                size = buffer.Length;
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
@@ -1748,7 +1902,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                return callbackFunc(buffer.AsSpan(0, written));
+                return func(buffer.AsSpan(0, written));
             }
             finally
             {
@@ -1771,7 +1925,7 @@ namespace System.Security.Cryptography
             return algorithm;
         }
 
-        internal static void ThrowIfNotSupported()
+        private static void ThrowIfNotSupported()
         {
             if (!IsSupported)
             {
@@ -1779,7 +1933,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static void ThrowIfNotSupported(CompositeMLDsaAlgorithm algorithm)
+        private static void ThrowIfNotSupported(CompositeMLDsaAlgorithm algorithm)
         {
             if (!IsSupported || !IsAlgorithmSupported(algorithm))
             {

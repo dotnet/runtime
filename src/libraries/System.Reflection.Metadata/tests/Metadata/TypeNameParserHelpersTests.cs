@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("A+B`1+C1`2+DD2`3+E", true, new int[] { 1, 3, 4, 5 }, 18)]
         [InlineData("Integer`2147483646+NoOverflow`1", true, new int[] { 18 }, 31)]
         [InlineData("Integer`2147483647+Overflow`1", true, new int[] { 18 }, 29)]
-        public void TryGetTypeNameInfoGetsAllTheInfo(string input, bool expectedResult, int[] expectedNestedNameLengths, int expectedTotalLength)
+        public void TryGetTypeNameInfoGetsAllTheInfo(string input, bool expectedResult, int[]? expectedNestedNameLengths, int expectedTotalLength)
         {
             List<int>? nestedNameLengths = null;
             ReadOnlySpan<char> span = input.AsSpan();

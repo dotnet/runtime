@@ -22,38 +22,38 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
     [SetupCompileBefore("library.dll", new string[] { "Dependencies/InstanceMethods.il" })]
     [Kept]
 #if IL_ASSEMBLY_AVAILABLE
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaInterface))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedDirectly))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaReflection))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.IInt))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.IIntUnreferenced))] // Kept only because of the .override on the public implementation method
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.IIntBase))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.IIntDerived))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.IGeneric<>))]
-	[KeptTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced))]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaInterface), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedDirectly), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaReflection), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.IInt), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.IIntUnreferenced), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.IIntBase), ["GetInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced), ["GetIntInt()"])]
-	[KeptMemberInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced), ["GetIntFloat()"])] // Could be removed
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaInterface), "library.dll", typeof (InstanceMethods.IInt))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedDirectly), "library.dll", typeof (InstanceMethods.IInt))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodAccessedViaReflection), "library.dll", typeof (InstanceMethods.IInt))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency), "library.dll", typeof (InstanceMethods.IInt))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced), "library.dll", typeof (InstanceMethods.IIntUnreferenced))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced), "library.dll", typeof (InstanceMethods.IIntDerived))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (InstanceMethods.IIntDerived), "library.dll", typeof (InstanceMethods.IIntBase))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", "InstanceMethods/TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced", "library.dll", "InstanceMethods/IGeneric`1<System.Int32>")]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", "InstanceMethods/TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced", "library.dll", "InstanceMethods/IGeneric`1<System.Single>")]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedViaInterface))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedDirectly))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedViaReflection))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.IInt))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.IIntUnreferenced))] // Kept only because of the .override on the public implementation method
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.IIntBase))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.IIntDerived))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.IGeneric<>))]
+    [KeptTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced))]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedViaInterface), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedDirectly), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedViaReflection), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodKeptByDynamicDependency), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.IInt), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.IIntUnreferenced), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.IIntBase), ["GetInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced), ["GetIntInt()"])]
+    [KeptMemberInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced), ["GetIntFloat()"])] // Could be removed
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedViaInterface), "library.dll", typeof(InstanceMethods.IInt))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedDirectly), "library.dll", typeof(InstanceMethods.IInt))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodAccessedViaReflection), "library.dll", typeof(InstanceMethods.IInt))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodKeptByDynamicDependency), "library.dll", typeof(InstanceMethods.IInt))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced), "library.dll", typeof(InstanceMethods.IIntUnreferenced))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced), "library.dll", typeof(InstanceMethods.IIntDerived))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", typeof(InstanceMethods.IIntDerived), "library.dll", typeof(InstanceMethods.IIntBase))]
+    [KeptInterfaceOnTypeInAssembly("library.dll", "InstanceMethods/TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced", "library.dll", "InstanceMethods/IGeneric`1<System.Int32>")]
+    [KeptInterfaceOnTypeInAssembly("library.dll", "InstanceMethods/TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced", "library.dll", "InstanceMethods/IGeneric`1<System.Single>")]
 #endif
     public class InstanceMethodsWithOverridesSwept
     {
@@ -61,17 +61,17 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			InstanceMethods.Test ();
-			typeof (InstanceMethods.TypeWithMethodAccessedViaReflection).GetMethod ("GetInt").Invoke (null, null);
-			new InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced ().GetInt ();
-			new InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced ().GetInt ();
-			new InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced ().GetIntInt ();
+            InstanceMethods.Test();
+            typeof(InstanceMethods.TypeWithMethodAccessedViaReflection).GetMethod("GetInt").Invoke(null, null);
+            new InstanceMethods.TypeWithMethodCalledDirectlyAndInterfaceUnreferenced().GetInt();
+            new InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced().GetInt();
+            new InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced().GetIntInt();
 #endif
             KeepTypeThroughDynamicDependency();
         }
 
 #if IL_ASSEMBLY_AVAILABLE
-		[DynamicDependency ("GetInt()", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
+        [DynamicDependency("GetInt()", typeof(InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
 #endif
         [Kept]
         public static void KeepTypeThroughDynamicDependency()

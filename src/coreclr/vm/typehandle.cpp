@@ -256,10 +256,7 @@ PTR_Module TypeHandle::GetLoaderModule() const
 
 PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     if (IsTypeDesc())
     {
@@ -268,6 +265,20 @@ PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
     else
     {
         return AsMethodTable()->GetLoaderAllocator();
+    }
+}
+
+bool TypeHandle::IsCollectible() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (IsTypeDesc())
+    {
+        return AsTypeDesc()->IsCollectible();
+    }
+    else
+    {
+        return AsMethodTable()->Collectible();
     }
 }
 
@@ -1511,7 +1522,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
 {
     CHECK(!IsNull());
     //    CHECK_MSGF(!IsNull(), ("Type is null, required load level is %s", classLoadLevelName[requiredLevel]));
-    static_assert_no_msg(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
+    static_assert(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
 
     // Quick check to avoid creating debug string
     ClassLoadLevel actualLevel = GetLoadLevel();

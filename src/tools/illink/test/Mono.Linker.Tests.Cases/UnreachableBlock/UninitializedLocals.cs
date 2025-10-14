@@ -22,8 +22,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
         public static void Main()
         {
 #if IL_ASSEMBLY_AVAILABLE
-			Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_1 ();
-			Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_2 ();
+            Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_1();
+            Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.ClassA.Method_2();
 #endif
         }
     }

@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
@@ -909,9 +904,9 @@ namespace System.Numerics.Tensors
             return default;
         }
 
-        public static TensorShape Create<T>(ref T reference, nint linearLength, bool pinned)
+        public static TensorShape Create<T>(ref readonly T reference, nint linearLength, bool pinned)
         {
-            if (!Unsafe.IsNullRef(ref reference))
+            if (!Unsafe.IsNullRef(in reference))
             {
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 flags |= TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
@@ -931,9 +926,9 @@ namespace System.Numerics.Tensors
             return default;
         }
 
-        public static TensorShape Create<T>(ref T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
+        public static TensorShape Create<T>(ref readonly T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            if (!Unsafe.IsNullRef(ref reference))
+            if (!Unsafe.IsNullRef(in reference))
             {
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 return new TensorShape(linearLength, lengths, strides, flags);
@@ -1006,7 +1001,7 @@ namespace System.Numerics.Tensors
             return linearOffset;
         }
 
-        public nint GetLinearOffset(nint index, int dimension)
+        public nint GetLinearOffsetForDimension(nint index, int dimension)
         {
             ReadOnlySpan<nint> lengths = Lengths;
             ReadOnlySpan<nint> strides = Strides;
@@ -1029,6 +1024,66 @@ namespace System.Numerics.Tensors
             }
 
             return linearOffset;
+        }
+
+        public nint GetLongestContiguousLength<TGetOffsetAndLength, T>(ReadOnlySpan<T> state, out nint linearOffset)
+           where TGetOffsetAndLength : IGetOffsetAndLength<T>
+        {
+            int rank = Rank;
+
+            ReadOnlySpan<nint> lengths = Lengths;
+            ReadOnlySpan<nint> strides = Strides;
+
+            if ((state.Length != lengths.Length) ||
+                (state.Length != strides.Length))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+
+            nint maximumLinearIndex = 0;
+            nint minimumNonZeroStride = 1;
+
+            nint computedOffset = 0;
+            nint longestContiguousLength = -1;
+
+            // This is effectively a simplification of the slice algorithm. Rather than initializing a shape
+            // and tracking the necessary data for that, it simply sets the longest contiguous length to one
+            // greater than the maximum linear index at the point we are no longer considered dense.
+
+            for (int n = 0; n < rank; n++)
+            {
+                int i = rank - (n + 1);
+
+                (nint offset, nint length) = TGetOffsetAndLength.GetOffsetAndLength(state[i], lengths[i]);
+
+                nint stride = strides[i];
+                nint adjustedStride = (length > 1) ? stride : 0;
+
+                if (adjustedStride != 0)
+                {
+                    if ((adjustedStride != minimumNonZeroStride) && (longestContiguousLength == -1))
+                    {
+                        // We have a gap in the data, so we are no longer dense.
+                        longestContiguousLength = maximumLinearIndex + 1;
+                    }
+                    maximumLinearIndex += ((length - 1) * adjustedStride);
+                }
+                else if ((length != 1) && (longestContiguousLength == -1))
+                {
+                    // We are no longer dense since we have a broadcast to more than 1 element
+                    longestContiguousLength = maximumLinearIndex + 1;
+                }
+                minimumNonZeroStride = adjustedStride * length;
+
+                computedOffset += (offset * stride);
+            }
+            linearOffset = computedOffset;
+
+            if (longestContiguousLength == -1)
+            {
+                longestContiguousLength = maximumLinearIndex + 1;
+            }
+            return longestContiguousLength;
         }
 
         public TensorShape Slice<TGetOffsetAndLength, T>(ReadOnlySpan<T> state, out nint linearOffset)

@@ -14,11 +14,10 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
-        internal static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        // TODO (https://github.com/dotnet/runtime/issues/118609): Windows currently does not support PKCS#8 export when imported as private key.
+        internal static bool SupportsExportingPrivateKeyPkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
-        // TODO: Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
-        internal static bool SigningEmptyDataIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
+        internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
@@ -28,29 +27,48 @@ namespace System.Security.Cryptography.Tests
         internal static void VerifyDisposed(MLDsa mldsa)
         {
             PbeParameters pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 10);
+            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
+            byte[] bigBuffer = new byte[10000];
+            byte[] mu = new byte[64];
 
-            Assert.Throws<ObjectDisposedException>(() => mldsa.SignData(ReadOnlySpan<byte>.Empty, new byte[mldsa.Algorithm.SignatureSizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[mldsa.Algorithm.SignatureSizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignData(Array.Empty<byte>()));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignData(ReadOnlySpan<byte>.Empty, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData(Array.Empty<byte>(), signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData(ReadOnlySpan<byte>.Empty, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignPreHash(mu, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignPreHash(mu, signature, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyPreHash(mu, signature, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyPreHash(new ReadOnlySpan<byte>(mu), signature, HashInfo.Sha512.Oid));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignMu(mu));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignMu(new ReadOnlySpan<byte>(mu)));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyMu(mu, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyMu(new ReadOnlySpan<byte>(mu), signature));
 
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[mldsa.Algorithm.PrivateSeedSizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey(new byte[mldsa.Algorithm.PublicKeySizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey(new byte[mldsa.Algorithm.SecretKeySizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateKey(new byte[mldsa.Algorithm.PrivateKeySizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKey());
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportPkcs8PrivateKey(new byte[10000], out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportPkcs8PrivateKey(bigBuffer, out _));
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKeyPem());
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams));
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKey("123", pbeParams));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams, new byte[10000], out _));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey("123", pbeParams, new byte[10000], out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams, bigBuffer, out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey("123", pbeParams, bigBuffer, out _));
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKeyPem([1, 2, 3], pbeParams));
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKeyPem("123", pbeParams));
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfo());
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportSubjectPublicKeyInfo(new byte[10000], out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportSubjectPublicKeyInfo(bigBuffer, out _));
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfoPem());
+
+            // Doesn't throw:
+            Assert.NotNull(mldsa.Algorithm);
         }
 
         internal static void AssertImportPublicKey(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] publicKey) =>
@@ -82,16 +100,16 @@ namespace System.Security.Cryptography.Tests
                 SubjectPublicKey = publicKey,
             };
 
-            AssertImportSubjectKeyPublicInfo(import => testEmbeddedCall(() => import(spki.Encode())));
+            AssertImportSubjectPublicKeyInfo(import => testEmbeddedCall(() => import(spki.Encode())));
         }
 
-        internal delegate MLDsa ImportSubjectKeyPublicInfoCallback(byte[] spki);
-        internal static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
-            AssertImportSubjectKeyPublicInfo(test, test);
+        internal delegate MLDsa ImportSubjectPublicKeyInfoCallback(byte[] spki);
+        internal static void AssertImportSubjectPublicKeyInfo(Action<ImportSubjectPublicKeyInfoCallback> test) =>
+            AssertImportSubjectPublicKeyInfo(test, test);
 
-        internal static void AssertImportSubjectKeyPublicInfo(
-            Action<ImportSubjectKeyPublicInfoCallback> testDirectCall,
-            Action<ImportSubjectKeyPublicInfoCallback> testEmbeddedCall)
+        internal static void AssertImportSubjectPublicKeyInfo(
+            Action<ImportSubjectPublicKeyInfoCallback> testDirectCall,
+            Action<ImportSubjectPublicKeyInfoCallback> testEmbeddedCall)
         {
             testDirectCall(spki => MLDsa.ImportSubjectPublicKeyInfo(spki));
             testDirectCall(spki => MLDsa.ImportSubjectPublicKeyInfo(spki.AsSpan()));
@@ -100,31 +118,31 @@ namespace System.Security.Cryptography.Tests
             testEmbeddedCall(spki => MLDsa.ImportFromPem(PemEncoding.WriteString("PUBLIC KEY", spki).AsSpan()));
         }
 
-        internal static void AssertImportSecretKey(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] secretKey) =>
-            AssertImportSecretKey(test, test, algorithm, secretKey);
+        internal static void AssertImportPrivateKey(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] privateKey) =>
+            AssertImportPrivateKey(test, test, algorithm, privateKey);
 
-        internal static void AssertImportSecretKey(Action<Func<MLDsa>> testDirectCall, Action<Func<MLDsa>> testEmbeddedCall, MLDsaAlgorithm algorithm, byte[] secretKey)
+        internal static void AssertImportPrivateKey(Action<Func<MLDsa>> testDirectCall, Action<Func<MLDsa>> testEmbeddedCall, MLDsaAlgorithm algorithm, byte[] privateKey)
         {
-            testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
+            testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, privateKey));
 
-            if (secretKey?.Length == 0)
+            if (privateKey?.Length == 0)
             {
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, default(ReadOnlySpan<byte>)));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, Array.Empty<byte>().AsSpan()));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey.AsSpan()));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, privateKey));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, privateKey.AsSpan()));
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            MLDsaPrivateKeyAsn privateKey = new MLDsaPrivateKeyAsn
+            MLDsaPrivateKeyAsn privateKeyAsn = new MLDsaPrivateKeyAsn
             {
-                ExpandedKey = secretKey
+                ExpandedKey = privateKey
             };
-            privateKey.Encode(writer);
+            privateKeyAsn.Encode(writer);
 
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
@@ -140,8 +158,8 @@ namespace System.Security.Cryptography.Tests
                 testEmbeddedCall(() => import(pkcs8.Encode())));
         }
 
-        internal static void AssertImportPrivateSeed(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] secretKey) =>
-            AssertImportPrivateSeed(test, test, algorithm, secretKey);
+        internal static void AssertImportPrivateSeed(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] privateSeed) =>
+            AssertImportPrivateSeed(test, test, algorithm, privateSeed);
 
         internal static void AssertImportPrivateSeed(Action<Func<MLDsa>> testDirectCall, Action<Func<MLDsa>> testEmbeddedCall, MLDsaAlgorithm algorithm, byte[] privateSeed)
         {
@@ -270,40 +288,23 @@ namespace System.Security.Cryptography.Tests
                     SubjectPublicKeyInfoAsn.Decode(exportSpki(mldsa), AsnEncodingRules.DER).SubjectPublicKey.Span.ToArray()));
         }
 
-        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> callback) =>
-            AssertExportMLDsaSecretKey(callback, callback);
+        internal static void AssertExportMLDsaPrivateKey(Action<Func<MLDsa, byte[]>> callback) =>
+            AssertExportMLDsaPrivateKey(callback, callback);
 
-        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> directCallback, Action<Func<MLDsa, byte[]>> indirectCallback)
+        internal static void AssertExportMLDsaPrivateKey(Action<Func<MLDsa, byte[]>> directCallback, Action<Func<MLDsa, byte[]>> indirectCallback)
         {
             directCallback(mldsa =>
             {
-                byte[] buffer = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
-                mldsa.ExportMLDsaSecretKey(buffer.AsSpan());
+                byte[] buffer = new byte[mldsa.Algorithm.PrivateKeySizeInBytes];
+                mldsa.ExportMLDsaPrivateKey(buffer.AsSpan());
                 return buffer;
             });
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    DecodeExpandedKey(
-                        mldsa,
+                    MLDsaPrivateKeyAsn.Decode(
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).ExpandedKey?.ToArray()));
-        }
-
-        // TODO remove this when windows supports draft 10 PKCS#8 format
-        internal static MLDsaPrivateKeyAsn DecodeExpandedKey(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            try
-            {
-                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
-            }
-            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
-            {
-                return new MLDsaPrivateKeyAsn
-                {
-                    ExpandedKey = (mldsa.Algorithm.SecretKeySizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
-                };
-            }
         }
 
         internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
@@ -320,26 +321,9 @@ namespace System.Security.Cryptography.Tests
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
                 indirectCallback(mldsa =>
-                    DecodePrivateSeed(
-                        mldsa,
+                    MLDsaPrivateKeyAsn.Decode(
                         PrivateKeyInfoAsn.Decode(
                             exportPkcs8(mldsa), AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed?.ToArray()));
-        }
-
-        // TODO remove this when windows supports draft 10 PKCS#8 format
-        internal static MLDsaPrivateKeyAsn DecodePrivateSeed(MLDsa mldsa, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            try
-            {
-                return MLDsaPrivateKeyAsn.Decode(encoded, ruleSet);
-            }
-            catch (CryptographicException) when (!SupportsDraft10Pkcs8)
-            {
-                return new MLDsaPrivateKeyAsn
-                {
-                    Seed = (mldsa.Algorithm.PrivateSeedSizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
-                };
-            }
         }
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>

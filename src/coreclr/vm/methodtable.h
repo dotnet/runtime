@@ -1745,8 +1745,6 @@ public:
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
-    static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
-
     PCODE GetRestoredSlot(DWORD slot);
 
     // Returns MethodTable that GetRestoredSlot get its values from
@@ -3122,6 +3120,14 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        static void* operator new(size_t size)
+        {
+            return ::operator new(size);
+        }
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
       protected:
         ULONG m_cRef;
         MethodTable *const m_pImplMT;
@@ -3357,6 +3363,12 @@ protected:
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
+
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
@@ -3782,61 +3794,61 @@ private:
         enum_flag_TokenMask                 = 0xFFFFFF00,
     };  // enum WFLAGS2_ENUM
 
-    __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
         m_dwFlags &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS_LOW_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
         m_dwFlags |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
     {
         SUPPORTS_DAC;
         return (IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag));
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (IsStringOrArray() ? (((DWORD)enum_flag_StringArrayValues & (DWORD)mask) == (DWORD)flag) :
             ((m_dwFlags & (DWORD)mask) == (DWORD)flag));
     }
 
-    __forceinline void ClearFlag(WFLAGS_HIGH_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS_HIGH_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS_HIGH_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwFlags & flag;
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ((m_dwFlags & (DWORD)mask) == (DWORD)flag);
     }
 
-    __forceinline void ClearFlag(WFLAGS2_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS2_ENUM flag)
     {
         m_dwFlags2 &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS2_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS2_ENUM flag)
     {
         m_dwFlags2 |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS2_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS2_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwFlags2 & flag;
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
     {
         return (m_dwFlags2 & (DWORD)mask) == (DWORD)flag;
     }
@@ -3905,12 +3917,12 @@ private:
         TADDR m_pCanonMT;
     };
 
-    __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
+    FORCEINLINE static LowBits union_getLowBits(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return LowBits(pCanonMT & UNION_MASK);
     }
-    __forceinline static TADDR   union_getPointer(TADDR pCanonMT)
+    FORCEINLINE static TADDR   union_getPointer(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (pCanonMT & ~UNION_MASK);
@@ -4071,7 +4083,7 @@ template<> struct cdac_data<MethodTable>
 };
 
 #ifndef CROSSBITNESS_COMPILE
-static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
+static_assert(sizeof(MethodTable) == SIZEOF__MethodTable_);
 #endif
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);

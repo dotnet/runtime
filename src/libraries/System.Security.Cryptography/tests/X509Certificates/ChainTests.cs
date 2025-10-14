@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 // The chain should have 3 members
                 Assert.Equal(3, chain.ChainElements.Count);
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Source chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
                 Assert.Equal(3, chain.ChainElements.Count);
 
                 using (var chainHolder2 = new ChainHolder(chain.ChainContext))
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
-                    Assert.True(valid, "Cloned chain built validly");
+                    Assert.True(valid, $"Chain built validly but failed with '{chain2.AllStatusFlags()}'.");
                 }
             }
         }
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 valid = chain.Build(sampleCert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 Assert.Equal(1, chain.ChainElements.Count);
                 chainHolder.DisposeChainElements();
@@ -288,13 +288,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Check some known conditions.
 
-                    if (PlatformDetection.UsesAppleCrypto)
-                    {
-                        Assert.Equal(3, chain.ChainElements.Count);
-                    }
-                    else if (OperatingSystem.IsLinux())
+                    if (OperatingSystem.IsLinux() || PlatformDetection.IsApplePlatform26OrLater)
                     {
                         Assert.Equal(2, chain.ChainElements.Count);
+                    }
+                    else if (PlatformDetection.IsApplePlatform)
+                    {
+                        Assert.Equal(3, chain.ChainElements.Count);
                     }
                 }
             }
@@ -344,6 +344,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chainTest.ChainPolicy.ExtraStore.Add(issuerCert);
 
+                X509ChainStatusFlags allowedFlags = X509ChainStatusFlags.NoError;
+
                 switch (testArguments)
                 {
                     case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
@@ -361,6 +363,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainHolder.DisposeChainElements();
                         chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                        chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                        chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        allowedFlags |= X509ChainStatusFlags.UntrustedRoot;
                         break;
                     default:
                         throw new InvalidDataException();
@@ -368,7 +373,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
                 Assert.Equal(3, chainTest.ChainElements.Count);
-                Assert.Equal(chainFlags, chainTest.AllStatusFlags());
+
+                X509ChainStatusFlags actualFlags = chainTest.AllStatusFlags();
+                actualFlags &= ~allowedFlags;
+
+                Assert.Equal(chainFlags, actualFlags);
             }
         }
 
@@ -530,7 +539,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(cert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
             }
         }
 
@@ -579,7 +588,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(cert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
             }
         }
 
@@ -1169,12 +1178,12 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
                 Assert.False(chain.Build(cert));
 
-                if (PlatformDetection.IsAndroid)
+                if (PlatformDetection.IsAndroid || PlatformDetection.IsApplePlatform26OrLater)
                 {
                     // Android always validates trust as part of building a path,
                     // so violations comes back as PartialChain with no elements
+                    // Apple 26 no longer block these SKIs since the roots are no longer trusted at all and are expired.
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
-                    Assert.Equal(0, chain.ChainElements.Count);
                 }
                 else
                 {

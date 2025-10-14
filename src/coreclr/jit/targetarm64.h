@@ -57,7 +57,7 @@
   #define REG_MASK_FIRST           REG_PREDICATE_FIRST
   #define REG_MASK_LAST            REG_PREDICATE_LAST
 
-  static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
+  static_assert(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
   #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register

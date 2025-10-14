@@ -20,38 +20,38 @@ namespace ILLink.Tasks.Tests
         public static IEnumerable<object[]> AssemblyPathsCases => new List<object[]> {
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "trimmode", "copy" } })
+                    new TaskItem("Assembly.dll", new Dictionary<string, string> { { "trimmode", "copy" } })
                 }
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "TrimMode", "Copy" } })
+                    new TaskItem("Assembly.dll", new Dictionary<string, string> { { "TrimMode", "Copy" } })
                 }
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("path with/spaces/Assembly.dll")
+                    new TaskItem("path with/spaces/Assembly.dll")
                 }
             },
             new object [] {
                 new ITaskItem [] {
-					// same path
-					new TaskItem ("path/to/Assembly1.dll"),
-                    new TaskItem ("path/to/Assembly2.dll")
+                    // same path
+                    new TaskItem("path/to/Assembly1.dll"),
+                    new TaskItem("path/to/Assembly2.dll")
                 }
             },
             new object [] {
                 new ITaskItem [] {
-					// same assembly
-					new TaskItem ("path/to/Assembly.dll"),
-                    new TaskItem ("path/to/Assembly.dll")
+                    // same assembly
+                    new TaskItem("path/to/Assembly.dll"),
+                    new TaskItem("path/to/Assembly.dll")
                 }
             },
             new object [] {
                 new ITaskItem [] {
-					// same assembly name, different paths
-					new TaskItem ("path1/Assembly.dll"),
-                    new TaskItem ("path2/Assembly.dll")
+                    // same assembly name, different paths
+                    new TaskItem("path1/Assembly.dll"),
+                    new TaskItem("path2/Assembly.dll")
                 }
             }
         };
@@ -79,7 +79,7 @@ namespace ILLink.Tasks.Tests
         {
             var assemblyPaths = new ITaskItem[] {
                 new TaskItem("Assembly1.dll", new Dictionary<string, string> {{ "IsTrimmable", "true" }}),
-                new TaskItem("Assembly2.dll", new Dictionary<string, string> ()),
+                new TaskItem("Assembly2.dll", new Dictionary<string, string>()),
                 new TaskItem("Assembly3.dll", new Dictionary<string, string> {{ "IsTrimmable", "false" }}),
             };
             var task = new MockTask()
@@ -251,14 +251,14 @@ namespace ILLink.Tasks.Tests
             {
                 yield return new object[] {
                     new ITaskItem [] {
-                        new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
+                        new TaskItem("path/to/Assembly.dll", new Dictionary<string, string> {
                             { optimization, "True" }
                         })
                     }
                 };
                 yield return new object[] {
                     new ITaskItem [] {
-                        new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
+                        new TaskItem("path/to/Assembly.dll", new Dictionary<string, string> {
                             { optimization, "False" }
                         })
                     }
@@ -267,11 +267,11 @@ namespace ILLink.Tasks.Tests
             // complex case with multiple optimizations, assemblies
             yield return new object[] {
                 new ITaskItem [] {
-                    new TaskItem ("path/to/Assembly1.dll", new Dictionary<string, string> {
+                    new TaskItem("path/to/Assembly1.dll", new Dictionary<string, string> {
                         { "Sealer", "True" },
                         { "BeforeFieldInit", "False" }
                     }),
-                    new TaskItem ("path/to/Assembly2.dll", new Dictionary<string, string> {
+                    new TaskItem("path/to/Assembly2.dll", new Dictionary<string, string> {
                         { "Sealer", "False" },
                         { "BeforeFieldInit", "True" }
                     })
@@ -310,15 +310,15 @@ namespace ILLink.Tasks.Tests
             new object[] {
                 true,
                 new ITaskItem [] {
-                    new TaskItem ("AssemblyTrue.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "true" } } ),
-                    new TaskItem ("AssemblyFalse.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "false" } } )
+                    new TaskItem("AssemblyTrue.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "true" } } ),
+                    new TaskItem("AssemblyFalse.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "false" } } )
                 },
             },
             new object [] {
                 false,
                 new ITaskItem [] {
-                    new TaskItem ("AssemblyTrue.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "true" } } ),
-                    new TaskItem ("AssemblyFalse.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "false" } } )
+                    new TaskItem("AssemblyTrue.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "true" } } ),
+                    new TaskItem("AssemblyFalse.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "false" } } )
                 }
             }
         };
@@ -349,7 +349,7 @@ namespace ILLink.Tasks.Tests
             var task = new MockTask()
             {
                 AssemblyPaths = new ITaskItem[] {
-                    new TaskItem ("path/to/Assembly.dll", new Dictionary<string, string> {
+                    new TaskItem("path/to/Assembly.dll", new Dictionary<string, string> {
                         { "Sealer", "invalid" }
                     })
                 }
@@ -462,24 +462,24 @@ namespace ILLink.Tasks.Tests
         public static IEnumerable<object[]> CustomDataCases => new List<object[]> {
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "DataValue" } })
+                    new TaskItem("DataName", new Dictionary<string, string> { { "Value", "DataValue" } })
                 },
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "DataValue" } }),
-                    new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "DataValue2" } })
+                    new TaskItem("DataName", new Dictionary<string, string> { { "Value", "DataValue" } }),
+                    new TaskItem("DataName", new Dictionary<string, string> { { "Value", "DataValue2" } })
                 },
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("DataName1", new Dictionary<string, string> { { "Value", "DataValue1" } }),
-                    new TaskItem ("DataName2", new Dictionary<string, string> { { "Value", "DataValue2" } })
+                    new TaskItem("DataName1", new Dictionary<string, string> { { "Value", "DataValue1" } }),
+                    new TaskItem("DataName2", new Dictionary<string, string> { { "Value", "DataValue2" } })
                 },
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "data value with spaces" } })
+                    new TaskItem("DataName", new Dictionary<string, string> { { "Value", "data value with spaces" } })
                 },
             },
         };
@@ -506,19 +506,19 @@ namespace ILLink.Tasks.Tests
         public static IEnumerable<object[]> FeatureSettingsCases => new List<object[]> {
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "true" } })
+                    new TaskItem("FeatureName", new Dictionary<string, string> { { "Value", "true" } })
                 },
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "true" } }),
-                    new TaskItem ("FeatureName", new Dictionary<string, string> { { "Value", "false" } })
+                    new TaskItem("FeatureName", new Dictionary<string, string> { { "Value", "true" } }),
+                    new TaskItem("FeatureName", new Dictionary<string, string> { { "Value", "false" } })
                 },
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem ("FeatureName1", new Dictionary<string, string> { { "value", "true" } }),
-                    new TaskItem ("FeatureName2", new Dictionary<string, string> { { "value", "false" } }),
+                    new TaskItem("FeatureName1", new Dictionary<string, string> { { "value", "true" } }),
+                    new TaskItem("FeatureName2", new Dictionary<string, string> { { "value", "false" } }),
                 },
             },
         };
@@ -731,14 +731,14 @@ namespace ILLink.Tasks.Tests
         public static IEnumerable<object[]> CustomStepsCases => new List<object[]> {
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                    new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                         { "Type", "ILLink.Tasks.Tests.MockCustomStep" }
                     })
                 },
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                    new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                         { "Type", "ILLink.Tasks.Tests.MockCustomStep" },
                         { "BeforeStep", "MarkStep" }
                     })
@@ -746,7 +746,7 @@ namespace ILLink.Tasks.Tests
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                    new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                         { "type", "ILLink.Tasks.Tests.MockCustomStep" },
                         { "beforebtep", "MarkStep" }
                     })
@@ -754,7 +754,7 @@ namespace ILLink.Tasks.Tests
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                    new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                         { "Type", "ILLink.Tasks.Tests.MockCustomStep" },
                         { "AfterStep", "MarkStep" }
                     })
@@ -762,11 +762,11 @@ namespace ILLink.Tasks.Tests
             },
             new object [] {
                 new ITaskItem [] {
-                    new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                    new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                         { "Type", "ILLink.Tasks.Tests.MockCustomStep" },
                         { "BeforeStep", "MarkStep" }
                     }),
-                    new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                    new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                         { "Type", "ILLink.Tasks.Tests.MockCustomStep" },
                         { "AfterStep", "MarkStep" }
                     })
@@ -815,7 +815,7 @@ namespace ILLink.Tasks.Tests
         public void TestCustomStepsWithBeforeAndAfterSteps()
         {
             var customSteps = new ITaskItem[] {
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep" },
                     { "BeforeStep", "MarkStep" },
                     { "AfterStep", "MarkStep" }
@@ -832,40 +832,40 @@ namespace ILLink.Tasks.Tests
         public void TestCustomStepOrdering()
         {
             var customSteps = new ITaskItem[] {
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep" },
                     { "BeforeStep", "MarkStep" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep2" },
                     { "BeforeStep", "MarkStep" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep3" },
                     { "AfterStep", "MarkStep" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep4" },
                     { "AfterStep", "MarkStep" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep5" },
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockCustomStep6" },
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockMarkHandler" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockMarkHandler2" },
                     { "BeforeStep", "MockMarkHandler" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockMarkHandler3" },
                     { "AfterStep", "MockMarkHandler2" }
                 }),
-                new TaskItem (Assembly.GetExecutingAssembly ().Location, new Dictionary<string, string> {
+                new TaskItem(Assembly.GetExecutingAssembly().Location, new Dictionary<string, string> {
                     { "Type", "ILLink.Tasks.Tests.MockMarkHandler4" }
                 }),
             };
@@ -901,7 +901,7 @@ namespace ILLink.Tasks.Tests
         public void TestCustomStepsMissingType()
         {
             var customSteps = new ITaskItem[] {
-                new TaskItem (Assembly.GetExecutingAssembly ().Location)
+                new TaskItem(Assembly.GetExecutingAssembly().Location)
             };
             var task = new MockTask()
             {

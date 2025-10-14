@@ -4759,7 +4759,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
 
     // Make sure any flags we hide in the offset are in the bits guaranteed
     // unused by alignment
-    C_ASSERT((OFFSET_MASK + 1) <= sizeof(int));
+    static_assert((OFFSET_MASK + 1) <= sizeof(int));
 
 #if defined(DEBUG) && defined(JIT32_GCENCODER) && defined(FEATURE_EH_WINDOWS_X86)
     if (!compiler->UsesFunclets() && mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
@@ -4785,7 +4785,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
 
     for (varPtrDsc* varTmp = gcVarPtrList; varTmp != nullptr; varTmp = varTmp->vpdNext)
     {
-        C_ASSERT((OFFSET_MASK + 1) <= sizeof(int));
+        static_assert((OFFSET_MASK + 1) <= sizeof(int));
 
         // Get hold of the variable's stack offset.
 

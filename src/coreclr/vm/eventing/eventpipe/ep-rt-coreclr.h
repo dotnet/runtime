@@ -21,6 +21,10 @@
 #include <minipal/strings.h>
 #include <minipal/time.h>
 
+#ifdef TARGET_UNIX
+#include <sys/time.h>
+#endif
+
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
 
@@ -227,6 +231,15 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return static_cast<int64_t>(InterlockedDecrement64 ((volatile LONG64 *)(value)));
+}
+
+static
+inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<int64_t>(InterlockedCompareExchangeT<int64_t> (target, value, expected));
 }
 
 static
@@ -1010,21 +1023,63 @@ void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
 	STATIC_CONTRACT_NOTHROW;
+    
+#ifdef HOST_WINDOWS
+    SYSTEMTIME value;
+    GetSystemTime (&value);
 
-	SYSTEMTIME value;
-	GetSystemTime (&value);
+    EP_ASSERT(system_time != NULL);
+    ep_system_time_set (
+        system_time,
+        value.wYear,
+        value.wMonth,
+        value.wDayOfWeek,
+        value.wDay,
+        value.wHour,
+        value.wMinute,
+        value.wSecond,
+        value.wMilliseconds);
+#else
+    time_t tt;
+    struct tm *ut_ptr;
+    struct timeval time_val;
+    int timeofday_retval;
 
-	EP_ASSERT(system_time != NULL);
-	ep_system_time_set (
-		system_time,
-		value.wYear,
-		value.wMonth,
-		value.wDayOfWeek,
-		value.wDay,
-		value.wHour,
-		value.wMinute,
-		value.wSecond,
-		value.wMilliseconds);
+    EP_ASSERT (system_time != NULL);
+
+    tt = time (NULL);
+
+    timeofday_retval = gettimeofday (&time_val, NULL);
+
+    ut_ptr = gmtime (&tt);
+
+    uint16_t milliseconds = 0;
+    if (timeofday_retval != -1) {
+        int old_seconds;
+        int new_seconds;
+
+        milliseconds = (uint16_t)(time_val.tv_usec / 1000);
+
+        old_seconds = ut_ptr->tm_sec;
+        new_seconds = time_val.tv_sec % 60;
+
+        /* just in case we reached the next second in the interval between time () and gettimeofday () */
+        if (old_seconds != new_seconds)
+            milliseconds = 999;
+    }
+
+    ep_system_time_set (
+        system_time,
+        (uint16_t)(1900 + ut_ptr->tm_year),
+        (uint16_t)ut_ptr->tm_mon + 1,
+        (uint16_t)ut_ptr->tm_wday,
+        (uint16_t)ut_ptr->tm_mday,
+        (uint16_t)ut_ptr->tm_hour,
+        (uint16_t)ut_ptr->tm_min,
+        (uint16_t)ut_ptr->tm_sec,
+        milliseconds);
+#endif
+
 }
 
 static
@@ -1033,10 +1088,7 @@ int64_t
 ep_rt_system_timestamp_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-	FILETIME value;
-	GetSystemTimeAsFileTime (&value);
-	return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+	return minipal_get_system_time();
 }
 
 static

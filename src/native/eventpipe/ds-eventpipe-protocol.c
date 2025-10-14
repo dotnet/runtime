@@ -409,7 +409,7 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_sets (
 	*tracepoint_sets = NULL;
 
 	if (tracepoint_sets_len == 0)
-		return false;
+		return true;
 
 	*tracepoint_sets = ep_rt_object_array_alloc (EventPipeProviderTracepointSet, tracepoint_sets_len);
 	ep_raise_error_if_nok (*tracepoint_sets != NULL);
@@ -920,7 +920,7 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->serialization_format,
 		payload->rundown_keyword,
 		payload->stackwalk_requested,
-		payload->session_type == EP_SESSION_TYPE_IPCSTREAM ? ds_ipc_stream_get_stream_ref (stream) : NULL,
+		ds_ipc_stream_get_stream_ref (stream),
 		NULL,
 		NULL,
 		user_events_data_fd);

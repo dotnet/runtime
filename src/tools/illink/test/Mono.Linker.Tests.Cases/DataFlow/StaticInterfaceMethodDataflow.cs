@@ -126,7 +126,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [Kept]
             static void DamOnParam(
                 [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type type)
             { }
 

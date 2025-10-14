@@ -119,7 +119,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             typeof(IBaseWithoutRequires).RequiresPublicMethods();
             typeof(ImplementationClassWithRequires).RequiresPublicMethods();
             typeof(ImplementationClassWithoutRequires).RequiresPublicMethods();
+            new ExplicitImplementationClassWithRequires(); // we need to see this one as constructed too
             typeof(ExplicitImplementationClassWithRequires).RequiresPublicMethods();
+            new ExplicitImplementationClassWithoutRequires(); // we need to see this one as constructed too
             typeof(ExplicitImplementationClassWithoutRequires).RequiresPublicMethods();
             typeof(ImplementationClassWithoutRequiresInSource).RequiresPublicMethods();
             typeof(ImplementationClassWithRequiresInSource).RequiresPublicMethods();

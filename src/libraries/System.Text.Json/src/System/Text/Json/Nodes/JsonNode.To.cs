@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
-
 namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
@@ -44,14 +42,14 @@ namespace System.Text.Json.Nodes
             // Special case for string; don't quote it.
             if (this is JsonValue)
             {
-                if (this is JsonValuePrimitive<string> jsonString)
+                switch (this)
                 {
-                    return jsonString.Value;
-                }
-
-                if (this is JsonValueOfElement { Value.ValueKind: JsonValueKind.String } jsonElement)
-                {
-                    return jsonElement.Value.GetString()!;
+                    case JsonValuePrimitive<string> jsonString:
+                        return jsonString.Value;
+                    case JsonValueOfElement { Value.ValueKind: JsonValueKind.String } jsonElement:
+                        return jsonElement.Value.GetString()!;
+                    case JsonValueOfJsonString jsonValueOfJsonString:
+                        return jsonValueOfJsonString.GetValue<string>()!;
                 }
             }
 

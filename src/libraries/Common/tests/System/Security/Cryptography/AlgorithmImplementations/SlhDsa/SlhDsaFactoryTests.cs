@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => SlhDsa.GenerateKey(null));
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => SlhDsa.ImportSlhDsaPublicKey(null, []));
-            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => SlhDsa.ImportSlhDsaSecretKey(null, []));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => SlhDsa.ImportSlhDsaPrivateKey(null, []));
 
             AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportEncryptedPkcs8PrivateKey(string.Empty, (byte[])null));
             AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportFromEncryptedPem((string)null, string.Empty));
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportFromPem(null));
             AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportPkcs8PrivateKey(null));
             AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportSlhDsaPublicKey(SlhDsaAlgorithm.SlhDsaSha2_128f, null));
-            AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportSlhDsaSecretKey(SlhDsaAlgorithm.SlhDsaSha2_128f, null));
+            AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportSlhDsaPrivateKey(SlhDsaAlgorithm.SlhDsaSha2_128f, null));
             AssertExtensions.Throws<ArgumentNullException>("source", static () => SlhDsa.ImportSubjectPublicKeyInfo(null));
 
             AssertExtensions.Throws<ArgumentNullException>("password", static () => SlhDsa.ImportEncryptedPkcs8PrivateKey((string)null, Array.Empty<byte>()));
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public static void ArgumentValidation_WrongKeySizeForAlgorithm(SlhDsaAlgorithm algorithm)
         {
             int publicKeySize = algorithm.PublicKeySizeInBytes;
-            int secretKeySize = algorithm.SecretKeySizeInBytes;
+            int privateKeySize = algorithm.PrivateKeySizeInBytes;
 
             // SLH-DSA key size is wrong when importing algorithm key. Throw an argument exception.
             Action<Func<SlhDsa>> assertDirectImport = import => AssertExtensions.Throws<ArgumentException>("source", import);
@@ -51,9 +51,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaTestHelpers.AssertImportPublicKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[publicKeySize - 1]);
             SlhDsaTestHelpers.AssertImportPublicKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[0]);
 
-            SlhDsaTestHelpers.AssertImportSecretKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[secretKeySize + 1]);
-            SlhDsaTestHelpers.AssertImportSecretKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[secretKeySize - 1]);
-            SlhDsaTestHelpers.AssertImportSecretKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[0]);
+            SlhDsaTestHelpers.AssertImportPrivateKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[privateKeySize + 1]);
+            SlhDsaTestHelpers.AssertImportPrivateKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[privateKeySize - 1]);
+            SlhDsaTestHelpers.AssertImportPrivateKey(assertDirectImport, assertEmbeddedImport, algorithm, new byte[0]);
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             static void AssertThrows(byte[] encodedBytes)
             {
-                SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => Assert.Throws<CryptographicException>(() => import(encodedBytes)),
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
 
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Valid BER but invalid DER - uses indefinite length encoding
             byte[] indefiniteLengthOctet = [0x04, 0x80, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00];
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 AssertThrowIfNotSupported(() =>
                     Assert.Throws<CryptographicException>(() => import(indefiniteLengthOctet))));
         }
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             algorithmIdentifier.Encode(writer);
             byte[] wrongAsnType = writer.Encode();
 
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
 
             SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Fact]
-        public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
+        public static void ImportSubjectPublicKeyInfo_AlgorithmErrorsInAsn()
         {
 #if !NETFRAMEWORK // Does not support exporting RSA SPKI
             if (!OperatingSystem.IsBrowser())
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 // RSA key
                 using RSA rsa = RSA.Create();
                 byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
-                SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
             }
 #endif
@@ -144,17 +144,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SubjectPublicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes]
             };
 
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             spki.Algorithm.Parameters = AsnUtils.DerNull;
 
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
             // Sanity check
             spki.Algorithm.Parameters = null;
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
         }
 
         [Fact]
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = SlhDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
                 },
-                PrivateKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes]
+                PrivateKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PrivateKeySizeInBytes]
             };
 
             SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -253,9 +253,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertThrowIfNotSupported(() =>
                     Assert.Equal(algorithm, import().Algorithm)), algorithm, new byte[algorithm.PublicKeySizeInBytes]);
 
-            SlhDsaTestHelpers.AssertImportSecretKey(import =>
+            SlhDsaTestHelpers.AssertImportPrivateKey(import =>
                 AssertThrowIfNotSupported(() =>
-                    Assert.Equal(algorithm, import().Algorithm)), algorithm, new byte[algorithm.SecretKeySizeInBytes]);
+                    Assert.Equal(algorithm, import().Algorithm)), algorithm, new byte[algorithm.PrivateKeySizeInBytes]);
         }
 
         /// <summary>

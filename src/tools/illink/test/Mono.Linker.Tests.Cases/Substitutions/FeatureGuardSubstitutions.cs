@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using ILLink.RoslynAnalyzer;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -17,10 +17,10 @@ namespace Mono.Linker.Tests.Cases.Substitutions
     [SetupCompileResource("FeatureGuardSubstitutions.xml", "ILLink.Substitutions.xml")]
     [IgnoreSubstitutions(false)]
 #if NATIVEAOT
-	// ILC has different constant propagation behavior than ILLink, and we don't have
-	// the test infrastructure to check for different IL sequences between ILLink/ILC.
-	// Just validate the warning behavior instead.
-	[SkipKeptItemsValidation]
+    // ILC has different constant propagation behavior than ILLink, and we don't have
+    // the test infrastructure to check for different IL sequences between ILLink/ILC.
+    // Just validate the warning behavior instead.
+    [SkipKeptItemsValidation]
 #else
     // Tell linker to treat RequiresDynamicCodeAttribute as a disabled feature:
     [SetupLinkerArgument("--feature", "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false")]

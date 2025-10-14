@@ -301,7 +301,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.Name == name)
+                    if (field.Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessField(type, field, nav);
@@ -325,7 +325,7 @@ namespace ILCompiler
             {
                 sb.Clear();
                 CecilTypeNameFormatter.Instance.AppendName(sb, field.FieldType);
-                if (signature == sb.ToString() + " " + field.Name)
+                if (signature == sb.ToString() + " " + field.GetName())
                     return field;
             }
 
@@ -367,7 +367,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (MethodDesc method in type.GetAllMethods())
                 {
-                    if (name == method.Name)
+                    if (method.Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessMethod(type, method, nav, customData);
@@ -532,7 +532,7 @@ namespace ILCompiler
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
             sb.Append(' ');
-            sb.Append(meth.Name);
+            sb.Append(meth.GetName());
             if (includeGenericParameters && meth.HasInstantiation)
             {
                 sb.Append('`');
@@ -642,20 +642,20 @@ namespace ILCompiler
             }
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                if (!string.IsNullOrEmpty(type.Namespace))
+                if (!type.Namespace.IsEmpty)
                 {
-                    sb.Append(type.Namespace);
+                    sb.Append(type.GetNamespace());
                     sb.Append('.');
                 }
 
-                sb.Append(type.Name);
+                sb.Append(type.GetName());
             }
 
             protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
             {
                 AppendName(sb, containingType);
                 sb.Append('/');
-                sb.Append(nestedType.Name);
+                sb.Append(nestedType.GetName());
             }
 
 #if false
@@ -771,7 +771,7 @@ namespace ILCompiler
             string @namespace, name;
             SplitFullName(fullName, out @namespace, out name);
 
-            return assembly.GetType(@namespace, name, throwIfNotFound: false);
+            return assembly.GetType(Encoding.UTF8.GetBytes(@namespace), Encoding.UTF8.GetBytes(name), throwIfNotFound: false);
         }
 
         private static MetadataType? GetNestedType(ModuleDesc assembly, string fullName)

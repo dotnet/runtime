@@ -206,7 +206,7 @@ namespace System
                     {
                         // Special-case string since it's the most common for ROM<char>.
 
-                        refToReturn = ref Unsafe.As<char, T>(ref Unsafe.As<string>(tmpObject).GetRawStringData());
+                        refToReturn = ref Unsafe.As<char, T>(ref ((string)tmpObject).GetRawStringData());
                         lengthOfUnderlyingSpan = Unsafe.As<string>(tmpObject).Length;
                     }
                     else if (RuntimeHelpers.ObjectHasComponentSize(tmpObject))

@@ -8,21 +8,74 @@
 // Debug: Outputs 1600094603
 // Release: Outputs 1600094604
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 public class Runtime_106338
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static float CastToFloatDirect(long val) => (float)val;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static float CastToFloatDirect(ulong val) => (float)val;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static float CastToFloatThroughDouble(long val) => (float)(double)val;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static float CastToFloatThroughDouble(ulong val) => (float)(double)val;
+
     [Fact]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/100368", TestPlatforms.Any)]
     public static void TestEntryPoint()
     {
-        ulong vr10 = 16105307123914158031UL;
-        float vr11 = 4294967295U | vr10;
-        uint result = BitConverter.SingleToUInt32Bits(vr11);
+        ulong vr10 = 0xDF818B7F_FFFFFFFF;
+        float vr11 = vr10;
+        float vr12 = (float)(double)vr10;
+
+        // These results will be const folded
+        uint resultDirect = BitConverter.SingleToUInt32Bits(vr11);
+        uint resultIntermediate = BitConverter.SingleToUInt32Bits(vr12);
 
         // Expected to cast ulong -> float directly
-        Assert.Equal(1600094603U, result);
+        Assert.Equal(1600094603U, resultDirect);
+
+        // Expected to preserve ulong -> double intermediate cast
+        Assert.Equal(1600094604U, resultIntermediate);
+
+        // Check that run-time computed values match
+        resultDirect = BitConverter.SingleToUInt32Bits(CastToFloatDirect(vr10));
+        resultIntermediate = BitConverter.SingleToUInt32Bits(CastToFloatThroughDouble(vr10));
+
+        Assert.Equal(1600094603U, resultDirect);
+        Assert.Equal(1600094604U, resultIntermediate);
+    }
+
+    [Fact]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/100368", TestPlatforms.Any)]
+    public static void TestEntryPointSigned()
+    {
+        long vr10 = 0x002FFFFF_DFFFFFFF;
+        float vr11 = vr10;
+        float vr12 = (float)(double)vr10;
+
+        // These results will be const folded
+        uint resultDirect = BitConverter.SingleToUInt32Bits(vr11);
+        uint resultIntermediate = BitConverter.SingleToUInt32Bits(vr12);
+
+        // Expected to cast long -> float directly
+        Assert.Equal(1514143743U, resultDirect);
+
+        // Expected to preserve long -> double intermediate cast
+        Assert.Equal(1514143744U, resultIntermediate);
+
+        // Check that run-time computed values match
+        resultDirect = BitConverter.SingleToUInt32Bits(CastToFloatDirect(vr10));
+        resultIntermediate = BitConverter.SingleToUInt32Bits(CastToFloatThroughDouble(vr10));
+
+        Assert.Equal(1514143743U, resultDirect);
+        Assert.Equal(1514143744U, resultIntermediate);
     }
 }

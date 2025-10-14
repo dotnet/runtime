@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
@@ -314,7 +315,7 @@ namespace ILCompiler
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
-                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch).DistinctBy((instructionSet) => instructionSet.Name, StringComparer.OrdinalIgnoreCase))
                 {
                     // Only instruction sets with are specifiable should be printed to the help text
                     if (instructionSet.Specifiable)

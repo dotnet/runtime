@@ -26,7 +26,6 @@ namespace System.Globalization
             True = 2
         }
 
-        private string? _listSeparator;
         private bool _isReadOnly;
 
         private readonly string _cultureName;
@@ -124,13 +123,13 @@ namespace System.Globalization
         /// </summary>
         public string ListSeparator
         {
-            get => _listSeparator ??= _cultureData.ListSeparator;
+            get => field ??= _cultureData.ListSeparator;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
-                _listSeparator = value;
+                field = value;
             }
         }
 
@@ -179,6 +178,17 @@ namespace System.Globalization
             }
 
             return ChangeCaseCommon<ToLowerConversion>(str);
+        }
+
+        internal void ToLower(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToLower(source, destination);
+                return;
+            }
+
+            ChangeCaseCommon<ToLowerConversion>(source, destination);
         }
 
         private unsafe char ChangeCase(char c, bool toUpper)
@@ -452,6 +462,17 @@ namespace System.Globalization
             return ChangeCaseCommon<ToUpperConversion>(str);
         }
 
+        internal void ToUpper(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToUpper(source, destination);
+                return;
+            }
+
+            ChangeCaseCommon<ToUpperConversion>(source, destination);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpperAsciiInvariant(char c)
         {
@@ -460,6 +481,50 @@ namespace System.Globalization
                 c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
             return c;
+        }
+
+        /// <summary>
+        /// Converts the specified rune to lowercase.
+        /// </summary>
+        /// <param name="value">The rune to convert to lowercase.</param>
+        /// <returns>The specified rune converted to lowercase.</returns>
+        public Rune ToLower(Rune value)
+        {
+            // Convert rune to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Change span to lower and convert to rune
+            if (valueChars.Length == 2)
+            {
+                Span<char> lowerChars = stackalloc char[2];
+                ToLower(valueChars, lowerChars);
+                return new Rune(lowerChars[0], lowerChars[1]);
+            }
+
+            char lowerChar = ToLower(valueChars[0]);
+            return new Rune(lowerChar);
+        }
+
+        /// <summary>
+        /// Converts the specified rune to uppercase.
+        /// </summary>
+        /// <param name="value">The rune to convert to uppercase.</param>
+        /// <returns>The specified rune converted to uppercase.</returns>
+        public Rune ToUpper(Rune value)
+        {
+            // Convert rune to span
+            ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+
+            // Change span to upper and convert to rune
+            if (valueChars.Length == 2)
+            {
+                Span<char> upperChars = stackalloc char[2];
+                ToUpper(valueChars, upperChars);
+                return new Rune(upperChars[0], upperChars[1]);
+            }
+
+            char upperChar = ToUpper(valueChars[0]);
+            return new Rune(upperChar);
         }
 
         private bool IsAsciiCasingSameAsInvariant

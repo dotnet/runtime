@@ -1579,8 +1579,8 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
     DAC_INSTANCE* inst;
     ULONG32 fullSize;
 
-    static_assert_no_msg(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
-    static_assert_no_msg((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
+    static_assert(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
+    static_assert((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
 
     //
     // All allocated instances must be kept alive as long
@@ -3103,7 +3103,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
-    m_gcNotificationTable  = NULL;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
     m_streams = NULL;
@@ -4175,7 +4174,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
-        if (IsPossibleCodeAddress(taddr) != S_OK)
+        if ( (status = IsPossibleCodeAddress(taddr)) != S_OK)
         {
             goto Exit;
         }
@@ -4183,6 +4182,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
         methodDesc = ExecutionManager::GetCodeMethodDesc(taddr);
         if (!methodDesc)
         {
+            status = S_FALSE;
             goto Exit;
         }
 
@@ -5325,31 +5325,8 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
 
     EX_TRY
     {
-        if (gcEvtArgs->typ >= GC_EVENT_TYPE_MAX)
-        {
-            status = E_INVALIDARG;
-        }
-        else
-        {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                GcEvtArgs *res = gn.GetNotification(*gcEvtArgs);
-                if (res != NULL)
-                {
-                    *gcEvtArgs = *res;
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
-        }
+        // XXX Microsoft.
+        status = E_NOTIMPL;
     }
     EX_CATCH
     {
@@ -5379,22 +5356,8 @@ ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
         }
         else
         {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                if (gn.SetNotification(gcEvtArgs) && gn.UpdateOutOfProcTable())
-                {
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
+            GcNotifications::SetNotification(gcEvtArgs);
+            status = S_OK;
         }
     }
     EX_CATCH
@@ -5619,7 +5582,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
@@ -5634,7 +5597,7 @@ ClrDataAccess::GetJitHelperName(
 
         for (int i = 0; i < CORINFO_HELP_COUNT; i++)
         {
-            if (address == (TADDR)(pTable[i].pfnHelper))
+            if (address == pTable[i].pfnHelper)
                 return s_rgHelperNames[i];
         }
     }
@@ -5651,7 +5614,7 @@ ClrDataAccess::GetJitHelperName(
         PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
     for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
     {
-        if (address == (TADDR)(pDynamicTable[d].pfnHelper))
+        if (address == pDynamicTable[d].pfnHelper)
         {
             return s_rgHelperNames[s_rgDynamicHCallIds[d]];
         }
@@ -5990,7 +5953,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
-        BoundsType::Instrumented, 
+        BoundsType::Instrumented,
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 
@@ -6395,18 +6358,6 @@ ClrDataAccess::GetHostJitNotificationTable()
     }
 
     return m_jitNotificationTable;
-}
-
-GcNotification*
-ClrDataAccess::GetHostGcNotificationTable()
-{
-    if (m_gcNotificationTable == NULL)
-    {
-        m_gcNotificationTable =
-            GcNotifications::InitializeNotificationTable(128);
-    }
-
-    return m_gcNotificationTable;
 }
 
 /* static */ bool
@@ -7033,7 +6984,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.

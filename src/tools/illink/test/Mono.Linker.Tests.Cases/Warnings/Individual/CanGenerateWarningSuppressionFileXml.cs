@@ -6,7 +6,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
     [SetupLinkerTrimMode("skip")]
 #if !NET
-	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
+    [SetupCompileBefore("library.dll", new[] { typeof(TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
 #else
     [SetupCompileBefore("library.dll", new[] { typeof(TriggerWarnings_Lib) })]
 #endif

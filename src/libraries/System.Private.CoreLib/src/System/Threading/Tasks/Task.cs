@@ -1677,11 +1677,12 @@ namespace System.Threading.Tasks
             if (s_asyncDebuggingEnabled)
                 AddToActiveTasks(this);
 
-            if (TplEventSource.Log.IsEnabled() && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
+            if (TplEventSource.Log.IsEnabled() &&
+                (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0 &&
+                m_action is Delegate action)
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
-                Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.GetMethodName(), 0);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + action.GetMethodName(), 0);
             }
 
             try
@@ -4531,6 +4532,9 @@ namespace System.Threading.Tasks
                 action.Invoke(this); // run the action directly if we failed to queue the continuation (i.e., the task completed)
         }
 
+        internal bool TryAddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers = false)
+            => AddTaskContinuation(action, addBeforeOthers);
+
         // Support method for AddTaskContinuation that takes care of multi-continuation logic.
         // Returns true if and only if the continuation was successfully queued.
         private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
@@ -6024,8 +6028,25 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
-            tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks)
+        {
+            switch (tasks.Length)
+            {
+                case 0:
+                    return CompletedTask;
+
+                case 1:
+                    Task t = tasks[0];
+                    if (t is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
+                    return t;
+
+                default:
+                    return new WhenAllPromise(tasks);
+            }
+        }
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction

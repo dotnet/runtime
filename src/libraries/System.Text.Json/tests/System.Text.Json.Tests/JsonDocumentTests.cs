@@ -1861,7 +1861,7 @@ namespace System.Text.Json.Tests
         [InlineData("\"hello\"    ", "hello")]
         [InlineData("    null     ", (string)null)]
         [InlineData("\"\\u0033\\u0031\"", "31")]
-        public static void ReadString(string json, string expectedValue)
+        public static void ReadString(string json, string? expectedValue)
         {
             using (JsonDocument doc = JsonDocument.Parse(json))
             {

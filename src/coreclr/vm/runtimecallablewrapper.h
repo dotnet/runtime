@@ -633,7 +633,7 @@ inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::f
 {
     LIMITED_METHOD_CONTRACT;
 
-    static_assert_no_msg(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
+    static_assert(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
 
     RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags &
                                         (ObjFromComIP::UNIQUE_OBJECT));

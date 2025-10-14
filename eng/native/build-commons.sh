@@ -70,7 +70,7 @@ build_native()
     # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
     # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
     # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    # 
+    #
     # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
     #
     export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
@@ -89,7 +89,11 @@ build_native()
     fi
 
     if [[ "$targetOS" == maccatalyst ]]; then
-        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default macCatalyst deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 $cmakeArgs"
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
@@ -545,6 +549,9 @@ elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == android ]]; then

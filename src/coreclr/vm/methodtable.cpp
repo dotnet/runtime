@@ -572,7 +572,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 
         if (tgt != NULL)
         {
-            RETURN(MethodTable::GetMethodDescForSlotAddress(tgt));
+            RETURN(NonVirtualEntry2MethodDesc(tgt));
         }
 
         // The interface is not in the static class definition so we need to look at the
@@ -1833,7 +1833,7 @@ MethodDesc *MethodTable::GetMethodDescForInterfaceMethod(TypeHandle ownerType, M
         _ASSERTE(!throwOnConflict);
         return NULL;
     }
-    pMD = MethodTable::GetMethodDescForSlotAddress(pTgt);
+    pMD = NonVirtualEntry2MethodDesc(pTgt);
 
 #ifdef _DEBUG
     MethodDesc *pDispSlotMD = FindDispatchSlotForInterfaceMD(ownerType, pInterfaceMD, throwOnConflict).GetMethodDesc();
@@ -2524,7 +2524,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const
 {
     static const size_t CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS = CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
-    static_assert_no_msg(CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS == SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
+    static_assert(CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS == SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
 
     if (!helperPtr->inEmbeddedStruct)
     {
@@ -6199,52 +6199,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
 #endif // !DACCESS_COMPILE
 }
 
-
-//==========================================================================================
-MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative /*=FALSE*/)
-{
-    CONTRACT(MethodDesc *)
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        POSTCONDITION(RETVAL->m_pDebugMethodTable == NULL || // We must be in BuildMethdTableThrowing()
-                      RETVAL->SanityCheck());
-    }
-    CONTRACT_END;
-
-    // If we see shared fcall implementation as an argument to this
-    // function, it means that a vtable slot for the shared fcall
-    // got backpatched when it shouldn't have.  The reason we can't
-    // backpatch this method is that it is an FCall that has many
-    // MethodDescs for one implementation.  If we backpatch delegate
-    // constructors, this function will not be able to recover the
-    // MethodDesc for the method.
-    //
-    _ASSERTE_IMPL(!ECall::IsSharedFCallImpl(addr) &&
-                  "someone backpatched shared fcall implementation -- "
-                  "see comment in code");
-
-    MethodDesc* pMethodDesc = ExecutionManager::GetCodeMethodDesc(addr);
-    if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-
-    // Is it an FCALL?
-    pMethodDesc = ECall::MapTargetBackToMethod(addr);
-    if (pMethodDesc != 0)
-    {
-        goto lExit;
-    }
-
-    pMethodDesc = MethodDesc::GetMethodDescFromStubAddr(addr, fSpeculative);
-
-lExit:
-
-    RETURN(pMethodDesc);
-}
-
 //==========================================================================================
 /* static*/
 BOOL MethodTable::ComputeContainsGenericVariables(Instantiation inst)
@@ -7899,7 +7853,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (fSharedVtableChunk)
         {
-            MethodDesc* pMD = GetMethodDescForSlotAddress(slotCode);
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc(slotCode);
             _ASSERTE(pMD->IsVersionableWithVtableSlotBackpatch() || pMD->GetStableEntryPoint() == slotCode);
         }
     }

@@ -85,7 +85,7 @@ namespace System.Net.Http.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void TryAddWithoutValidation_UseEmptyHeaderName_False(string headerName)
+        public void TryAddWithoutValidation_UseEmptyHeaderName_False(string? headerName)
         {
             MockHeaders headers = new MockHeaders();
             Assert.False(headers.TryAddWithoutValidation(headerName, "value"));
@@ -1149,7 +1149,7 @@ namespace System.Net.Http.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void TryGetValues_UseEmptyHeaderName_False(string headerName)
+        public void TryGetValues_UseEmptyHeaderName_False(string? headerName)
         {
             MockHeaders headers = new MockHeaders();
 

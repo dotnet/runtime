@@ -29,17 +29,7 @@ namespace System.Runtime
             IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
             if (pTargetCode != IntPtr.Zero)
             {
-                // We don't update the dispatch cell cache if this is IDynamicInterfaceCastable because this
-                // scenario is by-design dynamic. There is no guarantee that another instance with the same MethodTable
-                // as the one we just resolved would do the resolution the same way. We will need to ask again.
-                if (!pObject.GetMethodTable()->IsIDynamicInterfaceCastable)
-                {
-                    return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
-                }
-                else
-                {
-                    return pTargetCode;
-                }
+                return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
             }
 
             // "Valid method implementation was not found."
@@ -123,6 +113,10 @@ namespace System.Runtime
             return result;
         }
 
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        private static extern bool DynamicInterfaceCastablePresent();
+
         private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
         {
             // Type of object we're dispatching on.
@@ -135,7 +129,7 @@ namespace System.Runtime
                                                                               cellInfo.InterfaceSlot,
                                                                               flags: default,
                                                                               ppGenericContext: null);
-                if (pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
+                if (DynamicInterfaceCastablePresent() && pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
                 {
                     // Dispatch not resolved through normal dispatch map, try using the IDynamicInterfaceCastable
                     // This will either give us the appropriate result, or throw.

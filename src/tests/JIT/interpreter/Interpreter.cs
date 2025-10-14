@@ -5,6 +5,8 @@ using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 public interface ITest
 {
@@ -941,20 +943,45 @@ public class InterpreterTest
         if (!TestCalli())
             Environment.FailFast(null);
 
-        Console.WriteLine("TestStaticVirtualGeneric_CodePointerCase");
-        if (!TestStaticVirtualGeneric_CodePointerCase())
-            Environment.FailFast(null);
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            Console.WriteLine("TestStaticVirtualGeneric_CodePointerCase");
+            if (!TestStaticVirtualGeneric_CodePointerCase())
+                Environment.FailFast(null);
+        }
 
         Console.WriteLine("TestPreciseInitCctors");
         if (!TestPreciseInitCctors())
             Environment.FailFast(null);
 
-	Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+        Console.WriteLine("TestThreading_Interlocked_CompareExchange");
+        if (!TestThreading_Interlocked_CompareExchange())
+            Environment.FailFast(null);
 
-	Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+        Console.WriteLine("TestRuntimeHelpers_IsReferenceOrContainsReferences");
+        if (!TestRuntimeHelpers_IsReferenceOrContainsReferences())
+            Environment.FailFast(null);
 
-	Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+        Console.WriteLine("TestMemoryMarshal_GetArrayDataReference");
+        if (!TestMemoryMarshal_GetArrayDataReference())
+            Environment.FailFast(null);
 
+        Console.WriteLine("Empty string length: {0}", string.Empty.Length);
+
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
+        }
+
+        Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
+
+        Console.WriteLine("TestPInvoke");
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
+        // For stackwalking validation
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
@@ -1937,10 +1964,14 @@ public class InterpreterTest
         retType = bc.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || isBase)
             return false;
-        Console.WriteLine("bc.GenericVirtualMethod<string>");
-        retType = bc.GenericVirtualMethod<string>(out isBase);
-        if (retType != typeof(string) || isBase)
-            return false;
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            Console.WriteLine("bc.GenericVirtualMethod<string>");
+            retType = bc.GenericVirtualMethod<string>(out isBase);
+            if (retType != typeof(string) || isBase)
+                return false;
+        }
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xdede)
             return false;
@@ -1948,10 +1979,14 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || isBase)
             return false;
-        Console.WriteLine("itest.GenericVirtualMethod<string>");
-        retType = itest.GenericVirtualMethod<string>(out isBase);
-        if (retType != typeof(string) || isBase)
-            return false;
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            Console.WriteLine("itest.GenericVirtualMethod<string>");
+            retType = itest.GenericVirtualMethod<string>(out isBase);
+            if (retType != typeof(string) || isBase)
+                return false;
+        }
 
         bc = new BaseClass();
         itest = bc;
@@ -1965,10 +2000,14 @@ public class InterpreterTest
         retType = bc.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || !isBase)
             return false;
-        Console.WriteLine("bc.GenericVirtualMethod<string>");
-        retType = bc.GenericVirtualMethod<string>(out isBase);
-        if (retType != typeof(string) || !isBase)
-            return false;
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            Console.WriteLine("bc.GenericVirtualMethod<string>");
+            retType = bc.GenericVirtualMethod<string>(out isBase);
+            if (retType != typeof(string) || !isBase)
+                return false;
+        }
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xbebe)
             return false;
@@ -1976,10 +2015,14 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || !isBase)
             return false;
-        Console.WriteLine("itest.GenericVirtualMethod<string>");
-        retType = itest.GenericVirtualMethod<string>(out isBase);
-        if (retType != typeof(string) || !isBase)
-            return false;
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            Console.WriteLine("itest.GenericVirtualMethod<string>");
+            retType = itest.GenericVirtualMethod<string>(out isBase);
+            if (retType != typeof(string) || !isBase)
+                return false;
+        }
         return true;
     }
 
@@ -2040,7 +2083,7 @@ public class InterpreterTest
 
     public static T[,,] TestNewMDArr<T>(int len)
     {
-        return new T[len,len-1,len-2];
+        return new T[len, len - 1, len - 2];
     }
 
     public static object Box<T>(T value)
@@ -2056,6 +2099,11 @@ public class InterpreterTest
     struct GenericStruct<T>
     {
         public T Value;
+
+        public override string ToString()
+        {
+            return "GenericStruct<T>: " + (Value?.ToString() ?? "<null>");
+        }
     }
 
     public static int preciseInitCctorsRun = 0;
@@ -2072,7 +2120,7 @@ public class InterpreterTest
         }
 
         public static void TriggerCctorMethod<U>()
-        {}
+        { }
     }
 
     class MyClass<T>
@@ -2369,6 +2417,62 @@ public class InterpreterTest
         return (int)lhs - (int)rhs;
     }
 
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvokeWithMarshaling(string s);
+
+    public static bool TestPInvoke()
+    {
+        // WASM-TODO enable once we have generated pinvoke and in-tree native re-link
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            if (sumTwoInts(1, 2) != 3)
+                return false;
+
+            double summed = sumTwoDoubles(1, 2);
+            if (summed != 3)
+                return false;
+
+            // Test marshaling wrappers
+            writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+        }
+
+        bool caught = false;
+        try {
+            Console.WriteLine("calling missingPInvoke");
+            missingPInvoke();
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #1");
+            caught = true;
+        }
+
+        if (!caught)
+            return false;
+
+        bool caught2 = false;
+        try {
+            Console.WriteLine("calling missingPInvokeWithMarshaling");
+            missingPInvokeWithMarshaling("test");
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #2");
+            caught2 = true;
+        }
+
+        if (!caught2)
+            return false;
+
+        return true;
+    }
+
     public static bool TestArray()
     {
         // sbyte
@@ -2413,12 +2517,16 @@ public class InterpreterTest
         if (!ArrayUInt32(32, uint.MinValue)) return false;
         if (!ArrayUInt32(32, uint.MaxValue)) return false;
 
-        // // long
-        if (!ArrayInt64(0, 0)) return false;
-        if (!ArrayInt64(1, 1)) return false;
-        if (!ArrayInt64(32, 32)) return false;
-        if (!ArrayInt64(32, Int64.MinValue)) return false;
-        if (!ArrayInt64(32, Int64.MaxValue)) return false;
+        // active issue https://github.com/dotnet/runtime/issues/120659
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            // // long
+            if (!ArrayInt64(0, 0)) return false;
+            if (!ArrayInt64(1, 1)) return false;
+            if (!ArrayInt64(32, 32)) return false;
+            if (!ArrayInt64(32, Int64.MinValue)) return false;
+            if (!ArrayInt64(32, Int64.MaxValue)) return false;
+        }
 
         // float
         if (!ArrayFloat(0, 0)) return false;
@@ -2427,10 +2535,14 @@ public class InterpreterTest
         if (!ArrayFloat(32, float.MinValue)) return false;
         if (!ArrayFloat(32, float.MaxValue)) return false;
 
-        // double
-        if (!ArrayDouble(0, 0)) return false;
-        if (!ArrayDouble(1, 1)) return false;
-        if (!ArrayDouble(32, 32)) return false;
+        // active issue https://github.com/dotnet/runtime/issues/120659
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            // double
+            if (!ArrayDouble(0, 0)) return false;
+            if (!ArrayDouble(1, 1)) return false;
+            if (!ArrayDouble(32, 32)) return false;
+        }
 
         // ref and value types
         if (!TestObjectArray()) return false;
@@ -2854,18 +2966,22 @@ public class InterpreterTest
         }
 
 
-        GetCalliGeneric<object>()();
-        if (_typeFromFill != typeof(object))
+        // active issue https://github.com/dotnet/runtime/issues/120319
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
         {
-            Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
-            return false;
-        }
+            GetCalliGeneric<object>()();
+            if (_typeFromFill != typeof(object))
+            {
+                Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
+                return false;
+            }
 
-        GetCalliGeneric<string>()();
-        if (_typeFromFill != typeof(string))
-        {
-            Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
-            return false;
+            GetCalliGeneric<string>()();
+            if (_typeFromFill != typeof(string))
+            {
+                Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
+                return false;
+            }
         }
         return true;
     }
@@ -2905,5 +3021,73 @@ public class InterpreterTest
             return false;
 
         return true;
+    }
+
+    public static bool TestThreading_Interlocked_CompareExchange()
+    {
+        // Value type test
+        int location = 1;
+        int value = 2;
+        int comparand = 1;
+        int result = System.Threading.Interlocked.CompareExchange(ref location, value, comparand);
+        if (!(result == 1 && location == 2))
+            return false;
+
+        // Reference type test
+        object objLocation = "a";
+        object objValue = "b";
+        object objComparand = "a";
+        object objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objComparand) && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        // Reference type test (fail)
+        objLocation = "a";
+        objValue = "b";
+        objComparand = "c";
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(object.ReferenceEquals(objResult, objLocation) && object.ReferenceEquals(objLocation, "a")))
+            return false;
+
+        // Null reference test
+        objLocation = null;
+        objValue = "b";
+        objComparand = null;
+        objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
+        if (!(objResult is null && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        return true;
+    }
+
+    public static bool TestRuntimeHelpers_IsReferenceOrContainsReferences()
+    {
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<object>())
+            return false;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<int>())
+            return false;
+        if (!RuntimeHelpers.IsReferenceOrContainsReferences<int[]>())
+            return false;
+        return true;
+    }
+
+    public static bool TestMemoryMarshal_GetArrayDataReference()
+    {
+        int[] arr = new int[1];
+        ref int dataRef = ref MemoryMarshal.GetArrayDataReference(arr);
+        dataRef = 42;
+        if (arr[0] != 42)
+            return false;
+
+        arr = null;
+        try
+        {
+            MemoryMarshal.GetArrayDataReference(arr);
+            return false;
+        }
+        catch (NullReferenceException)
+        {
+            return true;
+        }
     }
 }

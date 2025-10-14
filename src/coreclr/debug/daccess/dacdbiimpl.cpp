@@ -914,7 +914,7 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 
     ULONG32 entryCount;
     BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                      InfoStoreNew, 
+                                                      InfoStoreNew,
                                                       NULL, // allocator
                                                       BoundsType::Uninstrumented,
                                                       &entryCount, &mapCopy,
@@ -935,6 +935,11 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 // Function Data
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+// Workaround for https://developercommunity.visualstudio.com/t/C-compiling-hangs-building-checked-bui/10974056 . Delete
+// once MSVC compiler with a fix is released.
+#ifdef _MSC_VER
+#pragma optimize("", off)
+#endif
 
 // GetILCodeAndSig returns the function's ILCode and SigToken given
 // a module and a token. The info will come from a MethodDesc, if
@@ -995,6 +1000,10 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
     *pLocalSigToken = GetILCodeAndSigHelper(pModule, pMethodDesc, functionToken, methodRVA, pCodeInfo);
 
 } // GetILCodeAndSig
+
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -3191,7 +3200,7 @@ HRESULT DacDbiInterfaceImpl::GetMethodDescPtrFromIpEx(TADDR funcIp, VMPTR_Method
     }
 
     // Otherwise try to see if a method desc is available for the method that isn't jitted by walking the code stubs.
-    MethodDesc* pMD = MethodTable::GetMethodDescForSlotAddress(PINSTRToPCODE(funcIp));
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(PINSTRToPCODE(funcIp));
 
     if (pMD == NULL)
         return E_INVALIDARG;
@@ -3423,9 +3432,9 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForJitCodeHeaps(CQuickArrayList<COR_
 {
     // We should always have a valid EEJitManager with at least one code heap.
     EEJitManager *pEM = ExecutionManager::GetEEJitManager();
-    _ASSERTE(pEM != NULL && pEM->m_pCodeHeap.IsValid());
+    _ASSERTE(pEM != NULL && pEM->m_pAllCodeHeaps.IsValid());
 
-    PTR_HeapList pHeapList = pEM->m_pCodeHeap;
+    PTR_HeapList pHeapList = pEM->m_pAllCodeHeaps;
     while (pHeapList != NULL)
     {
         CodeHeap *pHeap = pHeapList->pHeap;
@@ -4963,9 +4972,21 @@ void DacDbiInterfaceImpl::Hijack(
     // Setup context for hijack
     //
     T_CONTEXT ctx;
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS) && (defined(DTCONTEXT_IS_AMD64) || defined(DTCONTEXT_IS_ARM64))
+    // If the host or target is not Windows, then we can assume that the DT_CONTEXT
+    // is the same as the T_CONTEXT, except for the XSTATE registers.
+    static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT does not include the XSTATE registers");
+#else
+    // Since Dac + DBI are tightly coupled, context sizes should be the same.
+    static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
+#endif
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
-        CONTEXT_FULL,
+        CONTEXT_FULL | CONTEXT_FLOATING_POINT
+#ifdef CONTEXT_EXTENDED_REGISTERS
+        | CONTEXT_EXTENDED_REGISTERS
+#endif
+        ,
         sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
@@ -5503,7 +5524,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
                 {
                     UpdateContextFromRegDisp(&tmpRd, &tmpContext);
                     CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
-                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL 
+                    pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
                                                 | DT_CONTEXT_INTEGER  // DT_CONTEXT_INTEGER is needed to include the frame register on ARM32 and AMD64 architectures
                                                                       // DT_CONTEXT_CONTROL already includes the frame register for X86 and ARM64 architectures
@@ -7184,7 +7205,7 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
         *pOptimizationsDisabled = activeILVersion.IsDeoptimized();
     }
 #else
-    pOptimizationsDisabled->SetDacTargetPtr(0);
+    *pOptimizationsDisabled = FALSE;
 #endif
 
     return S_OK;
@@ -7310,6 +7331,23 @@ HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+}
+
+HRESULT DacDbiInterfaceImpl::GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (vmModule.IsNull() || pVmDomainAssembly == NULL)
+        return E_INVALIDARG;
+
+    Module *pModule = vmModule.GetDacPtr();
+    if (pModule == NULL)
+        return E_INVALIDARG;
+
+    *pVmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    pVmDomainAssembly->SetHostPtr(pModule->GetDomainAssembly());
+
+    return S_OK;
 }
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)

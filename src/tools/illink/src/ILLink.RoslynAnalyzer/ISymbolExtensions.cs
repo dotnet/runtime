@@ -61,7 +61,7 @@ namespace ILLink.RoslynAnalyzer
             if (!TryGetAttribute(symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
                 return DynamicallyAccessedMemberTypes.None;
 
-            return (DynamicallyAccessedMemberTypes)dynamicallyAccessedMembers!.ConstructorArguments[0].Value!;
+            return (DynamicallyAccessedMemberTypes)dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
         }
 
         internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesOnReturnType(this IMethodSymbol methodSymbol)

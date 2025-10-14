@@ -7,7 +7,7 @@
 #include "openum.h"
 #include <stdint.h>
 
-#include "intopsshared.h"
+#include <intopsshared.h>
 
 typedef enum
 {
@@ -120,5 +120,13 @@ inline double getR8LittleEndian(const uint8_t* ptr)
     int64_t val = getI8LittleEndian(ptr);
     return *(double*)&val;
 }
+
+// The implementation of syncrhonized methods is done by injecting
+// a try/finally block around the method body, and having some special
+// logic in the finally block and at the actual return for the method.
+// We use a couple of special "intrinsic" tokens to represent these operations.
+// These are recognized by our implementation of the CALL opcode.
+const uint32_t INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT = 0xFFFFFFFE;
+const uint32_t INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED = 0xFFFFFFFF;
 
 #endif

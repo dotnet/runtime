@@ -21,6 +21,9 @@ using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.
 
 namespace System.Runtime.Serialization.DataContracts
 {
+    /// <summary>
+    /// Represents a data contract that defines serialization and deserialization behavior for types.
+    /// </summary>
     public abstract class DataContract
     {
         internal const string SerializerTrimmerWarning = "Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the " +
@@ -46,6 +49,9 @@ namespace System.Runtime.Serialization.DataContracts
             _ns = helper.Namespace;
         }
 
+        /// <summary>
+        /// Gets the contract type name for this data contract.
+        /// </summary>
         public virtual string? ContractType => null;
 
         internal MethodInfo? ParseMethod => _helper.ParseMethod;
@@ -190,24 +196,36 @@ namespace System.Runtime.Serialization.DataContracts
             throw new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the data contract represents a value type.
+        /// </summary>
         public virtual bool IsValueType
         {
             get => _helper.IsValueType;
             internal set => _helper.IsValueType = value;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the data contract is serialized by reference.
+        /// </summary>
         public virtual bool IsReference
         {
             get => _helper.IsReference;
             internal set => _helper.IsReference = value;
         }
 
+        /// <summary>
+        /// Gets the XML qualified name for the data contract.
+        /// </summary>
         public virtual XmlQualifiedName XmlName
         {
             get => _helper.XmlName;
             internal set => _helper.XmlName = value;
         }
 
+        /// <summary>
+        /// Gets the base data contract for this data contract.
+        /// </summary>
         public virtual DataContract? BaseContract
         {
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -316,7 +334,6 @@ namespace System.Runtime.Serialization.DataContracts
 
             [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             private readonly Type _underlyingType;
-            private Type? _originalUnderlyingType;
             private bool _isValueType;
             private GenericInfo? _genericInfo;
             private XmlQualifiedName _xmlName = null!; // XmlName is always set in concrete ctors set except for the "invalid" CollectionDataContract
@@ -730,6 +747,10 @@ namespace System.Runtime.Serialization.DataContracts
                             dataContract = new TimeSpanDataContract();
                         else if (type == typeof(Guid))
                             dataContract = new GuidDataContract();
+                        else if (type == typeof(DateOnly))
+                            dataContract = new DateOnlyDataContract();
+                        else if (type == typeof(TimeOnly))
+                            dataContract = new TimeOnlyDataContract();
                         else if (type == typeof(Enum) || type == typeof(ValueType))
                         {
                             dataContract = new SpecialTypeDataContract(type, DictionaryGlobals.ObjectLocalName, DictionaryGlobals.SchemaNamespace);
@@ -847,6 +868,10 @@ namespace System.Runtime.Serialization.DataContracts
                         dataContract = new GuidDataContract();
                     else if (DictionaryGlobals.CharLocalName.Value == name)
                         dataContract = new CharDataContract();
+                    else if (DictionaryGlobals.DateOnlyLocalName.Value == name)
+                        dataContract = new DateOnlyDataContract();
+                    else if (DictionaryGlobals.TimeOnlyLocalName.Value == name)
+                        dataContract = new TimeOnlyDataContract();
                     else if ("ArrayOfanyType" == name)
                         dataContract = new CollectionDataContract(typeof(Array));
                 }
@@ -949,7 +974,7 @@ namespace System.Runtime.Serialization.DataContracts
             [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             internal Type UnderlyingType => _underlyingType;
 
-            internal Type OriginalUnderlyingType => _originalUnderlyingType ??= GetDataContractOriginalType(_underlyingType);
+            internal Type OriginalUnderlyingType => field ??= GetDataContractOriginalType(_underlyingType);
 
             internal virtual bool IsBuiltInDataContract => false;
 

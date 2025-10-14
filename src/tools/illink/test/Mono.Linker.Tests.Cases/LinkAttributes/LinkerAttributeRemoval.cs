@@ -18,8 +18,8 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
     [SetupCompileBefore("copyattribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeFromCopyAssembly.cs" })]
     [SetupLinkerAction("copy", "copyattribute")]
 #if !NET
-	[Reference ("System.dll")]
-	[SetupCompileBefore ("copyassembly.dll", new[] { "Dependencies/LinkerAttributeRemovalCopyAssembly.cs" }, references: new[] { "System.dll", "attribute.dll" })]
+    [Reference("System.dll")]
+    [SetupCompileBefore("copyassembly.dll", new[] { "Dependencies/LinkerAttributeRemovalCopyAssembly.cs" }, references: new[] { "System.dll", "attribute.dll" })]
 #else
     [SetupCompileBefore("copyassembly.dll", new[] { "Dependencies/LinkerAttributeRemovalCopyAssembly.cs" }, references: new[] { "attribute.dll" })]
 #endif
@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
     [KeptTypeInAssembly("LinkerAttributeRemovalEmbeddedAndLazyLoad.dll", typeof(TypeWithEmbeddedAttributeToBeRemoved))]
     // This needs to fixed with lazy loading assembly refactoring - currently the assembly="*" only applies to assemblies in initial closure
     // The attribute should be removed and not kept as it is now
-    // [RemovedAttributeInAssembly ("LinkerAttributeRemovalEmbeddedAndLazyLoad.dll", typeof (EmbeddedAttributeToBeRemoved), typeof (TypeWithEmbeddedAttributeToBeRemoved))]
+    // [RemovedAttributeInAssembly("LinkerAttributeRemovalEmbeddedAndLazyLoad.dll", typeof(EmbeddedAttributeToBeRemoved), typeof(TypeWithEmbeddedAttributeToBeRemoved))]
     [KeptAttributeInAssembly("LinkerAttributeRemovalEmbeddedAndLazyLoad", typeof(EmbeddedAttributeToBeRemoved), typeof(TypeWithEmbeddedAttributeToBeRemoved))]
 
     [LogContains("IL2045: Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TypeOnCopyAssemblyWithAttributeUsage.TypeOnCopyAssemblyWithAttributeUsage(): Attribute 'Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeReferencedAsTypeFromCopyAssemblyAttribute'")]

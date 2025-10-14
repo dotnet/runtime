@@ -17,7 +17,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 try
                 {
-                    return Name;
+                    return GetName();
                 }
                 catch
                 {
@@ -31,7 +31,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 try
                 {
-                    return Namespace;
+                    return GetNamespace();
                 }
                 catch
                 {

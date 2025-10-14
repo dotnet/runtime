@@ -30,7 +30,12 @@ namespace Internal.Cryptography
 #if NET
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
-        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
+        public static bool IsDSASupported =>
+            !OperatingSystem.IsIOS() &&
+            !OperatingSystem.IsTvOS() &&
+            !OperatingSystem.IsMacOS() &&
+            !OperatingSystem.IsMacCatalyst() &&
+            !OperatingSystem.IsBrowser();
 #else
         public static bool IsDSASupported => true;
 #endif
@@ -51,6 +56,14 @@ namespace Internal.Cryptography
             !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
             true;
+#endif
+
+        [SupportedOSPlatformGuard("windows")]
+        internal static bool IsOSPlatformWindows =>
+#if NETFRAMEWORK
+                true;
+#else
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
 
         [return: NotNullIfNotNull(nameof(src))]
@@ -100,19 +113,64 @@ namespace Internal.Cryptography
             return false;
         }
 
-        internal static int HashOidToByteLength(string hashOid)
+        private static int? TryGetHashOidToByteLength(ReadOnlySpan<char> hashOid)
         {
-            // This file is compiled in netstandard2.0, can't use the HashSizeInBytes consts.
             return hashOid switch
             {
-                Oids.Sha256 => 256 >> 3,
-                Oids.Sha384 => 384 >> 3,
-                Oids.Sha512 => 512 >> 3,
-                Oids.Sha1 => 160 >> 3,
-                Oids.Md5 => 128 >> 3,
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashOid)),
+                Oids.Md5 => 128 / 8,
+                Oids.Sha1 => 160 / 8,
+                Oids.Sha256 => 256 / 8,
+                Oids.Sha384 => 384 / 8,
+                Oids.Sha512 => 512 / 8,
+                Oids.Sha3_256 => 256 / 8,
+                Oids.Sha3_384 => 384 / 8,
+                Oids.Sha3_512 => 512 / 8,
+                Oids.Shake128 => 256 / 8,
+                Oids.Shake256 => 512 / 8,
+                _ => null,
             };
         }
+
+        internal static int HashOidToByteLength(string hashOid)
+        {
+            return TryGetHashOidToByteLength(hashOid) ??
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashOid));
+        }
+
+#if !BUILDING_PKCS
+        /// <summary>
+        /// Validates if the hash length matches the expected output size for the given hash algorithm OID.
+        /// When the OID is not one of the common hash algorithms, it only validates the format of the OID.
+        /// </summary>
+        internal static void ValidateHashLength(ReadOnlySpan<byte> hash, ReadOnlySpan<char> hashAlgorithmOid)
+        {
+            int? outputSize = TryGetHashOidToByteLength(hashAlgorithmOid);
+
+            if (outputSize is not null)
+            {
+                if (hash.Length != outputSize)
+                {
+                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
+                }
+            }
+            else
+            {
+                // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
+                const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
+
+                try
+                {
+                    // Only the format of the OID is validated here. The derived classes can decide to do more if they want to.
+                    writer.WriteObjectIdentifier(hashAlgorithmOid);
+                }
+                catch (ArgumentException ae)
+                {
+                    throw new CryptographicException(SR.Cryptography_HashLengthMismatch, ae);
+                }
+            }
+        }
+#endif
 
         internal static bool HashAlgorithmRequired(string? keyAlgorithm)
         {
@@ -211,5 +269,18 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
+
+#if !BUILDING_PKCS
+        internal static void ThrowIfDestinationWrongLength(
+            Span<byte> destination,
+            int expectedLength,
+            [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(destination))] string? paramName = null)
+        {
+            if (destination.Length != expectedLength)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_DestinationImprecise, expectedLength), paramName);
+            }
+        }
+#endif
     }
 }

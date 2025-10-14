@@ -18,7 +18,6 @@ To build the runtime repo, you will also need to install the following dependenc
 
 - `CMake` 3.20 or newer
 - `icu4c`
-- `openssl@1.1` or `openssl@3`
 - `pkg-config`
 - `python3`
 - `ninja` (This one is optional. It is an alternative tool to `make` for building native code)

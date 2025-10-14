@@ -133,6 +133,117 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaSignPreEncoded(
+            SafeEvpPKeyHandle pkey, IntPtr extraHandle,
+            ReadOnlySpan<byte> msg, int msgLength,
+            Span<byte> destination, int destinationLength);
+
+        internal static void MLDsaSignPreEncoded(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> msg,
+            Span<byte> destination)
+        {
+            int ret = CryptoNative_MLDsaSignPreEncoded(
+                pkey, GetExtraHandle(pkey),
+                msg, msg.Length,
+                destination, destination.Length);
+
+            if (ret != 1)
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaVerifyPreEncoded(
+            SafeEvpPKeyHandle pkey, IntPtr extraHandle,
+            ReadOnlySpan<byte> msg, int msgLength,
+            ReadOnlySpan<byte> signature, int signatureLength);
+
+        internal static bool MLDsaVerifyPreEncoded(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> msg,
+            ReadOnlySpan<byte> signature)
+        {
+            int ret = CryptoNative_MLDsaVerifyPreEncoded(
+                pkey, GetExtraHandle(pkey),
+                msg, msg.Length,
+                signature, signature.Length);
+
+            if (ret == 1)
+            {
+                return true;
+            }
+            else if (ret == 0)
+            {
+                return false;
+            }
+            else
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaSignExternalMu(
+            SafeEvpPKeyHandle pkey, IntPtr extraHandle,
+            ReadOnlySpan<byte> mu, int muLength,
+            Span<byte> destination, int destinationLength);
+
+        internal static void MLDsaSignExternalMu(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> mu,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+            const int SigningFailure = 0;
+
+            int ret = CryptoNative_MLDsaSignExternalMu(
+                pkey, GetExtraHandle(pkey),
+                mu, mu.Length,
+                destination, destination.Length);
+
+            if (ret != Success)
+            {
+                Debug.Assert(ret == SigningFailure, $"Unexpected return value {ret} from {nameof(CryptoNative_MLDsaSignExternalMu)}.");
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaVerifyExternalMu(
+            SafeEvpPKeyHandle pkey, IntPtr extraHandle,
+            ReadOnlySpan<byte> mu, int muLength,
+            ReadOnlySpan<byte> signature, int signatureLength);
+
+        internal static bool MLDsaVerifyExternalMu(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> mu,
+            ReadOnlySpan<byte> signature)
+        {
+            const int ValidSignature = 1;
+            const int InvalidSignature = 0;
+
+            int ret = CryptoNative_MLDsaVerifyExternalMu(
+                pkey, GetExtraHandle(pkey),
+                mu, mu.Length,
+                signature, signature.Length);
+
+            if (ret == ValidSignature)
+            {
+                return true;
+            }
+            else if (ret == InvalidSignature)
+            {
+                return false;
+            }
+            else
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaExportSecretKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
         [LibraryImport(Libraries.CryptoNative)]

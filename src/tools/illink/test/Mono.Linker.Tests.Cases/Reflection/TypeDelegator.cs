@@ -54,8 +54,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicFields))]
         static void TestDataFlowPropagation(
-            [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             Type typeWithPublicMethods = null)
         {
             var typeDelegator = new System.Reflection.TypeDelegator(typeWithPublicMethods);

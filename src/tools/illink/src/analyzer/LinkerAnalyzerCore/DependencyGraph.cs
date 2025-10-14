@@ -69,12 +69,12 @@ namespace LinkerAnalyzer.Core
                     switch (reader.NodeType)
                     {
                         case XmlNodeType.Element:
-                            // Console.WriteLine (reader.Name);
+                            // Console.WriteLine(reader.Name);
                             if (reader.Name == "edge" && reader.IsStartElement())
                             {
                                 string b = reader.GetAttribute("b");
                                 string e = reader.GetAttribute("e");
-                                //Console.WriteLine ("edge value " + b + "  -->  " + e);
+                                //Console.WriteLine("edge value " + b + "  -->  " + e);
 
                                 if (e != b)
                                 {
@@ -85,13 +85,13 @@ namespace LinkerAnalyzer.Core
                                     if (!end.parentIndexes.Contains(begin.index))
                                     {
                                         end.parentIndexes.Add(begin.index);
-                                        //Console.WriteLine (" end parent index: {0}", end.parentIndexes);
+                                        //Console.WriteLine(" end parent index: {0}", end.parentIndexes);
                                     }
                                 }
                             }
                             break;
                         default:
-                            //Console.WriteLine ("node: " + reader.NodeType);
+                            //Console.WriteLine("node: " + reader.NodeType);
                             break;
                     }
                 }
@@ -115,7 +115,7 @@ namespace LinkerAnalyzer.Core
                 counts[prefix] = count + 1;
             else
                 counts[prefix] = 1;
-            //Console.WriteLine ("prefix " + prefix + " count " + counts[prefix]);
+            //Console.WriteLine("prefix " + prefix + " count " + counts[prefix]);
             if (prefix == "TypeDef")
             {
                 Types.Add(vertex);

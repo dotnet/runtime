@@ -443,7 +443,19 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
         INLINE_GETTHREAD // result in rax, it can thrash all argument registers as it can call a helper
         mov             r10, rax
+        test            rax, rax
+        jz              LOCAL_LABEL(NoManagedThread)
 
+        mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
+        test            rax, rax
+        jnz             LOCAL_LABEL(HaveInterpThreadContext)
+
+LOCAL_LABEL(NoManagedThread):
+        mov             rcx, r10
+        call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
+
+LOCAL_LABEL(HaveInterpThreadContext):
+        mov             r10, qword ptr [rax + OFFSETOF__InterpThreadContext__pStackPointer]
         // Load the InterpMethod pointer from the IR bytecode
         mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
@@ -463,8 +475,6 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         movsd           xmm6, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x60]
         movsd           xmm7, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x70]
         lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
-        mov             r10, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
-        mov             r10, qword ptr [r10 + OFFSETOF__InterpThreadContext__pStackPointer]
         lea             rax, [rsp + __PWTB_TransitionBlock]
         // rbx contains IR bytecode address
         // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
@@ -1701,7 +1711,7 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
         alloc_stack 0x10
-        save_reg_postrsp r10, 0 
+        save_reg_postrsp r10, 0
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list

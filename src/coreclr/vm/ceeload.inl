@@ -338,21 +338,21 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #include "nibblestream.h"
 
-FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods)
+FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods)
 {
     WRAPPER_NO_CONTRACT;
 
     COUNT_T nImportSections;
     PTR_READYTORUN_IMPORT_SECTION pImportSections = GetImportSections(&nImportSections);
 
-    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetReadyToRunImage(), mayUsePrecompiledNDirectMethods);
+    return FixupDelayListAux(pFixupList, this, &Module::FixupNativeEntry, pImportSections, nImportSections, GetReadyToRunImage(), mayUsePrecompiledPInvokeMethods);
 }
 
 template<typename Ptr, typename FixupNativeEntryCallback>
 BOOL Module::FixupDelayListAux(TADDR pFixupList,
                                Ptr pThis, FixupNativeEntryCallback pfnCB,
                                PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                               PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods)
+                               PEDecoder * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -442,7 +442,7 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
         {
             CONSISTENCY_CHECK(fixupIndex * sizeof(TADDR) < cbData);
 
-            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledNDirectMethods))
+            if (!(pThis->*pfnCB)(pImportSection, fixupIndex, dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR)), mayUsePrecompiledPInvokeMethods))
                 return FALSE;
 
             int delta = reader.ReadEncodedU32();

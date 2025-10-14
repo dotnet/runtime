@@ -142,8 +142,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 [Kept]
                 public MyReflectOverType(
-                    [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
                     Type type)
                 {
                     _underlyingType = type;

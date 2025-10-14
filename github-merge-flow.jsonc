@@ -15,6 +15,11 @@
         "release/9.0":{
             "MergeToBranch": "release/9.0-staging",
             "ExtraSwitches": "-QuietComments"
+        },
+        // Automate merging runtime release/10.0-rc1 branch into release/10.0
+        "release/10.0-rc1":{
+            "MergeToBranch": "release/10.0",
+            "ExtraSwitches": "-QuietComments"
         }
     }
 }

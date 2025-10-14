@@ -69,41 +69,6 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void File_ExistsNoDirectorySeparator_RoutesToSDK()
-        {
-            // Create a file named "build" in the current directory to simulate a file that happens to match the name of a command
-            string buildFile = Path.Combine(sharedTestState.BaseDirectory.Location, "build");
-            File.WriteAllText(buildFile, string.Empty);
-
-            // Test that "dotnet build" still routes to SDK, not to the file
-            TestContext.BuiltDotNet.Exec("build")
-                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Fail()
-                .And.HaveStdErrContaining("The command could not be loaded, possibly because:") // This is a generic error for when we can't tell what exactly the user intended to do
-                .And.HaveStdErrContaining("Resolving SDKs");
-        }
-
-        [Fact]
-        public void RelativePathToNonManagedFile_ShowsSpecificError()
-        {
-            // Test relative path with directory separator
-            Directory.CreateDirectory(Path.Combine(sharedTestState.BaseDirectory.Location, "subdir"));
-            string testFile = Path.Combine(sharedTestState.BaseDirectory.Location, "subdir", "test.json");
-            File.WriteAllText(testFile, "{}");
-
-            string relativePath = Path.GetRelativePath(sharedTestState.BaseDirectory.Location, testFile);
-            TestContext.BuiltDotNet.Exec(relativePath)
-                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{relativePath}' is not a managed .dll.");
-        }
-
-        [Fact]
         public void InvalidFileOrCommand_NoSDK_ListsPossibleIssues()
         {
             string fileName = "NonExistent";

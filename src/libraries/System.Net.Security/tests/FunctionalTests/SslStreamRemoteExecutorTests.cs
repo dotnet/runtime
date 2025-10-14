@@ -83,31 +83,5 @@ namespace System.Net.Security.Tests
                 Assert.True(File.ReadAllText(tempFile).Length == 0);
             }
         }
-
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void DefaultRevocationMode_OfflineRevocationByDefault_True_UsesNoCheck(bool useEnvVar)
-        {
-            var psi = new ProcessStartInfo();
-            if (useEnvVar)
-            {
-                psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT", "true");
-            }
-
-            Assert.Equal(X509RevocationMode.Online, new SslClientAuthenticationOptions().CertificateRevocationCheckMode);
-            Assert.Equal(X509RevocationMode.Online, new SslServerAuthenticationOptions().CertificateRevocationCheckMode);
-
-            RemoteExecutor.Invoke(useEnvVar =>
-            {
-                if (!bool.Parse(useEnvVar))
-                {
-                    AppContext.SetSwitch("System.Net.Security.NoRevocationCheckByDefault", true);
-                }
-
-                Assert.Equal(X509RevocationMode.NoCheck, new SslClientAuthenticationOptions().CertificateRevocationCheckMode);
-                Assert.Equal(X509RevocationMode.NoCheck, new SslServerAuthenticationOptions().CertificateRevocationCheckMode);
-            }, useEnvVar.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
-        }
     }
 }

@@ -195,6 +195,9 @@ namespace System
         internal const string QueryableMinByMaxByTSourceObsoleteMessage = "The Queryable MinBy and MaxBy taking an IComparer<TSource> are obsolete. Use the new ones that take an IComparer<TKey>.";
         internal const string QueryableMinByMaxByTSourceObsoleteDiagId = "SYSLIB0061";
 
+        internal const string XsltSettingsEnableScriptMessage = "XSLT Script blocks are not supported.";
+        internal const string XsltSettingsEnableScriptDiagId = "SYSLIB0062";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

@@ -74,7 +74,8 @@ export function call_entry_point (main_assembly_name: string, program_args: stri
 
         return promise;
     } finally {
-        Module.stackRestore(sp); // synchronously
+        // synchronously
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
 }
 
@@ -90,7 +91,8 @@ export function load_satellite_assembly (dll: Uint8Array): void {
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
         invoke_sync_jsexport(managedExports.LoadSatelliteAssembly, args);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -109,7 +111,8 @@ export function load_lazy_assembly (dll: Uint8Array, pdb: Uint8Array | null): vo
         marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
         invoke_sync_jsexport(managedExports.LoadLazyAssembly, args);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -132,7 +135,8 @@ export function release_js_owned_object_by_gc_handle (gc_handle: GCHandle) {
             invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
         }
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -157,7 +161,8 @@ export function complete_task (holder_gc_handle: GCHandle, error?: any, data?: a
         }
         invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.CompleteTask, args, size);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -203,7 +208,8 @@ export function call_delegate (callback_gc_handle: GCHandle, arg1_js: any, arg2_
             return res_converter(res);
         }
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -223,7 +229,8 @@ export function get_managed_stack_trace (exception_gc_handle: GCHandle) {
         const res = get_arg(args, 1);
         return marshal_string_to_js(res);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -341,7 +348,8 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         }
         return promise;
     } finally {
-        Module.stackRestore(sp); // synchronously
+        // synchronously
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
 }
 

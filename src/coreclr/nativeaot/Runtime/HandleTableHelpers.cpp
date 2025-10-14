@@ -6,6 +6,7 @@
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
 #include "gchandleutilities.h"
+#include "interoplibinterface.h"
 
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
@@ -61,6 +62,27 @@ FCIMPLEND
 FCIMPL2(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     RestrictedCallouts::UnregisterRefCountedHandleCallback(pCallout, pTypeFilter);
+}
+FCIMPLEND
+
+FCIMPL2(OBJECTHANDLE, RhpHandleAllocCrossReference, Object *pPrimary, void *pContext)
+{
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleWithExtraInfo(pPrimary, HNDTYPE_CROSSREFERENCE, pContext);
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, RhHandleTryGetCrossReferenceContext, OBJECTHANDLE handle, void **pContext)
+{
+    *pContext = nullptr;
+
+    IGCHandleManager* gcHandleManager = GCHandleUtilities::GetGCHandleManager();
+    if (gcHandleManager->HandleFetchType(handle) != HNDTYPE_CROSSREFERENCE)
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pContext = gcHandleManager->GetExtraInfoFromHandle(handle);
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 

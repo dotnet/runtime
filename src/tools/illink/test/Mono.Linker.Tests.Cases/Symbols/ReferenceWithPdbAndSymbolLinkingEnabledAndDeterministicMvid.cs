@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
     [SetupLinkerArgument("--deterministic", "true")]
 
 #if WIN32
-	[KeptSymbols ("LibraryWithPdb.dll")]
+    [KeptSymbols("LibraryWithPdb.dll")]
 #else
     [RemovedSymbols("LibraryWithPdb.dll")]
 #endif

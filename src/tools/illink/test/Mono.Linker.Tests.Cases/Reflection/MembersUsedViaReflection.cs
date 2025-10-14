@@ -71,13 +71,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         [Kept]
-        private static void TestDataFlowWithAnnotation([KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-            [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors |
-                                         DynamicallyAccessedMemberTypes.PublicEvents |
-                                         DynamicallyAccessedMemberTypes.PublicFields |
-                                         DynamicallyAccessedMemberTypes.PublicMethods |
-                                         DynamicallyAccessedMemberTypes.PublicProperties |
-                                         DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type type)
+        private static void TestDataFlowWithAnnotation([KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+                                        DynamicallyAccessedMemberTypes.PublicEvents |
+                                        DynamicallyAccessedMemberTypes.PublicFields |
+                                        DynamicallyAccessedMemberTypes.PublicMethods |
+                                        DynamicallyAccessedMemberTypes.PublicProperties |
+                                        DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type type)
         {
             var properties = type.GetMembers(BindingFlags.Public | BindingFlags.Static);
         }

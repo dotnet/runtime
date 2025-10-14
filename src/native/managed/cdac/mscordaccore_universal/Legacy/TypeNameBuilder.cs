@@ -119,7 +119,7 @@ internal struct TypeNameBuilder
         }
         else
         {
-            module = loader.GetModuleHandle(runtimeTypeSystem.GetModule(th));
+            module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
             MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
             MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
             stringBuilder.Append(reader.GetString(methodDef.Name));
@@ -226,7 +226,7 @@ internal struct TypeNameBuilder
             }
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
             {
-                Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePointer);
+                Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                 MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 var handle = (GenericParameterHandle)MetadataTokens.Handle((int)genericParamToken);
                 GenericParameter genericParam = reader.GetGenericParameter(handle);
@@ -280,7 +280,7 @@ internal struct TypeNameBuilder
             {
                 // ...otherwise it's just a plain type def or an instantiated type
                 uint typeDefToken = typeSystemContract.GetTypeDefToken(typeHandle);
-                Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandle(typeSystemContract.GetModule(typeHandle));
+                Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(typeSystemContract.GetModule(typeHandle));
                 if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
                     tnb.AddName("(dynamicClass)");
@@ -311,7 +311,7 @@ internal struct TypeNameBuilder
             {
                 TargetPointer modulePtr = typeSystemContract.GetModule(typeHandle);
 
-                Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePtr);
+                Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
 
                 MetadataReader mr = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;

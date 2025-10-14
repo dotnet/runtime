@@ -386,7 +386,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData((string)null, true)]
         [InlineData("test", false)]
-        public static void TaskMethodBuilderRef_UsesCompletedCache(string result, bool shouldBeCached)
+        public static void TaskMethodBuilderRef_UsesCompletedCache(string? result, bool shouldBeCached)
         {
             TaskMethodBuilderT_UsesCompletedCache(result, shouldBeCached);
         }

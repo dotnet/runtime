@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 #if RootLibraryVisibleForwarders
-[assembly: TypeForwardedTo (typeof (ExternalPublic))]
+[assembly: TypeForwardedTo(typeof(ExternalPublic))]
 #endif
 
 namespace Mono.Linker.Tests.Cases.Libraries

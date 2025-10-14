@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.Extensions.DependencyModel;
@@ -58,7 +59,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The application '{appOtherExt}' is not a managed .dll.");
+                .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
         }
 
         [Fact]
@@ -325,12 +326,50 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
 
             command.EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The library '{Binaries.HostPolicy.FileName}' required to execute the application was not found")
                 .And.HaveStdErrContaining("Failed to run as a self-contained app")
                 .And.HaveStdErrContaining($"'{app.RuntimeConfigJson}' did not specify a framework");
+        }
+
+        [Fact]
+        public void MissingFrameworkName()
+        {
+            TestApp app = sharedTestState.MockApp.Copy();
+
+            // Create a runtimeconfig.json with a framework that has no name property
+            var framework = new RuntimeConfig.Framework(null, TestContext.MicrosoftNETCoreAppVersion);
+            new RuntimeConfig(app.RuntimeConfigJson)
+                .WithFramework(framework)
+                .Save();
+
+            Command.Create(app.AppExe)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"No framework name specified: {framework.ToJson().ToJsonString(new JsonSerializerOptions { WriteIndented = false })}")
+                .And.HaveStdErrContaining($"Invalid runtimeconfig.json [{app.RuntimeConfigJson}]");
+        }
+
+        [Fact]
+        public void MissingFrameworkVersion()
+        {
+            TestApp app = sharedTestState.MockApp.Copy();
+
+            // Create a runtimeconfig.json with a framework that has no version property
+            new RuntimeConfig(app.RuntimeConfigJson)
+                .WithFramework(Constants.MicrosoftNETCoreApp, null)
+                .Save();
+
+            Command.Create(app.AppExe)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"Framework '{Constants.MicrosoftNETCoreApp}' is missing a version")
+                .And.HaveStdErrContaining($"Invalid runtimeconfig.json [{app.RuntimeConfigJson}]");
         }
 
         [Theory]

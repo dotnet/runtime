@@ -392,7 +392,7 @@ namespace System.Formats.Asn1
         {
             try
             {
-#if NET8_0_OR_GREATER
+#if NET
                 return encoding.TryGetChars(source, destination, out charsWritten);
 #else
                 if (source.Length == 0)

@@ -331,6 +331,12 @@ ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) {
     return (currentValue - 1);
 }
 
+int64_t
+ep_rt_aot_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value) {
+    STATIC_CONTRACT_NOTHROW;
+    return static_cast<int64_t>(PalInterlockedCompareExchange64 ((volatile int64_t *)target, (int64_t)value, (int64_t)expected));
+}
+
 size_t
 ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) {
     STATIC_CONTRACT_NOTHROW;
@@ -513,10 +519,7 @@ int64_t
 ep_rt_aot_system_timestamp_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    FILETIME value;
-    PalGetSystemTimeAsFileTime (&value);
-    return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+    return minipal_get_system_time();
 }
 
 int32_t

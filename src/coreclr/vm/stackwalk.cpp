@@ -45,6 +45,44 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark)
+{
+#ifdef FEATURE_INTERPRETER
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (stackMark == NULL)
+        return NULL;
+
+    if ((stackMark < pThread->GetCachedStackLimit()) || stackMark > pThread->GetCachedStackBase())
+    {
+        PTR_Frame pFrame = pThread->GetFrame();
+        while (pFrame != FRAME_TOP)
+        {
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pFrame);
+                PTR_InterpMethodContextFrame pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+                PTR_InterpMethodContextFrame pCurrent = pTopInterpMethodContextFrame;
+                do
+                {
+                    if (dac_cast<PTR_VOID>(pCurrent->pStack) <= stackMark)
+                    {
+                        return dac_cast<PTR_VOID>(dac_cast<TADDR>(pCurrent) + 1);
+                    }
+                    pCurrent = pCurrent->pParent;
+                } while (pCurrent != NULL);
+                
+            }
+
+            pFrame = pFrame->PtrNextFrame();
+        }
+
+        _ASSERTE(!"Unable to find InterpMethodContextFrame for stackMark that appears to be on the interpreter stack");
+    }
+#endif
+    return stackMark;
+}
+
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1049,9 +1087,6 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_fDidFuncletReportGCReferences = true;
     m_isRuntimeWrappedExceptions = false;
 #endif // FEATURE_EH_FUNCLETS
-    m_forceReportingWhileSkipping = ForceGCReportingStage::Off;
-    m_movedPastFirstExInfo = false;
-    m_fFuncletNotSeen = false;
     m_fFoundFirstFunclet = false;
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
@@ -1113,7 +1148,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 #endif // FEATURE_HIJACK
 
     // FRAME_TOP must not be 0/NULL.
-    static_assert_no_msg(FRAME_TOP_VALUE != 0);
+    static_assert(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -1282,7 +1317,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         // 0012e884 ntdll32!DbgBreakPoint
         // 0012e89c CLRStub[StubLinkStub]@1f0ac1e
         // 0012e8a4     invalid ESP of Foo() according to the REGDISPLAY specified by the debuggers
-        // 0012e8b4     address of transition frame (NDirectMethodFrameStandalone)
+        // 0012e8b4     address of transition frame (PInvokeMethodFrameStandalone)
         // 0012e8c8     real ESP of Foo() according to the transition frame
         // 0012e8d8 managed!Dummy.Foo()+0x20
         //
@@ -1399,8 +1434,6 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFilterFuncletCached = false;
     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
     m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
-    m_crawl.fShouldSaveFuncletInfo = false;
-    m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = false;
 #endif // FEATURE_EH_FUNCLETS
 
     m_crawl.pThread = this->m_pThread;
@@ -1515,6 +1548,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
     SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
     SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+#ifdef FEATURE_INTERPRETER
+    // May contain InterpreterFrame address
+    SetFirstArgReg(pRD->pCurrentContext, GetFirstArgReg(pOtherRD->pCurrentContext));
+#endif
+
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     pRD->SSP = pOtherRD->SSP;
 #endif
@@ -1533,6 +1571,10 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
         *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
         SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
         SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
+#ifdef FEATURE_INTERPRETER
+        // May contain InterpreterFrame address
+        SetFirstArgReg(pRD->pCallerContext, GetFirstArgReg(pOtherRD->pCallerContext));
+#endif
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
@@ -1624,33 +1666,6 @@ StackWalkAction StackFrameIterator::Filter(void)
 
         SIZE_T frameSP = (m_frameState == SFITER_FRAME_FUNCTION) ? (SIZE_T)dac_cast<TADDR>(m_crawl.pFrame) : m_crawl.GetRegisterSet()->SP;
 
-        if ((m_flags & GC_FUNCLET_REFERENCE_REPORTING) && (pExInfo != NULL) && (frameSP > (SIZE_T)pExInfo))
-        {
-            if (!m_movedPastFirstExInfo)
-            {
-                if ((pExInfo->m_passNumber == 2) && !pExInfo->m_csfEnclosingClause.IsNull() && m_sfFuncletParent.IsNull() && pExInfo->m_lastReportedFunclet.IP != 0)
-                {
-                    // We are in the 2nd pass and we have already called an exceptionally called
-                    // finally funclet and reported that to GC in a previous GC run. But we have
-                    // not seen any funclet on the call stack yet.
-                    // Simulate that we have actualy seen a finally funclet during this pass and
-                    // that it didn't report GC references to ensure that the references will be
-                    // reported by the parent correctly.
-                    m_sfFuncletParent = (StackFrame)pExInfo->m_csfEnclosingClause;
-                    m_sfParent = m_sfFuncletParent;
-                    m_fProcessNonFilterFunclet = true;
-                    m_fDidFuncletReportGCReferences = false;
-                    m_fFuncletNotSeen = true;
-                    STRESS_LOG3(LF_GCROOTS, LL_INFO100,
-                                        "STACKWALK: Moved over first ExInfo @ %p in second pass, SP: %p, Enclosing clause: %p\n",
-                                        pExInfo, (void*)m_crawl.GetRegisterSet()->SP, (void*)m_sfFuncletParent.SP);
-                }
-                m_movedPastFirstExInfo = true;
-            }
-        }
-
-        m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = false;
-
         // by default, there is no funclet for the current frame
         // that reported GC references
         m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
@@ -1658,8 +1673,6 @@ StackWalkAction StackFrameIterator::Filter(void)
         // By default, assume that we are going to report GC references for this
         // CrawlFrame
         m_crawl.fShouldCrawlframeReportGCReferences = true;
-
-        m_crawl.fShouldSaveFuncletInfo = false;
 
         // By default, assume that parent frame is going to report GC references from
         // the actual location reported by the stack walk.
@@ -1770,14 +1783,6 @@ ProcessFuncletsForGCReporting:
                                         // can use it.
                                         m_sfParent = m_sfIntermediaryFuncletParent;
                                         fSkipFuncletCallback = false;
-
-                                        if (!ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
-                                        {
-                                            // Initiate force reporting of references in the new managed exception handling code frames.
-                                            // These frames are still alive when we are in a finally funclet.
-                                            m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame;
-                                            STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame while processing filter funclet\n");
-                                        }
                                     }
                                 }
                             }
@@ -1816,26 +1821,6 @@ ProcessFuncletsForGCReporting:
                                         // Set the parent frame so that the funclet skipping logic (further below)
                                         // can use it.
                                         m_sfParent = m_sfFuncletParent;
-
-                                        if (!m_fFoundFirstFunclet && (pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet())) && ((void*)m_sfParent.SP > pExInfo))
-                                        {
-                                            // For the first funclet we encounter below the topmost ExInfo that has a parent above that ExInfo
-                                            // (so it is an exceptionally called funclet for the exception represented by the ExInfo),
-                                            // we instruct the GC scanning of the frame
-                                            // to save information on the funclet so that we can use it to report references in the parent frame if
-                                            // no such funclet is found in future GC scans for the same exception.
-                                            _ASSERTE(pExInfo != NULL);
-                                            m_crawl.fShouldSaveFuncletInfo = true;
-                                            m_fFoundFirstFunclet = true;
-                                        }
-
-                                        if (!fFrameWasUnwound && !ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
-                                        {
-                                            // Initiate force reporting of references in the new managed exception handling code frames.
-                                            // These frames are still alive when we are in a finally funclet.
-                                            m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame;
-                                            STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame\n");
-                                        }
 
                                         // For non-filter funclets, we will make the callback for the funclet
                                         // but skip all the frames until we reach the parent method. When we do,
@@ -2029,14 +2014,6 @@ ProcessFuncletsForGCReporting:
                                         }
                                         else if (!m_crawl.IsFunclet())
                                         {
-                                            if (m_fFuncletNotSeen)
-                                            {
-                                                // We have reached a real parent of a funclet that would be on the stack if GC didn't
-                                                // kick in between the calls to funclets in the second pass. We instruct GC to report
-                                                // roots using the info of the saved funclet we've seen during a previous GC.
-                                                m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = true;
-                                                m_fFuncletNotSeen = false;
-                                            }
                                             // we've reached the parent and it's not handling an exception, it's also not
                                             // a funclet so reset our state.  note that we cannot reset the state when the
                                             // parent is a funclet since the leaf funclet didn't report any references and
@@ -2104,7 +2081,7 @@ ProcessFuncletsForGCReporting:
                         }
                         else if (fSkipFuncletCallback && (m_flags & GC_FUNCLET_REFERENCE_REPORTING))
                         {
-                            if (!m_sfParent.IsNull() && (m_forceReportingWhileSkipping == ForceGCReportingStage::Off))
+                            if (!m_sfParent.IsNull())
                             {
                                 STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                      "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
@@ -2117,22 +2094,6 @@ ProcessFuncletsForGCReporting:
                                 // don't stop here
                                 break;
                             }
-
-                            if (m_forceReportingWhileSkipping == ForceGCReportingStage::LookForManagedFrame)
-                            {
-                                // State indicating that the next marker frame should turn off the reporting again. That would be the caller of the managed RhThrowEx
-                                m_forceReportingWhileSkipping = ForceGCReportingStage::LookForMarkerFrame;
-                                STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForMarkerFrame\n");
-                            }
-
-#ifdef _DEBUG
-                            if (m_forceReportingWhileSkipping != ForceGCReportingStage::Off)
-                            {
-                                STRESS_LOG3(LF_GCROOTS, LL_INFO100,
-                                    "STACKWALK: Force callback for skipped function m_crawl.pFunc = %pM (%s.%s)\n", m_crawl.pFunc, m_crawl.pFunc->m_pszDebugClassName, m_crawl.pFunc->m_pszDebugMethodName);
-                                _ASSERTE((m_crawl.pFunc->GetMethodTable() == g_pEHClass) || (strcmp(m_crawl.pFunc->m_pszDebugClassName, "ILStubClass") == 0) || (strcmp(m_crawl.pFunc->m_pszDebugMethodName, "CallFinallyFunclet") == 0) || (m_crawl.pFunc->GetMethodTable() == g_pExceptionServicesInternalCallsClass));
-                            }
-#endif
                         }
                     }
                 }
@@ -2225,11 +2186,6 @@ ProcessFuncletsForGCReporting:
                         _ASSERTE(m_crawl.isNativeMarker == true);
                         fStop = true;
                     }
-                }
-                if (m_forceReportingWhileSkipping == ForceGCReportingStage::LookForMarkerFrame)
-                {
-                    m_forceReportingWhileSkipping = ForceGCReportingStage::Off;
-                    STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::Off\n");
                 }
                 break;
 
@@ -2851,6 +2807,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     // Switch to walking the underlying interpreted frames.
                     // Save the registers the interpreter frames walking reuses so that we can restore them
                     // after we are done with the interpreter frames.
+                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p, saving SP=%p, IP=%p\n", m_crawl.pFrame, GetIP(pRD->pCurrentContext), GetSP(pRD->pCurrentContext)));
                     m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
                     m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                     m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
@@ -2870,6 +2827,8 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
                     // Restore the registers to the values they had before we started walking the interpreter frames.
+                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Completed walking of interpreted frames for InterpreterFrame %p, restoring SP=%p, IP=%p\n", m_crawl.pFrame, m_interpExecMethodSP, m_interpExecMethodIP));
+                    _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(pRD->pCurrentContext));
                     SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
                     SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
@@ -2877,11 +2836,10 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SyncRegDisplayToCurrentContext(pRD);
                 }
             }
-            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) &&
-                     (m_crawl.pFrame->PtrNextFrame() != FRAME_TOP) &&
-                     (m_crawl.pFrame->PtrNextFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && ((PTR_InlinedCallFrame)m_crawl.pFrame)->IsInInterpreter())
             {
-                // There is an active inlined call frame and the next frame is the interpreter frame. This is a special case where we need to save the current context registers that the interpreter frames walking reuses.
+                // There is an active inlined call frame localed in the interpreter code. This is a special case where we need
+                // to save the current context registers that the interpreter frames walking reuses.
                 m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
                 m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                 m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
@@ -2988,17 +2946,6 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
           )
     {
-        BOOL fReportInteropMD =
-        // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-        // was passed to the stub as its secret argument. This is the true interop MD.
-        // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-        // the call is made using the CALLI instruction.
-            m_crawl.pFrame != FRAME_TOP &&
-            m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame &&
-            m_crawl.pFunc != NULL &&
-            m_crawl.pFunc->IsILStub() &&
-            m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
-
         if (fHandleSkippedFrames)
         {
             m_crawl.GotoNextFrame();
@@ -3019,6 +2966,16 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
+            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
+            // was passed to the stub as its secret argument. This is the true interop MD.
+            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
+            // the call is made using the CALLI instruction.
+            bool fReportInteropMD =
+                m_crawl.pFrame != FRAME_TOP
+                && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
+                && m_crawl.pFunc != NULL
+                && m_crawl.pFunc->IsILStub()
+                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();

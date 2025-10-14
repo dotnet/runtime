@@ -4140,7 +4140,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		if (assembly) {
 			DebuggerTlsData *tls;
 			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
-			if (!CHECK_ICORDBG (TRUE) || tls->invoke == NULL) {
+			if (!CHECK_ICORDBG (TRUE) || !tls || tls->invoke == NULL) {
 				process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, assembly);
 			} else {
 				mono_dbg_assembly_load (prof, assembly); //send later

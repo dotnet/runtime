@@ -60,7 +60,7 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netstandard21.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">

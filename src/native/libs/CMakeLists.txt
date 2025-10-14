@@ -51,7 +51,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_WASI)
         set(HOST_WASI 1)
-        add_compile_options(-Wno-unused-variable)
         add_compile_options(-Wno-unused-parameter)
         add_compile_options(-Wno-gnu-statement-expression)
         add_compile_options(-DHOST_WASI)
@@ -59,9 +58,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-D_WASI_EMULATED_SIGNAL)
         add_compile_options(-D_WASI_EMULATED_MMAN)
         add_compile_options(-D_WASI_EMULATED_PTHREAD)
-        # keep in sync with src\mono\wasi\build\WasiApp.targets
-        # keep in sync with src\mono\wasi\wasi.proj
-        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread)
     endif ()
 
     if (CLR_CMAKE_TARGET_ANDROID)
@@ -90,6 +86,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
                 # -O2 optimization generates faster/smaller code on Android
                 # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
                 add_compile_options (-O2)
+            elseif (CLR_CMAKE_TARGET_BROWSER)
+                add_compile_options (-Oz)
             else()
                 add_compile_options (-O3)
             endif ()
@@ -112,16 +110,18 @@ endif ()
 
 add_subdirectory(System.IO.Compression.Native)
 
+# Only when Browser for CoreCLR
+if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
+    add_subdirectory(System.Native.Browser)
+    add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+endif ()
+
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)
 
     if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
-
-    if (MONO_WASM_MT)
-        add_definitions(-DMONO_WASM_MT)
-    endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Weverything)
@@ -150,18 +150,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
-    elseif (CLR_CMAKE_TARGET_MACCATALYST)
-        add_subdirectory(System.Net.Security.Native)
-        # System.Security.Cryptography.Native is intentionally disabled on iOS
-        # it is only used for interacting with OpenSSL which isn't useful there
-    elseif (CLR_CMAKE_TARGET_IOS)
-        add_subdirectory(System.Net.Security.Native)
-        # System.Security.Cryptography.Native is intentionally disabled on iOS
-        # it is only used for interacting with OpenSSL which isn't useful there
-    elseif (CLR_CMAKE_TARGET_TVOS)
-        #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
-        # System.Security.Cryptography.Native is intentionally disabled on tvOS
-        # it is only used for interacting with OpenSSL which isn't useful there
+    elseif (CLR_CMAKE_TARGET_APPLE)
+        if (NOT CLR_CMAKE_TARGET_TVOS) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+            add_subdirectory(System.Net.Security.Native)
+        endif ()
+
+        add_subdirectory(System.Security.Cryptography.Native.Apple)
     elseif (CLR_CMAKE_TARGET_ANDROID AND NOT FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native.Android)
     elseif (FORCE_ANDROID_OPENSSL)
@@ -169,9 +163,5 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     else ()
         add_subdirectory(System.Net.Security.Native)
         add_subdirectory(System.Security.Cryptography.Native)
-    endif ()
-
-    if (CLR_CMAKE_TARGET_APPLE)
-        add_subdirectory(System.Security.Cryptography.Native.Apple)
     endif ()
 endif ()

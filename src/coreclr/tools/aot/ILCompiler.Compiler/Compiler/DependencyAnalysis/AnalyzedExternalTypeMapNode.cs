@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach ((string key, TypeDesc type) in entries)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(type)));
+                Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MetadataTypeSymbol(type)));
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
             }
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (TypeDesc targetType in entries.Values)
             {
-                yield return new DependencyListEntry(context.MaximallyConstructableType(targetType), "Analyzed external type map entry target type");
+                yield return new DependencyListEntry(context.MetadataTypeSymbol(targetType), "Analyzed external type map entry target type");
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];

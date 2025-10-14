@@ -12,16 +12,11 @@ namespace System.ComponentModel.Design
     /// </summary>
     public abstract class DesignerOptionService : IDesignerOptionService
     {
-        private DesignerOptionCollection? _options;
-
         /// <summary>
         /// Returns the options collection for this service. There is
         /// always a global options collection that contains child collections.
         /// </summary>
-        public DesignerOptionCollection Options
-        {
-            get => _options ??= new DesignerOptionCollection(this, null, string.Empty, null);
-        }
+        public DesignerOptionCollection Options => field ??= new DesignerOptionCollection(this, null, string.Empty, null);
 
         /// <summary>
         /// Creates a new DesignerOptionCollection with the given name, and adds it to

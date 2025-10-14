@@ -253,6 +253,7 @@ System.Text.Encodings.Web|${ProductVersion}
 System.Text.Json|${ProductVersion}
 System.Text.RegularExpressions|4.3.1
 System.Threading|4.3.0
+System.Threading.AccessControl|${ProductVersion}
 System.Threading.Channels|${ProductVersion}
 System.Threading.Overlapped|4.3.0
 System.Threading.Tasks|4.3.0

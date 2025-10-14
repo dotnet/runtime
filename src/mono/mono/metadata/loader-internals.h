@@ -264,7 +264,7 @@ static inline MonoGCHandle
 mono_alc_get_gchandle_for_resolving (MonoAssemblyLoadContext *alc)
 {
 	/* for the default ALC, pass NULL to ask for the Default ALC - see
-	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
+	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchAssemblyLoadContext) - which
 	 * will create the managed ALC object if it hasn't been created yet
 	 */
 	if (alc->gchandle == mono_alc_get_default ()->gchandle)

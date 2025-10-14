@@ -146,5 +146,20 @@ namespace Mono.Linker
             int implicitThisOffset = method.HasImplicitThis() ? 1 : 0;
             return new ParameterProxyEnumerable(implicitThisOffset, method.Parameters.Count + implicitThisOffset, method);
         }
+
+        public static bool IsCompilerGenerated(this MethodDefinition field)
+        {
+            if (!field.HasCustomAttributes)
+                return false;
+
+            foreach (var ca in field.CustomAttributes)
+            {
+                var caType = ca.AttributeType;
+                if (caType.Name == "CompilerGeneratedAttribute" && caType.Namespace == "System.Runtime.CompilerServices")
+                    return true;
+            }
+
+            return false;
+        }
     }
 }
