@@ -427,8 +427,8 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
-                        Continuation nextContinuation = UnwindToPossibleHandler(continuation, ex);
-                        if (nextContinuation.Resume == null)
+                        Continuation handlerContinuation = UnwindToPossibleHandler(continuation, ex);
+                        if (handlerContinuation.Resume == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             bool successfullySet = ex is OperationCanceledException oce ?
@@ -480,7 +480,8 @@ namespace System.Runtime.CompilerServices
             {
                 while (true)
                 {
-                    if (continuation.Resume != null) AddContinuationToExInternal(continuation, ex);
+                    if (continuation.Resume != null)
+                        AddContinuationToExInternal(continuation, ex);
                     if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
                         return continuation;
 

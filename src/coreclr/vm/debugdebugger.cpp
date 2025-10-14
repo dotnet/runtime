@@ -918,6 +918,11 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 }
 #endif // !DACCESS_COMPILE
 
+BYTE* DebugInfoStoreNew2(void * pData, size_t cBytes)
+{
+    return new BYTE[cBytes];
+}
+
 void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                                                   GetStackFramesData *pData,
                                                   PTRARRAYREF * pDynamicMethodArray /*= NULL*/
@@ -990,13 +995,28 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // push frames and the method body is therefore non-contiguous.
                 // Currently such methods always return an IP of 0, so they're easy
                 // to spot.
-                DWORD dwNativeOffset;
+                DWORD dwNativeOffset = 0;
                 UINT_PTR ip = cur.ip;
                 if (cur.flags & STEF_CONTINUATION)
                 {
-                    // Continuation frames don't have a meaningful native offset.
-                    // here we populate it with the continuation index which was stored in SP :(
-                    dwNativeOffset = (DWORD)cur.sp;
+                    PCODE addr = 0;
+                    if (ip != (PCODE)NULL)
+                    {
+                        EECodeInfo codeInfo(ip);
+                        addr = codeInfo.GetStartAddress();
+                        if (codeInfo.IsValid())
+                        {
+                            DebugInfoRequest request;
+                            request.InitFromStartingAddr(pMD, addr);
+                            ICorDebugInfo::AsyncInfo asyncInfo = {};
+                            NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
+                            NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
+                            ULONG32 cAsyncVars = 0;
+                            DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew2, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
+                            dwNativeOffset = asyncSuspensionPoints[cur.sp].NativeOffset;
+                        }
+                    }
+                    ip = addr + dwNativeOffset;
                 }
 
                 else
@@ -1589,11 +1609,6 @@ void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, 
 // Initialization done outside the TSL.
 // This may need to call locking operations that aren't safe under the TSL.
 
-BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
-{
-    return new BYTE[cBytes];
-}
-
 void DebugStackTrace::Element::InitPass2()
 {
     CONTRACTL
@@ -1608,37 +1623,7 @@ void DebugStackTrace::Element::InitPass2()
 
     bool bRes = false;
 
-    if (this->pFunc->IsAsyncThunkMethod())
-    {
-        if (this->pFunc->IsDynamicMethod())
-        {
-            bRes = false;
-        }
-    }
-
-    if (this->flags & STEF_CONTINUATION)
-    {
-        PCODE addr = this->pFunc->GetNativeCode();
-        if (addr != (PCODE)NULL)
-        {
-            EECodeInfo codeInfo(addr);
-            if (codeInfo.IsValid())
-            {
-                DebugInfoRequest request;
-                request.InitFromStartingAddr(this->pFunc, addr);
-                ICorDebugInfo::AsyncInfo asyncInfo = {};
-                NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
-                NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
-                ULONG32 cAsyncVars = 0;
-                DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
-                this->dwILOffset = asyncSuspensionPoints[this->dwOffset].RootILOffset;
-                // leave native offset TBD, Noah
-            }
-        }
-        return;
-    }
-
-    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
+    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0 && !(this->flags & STEF_CONTINUATION);
 
     // Check the cache!
     uint32_t dwILOffsetFromCache;
