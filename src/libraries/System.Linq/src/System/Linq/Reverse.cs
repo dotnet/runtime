@@ -13,7 +13,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">The sequence whose elements should be reversed.</param>
-        /// <returns>An <see cref="IEnumerable{TSource}"/> that enumerates the elements of <paramref name="source"/> in reverse.</returns>
+        /// <returns>A sequence that enumerates the elements of <paramref name="source"/> in reverse.</returns>
         public static IEnumerable<TSource> Reverse<TSource>(this IEnumerable<TSource> source)
         {
             if (source is null)
