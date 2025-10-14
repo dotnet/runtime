@@ -97,11 +97,6 @@ open ./src/mono/sample/iOS/bin/<ios|iossimulator|maccatalyst>-arm64/Bundle/Hello
 > ```bash
 > xcrun simctl list devices
 > ```
->
-> If no simulators are available, create one using Xcode's Device Manager or the command line:
-> ```bash
-> xcrun simctl create "My iPhone" "iPhone 15" "iOS 17.0"
-> ```
 
 ## Building and running tests on a simulator
 
