@@ -4,6 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
     <XunitShowProgress Condition="'$(TargetOS)' == 'wasi'">true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>

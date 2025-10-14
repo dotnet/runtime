@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -148,7 +149,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void CanConfigureAppConfigurationFromFile()
         {
             var hostBuilder = new HostBuilder()
@@ -307,7 +308,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void RelativeContentRootIsResolved()
         {
             using (var host = new HostBuilder()
@@ -943,7 +944,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             // Verify that ApplicationName retains original value (not sanitized)
             Assert.Equal("my/app", hostEnvironment.ApplicationName);
-            
+
             // Verify that path separators are replaced with underscores for file loading
             Assert.Equal("PathSeparatorValue", configuration["TestKey"]);
         }

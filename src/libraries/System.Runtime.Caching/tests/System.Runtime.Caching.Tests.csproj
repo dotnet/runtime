@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
     <EventSourceSupport>true</EventSourceSupport>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

@@ -3,6 +3,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <EventSourceSupport>true</EventSourceSupport>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CookieTest.cs" />

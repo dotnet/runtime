@@ -7,6 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AutoGenerateBindingRedirects Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</AutoGenerateBindingRedirects>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,6 +9,7 @@
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

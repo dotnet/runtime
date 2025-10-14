@@ -115,7 +115,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT_RuntimeTests
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
