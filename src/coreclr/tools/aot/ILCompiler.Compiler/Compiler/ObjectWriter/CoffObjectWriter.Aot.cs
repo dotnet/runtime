@@ -89,7 +89,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         // Produce an associative COMDAT symbol.
                         xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, currentSymbolName, unwindSymbolName);
-                        pdataSectionWriter = GetOrCreateSection(PDataSection, currentSymbolName, null);
+                        pdataSectionWriter = GetOrCreateSection(ObjectNodeSection.PDataSection, currentSymbolName, null);
                     }
                     else
                     {
