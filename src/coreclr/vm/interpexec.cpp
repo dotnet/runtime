@@ -60,13 +60,13 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
     {
         // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
-        // from the PrepareInitialCode call chain.
+        // from the native method (QCALL) call chain.
         // We need to process only managed ones here, the C++ ones are handled by the
         // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
         GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GET_THREAD()->LastThrownObject();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY
@@ -727,7 +727,7 @@ static void CallPreStub(MethodDesc *pMD)
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
         GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GET_THREAD()->LastThrownObject();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY
