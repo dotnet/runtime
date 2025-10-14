@@ -38,7 +38,7 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
     sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    ASSERT(alloc_ptr <= cxt->getAllocLimit());
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
     if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
@@ -71,7 +71,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= cxt->getAllocLimit());
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
     if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
