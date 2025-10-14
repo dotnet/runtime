@@ -112,7 +112,8 @@ namespace AppHost.Bundle.Tests
 
         [Theory(
             SkipType = typeof(Binaries.CetCompat),
-            SkipUnless = nameof(Binaries.CetCompat.IsSupported))]
+            SkipUnless = nameof(Binaries.CetCompat.IsSupported),
+            Skip = "CET is not supported on this platform")]
         [InlineData(true)]
         [InlineData(false)]
         public void DisableCetCompat(bool selfContained)
