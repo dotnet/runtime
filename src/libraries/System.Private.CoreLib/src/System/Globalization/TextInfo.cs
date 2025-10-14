@@ -263,7 +263,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 // We could have just checked instance for being null instead of GlobalizationMode.Invariant, but:
-                // 1) GlobalizationMode.Invariant is substitable by ILLink (so the other branch can be trimmed away when true)
+                // 1) GlobalizationMode.Invariant is substitutable by ILLink (so the other branch can be trimmed away when true)
                 // 2) GlobalizationMode.Invariant triggers ICU load if it was not already loaded.
                 Debug.Assert(instance == null);
 
@@ -375,7 +375,7 @@ namespace System.Globalization
                     if (GlobalizationMode.Invariant)
                     {
                         // We could have just checked instance for being null instead of GlobalizationMode.Invariant, but:
-                        // 1) GlobalizationMode.Invariant is substitable by ILLink (so the other branch can be trimmed away when true)
+                        // 1) GlobalizationMode.Invariant is substitutable by ILLink (so the other branch can be trimmed away when true)
                         // 2) GlobalizationMode.Invariant triggers ICU load if it was not already loaded.
                         Debug.Assert(instance == null);
                         return toUpper ? InvariantModeCasing.ToUpper(source) : InvariantModeCasing.ToLower(source);
