@@ -262,11 +262,6 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                // We could have just checked instance for being null instead of GlobalizationMode.Invariant, but:
-                // 1) GlobalizationMode.Invariant is substitutable by ILLink (so the other branch can be trimmed away when true)
-                // 2) GlobalizationMode.Invariant triggers ICU load if it was not already loaded.
-                Debug.Assert(instance == null);
-
                 if (toUpper)
                 {
                     InvariantModeCasing.ToUpper(source, destination);
@@ -276,14 +271,15 @@ namespace System.Globalization
                     InvariantModeCasing.ToLower(source, destination);
                 }
             }
-            else
+
+            // instance being null means it's Invariant
+            instance ??= Invariant;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
             {
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
-                fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
-                {
-                    instance!.ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed,
-                        pDestination + charsConsumed, destination.Length - charsConsumed, toUpper);
-                }
+                instance!.ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed,
+                    pDestination + charsConsumed, destination.Length - charsConsumed, toUpper);
             }
         }
 
@@ -374,33 +370,31 @@ namespace System.Globalization
                 {
                     if (GlobalizationMode.Invariant)
                     {
-                        // We could have just checked instance for being null instead of GlobalizationMode.Invariant, but:
-                        // 1) GlobalizationMode.Invariant is substitutable by ILLink (so the other branch can be trimmed away when true)
-                        // 2) GlobalizationMode.Invariant triggers ICU load if it was not already loaded.
                         Debug.Assert(instance == null);
                         return toUpper ? InvariantModeCasing.ToUpper(source) : InvariantModeCasing.ToLower(source);
                     }
-                    else
+
+                    // We reached non-ASCII data *or* the requested culture doesn't map ASCII data the same way as the invariant culture.
+                    // In either case we need to fall back to the localization tables.
+
+                    string result = string.FastAllocateString(source.Length); // changing case uses simple folding: doesn't change UTF-16 code unit count
+
+                    if (currIdx > 0)
                     {
-                        // We reached non-ASCII data *or* the requested culture doesn't map ASCII data the same way as the invariant culture.
-                        // In either case we need to fall back to the localization tables.
-
-                        string result = string.FastAllocateString(source.Length); // changing case uses simple folding: doesn't change UTF-16 code unit count
-
-                        if (currIdx > 0)
-                        {
-                            // copy existing known-good data into the result
-                            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
-                            source.AsSpan(0, (int)currIdx).CopyTo(resultSpan);
-                        }
-
-                        // and run the culture-aware logic over the remainder of the data
-                        fixed (char* pResult = result)
-                        {
-                            instance!.ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
-                        }
-                        return result;
+                        // copy existing known-good data into the result
+                        Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+                        source.AsSpan(0, (int)currIdx).CopyTo(resultSpan);
                     }
+
+                    // instance being null means it's Invariant
+                    instance ??= Invariant;
+
+                    // and run the culture-aware logic over the remainder of the data
+                    fixed (char* pResult = result)
+                    {
+                        instance!.ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                    }
+                    return result;
                 }
             }
         }
