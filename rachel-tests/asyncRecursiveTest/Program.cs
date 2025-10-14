@@ -63,7 +63,7 @@ public class Program
         try
         {
         // await MyMethod2(3);
-            await V1Methods.Test(MyMethod);
+            await V1Methods.Test(MyMethod2);
         }
         catch (NotImplementedException ex)
         {
