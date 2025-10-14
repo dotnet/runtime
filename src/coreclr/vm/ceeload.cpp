@@ -434,10 +434,16 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     AllocateMaps();
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
+    if (IsSystem())
+        m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
+        if (m_pReadyToRunInfo->SkipTypeValidation())
+            m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
         if (m_pNativeImage != NULL)
         {
