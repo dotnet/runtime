@@ -269,6 +269,7 @@ namespace System.Globalization
                 {
                     InvariantModeCasing.ToLower(source, destination);
                 }
+                return;
             }
 
             // instance being null means it's Invariant
@@ -277,7 +278,7 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
             {
-                instance!.ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed,
+                instance.ChangeCaseCore(pSource + charsConsumed, source.Length - charsConsumed,
                     pDestination + charsConsumed, destination.Length - charsConsumed, toUpper);
             }
         }
@@ -389,7 +390,7 @@ namespace System.Globalization
                     // and run the culture-aware logic over the remainder of the data
                     fixed (char* pResult = result)
                     {
-                        instance!.ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        instance.ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
                     }
                     return result;
                 }
