@@ -6,6 +6,7 @@
 #include "callstubgenerator.h"
 #include "ecall.h"
 
+extern "C" void InjectInterpStackAlign();
 extern "C" void Load_Stack();
 extern "C" void Store_Stack();
 
@@ -1350,7 +1351,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 {
     STANDARD_VM_CONTRACT;
 
-    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
+    // Allocate space for the routines. The size of the array is conservatively set to three times the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
     size_t tempStorageSize = ComputeTempStorageSize(sig);
     PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
@@ -1408,6 +1409,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 {
 
     ArgIterator argIt(&sig);
+    int32_t interpreterStackOffset = 0;
 
     m_r1 = NoRange; // indicates that there is no active range of general purpose registers
     m_r2 = 0;
@@ -1431,6 +1433,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         // we need to "inject" it here.
         // CLR ABI specifies that unlike the native Windows x64 calling convention, it is passed in the first argument register.
         m_r1 = 0;
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
     if (argIt.HasParamType())
@@ -1442,6 +1445,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
         ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
     int ofs;
@@ -1452,6 +1456,53 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 #endif
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
+
+        // Each argument takes at least one slot on the interpreter stack
+        int interpStackSlotSize = INTERP_STACK_SLOT_SIZE;
+
+        // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
+        TypeHandle thArgTypeHandle;
+        if (argIt.GetArgType(&thArgTypeHandle) == ELEMENT_TYPE_VALUETYPE)
+        {
+            unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
+            if (align < INTERP_STACK_SLOT_SIZE)
+            {
+                align = INTERP_STACK_SLOT_SIZE;
+            }
+            else if (align > INTERP_STACK_ALIGNMENT)
+            {
+                align = INTERP_STACK_ALIGNMENT;
+            }
+            assert(align == 8 || align == 16); // At the moment, we can only have an 8 or 16 byte alignment requirement here
+            while (interpreterStackOffset != ALIGN_UP(interpreterStackOffset, align))
+            {
+                if (m_r1 != NoRange)
+                {
+                    pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
+                    m_r1 = NoRange;
+                }
+                else if (m_x1 != NoRange)
+                {
+                    pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
+                    m_x1 = NoRange;
+                }
+                else if (m_s1 != NoRange)
+                {
+                    pRoutines[m_routineIndex++] = GetStackRoutine();
+                    pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+                    m_s1 = NoRange;
+                }
+
+                interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+                pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
+#if LOG_COMPUTE_CALL_STUB
+                printf("Inject stack align argument\n");
+#endif
+            }
+
+            interpStackSlotSize = ALIGN_UP(thArgTypeHandle.GetSize(), align);
+        }
+        interpreterStackOffset += interpStackSlotSize;
 
 #ifdef UNIX_AMD64_ABI
         if (argIt.GetArgLocDescForStructInRegs() != NULL)
