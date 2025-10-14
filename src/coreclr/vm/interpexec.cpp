@@ -344,7 +344,11 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*);
 InterpThreadContext::InterpThreadContext()
 {
     // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
+#ifdef TARGET_UNIX
     pStackStart = pStackPointer = (int8_t*)aligned_alloc(INTERP_STACK_ALIGNMENT, INTERP_STACK_SIZE);
+#else // !TARGET_UNIX
+    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+#endif // TARGET_UNIX
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
 }
 
@@ -2594,10 +2598,10 @@ MAIN_LOOP:
                             break;
                         }
                     }
-                    
+
                     OBJECTREF targetMethodObj = (*delegateObj)->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
-                    
+
                     if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
                     {
                         // In this case targetMethod holds a pointer to the MethodDesc that will be called by using targetMethodObj as
