@@ -2808,10 +2808,8 @@ CALL_INTERP_METHOD:
                 case INTOP_ZEROBLK_IMM:
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
-                    if (!dst)
-                        COMPlusThrow(kNullReferenceException);
-                    else
-                        memset(dst, 0, ip[2]);
+                    NULL_CHECK(dst);
+                    memset(dst, 0, ip[2]);
                     ip += 3;
                     break;
                 }
@@ -2863,24 +2861,18 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_THROW:
                 {
-                    OBJECTREF throwable;
-                    if (LOCAL_VAR(ip[1], OBJECTREF) == NULL)
+                    OBJECTREF throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                    if (!throwable)
                     {
                         EEException ex(kNullReferenceException);
                         throwable = ex.CreateThrowable();
                     }
                     else
                     {
-                        throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                        NormalizeThrownObject(&throwable);
                     }
+
                     pInterpreterFrame->SetIsFaulting(true);
-
-                    if (throwable == 0)
-                    {
-                        DispatchManagedException(kNullReferenceException);
-                    }
-
-                    NormalizeThrownObject(&throwable);
                     DispatchManagedException(throwable);
                     UNREACHABLE();
                     break;
