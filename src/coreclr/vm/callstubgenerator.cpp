@@ -1405,14 +1405,6 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     }
 };
 
-enum class RoutineType
-{
-    None,
-    GPReg,
-    FPReg,
-    Stack
-};
-
 void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines)
 {
     if ((m_r1 != NoRange) && (type != RoutineType::GPReg))
