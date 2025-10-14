@@ -4,7 +4,7 @@
 
 #include <fcall.h>
 #include <gcinterface.h>
-#include "../gc/env/gcenv.ee.h"
+#include <vars.hpp>
 
 extern void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow);
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
@@ -80,7 +80,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
         if (requiresAlignObject)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->SetMethodTable(GCToEEInterface::GetFreeObjectMethodTable());
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += 12;
         }
         PtrArray* pObject = (PtrArray *)alloc_ptr;
