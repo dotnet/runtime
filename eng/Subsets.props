@@ -54,7 +54,7 @@
 
     <!-- Determine if we support running the .NET SDK on the target platform -->
     <_SdkToolsSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_SdkToolsSupportedOS>
-    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel'">true</_SdkToolsSupportedArch>
+    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel' and '$(TargetsWasm)' != 'true'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
