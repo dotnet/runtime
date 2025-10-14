@@ -29,6 +29,14 @@ if (args.Length > 1 && args[0] == "instantiate")
     {
         Console.WriteLine("Type deriving from TrimTarget instantiated.");
     }
+    else if (t is TrimTarget2)
+    {
+        Console.WriteLine("Type deriving from TrimTarget2 instantiated.");
+    }
+    else if (t is TrimTarget3)
+    {
+        Console.WriteLine("Type deriving from TrimTarget3 instantiated.");
+    }
 
     Console.WriteLine("Hash code of SourceClass instance: " + new SourceClass().GetHashCode());
     return -1;

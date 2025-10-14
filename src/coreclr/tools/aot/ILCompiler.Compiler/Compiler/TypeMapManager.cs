@@ -16,7 +16,6 @@ using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 
 namespace ILCompiler
 {
-
     /// <summary>
     /// This class is responsible for managing emitted data for type maps.
     /// </summary>
