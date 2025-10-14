@@ -244,16 +244,24 @@ namespace System.Reflection.Emit
             {
                 foreach (Type conv in conventions)
                 {
-                    if (conv == typeof(CallConvCdecl))
-                        callConv = SignatureCallingConvention.CDecl;
-                    else if (conv == typeof(CallConvStdcall))
-                        callConv = SignatureCallingConvention.StdCall;
-                    else if (conv == typeof(CallConvThiscall))
-                        callConv = SignatureCallingConvention.ThisCall;
-                    else if (conv == typeof(CallConvFastcall))
-                        callConv = SignatureCallingConvention.FastCall;
-                    else
-                        retModOpts.Add(conv);
+                    switch (conv.FullName)
+                    {
+                        case "System.Runtime.CompilerServices.CallConvCdecl":
+                            callConv = SignatureCallingConvention.CDecl;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvStdcall":
+                            callConv = SignatureCallingConvention.StdCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvThiscall":
+                            callConv = SignatureCallingConvention.ThisCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvFastcall":
+                            callConv = SignatureCallingConvention.FastCall;
+                            break;
+                        default:
+                            retModOpts.Add(conv);
+                            break;
+                    }
                 }
             }
 
