@@ -325,9 +325,17 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
     if (IsContinuation())
     {
-        *pDest = OBJECTREFToObject(GetParent().GetManagedClassObject());
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
         return;
     }
 
