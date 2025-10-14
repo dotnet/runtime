@@ -60,7 +60,7 @@
 
     <!-- Generate wasm-props.json -->
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
+      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-nontrapping-float-to-int;--enable-sign-ext" />
     </ItemGroup>
 
     <ItemGroup>
