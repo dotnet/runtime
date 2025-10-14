@@ -88,8 +88,8 @@
       Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
       upgrading compiler warnings to errors in release branches.
     -->
-    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" Importance="High"/>
-    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" Importance="High"/>
+    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <!-- 
@@ -164,8 +164,8 @@
       IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
       upgrading compiler warnings to errors in release branches.
     -->
-    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" Importance="High"/>
-    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(_NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" Importance="High"/>
+    <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"
