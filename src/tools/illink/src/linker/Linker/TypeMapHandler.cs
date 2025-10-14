@@ -314,7 +314,7 @@ namespace Mono.Linker
                     "TypeMapAttribute`1" =>
                         sourceType is null || context.Annotations.IsMarked(sourceType),
                     "TypeMapAssociationAttribute`1" =>
-                        context.Annotations.IsInstantiated(sourceType),
+                        context.Annotations.IsMarked(sourceType),
                     _ => false,
                 };
             }
