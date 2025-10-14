@@ -40,7 +40,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (trimTarget is null)
                     {
-                        // Unconditional
                         unconditional = true;
                         break;
                     }
