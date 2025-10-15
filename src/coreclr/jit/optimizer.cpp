@@ -2345,6 +2345,23 @@ void Compiler::optFindLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
+    // If we saw anything unusual when finding loops,
+    // find the SCCs.
+    if (m_loops->ImproperLoopHeaders() > 0)
+    {
+        JITDUMP("Improper headers detected, finding SCCs\n");
+        if (optFindSCCs())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+            // not guaranteed as this counts "non canonical loops" too
+            //
+            assert(m_loops->ImproperLoopHeaders() == 0);
+        }
+    }
+
     optCompactLoops();
 
     if (optCanonicalizeLoops())
@@ -2366,14 +2383,6 @@ void Compiler::optFindLoops()
     // loops by removing edges.
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
-
-    // If we saw anything unusual when finding loops,
-    // find the SCCs.
-    if (m_loops->ImproperLoopHeaders() > 0)
-    {
-        JITDUMP("Improper headers detected, finding SCCs\n");
-        optFindSCCs();
-    }
 }
 
 //-----------------------------------------------------------------------------
@@ -2876,6 +2885,7 @@ private:
     BitVec               m_entries;
     jitstd::vector<SCC*> m_nested;
     unsigned             m_numIrr;
+    weight_t             m_entryWeight;
 
 public:
 
@@ -2888,6 +2898,7 @@ public:
         , m_entries(BitVecOps::UninitVal())
         , m_nested(comp->getAllocator(CMK_DepthFirstSearch))
         , m_numIrr(0)
+        , m_entryWeight(0)
     {
         m_blocks  = BitVecOps::MakeEmpty(&m_traits);
         m_entries = BitVecOps::MakeEmpty(&m_traits);
@@ -2918,6 +2929,7 @@ public:
                 if (!BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
                 {
                     BitVecOps::AddElemD(&m_traits, m_entries, block->bbPostorderNum);
+                    m_entryWeight += block->bbWeight;
                     break;
                 }
             }
@@ -2956,7 +2968,14 @@ public:
         return m_numIrr;
     }
 
-    void Dump(Compiler* comp, int indent = 0)
+    // Weight of all the flow into entry blocks
+    //
+    weight_t TotalEntryWeight()
+    {
+        return m_entryWeight;
+    }
+
+    void Dump(int indent = 0)
     {
         BitVecOps::Iter iterator(&m_traits, m_blocks);
         unsigned int    poNum;
@@ -2987,10 +3006,15 @@ public:
             JITDUMP(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
         }
         JITDUMP("\n");
+    }
+
+    void DumpAll(int indent = 0)
+    {
+        Dump(indent);
 
         for (SCC* child : m_nested)
         {
-            child->Dump(comp, indent + 3);
+            child->DumpAll(indent + 3);
         }
     }
 
@@ -3013,11 +3037,124 @@ public:
             m_nested.push_back(nestedScc);
         }
     }
+
+    //-----------------------------------------------------------------------------
+    // TransformViaSwichDispatch: modify SCC into a reducible loop
+    //
+    // Notes:
+    //
+    //   A multi-entry SCC is modified as follows:
+    //   * each SCC header H is given an integer index H_i
+    //   * a new BBJ_SWITCH header block J is created
+    //   * a new control local K is allocated.
+    //   * each flow edge that targets one of the H is split
+    //   * In the split block K is assigned the value i
+    //   * Flow from the split block is modified to flow to J
+    //   * The switch in J transfers control to the headers H based on K
+    //
+    //   Optionally: if the source of an edge to a header is dominated by that header,
+    //   the edge can be left as is. (requires dominators)
+    //
+    //   (validate: all headers in same EH region, none can be a region entry)
+    //
+    bool TransformViaSwitchDispatch()
+    {
+        bool           modified   = false;
+        const unsigned numHeaders = NumEntries();
+
+        if (numHeaders > 1)
+        {
+            JITDUMP("Transforming SCC via switch dispatch: ");
+            JITDUMPEXEC(Dump());
+
+            modified                       = true;
+            const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("SCC control var"));
+            LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
+            controlVarDsc->lvType          = TYP_INT;
+            BasicBlock*      dispatcher    = nullptr;
+            FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
+
+            // Split edges, rewire flow, and add control var assignments
+            //
+            int             headerNumber = 0;
+            BitVecOps::Iter iterator(&m_traits, m_entries);
+            unsigned int    poHeaderNumber = 0;
+
+            while (iterator.NextElem(&poHeaderNumber))
+            {
+                BasicBlock* const header = m_comp->m_dfsTree->GetPostOrder(poHeaderNumber);
+                if (dispatcher == nullptr)
+                {
+                    dispatcher = m_comp->fgNewBBbefore(BBJ_SWITCH, header, true);
+                }
+
+                weight_t incomingWeight = 0;
+
+                for (FlowEdge* const f : header->PredEdgesEditing())
+                {
+                    assert(f->getDestinationBlock() == header);
+                    JITDUMP("  Splitting edge " FMT_BB " -> " FMT_BB "\n", f->getSourceBlock()->bbNum, header->bbNum);
+                    BasicBlock* const transferBlock   = m_comp->fgSplitEdge(f->getSourceBlock(), header);
+                    GenTree* const    targetIndex     = m_comp->gtNewIconNode(headerNumber);
+                    GenTree* const    storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
+
+                    incomingWeight += f->getLikelyWeight();
+
+                    m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
+                    m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
+                }
+
+                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+
+                // Since all flow to header now goes through dispatch, we know the likelihood
+                // of the dispatch targets, unless all profile data is zero.
+                //
+                if (TotalEntryWeight() > 0)
+                {
+                    dispatchToHeaderEdge->setLikelihood(incomingWeight / TotalEntryWeight());
+                }
+                else
+                {
+                    dispatchToHeaderEdge->setLikelihood(1.0 / numHeaders);
+                }
+
+                cases[headerNumber] = dispatchToHeaderEdge;
+                headerNumber++;
+            }
+
+            // Create the dispatch switch... all cases unique, no default
+            //
+            JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
+            BBswtDesc* const swtDesc =
+                new (m_comp, CMK_BasicBlock) BBswtDesc(cases, numHeaders, cases, numHeaders, /* hasDefault */ false);
+            dispatcher->SetSwitch(swtDesc);
+
+            GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+
+            m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+        }
+
+        // Handle nested SCCs
+        //
+        for (SCC* const nested : m_nested)
+        {
+            modified |= nested->TransformViaSwitchDispatch();
+        }
+
+        return modified;
+    }
 };
 
 typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SCC*> SCCMap;
 
-void Compiler::optFindSCCs()
+//-----------------------------------------------------------------------------
+// optFindSCCs: find strongly connected components in the flow graph
+//
+// Returns:
+//   true if the flow graph was modified
+//
+bool Compiler::optFindSCCs()
 {
     BitVecTraits traits(m_dfsTree->GetPostOrderCount(), this);
     BitVec       allBlocks = BitVecOps::MakeFull(&traits);
@@ -3035,7 +3172,7 @@ void Compiler::optFindSCCs()
         for (int i = 0; i < sccs.Height(); i++)
         {
             SCC* const scc = sccs.Bottom(i);
-            scc->Dump(this);
+            scc->DumpAll();
 
             numIrreducible += scc->NumIrr();
         }
@@ -3051,8 +3188,31 @@ void Compiler::optFindSCCs()
     }
 
     Metrics.IrreducibleLoopsFoundDuringOpts = (int)numIrreducible;
+
+    // Optionally try and remove them
+    //
+    bool modified = false;
+
+    if (JitConfig.JitRemoveIrreducibleLoops() == 1)
+    {
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            SCC* const scc = sccs.Bottom(i);
+            modified |= scc->TransformViaSwitchDispatch();
+        }
+    }
+
+    return modified;
 }
 
+//-----------------------------------------------------------------------------
+// optFindSCCs: find strongly connected components in a subgraph
+//
+// Arguments:
+//   subset - bv describing the subgraph
+//   traits - bv traits
+//   sccs   - [out] collection of SCCs found in this subgraph
+//
 void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs)
 {
     // Initially we map a block to a null entry in the map.

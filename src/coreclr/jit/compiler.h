@@ -7025,7 +7025,7 @@ public:
     void optFindLoops();
     bool optCanonicalizeLoops();
 
-    void optFindSCCs();
+    bool optFindSCCs();
     void optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs);
 
     void optCompactLoops();
