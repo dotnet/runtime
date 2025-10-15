@@ -70,7 +70,11 @@ class CallStubGenerator
         ReturnTypeVoid,
         ReturnTypeI8,
         ReturnTypeDouble,
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifndef TARGET_64BIT
+        ReturnTypeI4,
+        ReturnTypeFloat,
+#endif // TARGET_64BIT
+#if (defined(TARGET_WINDOWS) && defined(TARGET_AMD64)) || defined(TARGET_ARM)
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else
@@ -116,10 +120,10 @@ class CallStubGenerator
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
     PCODE GetStackRefRoutine();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
     PCODE GetStackRoutine();
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     PCODE GetStackRoutine_1B();
