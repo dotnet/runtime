@@ -310,44 +310,29 @@ namespace System.Net.Sockets
                     // Terminal flags (Disconnect, ReuseSocket) apply only to the final operation
                     TransmitFileOptions behaviorFlags = flags & ~(TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket);
 
-                    // Send preBuffer if present
-                    if (preBuffer.Length > 0)
-                    {
-                        bool success = TransmitFileHelper(handle, null, null, (IntPtr)prePinnedBuffer, preBuffer.Length, IntPtr.Zero, 0, behaviorFlags);
-                        if (!success)
-                        {
-                            return GetLastSocketError();
-                        }
-                    }
-
-                    // Send file in chunks of int.MaxValue bytes
-                    long offset = 0;
                     long remaining = fileLength;
+                    bool isFirstChunk = true;
+
                     while (remaining > 0)
                     {
                         int chunkSize = (int)Math.Min(remaining, int.MaxValue);
+                        bool isLastChunk = remaining == chunkSize;
 
-                        // Set the file pointer to the current offset
-                        if (!Interop.Kernel32.SetFilePointerEx(fileHandle!, offset, out _, 0 /* FILE_BEGIN */))
-                        {
-                            return GetLastSocketError();
-                        }
+                        // For the first chunk, include preBuffer; for the last chunk, include postBuffer
+                        IntPtr preBufferPtr = isFirstChunk ? (IntPtr)prePinnedBuffer : IntPtr.Zero;
+                        int preBufferLen = isFirstChunk ? preBuffer.Length : 0;
+                        IntPtr postBufferPtr = isLastChunk ? (IntPtr)postPinnedBuffer : IntPtr.Zero;
+                        int postBufferLen = isLastChunk ? postBuffer.Length : 0;
+                        TransmitFileOptions currentFlags = isLastChunk ? flags : behaviorFlags;
 
-                        bool success = TransmitFileHelper(handle, fileHandle, null, IntPtr.Zero, 0, IntPtr.Zero, 0, behaviorFlags, chunkSize);
+                        bool success = TransmitFileHelper(handle, fileHandle, null, preBufferPtr, preBufferLen, postBufferPtr, postBufferLen, currentFlags, chunkSize);
                         if (!success)
                         {
                             return GetLastSocketError();
                         }
 
-                        offset += chunkSize;
                         remaining -= chunkSize;
-                    }
-
-                    // Send postBuffer with all flags (behavior + terminal flags apply to last operation)
-                    bool finalSuccess = TransmitFileHelper(handle, null, null, IntPtr.Zero, 0, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
-                    if (!finalSuccess)
-                    {
-                        return GetLastSocketError();
+                        isFirstChunk = false;
                     }
 
                     return SocketError.Success;
