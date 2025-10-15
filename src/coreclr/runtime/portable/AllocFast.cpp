@@ -53,6 +53,7 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
     return AllocateObject(pMT, 0, size);
 }
 
+#if defined(FEATURE_64BIT_ALIGNMENT)
 static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
@@ -70,7 +71,8 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     size_t paddedSize = sizeInBytes;
     if (requiresAlignObject)
     {
-        paddedSize += 12;
+        // We are assuming that allocation of minimal object flips the alignment
+        paddedSize += MIN_OBJECT_SIZE;
     }
 
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
@@ -97,7 +99,6 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
 
-#ifndef HOST_64BIT
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
     if (size > 0x10000)
@@ -105,10 +106,10 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
         // Overflow here should result in an OOM. Let the slow path take care of it.
         return AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
     }
-#endif // !HOST_64BIT
 
     return NewArrayFastAlign8Core(pMT, size);
 }
+#endif // FEATURE_64BIT_ALIGNMENT
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
 {
