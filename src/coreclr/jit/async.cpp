@@ -1201,8 +1201,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 #ifdef DEBUG
     if (m_comp->verbose)
     {
-        printf("Getting continuation layout size = %u, numGCRefs = %u (Continuation_%s_%u_%u)\n", layout.Size,
-               bitmapBuilder.NumObjRefs, m_comp->info.compMethodName, layout.Size, bitmapBuilder.NumObjRefs);
+        printf("Getting continuation layout size = %u, numGCRefs = %u\n", layout.Size, bitmapBuilder.NumObjRefs);
         bool* start        = objRefs;
         bool* endOfObjRefs = objRefs + layout.Size / TARGET_POINTER_SIZE;
         while (start < endOfObjRefs)
@@ -1230,6 +1229,11 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     offsets.ContinuationContext = layout.ContinuationContextOffset;
     offsets.KeepAlive           = keepAliveOffset;
     layout.ClassHnd             = m_comp->info.compCompHnd->getContinuationType(layout.Size, objRefs, offsets);
+
+#ifdef DEBUG
+    char buffer[256];
+    JITDUMP("  Result = %s\n", m_comp->eeGetClassName(layout.ClassHnd, buffer, ArrLen(buffer)));
+#endif
 
     return layout;
 }
