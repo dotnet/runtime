@@ -67,7 +67,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    int requiresAlignObject = ((uint32_t)alloc_ptr) & 7;
+    bool requiresAlignObject = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
     size_t paddedSize = sizeInBytes;
     if (requiresAlignObject)
     {
@@ -83,7 +83,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
         {
             Object* dummy = (Object*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
-            alloc_ptr += 12;
+            alloc_ptr += MIN_OBJECT_SIZE;
         }
         PtrArray* pObject = (PtrArray *)alloc_ptr;
         pObject->SetMethodTable(pMT);
