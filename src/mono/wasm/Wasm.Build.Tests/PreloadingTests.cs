@@ -19,16 +19,20 @@ public class PreloadingTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void PreloadAssets(bool isPublish, bool fingerprintDotnetJs)
+    [InlineData(false, false, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, true, true)]
+    public void PreloadAssets(bool isPublish, bool fingerprintDotnetJs, bool preloadAssets)
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "PreloadAssets");
 
-        string extraMSBuildArgs = $"-p:WasmFingerprintDotnetJs={fingerprintDotnetJs}";
+        string extraMSBuildArgs = $"-p:WasmFingerprintDotnetJs={fingerprintDotnetJs.ToString().ToLower()} -p:WasmPreloadAssets={preloadAssets.ToString().ToLower()}";
         if (isPublish)
             PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintDotnetJs);
         else
@@ -52,17 +56,20 @@ public class PreloadingTests : WasmTemplateTestsBase
         Assert.True(File.Exists(indexHtmlPath));
         string indexHtmlContent = File.ReadAllText(indexHtmlPath);
 
-        Assert.Equal(1, CountOccurrences(indexHtmlContent, "rel=\"preload\""));
-        if (fingerprintDotnetJs)
+        Assert.Equal(preloadAssets ? 1 : 0, CountOccurrences(indexHtmlContent, "rel=\"preload\""));
+        if (preloadAssets)
         {
-            // Expect to find fingerprinted preload
-            Assert.Contains("<link href=\"_framework/dotnet", indexHtmlContent);
-            Assert.DoesNotContain("<link href=\"_framework/dotnet.js\"", indexHtmlContent);
-        }
-        else
-        {
-            // Expect to find non-fingerprinted preload
-            Assert.Contains("<link href=\"_framework/dotnet.js\"", indexHtmlContent);
+            if (fingerprintDotnetJs)
+            {
+                // Expect to find fingerprinted preload
+                Assert.Contains("<link href=\"_framework/dotnet", indexHtmlContent);
+                Assert.DoesNotContain("<link href=\"_framework/dotnet.js\"", indexHtmlContent);
+            }
+            else
+            {
+                // Expect to find non-fingerprinted preload
+                Assert.Contains("<link href=\"_framework/dotnet.js\"", indexHtmlContent);
+            }
         }
     }
 
