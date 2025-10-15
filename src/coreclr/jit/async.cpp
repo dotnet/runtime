@@ -1166,7 +1166,8 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 #endif
 
     // Now create continuation type. First create bitmap of object refs.
-    bool* objRefs = layout.Size < TARGET_POINTER_SIZE ? nullptr : new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE]{};
+    bool* objRefs =
+        layout.Size < TARGET_POINTER_SIZE ? nullptr : new (m_comp, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE]{};
 
     GCPointerBitMapBuilder bitmapBuilder(objRefs, layout.Size);
     bitmapBuilder.SetIfNotMax(layout.ExceptionOffset);
