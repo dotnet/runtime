@@ -185,9 +185,15 @@ namespace System.Net.Quic.Tests
         {
             FileStream file = new FileStream("/proc/net/route", FileMode.Open, FileAccess.Read);
 
-            System.Console.WriteLine($"FileStream is of type: {file.GetType()}");
-            System.Console.WriteLine($"Seekable: {file.CanSeek}");
-            System.Console.WriteLine($"Current Position: {file.Seek(1, SeekOrigin.Current)}");
+System.Console.WriteLine($"Position: {file.Position}, CanSeek: {file.CanSeek}, Length: {file.Length}");
+
+file.Position = 1;
+
+System.Console.WriteLine($"SafeFileHandle: {file.SafeFileHandle}");
+
+System.Console.WriteLine($"Position: {file.Position}, CanSeek: {file.CanSeek}, Length: {file.Length}");
+file.ReadByte();
+System.Console.WriteLine($"Position: {file.Position}, CanSeek: {file.CanSeek}, Length: {file.Length}");
 
             X509Certificate2 certificate = _certificates.ServerCert;
             X509Certificate2Collection chain = _certificates.ServerChain;
