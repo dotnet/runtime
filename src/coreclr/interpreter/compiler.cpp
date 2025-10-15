@@ -960,6 +960,31 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
     return ip;
 }
 
+void ValidateEmittedSequenceTermination(InterpInst *lastIns)
+{
+    if (lastIns == NULL)
+        return;
+
+    if (InterpOpIsUncondBranch(lastIns->opcode) ||
+        (lastIns->opcode == INTOP_RET) ||
+        (lastIns->opcode == INTOP_RET_VOID) ||
+        (lastIns->opcode == INTOP_RET_VT) ||
+        (lastIns->opcode == INTOP_THROW) ||
+        (lastIns->opcode == INTOP_THROW_PNSE) ||
+        (lastIns->opcode == INTOP_CALL_TAIL) ||
+        (lastIns->opcode == INTOP_CALLI_TAIL) ||
+        (lastIns->opcode == INTOP_CALLVIRT_TAIL) ||
+        (lastIns->opcode == INTOP_RETHROW) ||
+        (lastIns->opcode == INTOP_LEAVE_FILTER) ||
+        (lastIns->opcode == INTOP_LEAVE_CATCH))
+    {
+        // Valid terminating instruction
+        return;
+    }
+
+    BADCODE("Emitted code sequence does not end with a terminating instruction");
+}
+
 void InterpCompiler::EmitCode()
 {
     TArray<Reloc*, MemPoolAllocator> relocs(GetMemPoolAllocator());
@@ -1005,14 +1030,19 @@ void InterpCompiler::EmitCode()
     do
     {
         emittedBlock = false;
+        InterpInst *lastEmittedIns = NULL;
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
             if (bb->overlappingEHClauseCount == clauseDepth)
             {
                 ip = EmitBBCode(ip, bb, &relocs);
+                lastEmittedIns = bb->pLastIns;
                 emittedBlock = true;
             }
         }
+
+        ValidateEmittedSequenceTermination(lastEmittedIns);
+
         clauseDepth++;
     }
     while (emittedBlock);
@@ -1845,6 +1875,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // All vars are stored at 8 byte aligned offsets
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
+
+        // We do not align beyond the stack alignment 
+        // (This is relevant for structs with very high alignment requirements, 
+        // where we align within struct layout, but the structs are not actually
+        // aligned on the stack)
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
     }
 #ifndef TARGET_64BIT
     else if (interpType == InterpTypeI8 || interpType == InterpTypeR8)
@@ -3474,7 +3511,7 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
-    PushStackType(StackTypeI, NULL);
+    PushStackType(StackTypeByRef, NULL);
     int32_t intermediateVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
@@ -3860,6 +3897,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         resolvedCallToken.tokenScope   = m_methodInfo->scope;
 
         m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -3874,6 +3915,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
 
         // Inject call to callsite callout helper
         EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
@@ -5338,7 +5384,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5359,7 +5405,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5380,7 +5426,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5401,7 +5447,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5438,7 +5484,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5475,7 +5521,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5498,7 +5544,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5521,7 +5567,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5549,7 +5595,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5569,7 +5615,7 @@ retry_emit:
                 case StackTypeR4:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5589,7 +5635,7 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5616,7 +5662,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5635,7 +5681,8 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
@@ -5656,7 +5703,8 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
@@ -5677,7 +5725,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5698,7 +5746,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5719,7 +5767,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5739,7 +5787,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5760,7 +5808,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5780,7 +5828,7 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5801,7 +5849,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5838,7 +5886,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5875,7 +5923,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5899,7 +5947,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5920,7 +5968,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5941,7 +5989,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5962,7 +6010,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5983,7 +6031,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6003,7 +6051,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6024,7 +6072,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6044,7 +6092,7 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6081,7 +6129,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -6116,7 +6164,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -7075,6 +7123,10 @@ DO_LDFTN:
 
             case CEE_ENDFINALLY:
             {
+                if (m_pCBB->clauseType != BBClauseFinally)
+                {
+                    BADCODE("endfinally not in a finally block");
+                }
                 AddIns(INTOP_RET_VOID);
                 m_ip++;
                 linkBBlocks = false;
