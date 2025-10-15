@@ -103,8 +103,22 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
             return NULL;
         }
 
+        // TODO: limit to OpenSSL >= 3.0.0 <= 3.0.2
+        uint8_t* keyCopy = (uint8_t*)malloc(keyLenT);
+
+        if (keyCopy == NULL)
+        {
+            EVP_MAC_CTX_free(evpMac);
+            free(dnCtx);
+            return NULL;
+        }
+
+        memcpy(keyCopy, key, keyLenT);
+
         memset(dnCtx, 0, sizeof(DN_MAC_CTX));
         dnCtx->mac = evpMac;
+        dnCtx->key = keyCopy;
+        dnCtx->keyLen = keyLenT;
         return dnCtx;
     }
 #endif
@@ -153,6 +167,12 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
             EVP_MAC_CTX_free(ctx->mac);
             ctx->mac = NULL;
         }
+
+        if (ctx->key)
+        {
+            free(ctx->key);
+            ctx->key = NULL;
+        }
 #endif
         if (ctx->legacy)
         {
@@ -175,7 +195,7 @@ int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx)
     if (HAVE_EVP_MAC)
     {
         assert(ctx->mac);
-        return EVP_MAC_init(ctx->mac, NULL, 0, NULL);
+        return EVP_MAC_init(ctx->mac, ctx->key, ctx->keyLen, NULL);
     }
 #endif
 
@@ -284,6 +304,23 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
         }
 
         memset(dnCtx, 0, sizeof(DN_MAC_CTX));
+
+        if (ctx->key)
+        {
+            uint8_t* keyCopy = (uint8_t*)malloc(ctx->keyLen);
+
+            if (keyCopy == NULL)
+            {
+                EVP_MAC_CTX_free(macDup);
+                free(dnCtx);
+                return NULL;
+            }
+
+            memcpy(keyCopy, dnCtx->key, dnCtx->keyLen);
+            dnCtx->key = keyCopy;
+            dnCtx->keyLen = ctx->keyLen;
+        }
+
         dnCtx->mac = macDup;
         return dnCtx;
     }
