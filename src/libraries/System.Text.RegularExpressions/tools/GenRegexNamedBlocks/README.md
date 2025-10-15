@@ -14,7 +14,8 @@ To update the named blocks when a new Unicode version is released:
    ```
    https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
    ```
-   
+
+
 2. Run the tool from this directory:
    ```bash
    dotnet run -- <path-to-Blocks.txt>
@@ -34,7 +35,8 @@ To update the named blocks when a new Unicode version is released:
   - Blocks outside the Basic Multilingual Plane (BMP) (code points >= U+10000)
   - Surrogate blocks (U+D800-U+DFFF)
   - Private Use Area blocks
-  
+
+
 - Block names are converted to "Is" + alphanumeric characters + hyphens (e.g., "Greek and Coptic" becomes "IsGreekandCoptic")
 
 - The tool sorts blocks alphabetically by name for consistent output
