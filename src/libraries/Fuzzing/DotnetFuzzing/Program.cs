@@ -107,8 +107,8 @@ public static class Program
 
         await DownloadArtifactAsync(
             Path.Combine(publishDirectory, "libfuzzer-dotnet.exe"),
-            "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2023.06.26.1359/libfuzzer-dotnet-windows.exe",
-            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458").ConfigureAwait(false);
+            "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2025.05.02.0904/libfuzzer-dotnet-windows.exe",
+            "4da2a77d06229a43040f9841bc632a881389a0b8fdcc2d60c8d0b547ccbedee63e7b0a7eca8eeffdba1243d85bdcec3cfe763237650c2f46a1327f8ee401d9a2").ConfigureAwait(false);
 
         Console.WriteLine("Preparing fuzzers ...");
 
@@ -278,7 +278,7 @@ public static class Program
             using var client = new HttpClient();
             byte[] bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
 
-            if (!Convert.ToHexString(SHA256.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
+            if (!Convert.ToHexString(SHA512.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
             {
                 throw new Exception($"{path} checksum mismatch");
             }
@@ -291,7 +291,7 @@ public static class Program
     {
         // {setup_dir} is replaced by OneFuzz with the path to the fuzzer directory.
         string? dictionaryArgument = fuzzer.Dictionary is not null
-            ? "\"-dict={setup_dir}/dictionary\""
+            ? "\"-dict={setup_dir}/dictionary\","
             : null;
 
         // Make it easier to distinguish between long-running CI jobs and short-lived test submissions.
@@ -313,7 +313,7 @@ public static class Program
                     ],
                     "CheckFuzzerHelp": false
                   },
-                  "FuzzerTimeoutInSeconds": 60,
+                  "FuzzerTimeoutInSeconds": 120,
                   "OneFuzzJobs": [
                     {
                       "ProjectName": "DotnetFuzzing",
@@ -324,6 +324,7 @@ public static class Program
                       ],
                       "FuzzingTargetOptions": [
                         {{{dictionaryArgument}}}
+                        "-timeout=60"
                       ]
                     }
                   ],

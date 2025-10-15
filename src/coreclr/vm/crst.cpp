@@ -645,10 +645,13 @@ BOOL CrstBase::IsSafeToTake()
         // when the thread is doing a stressing GC, some Crst violations could be ignored
         // also, we want to keep an explicit list of Crst's that we may take during GC stress
         || (pThread && pThread->GetGCStressing ()
-            && (m_crstType == CrstThreadStore || m_crstType == CrstHandleTable
-                || m_crstType == CrstSyncBlockCache || m_crstType == CrstIbcProfile
-                || m_crstType == CrstAvailableParamTypes || m_crstType == CrstSystemDomainDelayedUnloadList
-                || m_crstType == CrstAssemblyList || m_crstType == CrstJumpStubCache
+            && (m_crstType == CrstThreadStore
+                || m_crstType == CrstHandleTable
+                || m_crstType == CrstSyncBlockCache
+                || m_crstType == CrstAvailableParamTypes
+                || m_crstType == CrstSystemDomainDelayedUnloadList
+                || m_crstType == CrstAssemblyList
+                || m_crstType == CrstJumpStubCache
                 || m_crstType == CrstSingleUseLock)
            )
         || (pThread && pThread->GetUniqueStacking ())

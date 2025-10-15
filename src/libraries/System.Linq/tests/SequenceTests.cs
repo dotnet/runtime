@@ -12,11 +12,15 @@ namespace System.Linq.Tests
     public class SequenceTests : EnumerableTests
     {
         [Fact]
-        public void NullArguments_Throws()
+        public void InvalidArguments_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("start", () => Enumerable.Sequence((ReferenceAddable)null!, new(1), new(2)));
             AssertExtensions.Throws<ArgumentNullException>("endInclusive", () => Enumerable.Sequence(new(1), (ReferenceAddable)null!, new(2)));
             AssertExtensions.Throws<ArgumentNullException>("step", () => Enumerable.Sequence(new(1), new(2), (ReferenceAddable)null!));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => Enumerable.Sequence(float.NaN, 1.0f, 1.0f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("endInclusive", () => Enumerable.Sequence(1.0f, float.NaN, 1.0f));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("step", () => Enumerable.Sequence(1.0f, 1.0f, float.NaN));
         }
 
         [Fact]
@@ -46,25 +50,28 @@ namespace System.Linq.Tests
             {
                 ValidateUnsigned<T>();
 
-                for (int i = 1; i < 3; i++)
-                {
-                    Assert.NotNull(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(-i)));
-                }
+                // Test negative steps from 123 to 122
+                // step=-1: should give [123, 122] (2 elements)
+                // step=-2: should give [123] (1 element, step too large)
+                Assert.Equal(2, Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(-1)).Count());
+                Assert.Single(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(-2)));
 
                 ValidateThrows(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(-2));
             }
 
             static void ValidateUnsigned<T>() where T : INumber<T>
             {
+                // When start == end, all steps should return single element [123]
                 for (int i = 0; i < 3; i++)
                 {
-                    Assert.NotNull(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(123), T.CreateTruncating(i)));
+                    Assert.Single(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(123), T.CreateTruncating(i)));
                 }
 
-                for (int i = 1; i < 3; i++)
-                {
-                    Assert.NotNull(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(i)));
-                }
+                // Test positive steps from 123 to 124
+                // step=1: should give [123, 124] (2 elements)
+                // step=2: should give [123] (1 element, step too large)
+                Assert.Equal(2, Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(1)).Count());
+                Assert.Single(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(2)));
 
                 ValidateThrows(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(2));
             }
@@ -250,16 +257,16 @@ namespace System.Linq.Tests
             public static bool IsImaginaryNumber(ReferenceAddable value) => throw new NotImplementedException();
             public static bool IsInfinity(ReferenceAddable value) => throw new NotImplementedException();
             public static bool IsInteger(ReferenceAddable value) => throw new NotImplementedException();
-            public static bool IsNaN(ReferenceAddable value) => throw new NotImplementedException();
-            public static bool IsNegative(ReferenceAddable value) => throw new NotImplementedException();
+            public static bool IsNaN(ReferenceAddable value) => false;
+            public static bool IsNegative(ReferenceAddable value) => false;
             public static bool IsNegativeInfinity(ReferenceAddable value) => throw new NotImplementedException();
             public static bool IsNormal(ReferenceAddable value) => throw new NotImplementedException();
             public static bool IsOddInteger(ReferenceAddable value) => throw new NotImplementedException();
-            public static bool IsPositive(ReferenceAddable value) => throw new NotImplementedException();
+            public static bool IsPositive(ReferenceAddable value) => false;
             public static bool IsPositiveInfinity(ReferenceAddable value) => throw new NotImplementedException();
             public static bool IsRealNumber(ReferenceAddable value) => throw new NotImplementedException();
             public static bool IsSubnormal(ReferenceAddable value) => throw new NotImplementedException();
-            public static bool IsZero(ReferenceAddable value) => throw new NotImplementedException();
+            public static bool IsZero(ReferenceAddable value) => false;
             public static ReferenceAddable MaxMagnitude(ReferenceAddable x, ReferenceAddable y) => throw new NotImplementedException();
             public static ReferenceAddable MaxMagnitudeNumber(ReferenceAddable x, ReferenceAddable y) => throw new NotImplementedException();
             public static ReferenceAddable MinMagnitude(ReferenceAddable x, ReferenceAddable y) => throw new NotImplementedException();

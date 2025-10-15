@@ -1604,6 +1604,69 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(-1, jObject.IndexOf("Two"));
         }
 
+        [Fact]
+        public static void TryAdd_NewKey_EmptyJsonObject()
+        {
+            JsonObject jObject = new();
+
+            Assert.True(jObject.TryAdd("First", "value", out var index));
+            Assert.Equal(0, index);
+        }
+
+        [Fact]
+        public static void TryAdd_NewKey()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.True(jObject.TryAdd("Four", 33, out var index));
+            Assert.Equal(3, index);
+        }
+
+        [Fact]
+        public static void TryAdd_ExistingKey()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.False(jObject.TryAdd("Two", 33, out var index));
+            Assert.Equal(1, index);
+        }
+
+        [Fact]
+        public static void TryAdd_ThrowsArgumentNullException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentNullException>(() => { jObject.TryAdd(null, 33); });
+        }
+
+        [Fact]
+        public static void TryGetPropertyValue_ThrowsArgumentNullException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentNullException>(() => { jObject.TryGetPropertyValue(null, out var jsonNode, out var index); });
+        }
+
         [Theory]
         [InlineData(10_000)]
         [InlineData(50_000)]
@@ -1717,6 +1780,35 @@ namespace System.Text.Json.Nodes.Tests
             AssertExtensions.ThrowsContains<ArgumentException>(
                 () => JsonSerializer.Deserialize<JsonNode>(jsonPayload, options),
                 "An item with the same key has already been added.");
+        }
+
+        [Theory]
+        [InlineData("42")]
+        [InlineData("[]")]
+        public static void Deserialize_WrongType(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonObject>(json));
+        }
+
+        [Fact]
+        public static void GetPath_IsThreadSafe()
+        {
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                var tree = (JsonNode.Parse(
+                    """
+                    {
+                      "oh": "noes"
+                    }
+                    """
+                ) as JsonObject)!;
+
+                Parallel.ForEach(Enumerable.Range(0, 100), new ParallelOptions { MaxDegreeOfParallelism = 16 }, _ =>
+                {
+                    string path = tree.First().Value!.GetPath();
+                    Assert.Equal("$.oh", path);
+                });
+            }
         }
     }
 }

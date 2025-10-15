@@ -1186,7 +1186,7 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION( GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ) );
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 
@@ -1208,9 +1208,6 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    if ((g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() )
-        MinorCleanupSyncBlockComData(pInteropInfo);
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     ComClassFactory* pComClassFactory = pInteropInfo->GetComClassFactory();
@@ -1375,14 +1372,13 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     return hr;
 }
 
-VOID EnsureComStarted(BOOL fCoInitCurrentThread)
+VOID EnsureComStarted()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
         PRECONDITION(g_fEEStarted);
     }
     CONTRACTL_END;
@@ -1391,7 +1387,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     _ASSERTE(g_fComStarted);
 }
 
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
+HRESULT EnsureComStartedNoThrow()
 {
     CONTRACTL
     {
@@ -1399,7 +1395,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(g_fEEStarted);
-        PRECONDITION(GetThreadNULLOk() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
     CONTRACTL_END;
 

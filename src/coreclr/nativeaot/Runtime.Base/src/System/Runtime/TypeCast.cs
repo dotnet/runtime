@@ -469,9 +469,7 @@ namespace System.Runtime
 
         private static unsafe bool IsInstanceOfInterfaceViaIDynamicInterfaceCastable(MethodTable* pTargetType, object obj, bool throwing)
         {
-            var pfnIsInterfaceImplemented = (delegate*<object, MethodTable*, bool, bool>)
-                pTargetType->GetClasslibFunction(ClassLibFunctionId.IDynamicCastableIsInterfaceImplemented);
-            return pfnIsInterfaceImplemented(obj, pTargetType, throwing);
+            return ((IDynamicInterfaceCastable)obj).IsInterfaceImplemented(new RuntimeTypeHandle(pTargetType), throwing);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)

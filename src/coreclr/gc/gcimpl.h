@@ -60,7 +60,7 @@ protected:
     friend void GCProfileWalkHeap(bool etwOnly);
 
 public:
-    //In order to keep gc.cpp cleaner, ugly EE specific code is relegated to methods.
+    // In order to keep gc.cpp cleaner, ugly EE specific code is relegated to methods.
     static void UpdatePreGCCounters();
     static void UpdatePostGCCounters();
 
@@ -126,12 +126,13 @@ public:
     // Check if an argument is promoted (ONLY CALL DURING
     // THE PROMOTIONSGRANTED CALLBACK.)
     bool IsPromoted (Object *object);
+    bool IsPromoted2 (Object *object, bool bVerifyNextHeader);
 
     size_t GetPromotedBytes (int heap_index);
 
     int CollectionCount (int generation, int get_bgc_fgc_count = 0);
 
-    // promote an object
+    // Promote an object
     PER_HEAP_ISOLATED void    Promote (Object** object,
                                           ScanContext* sc,
                                           uint32_t flags=0);
@@ -144,16 +145,16 @@ public:
 
     HRESULT Init (size_t heapSize);
 
-    //Register an object for finalization
+    // Register an object for finalization
     bool    RegisterForFinalization (int gen, Object* obj);
 
-    //Unregister an object for finalization
+    // Unregister an object for finalization
     void    SetFinalizationRun (Object* obj);
 
-    // returns the generation number of an object (not valid during relocation) or
+    // Returns the generation number of an object (not valid during relocation) or
     // INT32_MAX if the object belongs to a non-GC heap.
     unsigned WhichGeneration (Object* object);
-    // returns TRUE is the object is ephemeral
+    // Returns TRUE if the object is ephemeral
     bool IsEphemeral (Object* object);
     bool IsHeapPointer (void* object, bool small_heap_only = false);
 
@@ -230,10 +231,10 @@ public:	// FIX
 
     PER_HEAP_ISOLATED   BOOL    GcCollectClasses;
     PER_HEAP_ISOLATED
-        VOLATILE(BOOL)          GcInProgress;       // used for syncing w/GC
+        VOLATILE(BOOL)          GcInProgress;       // Used for syncing w/GC
     PER_HEAP_ISOLATED   VOLATILE(unsigned) GcCount;
     PER_HEAP_ISOLATED   unsigned GcCondemnedGeneration;
-    // calculated at the end of a GC.
+    // Calculated at the end of a GC.
     PER_HEAP_ISOLATED   size_t  totalSurvivedSize;
 
     // Use only for GC tracing.
@@ -243,7 +244,7 @@ public:	// FIX
     // Interface with gc_heap
     size_t  GarbageCollectTry (int generation, BOOL low_memory_p=FALSE, int mode=collection_blocking);
 
-    // frozen segment management functions
+    // Frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
     virtual void UnregisterFrozenSegment(segment_handle seg);
     virtual bool IsInFrozenSegment(Object *object);
@@ -264,7 +265,7 @@ public:	// FIX
     void TemporaryDisableConcurrentGC();
     bool IsConcurrentGCEnabled();
 
-    PER_HEAP_ISOLATED   GCEvent *WaitForGCEvent;     // used for syncing w/GC
+    PER_HEAP_ISOLATED   GCEvent *WaitForGCEvent;     // Used for syncing w/GC
 
     PER_HEAP_ISOLATED    CFinalize* m_Finalize;
 
@@ -280,18 +281,19 @@ private:
         return g_fSuspensionPending == 0;
     }
 public:
-    //return TRUE if GC actually happens, otherwise FALSE
+
+    // Returns TRUE if GC actually happens, otherwise FALSE
     bool StressHeap(gc_alloc_context * acontext);
 
 #ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #ifdef STRESS_HEAP
 protected:
 
-    // only used in BACKGROUND_GC, but the symbol is not defined yet...
+    // Only used in BACKGROUND_GC, but the symbol is not defined yet...
     PER_HEAP_ISOLATED int gc_stress_fgcs_in_bgc;
 
 #if !defined(MULTIPLE_HEAPS)
-    // handles to hold the string objects that will force GC movement
+    // Handles to hold the string objects that will force GC movement
     enum { NUM_HEAP_STRESS_OBJS = 8 };
     PER_HEAP OBJECTHANDLE m_StressObjs[NUM_HEAP_STRESS_OBJS];
     PER_HEAP int m_CurStressObj;
@@ -330,6 +332,8 @@ public:
     static void ReportGenerationBounds();
 
     virtual int RefreshMemoryLimit();
+
+    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles);
 };
 
 #endif  // GCIMPL_H_

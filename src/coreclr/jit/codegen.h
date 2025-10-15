@@ -47,11 +47,11 @@ public:
 
 private:
 #if defined(TARGET_XARCH)
-    // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
-    void genSSE2BitwiseOp(GenTree* treeNode);
+    // Generates intrinsic code for the given tree as "Operand BitWiseOp BitMask"
+    void genIntrinsicBitwiseOp(GenTree* treeNode);
 
-    // Generates SSE42 code for the given tree as a round operation
-    void genSSE42RoundOp(GenTreeOp* treeNode);
+    // Generates intrinsic code for the given tree as a round operation
+    void genIntrinsicRoundOp(GenTreeOp* treeNode);
 
     instruction simdAlignedMovIns()
     {
@@ -560,6 +560,10 @@ protected:
 
 #if defined(TARGET_XARCH)
     unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
+#ifdef TARGET_AMD64
+    void     genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs);
+    unsigned genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs);
+#endif // TARGET_AMD64
 #endif // !defined(TARGET_XARCH)
 
 #endif // !defined(TARGET_ARM64)
@@ -738,6 +742,7 @@ protected:
 #endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
+    bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);
@@ -937,7 +942,6 @@ protected:
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
@@ -1040,7 +1044,7 @@ protected:
     //
     // Return Value:
     //     None.
-    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    FORCEINLINE void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
     {
         if (targetReg != REG_NA)
         {
@@ -1093,7 +1097,7 @@ protected:
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
 #endif
-    void genEmitGSCookieCheck(bool pushReg);
+    void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1334,7 +1338,7 @@ public:
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif
 
-    void inst_SET(emitJumpKind condition, regNumber reg);
+    void inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions = INS_OPTS_NONE);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
 
@@ -1586,6 +1590,10 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
+#if defined(TARGET_AMD64)
+    void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);
+#endif // defined(TARGET_AMD64)
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);

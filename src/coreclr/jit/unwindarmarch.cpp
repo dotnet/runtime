@@ -652,9 +652,9 @@ void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
     // Verify that the JIT enum is in sync with the JIT-EE interface enum
-    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
-    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
-    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
+    static_assert(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())

@@ -577,11 +577,11 @@ namespace System.Numerics
         {
             if (typeof(T) == typeof(float))
             {
-                return value ^ Vector.Create(-0.0f).As<float, T>();
+                return value ^ Vector<float>.NegativeZero.As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return value ^ Vector.Create(-0.0).As<double, T>();
+                return value ^ Vector<double>.NegativeZero.As<double, T>();
             }
             else
             {

@@ -77,14 +77,6 @@
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|x86" Project="x86" />
     </Project>
-    <Project Path="../shims/stubs/System.Drawing.Common.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
     <Project Path="../System.Private.Uri/src/System.Private.Uri.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -102,6 +94,16 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="src/System.Windows.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/shims/">
+    <Project Path="../shims/stubs/System.Drawing.Common.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />

@@ -97,7 +97,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, "http", "")]
         [InlineData(null, "", "", "")]
         [InlineData(null, null, "", "")]
-        public void Ctor_String_String(string schemeName, string hostName, string expectedScheme, string expectedHost)
+        public void Ctor_String_String(string? schemeName, string? hostName, string expectedScheme, string expectedHost)
         {
             var uriBuilder = new UriBuilder(schemeName, hostName);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, -1, "/", "", "");
@@ -116,7 +116,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, 180, "http", "")]
         [InlineData(null, "", -1, "", "")]
         [InlineData(null, null, 65535, "", "")]
-        public void Ctor_String_String_Int(string scheme, string host, int port, string expectedScheme, string expectedHost)
+        public void Ctor_String_String_Int(string? scheme, string? host, int port, string expectedScheme, string expectedHost)
         {
             var uriBuilder = new UriBuilder(scheme, host, port);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, port, "/", "", "");
@@ -135,7 +135,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, 180, @"path1\path2\", "http", "", "path1/path2/")]
         [InlineData(null, "", -1, "\u1234", "", "", "%E1%88%B4")]
         [InlineData(null, null, 65535, "\u1234\u2345", "", "", "%E1%88%B4%E2%8D%85")]
-        public void Ctor_String_String_Int_String(string schemeName, string hostName, int port, string pathValue, string expectedScheme, string expectedHost, string expectedPath)
+        public void Ctor_String_String_Int_String(string? schemeName, string? hostName, int port, string? pathValue, string expectedScheme, string expectedHost, string expectedPath)
         {
             var uriBuilder = new UriBuilder(schemeName, hostName, port, pathValue);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, port, expectedPath, "", "");
@@ -153,7 +153,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, 180, @"path1\path2\", "?\u1234#\u2345", "http", "", "path1/path2/", "?\u1234", "#\u2345")]
         [InlineData(null, "", -1, "\u1234", "", "", "", "%E1%88%B4", "", "")]
         [InlineData(null, null, 65535, "\u1234\u2345", null, "", "", "%E1%88%B4%E2%8D%85", "", "")]
-        public void Ctor_String_String_Int_String_String(string schemeName, string hostName, int port, string pathValue, string extraValue, string expectedScheme, string expectedHost, string expectedPath, string expectedQuery, string expectedFragment)
+        public void Ctor_String_String_Int_String_String(string? schemeName, string? hostName, int port, string? pathValue, string? extraValue, string expectedScheme, string expectedHost, string expectedPath, string expectedQuery, string expectedFragment)
         {
             var uriBuilder = new UriBuilder(schemeName, hostName, port, pathValue, extraValue);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, port, expectedPath, expectedQuery, expectedFragment);
@@ -171,7 +171,7 @@ namespace System.PrivateUri.Tests
         [InlineData("https", "https")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Scheme_Get_Set(string value, string expected)
+        public void Scheme_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.Scheme = value;
@@ -196,7 +196,7 @@ namespace System.PrivateUri.Tests
         [InlineData("username", "username")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void UserName_Get_Set(string value, string expected)
+        public void UserName_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.UserName = value;
@@ -212,7 +212,7 @@ namespace System.PrivateUri.Tests
         [InlineData("password", "password")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Password_Get_Set(string value, string expected)
+        public void Password_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo1:PLACEHOLDER@domain/path?query#fragment");
             uriBuilder.Password = value;
@@ -227,7 +227,7 @@ namespace System.PrivateUri.Tests
         [InlineData("host", "host")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Host_Get_Set(string value, string expected)
+        public void Host_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.Host = value;
@@ -264,7 +264,7 @@ namespace System.PrivateUri.Tests
         [InlineData(@"\path1\path2", "/path1/path2")]
         [InlineData("", "/")]
         [InlineData(null, "/")]
-        public void Path_Get_Set(string value, string expected)
+        public void Path_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.Path = value;
@@ -275,7 +275,7 @@ namespace System.PrivateUri.Tests
         [InlineData("query", "?query")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Query_Get_Set(string value, string expected)
+        public void Query_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder();
             uriBuilder.Query = value;
@@ -306,7 +306,7 @@ namespace System.PrivateUri.Tests
         [InlineData("fragment", "#fragment")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Fragment_Get_Set(string value, string expected)
+        public void Fragment_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder();
             uriBuilder.Fragment = value;

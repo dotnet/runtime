@@ -651,7 +651,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     //NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION    (1 << 4)
                     //  0 - Compression of replication data enabled
                     //  1 - Compression of replication data disabled
-                    if (value == false)
+                    if (!value)
                     {
                         _options |= 0x10;
                     }

@@ -185,6 +185,8 @@ public:
     static unsigned instInputSize(instruction ins);
     static unsigned instKMaskBaseSize(instruction ins);
 
+    static bool instHasPseudoName(instruction ins);
+
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
@@ -214,6 +216,8 @@ public:
 #ifdef DEBUG
     bool genWriteBarrierUsed;
 #endif
+
+    regMaskTP genGetGSCookieTempRegs(bool tailCall);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.

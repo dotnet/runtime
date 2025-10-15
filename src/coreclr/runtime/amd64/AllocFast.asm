@@ -72,7 +72,7 @@ NESTED_ENTRY RhpNewObject, _TEXT
         xor         r8d, r8d        ; numElements
 
         ;; Call the rest of the allocation helper.
-        ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc
 
         test        rax, rax
@@ -128,7 +128,7 @@ ENDM ; NEW_ARRAY_FAST
 
 ;; Allocate a string.
 ;;  RCX == MethodTable
-;;  EDX == character/element count
+;;  RDX == character/element count
 LEAF_ENTRY RhNewString, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
@@ -224,7 +224,7 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT
         ; passing pTransitionFrame in r9
 
         ; Call the rest of the allocation helper.
-        ; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        ; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc
 
         test        rax, rax

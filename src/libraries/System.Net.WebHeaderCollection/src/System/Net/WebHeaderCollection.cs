@@ -27,8 +27,6 @@ namespace System.Net
         private WebHeaderCollectionType _type;
         private NameValueCollection? _innerCollection;
 
-        private static HeaderInfoTable? _headerInfo;
-
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected WebHeaderCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
@@ -48,7 +46,7 @@ namespace System.Net
             }
         }
 
-        private static HeaderInfoTable HeaderInfo => _headerInfo ??= new HeaderInfoTable();
+        private static HeaderInfoTable HeaderInfo => field ??= new HeaderInfoTable();
 
         private NameValueCollection InnerCollection => _innerCollection ??= new NameValueCollection(ApproxHighAvgNumHeaders, StringComparer.OrdinalIgnoreCase);
 

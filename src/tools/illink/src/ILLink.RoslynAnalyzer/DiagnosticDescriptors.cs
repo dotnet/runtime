@@ -6,57 +6,58 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer
 {
-	public static class DiagnosticDescriptors
-	{
-		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId)
-		{
-			var diagnosticString = new DiagnosticString (diagnosticId);
-			return new DiagnosticDescriptor (diagnosticId.AsString (),
-				diagnosticString.GetTitleFormat (),
-				diagnosticString.GetMessageFormat (),
-				diagnosticId.GetDiagnosticCategory (),
-				DiagnosticSeverity.Warning,
-				true,
-				diagnosticId.GetHelpUri());
-		}
+    public static class DiagnosticDescriptors
+    {
+        public static DiagnosticDescriptor GetDiagnosticDescriptor(DiagnosticId diagnosticId)
+        {
+            var diagnosticString = new DiagnosticString(diagnosticId);
+            return new DiagnosticDescriptor(diagnosticId.AsString(),
+                diagnosticString.GetTitleFormat(),
+                diagnosticString.GetMessageFormat(),
+                diagnosticId.GetDiagnosticCategory(),
+                DiagnosticSeverity.Warning,
+                true,
+                diagnosticId.GetHelpUri());
+        }
 
-		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId, DiagnosticString diagnosticString)
-			=> new DiagnosticDescriptor (diagnosticId.AsString (),
-				diagnosticString.GetTitle (),
-				diagnosticString.GetMessage (),
-				diagnosticId.GetDiagnosticCategory (),
-				DiagnosticSeverity.Warning,
-				true,
-				diagnosticId.GetHelpUri());
+        public static DiagnosticDescriptor GetDiagnosticDescriptor(DiagnosticId diagnosticId, DiagnosticString diagnosticString)
+            => new DiagnosticDescriptor(diagnosticId.AsString(),
+                diagnosticString.GetTitle(),
+                diagnosticString.GetMessage(),
+                diagnosticId.GetDiagnosticCategory(),
+                DiagnosticSeverity.Warning,
+                true,
+                diagnosticId.GetHelpUri());
 
-		public static DiagnosticDescriptor GetDiagnosticDescriptor (DiagnosticId diagnosticId,
-			LocalizableResourceString? lrsTitle = null,
-			LocalizableResourceString? lrsMessage = null,
-			string? diagnosticCategory = null,
-			DiagnosticSeverity diagnosticSeverity = DiagnosticSeverity.Warning,
-			bool isEnabledByDefault = true,
-			string? helpLinkUri = null)
-		{
-			helpLinkUri ??= diagnosticId.GetHelpUri();
+        public static DiagnosticDescriptor GetDiagnosticDescriptor(DiagnosticId diagnosticId,
+            LocalizableResourceString? lrsTitle = null,
+            LocalizableResourceString? lrsMessage = null,
+            string? diagnosticCategory = null,
+            DiagnosticSeverity diagnosticSeverity = DiagnosticSeverity.Warning,
+            bool isEnabledByDefault = true,
+            string? helpLinkUri = null)
+        {
+            helpLinkUri ??= diagnosticId.GetHelpUri();
 
-			if (lrsTitle == null || lrsMessage == null) {
-				var diagnosticString = new DiagnosticString (diagnosticId);
-				return new DiagnosticDescriptor (diagnosticId.AsString (),
-					diagnosticString.GetTitleFormat (),
-					diagnosticString.GetMessageFormat (),
-					diagnosticCategory ?? diagnosticId.GetDiagnosticCategory (),
-					diagnosticSeverity,
-					isEnabledByDefault,
-					helpLinkUri);
-			}
+            if (lrsTitle == null || lrsMessage == null)
+            {
+                var diagnosticString = new DiagnosticString(diagnosticId);
+                return new DiagnosticDescriptor(diagnosticId.AsString(),
+                    diagnosticString.GetTitleFormat(),
+                    diagnosticString.GetMessageFormat(),
+                    diagnosticCategory ?? diagnosticId.GetDiagnosticCategory(),
+                    diagnosticSeverity,
+                    isEnabledByDefault,
+                    helpLinkUri);
+            }
 
-			return new DiagnosticDescriptor (diagnosticId.AsString (),
-				lrsTitle!,
-				lrsMessage!,
-				diagnosticCategory ?? diagnosticId.GetDiagnosticCategory (),
-				diagnosticSeverity,
-				isEnabledByDefault,
-				helpLinkUri);
-		}
-	}
+            return new DiagnosticDescriptor(diagnosticId.AsString(),
+                lrsTitle,
+                lrsMessage,
+                diagnosticCategory ?? diagnosticId.GetDiagnosticCategory(),
+                diagnosticSeverity,
+                isEnabledByDefault,
+                helpLinkUri);
+        }
+    }
 }

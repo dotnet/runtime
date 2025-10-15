@@ -86,18 +86,16 @@ void Z_INTERNAL x86_check_features(struct x86_cpu_features *features) {
     }
 
     if (maxbasic >= 7) {
+        // Reference: https://software.intel.com/sites/default/files/article/405250/how-to-detect-new-instruction-support-in-the-4th-generation-intel-core-processor-family.pdf
         cpuidex(7, 0, &eax, &ebx, &ecx, &edx);
 
-        // check BMI1 bit
-        // Reference: https://software.intel.com/sites/default/files/article/405250/how-to-detect-new-instruction-support-in-the-4th-generation-intel-core-processor-family.pdf
-        features->has_vpclmulqdq = ecx & 0x400;
+        // check BMI2 bit
+        features->has_bmi2 = ebx & 0x8;
 
         // check AVX2 bit if the OS supports saving YMM registers
         if (features->has_os_save_ymm) {
             features->has_avx2 = ebx & 0x20;
         }
-
-        features->has_bmi2 = ebx & 0x8;
 
         // check AVX512 bits if the OS supports saving ZMM registers
         if (features->has_os_save_zmm) {
@@ -112,6 +110,7 @@ void Z_INTERNAL x86_check_features(struct x86_cpu_features *features) {
             features->has_avx512_common = features->has_avx512f && features->has_avx512dq && features->has_avx512bw \
               && features->has_avx512vl && features->has_bmi2;
             features->has_avx512vnni = ecx & 0x800;
+            features->has_vpclmulqdq = ecx & 0x400;
         }
     }
 }

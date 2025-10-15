@@ -22,7 +22,6 @@ namespace System.Net.Mail
         private bool _shouldAbort;
 
         private bool _enableSsl;
-        private X509CertificateCollection? _clientCertificates;
 
         internal SmtpTransport(SmtpClient client) : this(client, SmtpAuthenticationManager.GetModules())
         {
@@ -68,7 +67,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal X509CertificateCollection ClientCertificates => _clientCertificates ??= new X509CertificateCollection();
+        internal X509CertificateCollection ClientCertificates => field ??= new X509CertificateCollection();
 
         internal bool ServerSupportsEai
         {

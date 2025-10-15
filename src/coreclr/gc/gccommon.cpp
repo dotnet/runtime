@@ -281,4 +281,15 @@ void log_init_error_to_host (const char* format, ...)
     GCToEEInterface::LogErrorToHost (error_buf);
     va_end (args);
 }
+
+static double g_QPFus = 0.0;
+
+uint64_t GetHighPrecisionTimeStamp()
+{
+    if (g_QPFus == 0.0)
+    {
+        g_QPFus = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
+    }
+    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * g_QPFus);
+}
 #endif // !DACCESS_COMPILE

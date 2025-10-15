@@ -824,7 +824,7 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
 {
     assert((regsMask & (RBM_CALLEE_SAVED | RBM_FP | RBM_LR)) == regsMask); // Do not expect anything else.
 
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
+    static_assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     return REGSIZE_BYTES;
 }
 
@@ -1060,7 +1060,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert(regsToRestoreCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED | RBM_FP | RBM_LR)));
 
     // Point past the end, to start. We predecrement to find the offset to load from.
-    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
+    static_assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES;
 
     // Save integer registers at higher addresses than floating-point registers.
@@ -2338,6 +2338,50 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             break;
         }
+
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mask = tree->AsMskCon();
+            emitter*       emit = GetEmitter();
+
+            // Try every type until a match is found
+
+            if (mask->IsZero())
+            {
+                emit->emitInsSve_R(INS_sve_pfalse, EA_SCALABLE, targetReg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+
+            insOpts        opt = INS_OPTS_SCALABLE_B;
+            SveMaskPattern pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_H;
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal);
+            }
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_S;
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal);
+            }
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_D;
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal);
+            }
+
+            // Should only ever create constant masks for valid patterns.
+            if (pat == SveMaskPatternNone)
+            {
+                unreached();
+            }
+
+            emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, (insSvePattern)pat);
+            break;
+        }
 #endif // FEATURE_SIMD
 
         default:
@@ -3057,7 +3101,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         const int storePairRegsWritesBytes = 2 * REGSIZE_BYTES;
 
         // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
-        static_assert_no_msg(STACK_ALIGN == storePairRegsWritesBytes);
+        static_assert(STACK_ALIGN == storePairRegsWritesBytes);
         assert(amount % storePairRegsWritesBytes == 0); // stp stores two registers at a time
 
         if (compiler->info.compInitMem)
@@ -4228,6 +4272,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         var_types   type = tree->TypeGet();
         instruction ins  = ins_StoreFromSrc(dataReg, type);
+        emitAttr    attr = emitActualTypeSize(type);
+
+        // Handle instances with a variable length store
+        if (varTypeUsesMaskReg(type))
+        {
+            attr = EA_SCALABLE;
+        }
 
         if (tree->IsVolatile())
         {
@@ -4244,7 +4295,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             }
         }
 
-        GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+        GetEmitter()->emitInsLoadStoreOp(ins, attr, dataReg, tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
         genUpdateLife(tree);

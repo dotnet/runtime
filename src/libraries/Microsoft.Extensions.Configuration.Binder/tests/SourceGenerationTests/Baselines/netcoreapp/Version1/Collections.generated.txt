@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary", "CollectionStructExplicit" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary", "CollectionStructExplicit" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -68,9 +68,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    instance[section.Key] = ParseInt(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        instance[section.Key] = ParseInt(value, section.Path);
+                    }
                 }
             }
         }
@@ -79,7 +82,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value)
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
                     instance.Add(value);
                 }
@@ -95,9 +98,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    temp.Add(ParseInt(value, section.Path));
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        temp.Add(ParseInt(value, section.Path));
+                    }
                 }
             }
         }
@@ -111,9 +117,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    temp[section.Key] = ParseInt(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        temp[section.Key] = ParseInt(value, section.Path);
+                    }
                 }
             }
         }
@@ -124,7 +133,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value)
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
                     temp.Add(value);
                 }
@@ -133,68 +142,85 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::Program.MyClassWithCustomCollections instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            ValidateConfigurationKeys(typeof(global::Program.MyClassWithCustomCollections), s_configKeys_ProgramMyClassWithCustomCollections, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(global::Program.MyClassWithCustomCollections), s_configKeys_Program__MyClassWithCustomCollections, configuration, binderOptions);
 
-            if (AsConfigWithChildren(configuration.GetSection("CustomDictionary")) is IConfigurationSection section1)
+            var value1 = configuration.GetSection("CustomDictionary");
+            if (AsConfigWithChildren(value1) is IConfigurationSection section2)
             {
-                global::Program.CustomDictionary<string, int>? temp3 = instance.CustomDictionary;
-                temp3 ??= new global::Program.CustomDictionary<string, int>();
-                BindCore(section1, ref temp3, defaultValueIfNotFound: false, binderOptions);
-                instance.CustomDictionary = temp3;
+                global::Program.CustomDictionary<string, int>? temp4 = instance.CustomDictionary;
+                temp4 ??= new global::Program.CustomDictionary<string, int>();
+                BindCore(section2, ref temp4, defaultValueIfNotFound: false, binderOptions);
+                instance.CustomDictionary = temp4;
             }
             else
             {
                 instance.CustomDictionary = instance.CustomDictionary;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section4)
+            var value5 = configuration.GetSection("CustomList");
+            if (AsConfigWithChildren(value5) is IConfigurationSection section6)
             {
-                global::Program.CustomList? temp6 = instance.CustomList;
-                temp6 ??= new global::Program.CustomList();
-                BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
-                instance.CustomList = temp6;
+                global::Program.CustomList? temp8 = instance.CustomList;
+                temp8 ??= new global::Program.CustomList();
+                BindCore(section6, ref temp8, defaultValueIfNotFound: false, binderOptions);
+                instance.CustomList = temp8;
             }
             else
             {
                 instance.CustomList = instance.CustomList;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
+            var value9 = configuration.GetSection("IReadOnlyList");
+            if (AsConfigWithChildren(value9) is IConfigurationSection section10)
             {
-                global::System.Collections.Generic.IReadOnlyList<int>? temp9 = instance.IReadOnlyList;
-                temp9 = temp9 is null ? (global::System.Collections.Generic.IReadOnlyList<int>)new List<int>() : (global::System.Collections.Generic.IReadOnlyList<int>)new List<int>(temp9);
-                BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
-                instance.IReadOnlyList = temp9;
+                global::System.Collections.Generic.IReadOnlyList<int>? temp12 = instance.IReadOnlyList;
+                temp12 = temp12 is null ? (global::System.Collections.Generic.IReadOnlyList<int>)new List<int>() : (global::System.Collections.Generic.IReadOnlyList<int>)new List<int>(temp12);
+                BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
+                instance.IReadOnlyList = temp12;
             }
             else
             {
                 instance.IReadOnlyList = instance.IReadOnlyList;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
+            var value13 = configuration.GetSection("IReadOnlyDictionary");
+            if (AsConfigWithChildren(value13) is IConfigurationSection section14)
             {
-                global::System.Collections.Generic.IReadOnlyDictionary<string, int>? temp12 = instance.IReadOnlyDictionary;
-                temp12 = temp12 is null ? (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)new Dictionary<string, int>() : (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
-                BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
-                instance.IReadOnlyDictionary = temp12;
+                global::System.Collections.Generic.IReadOnlyDictionary<string, int>? temp16 = instance.IReadOnlyDictionary;
+                temp16 = temp16 is null ? (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)new Dictionary<string, int>() : (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)temp16.ToDictionary(pair => pair.Key, pair => pair.Value);
+                BindCore(section14, ref temp16, defaultValueIfNotFound: false, binderOptions);
+                instance.IReadOnlyDictionary = temp16;
             }
             else
             {
                 instance.IReadOnlyDictionary = instance.IReadOnlyDictionary;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("CollectionStructExplicit")) is IConfigurationSection section13)
+            var value17 = configuration.GetSection("CollectionStructExplicit");
+            if (AsConfigWithChildren(value17) is IConfigurationSection section18)
             {
-                global::Program.CollectionStructExplicit temp14 = instance.CollectionStructExplicit;
-                var temp15 = new global::Program.CollectionStructExplicit();
-                BindCore(section13, ref temp15, defaultValueIfNotFound: false, binderOptions);
-                instance.CollectionStructExplicit = temp15;
-                temp14 = temp15;
+                global::Program.CollectionStructExplicit temp19 = instance.CollectionStructExplicit;
+                var temp20 = new global::Program.CollectionStructExplicit();
+                BindCore(section18, ref temp20, defaultValueIfNotFound: false, binderOptions);
+                instance.CollectionStructExplicit = temp20;
+                temp19 = temp20;
             }
             else
             {
                 instance.CollectionStructExplicit = instance.CollectionStructExplicit;
             }
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
 
@@ -264,7 +290,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

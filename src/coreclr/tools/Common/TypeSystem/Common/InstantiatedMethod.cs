@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using Internal.NativeFormat;
 
@@ -33,7 +34,7 @@ namespace Internal.TypeSystem
 
         protected override int ComputeHashCode()
         {
-            return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), Instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(Name)));
+            return OwningType.GetHashCode() ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(Name), Instantiation);
         }
 
         public override TypeSystemContext Context
@@ -156,7 +157,7 @@ namespace Internal.TypeSystem
             return _methodDef.GetTypicalMethodDefinition();
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

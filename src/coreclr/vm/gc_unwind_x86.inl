@@ -36,7 +36,7 @@ static  bool  trEnumGCRefs          = false;
 static  bool  dspPtr                = false; // prints the live ptrs as reported
 #endif
 
-__forceinline unsigned decodeUnsigned(PTR_CBYTE& src)
+FORCEINLINE unsigned decodeUnsigned(PTR_CBYTE& src)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -67,7 +67,7 @@ __forceinline unsigned decodeUnsigned(PTR_CBYTE& src)
     return value;
 }
 
-__forceinline int decodeSigned(PTR_CBYTE& src)
+FORCEINLINE int decodeSigned(PTR_CBYTE& src)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -2759,14 +2759,12 @@ void UnwindEspFrameProlog(
 
     unsigned offset = 0;
 
-#ifdef _DEBUG
     // If the first two instructions are 'nop, int3', then  we will
     // assume that is from a JitHalt operation and skip past it
     if (methodStart[0] == X86_INSTR_NOP && methodStart[1] == X86_INSTR_INT3)
     {
         offset += 2;
     }
-#endif
 
     const DWORD curOffs = info->prologOffs;
     unsigned ESP = pContext->SP;
@@ -2922,14 +2920,12 @@ void UnwindEbpDoubleAlignFrameProlog(
 
     DWORD offset = 0;
 
-#ifdef _DEBUG
     // If the first two instructions are 'nop, int3', then  we will
     // assume that is from a JitHalt operation and skip past it
     if (methodStart[0] == X86_INSTR_NOP && methodStart[1] == X86_INSTR_INT3)
     {
         offset += 2;
     }
-#endif
 
     /* Check for the case where EBP has not been updated yet. */
 

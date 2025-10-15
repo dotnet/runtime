@@ -171,7 +171,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Ref count updates.
-                    fgRedirectTargetEdge(currentBlock, postTryFinallyBlock);
+                    fgRedirectEdge(currentBlock->TargetEdgeRef(), postTryFinallyBlock);
                     currentBlock->SetKind(BBJ_ALWAYS);
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
@@ -1565,7 +1565,7 @@ PhaseStatus Compiler::fgCloneFinally()
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                     // Ref count updates.
-                    fgRedirectTargetEdge(currentBlock, firstCloneBlock);
+                    fgRedirectEdge(currentBlock->TargetEdgeRef(), firstCloneBlock);
 
                     // This call returns to the expected spot, so retarget it to branch to the clone.
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
@@ -1607,7 +1607,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    assert(block->GetEhfTargets()->bbeCount == 0);
+                    assert(block->GetEhfTargets()->GetSuccCount() == 0);
                     block->SetKind(BBJ_EHFAULTRET);
                 }
             }
@@ -2197,7 +2197,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
             canonicalCallFinally->bbNum);
 
     assert(callFinally->bbRefs > 0);
-    fgRedirectTargetEdge(block, canonicalCallFinally);
+    fgRedirectEdge(block->TargetEdgeRef(), canonicalCallFinally);
 
     // Update profile counts
     //
@@ -2505,7 +2505,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     //
     // We need to clone to the entire try region plus any
     // enclosed regions and any enclosing mutual protect regions,
-    // plus all the the associated handlers and filters and any
+    // plus all the associated handlers and filters and any
     // regions they enclose, plus any callfinallies that follow.
     //
     // This is necessary because try regions can't have multiple entries, or

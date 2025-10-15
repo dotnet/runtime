@@ -137,7 +137,6 @@ namespace System.Formats.Tar.Tests
             "gnu",
             "hardlink",
             "nil-uid",
-            "pax-bad-hdr-file",
             "pax-bad-mtime-file",
             "pax-global-records",
             "pax-nul-path",

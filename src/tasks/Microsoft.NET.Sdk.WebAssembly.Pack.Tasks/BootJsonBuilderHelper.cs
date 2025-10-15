@@ -87,7 +87,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 output = $"export const config = /*json-start*/{output}/*json-end*/;";
             }
 
-            File.WriteAllText(outputPath, output);
+            ArtifactWriter.PersistFileIfChanged(Log, Encoding.UTF8.GetBytes(output), outputPath);
         }
 
         private string ReplaceWithAssert(Regex regex, string content, string replacement, string errorMessage)
@@ -256,7 +256,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 );
             }
 
-            assets.libraryInitializers = resources.libraryInitializers;
+            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers, subFolder: "..");
             assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded);
             assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady);
 

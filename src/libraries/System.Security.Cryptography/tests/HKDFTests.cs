@@ -14,11 +14,12 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] Expand(HashAlgorithmName hash, byte[] prk, int outputLength, byte[] info);
         protected abstract byte[] DeriveKey(HashAlgorithmName hash, byte[] ikm, int outputLength, byte[] salt, byte[] info);
 
-        internal static bool MD5Supported => !PlatformDetection.IsBrowser && !PlatformDetection.IsAzureLinux;
-        internal static bool EmptyKeysSupported => !PlatformDetection.IsAzureLinux;
+        internal static bool MD5Supported => !PlatformDetection.IsBrowser && !PlatformDetection.IsSymCryptOpenSsl;
+        internal static bool EmptyKeysSupported => !PlatformDetection.IsSymCryptOpenSsl;
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
+        [MemberData(nameof(SupplementalTestCases))]
         public void ExtractTests(HkdfTestCase test)
         {
             byte[] prk = Extract(test.Hash, test.Prk.Length, test.Ikm, test.Salt);
@@ -95,6 +96,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
+        [MemberData(nameof(SupplementalTestCases))]
         public void ExpandTests(HkdfTestCase test)
         {
             byte[] okm = Expand(test.Hash, test.Prk, test.Okm.Length, test.Info);
@@ -151,6 +153,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
+        [MemberData(nameof(SupplementalTestCases))]
         public void DeriveKeyTests(HkdfTestCase test)
         {
             byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
@@ -408,6 +411,80 @@ namespace System.Security.Cryptography.Tests
                     "673a081d70cce7acfc48").HexToByteArray(),
             },
         };
+
+        public static IEnumerable<object[]> SupplementalTestCases
+        {
+            get
+            {
+                if (MD5Supported)
+                {
+                    yield return new object[]
+                    {
+                        // Generated
+                        //   openssl kdf -keylen 16 -kdfopt digest:MD5 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F \
+                        //   -kdfopt hexsalt:101112131415161718191A1B1C1D1E1F -kdfopt hexinfo:202122232425262728292A2B2C2D2E2F \
+                        //   -binary HKDF | xxd -p
+                        new HkdfTestCase()
+                        {
+                            Name = "Test with MD5, salt, and info",
+                            Hash = HashAlgorithmName.MD5,
+                            Ikm = "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                            Salt = "101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                            Info = "202122232425262728292A2B2C2D2E2F".HexToByteArray(),
+                            Okm = "5a25e9d9d27578f28a79a680fd9ce780".HexToByteArray(),
+
+                            // Add -kdfopt mode:EXTRACT_ONLY to derive the PRK.
+                            Prk = "2d2d573fd48c9ad0be5e8214af0d7d64".HexToByteArray(),
+
+                        }
+                    };
+                }
+
+                yield return new object[]
+                {
+                    // Generated
+                    //   openssl kdf -keylen 16 -kdfopt digest:SHA384 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F \
+                    //   -kdfopt hexsalt:101112131415161718191A1B1C1D1E1F -kdfopt hexinfo:202122232425262728292A2B2C2D2E2F \
+                    //   -binary HKDF | xxd -p
+                    new HkdfTestCase()
+                    {
+                        Name = "Test with SHA-2-384, salt, and info",
+                        Hash = HashAlgorithmName.SHA384,
+                        Ikm = "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        Salt = "101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Info = "202122232425262728292A2B2C2D2E2F".HexToByteArray(),
+                        Okm = "5b3a502e2ce5d366479afa17a4fe4aaa".HexToByteArray(),
+
+                        // Add -kdfopt mode:EXTRACT_ONLY to derive the PRK.
+                        Prk = ("31ca88a527220f8271d78df4ce6c4d973f135ad37973b966" +
+                                "44b4d52d499d0a2b03d53c875b1176b089e1e6161ab6d92b").HexToByteArray(),
+
+                    }
+                };
+
+                yield return new object[]
+                {
+                    // Generated
+                    //   openssl kdf -keylen 16 -kdfopt digest:SHA512 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F \
+                    //   -kdfopt hexsalt:101112131415161718191A1B1C1D1E1F -kdfopt hexinfo:202122232425262728292A2B2C2D2E2F \
+                    //   -binary HKDF | xxd -p
+                    new HkdfTestCase()
+                    {
+                        Name = "Test with SHA-2-512, salt, and info",
+                        Hash = HashAlgorithmName.SHA512,
+                        Ikm = "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        Salt = "101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Info = "202122232425262728292A2B2C2D2E2F".HexToByteArray(),
+                        Okm = "270b6ba8a5989e4c26c8d116930c14ab".HexToByteArray(),
+
+                        // Add -kdfopt mode:EXTRACT_ONLY to derive the PRK.
+                        Prk = ("f6e6b1ddb24ea0f0ede0f533d1f350c86bf78966b0e5fd2af34dd00dae3901d6" +
+                                "279fe8111d6572e3cd05f2f0eeabb9144dc0da9437cdf37b0c6d7f3b1064ab2b").HexToByteArray(),
+
+                    }
+                };
+            }
+        }
 
         public static IEnumerable<object[]> Sha3TestCases
         {

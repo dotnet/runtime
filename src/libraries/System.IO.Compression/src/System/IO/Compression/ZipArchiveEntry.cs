@@ -678,9 +678,9 @@ namespace System.IO.Compression
 
                 for (int i = 0; i < _compressedBytes.Length - 1; i++)
                 {
-                    ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes[i], maxSingleBufferSize);
+                    _archive.ArchiveStream.ReadAtLeast(_compressedBytes[i], maxSingleBufferSize, throwOnEndOfStream: true);
                 }
-                ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize));
+                _archive.ArchiveStream.ReadAtLeast(_compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), throwOnEndOfStream: true);
             }
         }
 
@@ -983,7 +983,7 @@ namespace System.IO.Compression
             {
                 // if we have a non-seekable stream, don't worry about sizes at all, and just set the right bit
                 // if we are using the data descriptor, then sizes and crc should be set to 0 in the header
-                if (_archive.Mode == ZipArchiveMode.Create && _archive.ArchiveStream.CanSeek == false)
+                if (_archive.Mode == ZipArchiveMode.Create && !_archive.ArchiveStream.CanSeek)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;

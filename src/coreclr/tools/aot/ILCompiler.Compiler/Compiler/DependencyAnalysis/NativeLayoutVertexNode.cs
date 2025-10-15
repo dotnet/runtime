@@ -1414,7 +1414,6 @@ namespace ILCompiler.DependencyAnalysis
             _directCall = directCall;
             Debug.Assert(_constrainedMethod.OwningType.IsInterface);
             Debug.Assert(!_constrainedMethod.HasInstantiation || !directCall);
-            Debug.Assert(_constrainedMethod.Signature.IsStatic);
         }
 
         protected sealed override string GetName(NodeFactory factory) =>
@@ -1428,10 +1427,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_constrainedMethod.HasInstantiation)
-                    return FixupSignatureKind.GenericStaticConstrainedMethod;
-                else
-                    return FixupSignatureKind.NonGenericStaticConstrainedMethod;
+                return (_constrainedMethod.HasInstantiation, _constrainedMethod.Signature.IsStatic) switch
+                {
+                    (true, _) => FixupSignatureKind.GenericConstrainedMethod,
+                    (false, true) => FixupSignatureKind.NonGenericStaticConstrainedMethod,
+                    (false, false) => FixupSignatureKind.NonGenericInstanceConstrainedMethod,
+                };
             }
         }
 
@@ -1477,13 +1478,13 @@ namespace ILCompiler.DependencyAnalysis
             Vertex constraintType = factory.NativeLayout.TypeSignatureVertex(_constraintType).WriteVertex(factory);
             if (_constrainedMethod.HasInstantiation)
             {
-                Debug.Assert(SignatureKind is FixupSignatureKind.GenericStaticConstrainedMethod);
+                Debug.Assert(SignatureKind is FixupSignatureKind.GenericConstrainedMethod);
                 Vertex constrainedMethodVertex = factory.NativeLayout.MethodEntry(_constrainedMethod).WriteVertex(factory);
                 return writer.GetTuple(constraintType, constrainedMethodVertex);
             }
             else
             {
-                Debug.Assert(SignatureKind is FixupSignatureKind.NonGenericStaticConstrainedMethod);
+                Debug.Assert(SignatureKind is FixupSignatureKind.NonGenericStaticConstrainedMethod or FixupSignatureKind.NonGenericInstanceConstrainedMethod);
                 Vertex methodType = factory.NativeLayout.TypeSignatureVertex(_constrainedMethod.OwningType).WriteVertex(factory);
                 var canonConstrainedMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 int interfaceSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, canonConstrainedMethod, canonConstrainedMethod.OwningType);
