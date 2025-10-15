@@ -42,7 +42,7 @@ namespace System.IO.Strategies
                 // we ignore this specific error to match the behavior in RandomAccess where we tolerate seek failures.
                 if (ignoreSeekErrors && errorInfo.Error == Interop.Error.ESPIPE)
                 {
-                    return offset; // return the requested offset as if the seek succeeded
+                    return -1; // Indicate failure without throwing
                 }
 
                 throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path);
