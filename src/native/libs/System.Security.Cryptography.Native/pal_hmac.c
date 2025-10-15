@@ -106,7 +106,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         unsigned long version = OpenSSL_version_num();
 
         // OpenSSL [3.0.0, 3.0.2] have an issue where EVP_MAC_init cannot reset the HMAC instance
-        // with it's existing key. The key must always be supplied. In order to work around this,
+        // with its existing key. The key must always be supplied. In order to work around this,
         // we keep a copy of the key for these OpenSSL versions.
         // If this is on a fixed or non-applicable version of OpenSSL, the key in the context struct will be
         // NULL. A NULL key tells the init to re-use the existing key properly. So for affected versions of
@@ -191,7 +191,7 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
             ctx->legacy = NULL;
         }
 
-        free(ctx);
+        OPENSSL_free(ctx);
     }
 }
 
