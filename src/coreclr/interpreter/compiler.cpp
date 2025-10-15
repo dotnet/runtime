@@ -6156,13 +6156,11 @@ retry_emit:
                 m_ip++;
                 uint32_t n = getU4LittleEndian(m_ip);
                 // Format of switch instruction is opcode + srcVal + n + T1 + T2 + ... + Tn
-                AddInsExplicit(INTOP_SWITCH, n + 3);
-                m_pLastNewIns->data[0] = n;
                 m_ip += 4;
                 const uint8_t *nextIp = m_ip + n * 4;
                 m_pStackPointer--;
-                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 InterpBasicBlock **targetBBTable = (InterpBasicBlock**)AllocMemPool(sizeof (InterpBasicBlock*) * n);
+                uint32_t *targetOffsets = (uint32_t*)AllocMemPool(sizeof (uint32_t) * n);
 
                 for (uint32_t i = 0; i < n; i++)
                 {
@@ -6170,12 +6168,36 @@ retry_emit:
                     uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
                     InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
                     assert(targetBB);
-
-                    InitBBStackState(targetBB);
+                    targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
-                    LinkBBs(m_pCBB, targetBB);
                     m_ip += 4;
                 }
+
+                // Sort the targetOffsets array so that we can easily skip duplicates
+                qsort(targetOffsets, n, sizeof(uint32_t), [](const void* a, const void* b) {
+                    uint32_t valA = *(const uint32_t*)a;
+                    uint32_t valB = *(const uint32_t*)b;
+                    return (valA < valB) ? -1 : (valA > valB) ? 1 : 0;
+                });
+
+                // Setup so that we can safely branch to each target
+                uint32_t lastOffset = MAXUINT32;
+                for (uint32_t i = 0; i < n; i++)
+                {
+                    if (targetOffsets[i] != lastOffset)
+                    {
+                        lastOffset = targetOffsets[i];
+                        InterpBasicBlock *targetBB = m_ppOffsetToBB[targetOffsets[i]];
+                        assert(targetBB);
+                        EmitBBEndVarMoves(targetBB);
+                        InitBBStackState(targetBB);
+                        LinkBBs(m_pCBB, targetBB);
+                    }
+                }
+
+                AddInsExplicit(INTOP_SWITCH, n + 3);
+                m_pLastNewIns->data[0] = n;
+                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 m_pLastNewIns->info.ppTargetBBTable = targetBBTable;
                 break;
             }
