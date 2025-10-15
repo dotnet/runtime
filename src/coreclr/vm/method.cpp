@@ -2434,7 +2434,7 @@ void MethodDesc::Reset()
         // We should go here only for the rental methods
         _ASSERTE(GetLoaderModule()->IsReflectionEmit());
 
-        DWORD flagsToSet = enum_flag3_HasStableEntryPoint;
+        WORD flagsToSet = enum_flag3_HasStableEntryPoint;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
         flagsToSet |= enum_flag3_HasPrecode;
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -2932,7 +2932,7 @@ void MethodDesc::MarkStableEntryPoint()
 #endif // _DEBUG
     _ASSERTE(RequiresStableEntryPoint());
 
-    DWORD flagsToSet = enum_flag3_HasStableEntryPoint;
+    WORD flagsToSet = enum_flag3_HasStableEntryPoint;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     flagsToSet |= enum_flag3_HasPrecode;
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
