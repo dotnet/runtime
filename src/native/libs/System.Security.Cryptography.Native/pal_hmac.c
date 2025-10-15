@@ -42,7 +42,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
 
     // NOTE: We can't pass NULL as empty key since HMAC_Init_ex will interpret
     // that as request to reuse the "existing" key.
-    uint8_t _;
+    uint8_t _ = 0;
     if (keyLen == 0)
     {
         key = &_;
