@@ -4,6 +4,7 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -238,6 +239,113 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = dom.Deserialize<string>();
             Assert.Equal("+", json);
+        }
+
+        [Fact]
+        public static void SerializeToDocument_WithJsonTypeInfo()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = MyPoco.Create();
+            using JsonDocument dom = JsonSerializer.SerializeToDocument(obj, typeInfo);
+
+            JsonElement stringProp = dom.RootElement.GetProperty("StringProp");
+            Assert.Equal(JsonValueKind.String, stringProp.ValueKind);
+            Assert.Equal("Hello", stringProp.ToString());
+        }
+
+        [Fact]
+        public static void SerializeToDocument_WithJsonTypeInfo_NonGeneric()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = MyPoco.Create();
+            using JsonDocument dom = JsonSerializer.SerializeToDocument(obj, typeInfo);
+
+            JsonElement stringProp = dom.RootElement.GetProperty("StringProp");
+            Assert.Equal(JsonValueKind.String, stringProp.ValueKind);
+            Assert.Equal("Hello", stringProp.ToString());
+        }
+
+        [Fact]
+        public static void SerializeToElement_WithJsonTypeInfo()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = MyPoco.Create();
+            JsonElement element = JsonSerializer.SerializeToElement(obj, typeInfo);
+
+            JsonElement stringProp = element.GetProperty("StringProp");
+            Assert.Equal(JsonValueKind.String, stringProp.ValueKind);
+            Assert.Equal("Hello", stringProp.ToString());
+        }
+
+        [Fact]
+        public static void SerializeToElement_WithJsonTypeInfo_NonGeneric()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = MyPoco.Create();
+            JsonElement element = JsonSerializer.SerializeToElement(obj, typeInfo);
+
+            JsonElement stringProp = element.GetProperty("StringProp");
+            Assert.Equal(JsonValueKind.String, stringProp.ValueKind);
+            Assert.Equal("Hello", stringProp.ToString());
+        }
+
+        [Fact]
+        public static void SerializeToNode_WithJsonTypeInfo()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = MyPoco.Create();
+            JsonNode node = JsonSerializer.SerializeToNode(obj, typeInfo);
+
+            Assert.NotNull(node);
+            Assert.Equal("Hello", node["StringProp"]?.GetValue<string>());
+        }
+
+        [Fact]
+        public static void SerializeToNode_WithJsonTypeInfo_NonGeneric()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = MyPoco.Create();
+            JsonNode node = JsonSerializer.SerializeToNode(obj, typeInfo);
+
+            Assert.NotNull(node);
+            Assert.Equal("Hello", node["StringProp"]?.GetValue<string>());
+        }
+
+        [Fact]
+        public static void DeserializeFromSpan_WithJsonTypeInfo()
+        {
+            ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
+            
+            JsonSerializerOptions options = new();
+            JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = JsonSerializer.Deserialize(utf8Json, typeInfo);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromSpan_WithJsonTypeInfo_NonGeneric()
+        {
+            ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
+            
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            object obj = JsonSerializer.Deserialize(utf8Json, typeInfo);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
         }
     }
 }
