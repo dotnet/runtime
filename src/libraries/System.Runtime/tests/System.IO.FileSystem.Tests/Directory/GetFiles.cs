@@ -194,28 +194,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void EnumerateFilesWithProblematicNames_Unix()
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            File.Create(Path.Combine(testDir.FullName, " leading")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, ".leading")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, "-")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, "--")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, "file\tname")).Dispose();
-
-            string[] files = GetEntries(testDir.FullName);
-            Assert.Equal(5, files.Length);
-            Assert.Contains(files, f => Path.GetFileName(f) == " leading");
-            Assert.Contains(files, f => Path.GetFileName(f) == ".leading");
-            Assert.Contains(files, f => Path.GetFileName(f) == "-");
-            Assert.Contains(files, f => Path.GetFileName(f) == "--");
-            Assert.Contains(files, f => Path.GetFileName(f) == "file\tname");
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void EnumerateFilesWithProblematicNames_Windows()
+        public void EnumerateFilesWithLeadingSpacesDots()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             File.Create(Path.Combine(testDir.FullName, " leading")).Dispose();
@@ -227,6 +206,22 @@ namespace System.IO.Tests
             Assert.Contains(files, f => Path.GetFileName(f) == " leading");
             Assert.Contains(files, f => Path.GetFileName(f) == ".leading");
             Assert.Contains(files, f => Path.GetFileName(f) == "..leading");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixEnumerateFilesWithDashesAndTabs()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            File.Create(Path.Combine(testDir.FullName, "-")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, "--")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, "file\tname")).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Equal(3, files.Length);
+            Assert.Contains(files, f => Path.GetFileName(f) == "-");
+            Assert.Contains(files, f => Path.GetFileName(f) == "--");
+            Assert.Contains(files, f => Path.GetFileName(f) == "file\tname");
         }
     }
 }

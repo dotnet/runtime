@@ -427,8 +427,7 @@ namespace System.IO.Tests
         [InlineData(" leading", "destination")]
         [InlineData("source", " leading")]
         [InlineData(" leading", " leadingdest")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixCopyWithLeadingSpaces(string sourceFileName, string destFileName)
+        public void CopyWithLeadingSpaces(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
@@ -444,11 +443,25 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(".leading", "destination")]
         [InlineData("source", ".leading")]
+        public void CopyWithLeadingDots(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
         [InlineData("-", "destination")]
         [InlineData("source", "-")]
         [InlineData("--", "destination")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixCopyWithProblematicNames(string sourceFileName, string destFileName)
+        public void UnixCopyWithDashPrefixedNames(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
@@ -466,25 +479,6 @@ namespace System.IO.Tests
         [InlineData("source", "file\tname")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void UnixCopyWithEmbeddedControlCharacters(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(sourcePath).Dispose();
-            Copy(sourcePath, destPath);
-
-            Assert.True(File.Exists(sourcePath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData(" leading", "destination")]
-        [InlineData("source", " leading")]
-        [InlineData(".leading", "destination")]
-        [InlineData("source", ".leading")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsCopyWithProblematicNames(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
@@ -527,8 +521,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData("name with spaces", "dest with spaces")]
         [InlineData("name.with.periods", "dest.with.periods")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsCopyEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
+        public void CopyEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);

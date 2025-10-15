@@ -399,8 +399,7 @@ namespace System.IO.Tests
         [InlineData(" leading", "destination")]
         [InlineData("source", " leading")]
         [InlineData(" leading", " moved")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixMoveWithLeadingSpaces(string sourceFileName, string destFileName)
+        public void MoveWithLeadingSpaces(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string srcPath = Path.Combine(testDir.FullName, sourceFileName);
@@ -416,10 +415,24 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(".leading", "destination")]
         [InlineData("source", ".leading")]
+        public void MoveWithLeadingDots(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
         [InlineData("-", "destination")]
         [InlineData("source", "--")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixMoveWithProblematicNames(string sourceFileName, string destFileName)
+        public void UnixMoveWithDashPrefixedNames(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string srcPath = Path.Combine(testDir.FullName, sourceFileName);
@@ -437,25 +450,6 @@ namespace System.IO.Tests
         [InlineData("source", "file\rname")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void UnixMoveWithEmbeddedControlCharacters(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(srcPath).Dispose();
-            Move(srcPath, destPath);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData(" leading", "destination")]
-        [InlineData("source", " leading")]
-        [InlineData(".leading", "destination")]
-        [InlineData("source", ".leading")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsMoveWithProblematicNames(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string srcPath = Path.Combine(testDir.FullName, sourceFileName);
@@ -498,8 +492,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData("name with spaces", "dest with spaces")]
         [InlineData("name.with.periods", "dest.with.periods")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsMoveEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
+        public void MoveEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string srcPath = Path.Combine(testDir.FullName, sourceFileName);

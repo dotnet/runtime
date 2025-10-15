@@ -235,11 +235,20 @@ namespace System.IO.Tests
         [InlineData("  leading")]
         [InlineData(".leading")]
         [InlineData("..leading")]
+        public void ExistsLeadingSpacesDots(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(Exists(filePath));
+        }
+
+        [Theory]
         [InlineData("-")]
         [InlineData("--")]
         [InlineData("-filename")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixExistsProblematicNames(string fileName)
+        public void UnixExistsDashPrefixedNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -253,19 +262,6 @@ namespace System.IO.Tests
         [InlineData("file\vname")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void UnixExistsEmbeddedControlCharacters(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData(" leading")]
-        [InlineData(".leading")]
-        [InlineData("..leading")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsExistsProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -296,8 +292,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData("name with spaces")]
         [InlineData("name.with.periods")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsExistsEmbeddedSpacesPeriods(string fileName)
+        public void ExistsEmbeddedSpacesPeriods(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);

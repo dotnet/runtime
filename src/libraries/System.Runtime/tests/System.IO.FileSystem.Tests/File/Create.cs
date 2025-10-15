@@ -345,8 +345,7 @@ namespace System.IO.Tests
         [InlineData(" leading")]
         [InlineData("  leading")]
         [InlineData("   leading")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixLeadingSpace(string fileName)
+        public void LeadingSpace(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -360,8 +359,7 @@ namespace System.IO.Tests
         [InlineData(".leading")]
         [InlineData("..leading")]
         [InlineData("...leading")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixLeadingDot(string fileName)
+        public void LeadingDot(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -403,34 +401,6 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(" leading")]
-        [InlineData("  leading")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsLeadingSpace(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
-        }
-
-        [Theory]
-        [InlineData(".leading")]
-        [InlineData("..leading")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsLeadingDot(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
-        }
-
         [ConditionalTheory(nameof(UsingNewNormalization))]
         [InlineData("trailing ")]
         [InlineData("trailing  ")]
@@ -461,10 +431,9 @@ namespace System.IO.Tests
         [InlineData("name  with  multiple  spaces")]
         [InlineData("name.with.periods")]
         [InlineData("name with spaces.txt")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsEmbeddedSpacesPeriods(string fileName)
+        public void EmbeddedSpacesPeriods(string fileName)
         {
-            // Embedded spaces and periods should work fine
+            // Embedded spaces and periods should work fine on all platforms
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
             using (Create(filePath))
@@ -474,11 +443,9 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData("name with spaces")]
-        [InlineData("name.with.periods")]
         [InlineData("name\twith\ttabs")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixEmbeddedSpecialChars(string fileName)
+        public void UnixEmbeddedTabs(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);

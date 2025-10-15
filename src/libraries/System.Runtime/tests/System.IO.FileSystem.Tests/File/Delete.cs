@@ -206,11 +206,22 @@ namespace System.IO.Tests
         [InlineData("  leading")]
         [InlineData(".leading")]
         [InlineData("..leading")]
+        public void DeleteLeadingSpacesDots(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(File.Exists(filePath));
+            Delete(filePath);
+            Assert.False(File.Exists(filePath));
+        }
+
+        [Theory]
         [InlineData("-")]
         [InlineData("--")]
         [InlineData("-filename")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixDeleteProblematicNames(string fileName)
+        public void UnixDeleteDashPrefixedNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -226,21 +237,6 @@ namespace System.IO.Tests
         [InlineData("file\vname")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void UnixDeleteEmbeddedControlCharacters(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(File.Exists(filePath));
-            Delete(filePath);
-            Assert.False(File.Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData(" leading")]
-        [InlineData(".leading")]
-        [InlineData("..leading")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsDeleteProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -273,8 +269,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData("name with spaces")]
         [InlineData("name.with.periods")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsDeleteEmbeddedSpacesPeriods(string fileName)
+        public void DeleteEmbeddedSpacesPeriods(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
