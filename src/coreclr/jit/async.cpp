@@ -1979,6 +1979,14 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
         m_comp->fgNewBBinRegion(BBJ_THROW, block, /* runRarely */ true, /* insertAtEnd */ true);
     JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
 
+    // If this ends up placed after 'block' then ensure it does not break
+    // debugging. We split 'block' at the call, so a BBF_INTERNAL block after
+    // it would result in broken debug info.
+    if ((rethrowExceptionBB->Prev() == block) && !block->HasFlag(BBF_INTERNAL))
+    {
+        rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
+    }
+
     BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
     JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
 
