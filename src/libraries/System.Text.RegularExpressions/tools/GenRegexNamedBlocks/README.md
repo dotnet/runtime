@@ -18,16 +18,14 @@ To update the named blocks when a new Unicode version is released:
 
 2. Run the tool from this directory:
    ```bash
-   dotnet run -- <path-to-Blocks.txt>
+   dotnet run -- <path-to-Blocks.txt> ../../src/System/Text/RegularExpressions/RegexCharClass.Tables.cs
    ```
 
-3. The tool will output the named blocks in the format needed for `RegexCharClass.cs`
+3. The tool will generate the `RegexCharClass.Tables.cs` file with all named blocks
 
-4. Replace the named blocks section in `RegexCharClass.cs` (lines starting with `["Is...`) with the generated output
+4. Update tests in `RegexCharacterSetTests.cs` to include tests for new blocks if needed
 
-5. Update tests in `RegexCharacterSetTests.cs` to include tests for new blocks
-
-6. Build and test to ensure all tests pass
+5. Build and test to ensure all tests pass
 
 ## Notes
 
