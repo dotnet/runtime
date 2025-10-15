@@ -186,7 +186,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(StaticOpenSslLinking)' != 'true' and Exists('$(IlcSdkPath)nonportable.txt')">
+    <ItemGroup Condition="'$(StaticOpenSslLinking)' != 'true' and Exists('$(IlcSdkPath)nonportable.txt') and '$(_targetOS)' == 'linux'">
       <NativeSystemLibrary Include="ssl" />
       <NativeSystemLibrary Include="crypto" />
     </ItemGroup>
