@@ -1234,7 +1234,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
             {
                 PTR_PEImageLayout pImage = pModule->GetReadyToRunInfo()->GetImage();
                 r2rImageBase = dac_cast<TADDR>(pImage->GetBase());
-                r2rImageEnd = r2rImageBase + pImage->GetSize();
+                r2rImageEnd = r2rImageBase + pImage->GetVirtualSize();
             }
         }
 
