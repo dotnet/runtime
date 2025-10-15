@@ -130,7 +130,7 @@ const libBrowserHost = configure({
         name: "libBrowserHost",
         format: "iife",
         file: staticLibDestination + "/libBrowserHost.js",
-        footer: await fs.readFile("./corehost/browserhost/host/libBrowserHost.footer.js"),
+        footer: await fs.readFile("./corehost/browserhost/libBrowserHost.footer.js"),
     }],
     terser: {
         compress: {

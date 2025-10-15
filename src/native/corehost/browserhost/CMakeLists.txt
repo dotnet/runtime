@@ -2,6 +2,41 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 project(browserhost)
+set(DOTNET_PROJECT_NAME "BrowserHost-Static")
+
+# the host library
+
+include(configure.cmake)
+
+set(BROWSERHOST_STATIC_SOURCES
+    ./config.h
+    ./browserhost.cpp
+    ../native.rc
+)
+
+add_compile_definitions(FEATURE_APPHOST)
+add_definitions(-DFEATURE_APPHOST=1)
+add_definitions(-DFEATURE_STATIC_HOST=1)
+
+add_library(BrowserHost-Static
+    STATIC
+    ${BROWSERHOST_STATIC_SOURCES}
+)
+set_target_properties(BrowserHost-Static PROPERTIES OUTPUT_NAME BrowserHost CLEAN_DIRECT_OUTPUT 1)
+
+target_compile_options(BrowserHost-Static PRIVATE
+        -fwasm-exceptions
+        -msimd128
+    )
+target_link_libraries(BrowserHost-Static PRIVATE
+    hostmisc
+)
+
+install(TARGETS BrowserHost-Static DESTINATION corehost COMPONENT runtime)
+install(TARGETS BrowserHost-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime)
+
+# the executable
 set(DOTNET_PROJECT_NAME "browserhost")
 
 set(BROWSERHOST_SOURCES
@@ -14,13 +49,9 @@ add_compile_definitions(FEATURE_APPHOST)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 
-add_subdirectory(host)
-
 add_executable(browserhost ${BROWSERHOST_SOURCES})
 set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
-
-add_dependencies(browserhost System.Native.Browser-Rollup)
 
 LIST(APPEND NATIVE_LIBS
     hostmisc
