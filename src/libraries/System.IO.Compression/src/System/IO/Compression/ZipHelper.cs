@@ -189,6 +189,8 @@ internal static partial class ZipHelper
     // number of characters whose bytes do not add up to more than that number.
     internal static byte[] GetEncodedTruncatedBytesFromString(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
     {
+        Debug.Assert(maxBytes >= 0, "maxBytes must be non-negative");
+
         if (string.IsNullOrEmpty(text))
         {
             isUTF8 = false;
