@@ -30,27 +30,8 @@ namespace System.IO.Strategies
             return result;
         }
 
-        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool ignoreSeekErrors = false)
-        {
-            long result = Interop.Sys.LSeek(handle, offset, (Interop.Sys.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
-            if (result < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-
-                // Some files, such as certain pseudofiles on AzureLinux, may report CanSeek = true
-                // but still fail with ESPIPE when attempting to seek. When ignoreSeekErrors is true,
-                // we ignore this specific error to match the behavior in RandomAccess where we tolerate seek failures.
-                // The return value in this case is not meaningful and should not be used by the caller.
-                if (ignoreSeekErrors && errorInfo.Error == Interop.Error.ESPIPE)
-                {
-                    return 0; // Return value is not used when ignoreSeekErrors is true
-                }
-
-                throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path);
-            }
-
-            return result;
-        }
+        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin) =>
+            CheckFileCall(Interop.Sys.LSeek(handle, offset, (Interop.Sys.SeekWhence)(int)origin), handle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
 
         internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EINVAL), handle.Path);
