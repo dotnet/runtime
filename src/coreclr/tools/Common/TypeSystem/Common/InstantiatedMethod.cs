@@ -126,7 +126,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IRuntimeAsync
+        public override bool IsRuntimeAsync
         {
             get
             {
