@@ -26,7 +26,7 @@ class Program
         {
             string[] methodsShouldBeGone = ["NlsChangeCase", "ChangeCaseCore", "ChangeCaseNative", "IcuChangeCase"];
 
-            foreach (MethodInfo method in textInfo.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+            foreach (MethodInfo method in textInfo.GetMethods(BindingFlags.Instance | allStatics))
             {
                 if (methodsShouldBeGone.Contains(method.Name))
                 {
