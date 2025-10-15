@@ -126,7 +126,9 @@ private:
     void Begin();
     void BeforeTypeLoad();
     void EagerFixups();
+#ifdef FEATURE_IJW
     void VtableFixups();
+#endif // FEATURE_IJW
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
     void FinishLoad();

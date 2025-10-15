@@ -4,11 +4,10 @@
 // File: DllImportCallback.h
 //
 
-//
-
-
 #ifndef __dllimportcallback_h__
 #define __dllimportcallback_h__
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "object.h"
 #include "stublink.h"
@@ -247,7 +246,8 @@ public:
 
         PCODE entryPoint = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
 
-#ifdef FEATURE_INTERPRETER
+        bool setTarget = true;
+#if defined(FEATURE_INTERPRETER)
         // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
         // unmanaged-to-managed invocation in order to populate the TLS variable every time.
         auto stubKind = RangeSectionStubManager::GetStubKind(entryPoint);
@@ -257,12 +257,12 @@ public:
             if (pPrecode->GetType() == PRECODE_INTERPRETER)
             {
                 m_pInterpretedTarget = entryPoint;
-                entryPoint = (PCODE)0;
+                setTarget = false;
             }
         }
-
-        if (entryPoint != (PCODE)0)
 #endif // FEATURE_INTERPRETER
+
+        if (setTarget)
         {
             m_pUMEntryThunk->SetTargetUnconditional(entryPoint);
         }
@@ -422,5 +422,10 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
+
+#if defined(FEATURE_INTERPRETER)
+UMEntryThunkData* GetMostRecentUMEntryThunkData();
+#endif // FEATURE_INTERPRETER
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif //__dllimportcallback_h__
