@@ -283,14 +283,14 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
         amTracker.SuppressRelease();
 
         ClassLoader::NotifyLoad(TypeHandle(pNewMT));
+    }
 
 #ifdef FEATURE_EVENT_TRACE
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
-        {
-            ETW::TypeSystemLog::TypeLoadEnd(typeLoad, TypeHandle(pNewMT), CLASS_LOADED);
-        }
-#endif
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        ETW::TypeSystemLog::TypeLoadEnd(typeLoad, TypeHandle(pReturnedMT), CLASS_LOADED);
     }
+#endif
 
     return pReturnedMT;
 }
