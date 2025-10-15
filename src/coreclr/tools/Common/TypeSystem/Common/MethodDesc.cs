@@ -658,6 +658,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public virtual bool IsRuntimeAsync
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
         /// <summary>
