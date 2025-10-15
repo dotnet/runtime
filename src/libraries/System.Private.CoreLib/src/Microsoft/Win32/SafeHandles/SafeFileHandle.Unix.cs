@@ -343,8 +343,13 @@ namespace Microsoft.Win32.SafeHandles
                     // we take advantage of the information provided by the fstat syscall
                     // and for regular files (most common case)
                     // avoid one extra sys call for determining whether file can be seeked
-                    _canSeek = NullableBool.True;
-                    Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+                    // we exclude 0-length files because they may be actually pipes
+                    // (e.g. /proc/net/route) and these are not seekable on all systems
+                    if (status.Size > 0)
+                    {
+                        _canSeek = NullableBool.True;
+                        Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+                    }
                 }
 
                 fileLength = status.Size;
