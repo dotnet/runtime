@@ -244,7 +244,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToDocument_WithJsonTypeInfo()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = MyPoco.Create();
@@ -258,7 +258,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToDocument_WithJsonTypeInfo_NonGeneric()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = MyPoco.Create();
@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToElement_WithJsonTypeInfo()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = MyPoco.Create();
@@ -286,7 +286,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToElement_WithJsonTypeInfo_NonGeneric()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = MyPoco.Create();
@@ -300,7 +300,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToNode_WithJsonTypeInfo()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = MyPoco.Create();
@@ -313,7 +313,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToNode_WithJsonTypeInfo_NonGeneric()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = MyPoco.Create();
@@ -328,7 +328,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
             
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = JsonSerializer.Deserialize(utf8Json, typeInfo);
@@ -340,7 +340,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
             
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             object obj = JsonSerializer.Deserialize(utf8Json, typeInfo);
@@ -351,7 +351,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToDocument_NullValue_WithJsonTypeInfo_NonGeneric()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             using JsonDocument dom = JsonSerializer.SerializeToDocument((object)null, typeInfo);
@@ -361,7 +361,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToElement_NullValue_WithJsonTypeInfo_NonGeneric()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             JsonElement element = JsonSerializer.SerializeToElement((object)null, typeInfo);
@@ -371,7 +371,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeToNode_NullValue_WithJsonTypeInfo_NonGeneric()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
             
             JsonNode node = JsonSerializer.SerializeToNode((object)null, typeInfo);
@@ -383,7 +383,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             ReadOnlySpan<byte> utf8Json = "null"u8;
             
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
             
             MyPoco obj = JsonSerializer.Deserialize(utf8Json, typeInfo);
