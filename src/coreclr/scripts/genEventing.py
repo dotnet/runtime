@@ -167,7 +167,7 @@ def includeProvider(providerName, runtimeFlavor):
         return False
     else:
         return True
-    
+
 def includeEvent(inclusionList, providerName, eventName):
     if len(inclusionList) == 0:
         return True
@@ -536,7 +536,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is
             if runtimeFlavor.coreclr or write_xplatheader:
                 fnbody.append(lindent)
                 fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
-            
+
             if runtimeFlavor.nativeaot:
                 if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate" or providerName == "Microsoft-Windows-DotNETRuntimeRundown":
                     fnbody.append("#ifndef TARGET_UNIX\n")
