@@ -357,6 +357,7 @@ GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
+GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
@@ -553,7 +554,7 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #endif
 
 #ifndef MAXULONGLONG
-#define MAXULONGLONG                     UI64(0xffffffffffffffff)
+#define MAXULONGLONG                     0xffffffffffffffffULL
 #endif
 
 //-----------------------------------------------------------------------------

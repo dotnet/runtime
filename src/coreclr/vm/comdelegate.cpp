@@ -635,6 +635,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
@@ -773,8 +774,8 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
     return TRUE;
 }
-
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // One time init.
 void COMDelegate::Init()
@@ -786,8 +787,9 @@ void COMDelegate::Init()
         MODE_ANY;
     }
     CONTRACTL_END;
-
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+#endif
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -827,7 +829,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -913,6 +915,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     MethodDesc *pMD = pClass->GetInvokeMethod();
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
@@ -928,8 +931,9 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0], "DelegateShuffleThunk");
     }
     else
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     {
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
@@ -2399,16 +2403,16 @@ static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, boo
                 // We need to check whether constraints of fromHandle have been loaded, because the
                 // CanCastTo operation might have made its decision without enumerating constraints
                 // (e.g. when toHandle is System.Object).
-                if (!fromHandleVar->ConstraintsLoaded())
-                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                if (!fromHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                 if (toHandle.IsGenericVariable())
                 {
                     TypeVarTypeDesc *toHandleVar = toHandle.AsGenericVariable();
 
                     // Constraints of toHandleVar were not touched by CanCastTo.
-                    if (!toHandleVar->ConstraintsLoaded())
-                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                    if (!toHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                     // Both handles are type variables. The following table lists all possible combinations.
                     //

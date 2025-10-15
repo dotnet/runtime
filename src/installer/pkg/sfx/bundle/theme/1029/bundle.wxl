@@ -1,79 +1,79 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
-  <String Id="Caption" Value="Instalační program pro [WixBundleName]" />
-  <String Id="Title" Value="[BUNDLEMONIKER]" />
+  <String Id="Caption" Value="Instalační program pro [WixBundleName]"/>
+  <String Id="Title" Value="[BUNDLEMONIKER]"/>
   <String Id="Motto" Value="Potřebujete jenom prostředí, textový editor a 10 minut času.
 
-Jste připraveni? Dejme se tedy do toho!" />
-  <String Id="ConfirmCancelMessage" Value="Opravdu chcete akci zrušit?" />
-  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Předchozí verze" />
-  <String Id="HelpHeader" Value="Nápověda nastavení" />
+Jste připraveni? Připraveni? Jdeme na to!"/>
+  <String Id="ConfirmCancelMessage" Value="Opravdu chcete akci zrušit?"/>
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Předchozí verze"/>
+  <String Id="HelpHeader" Value="Nápověda k nastavení"/>
   <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [adresář] – Nainstaluje, opraví, odinstaluje nebo
-   vytvoří úplnou místní kopii svazku v adresáři. Výchozí možností je instalace.
+   vytvoří úplnou místní kopii sady v adresáři. Výchozí možností je instalace.
 
-/passive | /quiet –  Zobrazí minimální uživatelské rozhraní bez výzev nebo nezobrazí žádné uživatelské rozhraní a
-   žádné výzvy. Výchozí možností je zobrazení uživatelského rozhraní a všech výzev.
+/passive | /quiet – zobrazí minimální uživatelské rozhraní bez jakýchkoli výzev nebo nezobrazí žádné uživatelské rozhraní ani
+   žádné výzvy. Ve výchozím nastavení se zobrazí uživatelské rozhraní a všechny výzvy.
 
-/norestart   – potlačí všechny pokusy o restartování. Ve výchozím nastavení uživatelské rozhraní před restartováním zobrazí výzvu.
-/log log.txt – Uloží protokol do konkrétního souboru. Ve výchozím nastavení bude soubor protokolu vytvořen v adresáři %TEMP%." />
-  <String Id="HelpCloseButton" Value="&amp;Zavřít" />
-  <String Id="InstallAcceptCheckbox" Value="Souhl&amp;asím s licenčními podmínkami" />
-  <String Id="InstallOptionsButton" Value="M&amp;ožnosti" />
-  <String Id="InstallInstallButton" Value="&amp;Instalovat" />
-  <String Id="InstallCloseButton" Value="&amp;Zavřít" />
-  <String Id="OptionsHeader" Value="Možnosti instalace" />
-  <String Id="OptionsLocationLabel" Value="Umístění instalace:" />
-  <String Id="OptionsBrowseButton" Value="&amp;Procházet" />
-  <String Id="OptionsOkButton" Value="&amp;OK" />
-  <String Id="OptionsCancelButton" Value="&amp;Storno" />
-  <String Id="ProgressHeader" Value="Průběh instalace" />
-  <String Id="ProgressLabel" Value="Probíhá zpracování:" />
-  <String Id="OverallProgressPackageText" Value="Inicializace..." />
-  <String Id="ProgressCancelButton" Value="&amp;Storno" />
-  <String Id="ModifyHeader" Value="Změnit instalaci" />
-  <String Id="ModifyRepairButton" Value="Op&amp;ravit" />
-  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
-  <String Id="ModifyUninstallButton" Value="O&amp;dinstalovat" />
-  <String Id="ModifyCloseButton" Value="&amp;Zavřít" />
-  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
-  <String Id="SuccessRepairHeader" Value="Oprava byla úspěšně dokončena" />
-  <String Id="SuccessUninstallHeader" Value="Odinstalace se úspěšně dokončila" />
-  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
-  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
-  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
-  <String Id="SuccessInstallHeader" Value="Instalace proběhla úspěšně" />
-  <String Id="SuccessHeader" Value="Instalace byla úspěšná." />
-  <String Id="SuccessLaunchButton" Value="&amp;Spustit" />
-  <String Id="SuccessRestartText" Value="Před použitím tohoto softwaru musíte restartovat počítač." />
-  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
-  <String Id="SuccessRestartButton" Value="&amp;Restartovat" />
-  <String Id="SuccessCloseButton" Value="&amp;Zavřít" />
-  <String Id="FailureHeader" Value="Instalace se nepovedla" />
-  <String Id="FailureInstallHeader" Value="Instalace se nepovedla" />
-  <String Id="FailureUninstallHeader" Value="Odinstalace se nepovedla" />
-  <String Id="FailureRepairHeader" Value="Oprava se nepovedla" />
-  <String Id="FailureHyperlinkLogText" Value="Jeden nebo více problémů způsobilo selhání instalace. Opravte tyto problémy a znovu spusťte instalaci. Pro více informací se podívejte do &lt;a href=&quot;#&quot;&gt;souboru protokolu&lt;/a&gt;." />
-  <String Id="FailureRestartText" Value="Pro dokončení vrácení změn tohoto softwaru je potřeba restartovat počítač." />
-  <String Id="FailureRestartButton" Value="&amp;Restartovat" />
-  <String Id="FailureCloseButton" Value="&amp;Zavřít" />
-  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] se tomto operačním systému nepodporuje. Další informace: [LINK_PREREQ_PAGE]" />
-  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] se v operačních systémech pro platformu x86 nepodporuje. Použijte prosím k instalaci odpovídající instalační program pro platformu x86." />
-  <String Id="FilesInUseHeader" Value="Soubory jsou používány" />
-  <String Id="FilesInUseLabel" Value="Následující aplikace používají soubory, které je potřeba aktualizovat:" />
-  <String Id="FilesInUseCloseRadioButton" Value="Zavřete &amp;aplikace a zkuste je restartovat." />
-  <String Id="FilesInUseDontCloseRadioButton" Value="A&amp;plikace nezavírejte. Bude potřeba provést restart." />
-  <String Id="FilesInUseOkButton" Value="&amp;OK" />
-  <String Id="FilesInUseCancelButton" Value="&amp;Zrušit" />
-  <String Id="WelcomeHeaderMessage" Value="Modul runtime platformy .NET" />
-  <String Id="WelcomeDescription" Value="Modul .NET Runtime se používá ke spouštění aplikací .NET na počítači s Windows. .NET je open source, k dispozici pro více platforem a podporovaný Microsoftem. Doufáme, že se vám bude líbit!" />
-  <String Id="LearnMoreTitle" Value="Další informace o .NET" />
-  <String Id="SuccessInstallLocation" Value="Do [DOTNETHOME] se nainstalovaly následující položky." />
-  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] " />
-  <String Id="ResourcesHeader" Value="Prostředky" />
-  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentace&lt;/A&gt;" />
-  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Zpráva k vydání verze&lt;/A&gt;" />
-  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Kurzy&lt;/A&gt;" />
-  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;Telemetrie pro platformu .NET&lt;/A&gt;" />
-  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Prohlášení o zásadách ochrany osobních údajů&lt;/A&gt;" />
-  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Informace o licencování pro .NET&lt;/A&gt;" />
-  <String Id="LicenseAssent" Value="Kliknutím na Nainstalovat vyjadřujete souhlas s následujícími podmínkami." />
+/norestart – Potlačí všechny pokusy o restartování. Ve výchozím nastavení uživatelské rozhraní zobrazí před restartováním výzvu.
+/log log.txt – Zapíše protokol do konkrétního souboru. Ve výchozím nastavení bude soubor protokolu vytvořen v adresáři %TEMP%."/>
+  <String Id="HelpCloseButton" Value="&amp;Zavřít"/>
+  <String Id="InstallAcceptCheckbox" Value="&amp;Souhlasím s licenčními podmínkami a ujednáními"/>
+  <String Id="InstallOptionsButton" Value="&amp;Možnosti"/>
+  <String Id="InstallInstallButton" Value="Na&amp;instalovat"/>
+  <String Id="InstallCloseButton" Value="&amp;Zavřít"/>
+  <String Id="OptionsHeader" Value="Možnosti instalace"/>
+  <String Id="OptionsLocationLabel" Value="Umístění instalace:"/>
+  <String Id="OptionsBrowseButton" Value="&amp;Procházet"/>
+  <String Id="OptionsOkButton" Value="&amp;OK"/>
+  <String Id="OptionsCancelButton" Value="&amp;Zrušit"/>
+  <String Id="ProgressHeader" Value="Průběh instalace"/>
+  <String Id="ProgressLabel" Value="Zpracování:"/>
+  <String Id="OverallProgressPackageText" Value="Probíhá inicializace..."/>
+  <String Id="ProgressCancelButton" Value="&amp;Zrušit"/>
+  <String Id="ModifyHeader" Value="Upravit nastavení"/>
+  <String Id="ModifyRepairButton" Value="&amp;Opravit"/>
+  <String Id="ModifyText" Value="Pokud chcete produkt přeinstalovat, vyberte Opravit, pokud ho chcete odebrat, vyberte Odinstalovat."/>
+  <String Id="ModifyUninstallButton" Value="&amp;Odinstalovat"/>
+  <String Id="ModifyCloseButton" Value="&amp;Zavřít"/>
+  <String Id="SuccessCacheHeader" Value="Úspěšné dokončení mezipaměti"/>
+  <String Id="SuccessRepairHeader" Value="Oprava byla úspěšně dokončena."/>
+  <String Id="SuccessUninstallHeader" Value="Odinstalace se úspěšně dokončila."/>
+  <String Id="SuccessLayoutHeader" Value="Rozložení se úspěšně dokončilo."/>
+  <String Id="SuccessModifyHeader" Value="Úprava byla úspěšně dokončena."/>
+  <String Id="SuccessUnsafeUninstallHeader" Value="Odinstalace se úspěšně dokončila."/>
+  <String Id="SuccessInstallHeader" Value="Instalace proběhla úspěšně"/>
+  <String Id="SuccessHeader" Value="Instalace byla úspěšná"/>
+  <String Id="SuccessLaunchButton" Value="&amp;Spustit"/>
+  <String Id="SuccessRestartText" Value="Před použitím tohoto softwaru musíte restartovat počítač."/>
+  <String Id="SuccessUninstallRestartText" Value="Odebrání softwaru dokončíte restartováním počítače."/>
+  <String Id="SuccessRestartButton" Value="&amp;Restartovat"/>
+  <String Id="SuccessCloseButton" Value="&amp;Zavřít"/>
+  <String Id="FailureHeader" Value="Instalace selhala."/>
+  <String Id="FailureInstallHeader" Value="Instalace selhala."/>
+  <String Id="FailureUninstallHeader" Value="Odinstalace selhala."/>
+  <String Id="FailureRepairHeader" Value="Oprava selhala."/>
+  <String Id="FailureHyperlinkLogText" Value="Nejméně jeden problém způsobil, že instalace selhala. Opravte prosím tyto problémy a zkuste instalaci zopakovat. Další informace najdete v &lt;a href=&quot;#&quot;&gt;souboru protokolu&lt;/a&gt;."/>
+  <String Id="FailureRestartText" Value="Pro dokončení vrácení změn tohoto softwaru je potřeba restartovat počítač."/>
+  <String Id="FailureRestartButton" Value="&amp;Restartovat"/>
+  <String Id="FailureCloseButton" Value="&amp;Zavřít"/>
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] se tomto operačním systému nepodporuje. Další informace: [LINK_PREREQ_PAGE]"/>
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] se v operačních systémech pro platformu x86 nepodporuje. Použijte prosím k instalaci odpovídající instalační program pro platformu x86."/>
+  <String Id="FilesInUseHeader" Value="Soubory jsou používány"/>
+  <String Id="FilesInUseLabel" Value="Následující aplikace používají soubory, které je potřeba aktualizovat:"/>
+  <String Id="FilesInUseCloseRadioButton" Value="&amp;Zavřít aplikace a pokusit se je znovu spustit"/>
+  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Nezavírat aplikace Bude nutné restartovat počítač."/>
+  <String Id="FilesInUseOkButton" Value="&amp;OK"/>
+  <String Id="FilesInUseCancelButton" Value="&amp;Zrušit"/>
+  <String Id="WelcomeHeaderMessage" Value="Modul runtime platformy .NET"/>
+  <String Id="WelcomeDescription" Value="Modul .NET Runtime se používá ke spouštění aplikací .NET na počítači s Windows. .NET je open source, k dispozici pro více platforem a podporovaný Microsoftem. Doufáme, že se vám bude líbit!"/>
+  <String Id="LearnMoreTitle" Value="Další informace o .NET"/>
+  <String Id="SuccessInstallLocation" Value="Do [DOTNETHOME] se nainstalovaly následující položky."/>
+  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
+  <String Id="ResourcesHeader" Value="Prostředky"/>
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentace&lt;/A&gt;"/>
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Poznámky k verzi&lt;/A&gt;"/>
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Kurzy&lt;/A&gt;"/>
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;Telemetrie .NET&lt;/A&gt;"/>
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Prohlášení o zásadách ochrany osobních údajů&lt;/A&gt;"/>
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Informace o licencování pro .NET&lt;/A&gt;"/>
+  <String Id="LicenseAssent" Value="Kliknutím na Nainstalovat vyjadřujete souhlas s následujícími podmínkami."/>
 </WixLocalization>

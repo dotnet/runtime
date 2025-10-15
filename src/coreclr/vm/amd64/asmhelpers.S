@@ -443,13 +443,16 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
         INLINE_GETTHREAD // result in rax, it can thrash all argument registers as it can call a helper
         mov             r10, rax
+        test            rax, rax
+        jz              LOCAL_LABEL(NoManagedThread)
 
         mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
         test            rax, rax
         jnz             LOCAL_LABEL(HaveInterpThreadContext)
 
+LOCAL_LABEL(NoManagedThread):
         mov             rcx, r10
-        call            C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+        call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
 
 LOCAL_LABEL(HaveInterpThreadContext):
         mov             r10, qword ptr [rax + OFFSETOF__InterpThreadContext__pStackPointer]
@@ -1145,6 +1148,12 @@ LEAF_END Store_XMM7, _TEXT
 // Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 // from the interpreter to native code
 
+LEAF_ENTRY InjectInterpStackAlign, _TEXT
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END InjectInterpStackAlign, _TEXT
+
 // Copy arguments from the the interpreter stack to the CPU stack.
 // The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack, _TEXT
@@ -1708,7 +1717,7 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
         alloc_stack 0x10
-        save_reg_postrsp r10, 0 
+        save_reg_postrsp r10, 0
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list

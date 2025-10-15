@@ -2030,6 +2030,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
         // The this parameter is always passed in registers, so we can ignore it.
         unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
         assert(call->gtArgs.CountUserArgs() == comp->info.compILargsCount);
+        bool checkForUnmanagedThisArg = call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall;
         for (CallArg& arg : call->gtArgs.Args())
         {
             if (!arg.IsUserArg())
@@ -2037,10 +2038,10 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
                 continue;
             }
 
-            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall &&
-                argIndex == call->gtArgs.CountUserArgs() - 1)
+            if (checkForUnmanagedThisArg && argIndex == call->gtArgs.CountUserArgs() - 1)
             {
                 assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
+                checkForUnmanagedThisArg = false;
                 continue;
             }
 
@@ -3175,10 +3176,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     assert(!comp->opts.IsReversePInvoke());                  // tail calls reverse pinvoke
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
-
-#ifdef TARGET_AMD64
-    assert(!comp->getNeedsGSSecurityCookie()); // jit64 compat: tail calls from methods that need GS check
-#endif                                         // TARGET_AMD64
 
     // We expect to see a call that meets the following conditions
     assert(call->IsFastTailCall());

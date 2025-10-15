@@ -1,79 +1,79 @@
 ﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
-  <String Id="Caption" Value="Instalador de [WixBundleName]" />
-  <String Id="Title" Value="[BUNDLEMONIKER]" />
+  <String Id="Caption" Value="Instalador de [WixBundleName]"/>
+  <String Id="Title" Value="[BUNDLEMONIKER]"/>
   <String Id="Motto" Value="Solo necesita un shell, un editor de texto y 10 minutos.
 
-¿Preparados? ¿Listos? ¡Ya!" />
-  <String Id="ConfirmCancelMessage" Value="¿Está seguro de que desea cancelar la operación?" />
-  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Versión anterior" />
-  <String Id="HelpHeader" Value="Ayuda del programa de instalación" />
-  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - instala, repara, desinstala o
-   crea una copia local completa del paquete en el directorio. Install es la opción predeterminada.
+¿Preparados? ¿Listos? ¡Adelante!"/>
+  <String Id="ConfirmCancelMessage" Value="¿Está seguro de que desea cancelar?"/>
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Versión anterior"/>
+  <String Id="HelpHeader" Value="Ayuda del programa de configuración"/>
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory]: instala, repara, desinstala o
+   crea una copia local completa del paquete en el directorio. Instalar es el valor predeterminado.
 
-/passive | /quiet -  muestra una IU mínima sin peticiones, o bien no muestra la IU 
-  ni las peticiones. De forma predeterminada, se muestran la IU y todas las peticiones.
+/passive | /quiet: muestra una interfaz de usuario mínima sin indicaciones o no muestra ninguna interfaz de usuario y ni
+   ninguna indicación. De manera predeterminada, se muestran la interfaz de usuario y todas las indicaciones.
 
-/norestart   - suprime los intentos de reiniciar. De forma predeterminada, la IU preguntará antes de reiniciar.
-/log log.txt - se registra en un archivo específico. De forma predeterminada, se crea un archivo de registro en %TEMP%." />
-  <String Id="HelpCloseButton" Value="&amp;Cerrar" />
-  <String Id="InstallAcceptCheckbox" Value="&amp;Acepto los términos y condiciones de licencia" />
-  <String Id="InstallOptionsButton" Value="&amp;Opciones" />
-  <String Id="InstallInstallButton" Value="&amp;Instalar" />
-  <String Id="InstallCloseButton" Value="&amp;Cerrar" />
-  <String Id="OptionsHeader" Value="Opciones de instalación" />
-  <String Id="OptionsLocationLabel" Value="Ubicación de instalación:" />
-  <String Id="OptionsBrowseButton" Value="E&amp;xaminar" />
-  <String Id="OptionsOkButton" Value="&amp;Aceptar" />
-  <String Id="OptionsCancelButton" Value="&amp;Cancelar" />
-  <String Id="ProgressHeader" Value="Progreso de la instalación" />
-  <String Id="ProgressLabel" Value="Procesando:" />
-  <String Id="OverallProgressPackageText" Value="Inicializando..." />
-  <String Id="ProgressCancelButton" Value="&amp;Cancelar" />
-  <String Id="ModifyHeader" Value="Modificar instalación" />
-  <String Id="ModifyRepairButton" Value="&amp;Reparar" />
-  <String Id="ModifyText" Value="Select repair to reinstall the product or uninstall to remove it." />
-  <String Id="ModifyUninstallButton" Value="&amp;Desinstalar" />
-  <String Id="ModifyCloseButton" Value="&amp;Cerrar" />
-  <String Id="SuccessCacheHeader" Value="Cache Successfully Completed" />
-  <String Id="SuccessRepairHeader" Value="La reparación se completó correctamente" />
-  <String Id="SuccessUninstallHeader" Value="La desinstalación se completó correctamente" />
-  <String Id="SuccessLayoutHeader" Value="Layout Successfully Completed" />
-  <String Id="SuccessModifyHeader" Value="Modify Successfully Completed" />
-  <String Id="SuccessUnsafeUninstallHeader" Value="Uninstall Successfully Completed" />
-  <String Id="SuccessInstallHeader" Value="La instalación se realizó correctamente" />
-  <String Id="SuccessHeader" Value="La instalación o desinstalación se realizó correctamente" />
-  <String Id="SuccessLaunchButton" Value="&amp;Iniciar" />
-  <String Id="SuccessRestartText" Value="Debe reiniciar el equipo para poder usar el software." />
-  <String Id="SuccessUninstallRestartText" Value="You must restart your computer to complete the removal of the software." />
-  <String Id="SuccessRestartButton" Value="&amp;Reiniciar" />
-  <String Id="SuccessCloseButton" Value="&amp;Cerrar" />
-  <String Id="FailureHeader" Value="Error de instalación" />
-  <String Id="FailureInstallHeader" Value="Error de instalación" />
-  <String Id="FailureUninstallHeader" Value="No se pudo desinstalar" />
-  <String Id="FailureRepairHeader" Value="No se pudo reparar" />
-  <String Id="FailureHyperlinkLogText" Value="Error de instalación debido a uno o varios problemas. Corrija los problemas e intente de nuevo la instalación. Para obtener más información, consulte el &lt;a href=&quot;#&quot;&gt;archivo de registro&lt;/a&gt;." />
-  <String Id="FailureRestartText" Value="Debe reiniciar el equipo para completar la reversión del software." />
-  <String Id="FailureRestartButton" Value="&amp;Reiniciar" />
-  <String Id="FailureCloseButton" Value="&amp;Cerrar" />
-  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] no se admite en este sistema operativo. Para obtener más información, consulte [LINK_PREREQ_PAGE]." />
-  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] no es compatible con los sistemas operativos x86. Instálelo con el instalador x86 correspondiente." />
-  <String Id="FilesInUseHeader" Value="Archivos en uso" />
-  <String Id="FilesInUseLabel" Value="Las siguientes aplicaciones usan archivos que se deben actualizar:" />
-  <String Id="FilesInUseCloseRadioButton" Value="Cerrar las &amp;aplicaciones e intentar reiniciarlas." />
-  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;No cerrar las aplicaciones. Será necesario un reinicio." />
-  <String Id="FilesInUseOkButton" Value="&amp;Aceptar" />
-  <String Id="FilesInUseCancelButton" Value="&amp;Cancelar" />
-  <String Id="WelcomeHeaderMessage" Value="Entorno de ejecución .NET" />
-  <String Id="WelcomeDescription" Value=".NET Runtime se usa para ejecutar aplicaciones .NET en un equipo con Windows. Microsoft admite .NET, un código abierto multiplataforma. Esperamos que lo disfrute." />
-  <String Id="LearnMoreTitle" Value="Más información sobre .NET" />
-  <String Id="SuccessInstallLocation" Value="Lo siguiente se instaló en [DOTNETHOME]" />
-  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] " />
-  <String Id="ResourcesHeader" Value="Recursos" />
-  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentación&lt;/A&gt;" />
-  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Notas de la versión&lt;/A&gt;" />
-  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutoriales&lt;/A&gt;" />
-  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;Telemetría de .NET&lt;/A&gt;" />
-  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Declaración de privacidad&lt;/A&gt;" />
-  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Información de licencias de .NET&lt;/A&gt;" />
-  <String Id="LicenseAssent" Value="Al hacer clic en Instalar, acepta los términos siguientes." />
+/norestart   : suprime los intentos de reinicio. De manera predeterminada, la interfaz de usuario le avisará antes del reinicio.
+/log log.txt: registra en un archivo específico. De manera predeterminada, se crea un archivo de registro en %TEMP%."/>
+  <String Id="HelpCloseButton" Value="&amp;Cerrar"/>
+  <String Id="InstallAcceptCheckbox" Value="&amp;Acepto los términos y las condiciones de la licencia"/>
+  <String Id="InstallOptionsButton" Value="&amp;Opciones"/>
+  <String Id="InstallInstallButton" Value="&amp;Instalar"/>
+  <String Id="InstallCloseButton" Value="&amp;Cerrar"/>
+  <String Id="OptionsHeader" Value="Opciones de configuración"/>
+  <String Id="OptionsLocationLabel" Value="Ubicación de la instalación:"/>
+  <String Id="OptionsBrowseButton" Value="&amp;Examinar"/>
+  <String Id="OptionsOkButton" Value="&amp;Aceptar"/>
+  <String Id="OptionsCancelButton" Value="&amp;Cancelar"/>
+  <String Id="ProgressHeader" Value="Progreso de la instalación"/>
+  <String Id="ProgressLabel" Value="Procesando:"/>
+  <String Id="OverallProgressPackageText" Value="Inicializando..."/>
+  <String Id="ProgressCancelButton" Value="&amp;Cancelar"/>
+  <String Id="ModifyHeader" Value="Modificar configuración"/>
+  <String Id="ModifyRepairButton" Value="&amp;Reparar"/>
+  <String Id="ModifyText" Value="Seleccione Reparar para reinstalar el producto o Desinstalar para quitarlo."/>
+  <String Id="ModifyUninstallButton" Value="&amp;Desinstalar"/>
+  <String Id="ModifyCloseButton" Value="&amp;Cerrar"/>
+  <String Id="SuccessCacheHeader" Value="El almacenamiento en caché se completó correctamente"/>
+  <String Id="SuccessRepairHeader" Value="La reparación se completó correctamente"/>
+  <String Id="SuccessUninstallHeader" Value="La desinstalación se completó correctamente"/>
+  <String Id="SuccessLayoutHeader" Value="El diseño se completó correctamente"/>
+  <String Id="SuccessModifyHeader" Value="La modificación se completó correctamente"/>
+  <String Id="SuccessUnsafeUninstallHeader" Value="La desinstalación se completó correctamente"/>
+  <String Id="SuccessInstallHeader" Value="La instalación se realizó correctamente"/>
+  <String Id="SuccessHeader" Value="La configuración se realizó correctamente"/>
+  <String Id="SuccessLaunchButton" Value="&amp;Iniciar"/>
+  <String Id="SuccessRestartText" Value="Debe reiniciar el equipo para poder usar el software."/>
+  <String Id="SuccessUninstallRestartText" Value="Debe reiniciar su equipo para completar la eliminación del software."/>
+  <String Id="SuccessRestartButton" Value="&amp;Reiniciar"/>
+  <String Id="SuccessCloseButton" Value="&amp;Cerrar"/>
+  <String Id="FailureHeader" Value="No se pudo configurar"/>
+  <String Id="FailureInstallHeader" Value="No se pudo configurar"/>
+  <String Id="FailureUninstallHeader" Value="No se pudo desinstalar"/>
+  <String Id="FailureRepairHeader" Value="No se pudo reparar"/>
+  <String Id="FailureHyperlinkLogText" Value="Ha habido algún problema que ha provocado un error en la configuración. Corrija los problemas y vuelva a intentar la instalación. Para más información, consulte el &lt;a href=&quot;#&quot;&gt;archivo de registro&lt;/a&gt;."/>
+  <String Id="FailureRestartText" Value="Debe reiniciar el equipo para completar la reversión del software."/>
+  <String Id="FailureRestartButton" Value="&amp;Reiniciar"/>
+  <String Id="FailureCloseButton" Value="&amp;Cerrar"/>
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="[PRODUCT_NAME] no se admite en este sistema operativo. Para obtener más información, consulte [LINK_PREREQ_PAGE]."/>
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="[PRODUCT_NAME] no es compatible con los sistemas operativos x86. Instálelo con el instalador x86 correspondiente."/>
+  <String Id="FilesInUseHeader" Value="Archivos en uso"/>
+  <String Id="FilesInUseLabel" Value="Las siguientes aplicaciones usan archivos que se deben actualizar:"/>
+  <String Id="FilesInUseCloseRadioButton" Value="Cierre las &amp;aplicaciones e intente reiniciarlas."/>
+  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;No cerrar aplicaciones. Será necesario un reinicio."/>
+  <String Id="FilesInUseOkButton" Value="&amp;Aceptar"/>
+  <String Id="FilesInUseCancelButton" Value="&amp;Cancelar"/>
+  <String Id="WelcomeHeaderMessage" Value="Runtime de .NET"/>
+  <String Id="WelcomeDescription" Value=".NET Runtime se usa para ejecutar aplicaciones .NET en un equipo con Windows. Microsoft admite .NET, un código abierto multiplataforma. Esperamos que lo disfrute."/>
+  <String Id="LearnMoreTitle" Value="Más información sobre .NET"/>
+  <String Id="SuccessInstallLocation" Value="Lo siguiente se instaló en [DOTNETHOME]"/>
+  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
+  <String Id="ResourcesHeader" Value="Recursos"/>
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentación&lt;/A&gt;"/>
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Notas de la versión&lt;/A&gt;"/>
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutoriales&lt;/A&gt;"/>
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;Telemetría de .NET&lt;/A&gt;"/>
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Declaración de privacidad&lt;/A&gt;"/>
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;Información de licencias para .NET&lt;/A&gt;"/>
+  <String Id="LicenseAssent" Value="Al hacer clic en Instalar, acepta los términos siguientes."/>
 </WixLocalization>

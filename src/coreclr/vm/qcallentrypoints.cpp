@@ -478,7 +478,7 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
-#endif
+#endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(CloseHandle)
     DllImportEntry(CreateEventExW)
@@ -529,10 +529,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_EH_FUNCLETS
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
-    DllImportEntry(CallCatchFunclet)
-    DllImportEntry(ResumeAtInterceptionLocation)
     DllImportEntry(CallFilterFunclet)
-    DllImportEntry(CallFinallyFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)

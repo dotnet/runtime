@@ -48,12 +48,12 @@ dotnet tool install --global dotnet-serve
 
 **Linux/macOS:**
 ```bash
-dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug/corewasmrun"
+dotnet-serve --directory "artifacts/bin/coreclr/browser.wasm.Debug"
 ```
 
 **Windows:**
 ```cmd
-dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug\corewasmrun"
+dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug"
 ```
 
 This will start a local HTTP server and you can open the provided URL in your browser.
@@ -61,15 +61,27 @@ This will start a local HTTP server and you can open the provided URL in your br
 ### Console Testing
 
 You can also run the runtime directly in Node.js:
+In script below please replace `/path/to/runtime/` by a **absolute unix path** to the actual runtime repo (even on Windows).
 
 ```bash
-cp /runtime3/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL
-cp helloworld.dll /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL
-cd /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/
-node ./corerun.js -c /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL /runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
+cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
+cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
+cd ./artifacts/bin/coreclr/browser.wasm.Debug/
+node ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
 ```
 
-Note that path in the node args need to be **absolute path** on your host file system in **unix format** (even on Windows).
+### Console Testing with corehost
+
+You can also run the corehost directly in Node.js:
+
+```bash
+cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
+cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
+cd ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
+node ./main.mjs
+```
+
+Note that paths to assemblies are in the `src/native/corehost/browserhost/sample/dotnet.boot.js`
 
 ## Debugging
 
@@ -97,6 +109,9 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
    - [WebAssembly Dwarf Debugging](https://marketplace.visualstudio.com/items?itemName=ms-vscode.wasm-dwarf-debugging)
 
 2. **Create a launch.json configuration:**
+
+In config below please replace `/path/to/runtime/` by a **absolute unix path** to the actual runtime repo (even on Windows).
+
    ```json
     {
         "version": "0.2.0",
@@ -111,12 +126,26 @@ VS Code, through Node.js, provides a good debugging option for WebAssembly CoreC
                 "outputCapture": "std",
                 "program": "corerun.js",
                 "env": {
-                    "CORE_ROOT":"/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
+                    "CORE_ROOT":"/path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
                 },
                 "args": [
-                    "/runtime3/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
+                    "/path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
                 ],
                 "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/"
+            },
+            {
+                "name": "browserhost",
+                "type": "node",
+                "request": "launch",
+                "skipFiles": [
+                    "<node_internals>/**"
+                ],
+                "args": [
+                    "HelloWorld.dll"
+                ],
+                "outputCapture": "std",
+                "cwd": "${workspaceFolder}/artifacts/bin/coreclr/browser.wasm.Debug/corehost",
+                "program": "main.mjs",
             }
         ]
     }
@@ -126,7 +155,7 @@ Note that for `corerun` path in the `args` and `CORE_ROOT` need to be **absolute
 
 3. **Copy managed DLLs** `System.Runtime.dll` and `helloworld.dll` into `artifacts/bin/coreclr/browser.wasm.Debug/IL/`.
 
-4. **Set breakpoints** in `corewasmrun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
+4. **Set breakpoints** in `corerun.js` in one of the `put_char` functions (the `stdout`/`stderr` implementation)
 
 5. **Start debugging** and step through the WebAssembly code using the call stack
 

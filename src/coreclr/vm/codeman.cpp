@@ -3371,7 +3371,7 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
 
     TypeHandle thResolved = EECodeGenManager::ResolveEHClause(pEHClause, pCf);
 
-    if (thResolved.IsSharedByGenericInstantiations())
+    if (thResolved.IsCanonicalSubtype())
     {
         _ASSERTE(!HasCachedTypeHandle(pEHClause));
 

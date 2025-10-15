@@ -33,9 +33,10 @@ namespace ILLink.RoslynAnalyzer
 
         public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics()
         {
-            var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor>(26);
+            var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor>(27);
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCode));
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods));
+            diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties));
             AddRange(DiagnosticId.MethodParameterCannotBeStaticallyDetermined, DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter);
             AddRange(DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings);
             diagDescriptorsArrayBuilder.Add(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings));
@@ -190,9 +191,12 @@ namespace ILLink.RoslynAnalyzer
                         context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), location, parameter.GetDisplayName(), member.GetDisplayName()));
                 }
             }
-            else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow(isByRef: property.ReturnsByRef))
+            else if (member is IPropertySymbol property)
             {
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+                if (property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow(isByRef: property.ReturnsByRef))
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName()));
+                if (property.GetDynamicallyAccessedMemberTypes() != DynamicallyAccessedMemberTypes.None && property.ContainingType.ExtensionParameter != null)
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties), location, member.GetDisplayName()));
             }
         }
 

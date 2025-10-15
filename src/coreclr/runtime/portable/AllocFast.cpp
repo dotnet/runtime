@@ -5,11 +5,17 @@
 #include <fcall.h>
 
 extern void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow);
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size)
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements)
 {
-    PORTABILITY_ASSERT("RhpNewVariableSizeObject is not yet implemented");
-    return nullptr;
+    Object* obj = RhpGcAlloc(pMT, 0, numElements, nullptr);
+    if (obj == NULL)
+    {
+        RhExceptionHandling_FailedAllocation(pMT, false /* isOverflow */);
+    }
+
+    return obj;
 }
 
 static Object* _RhpNewArrayFastCore(MethodTable* pMT, INT_PTR size)
@@ -96,7 +102,6 @@ EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
     if (stringLength > MAX_STRING_LENGTH)
     {
         RhExceptionHandling_FailedAllocation(pMT, false);
-        return NULL;
     }
 
     return _RhpNewArrayFastCore(pMT, stringLength);
