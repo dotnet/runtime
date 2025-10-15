@@ -5957,7 +5957,7 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
 {
     pRtf.EnumMem();
 
-    if (pFirstFunctionEntry == NULL)
+    if (pFirstFunctionEntry == NULL || numFunctionEntries == 0)
     {
         return;
     }
@@ -5965,7 +5965,7 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
     if (pRtf < pFirstFunctionEntry ||
         ((dac_cast<TADDR>(pRtf) - dac_cast<TADDR>(pFirstFunctionEntry)) % sizeof(T_RUNTIME_FUNCTION) != 0))
     {
-        // Program exceptions directory malformatted
+        // Runtime function table is malformed.
         return;
     }
 
