@@ -515,17 +515,18 @@ namespace System.Runtime.CompilerServices
 
                                 if ((continuationFlags & continueOnContextFlags) != 0)
                                 {
-                                    // effectively move context flags from headContinuation to the source config.
+                                    // if await has captured some context, inform the source
                                     configFlags |= ValueTaskSourceOnCompletedFlags.UseSchedulingContext;
-                                    headContinuation.Next!.Flags &= ~continueOnContextFlags;
                                 }
 
+                                // clear continuation flags, so that continuation runs transparently
+                                headContinuation.Next!.Flags &= ~continueFlags;
                                 vtTask.Configure(configFlags);
 
                                 if (!calledTask.TryAddCompletionAction(task))
                                 {
                                     // calledTask has already completed and we need to schedule
-                                    // our code for execution ourselves.
+                                    // the continuation for execution ourselves.
                                     // Restore the continuation flags before doing that.
                                     headContinuation.Next!.Flags = continuationFlags;
                                     ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal: true);
