@@ -3442,7 +3442,7 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     auto appendNum = [&](unsigned num)
     {
         char str[16];
-        sprintf_s(str, "%u", num);
+        sprintf_s(str, ARRAY_SIZE(str), "%u", num);
         append(str);
     };
 
