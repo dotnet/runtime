@@ -21,7 +21,7 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
-- When adding XML documentation to APIs, follow the guidelines at https://github.com/github/awesome-copilot/blob/main/prompts/csharp-docs.prompt.md.
+- When adding XML documentation to APIs, follow the guidelines at https://github.com/dotnet/runtime/blob/main/.github/prompts/docs.prompt.md.
 
 ---
 
