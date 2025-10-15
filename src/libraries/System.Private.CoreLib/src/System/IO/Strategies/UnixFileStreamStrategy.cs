@@ -26,7 +26,7 @@ namespace System.IO.Strategies
                     // since the in-memory position may be out-of-sync with the actual file position.
                     // However, some files such as certain pseudofiles on AzureLinux may report CanSeek = true
                     // but still fail with ESPIPE when attempting to seek. We tolerate this specific error
-                    // to match the behavior in RandomAccess where we ignore seek failures on certain file types.
+                    // to match the behavior in RandomAccess where we ignore pwrite and pread failures on certain file types.
                     long result = Interop.Sys.LSeek(_fileHandle, _filePosition, Interop.Sys.SeekWhence.SEEK_SET);
                     if (result < 0)
                     {
