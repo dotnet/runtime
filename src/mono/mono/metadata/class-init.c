@@ -1689,8 +1689,6 @@ mono_class_setup_count_virtual_methods (MonoClass *klass)
 	return vcount;
 }
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
-
 /*
  * Compressed interface bitmap design.
  *
@@ -1745,7 +1743,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	while (bitmap < end) {
 		if (*bitmap || numz == 255) {
 			if (dest) {
-				*dest++ = numz;
+				*dest++ = (uint8_t)numz;
 				*dest++ = *bitmap;
 			}
 			res += 2;
@@ -1759,7 +1757,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	if (numz) {
 		res += 2;
 		if (dest) {
-			*dest++ = numz;
+			*dest++ = (uint8_t)numz;
 			*dest++ = 0;
 		}
 	}
@@ -1780,7 +1778,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
  * FALSE otherwise.
  */
 int
-mono_class_interface_match (const uint8_t *bitmap, int id)
+mono_class_interface_match_compressed (const uint8_t *bitmap, int id)
 {
 	while (TRUE) {
 		id -= bitmap [0] * 8;
@@ -1793,7 +1791,6 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 		id -= 8;
 	}
 }
-#endif
 
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)

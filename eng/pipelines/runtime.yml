@@ -851,7 +851,6 @@ extends:
       #     scenarios:
       #       - WasmTestOnChrome
       #       - WasmTestOnFirefox
-      #       #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml

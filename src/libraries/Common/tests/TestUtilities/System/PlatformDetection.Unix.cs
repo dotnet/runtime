@@ -44,6 +44,7 @@ namespace System
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
         public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
         public static bool IsNotAppSandbox => !IsAppSandbox;
+        public static bool IsApplePlatform26OrLater => IsApplePlatform && Environment.OSVersion.Version.Major >= 26;
 
         public static Version OpenSslVersion => !IsApplePlatform && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :

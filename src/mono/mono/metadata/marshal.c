@@ -4860,11 +4860,8 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 
 	/* Compressed interface bitmaps require code that is quite complex, so don't optimize for it. */
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && !mono_class_has_variant_generic_params (element_class))
-#ifdef COMPRESSED_INTERFACE_BITMAP
-		return STELEMREF_COMPLEX;
-#else
-		return STELEMREF_INTERFACE;
-#endif
+		return mono_opt_compressed_interface_bitmap ? STELEMREF_COMPLEX : STELEMREF_INTERFACE;
+
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
 	if (m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
