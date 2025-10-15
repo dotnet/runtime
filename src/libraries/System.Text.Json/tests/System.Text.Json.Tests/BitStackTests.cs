@@ -23,7 +23,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, bitStack.CurrentDepth);
             bitStack.SetFirstBit();
             Assert.Equal(1, bitStack.CurrentDepth);
-            Assert.False(bitStack.Pop());
+            Assert.True(bitStack.Pop());
             Assert.Equal(0, bitStack.CurrentDepth);
 
             bitStack = default;
@@ -37,12 +37,87 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, bitStack.CurrentDepth);
             bitStack.SetFirstBit();
             Assert.Equal(1, bitStack.CurrentDepth);
-            Assert.False(bitStack.Pop());
+            Assert.True(bitStack.Pop());
             Assert.Equal(0, bitStack.CurrentDepth);
             bitStack.ResetFirstBit();
             Assert.Equal(1, bitStack.CurrentDepth);
             Assert.False(bitStack.Pop());
             Assert.Equal(0, bitStack.CurrentDepth);
+        }
+
+        [Fact]
+        public static void PeekTest()
+        {
+            BitStack bitStack = default;
+            
+            bitStack.PushTrue();
+            Assert.True(bitStack.Peek());
+            Assert.Equal(1, bitStack.CurrentDepth);
+            
+            bitStack.PushFalse();
+            Assert.False(bitStack.Peek());
+            Assert.Equal(2, bitStack.CurrentDepth);
+            
+            bitStack.PushTrue();
+            Assert.True(bitStack.Peek());
+            Assert.Equal(3, bitStack.CurrentDepth);
+            
+            Assert.True(bitStack.Pop());
+            Assert.False(bitStack.Peek());
+            Assert.Equal(2, bitStack.CurrentDepth);
+            
+            Assert.False(bitStack.Pop());
+            Assert.True(bitStack.Peek());
+            Assert.Equal(1, bitStack.CurrentDepth);
+            
+            Assert.True(bitStack.Pop());
+            Assert.Equal(0, bitStack.CurrentDepth);
+        }
+
+        [Fact]
+        public static void PeekAtDepth64()
+        {
+            BitStack bitStack = default;
+            
+            for (int i = 0; i < 63; i++)
+            {
+                bitStack.PushFalse();
+            }
+            
+            bitStack.PushTrue();
+            Assert.Equal(64, bitStack.CurrentDepth);
+            Assert.True(bitStack.Peek());
+            
+            Assert.True(bitStack.Pop());
+            Assert.Equal(63, bitStack.CurrentDepth);
+            Assert.False(bitStack.Peek());
+        }
+
+        [Fact]
+        public static void PeekBeyondAllocationFreeDepth()
+        {
+            BitStack bitStack = default;
+            
+            for (int i = 0; i < 64; i++)
+            {
+                bitStack.PushFalse();
+            }
+            
+            bitStack.PushTrue();
+            Assert.Equal(65, bitStack.CurrentDepth);
+            Assert.True(bitStack.Peek());
+            
+            bitStack.PushFalse();
+            Assert.Equal(66, bitStack.CurrentDepth);
+            Assert.False(bitStack.Peek());
+            
+            Assert.False(bitStack.Pop());
+            Assert.True(bitStack.Peek());
+            Assert.Equal(65, bitStack.CurrentDepth);
+            
+            Assert.True(bitStack.Pop());
+            Assert.False(bitStack.Peek());
+            Assert.Equal(64, bitStack.CurrentDepth);
         }
 
         [Theory]
