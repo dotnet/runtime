@@ -41,7 +41,7 @@ NativeImageIndexTraits::count_t NativeImageIndexTraits::Hash(LPCUTF8 a)
     return SString(SString::Utf8Literal, a).HashCaseInsensitive();
 }
 
-NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
+NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage *pImageLayout, LPCUTF8 imageFileName)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
@@ -236,7 +236,14 @@ NativeImage *NativeImage::Open(
     {
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
-    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, peLoadedImage.Extract(), nativeImageFileName);
+
+    NewHolder<ReadyToRunLoadedImage> peLoadedImageHolder = new ReadyToRunLoadedImage(
+        (TADDR)peLoadedImage->GetBase(),
+        peLoadedImage->GetSize(),
+        peLoadedImage.Extract(),
+        [](void* img) { delete (PEImageLayout*)img; });
+
+    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, peLoadedImageHolder.Extract(), nativeImageFileName);
     AllocMemTracker amTracker;
     image->Initialize(pHeader, pLoaderAllocator, &amTracker);
     pExistingImage = AppDomain::GetCurrentDomain()->SetNativeImage(nativeImageFileName, image);

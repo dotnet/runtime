@@ -63,7 +63,7 @@ ReadyToRunCoreInfo::ReadyToRunCoreInfo()
 {
 }
 
-ReadyToRunCoreInfo::ReadyToRunCoreInfo(PEImageLayout* pLayout, READYTORUN_CORE_HEADER *pCoreHeader)
+ReadyToRunCoreInfo::ReadyToRunCoreInfo(ReadyToRunLoadedImage* pLayout, READYTORUN_CORE_HEADER *pCoreHeader)
     : m_pLayout(pLayout), m_pCoreHeader(pCoreHeader), m_fForbidLoadILBodyFixups(false)
 {
 }
@@ -647,9 +647,16 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
     void * pMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo)));
 
+
+    void * pLoadedImageMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunLoadedImage)));
+
+    ReadyToRunLoadedImage* r2rLoadedImage = new(pLoadedImageMemory) ReadyToRunLoadedImage(
+        (TADDR)pLayout->GetBase(),
+        pLayout->GetSize());
+
     DoLog("Ready to Run initialized successfully");
 
-    return new (pMemory) ReadyToRunInfo(pModule, pModule->GetLoaderAllocator(), pLayout, pHeader, nativeImage, pamTracker);
+    return new (pMemory) ReadyToRunInfo(pModule, pModule->GetLoaderAllocator(), r2rLoadedImage, pHeader, nativeImage, pamTracker);
 }
 
 bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2)
@@ -762,7 +769,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(Met
     }
 }
 
-ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
+ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, ReadyToRunLoadedImage * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself

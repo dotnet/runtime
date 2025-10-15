@@ -1445,7 +1445,7 @@ public:
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
-    PEImageLayout * GetReadyToRunImage();
+    ReadyToRunLoadedImage * GetReadyToRunImage();
     PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
@@ -1490,7 +1490,7 @@ public:
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
