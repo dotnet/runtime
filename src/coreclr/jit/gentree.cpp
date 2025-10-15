@@ -12837,6 +12837,15 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_MinUnsigned:
                     printf(" minUnsigned");
                     break;
+                case NI_PRIMITIVE_LeadingZeroCount:
+                    printf(" leadingZeroCount");
+                    break;
+                case NI_PRIMITIVE_TrailingZeroCount:
+                    printf(" trailingZeroCount");
+                    break;
+                case NI_PRIMITIVE_PopCount:
+                    printf(" popCount");
+                    break;
 #endif // TARGET_RISCV64
                 case NI_System_Math_Pow:
                     printf(" pow");
