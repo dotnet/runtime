@@ -95,7 +95,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
 
         free(algorithmDup);
 
-        DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+        DN_MAC_CTX* dnCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
 
         if (dnCtx == NULL)
         {
@@ -103,22 +103,34 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
             return NULL;
         }
 
-        // TODO: limit to OpenSSL >= 3.0.0 <= 3.0.2
-        uint8_t* keyCopy = (uint8_t*)malloc(keyLenT);
+        unsigned long version = OpenSSL_version_num();
 
-        if (keyCopy == NULL)
+        // OpenSSL [3.0.0, 3.0.2] have an issue where EVP_MAC_init cannot reset the HMAC instance
+        // with it's existing key. The key must always be supplied. In order to work around this,
+        // we keep a copy of the key for these OpenSSL versions.
+        // If this is on a fixed or non-applicable version of OpenSSL, the key in the context struct will be
+        // NULL. A NULL key tells the init to re-use the existing key properly. So for affected versions of
+        // OpenSSL, the key will be present. For unaffected, it will be NULL and let OpenSSL do the correct reset
+        // behavior.
+        if (version >= OPENSSL_VERSION_3_0_RTM && version <= OPENSSL_VERSION_3_0_2_RTM)
         {
-            EVP_MAC_CTX_free(evpMac);
-            free(dnCtx);
-            return NULL;
+            // OpenSSL's allocator will not allocate a zero-sized buffer. So always allocate at least one
+            // byte. keyLenT will still be zero and contains the actual length of the key.
+            uint8_t* keyCopy = (uint8_t*)OPENSSL_malloc(keyLenT == 0 ? 1 : keyLenT);
+
+            if (keyCopy == NULL)
+            {
+                EVP_MAC_CTX_free(evpMac);
+                OPENSSL_free(dnCtx);
+                return NULL;
+            }
+
+            memcpy(keyCopy, key, keyLenT);
+            dnCtx->key = keyCopy;
+            dnCtx->keyLen = keyLenT;
         }
 
-        memcpy(keyCopy, key, keyLenT);
-
-        memset(dnCtx, 0, sizeof(DN_MAC_CTX));
         dnCtx->mac = evpMac;
-        dnCtx->key = keyCopy;
-        dnCtx->keyLen = keyLenT;
         return dnCtx;
     }
 #endif
@@ -142,7 +154,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         return NULL;
     }
 
-    DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+    DN_MAC_CTX* dnCtx = OPENSSL_zalloc(sizeof(DN_MAC_CTX));
 
     if (dnCtx == NULL)
     {
@@ -150,7 +162,6 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         return NULL;
     }
 
-    memset(dnCtx, 0, sizeof(DN_MAC_CTX));
     dnCtx->legacy = ctx;
     return dnCtx;
 }
@@ -170,7 +181,7 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
 
         if (ctx->key)
         {
-            free(ctx->key);
+            OPENSSL_clear_free(ctx->key, ctx->keyLen);
             ctx->key = NULL;
         }
 #endif
@@ -195,6 +206,8 @@ int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx)
     if (HAVE_EVP_MAC)
     {
         assert(ctx->mac);
+
+        // See the Create method for the key and keyLen.
         return EVP_MAC_init(ctx->mac, ctx->key, ctx->keyLen, NULL);
     }
 #endif
@@ -295,34 +308,34 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
             return NULL;
         }
 
-        DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+        DN_MAC_CTX* copyCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
 
-        if (dnCtx == NULL)
+        if (copyCtx == NULL)
         {
             EVP_MAC_CTX_free(macDup);
             return NULL;
         }
 
-        memset(dnCtx, 0, sizeof(DN_MAC_CTX));
-
+        // See Create for the existence of key. This gets copied, even if the key length is zero.
         if (ctx->key)
         {
-            uint8_t* keyCopy = (uint8_t*)malloc(ctx->keyLen);
+            size_t keyLen = ctx->keyLen;
+            uint8_t* keyCopy = (uint8_t*)OPENSSL_malloc(keyLen == 0 ? 1 : keyLen);
 
             if (keyCopy == NULL)
             {
                 EVP_MAC_CTX_free(macDup);
-                free(dnCtx);
+                OPENSSL_free(copyCtx);
                 return NULL;
             }
 
-            memcpy(keyCopy, dnCtx->key, dnCtx->keyLen);
-            dnCtx->key = keyCopy;
-            dnCtx->keyLen = ctx->keyLen;
+            memcpy(keyCopy, ctx->key, keyLen);
+            copyCtx->key = keyCopy;
+            copyCtx->keyLen = ctx->keyLen;
         }
 
-        dnCtx->mac = macDup;
-        return dnCtx;
+        copyCtx->mac = macDup;
+        return copyCtx;
     }
 #endif
 
@@ -350,17 +363,16 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
         return NULL;
     }
 
-    DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+    DN_MAC_CTX* copyCtx = OPENSSL_zalloc(sizeof(DN_MAC_CTX));
 
-    if (dnCtx == NULL)
+    if (copyCtx == NULL)
     {
         HMAC_CTX_free(dup);
         return NULL;
     }
 
-    memset(dnCtx, 0, sizeof(DN_MAC_CTX));
-    dnCtx->legacy = dup;
-    return dnCtx;
+    copyCtx->legacy = dup;
+    return copyCtx;
 }
 
 int32_t CryptoNative_HmacCurrent(const DN_MAC_CTX* ctx, uint8_t* md, int32_t* len)
