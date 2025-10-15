@@ -347,5 +347,47 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<MyPoco>(obj);
             ((MyPoco)obj).Verify();
         }
+
+        [Fact]
+        public static void SerializeToDocument_NullValue_WithJsonTypeInfo_NonGeneric()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            using JsonDocument dom = JsonSerializer.SerializeToDocument((object)null, typeInfo);
+            Assert.Equal(JsonValueKind.Null, dom.RootElement.ValueKind);
+        }
+
+        [Fact]
+        public static void SerializeToElement_NullValue_WithJsonTypeInfo_NonGeneric()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            JsonElement element = JsonSerializer.SerializeToElement((object)null, typeInfo);
+            Assert.Equal(JsonValueKind.Null, element.ValueKind);
+        }
+
+        [Fact]
+        public static void SerializeToNode_NullValue_WithJsonTypeInfo_NonGeneric()
+        {
+            JsonSerializerOptions options = new();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            JsonNode node = JsonSerializer.SerializeToNode((object)null, typeInfo);
+            Assert.Null(node);
+        }
+
+        [Fact]
+        public static void DeserializeFromSpan_NullValue()
+        {
+            ReadOnlySpan<byte> utf8Json = "null"u8;
+            
+            JsonSerializerOptions options = new();
+            JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)options.GetTypeInfo(typeof(MyPoco));
+            
+            MyPoco obj = JsonSerializer.Deserialize(utf8Json, typeInfo);
+            Assert.Null(obj);
+        }
     }
 }
