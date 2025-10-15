@@ -16,9 +16,14 @@ namespace System.Text.Json.Serialization.Tests
     /// </summary>
     /// The test class <see cref="System.Text.Json.Tests.Serialization.MetadataTests"/> provides tests for the JsonTypeInfo and JsonContext permutations.
     /// The test class <see cref="JsonSerializerApiValidation"/> provides tests for input validation.
-    public static class DomTests
+    public static partial class DomTests
     {
         private const string Escaped_PlusSign = "\"\\u002B\""; // A '+' sign is escaped as hex.
+
+        [JsonSerializable(typeof(MyPoco))]
+        private partial class MyPocoContext : JsonSerializerContext
+        {
+        }
 
         private class MyPoco
         {
@@ -591,6 +596,151 @@ namespace System.Text.Json.Serialization.Tests
             object obj = JsonSerializer.Deserialize(stream, typeInfo);
             Assert.IsType<MyPoco>(obj);
             ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void SerializeToDocument_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            using JsonDocument dom = JsonSerializer.SerializeToDocument(obj, typeof(MyPoco), MyPocoContext.Default);
+
+            JsonElement stringProp = dom.RootElement.GetProperty("StringProp");
+            Assert.Equal(JsonValueKind.String, stringProp.ValueKind);
+            Assert.Equal("Hello", stringProp.ToString());
+        }
+
+        [Fact]
+        public static void SerializeToElement_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            JsonElement element = JsonSerializer.SerializeToElement(obj, typeof(MyPoco), MyPocoContext.Default);
+
+            JsonElement stringProp = element.GetProperty("StringProp");
+            Assert.Equal(JsonValueKind.String, stringProp.ValueKind);
+            Assert.Equal("Hello", stringProp.ToString());
+        }
+
+        [Fact]
+        public static void SerializeToNode_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            JsonNode node = JsonSerializer.SerializeToNode(obj, typeof(MyPoco), MyPocoContext.Default);
+
+            Assert.NotNull(node);
+            Assert.Equal("Hello", node["StringProp"]?.GetValue<string>());
+        }
+
+        [Fact]
+        public static void DeserializeFromSpan_WithJsonSerializerContext()
+        {
+            ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
+            
+            object obj = JsonSerializer.Deserialize(utf8Json, typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromCharSpan_WithJsonSerializerContext()
+        {
+            ReadOnlySpan<char> jsonChars = Json.AsSpan();
+            
+            object obj = JsonSerializer.Deserialize(jsonChars, typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromJsonDocument_WithJsonSerializerContext()
+        {
+            using JsonDocument doc = JsonDocument.Parse(Json);
+            
+            object obj = doc.Deserialize(typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromJsonElement_WithJsonSerializerContext()
+        {
+            using JsonDocument doc = JsonDocument.Parse(Json);
+            JsonElement element = doc.RootElement;
+            
+            object obj = element.Deserialize(typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromJsonNode_WithJsonSerializerContext()
+        {
+            JsonNode node = JsonNode.Parse(Json);
+            
+            object obj = node.Deserialize(typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromUtf8JsonReader_WithJsonSerializerContext()
+        {
+            byte[] utf8Json = Encoding.UTF8.GetBytes(Json);
+            Utf8JsonReader reader = new(utf8Json);
+            
+            object obj = JsonSerializer.Deserialize(ref reader, typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void DeserializeFromStream_WithJsonSerializerContext()
+        {
+            using MemoryStream stream = new(Encoding.UTF8.GetBytes(Json));
+            
+            object obj = JsonSerializer.Deserialize(stream, typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
+        }
+
+        [Fact]
+        public static void SerializeToUtf8Bytes_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(obj, typeof(MyPoco), MyPocoContext.Default);
+            string json = Encoding.UTF8.GetString(bytes);
+            Assert.Contains("Hello", json);
+        }
+
+        [Fact]
+        public static void SerializeToStream_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            using MemoryStream stream = new();
+            JsonSerializer.Serialize(stream, obj, typeof(MyPoco), MyPocoContext.Default);
+            
+            stream.Position = 0;
+            string json = new StreamReader(stream).ReadToEnd();
+            Assert.Contains("Hello", json);
+        }
+
+        [Fact]
+        public static void SerializeToUtf8JsonWriter_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            using MemoryStream stream = new();
+            using (Utf8JsonWriter writer = new(stream))
+            {
+                JsonSerializer.Serialize(writer, obj, typeof(MyPoco), MyPocoContext.Default);
+            }
+            
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Contains("Hello", json);
         }
     }
 }
