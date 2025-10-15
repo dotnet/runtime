@@ -2265,7 +2265,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
 #endif // FEATURE_CODE_VERSIONING
 
-    if (!IsPointingToPrestub())
+    if (!ShouldCallPrestub())
     {
         LOG((LF_CLASSLOADER, LL_INFO10000,
             "    In PreStubWorker, method already jitted, backpatching call point\n"));
@@ -2343,7 +2343,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             MethodDesc* helperMD = PortableEntryPoint::GetMethodDesc(pCode);
             // If the FCall implementation is managed, then we need to potentially set up the interpreter code for it as well.
             // This is because the FCall may have been compiled to an IL stub that needs to be interpreted.
-            if (helperMD->IsPointingToPrestub())
+            if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
@@ -2427,7 +2427,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
-    _ASSERTE(!IsPointingToPrestub());
+    _ASSERTE(!ShouldCallPrestub());
     _ASSERTE(HasStableEntryPoint());
 
     pCode = DoBackpatch(pMT, pDispatchingMT, false /* doFullBackpatch */);
@@ -2851,7 +2851,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif // _DEBUG
 
             //
-            // Note that we do not want to call code:MethodDesc::IsPointingToPrestub() here. It does not take remoting
+            // Note that we do not want to call code:MethodDesc::ShouldCallPrestub() here. It does not take remoting
             // interception into account and so it would cause otherwise intercepted methods to be JITed. It is a compat
             // issue if the JITing fails.
             //

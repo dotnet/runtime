@@ -1737,7 +1737,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             break;
         }
 
-        if (!pMethodDesc->IsPointingToPrestub())
+        if (!pMethodDesc->ShouldCallPrestub())
         {
             *doFullBackpatchRef = true;
             return (PCODE)NULL;

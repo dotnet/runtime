@@ -1174,7 +1174,7 @@ public:
     // the table.
     void SetChunkIndex(MethodDescChunk *pChunk);
 
-    BOOL IsPointingToPrestub();
+    BOOL ShouldCallPrestub();
 
 public:
 

@@ -2372,7 +2372,7 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
 }
 
 //*******************************************************************************
-BOOL MethodDesc::IsPointingToPrestub()
+BOOL MethodDesc::ShouldCallPrestub()
 {
     CONTRACTL
     {
@@ -2388,7 +2388,8 @@ BOOL MethodDesc::IsPointingToPrestub()
         if (IsVersionableWithVtableSlotBackpatch())
         {
             methodEntryPoint = GetMethodEntryPointIfExists();
-            return methodEntryPoint == GetTemporaryEntryPointIfExists() && methodEntryPoint != (PCODE)NULL;
+            return methodEntryPoint == (PCODE)NULL
+                || methodEntryPoint == GetTemporaryEntryPointIfExists();
         }
         return TRUE;
     }

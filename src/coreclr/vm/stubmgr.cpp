@@ -1106,12 +1106,10 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
             break;
         }
 
-        PCODE target = pPrecode->GetTarget();
-
         // check if the method has been jitted
-        if (!pPrecode->IsPointingToPrestub(target))
+        if (!pPrecode->IsPointingToPrestub())
         {
-            trace->InitForStub(target);
+            trace->InitForStub(pPrecode->GetTarget());
             LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - code");
             return TRUE;
         }

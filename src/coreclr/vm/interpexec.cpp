@@ -679,15 +679,8 @@ static void CallPreStub(MethodDesc *pMD)
     STATIC_STANDARD_VM_CONTRACT;
     _ASSERTE(pMD != NULL);
 
-    // The prestub may not yet be ready to be used, so force temporary entry point creation, and check again.
-    if (!pMD->IsPointingToPrestub())
-    {
-        PCODE entryPoint = pMD->GetTemporaryEntryPoint();
-        if (entryPoint != (PCODE)NULL && !pMD->IsPointingToPrestub())
-        {
-            return;
-        }
-    }
+    if (!pMD->ShouldCallPrestub())
+        return;
 
     struct Param
     {
