@@ -26,9 +26,6 @@ namespace System.Formats.Tar
 
             archiveStream.ReadExactly(buffer);
 
-            // Check for compression magic numbers to provide better error messages if the file is a compressed tar archive (tar.gz, tar.bz2, etc.)
-            CheckForCompressionMagicNumbers(buffer);
-
             TarHeader? header = TryReadAttributes(initialFormat, buffer, archiveStream);
             if (header != null && processDataBlock)
             {
@@ -376,7 +373,19 @@ namespace System.Formats.Tar
             {
                 return null;
             }
-            int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+            
+            try
+            {
+                int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+            }
+            catch (InvalidDataException)
+            {
+                // This is likely not a TAR file
+                // Check for compression magic numbers to provide better error message
+                CheckForCompressionMagicNumbers(buffer);
+                throw new InvalidDataException("The file is not a valid TAR archive format.");
+            }
+
             // Zero checksum means the whole header is empty
             if (checksum == 0)
             {
@@ -796,79 +805,81 @@ namespace System.Formats.Tar
             return true;
         }
 
-        /// Checks if the buffer starts with common compression magic numbers and throws appropriate exceptions.
-        /// This provides better error messages when users try to read compressed tar files without decompressing them first.
+        /// Checks if the buffer starts with common file format magic numbers and provides a helpful error message.
+        /// This helps users understand when they've passed the wrong file type to the TAR reader.
         private static void CheckForCompressionMagicNumbers(ReadOnlySpan<byte> buffer)
         {
-            if (buffer.Length < 2) return; // Need at least 2 bytes for any compression format
-
-            static void ThrowIfSupportedCompression(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> magic, string compressionType, string streamClass)
+            if (buffer.Length < 2)
             {
-                if (buffer.Length >= magic.Length && buffer.StartsWith(magic))
-                {
-                    throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, compressionType, streamClass));
-                }
+                throw new InvalidDataException("The file is not a valid TAR archive format.");
             }
 
-            static void ThrowIfUnsupportedCompression(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> magic, string compressionType)
-            {
-                if (buffer.Length >= magic.Length && buffer.StartsWith(magic))
-                {
-                    throw new InvalidDataException(SR.Format(SR.TarUnsupportedCompressionDetected, compressionType));
-                }
-            }
-
-            // Use switch on first byte for O(1) performance instead of sequential checking
             byte firstByte = buffer[0];
             switch (firstByte)
             {
+                case 0x28: // Zstandard
+                    if (buffer.Length >= 4 && 
+                        buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
+                    {
+                        throw new InvalidDataException("The file appears to be a Zstandard archive. TAR format expected.");
+                    }
+                    break;
+
+                case 0x37: // 7-Zip
+                    if (buffer.Length >= 6 && 
+                        buffer[1] == 0x7A && buffer[2] == 0xBC && 
+                        buffer[3] == 0xAF && buffer[4] == 0x27 && buffer[5] == 0x1C)
+                    {
+                        throw new InvalidDataException("The file appears to be a 7-Zip archive. TAR format expected.");
+                    }
+                    break;
+
+                case 0x50: // ZIP files start with "PK"
+                    if (buffer.Length >= 2 && buffer[1] == 0x4B)
+                    {
+                        throw new InvalidDataException("The file appears to be a ZIP archive. TAR format expected.");
+                    }
+                    break;
+
                 case 0x1F: // GZIP
-                    if (buffer.Length >= 2)
+                    if (buffer.Length >= 2 && buffer[1] == 0x8B)
                     {
-                        byte secondByte = buffer[1];
-                        switch (secondByte)
-                        {
-                            case 0x8B: // GZIP magic number
-                                throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, "GZIP", "GZipStream"));
-                        }
+                        throw new InvalidDataException("The file appears to be a GZIP archive. TAR format expected.");
                     }
                     break;
 
-                case 0x78: // ZLIB variants
-                    if (buffer.Length >= 2)
+                case 0x42: // BZIP2 - "BZh"
+                    if (buffer.Length >= 3 && buffer[1] == 0x5A && buffer[2] == 0x68)
                     {
-                        byte secondByte = buffer[1];
-                        switch (secondByte)
-                        {
-                            case 0x01: // No compression (no preset dictionary)
-                            case 0x5E: // Best speed (no preset dictionary)
-                            case 0x9C: // Default compression (no preset dictionary)
-                            case 0xDA: // Best compression (no preset dictionary)
-                                throw new InvalidDataException(SR.Format(SR.TarSupportedCompressionDetected, "ZLIB", "ZLibStream"));
-                        }
+                        throw new InvalidDataException("The file appears to be a BZIP2 archive. TAR format expected.");
                     }
-                    break;
-
-                case 0x42: // BZIP2
-                    ThrowIfUnsupportedCompression(buffer, [0x42, 0x5A], "BZIP2");
-                    break;
-
-                case 0x04: // LZ4
-                    ThrowIfUnsupportedCompression(buffer, [0x04, 0x22, 0x4D, 0x18], "LZ4");
-                    break;
-
-                case 0x5D: // LZMA
-                    ThrowIfUnsupportedCompression(buffer, [0x5D, 0x00, 0x00], "LZMA");
-                    break;
-
-                case 0x89: // LZO
-                    ThrowIfUnsupportedCompression(buffer, [0x89, 0x4C, 0x5A, 0x4F], "LZO");
                     break;
 
                 case 0xFD: // XZ
-                    ThrowIfUnsupportedCompression(buffer, [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], "XZ");
+                    if (buffer.Length >= 6 && 
+                        buffer[1] == 0x37 && buffer[2] == 0x7A && 
+                        buffer[3] == 0x58 && buffer[4] == 0x5A && buffer[5] == 0x00)
+                    {
+                        throw new InvalidDataException("The file appears to be an XZ archive. TAR format expected.");
+                    }
+                    break;
+
+                case 0x78: // ZLIB (deflate compression)
+                    if (buffer.Length >= 2)
+                    {
+                        byte secondByte = buffer[1];
+                        if (secondByte == 0x01 || secondByte == 0x5E || secondByte == 0x9C || 
+                            secondByte == 0xDA || secondByte == 0x20 || secondByte == 0x7D || 
+                            secondByte == 0xBB || secondByte == 0xF9)
+                        {
+                            throw new InvalidDataException("The file appears to be a ZLIB archive. TAR format expected.");
+                        }
+                    }
                     break;
             }
+
+            // If we can't identify the specific format, provide a generic message
+            throw new InvalidDataException("The file is not a valid TAR archive format.");
         }
     }
 }
