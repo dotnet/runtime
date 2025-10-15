@@ -1,5 +1,6 @@
 <Project DefaultTargets="Build">
   <Import Project="Common\dirs.proj" />
+  <Import Project="$(RepoRoot)/eng/testing/Android/AndroidNdkCompiler.props" Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot'" />
   <Import Project="Directory.Build.targets" />
   <Import Project="xunit-wrappers.targets" />
 
@@ -486,6 +487,7 @@
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(CppCompilerAndLinker)' != ''">$(GroupBuildCmd) "/p:CppCompilerAndLinker=$(CppCompilerAndLinker)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcUseServerGc)' == 'false'">$(GroupBuildCmd) "/p:IlcUseServerGc=false"</GroupBuildCmd>

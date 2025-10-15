@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup Condition="'$(TargetOS)' == 'android'">
+    <NdkToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</NdkToolchainPrebuiltOS>
+    <NdkToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</NdkToolchainPrebuiltOS>
+    <NdkToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows-x86_64</NdkToolchainPrebuiltOS>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">$(ANDROID_NDK_ROOT)\toolchains\llvm\prebuilt\$(NdkToolchainPrebuiltOS)\bin\clang</CppCompilerAndLinker>
+  </PropertyGroup>
+</Project>
