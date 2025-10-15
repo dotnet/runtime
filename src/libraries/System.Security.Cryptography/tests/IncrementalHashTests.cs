@@ -527,8 +527,6 @@ namespace System.Security.Cryptography.Tests
             {
                 referenceAlgorithm.Key = Array.Empty<byte>();
                 cloned.AppendData([1, 2, 3]);
-
-
                 byte[] referenceHash = referenceAlgorithm.ComputeHash([1, 2, 3]);
                 byte[] clonedResult = new byte[referenceHash.Length];
                 Assert.True(cloned.TryGetHashAndReset(clonedResult, out int bytesWritten));
