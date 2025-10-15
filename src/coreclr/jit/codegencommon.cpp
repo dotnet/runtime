@@ -2527,8 +2527,8 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
     }
 
 #ifdef TARGET_AMD64
-    // Otherwise on x64 (win-x64 and SysV) r8 is never used for return values
-    return RBM_R8;
+    // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values
+    return RBM_R9;
 #else
     // On x86 it's more difficult: we have only eax, ecx and edx available as volatile
     // registers, and all of them may be used for return values (longs + async continuation).
