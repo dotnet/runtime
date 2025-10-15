@@ -9,6 +9,7 @@
 #include <brotli/encode.h>
 #include <brotli/port.h>
 #include <brotli/types.h>
+#include <zstd.h>
 
 static const Entry s_compressionNative[] =
 {
@@ -32,6 +33,37 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_InflateEnd)
     DllImportEntry(CompressionNative_InflateInit2_)
     DllImportEntry(CompressionNative_InflateReset2_)
+    DllImportEntry(ZSTD_createCCtx)
+    DllImportEntry(ZSTD_createDCtx)
+    DllImportEntry(ZSTD_freeCCtx)
+    DllImportEntry(ZSTD_freeDCtx)
+    DllImportEntry(ZSTD_createCDict)
+    DllImportEntry(ZSTD_freeCDict)
+    DllImportEntry(ZSTD_createDDict)
+    DllImportEntry(ZSTD_freeDDict)
+    DllImportEntry(ZSTD_decompress)
+    DllImportEntry(ZSTD_decompressDCtx)
+    DllImportEntry(ZSTD_decompress_usingDDict)
+    DllImportEntry(ZSTD_decompressBound)
+    DllImportEntry(ZSTD_decompressStream)
+    DllImportEntry(ZSTD_DCtx_reset)
+    DllImportEntry(ZSTD_DCtx_refDDict)
+    DllImportEntry(ZSTD_CCtx_refCDict)
+    DllImportEntry(ZSTD_compressBound)
+    DllImportEntry(ZSTD_compress)
+    DllImportEntry(ZSTD_compressCCtx)
+    DllImportEntry(ZSTD_compress_usingCDict)
+    DllImportEntry(ZSTD_compressStream2)
+    DllImportEntry(ZSTD_CCtx_setParameter)
+    DllImportEntry(ZSTD_DCtx_setParameter)
+    DllImportEntry(ZSTD_CCtx_reset)
+    DllImportEntry(ZSTD_minCLevel)
+    DllImportEntry(ZSTD_maxCLevel)
+    DllImportEntry(ZSTD_defaultCLevel)
+    DllImportEntry(ZSTD_isError)
+    DllImportEntry(ZSTD_getErrorName)
+    DllImportEntry(ZSTD_DCtx_refPrefix)
+    DllImportEntry(ZSTD_CCtx_refPrefix)
 };
 
 EXTERN_C const void* CompressionResolveDllImport(const char* name);
