@@ -625,8 +625,39 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.DumpNativeImage(loadedBase, name, display, libSupport, dis) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess2.GetGcNotification(GcEvtArgs* gcEvtArgs)
-        => _legacyProcess2 is not null ? _legacyProcess2.GetGcNotification(gcEvtArgs) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.E_NOTIMPL;
+#if DEBUG
+        if (_legacyProcess2 is not null)
+        {
+            int hrLocal = _legacyProcess2.GetGcNotification(gcEvtArgs);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess2.SetGcNotification(GcEvtArgs gcEvtArgs)
-        => _legacyProcess2 is not null ? _legacyProcess2.SetGcNotification(gcEvtArgs) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (gcEvtArgs.type >= GcEvtArgs.GcEvt_t.GC_EVENT_TYPE_MAX)
+                throw new ArgumentException();
+            _target.Contracts.Notifications.SetGcNotification(gcEvtArgs.condemnedGeneration);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess2 is not null)
+        {
+            // update the DAC cache
+            int hrLocal = _legacyProcess2.SetGcNotification(gcEvtArgs);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
+    }
 }

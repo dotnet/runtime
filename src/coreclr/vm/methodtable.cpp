@@ -1265,7 +1265,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
-        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner))
+        pTargetMT->GetInstantiation().ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
     {
         return TRUE;
     }
@@ -1290,7 +1290,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
             TypeHandle thArg = inst[i];
             if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             {
-                thArg = pMTInterfaceMapOwner;
+                thArg = pMTInterfaceMapOwner->GetSpecialInstantiationType();
             }
 
             TypeHandle thTargetArg = targetInst[i];
@@ -1753,6 +1753,63 @@ NOINLINE BOOL MethodTable::ImplementsInterface(MethodTable *pInterface)
     return ImplementsInterfaceInline(pInterface);
 }
 
+bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMT->IsInterface()); // class we are looking up should be an interface
+    }
+    CONTRACTL_END;
+
+    MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
+
+    if (pCurrentMethodTable == pMT)
+        return true;
+        
+    if (pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pCurrentMethodTable->HasSameTypeDefAs(pMT))
+    {
+        // Any matches need to use the special marker type logic
+        if (!pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
+        {
+            TypeHandle pSpecialInstantiationType = pCurrentMethodTable->GetSpecialInstantiationType();
+            // If we reach here, we are trying to do a compare with a value in the interface map which is a special marker type
+            // First check for exact match.
+            if (pMT->GetInstantiation().ContainsAllOneType(pSpecialInstantiationType))
+            {
+                // We match exactly, and have an actual pMT loaded. Insert
+                // the searched for interface if it is fully loaded, so that
+                // future checks are more efficient
+#ifndef DACCESS_COMPILE
+                if (pMT->IsFullyLoaded())
+                    SetInterface(pMT);
+#endif 
+                return true;
+            }
+            else
+            {
+                // We don't match exactly, but we may still be equivalent
+                for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
+                {
+                    TypeHandle arg = pMT->GetInstantiation()[i];
+                    if (!arg.IsEquivalentTo(pSpecialInstantiationType))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+    else
+    {
+        // We don't have a special marker type in the interface map, so we need to do the normal equivalence check
+        return pCurrentMethodTable->IsEquivalentTo(pMT);
+    }
+}
+
 //==========================================================================================
 BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
 {
@@ -1778,16 +1835,12 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
     if (numInterfaces == 0)
         return FALSE;
 
-    InterfaceInfo_t *pInfo = GetInterfaceMap();
-
-    do
+    InterfaceMapIterator it = IterateInterfaceMap();
+    while (it.Next())
     {
-        if (pInfo->GetMethodTable()->IsEquivalentTo(pInterface))
+        if (it.CurrentInterfaceEquivalentTo(this, pInterface))
             return TRUE;
-
-        pInfo++;
     }
-    while (--numInterfaces);
 
     return FALSE;
 }
@@ -4165,12 +4218,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
 
 VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thConstraint, UINT resIDWhy)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (thConstraint.IsArray())
     {
@@ -4204,22 +4252,181 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
 
 }
 
+VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSigPtr, MethodTable *pAskingMT, UINT resIDWhy)
+{
+    STANDARD_VM_CONTRACT;
+
+    CorElementType elemType;
+    IfFailThrow(pSigPtr->GetElemType(&elemType));
+    switch (elemType)
+    {
+        case ELEMENT_TYPE_CLASS:
+        case ELEMENT_TYPE_VALUETYPE:
+        {
+            mdToken typeDefOrRef;
+            IfFailThrow(pSigPtr->GetToken(&typeDefOrRef));
+
+            TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes, CLASS_DEPENDENCIES_LOADED);
+            DoAccessibilityCheckForConstraint(pAskingMT, th, resIDWhy);
+            break;
+        }
+        case ELEMENT_TYPE_GENERICINST:
+        {
+            IfFailThrow(pSigPtr->GetElemType(&elemType));
+            if (!(elemType == ELEMENT_TYPE_CLASS || elemType == ELEMENT_TYPE_VALUETYPE))
+            {
+                COMPlusThrow(kTypeLoadException, IDS_CLASSLOAD_BADFORMAT);
+            }
+            mdToken typeDefOrRef;
+            IfFailThrow(pSigPtr->GetToken(&typeDefOrRef));
+            TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pModule, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, tdNoTypes, CLASS_DEPENDENCIES_LOADED);
+            DoAccessibilityCheckForConstraint(pAskingMT, th, resIDWhy);
+            uint32_t numArgs;
+            IfFailThrow(pSigPtr->GetData(&numArgs));
+            for (uint32_t i = 0; i < numArgs; i++)
+            {
+                DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
+            }
+            break;
+        }
+        case ELEMENT_TYPE_SZARRAY:
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+            DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
+            break;
+        case ELEMENT_TYPE_ARRAY:
+        {
+            IfFailThrow(pSigPtr->GetElemType(&elemType));
+            DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
+            uint32_t rank;
+            IfFailThrow(pSigPtr->GetData(&rank));
+            uint32_t numSizes;
+            IfFailThrow(pSigPtr->GetData(&numSizes));
+            for (ULONG i = 0; i < numSizes; i++)
+            {
+                uint32_t size;
+                IfFailThrow(pSigPtr->GetData(&size));
+            }
+            uint32_t numLoBounds;
+            IfFailThrow(pSigPtr->GetData(&numLoBounds));
+            for (uint32_t i = 0; i < numLoBounds; i++)
+            {
+                uint32_t loBound;
+                IfFailThrow(pSigPtr->GetData(&loBound));
+            }
+            break;
+        }
+        case ELEMENT_TYPE_FNPTR:
+        {
+            uint32_t uCallConv = 0;
+            IfFailThrow(pSigPtr->GetData(&uCallConv));
+
+            if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+            {
+                // Generic function pointers are not allowed.
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
+            // Get the arg count.
+            uint32_t cArgs = 0;
+            IfFailThrow(pSigPtr->GetData(&cArgs));
+
+            // Loop for cArgs + 1 to handle the return type and all the args
+            for (uint32_t i = 0; i <= cArgs; i++)
+            {
+                DoAccessibilityCheckForConstraintSignature(pModule, pSigPtr, pAskingMT, resIDWhy);
+            }
+            break;
+        }
+        case ELEMENT_TYPE_VOID:
+        case ELEMENT_TYPE_BOOLEAN:
+        case ELEMENT_TYPE_CHAR:
+        case ELEMENT_TYPE_I1:
+        case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_I2:
+        case ELEMENT_TYPE_U2:
+        case ELEMENT_TYPE_I4:
+        case ELEMENT_TYPE_U4:
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+        case ELEMENT_TYPE_I:
+        case ELEMENT_TYPE_U:
+        case ELEMENT_TYPE_OBJECT:
+        case ELEMENT_TYPE_STRING:
+        case ELEMENT_TYPE_TYPEDBYREF:
+            // Primitive types and such. Nothing to check
+            break;
+        
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
+        {
+            // A generic variable. Its always accessible, but we do need to parse it
+            uint32_t varNumber;
+            IfFailThrow(pSigPtr->GetData(&varNumber));
+            break;
+        }
+
+        default:
+            // Unknown element type, bad format
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+            break;
+    }
+}
+
+
 VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc *pTyVar, UINT resIDWhy)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DWORD numConstraints;
-    TypeHandle *pthConstraints = pTyVar->GetCachedConstraints(&numConstraints);
+    TypeHandle *pthConstraints = pTyVar->GetConstraints(&numConstraints, CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
     for (DWORD cidx = 0; cidx < numConstraints; cidx++)
     {
         TypeHandle thConstraint = pthConstraints[cidx];
 
-        DoAccessibilityCheckForConstraint(pAskingMT, thConstraint, resIDWhy);
+        if (thConstraint.IsNull())
+        {
+            // This is a constraint which we didn't load above. Instead of doing the full load, just iterate the signature of the constraint to make sure all of the TypeDefs/Refs are accessible
+            Module *pModule = pTyVar->GetModule();
+
+            IMDInternalImport* pInternalImport = pModule->GetMDImport();
+            HENUMInternalHolder hEnum(pInternalImport);
+            mdGenericParamConstraint tkConstraint;
+            hEnum.EnumInit(mdtGenericParamConstraint, pTyVar->GetToken());
+            DWORD i = 0;
+            while (pInternalImport->EnumNext(&hEnum, &tkConstraint))
+            {
+                _ASSERTE(i <= numConstraints);
+                if (i == cidx)
+                {
+                    // We've found the constraint we're looking for.
+                    mdToken tkConstraintType, tkParam;
+                    if (FAILED(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType)))
+                    {
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
+                    _ASSERTE(tkParam == pTyVar->GetToken());
+
+                    _ASSERTE(TypeFromToken(tkConstraintType) == mdtTypeSpec);
+                    ULONG cSig;
+                    PCCOR_SIGNATURE pSig;
+
+                    if (FAILED(pInternalImport->GetTypeSpecFromToken(tkConstraintType, &pSig, &cSig)))
+                    {
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
+                    SigPointer sigPtr(pSig, cSig);
+                    DoAccessibilityCheckForConstraintSignature(pModule, &sigPtr, pAskingMT, resIDWhy);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            DoAccessibilityCheckForConstraint(pAskingMT, thConstraint, resIDWhy);
+        }
     }
 }
 
@@ -4387,13 +4594,11 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     bool fNeedsSanityChecks = true;
 
-#ifdef FEATURE_READYTORUN
     Module * pModule = GetModule();
 
     // No sanity checks for ready-to-run compiled images if possible
-    if (pModule->IsSystem() || (pModule->IsReadyToRun() && pModule->GetReadyToRunInfo()->SkipTypeValidation()))
+    if (pModule->SkipTypeValidation())
         fNeedsSanityChecks = false;
-#endif
 
     bool fNeedAccessChecks = (level == CLASS_LOADED) &&
                              fNeedsSanityChecks &&
@@ -4579,10 +4784,11 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             for (DWORD i = 0; i < formalParams.GetNumArgs(); i++)
             {
+                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked 
+                // via the call to GetConstraints which will eventually call EEClass::CheckVarianceInSig
                 BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth);
 
                 TypeVarTypeDesc *pTyVar = formalParams[i].AsGenericVariable();
-                pTyVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
                 if (!Bounded(pTyVar, formalParams.GetNumArgs()))
                 {
                     COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_VAR_CONSTRAINTS);
@@ -4603,15 +4809,10 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
                     if (pMD->IsGenericMethodDefinition() && pMD->IsTypicalMethodDefinition())
                     {
-                        BOOL fHasCircularClassConstraints = TRUE;
                         BOOL fHasCircularMethodConstraints = TRUE;
 
-                        pMD->LoadConstraintsForTypicalMethodDefinition(&fHasCircularClassConstraints, &fHasCircularMethodConstraints, CLASS_DEPENDENCIES_LOADED);
+                        pMD->CheckConstraintMetadataValidity(&fHasCircularMethodConstraints);
 
-                        if (fHasCircularClassConstraints)
-                        {
-                            COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_VAR_CONSTRAINTS);
-                        }
                         if (fHasCircularMethodConstraints)
                         {
                             COMPlusThrow(kTypeLoadException, VER_E_CIRCULAR_MVAR_CONSTRAINTS);
@@ -5577,6 +5778,27 @@ namespace
     }
 }
 
+// Looking only at the typedef details of pMT, determine if it might have a candidate implementation
+bool InterfaceMayHaveCandidateImplementation(MethodTable *pMT, MethodDesc *pInterfaceMD)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    MethodTable *pInterfaceMT = pInterfaceMD->GetMethodTable();
+
+    // If a method is defined on pMT and isn't abstract, then it might have a default implementation on that type if it isn't abstract
+    if (pMT->HasSameTypeDefAs(pInterfaceMT))
+    {
+        return !pInterfaceMD->IsAbstract();
+    }
+
+    // If a pMT has MethodImpl records then its possible that it could override the interface method
+    if (pMT->GetClass()->ContainsMethodImpls())
+        return true;
+
+    // Otherwise the type pMT cannot possibly have a candidate implementation for pInterfaceMD
+    return false;
+}
+
 // Find the default interface implementation method for interface dispatch
 // It is either the interface method with default interface method implementation,
 // or an most specific interface with an explicit methodimpl overriding the method
@@ -5610,7 +5832,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
+    if (IsInterface() && InterfaceMayHaveCandidateImplementation(this, pInterfaceMD) && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &candidateMaybe, level))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5647,73 +5869,76 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
             while (!it.Finished())
             {
-                MethodTable *pCurMT = it.GetInterface(pMT, level);
-
-                MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
+                if (InterfaceMayHaveCandidateImplementation(it.GetInterfaceApprox(), pInterfaceMD))
                 {
-                    //
-                    // Found a match. But is it a more specific match (we want most specific interfaces)
-                    //
-                    _ASSERTE(pCurMD != NULL);
-                    bool needToInsert = true;
-                    bool seenMoreSpecific = false;
+                    MethodTable *pCurMT = it.GetInterface(pMT, level);
 
-                    // We need to maintain the invariant that the candidates are always the most specific
-                    // in all path scaned so far. There might be multiple incompatible candidates
-                    for (unsigned i = 0; i < candidatesCount; ++i)
+                    MethodDesc *pCurMD = NULL;
+                    if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, findDefaultImplementationFlags, &pCurMD, level))
                     {
-                        MethodTable *pCandidateMT = candidates[i].pMT;
-                        if (pCandidateMT == NULL)
-                            continue;
+                        //
+                        // Found a match. But is it a more specific match (we want most specific interfaces)
+                        //
+                        _ASSERTE(pCurMD != NULL);
+                        bool needToInsert = true;
+                        bool seenMoreSpecific = false;
 
-                        if (pCandidateMT == pCurMT)
+                        // We need to maintain the invariant that the candidates are always the most specific
+                        // in all path scaned so far. There might be multiple incompatible candidates
+                        for (unsigned i = 0; i < candidatesCount; ++i)
                         {
-                            // A dup - we are done
-                            needToInsert = false;
-                            break;
-                        }
+                            MethodTable *pCandidateMT = candidates[i].pMT;
+                            if (pCandidateMT == NULL)
+                                continue;
 
-                        if (allowVariance && pCandidateMT->HasSameTypeDefAs(pCurMT))
-                        {
-                            // Variant match on the same type - this is a tie
-                        }
-                        else if (pCurMT->CanCastToInterface(pCandidateMT))
-                        {
-                            // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
-                            if (!seenMoreSpecific)
+                            if (pCandidateMT == pCurMT)
                             {
-                                seenMoreSpecific = true;
-                                candidates[i].pMT = pCurMT;
-                                candidates[i].pMD = pCurMD;
+                                // A dup - we are done
+                                needToInsert = false;
+                                break;
+                            }
+
+                            if (allowVariance && pCandidateMT->HasSameTypeDefAs(pCurMT))
+                            {
+                                // Variant match on the same type - this is a tie
+                            }
+                            else if (pCurMT->CanCastToInterface(pCandidateMT))
+                            {
+                                // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
+                                if (!seenMoreSpecific)
+                                {
+                                    seenMoreSpecific = true;
+                                    candidates[i].pMT = pCurMT;
+                                    candidates[i].pMD = pCurMD;
+                                }
+                                else
+                                {
+                                    candidates[i].pMT = NULL;
+                                    candidates[i].pMD = NULL;
+                                }
+
+                                needToInsert = false;
+                            }
+                            else if (pCandidateMT->CanCastToInterface(pCurMT))
+                            {
+                                // pCurMT is less specific - we don't need to scan more entries as this entry can
+                                // represent pCurMT (other entries are incompatible with pCurMT)
+                                needToInsert = false;
+                                break;
                             }
                             else
                             {
-                                candidates[i].pMT = NULL;
-                                candidates[i].pMD = NULL;
+                                // pCurMT is incompatible - keep scanning
                             }
+                        }
 
-                            needToInsert = false;
-                        }
-                        else if (pCandidateMT->CanCastToInterface(pCurMT))
+                        if (needToInsert)
                         {
-                            // pCurMT is less specific - we don't need to scan more entries as this entry can
-                            // represent pCurMT (other entries are incompatible with pCurMT)
-                            needToInsert = false;
-                            break;
+                            ASSERT(candidatesCount < candidates.Size());
+                            candidates[candidatesCount].pMT = pCurMT;
+                            candidates[candidatesCount].pMD = pCurMD;
+                            candidatesCount++;
                         }
-                        else
-                        {
-                            // pCurMT is incompatible - keep scanning
-                        }
-                    }
-
-                    if (needToInsert)
-                    {
-                        ASSERT(candidatesCount < candidates.Size());
-                        candidates[candidatesCount].pMT = pCurMT;
-                        candidates[candidatesCount].pMD = pCurMD;
-                        candidatesCount++;
                     }
                 }
 
@@ -8123,6 +8348,21 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             // entries, let's reset the count and just break out. (Should we throw?)
             break;
         }
+
+        LPCUTF8     szMember = NULL;
+        PCCOR_SIGNATURE pSigMember = NULL;
+        DWORD       cSigMember = 0;
+        if (TypeFromToken(methodDecl) == mdtMemberRef)
+        {
+            IfFailThrow(pMDInternalImport->GetNameAndSigOfMemberRef(methodDecl, &pSigMember, &cSigMember, &szMember));
+
+            // Do a quick name check to avoid excess use of FindMethod and the type load below
+            if (strcmp(szMember, pInterfaceMD->GetName()) != 0)
+            {
+                continue;
+            }
+        }
+
         mdToken tkParent;
         hr = pMDInternalImport->GetParentToken(methodDecl, &tkParent);
         if (FAILED(hr))
@@ -8169,19 +8409,8 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         }
         else if (TypeFromToken(methodDecl) == mdtMemberRef)
         {
-            LPCUTF8     szMember;
-            PCCOR_SIGNATURE pSig;
-            DWORD       cSig;
-
-            IfFailThrow(pMDInternalImport->GetNameAndSigOfMemberRef(methodDecl, &pSig, &cSig, &szMember));
-
-            // Do a quick name check to avoid excess use of FindMethod
-            if (strcmp(szMember, pInterfaceMD->GetName()) != 0)
-            {
-                continue;
-            }
-
-            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSig, cSig, GetModule());
+            // We've already gotten the szMember, pSigMember, and cSigMember as a result of the early out check above.
+            pMethodDecl = MemberLoader::FindMethod(pInterfaceMT, szMember, pSigMember, cSigMember, GetModule());
         }
         else
         {
@@ -8388,6 +8617,12 @@ MethodTable::TryResolveConstraintMethodApprox(
         DWORD cPotentialMatchingInterfaces = 0;
         while (it.Next())
         {
+            // If the approx type doesn't match by type handle, then it clearly can't match
+            // by canonical type. This avoids force loading the interface and breaking the
+            // special interface map type scenario
+            if (!it.GetInterfaceApprox()->HasSameTypeDefAs(thInterfaceType.AsMethodTable()))
+                continue;
+
             TypeHandle thPotentialInterfaceType(it.GetInterface(pCanonMT));
             if (thPotentialInterfaceType.AsMethodTable()->GetCanonicalMethodTable() ==
                 thInterfaceType.AsMethodTable()->GetCanonicalMethodTable())
@@ -8674,7 +8909,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
-            ownerAsInst[i] = pMTOwner;
+            ownerAsInst[i] = pMTOwner->GetSpecialInstantiationType();
 
         _ASSERTE(pResult->GetInstantiation().GetNumArgs() <= MaxGenericParametersForSpecialMarkerType);
         Instantiation inst(ownerAsInst, pResult->GetInstantiation().GetNumArgs());

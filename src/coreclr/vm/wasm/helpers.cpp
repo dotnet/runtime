@@ -3,6 +3,7 @@
 //
 
 #include <interpretershared.h>
+#include "shash.h"
 
 extern "C" void STDCALL CallCountingStubCode()
 {
@@ -85,16 +86,6 @@ extern "C" void STDCALL FixupPrecodeCode_End()
     PORTABILITY_ASSERT("FixupPrecodeCode_End is not implemented on wasm");
 }
 
-extern "C" void STDCALL JIT_PatchedCodeLast()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeLast is not implemented on wasm");
-}
-
-extern "C" void STDCALL JIT_PatchedCodeStart()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeStart is not implemented on wasm");
-}
-
 extern "C" void RhpInitialInterfaceDispatch()
 {
     PORTABILITY_ASSERT("RhpInitialInterfaceDispatch is not implemented on wasm");
@@ -119,7 +110,47 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    PORTABILITY_ASSERT("InlinedCallFrame::UpdateRegDisplay_Impl is not implemented on wasm");
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+#ifdef PROFILING_SUPPORTED
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+#endif
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (!InlinedCallFrame::FrameHasActiveCall(this))
+    {
+        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
+        return;
+    }
+
+    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef FEATURE_INTERPRETER
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
+        SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
+    }
+#endif // FEATURE_INTERPRETER
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -379,12 +410,6 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-extern "C" int32_t SystemJS_RandomBytes(uint8_t* buffer, int32_t bufferLength)
-{
-    PORTABILITY_ASSERT("SystemJS_RandomBytes is not implemented");
-    return -1;
-}
-
 void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
@@ -399,7 +424,7 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
 
-    // WASMTODO: Reconcile calling conventions.
+    // WASM-TODO: Reconcile calling conventions.
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
@@ -410,9 +435,12 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
 
 namespace
 {
-    // Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
-#define ARG_IND(i) ((int32_t)((int32_t*)(pArgs + (i * INTERP_STACK_SLOT_SIZE))))
-#define ARG(i) (*(int32_t*)ARG_IND(i))
+// Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
+#define ARG_ADDR(i) (pArgs + (i * INTERP_STACK_SLOT_SIZE))
+#define ARG_IND(i) ((int32_t)((int32_t*)ARG_ADDR(i)))
+#define ARG_I32(i) (*(int32_t*)ARG_ADDR(i))
+#define ARG_I64(i) (*(int64_t*)ARG_ADDR(i))
+#define ARG_F64(i) (*(double*)ARG_ADDR(i))
 
     void CallFunc_Void_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
@@ -423,25 +451,37 @@ namespace
     void CallFunc_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
-        (*fptr)(ARG(0));
+        (*fptr)(ARG_I32(0));
     }
 
     void CallFunc_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
-        (*fptr)(ARG(0), ARG(1));
+        (*fptr)(ARG_I32(0), ARG_I32(1));
     }
 
     void CallFunc_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG(0), ARG(1), ARG(2));
+        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
+    }
+
+    void CallFunc_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3));
+    }
+
+    void CallFunc_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
     }
 
     void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
     }
 
     void CallFunc_Void_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
@@ -453,28 +493,32 @@ namespace
     void CallFunc_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG(0));
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0));
     }
 
     void CallFunc_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1));
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1));
     }
 
     void CallFunc_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2));
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
     }
 
     void CallFunc_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG(0), ARG(1), ARG(2), ARG(3));
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3));
     }
 
-    // Special thunks for signatures with indirect arguments.
+    void CallFunc_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
+    }
 
     void CallFunc_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
@@ -482,64 +526,128 @@ namespace
         (*fptr)(ARG_IND(0));
     }
 
-
     void CallFunc_I32IND_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG(1));
+        (*fptr)(ARG_IND(0), ARG_I32(1));
+    }
+
+    void CallFunc_I32IND_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_IND(1));
     }
 
     void CallFunc_I32IND_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG(1), ARG(2));
+        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2));
+    }
+
+    void CallFunc_I32IND_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3));
+    }
+
+    void CallFunc_I32IND_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
+    }
+
+    void CallFunc_I32IND_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
     }
 
     void CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 
     void CallFunc_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1));
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1));
+    }
+
+    void CallFunc_I32IND_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2));
+    }
+
+    void CallFunc_I32IND_I32_I32IND_I32IND_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_IND(2), ARG_IND(3));
+    }
+
+    void CallFunc_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
+    }
+
+    void CallFunc_I32_I32IND_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2), ARG_IND(3), ARG_I32(4));
     }
 
     void CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
     }
 
-#undef ARG
-
-    void* const RetVoidThunks[] =
+    void CallFunc_I32_I64_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
-        (void*)&CallFunc_Void_RetVoid,
-        (void*)&CallFunc_I32_RetVoid,
-        (void*)&CallFunc_I32_I32_RetVoid,
-        (void*)&CallFunc_I32_I32_I32_RetVoid,
-        NULL,
-        NULL,
-        (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid,
-    };
+        int32_t (*fptr)(int32_t, int64_t, int32_t) = (int32_t (*)(int32_t, int64_t, int32_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2));
+    }
 
-    void* const RetI32Thunks[] =
+    void CallFunc_I32_I64_I32_I32_I32_I64_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
-        (void*)&CallFunc_Void_RetI32,
-        (void*)&CallFunc_I32_RetI32,
-        (void*)&CallFunc_I32_I32_RetI32,
-        (void*)&CallFunc_I32_I32_I32_RetI32,
-        (void*)&CallFunc_I32_I32_I32_I32_RetI32,
-    };
+        int32_t (*fptr)(int32_t, int64_t, int32_t, int32_t, int32_t, int64_t) = (int32_t (*)(int32_t, int64_t, int32_t, int32_t, int32_t, int64_t))pcode;
+        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I64(5));
+    }
+
+    void CallFunc_F64_RetF64(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        double (*fptr)(double) = (double (*)(double))pcode;
+        *(double*)pRet = (*fptr)(ARG_F64(0));
+    }
+
+    void CallFunc_I32_RetI64(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int64_t (*fptr)(int32_t) = (int64_t (*)(int32_t))pcode;
+        *(int64_t*)pRet = (*fptr)(ARG_I32(0));
+    }
+
+    void CallFunc_I32_I64_I32_RetI64(PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        int64_t (*fptr)(int32_t, int64_t, int32_t) = (int64_t (*)(int32_t, int64_t, int32_t))pcode;
+        *(int64_t*)pRet = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2));
+    }
+
+#undef ARG_ADDR
+#undef ARG_IND
+#undef ARG_I32
+#undef ARG_I64
+#undef ARG_F64
 
     enum class ConvertType
     {
         NotConvertible,
         ToI32,
-        ToI32Indirect
+        ToI64,
+        ToI32Indirect,
+        ToF32,
+        ToF64
     };
 
     ConvertType ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
@@ -565,13 +673,20 @@ namespace
             case ELEMENT_TYPE_FNPTR:
             case ELEMENT_TYPE_SZARRAY:
                 return ConvertType::ToI32;
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+                return ConvertType::ToI64;
+            case ELEMENT_TYPE_R4:
+                return ConvertType::ToF32;
+            case ELEMENT_TYPE_R8:
+                return ConvertType::ToF64;
             case ELEMENT_TYPE_TYPEDBYREF:
                 // Typed references are passed indirectly in WASM since they are larger than pointer size.
                 return ConvertType::ToI32Indirect;
             case ELEMENT_TYPE_VALUETYPE:
             {
                 // In WASM, values types that are larger than pointer size or have multiple fields are passed indirectly.
-                // WASMTODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
+                // WASM-TODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
                 TypeHandle vt = isReturn
                     ? sig.GetRetTypeHandleThrowing()
                     : sig.GetLastTypeHandleThrowing();
@@ -591,78 +706,142 @@ namespace
         }
     }
 
-    void* ComputeCalliSigThunkSpecial(bool isVoidReturn, uint32_t numArgs, ConvertType* args)
+    char GetTypeCode(ConvertType type)
+    {
+        switch (type)
+        {
+            case ConvertType::ToI32:
+                return 'i';
+            case ConvertType::ToI64:
+                return 'l';
+            case ConvertType::ToF32:
+                return 'f';
+            case ConvertType::ToF64:
+                return 'd';
+            case ConvertType::ToI32Indirect:
+                return 'n';
+            default:
+                PORTABILITY_ASSERT("Unknown type");
+                return '?';
+        }
+    }
+
+    bool GetSignatureKey(MetaSig& sig, char* keyBuffer, uint32_t maxSize)
     {
         STANDARD_VM_CONTRACT;
 
-        if (isVoidReturn)
+        uint32_t pos = 0;
+
+        if (sig.IsReturnTypeVoid())
         {
-            switch(numArgs)
-            {
-                case 1:
-                    if (args[0] == ConvertType::ToI32Indirect)
-                    {
-                        return (void*)&CallFunc_I32IND_RetVoid;
-                    }
-                    break;
-                case 2:
-                    if (args[0] == ConvertType::ToI32Indirect &&
-                        args[1] == ConvertType::ToI32)
-                    {
-                        return (void*)&CallFunc_I32IND_I32_RetVoid;
-                    }
-                    break;
-                case 3:
-                    if (args[0] == ConvertType::ToI32Indirect &&
-                        args[1] == ConvertType::ToI32 &&
-                        args[2] == ConvertType::ToI32)
-                    {
-                        return (void*)&CallFunc_I32IND_I32_I32_RetVoid;
-                    }
-                    break;
-                case 7:
-                    if (args[0] == ConvertType::ToI32Indirect &&
-                        args[1] == ConvertType::ToI32 &&
-                        args[2] == ConvertType::ToI32 &&
-                        args[3] == ConvertType::ToI32 &&
-                        args[4] == ConvertType::ToI32 &&
-                        args[5] == ConvertType::ToI32 &&
-                        args[6] == ConvertType::ToI32)
-                    {
-                        return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid;
-                    }
-                    break;
-            }
+            keyBuffer[pos++] = 'v';
         }
         else
         {
-            switch (numArgs) {
-                case 2:
-                    if (args[0] == ConvertType::ToI32Indirect &&
-                        args[1] == ConvertType::ToI32)
-                    {
-                        return (void*)&CallFunc_I32IND_I32_RetI32;
-                    }
-                    break;
-                case 6:
-                    if (args[0] == ConvertType::ToI32Indirect &&
-                        args[1] == ConvertType::ToI32 &&
-                        args[2] == ConvertType::ToI32 &&
-                        args[3] == ConvertType::ToI32 &&
-                        args[4] == ConvertType::ToI32 &&
-                        args[5] == ConvertType::ToI32)
-                    {
-                        return (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32;
-                    }
-                    break;
-            }
+            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */));
         }
 
-        return NULL;
+        if (sig.HasThis())
+            keyBuffer[pos++] = 'i';
+
+        for (CorElementType argType = sig.NextArg();
+            argType != ELEMENT_TYPE_END;
+            argType = sig.NextArg())
+        {
+            if (pos >= maxSize)
+                return false;
+
+            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
+        }
+
+        if (pos >= maxSize)
+            return false;
+
+        keyBuffer[pos] = 0;
+
+        return true;
+    }
+
+    struct StringToWasmSigThunk
+    {
+        const char* key;
+        void*       value;
+    };
+
+    StringToWasmSigThunk wasmThunks[] = {
+        { "v", (void*)&CallFunc_Void_RetVoid },
+        { "vi", (void*)&CallFunc_I32_RetVoid },
+        { "vii", (void*)&CallFunc_I32_I32_RetVoid },
+        { "viii", (void*)&CallFunc_I32_I32_I32_RetVoid },
+        { "viiii", (void*)&CallFunc_I32_I32_I32_I32_RetVoid },
+        { "viiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetVoid },
+        { "viiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid },
+
+        { "vn", (void*)&CallFunc_I32IND_RetVoid },
+        { "vni", (void*)&CallFunc_I32IND_I32_RetVoid },
+        { "vnii", (void*)&CallFunc_I32IND_I32_I32_RetVoid },
+        { "vniii", (void*)&CallFunc_I32IND_I32_I32_I32_RetVoid },
+        { "vniiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_RetVoid },
+        { "vniiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetVoid },
+        { "vniiiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid },
+        { "vnn", (void*)&CallFunc_I32IND_I32IND_RetVoid },
+
+        { "i", (void*)&CallFunc_Void_RetI32 },
+        { "ii", (void*)&CallFunc_I32_RetI32 },
+        { "iii", (void*)&CallFunc_I32_I32_RetI32 },
+        { "iiii", (void*)&CallFunc_I32_I32_I32_RetI32 },
+        { "iiiii", (void*)&CallFunc_I32_I32_I32_I32_RetI32 },
+        { "iiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetI32 },
+
+        { "ini",  (void*)&CallFunc_I32IND_I32_RetI32 },
+        { "inii",  (void*)&CallFunc_I32IND_I32_I32_RetI32 },
+        { "ininn", (void*)&CallFunc_I32IND_I32_I32IND_I32IND_RetI32 },
+        { "iini",  (void*)&CallFunc_I32_I32IND_I32_RetI32 },
+        { "iinini", (void*)&CallFunc_I32_I32IND_I32_I32IND_I32_RetI32 },
+        { "iniiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32 },
+
+        { "iili", (void*)&CallFunc_I32_I64_I32_RetI32 },
+        { "iiliiil", (void*)&CallFunc_I32_I64_I32_I32_I32_I64_RetI32 },
+
+        { "dd", (void*)&CallFunc_F64_RetF64 },
+
+        { "li", (void*)&CallFunc_I32_RetI64 },
+        { "lili", (void*)&CallFunc_I32_I64_I32_RetI64 },
+    };
+
+    class StringWasmThunkSHashTraits : public MapSHashTraits<const char*, void*>
+    {
+    public:
+        static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
+        static count_t Hash(const char* key) { return HashStringA(key); }
+    };
+
+    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringWasmThunkSHashTraits>> StringToWasmSigThunkHash;
+    static StringToWasmSigThunkHash* thunkCache = nullptr;
+
+    void* LookupThunk(const char* key)
+    {
+        StringToWasmSigThunkHash* table = VolatileLoad(&thunkCache);
+        if (table == nullptr)
+        {
+            StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+            for (const StringToWasmSigThunk& thunk : wasmThunks)
+                newTable->Add(thunk.key, thunk.value);
+
+            if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
+            {
+                // Another thread won the race, discard ours
+                delete newTable;
+            }
+            table = thunkCache;
+        }
+
+        void* thunk;
+        bool success = table->Lookup(key, &thunk);
+        return success ? thunk : nullptr;
     }
 
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
-    // Note: Currently only validates void return type and i32 wasm convertible arguments.
     void* ComputeCalliSigThunk(MetaSig& sig)
     {
         STANDARD_VM_CONTRACT;
@@ -682,52 +861,12 @@ namespace
                 return NULL;
         }
 
-        // Check return value. We only support void or i32 return types for now.
-        bool returnsVoid = sig.IsReturnTypeVoid();
-        if (!returnsVoid && ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */) != ConvertType::ToI32)
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2;
+        char* keyBuffer = (char*)alloca(keyBufferLen);
+        if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
 
-        ConvertType args[16];
-        _ASSERTE(sig.NumFixedArgs() < ARRAY_SIZE(args));
-
-        uint32_t i = 0;
-        // Ensure all arguments are wasm i32 compatible types.
-        for (CorElementType argType = sig.NextArg();
-            argType != ELEMENT_TYPE_END;
-            argType = sig.NextArg())
-        {
-            // If we have no conversion, immediately return.
-            ConvertType type = ConvertibleTo(argType, sig, false /* isReturn */);
-            if (type == ConvertType::NotConvertible)
-                return NULL;
-
-            args[i++] = type;
-        }
-
-        uint32_t numArgs = sig.NumFixedArgs();
-
-        // Check for homogeneous i32 argument types.
-        for (uint32_t j = 0; j < numArgs; j++)
-        {
-            if (args[j] != ConvertType::ToI32)
-                return ComputeCalliSigThunkSpecial(returnsVoid, numArgs, args);
-        }
-
-        void* const * thunks;
-        if (returnsVoid)
-        {
-            thunks = RetVoidThunks;
-            if (numArgs >= ARRAY_SIZE(RetVoidThunks))
-                return NULL;
-        }
-        else
-        {
-            thunks = RetI32Thunks;
-            if (numArgs >= ARRAY_SIZE(RetI32Thunks))
-                return NULL;
-        }
-
-        return thunks[numArgs];
+        return LookupThunk(keyBuffer);
     }
 }
 
@@ -751,7 +890,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 
     _ASSERTE(cookie != NULL);
 
-    InvokeCalliStub(target, cookie, pArgs, pRet);
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)

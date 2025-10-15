@@ -36,7 +36,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         _target = target;
         _legacyModule = legacyImpl;
         _legacyModule2 = legacyImpl as IXCLRDataModule2;
-        if (legacyImpl is not null && ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
+        if (legacyImpl is not null && System.Runtime.InteropServices.ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
         {
             // Release the AddRef from TryGetComInstance. We rely on the ref-count from holding on to IXCLRDataModule.
             Marshal.Release(_legacyModulePointer);

@@ -32,15 +32,14 @@ namespace System.Diagnostics
             set { }
         }
 
-        [ThreadStatic]
-        private static int t_indentLevel;
+        [field: ThreadStatic]
         public static int IndentLevel
         {
-            get => t_indentLevel;
+            get => field;
             set
             {
-                t_indentLevel = value < 0 ? 0 : value;
-                s_provider.OnIndentLevelChanged(t_indentLevel);
+                field = value < 0 ? 0 : value;
+                s_provider.OnIndentLevelChanged(field);
             }
         }
 

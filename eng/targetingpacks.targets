@@ -124,10 +124,10 @@
 
   <!-- Use local Crossgen2 pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalCrossgen2Pack"
-          Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '$(Crossgen2Dir)' != ''"
+          Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '$(Crossgen2InBuildDir)' != ''"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
-      <ResolvedCrossgen2Pack PackageDirectory="$(Crossgen2Dir)"
+      <ResolvedCrossgen2Pack PackageDirectory="$(Crossgen2InBuildDir)"
                              NuGetPackageVersion="$(ProductVersion)" />
     </ItemGroup>
   </Target>

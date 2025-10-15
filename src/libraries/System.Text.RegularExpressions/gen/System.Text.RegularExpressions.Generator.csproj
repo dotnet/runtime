@@ -14,6 +14,7 @@
     <NoWarn>$(NoWarn);CS0436;CS0649;CA1872</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
