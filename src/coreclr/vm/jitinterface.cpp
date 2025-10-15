@@ -3417,7 +3417,6 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     size_t requiredBufferSize = 0;
 
     TypeHandle th(cls);
-    IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
 
     auto append = [buffer, bufferSize, &bytesWritten, &requiredBufferSize](const char* str)
     {
@@ -3440,6 +3439,13 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
         requiredBufferSize += strLen;
     };
 
+    auto appendNum = [&](unsigned num)
+    {
+        char str[16];
+        sprintf_s(str, "%u", num);
+        append(str);
+    };
+
     // Subset of TypeString that does just what we need while staying in UTF8
     // and avoiding expensive copies. This function is called a lot in checked
     // builds.
@@ -3451,10 +3457,22 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
-        append("(dynamicClass)");
+        if (th.IsContinuation())
+        {
+            AsyncContinuationsManager::PrintContinuationName(
+                th.AsMethodTable(),
+                [&](LPCSTR str, LPCWSTR wstr) { append(str); },
+                appendNum);
+        }
+        else
+        {
+            append("(dynamicClass)");
+        }
     }
     else
     {
+        IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
+
         DWORD attr;
         IfFailThrow(pImport->GetTypeDefProps(td, &attr, NULL));
 

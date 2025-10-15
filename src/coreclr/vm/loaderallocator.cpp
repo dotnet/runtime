@@ -1414,6 +1414,8 @@ void LoaderAllocator::Terminate()
 
     if (m_asyncContinuationsManager != NULL)
     {
+        m_asyncContinuationsManager->NotifyUnloadingClasses();
+
         delete m_asyncContinuationsManager;
         m_asyncContinuationsManager = NULL;
     }

@@ -24,6 +24,23 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
     m_layouts.Init(16, &lock, m_allocator->GetLowFrequencyHeap());
 }
 
+void AsyncContinuationsManager::NotifyUnloadingClasses()
+{
+    if (!CORProfilerTrackClasses())
+    {
+        return;
+    }
+
+    EEHashTableIteration iter;
+    m_layouts.IterateStart(&iter);
+    while (m_layouts.IterateNext(&iter))
+    {
+        MethodTable* pMT = (MethodTable*)m_layouts.IterateGetValue(&iter);
+        ClassLoader::NotifyUnload(pMT, true);
+        ClassLoader::NotifyUnload(pMT, false);
+    }
+}
+
 static EEClass* volatile g_singletonContinuationEEClass;
 
 EEClass* AsyncContinuationsManager::GetOrCreateSingletonSubContinuationEEClass()
@@ -53,8 +70,8 @@ EEClass* AsyncContinuationsManager::CreateSingletonSubContinuationEEClass()
     pClass->SetMethodTable(pMT);
 
 #ifdef _DEBUG
-    pClass->SetDebugClassName("dynamicContinuation");
-    pMT->SetDebugClassName("dynamicContinuation");
+    pClass->SetDebugClassName("Continuation");
+    pMT->SetDebugClassName("Continuation");
 #endif
 
     if (InterlockedCompareExchangeT(&g_singletonContinuationEEClass, pClass, NULL) == NULL)
@@ -197,13 +214,11 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
         pamTracker);
 
 #ifdef DEBUG
-    size_t numObjRefs = 0;
-    EnumerateRunsOfObjRefs(dataSize, objRefs, [&](size_t start, size_t count) {
-        numObjRefs += count;
-        return true;
-        });
     StackSString debugName;
-    debugName.Printf("dynamicContinuation_%s_%u_%zu", asyncMethod->m_pszDebugMethodName, dataSize, numObjRefs);
+    PrintContinuationName(
+        pMT,
+        [&](LPCSTR str, LPCWSTR wstr) { debugName.AppendUTF8(str); },
+        [&](unsigned num) { debugName.AppendPrintf("%u", num); });
     const char* debugNameUTF8 = debugName.GetUTF8();
     size_t len = strlen(debugNameUTF8) + 1;
     char* name = (char*)pamTracker->Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
@@ -243,23 +258,41 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
         }
     }
 
+#ifdef FEATURE_EVENT_TRACE
+    UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
+#endif
+
     AllocMemTracker amTracker;
-    MethodTable* result = CreateNewContinuationMethodTable(dataSize, objRefs, adjustedDataOffsets, asyncMethod, &amTracker);
+    MethodTable* pNewMT = CreateNewContinuationMethodTable(dataSize, objRefs, adjustedDataOffsets, asyncMethod, &amTracker);
+    MethodTable* pReturnedMT = pNewMT;
     {
         CrstHolder lock(&m_layoutsLock);
         MethodTable* lookupResult;
         if (m_layouts.GetValue(ContinuationLayoutKey(&keyData), (HashDatum*)&lookupResult))
         {
-            result = lookupResult;
+            pReturnedMT = lookupResult;
         }
         else
         {
-            m_layouts.InsertValue(ContinuationLayoutKey(result), result);
-            amTracker.SuppressRelease();
+            m_layouts.InsertValue(ContinuationLayoutKey(pNewMT), pNewMT);
         }
     }
 
-    return result;
+    if (pReturnedMT == pNewMT)
+    {
+        amTracker.SuppressRelease();
+
+        ClassLoader::NotifyLoad(TypeHandle(pNewMT));
+
+#ifdef FEATURE_EVENT_TRACE
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+        {
+            ETW::TypeSystemLog::TypeLoadEnd(typeLoad, TypeHandle(pNewMT), CLASS_LOADED);
+        }
+#endif
+    }
+
+    return pReturnedMT;
 }
 
 ContinuationLayoutKey::ContinuationLayoutKey(MethodTable* pMT)

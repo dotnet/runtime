@@ -57,8 +57,33 @@ class AsyncContinuationsManager
 public:
     AsyncContinuationsManager(LoaderAllocator* allocator);
     MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod);
+    void NotifyUnloadingClasses();
+
+    template<typename AppendString, typename AppendNum>
+    static void PrintContinuationName(MethodTable* pMT, AppendString append, AppendNum appendNum);
 };
 
 typedef DPTR(AsyncContinuationsManager) PTR_AsyncContinuationsManager;
+
+template<typename AppendString, typename AppendNum>
+void AsyncContinuationsManager::PrintContinuationName(MethodTable* pMT, AppendString append, AppendNum appendNum)
+{
+    append("Continuation_", W("Continuation_"));
+    appendNum(pMT->GetBaseSize() - (OBJHEADER_SIZE + OFFSETOF__CORINFO_Continuation__data));
+    CGCDesc* desc = CGCDesc::GetCGCDescFromMT(pMT);
+    CGCDescSeries* lowestSeries = desc->GetLowestSeries();
+    for (CGCDescSeries* curSeries = desc->GetHighestSeries(); curSeries >= lowestSeries; curSeries--)
+    {
+        if (curSeries->GetSeriesOffset() < OFFSETOF__CORINFO_Continuation__data)
+        {
+            continue;
+        }
+
+        append("_", W("_"));
+        appendNum((unsigned)(curSeries->GetSeriesOffset() - OFFSETOF__CORINFO_Continuation__data));
+        append("_", W("_"));
+        appendNum((unsigned)((curSeries->GetSeriesSize() + pMT->GetBaseSize()) / TARGET_POINTER_SIZE));
+    }
+}
 
 #endif

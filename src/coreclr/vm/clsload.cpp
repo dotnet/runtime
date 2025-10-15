@@ -2879,7 +2879,7 @@ void ClassLoader::NotifyLoad(TypeHandle typeHnd)
     }
 #endif //PROFILING_SUPPORTED
 
-    if (pMT->IsTypicalTypeDefinition())
+    if (pMT->IsTypicalTypeDefinition() && !IsNilToken(pMT->GetCl()))
     {
         LOG((LF_CLASSLOADER, LL_INFO100, "Successfully loaded class %s\n", pMT->GetDebugClassName()));
 
