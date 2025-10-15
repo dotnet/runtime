@@ -879,6 +879,12 @@ LEAF_ENTRY Store_XMM3, _TEXT
         jmp qword ptr [r11]
 LEAF_END Store_XMM3, _TEXT
 
+LEAF_ENTRY InjectInterpStackAlign, _TEXT
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END InjectInterpStackAlign, _TEXT
+
 ; Copy arguments from the interpreter stack to the processor stack.
 ; The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack, _TEXT

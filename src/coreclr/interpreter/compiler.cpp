@@ -1865,6 +1865,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // All vars are stored at 8 byte aligned offsets
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
+
+        // We do not align beyond the stack alignment 
+        // (This is relevant for structs with very high alignment requirements, 
+        // where we align within struct layout, but the structs are not actually
+        // aligned on the stack)
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
     }
     else
     {
@@ -3487,7 +3494,7 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
-    PushStackType(StackTypeI, NULL);
+    PushStackType(StackTypeByRef, NULL);
     int32_t intermediateVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
