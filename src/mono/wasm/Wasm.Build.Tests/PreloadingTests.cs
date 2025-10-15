@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -33,7 +34,7 @@ public class PreloadingTests : WasmTemplateTestsBase
         else
             BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintDotnetJs);
 
-        string? indexHtmlPath = null;
+        string? indexHtmlPath;
         if (isPublish)
         {
             indexHtmlPath = Path.Combine(
@@ -51,6 +52,7 @@ public class PreloadingTests : WasmTemplateTestsBase
         Assert.True(File.Exists(indexHtmlPath));
         string indexHtmlContent = File.ReadAllText(indexHtmlPath);
 
+        Assert.Equal(1, CountOccurrences(indexHtmlContent, "rel=\"preload\""));
         if (fingerprintDotnetJs)
         {
             // Expect to find fingerprinted preload
@@ -62,5 +64,22 @@ public class PreloadingTests : WasmTemplateTestsBase
             // Expect to find non-fingerprinted preload
             Assert.Contains("<link href=\"_framework/dotnet.js\"", indexHtmlContent);
         }
+    }
+
+    public static int CountOccurrences(string source, string substring)
+    {
+        if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(substring))
+            return 0;
+
+        int count = 0;
+        int index = 0;
+
+        while ((index = source.IndexOf(substring, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += substring.Length;
+        }
+
+        return count;
     }
 }
