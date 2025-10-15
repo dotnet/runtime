@@ -40,9 +40,10 @@ namespace System.IO.Strategies
                 // Some files, such as certain pseudofiles on AzureLinux, may report CanSeek = true
                 // but still fail with ESPIPE when attempting to seek. When ignoreSeekErrors is true,
                 // we ignore this specific error to match the behavior in RandomAccess where we tolerate seek failures.
+                // The return value in this case is not meaningful and should not be used by the caller.
                 if (ignoreSeekErrors && errorInfo.Error == Interop.Error.ESPIPE)
                 {
-                    return -1; // Indicate failure without throwing
+                    return 0; // Return value is not used when ignoreSeekErrors is true
                 }
 
                 throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path);
