@@ -125,14 +125,272 @@ namespace System.Net.Http.Headers
         /// Matching is case-insensitive. Because of this, we do not preserve the case of the original header,
         /// whether from the wire or from the user explicitly setting a known header using a header name string.
         /// </remarks>
-        private static KnownHeader? GetCandidate<T>(ReadOnlySpan<T> key)
-            where T : struct, INumberBase<T>
+        private static KnownHeader? GetCandidate(ReadOnlySpan<char> key)
         {
             // Lookup is performed by first switching on the header name's length, and then switching
             // on the most unique position in that length's string.
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static int GetLower(T value) => int.CreateTruncating(value) | 0x20;
+            static int GetLower(char value) => value | 0x20;
+
+            switch (key.Length)
+            {
+                case 2:
+                    return TE; // TE
+
+                case 3:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'a': return Age; // [A]ge
+                        case 'p': return P3P; // [P]3P
+                        case 't': return TSV; // [T]SV
+                        case 'v': return Via; // [V]ia
+                    }
+                    break;
+
+                case 4:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'd': return Date; // [D]ate
+                        case 'e': return ETag; // [E]Tag
+                        case 'f': return From; // [F]rom
+                        case 'h': return Host; // [H]ost
+                        case 'l': return Link; // [L]ink
+                        case 'v': return Vary; // [V]ary
+                    }
+                    break;
+
+                case 5:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'a': return Allow; // [A]llow
+                        case 'r': return Range; // [R]ange
+                    }
+                    break;
+
+                case 6:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'a': return Accept; // [A]ccept
+                        case 'c': return Cookie; // [C]ookie
+                        case 'e': return Expect; // [E]xpect
+                        case 'o': return Origin; // [O]rigin
+                        case 'p': return Pragma; // [P]ragma
+                        case 's': return Server; // [S]erver
+                    }
+                    break;
+
+                case 7:
+                    switch (GetLower(key[0]))
+                    {
+                        case ':': return PseudoStatus; // [:]status
+                        case 'a': return AltSvc;  // [A]lt-Svc
+                        case 'c': return Cookie2; // [C]ookie2
+                        case 'e': return Expires; // [E]xpires
+                        case 'r':
+                            switch (GetLower(key[3]))
+                            {
+                                case 'e': return Referer; // [R]ef[e]rer
+                                case 'r': return Refresh; // [R]ef[r]esh
+                            }
+                            break;
+                        case 't': return Trailer; // [T]railer
+                        case 'u': return Upgrade; // [U]pgrade
+                        case 'w': return Warning; // [W]arning
+                        case 'x': return XCache;  // [X]-Cache
+                    }
+                    break;
+
+                case 8:
+                    switch (GetLower(key[3]))
+                    {
+                        case '-': return AltUsed;  // Alt[-]Used
+                        case 'a': return Location; // Loc[a]tion
+                        case 'm': return IfMatch;  // If-[M]atch
+                        case 'r': return IfRange;  // If-[R]ange
+                    }
+                    break;
+
+                case 9:
+                    return ExpectCT; // Expect-CT
+
+                case 10:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'c': return Connection; // [C]onnection
+                        case 'k': return KeepAlive;  // [K]eep-Alive
+                        case 's': return SetCookie;  // [S]et-Cookie
+                        case 'u': return UserAgent;  // [U]ser-Agent
+                    }
+                    break;
+
+                case 11:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'c': return ContentMD5; // [C]ontent-MD5
+                        case 'g': return GrpcStatus; // [g]rpc-status
+                        case 'r': return RetryAfter; // [R]etry-After
+                        case 's': return SetCookie2; // [S]et-Cookie2
+                        case 'x': return XServedBy;  // [X]-Served-By
+                    }
+                    break;
+
+                case 12:
+                    switch (GetLower(key[5]))
+                    {
+                        case 'd': return XMSEdgeRef;  // X-MSE[d]ge-Ref
+                        case 'e': return XPoweredBy;  // X-Pow[e]red-By
+                        case 'm': return GrpcMessage; // grpc-[m]essage
+                        case 'n': return ContentType; // Conte[n]t-Type
+                        case 'o': return MaxForwards; // Max-F[o]rwards
+                        case 't': return AcceptPatch; // Accep[t]-Patch
+                        case 'u': return XRequestID;  // X-Req[u]est-ID
+                    }
+                    break;
+
+                case 13:
+                    switch (GetLower(key[12]))
+                    {
+                        case 'd': return LastModified;  // Last-Modifie[d]
+                        case 'e': return ContentRange;  // Content-Rang[e]
+                        case 'g':
+                            switch (GetLower(key[0]))
+                            {
+                                case 's': return ServerTiming;  // [S]erver-Timin[g]
+                                case 'g': return GrpcEncoding;  // [g]rpc-encodin[g]
+                            }
+                            break;
+                        case 'h': return IfNoneMatch;   // If-None-Matc[h]
+                        case 'l': return CacheControl;  // Cache-Contro[l]
+                        case 'n': return Authorization; // Authorizatio[n]
+                        case 's': return AcceptRanges;  // Accept-Range[s]
+                        case 't': return ProxySupport;  // Proxy-Suppor[t]
+                    }
+                    break;
+
+                case 14:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'a': return AcceptCharset; // [A]ccept-Charset
+                        case 'c': return ContentLength; // [C]ontent-Length
+                    }
+                    break;
+
+                case 15:
+                    switch (GetLower(key[7]))
+                    {
+                        case '-': return XFrameOptions;  // X-Frame[-]Options
+                        case 'e': return AcceptEncoding; // Accept-[E]ncoding
+                        case 'k': return PublicKeyPins;  // Public-[K]ey-Pins
+                        case 'l': return AcceptLanguage; // Accept-[L]anguage
+                        case 'm': return XUACompatible;  // X-UA-Co[m]patible
+                        case 'r': return ReferrerPolicy; // Referre[r]-Policy
+                    }
+                    break;
+
+                case 16:
+                    switch (GetLower(key[11]))
+                    {
+                        case 'a': return ContentLocation; // Content-Loc[a]tion
+                        case 'c':
+                            switch (GetLower(key[0]))
+                            {
+                                case 'p': return ProxyConnection; // [P]roxy-Conne[c]tion
+                                case 'x': return XXssProtection;  // [X]-XSS-Prote[c]tion
+                            }
+                            break;
+                        case 'g': return ContentLanguage; // Content-Lan[g]uage
+                        case 'i': return WWWAuthenticate; // WWW-Authent[i]cate
+                        case 'o': return ContentEncoding; // Content-Enc[o]ding
+                        case 'r': return XAspNetVersion;  // X-AspNet-Ve[r]sion
+                    }
+                    break;
+
+                case 17:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'i': return IfModifiedSince;  // [I]f-Modified-Since
+                        case 's': return SecWebSocketKey;  // [S]ec-WebSocket-Key
+                        case 't': return TransferEncoding; // [T]ransfer-Encoding
+                    }
+                    break;
+
+                case 18:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'p': return ProxyAuthenticate; // [P]roxy-Authenticate
+                        case 'x': return XContentDuration;  // [X]-Content-Duration
+                    }
+                    break;
+
+                case 19:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'c': return ContentDisposition; // [C]ontent-Disposition
+                        case 'i': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
+                        case 'p': return ProxyAuthorization; // [P]roxy-Authorization
+                        case 't': return TimingAllowOrigin;  // [T]iming-Allow-Origin
+                    }
+                    break;
+
+                case 20:
+                    return SecWebSocketAccept; // Sec-WebSocket-Accept
+
+                case 21:
+                    return SecWebSocketVersion; // Sec-WebSocket-Version
+
+                case 22:
+                    switch (GetLower(key[0]))
+                    {
+                        case 'a': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
+                        case 's': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
+                        case 'x': return XContentTypeOptions;  // [X]-Content-Type-Options
+                    }
+                    break;
+
+                case 23:
+                    return ContentSecurityPolicy; // Content-Security-Policy
+
+                case 24:
+                    return SecWebSocketExtensions; // Sec-WebSocket-Extensions
+
+                case 25:
+                    switch (GetLower(key[0]))
+                    {
+                        case 's': return StrictTransportSecurity; // [S]trict-Transport-Security
+                        case 'u': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
+                    }
+                    break;
+
+                case 27:
+                    return AccessControlAllowOrigin; // Access-Control-Allow-Origin
+
+                case 28:
+                    switch (GetLower(key[21]))
+                    {
+                        case 'h': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
+                        case 'm': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
+                        case '-': return CrossOriginResourcePolicy; // Cross-Origin-Resource[-]Policy
+                    }
+                    break;
+
+                case 29:
+                    return AccessControlExposeHeaders; // Access-Control-Expose-Headers
+
+                case 32:
+                    return AccessControlAllowCredentials; // Access-Control-Allow-Credentials
+            }
+
+            return null;
+        }
+
+        private static KnownHeader? GetCandidate(ReadOnlySpan<byte> key)
+        {
+            // Lookup is performed by first switching on the header name's length, and then switching
+            // on the most unique position in that length's string.
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int GetLower(byte value) => value | 0x20;
 
             switch (key.Length)
             {
@@ -387,7 +645,7 @@ namespace System.Net.Http.Headers
 
         public static KnownHeader? TryGetKnownHeader(string name)
         {
-            KnownHeader? candidate = GetCandidate<char>(name);
+            KnownHeader? candidate = GetCandidate(name);
             if (candidate != null && StringComparer.OrdinalIgnoreCase.Equals(name, candidate.Name))
             {
                 return candidate;
