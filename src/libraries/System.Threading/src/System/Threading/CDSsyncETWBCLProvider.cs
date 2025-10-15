@@ -13,6 +13,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Security;
@@ -22,18 +23,33 @@ namespace System.Threading
 {
     /// <summary>Provides an event source for tracing CDS synchronization information.</summary>
     [EventSource(
-        Name = "System.Threading.SynchronizationEventSource",
+        Name = EventSourceName,
         Guid = "EC631D38-466B-4290-9306-834971BA0217"
         )]
     internal sealed class CdsSyncEtwBCLProvider : EventSource
     {
+        private const string EventSourceName = "System.Threading.SynchronizationEventSource";
+
         /// <summary>
         /// Defines the singleton instance for the CDS Sync ETW provider.
         /// The CDS Sync Event provider GUID is {EC631D38-466B-4290-9306-834971BA0217}.
         /// </summary>
-        public static readonly CdsSyncEtwBCLProvider Log = new CdsSyncEtwBCLProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private CdsSyncEtwBCLProvider() { }
+        public static readonly CdsSyncEtwBCLProvider Log = new CreateInstance();
+
+        private static CdsSyncEtwBCLProvider CreateInstance()
+        {
+            [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
+            static extern void BaseConstructor(EventSource eventSource, Guid eventSourceGuid, string eventSourceName, EventSourceSettings settings, string[]? traits = null);
+
+            var instance = (CdsSyncEtwBCLProvider)RuntimeHelpers.GetUninitializedObject(typeof(CdsSyncEtwBCLProvider));
+
+            BaseConstructor(instance,
+                new Guid(0xEC631D38, 0x466B, 0x4290, 0x93, 0x06, 0x83, 0x49, 0x71, 0xBA, 0x02, 0x17),
+                EventSourceName,
+                EventSourceSettings.EtwManifestEventFormat);
+
+            return instance;
+        }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);

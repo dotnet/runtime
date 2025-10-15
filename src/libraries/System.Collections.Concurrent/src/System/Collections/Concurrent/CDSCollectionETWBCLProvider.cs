@@ -14,23 +14,38 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Concurrent
 {
     /// <summary>Provides an event source for tracing CDS collection information.</summary>
     [EventSource(
-        Name = "System.Collections.Concurrent.ConcurrentCollectionsEventSource",
+        Name = EventSourceName,
         Guid = "35167F8E-49B2-4b96-AB86-435B59336B5E"
         )]
     internal sealed class CDSCollectionETWBCLProvider : EventSource
     {
+        private const string EventSourceName = "System.Collections.Concurrent.ConcurrentCollectionsEventSource";
         /// <summary>
         /// Defines the singleton instance for the collection ETW provider.
         /// The collection provider GUID is {35167F8E-49B2-4b96-AB86-435B59336B5E}.
         /// </summary>
-        public static readonly CDSCollectionETWBCLProvider Log = new CDSCollectionETWBCLProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private CDSCollectionETWBCLProvider() { }
+        public static readonly CDSCollectionETWBCLProvider Log = CreateInstance();
+
+        private static CDSCollectionETWBCLProvider CreateInstance()
+        {
+            [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
+            static extern void BaseConstructor(EventSource eventSource, Guid eventSourceGuid, string eventSourceName, EventSourceSettings settings, string[]? traits = null);
+
+            var instance = (CDSCollectionETWBCLProvider)RuntimeHelpers.GetUninitializedObject(typeof(CDSCollectionETWBCLProvider));
+
+            BaseConstructor(instance,
+                new Guid(0x35167F8E, 0x49B2, 0x4b96, 0xAB, 0x86, 0x43, 0x5B, 0x59, 0x33, 0x6B, 0x5E),
+                EventSourceName,
+                EventSourceSettings.EtwManifestEventFormat);
+
+            return instance;
+        }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
