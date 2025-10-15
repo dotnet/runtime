@@ -3,8 +3,6 @@
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
-    <!-- Some tests need types like System.Diagnostics.DebugProvider which are only exposed from System.Private.CoreLib -->
-    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
     <!-- Active issue: https://github.com/dotnet/runtime/issues/87740 -->
     <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
