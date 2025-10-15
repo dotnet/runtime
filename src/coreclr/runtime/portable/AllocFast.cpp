@@ -31,7 +31,11 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
-    _ASSERTE(size < INT32_MAX);
+    if (size < 0 || size > INT32_MAX)
+    {
+        RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
+        return nullptr;
+    }
 
     Thread* thread = GetThread();
     ee_alloc_context* cxt = thread->GetEEAllocContext();
@@ -58,7 +62,12 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
-    _ASSERTE(size < INT32_MAX);
+
+    if (size < 0 || size > INT32_MAX)
+    {
+        RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
+        return nullptr;
+    }
 
     Thread* thread = GetThread();
     ee_alloc_context* cxt = thread->GetEEAllocContext();
