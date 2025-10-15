@@ -21,6 +21,14 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
+// Filter to ignore SEH exceptions representing C++ exceptions.
+LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+        ? EXCEPTION_CONTINUE_SEARCH
+        : EXCEPTION_EXECUTE_HANDLER;
+}
+
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
 void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
@@ -33,11 +41,35 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
 
+    struct Param
     {
-        GCX_PREEMP();
-        // WASM-TODO: Handle unmanaged calling conventions
-        InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget);
+        MethodDesc *targetMethod;
+        int8_t *pArgs;
+        int8_t *pRet;
+        PCODE callTarget;
     }
+    param = { targetMethod, pArgs, pRet, callTarget };
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        GCX_PREEMP_NO_DTOR();
+        // WASM-TODO: Handle unmanaged calling conventions
+        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget);
+        GCX_PREEMP_NO_DTOR_END();
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
+        // from the native method (QCALL) call chain.
+        // We need to process only managed ones here, the C++ ones are handled by the
+        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
+        // The managed ones are represented by SEH exception, which cannot be handled there
+        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
+        GCX_COOP_NO_DTOR();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        DispatchManagedException(ohThrowable);
+    }
+    PAL_ENDTRY
 
     inlinedCallFrame.Pop();
 }
@@ -665,14 +697,6 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
-// Filter to ignore SEH exceptions representing C++ exceptions.
-LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
-{
-    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
-        ? EXCEPTION_CONTINUE_SEARCH
-        : EXCEPTION_EXECUTE_HANDLER;
-}
-
 // Wrapper around MethodDesc::DoPrestub to handle possible managed exceptions thrown by it.
 static void CallPreStub(MethodDesc *pMD)
 {
@@ -703,7 +727,7 @@ static void CallPreStub(MethodDesc *pMD)
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
         GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GET_THREAD()->LastThrownObject();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
         DispatchManagedException(ohThrowable);
     }
     PAL_ENDTRY
@@ -2333,6 +2357,59 @@ MAIN_LOOP:
                     ip += 4;
                     break;
                 }
+                case INTOP_CALL_HELPER_V_SS:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR(ip[2], void*);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = pMethod->allocaSize;
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    helperFtn(helperArg1, helperArg2);
+                    ip += 4;
+                    break;
+                }
+
+                case INTOP_CALL_HELPER_V_SSS:
+                {
+                    void* helperArg1 = LOCAL_VAR(ip[1], void*);
+                    void* helperArg2 = LOCAL_VAR(ip[2], void*);
+                    void* helperArg3 = LOCAL_VAR(ip[3], void*);
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_V_PPP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_V_PPP>(pMethod, ip[4], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = pMethod->allocaSize;
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass arguments to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = helperArg1;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, void*) = helperArg2;
+                        LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, void*) = helperArg3;
+
+                        targetMethod = pILTargetMethod;
+                        ip += 5;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    ip += 5;
+                    break;
+                }
 
                 case INTOP_CALLVIRT_TAIL:
                 case INTOP_CALLVIRT:
@@ -2729,9 +2806,13 @@ CALL_INTERP_METHOD:
                     goto CALL_INTERP_SLOT;
                 }
                 case INTOP_ZEROBLK_IMM:
-                    memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    NULL_CHECK(dst);
+                    memset(dst, 0, ip[2]);
                     ip += 3;
                     break;
+                }
                 case INTOP_CPBLK:
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
@@ -2780,16 +2861,17 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_THROW:
                 {
-                    OBJECTREF throwable;
-                    if (LOCAL_VAR(ip[1], OBJECTREF) == NULL)
+                    OBJECTREF throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                    if (!throwable)
                     {
                         EEException ex(kNullReferenceException);
                         throwable = ex.CreateThrowable();
                     }
                     else
                     {
-                        throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                        NormalizeThrownObject(&throwable);
                     }
+
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchManagedException(throwable);
                     UNREACHABLE();

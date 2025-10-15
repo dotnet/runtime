@@ -954,6 +954,31 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
     return ip;
 }
 
+void ValidateEmittedSequenceTermination(InterpInst *lastIns)
+{
+    if (lastIns == NULL)
+        return;
+
+    if (InterpOpIsUncondBranch(lastIns->opcode) ||
+        (lastIns->opcode == INTOP_RET) ||
+        (lastIns->opcode == INTOP_RET_VOID) ||
+        (lastIns->opcode == INTOP_RET_VT) ||
+        (lastIns->opcode == INTOP_THROW) ||
+        (lastIns->opcode == INTOP_THROW_PNSE) ||
+        (lastIns->opcode == INTOP_CALL_TAIL) ||
+        (lastIns->opcode == INTOP_CALLI_TAIL) ||
+        (lastIns->opcode == INTOP_CALLVIRT_TAIL) ||
+        (lastIns->opcode == INTOP_RETHROW) ||
+        (lastIns->opcode == INTOP_LEAVE_FILTER) ||
+        (lastIns->opcode == INTOP_LEAVE_CATCH))
+    {
+        // Valid terminating instruction
+        return;
+    }
+
+    BADCODE("Emitted code sequence does not end with a terminating instruction");
+}
+
 void InterpCompiler::EmitCode()
 {
     TArray<Reloc*, MemPoolAllocator> relocs(GetMemPoolAllocator());
@@ -999,14 +1024,19 @@ void InterpCompiler::EmitCode()
     do
     {
         emittedBlock = false;
+        InterpInst *lastEmittedIns = NULL;
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
             if (bb->overlappingEHClauseCount == clauseDepth)
             {
                 ip = EmitBBCode(ip, bb, &relocs);
+                lastEmittedIns = bb->pLastIns;
                 emittedBlock = true;
             }
         }
+
+        ValidateEmittedSequenceTermination(lastEmittedIns);
+
         clauseDepth++;
     }
     while (emittedBlock);
@@ -1645,6 +1675,11 @@ static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
     delete (InterpreterStackMap *)value;
 }
 
+static void InterpreterCompilerBreak()
+{
+    assert(!"InterpreterCompilerBreak reached");
+}
+
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
     : m_stackmapsByClass(FreeInterpreterStackMap)
@@ -1689,6 +1724,13 @@ InterpMethod* InterpCompiler::CompileMethod()
         printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
 #endif
+#ifdef DEBUG
+    if (InterpConfig.InterpBreak().contains(m_compHnd, m_methodInfo->ftn, m_classHnd, &m_methodInfo->args))
+    {
+        InterpreterCompilerBreak();
+    }
+#endif
+
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
     {
@@ -1823,6 +1865,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // All vars are stored at 8 byte aligned offsets
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
+
+        // We do not align beyond the stack alignment 
+        // (This is relevant for structs with very high alignment requirements, 
+        // where we align within struct layout, but the structs are not actually
+        // aligned on the stack)
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
     }
     else
     {
@@ -2405,7 +2454,7 @@ void InterpCompiler::EmitStoreVar(int32_t var)
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */);
+        EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */, false /* enableImplicitArgConversionRules */);
         return;
     }
 
@@ -3445,7 +3494,7 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
-    PushStackType(StackTypeI, NULL);
+    PushStackType(StackTypeByRef, NULL);
     int32_t intermediateVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
@@ -3679,6 +3728,90 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
 }
 
+void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken)
+{
+    CORINFO_HELPER_DESC calloutHelper;
+    CorInfoIsAccessAllowedResult accessAllowed =
+        m_compHnd->canAccessClass(pResolvedToken, m_methodHnd, &calloutHelper);
+
+    // Inject call to callsite callout helper
+    EmitCallsiteCallout(accessAllowed, &calloutHelper);
+}
+
+void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
+{
+    if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
+    {
+        int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
+
+        for (unsigned i = 0; i < calloutDesc->numArgs; i++)
+        {
+            void *value = NULL;
+            void *pValue = NULL;
+
+            switch (calloutDesc->args[i].argType)
+            {
+                case CORINFO_HELPER_ARG_TYPE_Class:
+                    value = (void*)m_compHnd->embedClassHandle(calloutDesc->args[i].classHandle, &pValue);
+                    break;
+                case CORINFO_HELPER_ARG_TYPE_Method:
+                    value = (void*)m_compHnd->embedMethodHandle(calloutDesc->args[i].methodHandle, &pValue);
+                    break;
+                default:
+                    NO_WAY("Callsite callout with unsupported arg type");
+            }
+
+            if (value == NULL)
+            {
+                if (pValue == NULL)
+                {
+                    NO_WAY("Callsite callout with unsupported arg type");
+                }
+
+                AddIns(INTOP_LDPTR);
+                m_pLastNewIns->data[0] = GetDataItemIndex(pValue);
+                PushInterpType(InterpTypeI, nullptr);
+                int tempVar = m_pStackPointer[-1].var;
+                m_pLastNewIns->SetDVar(tempVar);
+
+                // Now we generate an LDIND_I to get the actual value out of the ref
+                AddIns(INTOP_LDIND_I);
+                m_pLastNewIns->data[0] = 0;
+                m_pLastNewIns->SetSVar(tempVar);
+                m_pStackPointer--;
+                PushInterpType(InterpTypeI, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pStackPointer--;
+                svars[i] = m_pStackPointer[0].var;
+            }
+            else
+            {
+                AddIns(INTOP_LDPTR);
+                m_pLastNewIns->data[0] = GetDataItemIndex(value);
+                PushInterpType(InterpTypeI, nullptr);
+                svars[i] = m_pStackPointer[-1].var;
+                m_pLastNewIns->SetDVar(svars[i]);
+                m_pStackPointer--;
+            }
+        }
+        if (calloutDesc->numArgs == 2)
+        {
+            AddIns(INTOP_CALL_HELPER_V_SS);
+            m_pLastNewIns->SetSVars2(svars[0], svars[1]);
+        }
+        else if (calloutDesc->numArgs == 3)
+        {
+            AddIns(INTOP_CALL_HELPER_V_SSS);
+            m_pLastNewIns->SetSVars3(svars[0], svars[1], svars[2]);
+        }
+        else
+        {
+            NO_WAY("Callsite callout with unsupported number of args");
+        }
+        m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
+    }
+}
+
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -3747,6 +3880,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         resolvedCallToken.tokenScope   = m_methodInfo->scope;
 
         m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -3761,6 +3898,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
+
+        // Inject call to callsite callout helper
+        EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
+
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
             NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
@@ -3885,10 +4031,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     {
 #ifdef TARGET_64BIT
                     case CORINFO_TYPE_NATIVEINT:
-                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_I8_I4);
-                        break;
                     case CORINFO_TYPE_NATIVEUINT:
-                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_U8_U4);
+                        EmitConv(m_pStackPointer + iCurrentStackArg, StackTypeI8, INTOP_CONV_I8_I4); // This subtly differs from the published ECMA spec, and is what is defined in the Ecma-335-Augments.md document
                         break;
 #endif // TARGET_64BIT
                     case CORINFO_TYPE_BYTE:
@@ -4343,11 +4487,11 @@ void InterpCompiler::EmitLdind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
-void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder)
+void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder, bool enableImplicitArgConversionRules)
 {
     int stackIndexValue;
     int stackIndexAddress;
-    if (reverseSVarOrder)
+    if (!reverseSVarOrder)
     {
         stackIndexAddress = -2;
         stackIndexValue = -1;
@@ -4365,6 +4509,10 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     else if (interpType == InterpTypeR8 && m_pStackPointer[stackIndexValue].type == StackTypeR4)
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR8, INTOP_CONV_R8_R4);
+    }
+    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].type == StackTypeI4) // This subtly differs from the published ECMA spec for section III.1.6, and is what is defined in the Ecma-335-Augments.md document
+    {
+        EmitConv(m_pStackPointer + stackIndexValue, StackTypeI8, INTOP_CONV_I8_I4);
     }
 
     // stack contains address and then the value to be stored
@@ -4389,7 +4537,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
     m_pLastNewIns->data[0] = offset;
 
-    m_pLastNewIns->SetSVars2(m_pStackPointer[stackIndexValue].var, m_pStackPointer[stackIndexAddress].var);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[stackIndexAddress].var, m_pStackPointer[stackIndexValue].var);
     m_pStackPointer -= 2;
 }
 
@@ -4561,7 +4709,7 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
             if (isLoad)
                 EmitLdind(interpFieldType, pFieldInfo->structType, 0);
             else
-                EmitStind(interpFieldType, pFieldInfo->structType, 0, true);
+                EmitStind(interpFieldType, pFieldInfo->structType, 0, true, true /* enableImplicitArgConversionRules */);
             break;
     }
 }
@@ -5101,7 +5249,7 @@ retry_emit:
                 }
                 else
                 {
-                    EmitStind(interpType, resolvedToken.hClass, 0, false);
+                    EmitStind(interpType, resolvedToken.hClass, 0, false, false /* enableImplicitArgConversionRules */);
                 }
                 m_ip += 5;
                 break;
@@ -5114,7 +5262,7 @@ retry_emit:
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
                 InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
                 EmitLdind(interpType, resolvedToken.hClass, 0);
-                EmitStind(interpType, resolvedToken.hClass, 0, false);
+                EmitStind(interpType, resolvedToken.hClass, 0, false, false /* enableImplicitArgConversionRules */);
                 m_ip += 5;
                 break;
             }
@@ -5219,7 +5367,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5240,7 +5388,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5261,7 +5409,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5282,7 +5430,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5319,7 +5467,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5356,7 +5504,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5379,7 +5527,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5402,7 +5550,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5430,7 +5578,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5450,7 +5598,7 @@ retry_emit:
                 case StackTypeR4:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5470,7 +5618,7 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5497,7 +5645,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5516,7 +5664,8 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
@@ -5537,7 +5686,8 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
@@ -5558,7 +5708,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5579,7 +5729,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5600,7 +5750,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5620,7 +5770,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5641,7 +5791,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5661,7 +5811,7 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5682,7 +5832,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5719,7 +5869,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5756,7 +5906,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5780,7 +5930,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5801,7 +5951,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5822,7 +5972,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5843,7 +5993,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5864,7 +6014,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5884,7 +6034,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5905,7 +6055,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5925,7 +6075,7 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5962,7 +6112,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5997,7 +6147,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -6291,6 +6441,9 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
 
+                // Inject call to callsite callout helper
+                EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
+
                 bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
 
                 if (isStatic)
@@ -6321,6 +6474,9 @@ retry_emit:
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                // Inject call to callsite callout helper
+                EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
 
                 CorInfoType fieldType = fieldInfo.fieldType;
                 bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
@@ -6382,6 +6538,9 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
 
+                // Inject call to callsite callout helper
+                EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
+
                 CorInfoType fieldType = fieldInfo.fieldType;
                 bool isStatic = !!(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC);
                 InterpType interpFieldType = GetInterpType(fieldType);
@@ -6402,7 +6561,7 @@ retry_emit:
                 else
                 {
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
-                    EmitStind(interpFieldType, fieldInfo.structType, fieldInfo.offset, false);
+                    EmitStind(interpFieldType, fieldInfo.structType, fieldInfo.offset, false, true /* enableImplicitArgConversionRules */);
                 }
                 m_ip += 5;
 
@@ -6416,6 +6575,9 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_ADDRESS, &fieldInfo);
 
+                // Inject call to callsite callout helper
+                EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
+
                 EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
 
                 m_ip += 5;
@@ -6428,6 +6590,9 @@ retry_emit:
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                // Inject call to callsite callout helper
+                EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
 
                 CorInfoType fieldType = fieldInfo.fieldType;
                 InterpType interpFieldType = GetInterpType(fieldType);
@@ -6451,6 +6616,9 @@ retry_emit:
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
                 m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+
+                // Inject call to callsite callout helper
+                EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
 
                 CorInfoType fieldType = fieldInfo.fieldType;
                 InterpType interpFieldType = GetInterpType(fieldType);
@@ -6570,7 +6738,7 @@ retry_emit:
                     AddIns(INTOP_MEMBAR);
                     volatile_ = false;
                 }
-                EmitStind(interpType, NULL, 0, false);
+                EmitStind(interpType, NULL, 0, false, false /* enableImplicitArgConversionRules */);
                 m_ip++;
                 break;
             }
@@ -6582,6 +6750,9 @@ retry_emit:
 
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                EmitCanAccessCallout(&resolvedToken);
+
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 m_compHnd->embedGenericHandle(&resolvedToken, true, m_methodInfo->ftn, &embedInfo);
                 assert(embedInfo.compileTimeHandle != NULL);
@@ -6832,6 +7003,9 @@ retry_emit:
                             NO_WAY("Currently do not support LDFTN of Parameterized functions");
                         }
 
+                        // Inject call to callsite callout helper
+                        EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
+
                         m_pStackPointer--;
                         int thisVar = m_pStackPointer[0].var;
 
@@ -6861,6 +7035,9 @@ retry_emit:
                         {
                             NO_WAY("Currently do not support LDFTN of Parameterized functions");
                         }
+
+                        // Inject call to callsite callout helper
+                        EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
 DO_LDFTN:
                         if (callInfo.kind == CORINFO_CALL)
@@ -6929,6 +7106,10 @@ DO_LDFTN:
 
             case CEE_ENDFINALLY:
             {
+                if (m_pCBB->clauseType != BBClauseFinally)
+                {
+                    BADCODE("endfinally not in a finally block");
+                }
                 AddIns(INTOP_RET_VOID);
                 m_ip++;
                 linkBBlocks = false;
@@ -6959,6 +7140,9 @@ DO_LDFTN:
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Box, &resolvedToken);
+
+                EmitCanAccessCallout(&resolvedToken);
+
                 if (m_compHnd->isValueClass(resolvedToken.hClass))
                 {
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
@@ -6978,6 +7162,9 @@ DO_LDFTN:
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+                EmitCanAccessCallout(&resolvedToken);
+
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                 DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
@@ -7064,6 +7251,8 @@ DO_LDFTN:
 
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Newarr, &resolvedToken);
+
+                EmitCanAccessCallout(&resolvedToken);
 
                 CORINFO_CLASS_HANDLE arrayClsHnd = resolvedToken.hClass;
                 CorInfoHelpFunc helpFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
@@ -7462,6 +7651,8 @@ DO_LDFTN:
                 CHECK_STACK(1);
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
+
+                EmitCanAccessCallout(&resolvedToken);
 
                 CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, *m_ip == CEE_CASTCLASS /* throwing */);
 

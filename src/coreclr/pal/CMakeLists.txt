@@ -15,7 +15,6 @@ else()
         )
     add_link_options(
         -fwasm-exceptions 
-        -msimd128
         )
 endif()
 

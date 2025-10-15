@@ -158,8 +158,8 @@ namespace System.IO.Strategies
             }
             else
             {
-                // keep throwing the same exception we did when seek was causing actual offset change
-                FileStreamHelpers.ThrowInvalidArgument(_fileHandle);
+                // keep throwing the same exception type we did when seek was causing actual offset change
+                throw new IOException(SR.IO_SeekBeforeBegin);
             }
 
             // Prevent users from overwriting data in a file that was opened in append mode.

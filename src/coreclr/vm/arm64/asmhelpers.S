@@ -1312,6 +1312,12 @@ ALTERNATE_ENTRY Store_D7
     EPILOG_BRANCH_REG x11
 LEAF_END Store_D1_D2_D3_D4_D5_D6_D7
 
+LEAF_ENTRY InjectInterpStackAlign
+    add x9, x9, #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END InjectInterpStackAlign
+
 // Copy arguments from the interpreter stack to the processor stack
 // The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack

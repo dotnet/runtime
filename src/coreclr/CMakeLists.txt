@@ -41,7 +41,6 @@ if (CLR_CMAKE_TARGET_ARCH_WASM)
       -msimd128)
     add_link_options(
       -fwasm-exceptions 
-      -msimd128
       )
 endif()
 

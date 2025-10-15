@@ -7685,6 +7685,7 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
+    UNREACHABLE();
 }
 
 #ifdef FEATURE_INTERPRETER
