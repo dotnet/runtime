@@ -1339,7 +1339,7 @@ namespace System.IO
             try
             {
                 writer = new StreamWriter(
-                    new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize: 1, FileOptions.Asynchronous),
+                    new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous),
                     encoding);
             }
             catch (Exception e)

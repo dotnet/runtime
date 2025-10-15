@@ -232,7 +232,7 @@ namespace System.IO
                 ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             }
 
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()
