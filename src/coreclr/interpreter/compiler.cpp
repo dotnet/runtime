@@ -6181,7 +6181,7 @@ retry_emit:
                 });
 
                 // Setup so that we can safely branch to each target
-                uint32_t lastOffset = MAXUINT32;
+                uint32_t lastOffset = UINT32_MAX;
                 for (uint32_t i = 0; i < n; i++)
                 {
                     if (targetOffsets[i] != lastOffset)
