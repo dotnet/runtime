@@ -8067,6 +8067,56 @@ namespace System.Text.Json.Tests
             from anotherValue in anothers
             select new object[] { options, inputValue, anotherValue };
 
+        [Fact]
+        public static void WritePropertyWithExtremelyLongName_ThrowsArgumentException()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output);
+            
+            writer.WriteStartObject();
+            
+            string longName = new string('a', 1000000001);
+            
+            Assert.Throws<ArgumentException>(() => writer.WritePropertyName(longName.AsSpan()));
+        }
+
+        [Fact]
+        public static void WriteValueWithExtremelyLongValue_ThrowsArgumentException()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output);
+            
+            writer.WriteStartArray();
+            
+            string longValue = new string('a', 1000000001);
+            
+            Assert.Throws<ArgumentException>(() => writer.WriteStringValue(longValue.AsSpan()));
+        }
+
+        [Fact]
+        public static void WriteRawValueWithInvalidJson_ValidationDisabled()
+        {
+            var options = new JsonWriterOptions { SkipValidation = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartArray();
+            writer.WriteRawValue("invalid json content"u8, skipInputValidation: true);
+            writer.WriteEndArray();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("invalid json content", json);
+        }
+
+        [Fact]
+        public static void JsonElement_ToString_EdgeCase()
+        {
+            using JsonDocument doc = JsonDocument.Parse("null");
+            JsonElement element = doc.RootElement;
+            string result = element.ToString();
+            Assert.Equal("", result);
+        }
     }
 
     public static class WriterHelpers
