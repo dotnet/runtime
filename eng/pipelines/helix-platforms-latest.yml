@@ -1,0 +1,50 @@
+# Central Helix platform alias definitions.
+# This file defines stable alias variable names that map to concrete Helix queue identifiers.
+# Pipelines can reference these variables to avoid embedding version-specific queue names.
+#
+# Bumping an OS version (e.g. moving macos-arm64-latest from OSX.26 -> OSX.27) should be done ONLY here.
+# After updating, audit helix-queues-setup.yml files to ensure any conditional logic (extra platform builds, capacity variations)
+# still makes sense relative to latest/baseline definitions.
+#
+# Naming convention:
+#   <os>-<arch>-latest    : Newest supported / forward-looking queue
+#   <os>-<arch>-baseline  : Oldest supported queue validating minimum support ("oldest" alias may be added later if desired)
+# For now baseline and oldest are synonymous; use "baseline" consistently.
+#
+# NOTE: Internal vs public queues: These mappings currently point to public (".Open") queues.
+# If internal-only variants are needed, either add parallel variables (e.g. macos-arm64-latest-internal) or incorporate logic
+# in consuming templates to substitute internal queues when System.TeamProject == 'internal'.
+#
+# Initial set kept intentionally small; extend as needed (linux-musl, windows-arm64, macos catalyst, etc.).
+#
+# macOS ARM64
+variables:
+  macos-arm64-latest: OSX.26.Arm64.Open
+  macos-arm64-baseline: OSX.13.Arm64.Open
+
+  # macOS x64 (currently 13 only; update latest when newer queue desired)
+  macos-x64-latest: OSX.13.Amd64.Open
+  macos-x64-baseline: OSX.13.Amd64.Open
+
+  # Linux x64
+  linux-x64-latest: AzureLinux.3.Amd64.Open
+  linux-x64-baseline: Ubuntu.2204.Amd64.Open
+
+  # Windows x64 (Client.Open provides Windows 11; baseline kept at Windows 10)
+  windows-x64-latest: Windows.11.Amd64.Client.Open
+  windows-x64-baseline: Windows.10.Amd64.Open
+
+# Future examples (uncomment/add when needed):
+#  linux-arm64-latest: (Ubuntu.2510.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-arm64v8
+#  linux-arm64-baseline: Ubuntu.2204.Armarch.Open
+#  windows-arm64-latest: Windows.11.Arm64.Open
+#  windows-arm64-baseline: Windows.10.Arm64.Open (if/when defined)
+#  linux-musl-x64-latest: (Alpine.322.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
+#  linux-musl-x64-baseline: Alpine.322.Amd64.Open
+#  macos-arm64-oldest: OSX.13.Arm64.Open   # Optional synonymous alias if desired
+#
+# Usage example in a pipeline template:
+#   - template: eng/pipelines/installer/helix-queues-setup.yml
+#     parameters:
+#       platformAlias: macos-arm64-latest
+# or directly: $(macos-arm64-latest) where a queue name is required.
