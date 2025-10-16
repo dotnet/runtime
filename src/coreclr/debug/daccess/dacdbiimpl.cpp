@@ -7153,6 +7153,7 @@ HRESULT DacDbiInterfaceImpl::GetReJitInfo(VMPTR_Module vmModule, mdMethodDef met
     return S_OK;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 HRESULT DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode)
 {
     DD_ENTER_MAY_THROW;
@@ -7183,6 +7184,72 @@ HRESULT DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModu
     return S_OK;
 }
 
+HRESULT DacDbiInterfaceImpl::GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode)
+{
+    DD_ENTER_MAY_THROW;
+    if (pVmNativeCodeVersionNode == NULL)
+        return E_INVALIDARG;
+#ifdef FEATURE_REJIT
+    PTR_MethodDesc pMD = vmMethod.GetDacPtr();
+    CodeVersionManager * pCodeVersionManager = pMD->GetCodeVersionManager();
+    NativeCodeVersion codeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, (PCODE)codeStartAddress);
+    pVmNativeCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(codeVersion.AsNode()));
+#else
+    pVmNativeCodeVersionNode->SetDacTargetPtr(0);
+#endif
+    return S_OK;
+}
+
+HRESULT DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode)
+{
+    DD_ENTER_MAY_THROW;
+    if (pVmILCodeVersionNode == NULL)
+        return E_INVALIDARG;
+#ifdef FEATURE_REJIT
+    NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
+    ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
+    if (ilCodeVersion.IsDefaultVersion())
+    {
+        pVmILCodeVersionNode->SetDacTargetPtr(0);
+    }
+    else
+    {
+        pVmILCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(ilCodeVersion.AsNode()));
+    }
+
+#else
+    _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
+    pVmILCodeVersionNode->SetDacTargetPtr(0);
+#endif
+    return S_OK;
+}
+
+HRESULT DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData)
+{
+    DD_ENTER_MAY_THROW;
+#ifdef FEATURE_REJIT
+    ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
+    pData->m_state = static_cast<DWORD>(ilCode.GetRejitState());
+    pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
+    pData->m_dwCodegenFlags = ilCode.GetJitFlags();
+    const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();
+    if (pMapping)
+    {
+        pData->m_cInstrumentedMapEntries = (ULONG)pMapping->GetCount();
+        pData->m_rgInstrumentedMapEntries = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pMapping->GetOffsets()));
+    }
+    else
+    {
+        pData->m_cInstrumentedMapEntries = 0;
+        pData->m_rgInstrumentedMapEntries = 0;
+    }
+#else
+    _ASSERTE(!"You shouldn't be calling this - rejit isn't supported in this build");
+#endif
+    return S_OK;
+}
+#endif // FEATURE_CODE_VERSIONING
+
 HRESULT DacDbiInterfaceImpl::GetReJitInfo(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pvmReJitInfo)
 {
     DD_ENTER_MAY_THROW;
@@ -7211,22 +7278,6 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
     return S_OK;
 }
 
-HRESULT DacDbiInterfaceImpl::GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode)
-{
-    DD_ENTER_MAY_THROW;
-    if (pVmNativeCodeVersionNode == NULL)
-        return E_INVALIDARG;
-#ifdef FEATURE_REJIT
-    PTR_MethodDesc pMD = vmMethod.GetDacPtr();
-    CodeVersionManager * pCodeVersionManager = pMD->GetCodeVersionManager();
-    NativeCodeVersion codeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, (PCODE)codeStartAddress);
-    pVmNativeCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(codeVersion.AsNode()));
-#else
-    pVmNativeCodeVersionNode->SetDacTargetPtr(0);
-#endif
-    return S_OK;
-}
-
 HRESULT DacDbiInterfaceImpl::GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, OUT VMPTR_SharedReJitInfo* pvmSharedReJitInfo)
 {
     DD_ENTER_MAY_THROW;
@@ -7234,59 +7285,10 @@ HRESULT DacDbiInterfaceImpl::GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, OUT
     return S_OK;
 }
 
-HRESULT DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode)
-{
-    DD_ENTER_MAY_THROW;
-    if (pVmILCodeVersionNode == NULL)
-        return E_INVALIDARG;
-#ifdef FEATURE_REJIT
-    NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
-    ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
-    if (ilCodeVersion.IsDefaultVersion())
-    {
-        pVmILCodeVersionNode->SetDacTargetPtr(0);
-    }
-    else
-    {
-        pVmILCodeVersionNode->SetDacTargetPtr(PTR_TO_TADDR(ilCodeVersion.AsNode()));
-    }
-
-#else
-    _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
-    pVmILCodeVersionNode->SetDacTargetPtr(0);
-#endif
-    return S_OK;
-}
-
 HRESULT DacDbiInterfaceImpl::GetSharedReJitInfoData(VMPTR_SharedReJitInfo vmSharedReJitInfo, DacSharedReJitInfo* pData)
 {
     DD_ENTER_MAY_THROW;
     _ASSERTE(!"You shouldn't be calling this - use GetILCodeVersionNodeData instead");
-    return S_OK;
-}
-
-HRESULT DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData)
-{
-    DD_ENTER_MAY_THROW;
-#ifdef FEATURE_REJIT
-    ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
-    pData->m_state = static_cast<DWORD>(ilCode.GetRejitState());
-    pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
-    pData->m_dwCodegenFlags = ilCode.GetJitFlags();
-    const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();
-    if (pMapping)
-    {
-        pData->m_cInstrumentedMapEntries = (ULONG)pMapping->GetCount();
-        pData->m_rgInstrumentedMapEntries = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pMapping->GetOffsets()));
-    }
-    else
-    {
-        pData->m_cInstrumentedMapEntries = 0;
-        pData->m_rgInstrumentedMapEntries = 0;
-    }
-#else
-    _ASSERTE(!"You shouldn't be calling this - rejit isn't supported in this build");
-#endif
     return S_OK;
 }
 

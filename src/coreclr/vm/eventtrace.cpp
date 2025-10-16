@@ -3544,16 +3544,28 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JITTEDMETHODILTONATIVEMAP_KEYWORD))
         {
+#ifdef FEATURE_CODE_VERSIONING
             ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc,
                                                          ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
                                                          pNativeCodeStartAddress,
                                                          pConfig->GetCodeVersion().GetVersionId(),
                                                          pConfig->GetCodeVersion().GetILCodeVersionId());
+#else
+            ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc,
+                                                         ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
+                                                         pNativeCodeStartAddress,
+                                                         pConfig->GetCodeVersion().GetVersionId(),
+                                                         0);
+#endif // FEATURE_CODE_VERSIONING
         }
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
+#ifdef FEATURE_CODE_VERSIONING
             ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
+#else
+            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), 0, NULL);
+#endif // FEATURE_CODE_VERSIONING
         }
 
     } EX_CATCH { } EX_END_CATCH

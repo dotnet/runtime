@@ -4650,6 +4650,7 @@ HRESULT ClrDataAccess::GetClrNotification(CLRDATA_ADDRESS arguments[], int count
 
 HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejitId)
 {
+#ifdef FEATURE_CODE_VERSIONING
     if (methodDesc == 0 || pRejitId == NULL)
     {
         return E_INVALIDARG;
@@ -4679,9 +4680,14 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     SOSDacLeave();
 
     return hr;
+#else
+    return E_NOTIMPL;
+#endif // FEATURE_CODE_VERSIONING
 }
 
 HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpReJitData2 *pReJitData)
+{
+#ifdef FEATURE_CODE_VERSIONING
 {
     if (methodDesc == 0 || rejitId < 0 || pReJitData == NULL)
     {
@@ -4728,10 +4734,15 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
 
     return hr;
 }
+#else
+    return E_NOTIMPL;
+#endif // FEATURE_CODE_VERSIONING
+}
 
 
 HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData)
 {
+#ifdef FEATURE_CODE_VERSIONING
     if (methodDesc == 0 || pILData == NULL)
     {
         return E_INVALIDARG;
@@ -4763,10 +4774,14 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     SOSDacLeave();
 
     return hr;
+#else
+    return E_NOTIMPL;
+#endif // FEATURE_CODE_VERSIONING
 }
 
 HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs)
 {
+#ifdef FEATURE_CODE_VERSIONING
     if (mod == 0 || methodDescs == NULL || cMethodDescs == 0 || pcMethodDescs == NULL)
     {
         return E_INVALIDARG;
@@ -4814,6 +4829,9 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
     SOSDacLeave();
 
     return hr;
+#else
+    return E_NOTIMPL;
+#endif // FEATURE_CODE_VERSIONING
 }
 
 HRESULT ClrDataAccess::GetNumberGenerations(unsigned int *pGenerations)
