@@ -142,7 +142,7 @@ namespace System.Collections.Frozen
             }
             else if (newDictionary.Count != 0 && !newDictionary.Comparer.Equals(comparer))
             {
-                var dictionary = new Dictionary<TKey, TValue>(newDictionary.Count, comparer);
+                var dictionary = new Dictionary<TKey, TValue>(comparer);
                 foreach (KeyValuePair<TKey, TValue> pair in newDictionary)
                 {
                     // Dictionary's constructor uses Add, which will throw on duplicates.
