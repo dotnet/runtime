@@ -99,6 +99,9 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void NullHandle_Throws_ArgumentNullException(PipeDirection direction)
         {
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
+            AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, null));
+#pragma warning restore SYSLIB0063
             AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, null));
         }
 
@@ -109,6 +112,9 @@ namespace System.IO.Pipes.Tests
         public static void InvalidHandle_Throws_ArgumentException(PipeDirection direction)
         {
             using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
+            AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, pipeHandle));
+#pragma warning restore SYSLIB0063
             AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, pipeHandle));
         }
 
@@ -129,6 +135,9 @@ namespace System.IO.Pipes.Tests
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
                     SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, ownsHandle: false);
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
+                    Assert.Throws<IOException>(() => new NamedPipeClientStream(direction, false, true, fakePipeHandle));
+#pragma warning restore SYSLIB0063
                     Assert.Throws<IOException>(() => new NamedPipeClientStream(direction, false, fakePipeHandle));
                 }
                 finally
