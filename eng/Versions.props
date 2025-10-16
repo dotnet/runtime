@@ -225,7 +225,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.10</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.25504.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.25515.1</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>8.0.10</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
