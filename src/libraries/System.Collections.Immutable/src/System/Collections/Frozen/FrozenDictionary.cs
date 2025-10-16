@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -129,7 +129,7 @@ namespace System.Collections.Frozen
             // Ensure we have a Dictionary<,> using the specified comparer such that all keys
             // are non-null and unique according to that comparer.
             newDictionary = source as Dictionary<TKey, TValue>;
-            if (newDictionary is null || (newDictionary.Count != 0 && !newDictionary.Comparer.Equals(comparer)))
+            if (newDictionary is null)
             {
                 newDictionary = new Dictionary<TKey, TValue>(comparer);
                 foreach (KeyValuePair<TKey, TValue> pair in source)
@@ -139,6 +139,18 @@ namespace System.Collections.Frozen
                     // existing entries such that last one wins.
                     newDictionary[pair.Key] = pair.Value;
                 }
+            }
+            else if (newDictionary.Count != 0 && !newDictionary.Comparer.Equals(comparer))
+            {
+                var dictionary = new Dictionary<TKey, TValue>(newDictionary.Count, comparer);
+                foreach (KeyValuePair<TKey, TValue> pair in newDictionary)
+                {
+                    // Dictionary's constructor uses Add, which will throw on duplicates.
+                    // This implementation uses the indexer to avoid throwing and to overwrite
+                    // existing entries such that last one wins.
+                    dictionary[pair.Key] = pair.Value;
+                }
+                newDictionary = dictionary;
             }
 
             if (newDictionary.Count == 0)
