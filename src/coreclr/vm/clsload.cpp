@@ -2851,14 +2851,8 @@ void ClassLoader::NotifyLoad(TypeHandle typeHnd)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         // We don't tell profilers about typedescs, as per IF above.  Also, we don't
-        // tell profilers about:
-        if (
-            // ...generics with unbound variables
-            (!pMT->ContainsGenericVariables()) &&
-            // ...or array method tables
-            // (This check is mainly for NGEN restore, as JITted code won't hit
-            // this code path for array method tables anyway)
-            (!pMT->IsArray()))
+        // tell profilers about generics with unbound variables.
+        if (!pMT->ContainsGenericVariables())
         {
             LOG((LF_CLASSLOADER, LL_INFO1000, "Notifying profiler of Started1 %p %s\n", pMT, pMT->GetDebugClassName()));
             // Record successful load of the class for the profiler
