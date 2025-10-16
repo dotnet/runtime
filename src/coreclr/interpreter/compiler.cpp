@@ -5296,6 +5296,7 @@ retry_emit:
                         CheckStackExact(0);
                     }
                     EmitLeave(ilOffset, target);
+                    linkBBlocks = false;
                     m_ip++;
                     break;
                 }
@@ -5322,6 +5323,7 @@ retry_emit:
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                 }
                 m_ip++;
+                linkBBlocks = false;
                 break;
             }
 

@@ -451,7 +451,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         jnz             LOCAL_LABEL(HaveInterpThreadContext)
 
 LOCAL_LABEL(NoManagedThread):
-        mov             rcx, r10
+        mov             rdi, r10
         call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
 
 LOCAL_LABEL(HaveInterpThreadContext):
