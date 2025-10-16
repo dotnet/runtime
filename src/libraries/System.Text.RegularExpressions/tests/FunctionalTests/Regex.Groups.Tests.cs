@@ -468,6 +468,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return (enUS, @"^(A)(\s)\z", "A\n", RegexOptions.None, new string[] { "A\n", "A", "\n" });
             yield return (enUS, @"^(A)(\s)$", "A\n", RegexOptions.None, new string[] { "A\n", "A", "\n" });
             yield return (enUS, @"^(A)(\s)\Z", "A\n", RegexOptions.None, new string[] { "A\n", "A", "\n" });
+            yield return (enUS, @"(A)(\s)\z", "A\n", RegexOptions.None, new string[] { "A\n", "A", "\n" }); // without beginning anchor
             yield return (enUS, @"^(A)(\s)", "A\n", RegexOptions.Multiline, new string[] { "A\n", "A", "\n" });
             yield return (enUS, @"^(A)(\s)", "A ", RegexOptions.None, new string[] { "A ", "A", " " });
             
