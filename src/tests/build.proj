@@ -264,8 +264,8 @@
     <!-- Resolve runtime flavor for Android similar to AndroidBuild.targets -->
     <PropertyGroup>
       <_RuntimeFlavor>Mono</_RuntimeFlavor>
-      <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
-      <_RuntimeFlavor Condition="'$(UseNativeAOTRuntime)' == 'true'">nativeaot</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(TestBuildMode)' != 'nativeaot'">CoreCLR</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(TestBuildMode)' == 'nativeaot'">nativeaot</_RuntimeFlavor>
     </PropertyGroup>
 
     <AndroidAppBuilderTask
