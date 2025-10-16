@@ -1999,5 +1999,25 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(result);
             Assert.NotEmpty(result);
         }
+
+        [Fact]
+        public static void JsonSerializerOptions_WriteIndented()
+        {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            Assert.True(options.WriteIndented);
+            
+            string json = JsonSerializer.Serialize(new { name = "test" }, options);
+            Assert.Contains("\n", json);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_DefaultBufferSize()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Equal(16384, options.DefaultBufferSize);
+            
+            options.DefaultBufferSize = 8192;
+            Assert.Equal(8192, options.DefaultBufferSize);
+        }
     }
 }
