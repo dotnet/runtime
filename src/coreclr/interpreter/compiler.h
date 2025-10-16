@@ -316,7 +316,7 @@ struct InterpBasicBlock
     //   was before all funclets were moved to the end of the method.
     // * If this basic block is a call island, this points to the next finally call / catch leave island basic block.
     // * Otherwise, this is NULL.
-    InterpBasicBlock *pFinallyCallIslandBB;
+    InterpBasicBlock *pLeaveChainIslandBB;
     // Target of a leave instruction that is located in this basic block. NULL if there is none.
     InterpBasicBlock *pLeaveTargetBB;
 
@@ -354,7 +354,7 @@ struct InterpBasicBlock
 
         pFirstIns = pLastIns = NULL;
         pNextBB = NULL;
-        pFinallyCallIslandBB = NULL;
+        pLeaveChainIslandBB = NULL;
         pLeaveTargetBB = NULL;
 
         inCount = 0;
@@ -464,7 +464,7 @@ struct LeavesTableEntry
     int32_t ilOffset;
     // The BB of the call island BB that will be the first to call when the leave
     // instruction is executed.
-    InterpBasicBlock *pFinallyCallIslandBB;
+    InterpBasicBlock *pLeaveChainIslandBB;
 };
 
 class InterpCompiler
@@ -555,7 +555,7 @@ private:
     int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
-    InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
+    InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
@@ -783,7 +783,7 @@ private:
     InterpMethod* CreateInterpMethod();
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
-    void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
+    void CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
     void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
     void getEHinfo(CORINFO_METHOD_INFO* methodInfo, unsigned int index, CORINFO_EH_CLAUSE* ehClause);
     unsigned int getEHcount(CORINFO_METHOD_INFO* methodInfo);
