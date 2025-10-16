@@ -909,5 +909,41 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         private record DummyClass;
+
+        [Fact]
+        public static void JsonValue_CreateFromInt()
+        {
+            JsonValue value = JsonValue.Create(42);
+            Assert.Equal(42, value.GetValue<int>());
+            Assert.True(value.TryGetValue(out int result));
+            Assert.Equal(42, result);
+        }
+
+        [Fact]
+        public static void JsonValue_CreateFromString()
+        {
+            JsonValue value = JsonValue.Create("test");
+            Assert.Equal("test", value.GetValue<string>());
+            Assert.True(value.TryGetValue(out string result));
+            Assert.Equal("test", result);
+        }
+
+        [Fact]
+        public static void JsonValue_CreateFromBool()
+        {
+            JsonValue value = JsonValue.Create(true);
+            Assert.True(value.GetValue<bool>());
+            Assert.True(value.TryGetValue(out bool result));
+            Assert.True(result);
+        }
+
+        [Fact]
+        public static void JsonValue_CreateFromDouble()
+        {
+            JsonValue value = JsonValue.Create(3.14);
+            Assert.Equal(3.14, value.GetValue<double>());
+            Assert.True(value.TryGetValue(out double result));
+            Assert.Equal(3.14, result);
+        }
     }
 }

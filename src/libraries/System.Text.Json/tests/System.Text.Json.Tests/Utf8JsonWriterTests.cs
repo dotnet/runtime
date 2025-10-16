@@ -8149,6 +8149,72 @@ namespace System.Text.Json.Tests
             string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
             Assert.Equal("[42]", json);
         }
+
+        [Fact]
+        public static void WriteDateTime_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            DateTime dt = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+            writer.WriteStartObject();
+            writer.WriteString("date", dt);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("2024-01-01", json);
+        }
+
+        [Fact]
+        public static void WriteGuid_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            Guid guid = Guid.Parse("12345678-1234-1234-1234-123456789012");
+            writer.WriteStartObject();
+            writer.WriteString("id", guid);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("12345678-1234-1234-1234-123456789012", json);
+        }
+
+        [Fact]
+        public static void WriteDecimal_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteNumber("value", 123.456m);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("123.456", json);
+        }
+
+        [Fact]
+        public static void WriteLargeInteger_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteNumber("value", long.MaxValue);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("9223372036854775807", json);
+        }
     }
 
     public static class WriterHelpers
