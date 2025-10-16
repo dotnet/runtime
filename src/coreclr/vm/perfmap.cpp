@@ -161,7 +161,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
                 PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
                 NativeCodeVersion nativeCodeVersion;
-                nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);;
+                nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);
                 if (nativeCodeVersion.IsNull() && codeStart != pMethod->GetNativeCode())
                 {
                     continue;
