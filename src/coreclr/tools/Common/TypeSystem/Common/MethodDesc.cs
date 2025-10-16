@@ -658,7 +658,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public virtual bool IsRuntimeAsync
+        public virtual bool IsAsync
         {
             get
             {

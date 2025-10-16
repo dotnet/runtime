@@ -371,7 +371,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override bool IsRuntimeAsync
+        public override bool IsAsync
         {
             get
             {

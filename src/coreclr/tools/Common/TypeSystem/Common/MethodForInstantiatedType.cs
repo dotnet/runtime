@@ -119,11 +119,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsRuntimeAsync
+        public override bool IsAsync
         {
             get
             {
-                return _typicalMethodDef.IsRuntimeAsync;
+                return _typicalMethodDef.IsAsync;
             }
         }
 
