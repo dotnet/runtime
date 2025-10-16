@@ -11,6 +11,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Diagnostics
@@ -406,62 +407,91 @@ namespace System.Diagnostics.Tests
             }, regPattern).Dispose();
         }
 
-        public static Dictionary<string, string> MethodExceptionStrings = new Dictionary<string, string>
+        public static Dictionary<string, string[]> MethodExceptionStrings = new()
         {
-            { "Foo", @"(?s)" +
-                        @".+Not Found from Foo2" +
-                        @".+AsyncTest\.Program\.Foo2\(Int32 i\).+Program\.cs:line 63" +
-                        @".+AsyncTest\.Program\.Foo2\(Int32 i\).+Program\.cs:line 48" +
-                        @".+AsyncTest\.Program\.Foo1\(Int32 i\).+Program\.cs:line 33" },
-            { "Bar", @"(?s)" +
-                        @".+Exception from Bar" +
-                        @".+AsyncTest\.Program\.Bar\(Int32 i\).+Program\.cs:line 71" +
-                        @".+AsyncTest\.Program\.Bar\(Int32 i\).+Program\.cs:line 72" +
-                        @".+AsyncTest\.Program\.Bar\(Int32 i\).+Program\.cs:line 72" +
-                        @".+AsyncTest\.Program\.Bar\(Int32 i\).+Program\.cs:line 72" },
-            { "Baz", @"(?s)" +
-                        @".+Exception from Baz" +
-                        @".+AsyncTest\.Program\.Baz\(\).+Program\.cs:line 77"},
-            { "Qux", @"(?s)" +
-                        @".+Exception from Qux" +
-                        @".+AsyncTest\.Program\.Qux\(Int32 i\).+Program\.cs:line 102"},
-            { "Moin", @"(?s)" +
-                        @".+Exception from Moin2" +
-                        @".+AsyncTest\.Program\.Moin2\(\).+Program\.cs:line 90" +
-                        @".+AsyncTest\.Program\.Moin\(\).+Program\.cs:line 84"}
+            { "Foo", new[] {
+                @"Not Found from Foo2",
+                @"Program\.Foo2\(Int32 i\).*Program\.cs:line 53",
+                @"Program\.Foo1\(Int32 i\).*Program\.cs:line 26",
+                @"V1Methods\.Test1\(Func`2 method\).*Program\.cs:line 17",
+                @"V1Methods\.Test0\(Func`2 method\).*Program\.cs:line 8",
+                @"Program\.Foo\(\).*Program\.cs:line 12"
+            }},
+            { "Bar", new[] {
+                @"Exception from Bar",
+                @"Program\.Bar\(Int32 i\).*Program\.cs:line 61",
+                @"Program\.Bar\(Int32 i\).*Program\.cs:line 63"
+            }},
+            { "Baz", new[] {
+                @"Exception from Baz",
+                @"Program\.Baz\(\).*Program\.cs:line 69"
+            }},
+            { "Qux", new[] {
+                @"Exception from Qux",
+                @"Program\.Qux\(Int32 i\).*Program\.cs:line 82"
+            }},
+            {"Quux", new[] {
+                @"Not Found from Quux1",
+                @"Program\.Quux1\(Int32 i\).*Program\.cs:line 107",
+                @"V1Methods\.Test1\(Func`2 method\).*Program\.cs:line 17",
+                @"V1Methods\.Test0\(Func`2 method\).*Program\.cs:line 8",
+                @"Program\.Quux\(\).*Program\.cs:line 93"
+            }},
+            { "Quuux", new[] {
+                @"Exception from Quuux2",
+                @"Program\.Quuux2\(\).*Program\.cs:line 127",
+                @"Program\.Quuux\(\).*Program\.cs:line 120"
+            }}
         };
 
         public static IEnumerable<object[]> Ctor_Async_TestData()
         {
-            yield return new object[] { "Foo", null, MethodExceptionStrings["Foo"]};
-            yield return new object[] { "Bar", 3, MethodExceptionStrings["Bar"]};
-            yield return new object[] { "Baz", null, MethodExceptionStrings["Baz"]};
-            yield return new object[] { "Qux", 0, MethodExceptionStrings["Qux"]};
-            yield return new object[] { "Moin", null, MethodExceptionStrings["Moin"]};
+            yield return new object[] { "Foo", null, MethodExceptionStrings["Foo"] };
+            yield return new object[] { "Bar", 3, MethodExceptionStrings["Bar"] };
+            yield return new object[] { "Baz", null, MethodExceptionStrings["Baz"] };
+            yield return new object[] { "Qux", 0, MethodExceptionStrings["Qux"] };
+            yield return new object[] { "Quux", null, MethodExceptionStrings["Quux"] };
+            yield return new object[] { "Quuux", null, MethodExceptionStrings["Quuux"] };
         }
 
-        // async stuff
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        public static class RuntimeAsyncAndRemoteExecutor
+        {
+            public static bool IsSupported => RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
+        }
+
+        [ConditionalTheory(typeof(RuntimeAsyncAndRemoteExecutor), nameof(RuntimeAsyncAndRemoteExecutor.IsSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
-        public void ToString_Async(string methodName, object arg1, string expected)
+        public void ToString_Async(string methodName, object arg1, string[] expectedPatterns)
         {
             string AssemblyName = "AsyncAssembly.dll";
             string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_RuntimeAsync"] = "1";
-            RemoteExecutor.Invoke(() =>
+            string joinedPatterns = string.Join("|", expectedPatterns);
+            string arg1String = arg1?.ToString() ?? "null";
+            Func<string, string, string, string, Task> method = async (asmPath, methodName, arg1String, joinedPatterns) =>
             {
-                var asm = Assembly.LoadFrom(SourceTestAssemblyPath);
+                var asm = Assembly.LoadFrom(asmPath);
                 try
                 {
-                    asm.GetType("Program").GetMethod(methodName).Invoke(null, new[] { arg1 });
+                    object arg1 = arg1String == "null" ? null : int.Parse(arg1String, CultureInfo.InvariantCulture);
+                    var result = asm.GetType("Program").GetMethod(methodName).Invoke(null, arg1 == null ? null : new[] { arg1 });
+                    if (result is Task task)
+                    {
+                        await task;
+                    }
                 }
                 catch (Exception e)
                 {
-                    Assert.Matches(expected, e.ToString());
+                    string exceptionString = e.ToString();
+                    string[] patterns = joinedPatterns.Split('|');
+                    foreach (string pattern in patterns)
+                    {
+                        Assert.Matches(pattern, exceptionString);
+                    }
                 }
-            }, options).Dispose();
+            };
+            RemoteExecutor.Invoke(method, SourceTestAssemblyPath, methodName, arg1String, joinedPatterns, options).Dispose();
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

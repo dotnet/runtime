@@ -391,7 +391,7 @@ namespace System.Runtime.CompilerServices
             // To be used for async stack walking
             [ThreadStatic]
             private static unsafe NextContinuationData* t_nextContinuation;
-
+            [StackTraceHidden]
             public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
@@ -758,12 +758,14 @@ namespace System.Runtime.CompilerServices
             flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
         }
 
+        [StackTraceHidden]
         internal static T CompletedTaskResult<T>(Task<T> task)
         {
             TaskAwaiter.ValidateEnd(task);
             return task.ResultOnSuccess;
         }
 
+        [StackTraceHidden]
         internal static void CompletedTask(Task task)
         {
             TaskAwaiter.ValidateEnd(task);

@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -11,6 +12,10 @@
 
   <ItemGroup>
     <ProjectReference Include="../AsyncV1Assembly/AsyncV1Assembly.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
   </ItemGroup>
 
 </Project>

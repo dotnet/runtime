@@ -25,5 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ExceptionTestAssembly\ExceptionTestAssembly.csproj" />
+    <ProjectReference Include="AsyncAssembly\AsyncAssembly.csproj" />
   </ItemGroup>
 </Project>
