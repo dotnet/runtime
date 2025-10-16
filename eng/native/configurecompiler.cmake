@@ -34,11 +34,15 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
 endif()
 
-# Force usage of classic linker on Xcode 15
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15 AND
-    CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
-    add_link_options("-Wl,-ld_classic")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # enable $<LINK_GROUP:RESCAN> on AppleClang as a no-op
+    set(CMAKE_LINK_GROUP_USING_RESCAN "" "")
+    set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED ON)
+    # Force usage of classic linker on Xcode 15
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15 AND
+        CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+        add_link_options(LINKER:-ld_classic)
+    endif()
 endif()
 
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
