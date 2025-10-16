@@ -3084,9 +3084,10 @@ public:
 
             // Split edges, rewire flow, and add control var assignments
             //
-            int             headerNumber = 0;
+            unsigned        headerNumber = 0;
             BitVecOps::Iter iterator(&m_traits, m_entries);
             unsigned int    poHeaderNumber = 0;
+            weight_t        netLikelihood  = 0.0;
 
             while (iterator.NextElem(&poHeaderNumber))
             {
@@ -3097,17 +3098,16 @@ public:
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
-                weight_t incomingWeight = 0;
+                weight_t headerWeight = header->bbWeight;
 
                 for (FlowEdge* const f : header->PredEdgesEditing())
                 {
                     assert(f->getDestinationBlock() == header);
-                    JITDUMP("  Splitting edge " FMT_BB " -> " FMT_BB "\n", f->getSourceBlock()->bbNum, header->bbNum);
-                    BasicBlock* const transferBlock   = m_comp->fgSplitEdge(f->getSourceBlock(), header);
+                    BasicBlock* const pred = f->getSourceBlock();
+                    JITDUMP("  Splitting edge " FMT_BB " -> " FMT_BB "\n", pred->bbNum, header->bbNum);
+                    BasicBlock* const transferBlock   = m_comp->fgSplitEdge(pred, header);
                     GenTree* const    targetIndex     = m_comp->gtNewIconNode(headerNumber);
                     GenTree* const    storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
-
-                    incomingWeight += f->getLikelyWeight();
 
                     m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
                     m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
@@ -3116,16 +3116,22 @@ public:
                 FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
 
                 // Since all flow to header now goes through dispatch, we know the likelihood
-                // of the dispatch targets, unless all profile data is zero.
+                // of the dispatch targets. If all profile data is zero just divide evenly.
                 //
-                if (TotalEntryWeight() > 0)
+                if ((headerNumber + 1) == numHeaders)
                 {
-                    dispatchToHeaderEdge->setLikelihood(incomingWeight / TotalEntryWeight());
+                    dispatchToHeaderEdge->setLikelihood(1.0 - netLikelihood);
+                }
+                else if (TotalEntryWeight() > 0)
+                {
+                    dispatchToHeaderEdge->setLikelihood(headerWeight / TotalEntryWeight());
                 }
                 else
                 {
                     dispatchToHeaderEdge->setLikelihood(1.0 / numHeaders);
                 }
+
+                netLikelihood += dispatchToHeaderEdge->getLikelihood();
 
                 succs[headerNumber] = dispatchToHeaderEdge;
                 cases[headerNumber] = dispatchToHeaderEdge;
@@ -3294,6 +3300,7 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
         //
         if (bbIsHandlerBeg(u))
         {
+            JITDUMP("hdlr " FMT_BB ", skipping all preds\n");
             return;
         }
 
@@ -3311,6 +3318,14 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
         //
         for (BasicBlock* p : u->PredBlocks())
         {
+            // Do not walk back into a catch or filter.
+            //
+            if (p->KindIs(BBJ_EHCATCHRET))
+            {
+                JITDUMP("c-cont " FMT_BB ", skipping " FMT_BB "\n", u->bbNum, u->Prev()->bbNum);
+                continue;
+            }
+
             self(self, p, root, subset);
         }
     };
