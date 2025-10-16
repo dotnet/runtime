@@ -74,9 +74,9 @@
                                    Version="$(MonoLLVMToolsVersion)"
                                    PackageArch="$(BuildArchitecture)"/>
   </ItemGroup>
-  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk'))">
-    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" />
-    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+  <ItemGroup Condition="@(_PackageReferenceDeduplicated->AnyHaveMetadataValue('Identity', 'runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk$(MonoLLVMSDKDebugSuffix)'))">
+    <_PackageReferenceDeduplicated Remove="runtime.$(MonoLLVMHostOS)-wasm.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk$(MonoLLVMSDKDebugSuffix)" />
+    <_PackageReferenceDeduplicated Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk$(MonoLLVMSDKDebugSuffix)"
                                    Version="$(MonoLLVMSDKVersion)"
                                    PackageArch="$(BuildArchitecture)"/>
    </ItemGroup>

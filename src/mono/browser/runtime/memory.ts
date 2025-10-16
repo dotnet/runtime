@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { loaderHelpers, Module, mono_assert, runtimeHelpers } from "./globals";
 import { utf8ToString } from "./strings";
 import { mono_log_warn, mono_log_error } from "./logging";
 
@@ -327,7 +327,8 @@ export function withStackAlloc<T1, T2, T3, TResult> (bytesWanted: number, f: (pt
     try {
         return f(ptr, ud1, ud2, ud3);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 

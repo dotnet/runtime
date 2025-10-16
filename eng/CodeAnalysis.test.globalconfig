@@ -279,6 +279,9 @@ dotnet_diagnostic.CA1514.severity = none
 # CA1515: Consider making public types internal
 dotnet_diagnostic.CA1515.severity = none
 
+# CA1516: Use cross-platform intrinsics
+dotnet_diagnostic.CA1516.severity = none
+
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none
 
@@ -560,6 +563,9 @@ dotnet_diagnostic.CA2021.severity = none
 
 # CA2022: Avoid inexact read with 'Stream.Read'
 dotnet_diagnostic.CA2022.severity = none
+
+# CA2025: Ensure tasks using 'IDisposable' instances complete before the instances are disposed
+dotnet_diagnostic.CA2025.severity = none
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none

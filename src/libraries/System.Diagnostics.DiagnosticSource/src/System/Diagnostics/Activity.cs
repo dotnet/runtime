@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
@@ -58,8 +59,8 @@ namespace System.Diagnostics
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
         private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
@@ -551,10 +552,7 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
         {
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             TagList exceptionTags = tags;
 
@@ -2041,26 +2039,12 @@ namespace System.Diagnostics
             return (byte)((hi << 4) | lo);
         }
 
+        private static readonly SearchValues<char> s_hexLowerChars = SearchValues.Create("0123456789abcdef");
+
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
         {
             // Verify lower-case hex and not all zeros https://w3c.github.io/trace-context/#field-value
-            bool isNonZero = false;
-            int i = 0;
-            for (; i < idData.Length; i++)
-            {
-                char c = idData[i];
-                if (!HexConverter.IsHexLowerChar(c))
-                {
-                    return false;
-                }
-
-                if (c != '0')
-                {
-                    isNonZero = true;
-                }
-            }
-
-            return isNonZero;
+            return !idData.ContainsAnyExcept(s_hexLowerChars) && idData.ContainsAnyExcept('0');
         }
     }
 

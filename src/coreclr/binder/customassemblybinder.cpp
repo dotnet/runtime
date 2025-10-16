@@ -72,7 +72,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
             // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
             // that has been loaded.
             //
-            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName,
+            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(GetAssemblyLoadContext(), pAssemblyName,
                                                                      m_pDefaultBinder, this, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
@@ -178,7 +178,7 @@ HRESULT CustomAssemblyBinder::SetupContext(DefaultAssemblyBinder *pDefaultBinder
 
                 // Save the reference to the IntPtr for GCHandle for the managed
                 // AssemblyLoadContext instance
-                pBinder->SetManagedAssemblyLoadContext(ptrAssemblyLoadContext);
+                pBinder->SetAssemblyLoadContext(ptrAssemblyLoadContext);
 
                 if (pLoaderAllocator != NULL)
                 {
@@ -247,16 +247,16 @@ CustomAssemblyBinder::CustomAssemblyBinder()
 
 void CustomAssemblyBinder::ReleaseLoadContext()
 {
-    VERIFY(GetManagedAssemblyLoadContext() != (INT_PTR)NULL);
+    VERIFY(GetAssemblyLoadContext() != (INT_PTR)NULL);
     VERIFY(m_ptrManagedStrongAssemblyLoadContext != (INT_PTR)NULL);
 
     // This method is called to release the weak and strong handles on the managed AssemblyLoadContext
     // once the Unloading event has been fired
-    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetManagedAssemblyLoadContext());
+    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(GetAssemblyLoadContext());
     DestroyLongWeakHandle(handle);
     handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedStrongAssemblyLoadContext);
     DestroyHandle(handle);
-    SetManagedAssemblyLoadContext((INT_PTR)NULL);
+    SetAssemblyLoadContext((INT_PTR)NULL);
 
     // The AssemblyLoaderAllocator is in a process of shutdown and should not be used 
     // after this point.

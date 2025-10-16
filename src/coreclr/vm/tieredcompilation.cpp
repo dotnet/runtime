@@ -12,6 +12,7 @@
 #include "log.h"
 #include "threadsuspend.h"
 #include "tieredcompilation.h"
+#include "minipal/time.h"
 
 // TieredCompilationManager determines which methods should be recompiled and
 // how they should be recompiled to best optimize the running code. It then
@@ -114,7 +115,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
         // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
         // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
-        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() || 
+        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() ||
             ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
         {
             return NativeCodeVersion::OptimizationTier0;
@@ -127,6 +128,16 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 #else
     return NativeCodeVersion::OptimizationTierOptimized;
 #endif
+}
+
+bool TieredCompilationManager::IsTieringDelayActive()
+{
+    LIMITED_METHOD_CONTRACT;
+#if defined(FEATURE_TIERED_COMPILATION)
+    return m_methodsPendingCountingForTier1 != nullptr;
+#else
+    return false;
+#endif // FEATURE_TIERED_COMPILATION
 }
 
 #if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
@@ -211,7 +222,7 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
 
             EX_RETHROW;
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
     }
 
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
@@ -432,7 +443,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
 
         EX_RETHROW;
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
@@ -500,12 +511,10 @@ void TieredCompilationManager::BackgroundWorkerStart()
     int processorCount = GetCurrentProcessCpuCount();
     _ASSERTE(processorCount > 0);
 
-    LARGE_INTEGER li;
-    QueryPerformanceFrequency(&li);
-    UINT64 ticksPerS = li.QuadPart;
-    UINT64 maxWorkDurationTicks = ticksPerS * 50 / 1000; // 50 ms
-    UINT64 minWorkDurationTicks = min(ticksPerS * processorCount / 1000, maxWorkDurationTicks); // <proc count> ms (capped)
-    UINT64 workDurationTicks = minWorkDurationTicks;
+    int64_t ticksPerS = minipal_hires_tick_frequency();
+    int64_t maxWorkDurationTicks = ticksPerS * 50 / 1000; // 50 ms
+    int64_t minWorkDurationTicks = min(ticksPerS * processorCount / 1000, maxWorkDurationTicks); // <proc count> ms (capped)
+    int64_t workDurationTicks = minWorkDurationTicks;
 
     while (true)
     {
@@ -573,12 +582,6 @@ void TieredCompilationManager::BackgroundWorkerStart()
         INDEBUG(s_backgroundWorkerThread = nullptr);
         return;
     }
-}
-
-bool TieredCompilationManager::IsTieringDelayActive()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_methodsPendingCountingForTier1 != nullptr;
 }
 
 bool TieredCompilationManager::TryDeactivateTieringDelay()
@@ -662,8 +665,9 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DeactivateTieringDelay: "
                     "Exception in CallCountingManager::SetCodeEntryPoint, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
         }
     }
 
@@ -713,9 +717,9 @@ void TieredCompilationManager::AsyncCompleteCallCounting()
 // optimizations enabled and then installed as the active implementation
 // of the method entrypoint.
 bool TieredCompilationManager::DoBackgroundWork(
-    UINT64 *workDurationTicksRef,
-    UINT64 minWorkDurationTicks,
-    UINT64 maxWorkDurationTicks)
+    int64_t *workDurationTicksRef,
+    int64_t minWorkDurationTicks,
+    int64_t maxWorkDurationTicks)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(GetThread() == s_backgroundWorkerThread);
@@ -723,7 +727,7 @@ bool TieredCompilationManager::DoBackgroundWork(
     _ASSERTE(workDurationTicksRef != nullptr);
     _ASSERTE(minWorkDurationTicks <= maxWorkDurationTicks);
 
-    UINT64 workDurationTicks = *workDurationTicksRef;
+    int64_t workDurationTicks = *workDurationTicksRef;
     _ASSERTE(workDurationTicks >= minWorkDurationTicks);
     _ASSERTE(workDurationTicks <= maxWorkDurationTicks);
 
@@ -740,10 +744,8 @@ bool TieredCompilationManager::DoBackgroundWork(
     bool sendStopEvent = true;
     bool allMethodsJitted = false;
     UINT32 jittedMethodCount = 0;
-    LARGE_INTEGER li;
-    QueryPerformanceCounter(&li);
-    UINT64 startTicks = li.QuadPart;
-    UINT64 previousTicks = startTicks;
+    int64_t startTicks = minipal_hires_ticks();
+    int64_t previousTicks = startTicks;
 
     do
     {
@@ -811,8 +813,9 @@ bool TieredCompilationManager::DoBackgroundWork(
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
                     "Exception in CallCountingManager::CompleteCallCounting, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
 
             continue;
         }
@@ -822,8 +825,7 @@ bool TieredCompilationManager::DoBackgroundWork(
 
         // Yield the thread periodically to give preference to possibly more important work
 
-        QueryPerformanceCounter(&li);
-        UINT64 currentTicks = li.QuadPart;
+        int64_t currentTicks = minipal_hires_ticks();
         if (currentTicks - startTicks < workDurationTicks)
         {
             previousTicks = currentTicks;
@@ -849,11 +851,10 @@ bool TieredCompilationManager::DoBackgroundWork(
             ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(countOfMethodsToOptimize, jittedMethodCount);
         }
 
-        UINT64 beforeSleepTicks = currentTicks;
+        int64_t beforeSleepTicks = currentTicks;
         ClrSleepEx(0, false);
 
-        QueryPerformanceCounter(&li);
-        currentTicks = li.QuadPart;
+        currentTicks = minipal_hires_ticks();
 
         // Depending on how oversubscribed thread usage is on the system, the sleep may have caused this thread to not be
         // scheduled for a long time. Yielding the thread too frequently may significantly slow down the background work, which
@@ -864,8 +865,8 @@ bool TieredCompilationManager::DoBackgroundWork(
         // work duration is capped to a maximum and since a long sleep delay is likely to repeat, to avoid going back to
         // too-frequent yielding too quickly, the background work duration is decayed back to the minimum if the sleep duration
         // becomes consistently short.
-        UINT64 newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
-        UINT64 decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
+        int64_t newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
+        int64_t decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
         workDurationTicks = newWorkDurationTicks < decayedWorkDurationTicks ? decayedWorkDurationTicks : newWorkDurationTicks;
         if (workDurationTicks < minWorkDurationTicks)
         {
@@ -917,8 +918,9 @@ bool TieredCompilationManager::DoBackgroundWork(
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
                 "Exception in CallCountingManager::StopAndDeleteAllCallCountingStubs, hr=0x%x\n",
                 GET_EXCEPTION()->GetHR());
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
     }
 
     *workDurationTicksRef = workDurationTicks;
@@ -976,8 +978,9 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         // Failing to jit should be rare but acceptable. We will leave whatever code already exists in place.
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::CompileCodeVersion: Method %pM failed to jit, hr=0x%x\n",
             pMethod, GET_EXCEPTION()->GetHR());
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     return pCode != (PCODE)NULL;
 }
@@ -1000,7 +1003,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        
+
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
         // methods this first attempt should succeed
         ilParent = nativeCodeVersion.GetILCodeVersion();

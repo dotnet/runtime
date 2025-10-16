@@ -23,9 +23,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|#1:MarshallerType|}))]
                 struct MarshallerType
@@ -35,9 +35,9 @@ namespace LibraryImportGenerator.UnitTests
 
             string fixedSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof(MarshallerType))]
                 struct MarshallerType
@@ -75,9 +75,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof({|#1:MarshallerType|}))]
                 struct MarshallerType
@@ -87,9 +87,9 @@ namespace LibraryImportGenerator.UnitTests
 
             string fixedSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedIn, typeof(MarshallerType))]
                 struct MarshallerType
@@ -127,9 +127,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedOut, typeof({|#0:MarshallerType|}))]
                 struct MarshallerType
                 {
@@ -150,9 +150,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType|}))]
                 struct MarshallerType
@@ -162,9 +162,9 @@ namespace LibraryImportGenerator.UnitTests
 
             string fixedSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof(MarshallerType))]
                 struct MarshallerType
@@ -183,12 +183,12 @@ namespace LibraryImportGenerator.UnitTests
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public ManagedType ToManaged()
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public void Free()
                     {
                         throw new System.NotImplementedException();
@@ -216,9 +216,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof({|#1:MarshallerType|}))]
                 struct MarshallerType
@@ -242,9 +242,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedRef, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedRef, typeof(MarshallerType))]
                 struct MarshallerType
@@ -266,9 +266,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementRef, typeof({|#1:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementOut, typeof({|#2:MarshallerType|}))]
@@ -294,9 +294,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.Default, typeof({|#0:MarshallerType|}))]
                 struct MarshallerType
                 {
@@ -305,9 +305,9 @@ namespace LibraryImportGenerator.UnitTests
 
             string fixedSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.Default, typeof(MarshallerType))]
                 struct MarshallerType
                 {
@@ -315,7 +315,7 @@ namespace LibraryImportGenerator.UnitTests
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public nint ToUnmanaged()
                     {
                         throw new System.NotImplementedException();
@@ -325,12 +325,12 @@ namespace LibraryImportGenerator.UnitTests
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public ManagedType ToManaged()
                     {
                         throw new System.NotImplementedException();
                     }
-                
+
                     public void Free()
                     {
                         throw new System.NotImplementedException();
@@ -354,9 +354,9 @@ namespace LibraryImportGenerator.UnitTests
             string source = """
                 using System;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 struct MarshallerType
                 {
@@ -371,9 +371,9 @@ namespace LibraryImportGenerator.UnitTests
             string fixedSource = """
                 using System;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 struct MarshallerType
                 {
@@ -382,6 +382,7 @@ namespace LibraryImportGenerator.UnitTests
                     public int ToUnmanaged() => default;
 
                     public void Free() {}
+
                     public static int BufferSize
                     {
                         get

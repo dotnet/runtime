@@ -36,169 +36,186 @@ using Mono.Linker.Steps;
 namespace Mono.Linker
 {
 
-	public class Pipeline
-	{
+    public class Pipeline
+    {
 
-		readonly List<IStep> _steps;
-		public List<IMarkHandler> MarkHandlers { get; }
+        readonly List<IStep> _steps;
+        public List<IMarkHandler> MarkHandlers { get; }
 
-		public Pipeline ()
-		{
-			_steps = new List<IStep> ();
-			MarkHandlers = new List<IMarkHandler> ();
-		}
+        public Pipeline()
+        {
+            _steps = new List<IStep>();
+            MarkHandlers = new List<IMarkHandler>();
+        }
 
-		public void PrependStep (IStep step)
-		{
-			_steps.Insert (0, step);
-		}
+        public void PrependStep(IStep step)
+        {
+            _steps.Insert(0, step);
+        }
 
-		public void AppendStep (IStep step)
-		{
-			_steps.Add (step);
-		}
+        public void AppendStep(IStep step)
+        {
+            _steps.Add(step);
+        }
 
-		public void AppendMarkHandler (IMarkHandler step)
-		{
-			MarkHandlers.Add (step);
-		}
+        public void AppendMarkHandler(IMarkHandler step)
+        {
+            MarkHandlers.Add(step);
+        }
 
-		public void AddStepBefore (Type target, IStep step)
-		{
-			for (int i = 0; i < _steps.Count; i++) {
-				if (target.IsInstanceOfType (_steps[i])) {
-					_steps.Insert (i, step);
-					return;
-				}
-			}
-			throw new InternalErrorException ($"Step {step} could not be inserted before (not found) {target}");
-		}
+        public void AddStepBefore(Type target, IStep step)
+        {
+            for (int i = 0; i < _steps.Count; i++)
+            {
+                if (target.IsInstanceOfType(_steps[i]))
+                {
+                    _steps.Insert(i, step);
+                    return;
+                }
+            }
+            throw new InternalErrorException($"Step {step} could not be inserted before (not found) {target}");
+        }
 
-		public void AddStepBefore (IStep target, IStep step)
-		{
-			for (int i = 0; i < _steps.Count; i++) {
-				if (_steps[i] == target) {
-					_steps.Insert (i, step);
-					return;
-				}
-			}
-			throw new InternalErrorException ($"Step {step} could not be inserted before (not found) {target}");
-		}
+        public void AddStepBefore(IStep target, IStep step)
+        {
+            for (int i = 0; i < _steps.Count; i++)
+            {
+                if (_steps[i] == target)
+                {
+                    _steps.Insert(i, step);
+                    return;
+                }
+            }
+            throw new InternalErrorException($"Step {step} could not be inserted before (not found) {target}");
+        }
 
-		public void AddMarkHandlerBefore (IMarkHandler target, IMarkHandler step)
-		{
-			for (int i = 0; i < MarkHandlers.Count; i++) {
-				if (MarkHandlers[i] == target) {
-					MarkHandlers.Insert (i, step);
-					return;
-				}
-			}
-			throw new InternalErrorException ($"Step {step} could not be inserted before (not found) {target}");
-		}
+        public void AddMarkHandlerBefore(IMarkHandler target, IMarkHandler step)
+        {
+            for (int i = 0; i < MarkHandlers.Count; i++)
+            {
+                if (MarkHandlers[i] == target)
+                {
+                    MarkHandlers.Insert(i, step);
+                    return;
+                }
+            }
+            throw new InternalErrorException($"Step {step} could not be inserted before (not found) {target}");
+        }
 
-		public void ReplaceStep (Type target, IStep step)
-		{
-			AddStepBefore (target, step);
-			RemoveStep (target);
-		}
+        public void ReplaceStep(Type target, IStep step)
+        {
+            AddStepBefore(target, step);
+            RemoveStep(target);
+        }
 
-		public void AddStepAfter (Type target, IStep step)
-		{
-			for (int i = 0; i < _steps.Count; i++) {
-				if (target.IsInstanceOfType (_steps[i])) {
-					if (i == _steps.Count - 1)
-						_steps.Add (step);
-					else
-						_steps.Insert (i + 1, step);
-					return;
-				}
-			}
-			throw new InternalErrorException ($"Step {step} could not be inserted after (not found) {target}");
-		}
+        public void AddStepAfter(Type target, IStep step)
+        {
+            for (int i = 0; i < _steps.Count; i++)
+            {
+                if (target.IsInstanceOfType(_steps[i]))
+                {
+                    if (i == _steps.Count - 1)
+                        _steps.Add(step);
+                    else
+                        _steps.Insert(i + 1, step);
+                    return;
+                }
+            }
+            throw new InternalErrorException($"Step {step} could not be inserted after (not found) {target}");
+        }
 
-		public void AddStepAfter (IStep target, IStep step)
-		{
-			for (int i = 0; i < _steps.Count; i++) {
-				if (_steps[i] == target) {
-					if (i == _steps.Count - 1)
-						_steps.Add (step);
-					else
-						_steps.Insert (i + 1, step);
-					return;
-				}
-			}
-			throw new InternalErrorException ($"Step {step} could not be inserted after (not found) {target}");
-		}
+        public void AddStepAfter(IStep target, IStep step)
+        {
+            for (int i = 0; i < _steps.Count; i++)
+            {
+                if (_steps[i] == target)
+                {
+                    if (i == _steps.Count - 1)
+                        _steps.Add(step);
+                    else
+                        _steps.Insert(i + 1, step);
+                    return;
+                }
+            }
+            throw new InternalErrorException($"Step {step} could not be inserted after (not found) {target}");
+        }
 
-		public void AddMarkHandlerAfter (IMarkHandler target, IMarkHandler step)
-		{
-			for (int i = 0; i < MarkHandlers.Count; i++) {
-				if (MarkHandlers[i] == target) {
-					if (i == MarkHandlers.Count - 1)
-						MarkHandlers.Add (step);
-					else
-						MarkHandlers.Insert (i + 1, step);
-					return;
-				}
-			}
-			throw new InternalErrorException ($"Step {step} could not be inserted after (not found) {target}");
-		}
+        public void AddMarkHandlerAfter(IMarkHandler target, IMarkHandler step)
+        {
+            for (int i = 0; i < MarkHandlers.Count; i++)
+            {
+                if (MarkHandlers[i] == target)
+                {
+                    if (i == MarkHandlers.Count - 1)
+                        MarkHandlers.Add(step);
+                    else
+                        MarkHandlers.Insert(i + 1, step);
+                    return;
+                }
+            }
+            throw new InternalErrorException($"Step {step} could not be inserted after (not found) {target}");
+        }
 
-		public void RemoveStep (Type target)
-		{
-			for (int i = 0; i < _steps.Count; i++) {
-				if (_steps[i].GetType () != target)
-					continue;
+        public void RemoveStep(Type target)
+        {
+            for (int i = 0; i < _steps.Count; i++)
+            {
+                if (_steps[i].GetType() != target)
+                    continue;
 
-				_steps.RemoveAt (i);
-				break;
-			}
-		}
+                _steps.RemoveAt(i);
+                break;
+            }
+        }
 
-		public void Process (LinkContext context)
-		{
-			while (_steps.Count > 0) {
-				IStep step = _steps[0];
-				string? stepName = null;
-				if (LinkerEventSource.Log.IsEnabled ()) {
-					stepName = step.GetType ().Name;
-					LinkerEventSource.Log.LinkerStepStart (stepName);
-				}
-				ProcessStep (context, step);
-				if (LinkerEventSource.Log.IsEnabled ()) {
-					stepName ??= step.GetType ().Name;
-					LinkerEventSource.Log.LinkerStepStop (stepName);
-				}
-				_steps.Remove (step);
-			}
-		}
+        public void Process(LinkContext context)
+        {
+            while (_steps.Count > 0)
+            {
+                IStep step = _steps[0];
+                string? stepName = null;
+                if (LinkerEventSource.Log.IsEnabled())
+                {
+                    stepName = step.GetType().Name;
+                    LinkerEventSource.Log.LinkerStepStart(stepName);
+                }
+                ProcessStep(context, step);
+                if (LinkerEventSource.Log.IsEnabled())
+                {
+                    stepName ??= step.GetType().Name;
+                    LinkerEventSource.Log.LinkerStepStop(stepName);
+                }
+                _steps.Remove(step);
+            }
+        }
 
-		protected virtual void ProcessStep (LinkContext context, IStep step)
-		{
-			step.Process (context);
-		}
+        protected virtual void ProcessStep(LinkContext context, IStep step)
+        {
+            step.Process(context);
+        }
 
-		public IStep[] GetSteps ()
-		{
-			return _steps.ToArray ();
-		}
+        public IStep[] GetSteps()
+        {
+            return _steps.ToArray();
+        }
 
-		public void InitializeMarkHandlers (LinkContext context, MarkContext markContext)
-		{
-			while (MarkHandlers.Count > 0) {
-				IMarkHandler markHandler = MarkHandlers[0];
-				markHandler.Initialize (context, markContext);
-				MarkHandlers.Remove (markHandler);
-			}
-		}
+        public void InitializeMarkHandlers(LinkContext context, MarkContext markContext)
+        {
+            while (MarkHandlers.Count > 0)
+            {
+                IMarkHandler markHandler = MarkHandlers[0];
+                markHandler.Initialize(context, markContext);
+                MarkHandlers.Remove(markHandler);
+            }
+        }
 
-		public bool ContainsStep (Type type)
-		{
-			foreach (IStep step in _steps)
-				if (step.GetType () == type)
-					return true;
+        public bool ContainsStep(Type type)
+        {
+            foreach (IStep step in _steps)
+                if (step.GetType() == type)
+                    return true;
 
-			return false;
-		}
-	}
+            return false;
+        }
+    }
 }

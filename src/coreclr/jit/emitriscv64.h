@@ -3,7 +3,7 @@
 
 #if defined(TARGET_RISCV64)
 
-// The RISCV64 instructions are all 32 bits in size.
+// The RISCV64 instructions are all 32 / 16 bits in size.
 // we use an unsigned int to hold the encoded instructions.
 // This typedef defines the type that we use to hold encoded instructions.
 //
@@ -42,14 +42,16 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */
@@ -60,6 +62,17 @@ bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
+// RVC emitters
+bool tryEmitCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+
+// RVC helpers
+instruction tryGetCompressedIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt);
+unsigned    tryGetRvcRegisterNumber(regNumber reg);
+instruction getCompressedArithmeticIns(instruction ins);
+regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
+
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
@@ -68,13 +81,14 @@ void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
+void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
-emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
+static emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
-// Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
+// Emit the 16/32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
 ssize_t emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
@@ -96,6 +110,9 @@ static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1
 static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20);
 static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13);
 static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21);
+
+static code_t insEncodeCRTypeInstr(instruction ins, unsigned rdRs1, unsigned rs2);
+static code_t insEncodeCATypeInstr(instruction ins, unsigned rdRs1Rvc, unsigned rs2Rvc);
 
 #ifdef DEBUG
 static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
@@ -119,27 +136,52 @@ unsigned emitOutput_BTypeInstr_InvertComparation(
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const;
 
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id);
-BYTE* emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
-BYTE* emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
-BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
-BYTE* emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
 BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
-BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
-BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
 BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
+BYTE* emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* ins);
 
 static unsigned TrimSignedToImm12(ssize_t imm12);
 static unsigned TrimSignedToImm13(ssize_t imm13);
 static unsigned TrimSignedToImm20(ssize_t imm20);
 static unsigned TrimSignedToImm21(ssize_t imm21);
+
+// Major opcode of 32-bit & 16-bit instructions as per "The RISC-V Instruction Set Manual", chapter "RV32/64G
+// Instruction Set Listings", table "RISC-V base opcode map" and chapter "RVC Instruction Set Listings", table "RVC
+// opcode map instructions"
+enum class MajorOpcode
+{
+    // clang-format off
+    // inst[1:0] = 11
+    // inst[4:2]    000,    001,     010,      011,     100,    101,   110,          111 (>32Bit)
+    /* inst[6:5] */
+    /*        00 */ Load,   LoadFp,  Custom0,  MiscMem, OpImm,  Auipc, OpImm32,      Encoding48Bit1,
+    /*        01 */ Store,  StoreFp, Custom1,  Amo,     Op,     Lui,   Op32,         Encoding64Bit,
+    /*        11 */ MAdd,   MSub,    NmSub,    NmAdd,   OpFp,   OpV,   Custom2Rv128, Encoding48Bit2,
+    /*        11 */ Branch, Jalr,    Reserved, Jal,     System, OpVe,  Custom3Rv128, Encoding80Bit,
+
+    // Compressed (RVC) instructions
+    // inst[15:13]  000,      001,   010,  011,         100,         101,   110,  111
+    /* inst[1:0] */
+    /*        00 */ Addi4Spn, Fld,   Lw,   Ld,          Reserved2,   Fsd,   Sw,   Sd,
+    /*        01 */ Addi,     Addiw, Li,   LuiAddi16Sp, MiscAlu,     J,     Beqz, Bnez,
+    /*        10 */ Slli,     FldSp, LwSp, Ldsp,        JrJalrMvAdd, FsdSp, SwSp, SdSp,
+    // clang-format on
+};
+
+//------------------------------------------------------------------------
+// GetMajorOpcode: extracts major opcode from an instruction
+//
+// Arguments:
+//    instr - instruction code
+//
+// Return Value:
+//    Major opcode
+//
+static MajorOpcode GetMajorOpcode(code_t instr);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -198,6 +240,26 @@ static bool isValidSimm21(ssize_t value)
 static bool isValidSimm32(ssize_t value)
 {
     return (-(((ssize_t)1) << 31) - 0x800) <= value && value < (((ssize_t)1) << 31) - 0x800;
+}
+
+//------------------------------------------------------------------------
+// isSingleInstructionFpImm: checks if the floating-point constant can be synthesized with one instruction
+//
+// Arguments:
+//    value   - the constant to be imm'ed
+//    size    - size of the target immediate
+//    outBits - [out] the bits of the immediate
+//
+// Return Value:
+//    Whether the floating-point immediate can be synthesized with one instruction
+//
+static bool isSingleInstructionFpImm(double value, emitAttr size, int64_t* outBits)
+{
+    assert(size == EA_4BYTE || size == EA_8BYTE);
+    *outBits = (size == EA_4BYTE)
+                   ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(value))
+                   : (int64_t)BitOperations::DoubleToUInt64Bits(value);
+    return isValidSimm12(*outBits) || (((*outBits & 0xfff) == 0) && isValidSimm20(*outBits >> 12));
 }
 
 // Returns the number of bits used by the given 'size'.
@@ -279,8 +341,7 @@ void emitIns_R_R_I_I(
 
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
 
-void emitIns_R_C(
-    instruction ins, emitAttr attr, regNumber reg, regNumber tmpReg, CORINFO_FIELD_HANDLE fldHnd, int offs);
+void emitIns_R_C(instruction ins, emitAttr attr, regNumber destReg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd);
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
@@ -293,47 +354,7 @@ void emitIns_R_AI(instruction  ins,
                   regNumber    reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-enum EmitCallType
-{
-
-    // I have included here, but commented out, all the values used by the x86 emitter.
-    // However, RISCV64 has a much reduced instruction set, and so the RISCV64 emitter only
-    // supports a subset of the x86 variants.  By leaving them commented out, it becomes
-    // a compile time error if code tries to use them (and hopefully see this comment
-    // and know why they are unavailable on RISCV64), while making it easier to stay
-    // in-sync with x86 and possibly add them back in if needed.
-
-    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
-                   //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-                   // EC_FUNC_ADDR,  // Direct call to an absolute address
-
-    //  EC_FUNC_VIRTUAL,        // Call to a virtual method (using the vtable)
-    EC_INDIR_R, // Indirect call via register
-                //  EC_INDIR_SR,            // Indirect call via stack-reference (local var)
-                //  EC_INDIR_C,             // Indirect call via static class var
-                //  EC_INDIR_ARD,           // Indirect call via an addressing mode
-
-    EC_COUNT
-};
-
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  ssize_t          argSize,
-                  emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  const DebugInfo& di,
-                  regNumber        ireg        = REG_NA,
-                  regNumber        xreg        = REG_NA,
-                  unsigned         xmul        = 0,
-                  ssize_t          disp        = 0,
-                  bool             isJump      = false,
-                  bool             noSafePoint = false);
-
-unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
+unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 

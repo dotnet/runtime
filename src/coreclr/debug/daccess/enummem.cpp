@@ -25,6 +25,8 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
+#include "cdacplatformmetadata.hpp"
+
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
@@ -201,8 +203,9 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
@@ -318,8 +321,12 @@ HRESULT ClrDataAccess::EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        EEJitManager* managerPtr = ExecutionManager::GetEEJitManager();
+        EECodeGenManager* managerPtr = ExecutionManager::GetEEJitManager();
         managerPtr->EnumMemoryRegions(flags);
+#ifdef FEATURE_INTERPRETER
+        managerPtr = ExecutionManager::GetInterpreterJitManager();
+        managerPtr->EnumMemoryRegions(flags);
+#endif // FEATURE_INTERPRETER
     }
 
     return status;
@@ -557,7 +564,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // included in the dump.  When we touch the header and each element looking for the
     // MD this happens.
     StackTraceArray stackTrace;
-    exceptRef->GetStackTrace(stackTrace);
+    exceptRef->GetStackTrace(stackTrace, /*outKeepAliveArray*/ NULL, /* pCurrentThread */ NULL);
 
     // The stackTraceArrayObj can be either a byte[] with the actual stack trace array or an object[] where the first element is the actual stack trace array.
     // In case it was the latter, we need to dump the actual stack trace array object here too.
@@ -587,8 +594,6 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            // Pulls in sequence points.
-            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
             PCODE addr = pMD->GetNativeCode();
             if (addr != (PCODE)NULL)
             {
@@ -714,16 +719,18 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
             {
                 // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
                 // was thrown. Used generating dumps, where rethrow will cancel dump.
+                RethrowCancelExceptions();
             }
-            EX_END_CATCH(RethrowCancelExceptions)
+            EX_END_CATCH
         }
     }
     EX_CATCH
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     m_dumpStats.m_cbModuleList = m_cbMemoryReported - cbMemoryReported;
 
@@ -966,9 +973,6 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // back to source lines for functions on stacks is very useful and we don't
                             // want to allow the function to fail for all targets.
 
-                            // Pulls in sequence points and local variable info
-                            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
-
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 
                             if (addr != (PCODE)NULL)
@@ -1009,8 +1013,9 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         status = E_FAIL;
         // Catch the exception and keep going unless a COR_E_OPERATIONCANCELED
         // was thrown. In which case, rethrow to cancel the dump gathering
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 #if defined(DAC_MEASURE_PERF)
     uint64_t nEnd = GetCycleCount();
@@ -2069,7 +2074,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     // fix for issue 866100: DAC is too late in releasing ICLRDataEnumMemoryRegionsCallback2*
     if (m_updateMemCb)

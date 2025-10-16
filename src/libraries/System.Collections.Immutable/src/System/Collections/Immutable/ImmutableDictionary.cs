@@ -65,6 +65,25 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Creates a new immutable dictionary that contains the specified items.
+        /// </summary>
+        /// <typeparam name="TKey">The type of keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of values in the dictionary.</typeparam>
+        /// <param name="items">The items used to populate the dictionary before it's immutable.</param>
+        /// <returns>A new immutable dictionary that contains the specified items.</returns>
+        /// <remarks>
+        /// In contrast to <see cref="CreateRange{TKey, TValue}(IEnumerable{KeyValuePair{TKey, TValue}})"/>,
+        /// if there are duplicate keys in the <paramref name="items"/> collection, the last one will be used,
+        /// rather than an exception being thrown.
+        /// </remarks>
+        public static ImmutableDictionary<TKey, TValue> CreateRangeWithOverwrite<TKey, TValue>(
+            params ReadOnlySpan<KeyValuePair<TKey, TValue>> items)
+            where TKey : notnull
+        {
+            return ImmutableDictionary<TKey, TValue>.Empty.AddRange(items, ImmutableDictionary<TKey, TValue>.KeyCollisionBehavior.SetValue);
+        }
+
+        /// <summary>
         /// Creates a new immutable collection prefilled with the specified items.
         /// </summary>
         /// <typeparam name="TKey">The type of keys stored by the dictionary.</typeparam>
@@ -75,6 +94,27 @@ namespace System.Collections.Immutable
         public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer).AddRange(items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable dictionary that contains the specified items and uses the specified key comparer.
+        /// </summary>
+        /// <typeparam name="TKey">The type of keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of values in the dictionary.</typeparam>
+        /// <param name="keyComparer">The comparer implementation to use to compare keys for equality.</param>
+        /// <param name="items">The items to add to the dictionary before it's immutable.</param>
+        /// <returns>A new immutable dictionary that contains the specified items and uses the specified comparer.</returns>
+        /// <remarks>
+        /// In contrast to <see cref="CreateRange{TKey, TValue}(IEqualityComparer{TKey}?, IEnumerable{KeyValuePair{TKey, TValue}})"/>,
+        /// if there are duplicate keys in the <paramref name="items"/> collection, the last one will be used,
+        /// rather than an exception being thrown.
+        /// </remarks>
+        public static ImmutableDictionary<TKey, TValue> CreateRangeWithOverwrite<TKey, TValue>(
+            IEqualityComparer<TKey>? keyComparer,
+            params ReadOnlySpan<KeyValuePair<TKey, TValue>> items)
+            where TKey : notnull
+        {
+            return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer).AddRange(items, ImmutableDictionary<TKey, TValue>.KeyCollisionBehavior.SetValue);
         }
 
         /// <summary>

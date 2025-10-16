@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override JsonElement Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return JsonElement.ParseValue(ref reader);
+            return JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
         }
 
         public override void Write(Utf8JsonWriter writer, JsonElement value, JsonSerializerOptions options)

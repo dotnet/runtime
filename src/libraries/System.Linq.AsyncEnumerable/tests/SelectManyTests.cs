@@ -58,6 +58,27 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<char>(), AsyncEnumerable.Empty<string>().SelectMany(s => s.ToCharArray()));
+            Assert.Same(AsyncEnumerable.Empty<char>(), AsyncEnumerable.Empty<string>().SelectMany(async (s, ct) => (IEnumerable<char>)s.ToCharArray()));
+            Assert.Same(AsyncEnumerable.Empty<char>(), AsyncEnumerable.Empty<string>().SelectMany(s => s.ToAsyncEnumerable()));
+
+            Assert.Same(AsyncEnumerable.Empty<char>(), AsyncEnumerable.Empty<string>().SelectMany((s, i) => s.ToCharArray()));
+            Assert.Same(AsyncEnumerable.Empty<char>(), AsyncEnumerable.Empty<string>().SelectMany(async (s, i, ct) => (IEnumerable<char>)s.ToCharArray()));
+            Assert.Same(AsyncEnumerable.Empty<char>(), AsyncEnumerable.Empty<string>().SelectMany((s, i) => s.ToAsyncEnumerable()));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany(s => s.ToCharArray(), (s, c) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany(async (s, ct) => (IEnumerable<char>)s.ToCharArray(), async (s, c, ct) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany(s => s.ToAsyncEnumerable(), (s, c) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany(s => s.ToAsyncEnumerable(), async (s, c, ct) => s));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany((s, i) => s.ToCharArray(), (s, c) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany(async (s, i, ct) => (IEnumerable<char>)s.ToCharArray(), async (s, c, ct) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SelectMany((s, i) => s.ToAsyncEnumerable(), async (s, c, ct) => s));
+        }
+
+        [Fact]
         public async Task VariousValues_MatchesEnumerable()
         {
             Random rand = new(42);
@@ -196,6 +217,22 @@ namespace System.Linq.Tests
                 Assert.Equal(4, source.CurrentCount);
                 Assert.Equal(1, source.DisposeAsyncCount);
             }
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().SelectMany(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return new int[] { i };
+                }));
+            });
         }
     }
 }

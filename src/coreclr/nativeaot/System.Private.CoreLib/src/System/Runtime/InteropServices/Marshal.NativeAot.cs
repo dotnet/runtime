@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(throwIfNotMarshalable);
 
-            if (t.IsPointer /* or IsFunctionPointer */)
+            if (t.IsPointer || t.IsFunctionPointer)
                 return IntPtr.Size;
 
             if (t.IsByRef || t.IsArray || t.ContainsGenericParameters)
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structuretype, nameof(structuretype));
+            ArgumentNullException.ThrowIfNull(structuretype);
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 

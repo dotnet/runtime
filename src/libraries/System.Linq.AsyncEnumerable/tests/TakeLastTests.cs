@@ -16,6 +16,14 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => AsyncEnumerable.TakeLast((IAsyncEnumerable<int>)null, 42));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().TakeLast(42));
+            Assert.Same(AsyncEnumerable.Empty<int>(), CreateSource(1, 2, 3).TakeLast(0));
+            Assert.Same(AsyncEnumerable.Empty<int>(), CreateSource(1, 2, 3).TakeLast(-1));
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0])]

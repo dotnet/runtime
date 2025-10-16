@@ -2,23 +2,23 @@
 
 namespace Mono.Linker.Tests.Cases.Generics
 {
-	public class UsedOverloadedGenericMethodInstanceInGenericClassIsNotStripped
-	{
-		public static void Main ()
-		{
-			B<int>.Method (1);
-		}
+    public class UsedOverloadedGenericMethodInstanceInGenericClassIsNotStripped
+    {
+        public static void Main()
+        {
+            B<int>.Method(1);
+        }
 
-		class B<TBase>
-		{
-			public static void Method<T> (T value)
-			{
-			}
+        class B<TBase>
+        {
+            public static void Method<T>(T value)
+            {
+            }
 
-			[Kept]
-			public static void Method (TBase value)
-			{
-			}
-		}
-	}
+            [Kept]
+            public static void Method(TBase value)
+            {
+            }
+        }
+    }
 }

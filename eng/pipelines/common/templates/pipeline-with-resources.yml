@@ -21,11 +21,6 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
-      linux_armv6:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10
-        env:
-          ROOTFS_DIR: /crossrootfs/armv6
-
       linux_arm64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm64
         env:
@@ -69,23 +64,23 @@ extends:
           ROOTFS_DIR: /crossrootfs/x86
 
       linux_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04
 
       linux_musl_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-amd64
 
       linux_x64_sanitizer:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64-sanitizer
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
-      # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 9.
+      # Used to test RHEL compatibility: CentOS Stream is upstream of RHEL
       SourceBuild_centos_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64
 
-      # AlmaLinux 8 is a RHEL 8 rebuild, so we use it to test building from source on RHEL 8.
+      # Used to test RHEL compatibility: Alma Linux is downstream of RHEL
       SourceBuild_linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64
 
       linux_s390x:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-s390x
@@ -107,11 +102,11 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/loongarch64
 
-      debian-12-gcc14-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
+      debian-12-gcc15-amd64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc15-amd64
 
       linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64
 
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-webassembly-amd64

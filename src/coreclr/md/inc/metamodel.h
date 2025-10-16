@@ -40,11 +40,6 @@
 #define METAMODEL_MAJOR_VER 2
 #define METAMODEL_MINOR_VER 0
 
-// Metadata version number up through Whidbey Beta2
-#define METAMODEL_MAJOR_VER_B1 1
-#define METAMODEL_MINOR_VER_B1 1
-
-
 typedef enum MetadataVersion
 {
     MDVersion1          = 0x00000001,
@@ -285,7 +280,7 @@ public:
 private:
     FORCEINLINE uint64_t BIT(ULONG ixBit)
     {   _ASSERTE(ixBit < (sizeof(int64_t)*CHAR_BIT));
-        return UI64(1) << ixBit; }
+        return 1ULL << ixBit; }
 
 };
 
@@ -528,23 +523,6 @@ public:
     BOOL IsVerified()
     {
         return m_fVerifiedByTrustedSource && CommonIsRo();
-    }
-
-    void SetVerifiedByTrustedSource(BOOL fVerifiedByTrustedSource)
-    {
-        m_fVerifiedByTrustedSource = fVerifiedByTrustedSource;
-    }
-
-    STDMETHODIMP GetRvaOffsetData(// S_OK or error
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount)            // [OUT] Number of records in FieldRVA table.
-    {
-        _ASSERTE("Not implemented");
-        return E_NOTIMPL;
     }
 
     //*****************************************************************************
@@ -1998,9 +1976,8 @@ public:
 
     BOOL SupportsGenerics()
     {
-        // Only 2.0 of the metadata (and 1.1) support generics
-        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 ||
-                (m_Schema.m_major == METAMODEL_MAJOR_VER_B1 && m_Schema.m_minor == METAMODEL_MINOR_VER_B1));
+        // Only 2.0 of the metadata support generics
+        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0);
     }// SupportGenerics
 
     protected:

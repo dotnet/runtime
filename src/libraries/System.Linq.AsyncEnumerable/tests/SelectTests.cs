@@ -24,6 +24,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("selector", () => AsyncEnumerable.Select(AsyncEnumerable.Empty<int>(), (Func<int, int, CancellationToken, ValueTask<string>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select(s => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select((s, index) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select(async (string s, CancellationToken ct) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select(async (string s, int index, CancellationToken ct) => s));
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 42 })]
@@ -91,6 +100,22 @@ namespace System.Linq.Tests
                 Assert.Equal(4, source.CurrentCount);
                 Assert.Equal(1, source.DisposeAsyncCount);
             }
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().Select(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return i;
+                }));
+            });
         }
     }
 }

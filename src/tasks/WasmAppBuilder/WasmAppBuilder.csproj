@@ -21,6 +21,7 @@
     <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Common\JoinedString.cs" />
+    <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\ArtifactWriter.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonData.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonBuilderHelper.cs" />
   </ItemGroup>
@@ -36,14 +37,14 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <!-- non-net4* -->
+      <!-- .NETCoreApp -->
       <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
       <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
 
 
-      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
+      <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
       <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
                       TargetPath="tasks\$(NetFrameworkToolCurrent)" />
     </ItemGroup>

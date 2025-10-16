@@ -89,7 +89,7 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
         // Catch any errors and return E_OUTOFMEMORY;
         retVal = E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return retVal;
 }
@@ -191,7 +191,7 @@ HRESULT FillErrorInfo(                  // Return status.
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (FAILED(hr))
         return (hr);
@@ -200,24 +200,11 @@ HRESULT FillErrorInfo(                  // Return status.
     if (FAILED(hr = pICreateErr->SetDescription((LPWSTR) szMsg)))
         goto Exit1;
 
-    // suppress PreFast warning about passing literal string to non-const API.
-    // This API (ICreateErrorInfo::SetHelpFile) is documented to take a const argument, but
-    // we can't put const in the signature because it would break existing implementors of
-    // the API.
-#ifdef _PREFAST_
-#pragma prefast(push)
-#pragma warning(disable:6298)
-#endif
-
     // Set the help file and help context.
     //<TODO>@todo: we don't have a help file yet.</TODO>
     if (FAILED(hr = pICreateErr->SetHelpFile(const_cast<WCHAR*>(W("complib.hlp")))) ||
         FAILED(hr = pICreateErr->SetHelpContext(dwHelpContext)))
         goto Exit1;
-
-#ifdef _PREFAST_
-#pragma prefast(pop)
-#endif
 
     // Get the IErrorInfo pointer.
     if (FAILED(hr = pICreateErr->QueryInterface(IID_IErrorInfo, (PVOID *) &pIErrInfo)))

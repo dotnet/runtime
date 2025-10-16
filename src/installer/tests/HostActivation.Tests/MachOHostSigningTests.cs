@@ -8,6 +8,8 @@ using System.IO;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.AppHost;
+using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
+using Microsoft.NET.HostModel.Bundle;
 
 namespace HostActivation.Tests
 {

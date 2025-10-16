@@ -12,6 +12,8 @@ namespace System.Reflection.Emit
     {
         internal static BlobBuilder GetLocalSignature(List<LocalBuilder> locals, ModuleBuilderImpl module)
         {
+            locals.Sort((l1, l2) => l1.LocalIndex - l2.LocalIndex); // sort by created order
+
             BlobBuilder localSignature = new();
             LocalVariablesEncoder encoder = new BlobEncoder(localSignature).LocalVariableSignature(locals.Count);
 

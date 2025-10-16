@@ -29,6 +29,37 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("third", () => AsyncEnumerable.Zip(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<int>(), (IAsyncEnumerable<DateTime>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<int> empty = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> nonEmpty = CreateSource(1, 2, 3);
+
+            Assert.Same(AsyncEnumerable.Empty<(int, int)>(), empty.Zip(empty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int)>(), empty.Zip(nonEmpty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int)>(), nonEmpty.Zip(empty));
+            Assert.NotSame(AsyncEnumerable.Empty<(int, int)>(), nonEmpty.Zip(nonEmpty));
+
+            Assert.Same(AsyncEnumerable.Empty<int>(), empty.Zip(empty, (i1, i2) => i1 + i2));
+            Assert.Same(AsyncEnumerable.Empty<int>(), nonEmpty.Zip(empty, (i1, i2) => i1 + i2));
+            Assert.Same(AsyncEnumerable.Empty<int>(), empty.Zip(nonEmpty, (i1, i2) => i1 + i2));
+            Assert.NotSame(AsyncEnumerable.Empty<int>(), nonEmpty.Zip(nonEmpty, (i1, i2) => i1 + i2));
+
+            Assert.Same(AsyncEnumerable.Empty<int>(), empty.Zip(empty, async (i1, i2, ct) => i1 + i2));
+            Assert.Same(AsyncEnumerable.Empty<int>(), nonEmpty.Zip(empty, async (i1, i2, ct) => i1 + i2));
+            Assert.Same(AsyncEnumerable.Empty<int>(), empty.Zip(nonEmpty, async (i1, i2, ct) => i1 + i2));
+            Assert.NotSame(AsyncEnumerable.Empty<int>(), nonEmpty.Zip(nonEmpty, async (i1, i2, ct) => i1 + i2));
+
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), empty.Zip(empty, empty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), nonEmpty.Zip(empty, empty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), empty.Zip(nonEmpty, empty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), empty.Zip(empty, nonEmpty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), nonEmpty.Zip(nonEmpty, empty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), nonEmpty.Zip(empty, nonEmpty));
+            Assert.Same(AsyncEnumerable.Empty<(int, int, int)>(), empty.Zip(nonEmpty, nonEmpty));
+            Assert.NotSame(AsyncEnumerable.Empty<(int, int, int)>(), nonEmpty.Zip(nonEmpty, nonEmpty));
+        }
+
         [Theory]
         [InlineData(new int[0], new int[0])]
         [InlineData(new int[0], new int[] { 42 })]
@@ -141,6 +172,22 @@ namespace System.Linq.Tests
             Assert.Equal(3, third.MoveNextAsyncCount);
             Assert.Equal(2, third.CurrentCount);
             Assert.Equal(1, third.DisposeAsyncCount);
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().Zip(CreateSource(2, 4, 8, 16).Yield(), (x, y) =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return x + y;
+                }));
+            });
         }
     }
 }

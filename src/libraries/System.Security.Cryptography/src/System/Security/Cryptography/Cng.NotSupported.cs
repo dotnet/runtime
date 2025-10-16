@@ -93,6 +93,12 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
 
+        [SupportedOSPlatform("windows")]
+        public AesCng(CngKey key)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
         public override void GenerateKey() { }
         public override void GenerateIV() { }
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => null!;
@@ -384,5 +390,101 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => null!;
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) => null!;
+    }
+    public sealed partial class MLDsaCng : MLDsa
+    {
+        private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey) =>
+            throw new PlatformNotSupportedException();
+
+        public partial CngKey GetKey() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+    }
+
+    public sealed partial class MLKemCng : MLKem
+    {
+        private static partial MLKemAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        public partial CngKey GetKey()
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override void ExportPrivateSeedCore(Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override void ExportDecapsulationKeyCore(Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override void ExportEncapsulationKeyCore(Span<byte> destination)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+        }
+    }
+
+    public sealed partial class CompositeMLDsaCng : CompositeMLDsa
+    {
+        public partial CngKey GetKey() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
     }
 }

@@ -80,7 +80,7 @@ namespace System.Collections.Generic
                 // The Ordinal version of Marvin32 operates over bytes.
                 // The multiplication from # chars -> # bytes will never integer overflow.
                 return Marvin.ComputeHash32(
-                    ref Unsafe.As<char, byte>(ref obj.GetRawStringData()),
+                    ref obj.GetRawStringDataAsUInt8(),
                     (uint)obj.Length * 2,
                     _seed.p0, _seed.p1);
             }
@@ -102,7 +102,7 @@ namespace System.Collections.Generic
             string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
                 span.ToString();
 
-            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
+            public override bool Equals(string? x, string? y) => string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
 
             bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> alternate, string? other)
             {

@@ -2295,5 +2295,33 @@ namespace System.Numerics.Tests
             Assert.Equal(z, vector.Z);
             Assert.Equal(w, vector.W);
         }
+
+        [Fact]
+        public void CreateScalarTest()
+        {
+            var vector = Vector4.CreateScalar(float.Pi);
+
+            Assert.Equal(float.Pi, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+            Assert.Equal(0, vector.W);
+
+            vector = Vector4.CreateScalar(float.E);
+
+            Assert.Equal(float.E, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+            Assert.Equal(0, vector.W);
+        }
+
+        [Fact]
+        public void CreateScalarUnsafeTest()
+        {
+            var vector = Vector4.CreateScalarUnsafe(float.Pi);
+            Assert.Equal(float.Pi, vector.X);
+
+            vector = Vector4.CreateScalarUnsafe(float.E);
+            Assert.Equal(float.E, vector.X);
+        }
     }
 }

@@ -64,6 +64,7 @@ ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativ
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
 ICALL_EXPORT MonoThread *ves_icall_System_Threading_Thread_GetCurrentThread (void);
+ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_CurrentThreadIsFinalizerThread (void);
 ICALL_EXPORT void ves_icall_System_ArgIterator_Setup (MonoArgIterator*, char*, char*);
 ICALL_EXPORT MonoType* ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator*, MonoTypedRef*);
@@ -118,8 +119,6 @@ ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, doub
 ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
 ICALL_EXPORT float ves_icall_System_MathF_FusedMultiplyAdd (float, float, float);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_ProcessorCount (void);
-ICALL_EXPORT gint32 ves_icall_System_Environment_get_TickCount (void);
-ICALL_EXPORT gint64 ves_icall_System_Environment_get_TickCount64 (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection);
 ICALL_EXPORT int ves_icall_System_GC_GetCollectionCount (int);
 ICALL_EXPORT int ves_icall_System_GC_GetMaxGeneration (void);

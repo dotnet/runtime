@@ -34,8 +34,7 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("%JNI_LIBRARY_NAME%");
-        System.loadLibrary("monodroid");
+        %LoadLibraryStatements%
     }
 
     static String testResultsDir;
@@ -92,6 +91,7 @@ public class MonoRunner extends Instrumentation
 
         // set environment variables
         setEnv("HOME", filesDir);
+        setEnv("ASSETS_DIR", filesDir);
         setEnv("TMPDIR", cacheDir);
         setEnv("TEST_RESULTS_DIR", testResultsDir);
 
@@ -146,33 +146,34 @@ public class MonoRunner extends Instrumentation
 
     static void unzipAssets(Context context, String toPath, String zipName) {
         AssetManager assetManager = context.getAssets();
-        try {
-            InputStream inputStream = assetManager.open(zipName);
-            ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(inputStream));
+        try (InputStream inputStream = assetManager.open(zipName);
+            ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(inputStream))) {
+
             ZipEntry zipEntry;
             byte[] buffer = new byte[4096];
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
                 String fileOrDirectory = zipEntry.getName();
-                Uri.Builder builder = new Uri.Builder();
-                builder.scheme("file");
-                builder.appendPath(toPath);
-                builder.appendPath(fileOrDirectory);
-                String fullToPath = builder.build().getPath();
+                File file = new File(toPath, fileOrDirectory);
+                File parent = new File(file.getParent());
+
                 if (zipEntry.isDirectory()) {
-                    File directory = new File(fullToPath);
-                    directory.mkdirs();
+                    file.mkdirs();
                     continue;
                 }
+                else if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+
+                String fullToPath = file.getAbsolutePath();
                 Log.i("DOTNET", "Extracting asset to " + fullToPath);
+
                 int count = 0;
                 FileOutputStream fileOutputStream = new FileOutputStream(fullToPath);
                 while ((count = zipInputStream.read(buffer)) != -1) {
                     fileOutputStream.write(buffer, 0, count);
                 }
-                fileOutputStream.close();
                 zipInputStream.closeEntry();
             }
-            zipInputStream.close();
         } catch (IOException e) {
             Log.e("DOTNET", e.getLocalizedMessage());
         }

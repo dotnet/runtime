@@ -84,12 +84,6 @@ class ComCallWrapperTemplate;
 class TypeHandle
 {
 public:
-    TypeHandle() {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        m_asTAddr = 0;
-    }
-
     static TypeHandle FromPtr(PTR_VOID aPtr)
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -104,29 +98,34 @@ public:
         return TypeHandle(data);
     }
 
+    TypeHandle()
+        : m_asTAddr{ 0 }
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+    }
+
     // When you ask for a class in JitInterface when all you have
     // is a methodDesc of an array method...
     // Convert from a JitInterface handle to an internal EE TypeHandle
     explicit TypeHandle(struct CORINFO_CLASS_STRUCT_*aPtr)
+        : m_asTAddr{ dac_cast<TADDR>(aPtr) }
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        m_asTAddr = dac_cast<TADDR>(aPtr);
         INDEBUGIMPL(Verify());
     }
 
-    TypeHandle(MethodTable const * aMT) {
+    TypeHandle(MethodTable const * aMT)
+        : m_asTAddr{ dac_cast<TADDR>(aMT) }
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        m_asTAddr = dac_cast<TADDR>(aMT);
         INDEBUGIMPL(Verify());
     }
 
-    explicit TypeHandle(TypeDesc *aType) {
+    explicit TypeHandle(TypeDesc *aType)
+        : m_asTAddr{ dac_cast<TADDR>(aType) | 2 }
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(aType);
-
-        m_asTAddr = (dac_cast<TADDR>(aType) | 2);
         INDEBUGIMPL(Verify());
     }
 
@@ -138,9 +137,9 @@ private:
     // TypeHandle::FromPtr and TypeHandle::TAddr instead of these constructors.
     // Allowing a public constructor that takes a "void *" or a "TADDR" is error-prone.
     explicit TypeHandle(TADDR aTAddr)
+        : m_asTAddr{ aTAddr }
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        m_asTAddr = aTAddr;
         INDEBUGIMPL(Verify());
     }
 
@@ -158,44 +157,17 @@ public:
         return(m_asTAddr != typeHnd.m_asTAddr);
     }
 
-        // Methods for probing exactly what kind of a type handle we have
-    FORCEINLINE BOOL IsNull() const {
+    // Methods for probing exactly what kind of a type handle we have
+    bool IsNull() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr == 0) {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr == NULL);
-#endif
-            return true;
-        }
-        else {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr != NULL);
-#endif
-            return false;
-        }
-#else
-        return(m_asTAddr == 0);
-#endif
+        return (m_asTAddr == 0);
     }
 
-    // Note that this returns denormalized BOOL to help the compiler with optimizations
-    FORCEINLINE BOOL IsTypeDesc() const  {
+    bool IsTypeDesc() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr & 2) {
-            PREFIX_ASSUME(m_asTAddr != NULL);
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr   != NULL);
-#endif
-            return true;
-        }
-        else {
-            return false;
-        }
-#else
-        return(m_asTAddr & 2);
-#endif
+        return !!(m_asTAddr & 2);
     }
 
     BOOL IsEnum() const;
@@ -441,6 +413,8 @@ public:
     Assembly * GetAssembly() const;
 
     PTR_LoaderAllocator GetLoaderAllocator() const;
+
+    bool IsCollectible() const;
 
     // Get the class token, assuming the type handle represents a named type,
     // i.e. a class, a value type, a generic instantiation etc.
@@ -719,7 +693,7 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
-        for (auto i = GetNumArgs(); i > 0;)
+        for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)
                 return false;

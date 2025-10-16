@@ -8,11 +8,11 @@ pr:
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: HttpStress nightly run
+  always: true
   branches:
     include:
     - main
-    - release/8.0
-    - release/9.0
+    - release/*-staging
 
 variables:
   - template: ../variables.yml
@@ -72,6 +72,7 @@ extends:
             export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
             export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
             mkdir -p $DUMPS_SHARE
+            docker-compose down
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -81,6 +82,7 @@ extends:
             export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
             export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
             mkdir -p $DUMPS_SHARE
+            docker-compose down
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))

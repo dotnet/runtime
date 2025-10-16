@@ -107,7 +107,7 @@ namespace System.IO.Compression
         {
             byte[] buffer = null;
             string testFilePath = CompressedTestFile(UncompressedTestFile());
-            using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
+            using (var origStream = await LocalMemoryStream.ReadAppFileAsync(testFilePath))
             {
                 buffer = origStream.ToArray();
             }
@@ -164,8 +164,8 @@ namespace System.IO.Compression
         [MemberData(nameof(UncompressedTestFiles))]
         public async Task Read(string testFile)
         {
-            var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
-            var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(testFile));
+            var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
+            var compressedStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(testFile));
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
             var decompressorOutput = new MemoryStream();
 
@@ -199,7 +199,7 @@ namespace System.IO.Compression
         [Fact]
         public async Task Read_EndOfStreamPosition()
         {
-            var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
+            var compressedStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile()));
             int compressedEndPosition = (int)compressedStream.Length;
             var rand = new Random(1024);
             int _bufferSize = BufferSize * 2 - 568;
@@ -219,7 +219,7 @@ namespace System.IO.Compression
         public async Task Read_BaseStreamSlowly()
         {
             string testFile = UncompressedTestFile();
-            var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
             var compressedStream = new BadWrappedStream(BadWrappedStream.Mode.ReadSlowly, File.ReadAllBytes(CompressedTestFile(testFile)));
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
             var decompressorOutput = new MemoryStream();
@@ -354,7 +354,7 @@ namespace System.IO.Compression
             //Create the Stream
             int _bufferSize = 1024;
             var bytes = new byte[_bufferSize];
-            Stream compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
+            Stream compressedStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile()));
             Stream decompressor = CreateStream(compressedStream, CompressionMode.Decompress, leaveOpen: false);
 
             //Read some data and Close the stream
@@ -426,7 +426,7 @@ namespace System.IO.Compression
         [InlineData(CompressionMode.Decompress)]
         public async Task BaseStream_Modify(CompressionMode mode)
         {
-            using (var baseStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile())))
+            using (var baseStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile())))
             using (var compressor = CreateStream(baseStream, mode))
             {
                 int size = 1024;
@@ -441,13 +441,13 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void BaseStream_NullAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
+        public void BaseStream_ThrowsAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
         {
             var ms = new MemoryStream();
             using var compressor = CreateStream(ms, mode);
             compressor.Dispose();
 
-            Assert.Null(BaseStream(compressor));
+            Assert.Throws<ObjectDisposedException>(() => BaseStream(compressor));
 
             compressor.Dispose(); // Should be a no-op
         }
@@ -457,7 +457,7 @@ namespace System.IO.Compression
         [InlineData(CompressionMode.Decompress)]
         public async Task BaseStream_ValidAfterDisposeWithTrueLeaveOpen(CompressionMode mode)
         {
-            var ms = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
+            var ms = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile()));
             using var decompressor = CreateStream(ms, mode, leaveOpen: true);
             var baseStream = BaseStream(decompressor);
             Assert.Same(ms, baseStream);
@@ -475,7 +475,7 @@ namespace System.IO.Compression
         [MemberData(nameof(UncompressedTestFilesZLib))]
         public async Task CompressionLevel_SizeInOrder(string testFile)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
 
             async Task<long> GetLengthAsync(CompressionLevel compressionLevel)
             {
@@ -501,7 +501,7 @@ namespace System.IO.Compression
         [MemberData(nameof(UncompressedTestFilesZLib))]
         public async Task ZLibCompressionOptions_SizeInOrder(string testFile)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
 
             async Task<long> GetLengthAsync(int compressionLevel)
             {
@@ -512,7 +512,7 @@ namespace System.IO.Compression
                 await compressor.FlushAsync();
                 return mms.Length;
             }
-            
+
             long fastestLength = await GetLengthAsync(1);
             long optimalLength = await GetLengthAsync(5);
             long smallestLength = await GetLengthAsync(9);
@@ -525,7 +525,7 @@ namespace System.IO.Compression
         [MemberData(nameof(ZLibOptionsRoundTripTestData))]
         public async Task RoundTripWithZLibCompressionOptions(string testFile, ZLibCompressionOptions options)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
             var compressedStream = await CompressTestFile(uncompressedStream, options);
             using var decompressor = CreateStream(compressedStream, mode: CompressionMode.Decompress);
             using var decompressorOutput = new MemoryStream();

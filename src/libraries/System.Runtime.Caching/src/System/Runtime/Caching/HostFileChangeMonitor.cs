@@ -159,10 +159,7 @@ namespace System.Runtime.Caching
 
         public HostFileChangeMonitor(IList<string> filePaths)
         {
-            if (filePaths is null)
-            {
-                throw new ArgumentNullException(nameof(filePaths));
-            }
+            ArgumentNullException.ThrowIfNull(filePaths);
 
             if (filePaths.Count == 0)
             {

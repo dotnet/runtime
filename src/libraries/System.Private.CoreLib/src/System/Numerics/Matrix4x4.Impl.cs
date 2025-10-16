@@ -18,9 +18,6 @@ namespace System.Numerics
         // syntax. We do this because it saves roughly 8-bytes of IL per method which
         // in turn helps improve inlining chances.
 
-        internal const uint RowCount = 4;
-        internal const uint ColumnCount = 4;
-
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref Impl AsImpl() => ref Unsafe.As<Matrix4x4, Impl>(ref this);
@@ -43,90 +40,6 @@ namespace System.Numerics
             public Vector4 Y;
             public Vector4 Z;
             public Vector4 W;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Init(float m11, float m12, float m13, float m14,
-                             float m21, float m22, float m23, float m24,
-                             float m31, float m32, float m33, float m34,
-                             float m41, float m42, float m43, float m44)
-            {
-                X = Vector4.Create(m11, m12, m13, m14);
-                Y = Vector4.Create(m21, m22, m23, m24);
-                Z = Vector4.Create(m31, m32, m33, m34);
-                W = Vector4.Create(m41, m42, m43, m44);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Init(in Matrix3x2.Impl value)
-            {
-                X = Vector4.Create(value.X, 0, 0);
-                Y = Vector4.Create(value.Y, 0, 0);
-                Z = Vector4.UnitZ;
-                W = Vector4.Create(value.Z, 0, 1);
-            }
-
-            public static Impl Identity
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    Impl result;
-
-                    result.X = Vector4.UnitX;
-                    result.Y = Vector4.UnitY;
-                    result.Z = Vector4.UnitZ;
-                    result.W = Vector4.UnitW;
-
-                    return result;
-                }
-            }
-
-            public float this[int row, int column]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get
-                {
-                    if ((uint)row >= RowCount)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-                    return Unsafe.Add(ref Unsafe.AsRef(in X), row)[column];
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set
-                {
-                    if ((uint)row >= RowCount)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-                    Unsafe.Add(ref X, row)[column] = value;
-                }
-            }
-
-            public readonly bool IsIdentity
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    return (X == Vector4.UnitX)
-                        && (Y == Vector4.UnitY)
-                        && (Z == Vector4.UnitZ)
-                        && (W == Vector4.UnitW);
-                }
-            }
-
-            public Vector3 Translation
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get => W.AsVector3();
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set
-                {
-                    W = Vector4.Create(value, W.W);
-                }
-            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl operator +(in Impl left, in Impl right)
@@ -157,19 +70,6 @@ namespace System.Numerics
                     || (left.Y != right.Y)
                     || (left.Z != right.Z)
                     || (left.W != right.W);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Impl operator *(in Impl left, in Impl right)
-            {
-                Impl result;
-
-                result.X = Vector4.Transform(left.X, in right);
-                result.Y = Vector4.Transform(left.Y, in right);
-                result.Z = Vector4.Transform(left.Z, in right);
-                result.W = Vector4.Transform(left.W, in right);
-
-                return result;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1049,7 +949,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe bool Decompose(in Impl matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
             {
-                Impl matTemp = Identity;
+                Impl matTemp = Matrix4x4.Identity.AsImpl();
 
                 Vector3* canonicalBasis = stackalloc Vector3[3] {
                     Vector3.UnitX,
@@ -1386,7 +1286,7 @@ namespace System.Numerics
                     // Check determinate is not zero
                     if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = Vector4.Create(float.NaN);
+                        Vector4 vNaN = Vector4.NaN;
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1524,7 +1424,7 @@ namespace System.Numerics
 
                     if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = Vector4.Create(float.NaN);
+                        Vector4 vNaN = Vector4.NaN;
 
                         result.X = vNaN;
                         result.Y = vNaN;

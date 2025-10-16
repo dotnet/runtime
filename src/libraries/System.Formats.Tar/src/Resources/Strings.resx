@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -204,5 +204,8 @@
   </data>
   <data name="TarStreamSeekabilityUnsupportedCombination" xml:space="preserve">
     <value>Cannot write the unseekable data stream of entry '{0}' into an unseekable archive stream.</value>
+  </data>
+  <data name="ExtHeaderInvalidRecords" xml:space="preserve">
+    <value>The extended header contains invalid records.</value>
   </data>
 </root>

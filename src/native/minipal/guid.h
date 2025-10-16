@@ -6,45 +6,73 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <minipal/utils.h>
 
 #ifdef __cplusplus
     extern "C"
     {
 #endif // __cplusplus
 
+#ifdef _WIN32
+#include <guiddef.h>
+#else // _WIN32
 typedef struct minipal_guid__
 {
-    uint32_t data1;
-    uint16_t data2;
-    uint16_t data3;
-    uint8_t  data4[8];
-} minipal_guid_t;
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t  Data4[8];
+} GUID;
+#endif // _WIN32
 
-bool minipal_guid_v4_create(minipal_guid_t* guid);
+/**
+ * Define the buffer length required to store a GUID string, including the null terminator.
+ *
+ * This accounts for the standard GUID format: "{12345678-1234-1234-1234-123456789abc}"
+ * which consists of 38 characters plus 1 null-terminating character.
+ */
+#define MINIPAL_GUID_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
 
-bool minipal_guid_equals(minipal_guid_t const* g1, minipal_guid_t const* g2);
+/**
+ * Generate a new version 4 GUID (randomly generated)
+ *
+ * @param guid Pointer to a GUID structure to receive the new GUID.
+ * @return true if the GUID was successfully created, false otherwise.
+ */
+bool minipal_guid_v4_create(GUID* guid);
+
+/**
+ * Compare two GUIDs for equality
+ *
+ * @param g1 Pointer to the first GUID.
+ * @param g2 Pointer to the second GUID.
+ * @return true if the GUIDs are equal, false otherwise.
+ */
+bool minipal_guid_equals(GUID const* g1, GUID const* g2);
+
+/**
+ * Convert a GUID to its string representation
+ *
+ * @param guid The GUID to be converted.
+ * @param guidString Pointer to a buffer to store the GUID string. The buffer must be at least MINIPAL_GUID_BUFFER_LEN in size.
+ * @param len Length of the destination buffer.
+ */
+void minipal_guid_as_string(GUID guid, char* guidString, uint32_t len);
 
 #ifdef __cplusplus
     }
-#endif // __cplusplus
 
-#ifdef __cplusplus
-inline bool operator==(minipal_guid_t const& a, minipal_guid_t const& b)
+#ifndef _WIN32
+inline bool operator==(GUID const& a, GUID const& b)
 {
     return minipal_guid_equals(&a, &b);
 }
 
-inline bool operator!=(minipal_guid_t const& a, minipal_guid_t const& b)
+inline bool operator!=(GUID const& a, GUID const& b)
 {
     return !(a == b);
 }
-
-template<typename T>
-bool minipal_guid_v4_create(T* guid)
-{
-    static_assert(sizeof(T) == sizeof(minipal_guid_t), "minipal_guid_t size mismatch");
-    return minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(guid));
-}
-#endif
+#endif // _WIN32
+#endif // __cplusplus
 
 #endif // MINIPAL_GUID_H

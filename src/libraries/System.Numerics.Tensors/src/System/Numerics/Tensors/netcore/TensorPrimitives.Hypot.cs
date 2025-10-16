@@ -22,8 +22,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Hypot<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IRootFunctions<T> =>
+            where T : IRootFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, HypotOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, HypotOperator<T>>(x, y, destination);
+        }
 
         /// <summary>T.Hypot(x, y)</summary>
         private readonly struct HypotOperator<T> : IBinaryOperator<T>

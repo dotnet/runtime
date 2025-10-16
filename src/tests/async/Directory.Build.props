@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Merged.props', $(MSBuildThisFileDirectory)..))" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+    <NoWarn>$(NoWarn);xUnit1013;CS1998</NoWarn>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)RuntimeAsyncMethodGenerationAttribute.cs" />
+  </ItemGroup>
+</Project>

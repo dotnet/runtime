@@ -35,17 +35,6 @@ namespace System.Collections
             throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
 
 #if !NET
-        /// <summary>Throws an <see cref="ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
-        /// <param name="argument">The reference type argument to validate as non-null.</param>
-        /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
-        public static void ThrowIfNull([NotNull] object? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-            if (argument is null)
-            {
-                ThrowNull(paramName);
-            }
-        }
-
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is negative.</summary>
         /// <param name="value">The argument to validate as non-negative.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>

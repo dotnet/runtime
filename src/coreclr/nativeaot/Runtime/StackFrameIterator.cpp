@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
-#include "RedhawkWarnings.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -36,7 +31,7 @@
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
+#if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
@@ -49,7 +44,7 @@ EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
 EXTERN_C CODE_LOCATION RhpThrowEx2;
 EXTERN_C CODE_LOCATION RhpThrowHwEx2;
 EXTERN_C CODE_LOCATION RhpRethrow2;
-#endif // !defined(USE_PORTABLE_HELPERS)
+#endif // !defined(FEATURE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
 // assign them to globals. However it is more performant in the runtime to compare
@@ -167,7 +162,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
+#if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)PCODEToPINSTR((PCODE)pFrame->m_RIP));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
@@ -354,7 +349,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
-#endif // !defined(USE_PORTABLE_HELPERS)
+#endif // !defined(FEATURE_PORTABLE_HELPERS)
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -496,7 +491,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, RA);
 
     //
-    // preserved vfp regs
+    // preserved fp regs
     //
     for (int32_t i = 0; i < 16 - 8; i++)
     {
@@ -507,6 +502,39 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     //
     m_RegDisplay.pR4 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R4);
     m_RegDisplay.pR5 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R5);
+
+#elif defined(TARGET_RISCV64)
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pS1 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S1);
+    m_RegDisplay.pS2 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S2);
+    m_RegDisplay.pS3 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S3);
+    m_RegDisplay.pS4 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S4);
+    m_RegDisplay.pS5 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S5);
+    m_RegDisplay.pS6 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S6);
+    m_RegDisplay.pS7 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S7);
+    m_RegDisplay.pS8 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S8);
+    m_RegDisplay.pS9 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S9);
+    m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S10);
+    m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S11);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, FP);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, RA);
+
+    //
+    // preserved floating-point registers
+    //
+    int32_t preservedFpIndices[] = {8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    for (int i = 0; i < ARRAY_SIZE(preservedFpIndices); i++)
+    {
+        m_RegDisplay.F[preservedFpIndices[i]] = pCtx->F[preservedFpIndices[i]];
+    }
+
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pA0 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, A0);
+    m_RegDisplay.pA1 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, A1);
 
 #elif defined(UNIX_AMD64_ABI)
     //
@@ -776,7 +804,9 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pS9 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S9);
     m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S10);
     m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S11);
- 
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_REG(pCtx, Fp);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_REG(pCtx, Ra);
+
     //
     // scratch regs
     //
@@ -1004,10 +1034,10 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
     return;
-#else // defined(USE_PORTABLE_HELPERS)
-    ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) || 
+#else // defined(FEATURE_PORTABLE_HELPERS)
+    ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) ||
            (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
     PTR_uintptr_t SP;
@@ -1077,7 +1107,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
         if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP += 3; // 3 locals
+            SP += 2 + 1; // 2 locals and stack alignment
         }
         else
         {
@@ -1113,14 +1143,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-    {
-        SP += 2; // 2 locals
-    }
-    else
-    {
-        SP++; // 1 local
-    }
+    SP++; // local / stack alignment
     m_RegDisplay.pRdi = SP++;
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;
@@ -1248,13 +1271,15 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR29 = SP++;
     m_RegDisplay.pR30 = SP++;
     m_RegDisplay.pR31 = SP++;
+    SP++; // for alignment padding
 
 #elif defined(TARGET_RISCV64)
     PTR_uint64_t f = (PTR_uint64_t)(m_RegDisplay.SP);
 
-    for (int i = 0; i < 32; i++)
+    int32_t preservedFpIndices[] = {8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    for (int i = 0; i < ARRAY_SIZE(preservedFpIndices); i++)
     {
-        m_RegDisplay.F[i] = *f++;
+        m_RegDisplay.F[preservedFpIndices[i]] = *f++;
     }
 
     SP = (PTR_uintptr_t)f;
@@ -1310,7 +1335,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from funclet invoke stub failed");
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 // For a given target architecture, the layout of this structure must precisely match the
@@ -1441,12 +1466,12 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0F0 (0x08 bytes)    (fp)
-    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-0E8 (0x08 bytes)    (ra)
-    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0E0 (0x80 bytes)    (fa0-fa7)
-    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-060 (0x20 bytes)
-    uintptr_t m_intArgRegs[8];             // ChildSP+0B0     CallerSP-040 (0x40 bytes)    (a0-a7)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0F0     CallerSP+000 (unknown size)
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0A0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-098 (0x08 bytes)    (ra)
+    uint64_t  m_fpArgRegs[8];              // ChildSP+010     CallerSP-090 (0x40 bytes)    (fa0-fa7)
+    uintptr_t m_returnBlock[2];            // ChildSP+050     CallerSP-050 (0x10 bytes)
+    uintptr_t m_intArgRegs[8];             // ChildSP+060     CallerSP-040 (0x40 bytes)    (a0-a7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0A0     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
@@ -1463,12 +1488,12 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedRA;                  // ChildSP+000     CallerSP-0F0 (0x08 bytes)    (ra)
-    uintptr_t m_pushedFP;                  // ChildSP+008     CallerSP-0E8 (0x08 bytes)    (fp)
-    Fp128     m_fpArgRegs[8];              // ChildSP+010     CallerSP-0E0 (0x80 bytes)    (fa0-fa7)
-    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-060 (0x20 bytes)
-    uintptr_t m_intArgRegs[8];             // ChildSP+0B0     CallerSP-040 (0x40 bytes)    (a0-a7)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0F0     CallerSP+000 (unknown size)
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0A0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-098 (0x08 bytes)    (ra)
+    uint64_t  m_fpArgRegs[8];              // ChildSP+010     CallerSP-090 (0x40 bytes)    (fa0-fa7)
+    uintptr_t m_returnBlock[2];            // ChildSP+050     CallerSP-050 (0x10 bytes)
+    uintptr_t m_intArgRegs[8];             // ChildSP+060     CallerSP-040 (0x40 bytes)    (a0-a7)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+0A0     CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
@@ -1517,9 +1542,9 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InUniversalTransitionThunk);
 
     // The current PC is within RhpUniversalTransition, so establish a view of the surrounding stack frame.
@@ -1546,7 +1571,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     ASSERT(pLowerBound != NULL);
     ASSERT(m_pConservativeStackRangeLowerBound == NULL);
     m_pConservativeStackRangeLowerBound = pLowerBound;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 #ifdef TARGET_AMD64
@@ -1567,9 +1592,9 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
     return;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
     const uintptr_t STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
@@ -1667,7 +1692,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from throw site stub failed");
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 bool StackFrameIterator::IsValid()
@@ -2200,11 +2225,11 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
 {
-#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
 
     return InManagedCode;
 
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
 
 #if defined(FEATURE_DYNAMIC_CODE)
     if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
@@ -2232,7 +2257,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InFilterFuncletInvokeThunk;
     }
     return InManagedCode;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 #ifndef DACCESS_COMPILE

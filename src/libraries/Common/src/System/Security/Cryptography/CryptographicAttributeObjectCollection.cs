@@ -31,20 +31,14 @@ namespace System.Security.Cryptography
 
         public int Add(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData is null)
-            {
-                throw new ArgumentNullException(nameof(asnEncodedData));
-            }
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
 
             return Add(new CryptographicAttributeObject(asnEncodedData.Oid!, new AsnEncodedDataCollection(asnEncodedData)));
         }
 
         public int Add(CryptographicAttributeObject attribute)
         {
-            if (attribute is null)
-            {
-                throw new ArgumentNullException(nameof(attribute));
-            }
+            ArgumentNullException.ThrowIfNull(attribute);
 
             //
             // Merge with existing attribute, if already existed, else add as new.
@@ -89,10 +83,7 @@ namespace System.Security.Cryptography
 
         public void Remove(CryptographicAttributeObject attribute)
         {
-            if (attribute is null)
-            {
-                throw new ArgumentNullException(nameof(attribute));
-            }
+            ArgumentNullException.ThrowIfNull(attribute);
 
             _list.Remove(attribute);
         }
@@ -141,10 +132,7 @@ namespace System.Security.Cryptography
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
@@ -162,10 +150,7 @@ namespace System.Security.Cryptography
 
         public void CopyTo(CryptographicAttributeObject[] array, int index)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);

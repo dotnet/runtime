@@ -6,17 +6,38 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 
+using Internal.IL.Stubs;
+using Internal.TypeSystem;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
     public sealed class ObjectDataInterner
     {
+        private readonly bool _genericsOnly;
         private Dictionary<ISymbolNode, ISymbolNode> _symbolRemapping;
 
-        public static ObjectDataInterner Null { get; } = new ObjectDataInterner() { _symbolRemapping = new() };
+        public static ObjectDataInterner Null { get; } = new ObjectDataInterner(genericsOnly: false) { _symbolRemapping = new() };
 
-        public bool IsNull => _symbolRemapping != null && _symbolRemapping.Count == 0;
+        public ObjectDataInterner(bool genericsOnly)
+        {
+            _genericsOnly = genericsOnly;
+        }
+
+        public bool CanFold(MethodDesc method)
+        {
+            if (this == Null)
+                return false;
+
+            if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
+                return true;
+
+            if (method.GetTypicalMethodDefinition() is ValueTypeGetFieldHelperMethodOverride)
+                return true;
+
+            return false;
+        }
 
         private void EnsureMap(NodeFactory factory)
         {
@@ -25,30 +46,43 @@ namespace ILCompiler
             if (_symbolRemapping != null)
                 return;
 
-            var symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>();
-            var methodHash = new HashSet<MethodInternKey>(new MethodInternComparer(factory));
+            HashSet<MethodInternKey> previousMethodHash;
+            HashSet<MethodInternKey> methodHash = null;
+            Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping;
+            Dictionary<ISymbolNode, ISymbolNode> symbolRemapping = null;
 
-            foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
+            do
             {
-                // We don't track special unboxing thunks as virtual method use related so ignore them
-                if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
-                    continue;
+                previousMethodHash = methodHash;
+                previousSymbolRemapping = symbolRemapping;
+                methodHash = new HashSet<MethodInternKey>(previousMethodHash?.Count ?? 0, new MethodInternComparer(factory, previousSymbolRemapping, _genericsOnly));
+                symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>((int)(1.05 * (previousSymbolRemapping?.Count ?? 0)));
 
-                // Bodies that are visible from outside should not be folded because we don't know
-                // if they're address taken.
-                if (factory.GetSymbolAlternateName(body, out _) != null)
-                    continue;
+                foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
+                {
+                    if (!CanFold(body.Method))
+                        continue;
 
-                var key = new MethodInternKey(body, factory);
-                if (methodHash.TryGetValue(key, out MethodInternKey found))
-                {
-                    symbolRemapping.Add(body, found.Method);
+                    // We don't track special unboxing thunks as virtual method use related so ignore them
+                    if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
+                        continue;
+
+                    // Bodies that are visible from outside should not be folded because we don't know
+                    // if they're address taken.
+                    if (factory.GetSymbolAlternateName(body, out _) != null)
+                        continue;
+
+                    var key = new MethodInternKey(body, factory);
+                    if (methodHash.TryGetValue(key, out MethodInternKey found))
+                    {
+                        symbolRemapping.Add(body, found.Method);
+                    }
+                    else
+                    {
+                        methodHash.Add(key);
+                    }
                 }
-                else
-                {
-                    methodHash.Add(key);
-                }
-            }
+            } while (previousSymbolRemapping == null || previousSymbolRemapping.Count < symbolRemapping.Count);
 
             _symbolRemapping = symbolRemapping;
         }
@@ -96,15 +130,17 @@ namespace ILCompiler
         private sealed class MethodInternComparer : IEqualityComparer<MethodInternKey>
         {
             private readonly NodeFactory _factory;
+            private readonly Dictionary<ISymbolNode, ISymbolNode> _interner;
+            private readonly bool _genericsOnly;
 
-            public MethodInternComparer(NodeFactory factory)
-                => (_factory) = (factory);
+            public MethodInternComparer(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> interner, bool genericsOnly)
+                => (_factory, _interner, _genericsOnly) = (factory, interner, genericsOnly);
 
             public int GetHashCode(MethodInternKey key) => key.HashCode;
 
             private static bool AreSame(ReadOnlySpan<byte> o1, ReadOnlySpan<byte> o2) => o1.SequenceEqual(o2);
 
-            private static bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2)
+            private bool AreSame(ObjectNode.ObjectData o1, ObjectNode.ObjectData o2)
             {
                 if (AreSame(o1.Data, o2.Data) && o1.Relocs.Length == o2.Relocs.Length)
                 {
@@ -113,11 +149,29 @@ namespace ILCompiler
                         ref Relocation r1 = ref o1.Relocs[i];
                         ref Relocation r2 = ref o2.Relocs[i];
                         if (r1.RelocType != r2.RelocType
-                            || r1.Offset != r2.Offset
-                            // TODO: should be comparing target after folding to catch more sameness
-                            || r1.Target != r2.Target)
+                            || r1.Offset != r2.Offset)
                         {
                             return false;
+                        }
+
+                        if (r1.Target != r2.Target)
+                        {
+                            if (r1.Target is MethodReadOnlyDataNode rodata1
+                                && r2.Target is MethodReadOnlyDataNode rodata2
+                                && AreSame(rodata1.GetData(_factory, relocsOnly: false), rodata2.GetData(_factory, relocsOnly: false)))
+                            {
+                                // We can consider same MethodReadOnlyDataNode the same.
+                            }
+                            else if (_interner != null &&
+                                ((_interner.TryGetValue(r1.Target, out ISymbolNode t1) && r2.Target == t1)
+                                || (_interner.TryGetValue(r2.Target, out ISymbolNode t2) && r1.Target == t2)))
+                            {
+                                // These got already interned
+                            }
+                            else
+                            {
+                                return false;
+                            }
                         }
                     }
 
@@ -130,6 +184,10 @@ namespace ILCompiler
             public bool Equals(MethodInternKey a, MethodInternKey b)
             {
                 if (a.HashCode != b.HashCode)
+                    return false;
+
+                if (_genericsOnly
+                    && a.Method.Method.GetTypicalMethodDefinition() != b.Method.Method.GetTypicalMethodDefinition())
                     return false;
 
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);

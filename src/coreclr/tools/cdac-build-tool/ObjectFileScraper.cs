@@ -160,6 +160,10 @@ public class ObjectFileScraper
         public uint GlobalLiteralValuesStart;
 
         public uint GlobalPointersStart;
+        public uint GlobalStringValuesStart;
+
+        public uint GlobalSubDescriptorsStart;
+        public uint GlobalContractsStart;
         public uint NamesStart;
 
         public uint TypesCount;
@@ -167,6 +171,9 @@ public class ObjectFileScraper
 
         public uint GlobalLiteralValuesCount;
         public uint GlobalPointerValuesCount;
+        public uint GlobalStringValuesCount;
+        public uint GlobalSubDescriptorsCount;
+        public uint GlobalContractsCount;
 
         public uint NamesPoolCount;
 
@@ -174,6 +181,7 @@ public class ObjectFileScraper
         public byte FieldSpecSize;
         public byte GlobalLiteralSpecSize;
         public byte GlobalPointerSpecSize;
+        public byte GlobalStringSpecSize;
     };
 
     private static void DumpHeaderDirectory(HeaderDirectory headerDirectory)
@@ -181,18 +189,22 @@ public class ObjectFileScraper
         Console.WriteLine($"""
         Scaped Header Directory:
 
-        Baseline Start        = 0x{headerDirectory.FlagsAndBaselineStart:x8}
-        Types Start           = 0x{headerDirectory.TypesStart:x8}
-        Fields Pool Start     = 0x{headerDirectory.FieldsPoolStart:x8}
-        Global Literals Start = 0x{headerDirectory.GlobalLiteralValuesStart:x8}
-        Global Pointers Start = 0x{headerDirectory.GlobalPointersStart:x8}
-        Names Pool Start      = 0x{headerDirectory.NamesStart:x8}
+        Baseline Start               = 0x{headerDirectory.FlagsAndBaselineStart:x8}
+        Types Start                  = 0x{headerDirectory.TypesStart:x8}
+        Fields Pool Start            = 0x{headerDirectory.FieldsPoolStart:x8}
+        Global Literals Start        = 0x{headerDirectory.GlobalLiteralValuesStart:x8}
+        Global Pointers Start        = 0x{headerDirectory.GlobalPointersStart:x8}
+        Global Strings Start         = 0x{headerDirectory.GlobalStringValuesStart:x8}
+        Global Sub-Descriptors Start = 0x{headerDirectory.GlobalSubDescriptorsStart:x8}
+        Names Pool Start             = 0x{headerDirectory.NamesStart:x8}
 
-        Types Count                 = {headerDirectory.TypesCount}
-        Fields Pool Count           = {headerDirectory.FieldsPoolCount}
-        Global Literal Values Count = {headerDirectory.GlobalLiteralValuesCount}
-        Global Pointer Values Count = {headerDirectory.GlobalPointerValuesCount}
-        Names Pool Count            = {headerDirectory.NamesPoolCount}
+        Types Count                  = {headerDirectory.TypesCount}
+        Fields Pool Count            = {headerDirectory.FieldsPoolCount}
+        Global Literal Values Count  = {headerDirectory.GlobalLiteralValuesCount}
+        Global Pointer Values Count  = {headerDirectory.GlobalPointerValuesCount}
+        Global String Values Count   = {headerDirectory.GlobalStringValuesCount}
+        Global Sub-Descriptors Count = {headerDirectory.GlobalSubDescriptorsCount}
+        Names Pool Count             = {headerDirectory.NamesPoolCount}
 
         """);
     }
@@ -207,20 +219,30 @@ public class ObjectFileScraper
         var globalLiteralValuesStart = state.ReadUInt32();
 
         var globalPointersStart = state.ReadUInt32();
+        var globalStringValuesStart = state.ReadUInt32();
+
+        var globalSubDescriptorsStart = state.ReadUInt32();
+        var globalContractsStart = state.ReadUInt32();
+
         var namesStart = state.ReadUInt32();
-
         var typeCount = state.ReadUInt32();
-        var fieldPoolCount = state.ReadUInt32();
 
+        var fieldPoolCount = state.ReadUInt32();
         var globalLiteralValuesCount = state.ReadUInt32();
+
         var globalPointerValuesCount = state.ReadUInt32();
+        var globalStringValuesCount = state.ReadUInt32();
+
+        var globalSubDescriptorsCount = state.ReadUInt32();
+        var globalContractsCount = state.ReadUInt32();
 
         var namesPoolCount = state.ReadUInt32();
-
         var typeSpecSize = state.ReadByte();
         var fieldSpecSize = state.ReadByte();
         var globalLiteralSpecSize = state.ReadByte();
         var globalPointerSpecSize = state.ReadByte();
+
+        var globalStringSpecSize = state.ReadByte();
 
         return new HeaderDirectory {
             FlagsAndBaselineStart = baselineStart,
@@ -228,6 +250,9 @@ public class ObjectFileScraper
             FieldsPoolStart = fieldPoolStart,
             GlobalLiteralValuesStart = globalLiteralValuesStart,
             GlobalPointersStart = globalPointersStart,
+            GlobalStringValuesStart = globalStringValuesStart,
+            GlobalSubDescriptorsStart = globalSubDescriptorsStart,
+            GlobalContractsStart = globalContractsStart,
             NamesStart = namesStart,
 
             TypesCount = typeCount,
@@ -236,12 +261,17 @@ public class ObjectFileScraper
             GlobalLiteralValuesCount = globalLiteralValuesCount,
             GlobalPointerValuesCount = globalPointerValuesCount,
 
+            GlobalStringValuesCount = globalStringValuesCount,
+            GlobalSubDescriptorsCount = globalSubDescriptorsCount,
+            GlobalContractsCount = globalContractsCount,
+
             NamesPoolCount = namesPoolCount,
 
             TypeSpecSize = typeSpecSize,
             FieldSpecSize = fieldSpecSize,
             GlobalLiteralSpecSize = globalLiteralSpecSize,
             GlobalPointerSpecSize = globalPointerSpecSize,
+            GlobalStringSpecSize = globalStringSpecSize,
         };
     }
 
@@ -280,15 +310,30 @@ public class ObjectFileScraper
         public uint AuxDataIdx;
     }
 
+    private struct GlobalStringSpec
+    {
+        public uint NameIdx;
+        public uint ValueIdx;
+    }
+
+    private struct GlobalContractSpec
+    {
+        public uint NameIdx;
+        public uint Value;
+    }
+
     private sealed class Content
     {
-        public required bool Verbose {get; init; }
+        public required bool Verbose { get; init; }
         public required uint PlatformFlags { get; init; }
         public required uint Baseline { get; init; }
         public required IReadOnlyList<TypeSpec> TypeSpecs { get; init; }
         public required IReadOnlyList<FieldSpec> FieldSpecs { get; init; }
-        public required IReadOnlyList<GlobalLiteralSpec> GlobaLiteralSpecs { get; init; }
+        public required IReadOnlyList<GlobalLiteralSpec> GlobalLiteralSpecs { get; init; }
         public required IReadOnlyList<GlobalPointerSpec> GlobalPointerSpecs { get; init; }
+        public required IReadOnlyList<GlobalStringSpec> GlobalStringSpecs { get; init; }
+        public required IReadOnlyList<GlobalPointerSpec> GlobalSubDescriptorSpecs { get; init; }
+        public required IReadOnlyList<GlobalContractSpec> GlobalContractSpecs { get; init; }
         public required ReadOnlyMemory<byte> NamesPool { get; init; }
 
         internal string GetPoolString(uint stringIdx)
@@ -343,7 +388,7 @@ public class ObjectFileScraper
                 }
             }
 
-            foreach (var globalSpec in GlobaLiteralSpecs)
+            foreach (var globalSpec in GlobalLiteralSpecs)
             {
                 var globalName = GetPoolString(globalSpec.NameIdx);
                 var globalType = GetPoolString(globalSpec.TypeNameIdx);
@@ -359,6 +404,31 @@ public class ObjectFileScraper
                 var globalValue = DataDescriptorModel.GlobalValue.MakeIndirect(auxDataIdx);
                 builder.AddOrUpdateGlobal(globalName, DataDescriptorModel.PointerTypeName, globalValue);
                 WriteVerbose($"Global pointer {globalName} has index {globalValue}");
+            }
+
+            foreach (var globalString in GlobalStringSpecs)
+            {
+                var globalName = GetPoolString(globalString.NameIdx);
+                var globalValue = DataDescriptorModel.GlobalValue.MakeString(GetPoolString(globalString.ValueIdx));
+                builder.AddOrUpdateGlobal(globalName, DataDescriptorModel.StringTypeName, globalValue);
+                WriteVerbose($"Global string {globalName} has value {globalValue}");
+            }
+
+            foreach (var subDescriptor in GlobalSubDescriptorSpecs)
+            {
+                var globalName = GetPoolString(subDescriptor.NameIdx);
+                var auxDataIdx = subDescriptor.AuxDataIdx;
+                var globalValue = DataDescriptorModel.GlobalValue.MakeIndirect(auxDataIdx);
+                builder.AddOrUpdateSubDescriptor(globalName, DataDescriptorModel.PointerTypeName, globalValue);
+                WriteVerbose($"Global sub-descriptor {globalName} has index {globalValue}");
+            }
+
+            foreach (var contract in GlobalContractSpecs)
+            {
+                var globalName = GetPoolString(contract.NameIdx);
+                var value = contract.Value;
+                builder.AddOrUpdateContract(globalName, (int)value);
+                WriteVerbose($"Contract {globalName} has value {value}");
             }
         }
 
@@ -381,12 +451,19 @@ public class ObjectFileScraper
         FieldSpec[] fieldSpecs = ReadFieldSpecs(state, header);
         GlobalLiteralSpec[] globalLiteralSpecs = ReadGlobalLiteralSpecs(state, header);
         GlobalPointerSpec[] globalPointerSpecs = ReadGlobalPointerSpecs(state, header);
+        GlobalStringSpec[] globalStringSpecs = ReadGlobalStringSpecs(state, header);
+        GlobalPointerSpec[] globalSubDescriptorSpecs = ReadGlobalSubDescriptorSpecs(state, header);
+        GlobalContractSpec[] globalContractSpecs = ReadGlobalContractSpecs(state, header);
         byte[] namesPool = ReadNamesPool(state, header);
 
         byte[] endMagic = new byte[4];
         state.ReadBytes(endMagic.AsSpan());
         if (!CheckEndMagic(endMagic))
         {
+            if (endMagic.All(b => b == 0))
+            {
+                throw new InvalidOperationException("expected endMagic, got all zeros. Did you add something to the data descriptor that can't be initialized at compile time?");
+            }
             throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
         }
         else
@@ -400,8 +477,11 @@ public class ObjectFileScraper
             Baseline = baselineNameIdx,
             TypeSpecs = typeSpecs,
             FieldSpecs = fieldSpecs,
-            GlobaLiteralSpecs = globalLiteralSpecs,
+            GlobalLiteralSpecs = globalLiteralSpecs,
             GlobalPointerSpecs = globalPointerSpecs,
+            GlobalStringSpecs = globalStringSpecs,
+            GlobalSubDescriptorSpecs = globalSubDescriptorSpecs,
+            GlobalContractSpecs = globalContractSpecs,
             NamesPool = namesPool
         };
     }
@@ -498,6 +578,65 @@ public class ObjectFileScraper
         return globalSpecs;
     }
 
+    private static GlobalStringSpec[] ReadGlobalStringSpecs(ScraperState state, HeaderDirectory header)
+    {
+        GlobalStringSpec[] globalSpecs = new GlobalStringSpec[header.GlobalStringValuesCount];
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalStringValuesStart);
+        for (int i = 0; i < header.GlobalStringValuesCount; i++)
+        {
+            int bytesRead = 0;
+            globalSpecs[i].NameIdx = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            globalSpecs[i].ValueIdx = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            // skip padding
+            if (bytesRead < header.GlobalStringSpecSize)
+            {
+                state.Skip(header.GlobalStringSpecSize - bytesRead);
+            }
+        }
+        return globalSpecs;
+    }
+
+    private static GlobalPointerSpec[] ReadGlobalSubDescriptorSpecs(ScraperState state, HeaderDirectory header)
+    {
+        GlobalPointerSpec[] globalSpecs = new GlobalPointerSpec[header.GlobalSubDescriptorsCount];
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalSubDescriptorsStart);
+        for (int i = 0; i < header.GlobalSubDescriptorsCount; i++)
+        {
+            int bytesRead = 0;
+            globalSpecs[i].NameIdx = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            globalSpecs[i].AuxDataIdx = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            // skip padding
+            if (bytesRead < header.GlobalPointerSpecSize)
+            {
+                state.Skip(header.GlobalPointerSpecSize - bytesRead);
+            }
+        }
+        return globalSpecs;
+    }
+
+    private static GlobalContractSpec[] ReadGlobalContractSpecs(ScraperState state, HeaderDirectory header)
+    {
+        GlobalContractSpec[] globalSpecs = new GlobalContractSpec[header.GlobalContractsCount];
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalContractsStart);
+        for (int i = 0; i < header.GlobalContractsCount; i++)
+        {
+            int bytesRead = 0;
+            globalSpecs[i].NameIdx = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            globalSpecs[i].Value = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            // skip padding
+            if (bytesRead < header.GlobalPointerSpecSize)
+            {
+                state.Skip(header.GlobalPointerSpecSize - bytesRead);
+            }
+        }
+        return globalSpecs;
+    }
     private static byte[] ReadNamesPool(ScraperState state, HeaderDirectory header)
     {
         byte[] namesPool = new byte[header.NamesPoolCount];

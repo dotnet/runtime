@@ -115,14 +115,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         case ParsableFromStringSpec stringParsableType:
                             {
                                 EmitCastToIConfigurationSection();
+
+                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: null, out string? {Identifier.value}))");
                                 EmitBindingLogic(
                                     stringParsableType,
-                                    Expression.sectionValue,
+                                    Identifier.value,
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
-                                    checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
-                                    defaultValueSource: null,
-                                    useIncrementalStringValueIdentifier: false);
+                                    checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+                                EmitEndBlock(); // End if-check for input type.
                             }
                             break;
                         case ConfigurationSectionSpec:
@@ -183,14 +184,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteLine($@"{Identifier.IConfigurationSection} {Identifier.section} = {GetSectionFromConfigurationExpression(Identifier.key, addQuotes: false)};");
                 _writer.WriteLine();
 
-                _writer.WriteLine($$"""
-                    if ({{Expression.sectionValue}} is not string {{Identifier.value}})
-                    {
-                        return null;
-                    }
-                    """);
-
-                _writer.WriteLine();
+                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.section}, {Identifier.key}: null, out string? {Identifier.value}) && !string.IsNullOrEmpty({Identifier.value}))");
 
                 bool isFirstType = true;
                 foreach (TypeSpec type in targetTypes)
@@ -203,12 +197,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         Identifier.value,
                         Expression.sectionPath,
                         writeOnSuccess: (parsedValueExpr) => _writer.WriteLine($"return {parsedValueExpr};"),
-                        checkForNullSectionValue: false,
-                        defaultValueSource: null,
-                        useIncrementalStringValueIdentifier: false);
+                        checkForNullSectionValue: false);
 
                     EmitEndBlock();
                 }
+                EmitEndBlock();
 
                 _writer.WriteLine();
                 _writer.WriteLine("return null;");
@@ -420,7 +413,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                         {
                             // Add exception logic for parameter ctors; must be present in configuration object.
-                            EmitThrowBlock(condition: "else");
+                            // In case of Arrays, we emit extra block to handle empty arrays. The throw block will not be `else` case at that time.
+                            EmitThrowBlock(condition: _typeIndex.GetEffectiveTypeSpec(member.TypeRef) is ArraySpec ? $"if ({member.Name} is null)" : "else");
                         }
 
                         _writer.WriteLine();
@@ -438,6 +432,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitHelperMethods()
             {
+                // This is used all the time Get, Bind, and GetValue methods.
+                EmitTryGetConfigurationValueMethod();
+
                 // Emitted if we are to bind objects with complex members, or if we're emitting BindCoreMain or GetCore methods.
                 bool emitAsConfigWithChildren = ShouldEmitMethods(MethodsToGen_CoreBindingHelper.AsConfigWithChildren);
 
@@ -486,6 +483,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     }
                 }
+            }
+
+            private void EmitTryGetConfigurationValueMethod()
+            {
+                EmitBlankLineIfRequired();
+                _writer.WriteLine($$"""
+                    /// <summary>Tries to get the configuration value for the specified key.</summary>
+                    public static bool {{Identifier.TryGetConfigurationValue}}({{Identifier.IConfiguration}} {{Identifier.configuration}}, string {{Identifier.key}}, out string? {{Identifier.value}})
+                    {
+                        if ({{Identifier.configuration}} is {{Identifier.ConfigurationSection}} {{Identifier.section}})
+                        {
+                            return {{Identifier.section}}.TryGetValue({{Identifier.key}}, out {{Identifier.value}});
+                        }
+
+                        {{Identifier.value}} = {{Identifier.key}} != null ? {{Identifier.configuration}}[{{Identifier.key}}] : {{Identifier.configuration}} is {{Identifier.IConfigurationSection}} sec ? sec.Value : null;
+                        return {{Identifier.value}} != null;
+                    }
+                    """);
             }
 
             private void EmitValidateConfigurationKeysMethod()
@@ -572,7 +587,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitEnumParseMethod()
             {
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.path}}}", $"{{typeof(T)}}");
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.value} ?? \"null\"}}", $"{{{Identifier.path}}}", $"{{typeof(T)}}");
 
                 string parseEnumCall = _emitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
@@ -642,7 +657,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                 }
 
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.path}}}", $"{{typeof({typeFQN})}}");
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.value} ?? \"null\"}}", $"{{{Identifier.path}}}", $"{{typeof({typeFQN})}}");
 
                 EmitStartBlock($"public static {typeFQN} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, string? {Identifier.path})");
                 EmitEndBlock($$"""
@@ -695,14 +710,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     case ParsableFromStringSpec stringParsableType:
                         {
+                            EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.section}, {Identifier.key}: null, out string? {Identifier.value}))");
                             EmitBindingLogic(
                                 stringParsableType,
-                                Expression.sectionValue,
+                                Identifier.value,
                                 Expression.sectionPath,
                                 (parsedValueExpr) => _writer.WriteLine($"{addExpr}({parsedValueExpr});"),
-                                checkForNullSectionValue: true,
-                                defaultValueSource: null,
-                                useIncrementalStringValueIdentifier: false);
+                                checkForNullSectionValue: true);
+                            EmitEndBlock(); // End if-check for input type.
                         }
                         break;
                     case ConfigurationSectionSpec:
@@ -746,7 +761,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
                 ParsableFromStringSpec keyType = (ParsableFromStringSpec)_typeIndex.GetEffectiveTypeSpec(type.KeyTypeRef);
-                TypeSpec elementType = _typeIndex.GetTypeSpec(type.ElementTypeRef);
+                TypeSpec elementType = _typeIndex.GetEffectiveTypeSpec(type.ElementTypeRef);
 
                 // Parse key
                 EmitBindingLogic(
@@ -754,9 +769,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Expression.sectionKey,
                     Expression.sectionPath,
                     Emit_BindAndAddLogic_ForElement,
-                    checkForNullSectionValue: false,
-                    defaultValueSource: null,
-                    useIncrementalStringValueIdentifier: false);
+                    checkForNullSectionValue: false);
 
                 void Emit_BindAndAddLogic_ForElement(string parsedKeyExpr)
                 {
@@ -764,14 +777,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         case ParsableFromStringSpec stringParsableElementType:
                             {
+                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.section}, {Identifier.key}: null, out string? {Identifier.value}))");
                                 EmitBindingLogic(
                                     stringParsableElementType,
-                                    Expression.sectionValue,
+                                    Identifier.value,
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
-                                    checkForNullSectionValue: true,
-                                    defaultValueSource: null,
-                                    useIncrementalStringValueIdentifier: false);
+                                    checkForNullSectionValue: true);
+                                EmitEndBlock(); // End if-check for input type.
                             }
                             break;
                         case ConfigurationSectionSpec:
@@ -877,14 +890,54 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (canSet && canGet)
                             {
                                 EmitBlankLineIfRequired();
+                                string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
+                                EmitStartBlock($@"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: ""{member.ConfigurationKeyName}"", out string? {valueIdentifier}))");
+
+                                // Decide to emit the null check block for nullable types (e.g. int?).
+                                // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
+                                // anyway to the memberAccessExpr regardless of the nullability. This can reduce the emitted code size when assigning objects or strings which
+                                // are common cases.
+                                bool emitNullCheck = member.TypeRef.CanBeNull && stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue;
+
+                                // Nullable type can be set to null
+                                if (emitNullCheck)
+                                {
+                                    EmitStartBlock($"if ({valueIdentifier} is null)");
+                                    _writer.WriteLine($"{memberAccessExpr} = null;");
+                                    EmitEndBlock(); // End if-check for input type.
+                                    EmitStartBlock($"else");
+                                }
+
                                 EmitBindingLogic(
                                     stringParsableType,
-                                    $@"{Identifier.configuration}[""{member.ConfigurationKeyName}""]",
+                                    valueIdentifier,
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
-                                    checkForNullSectionValue: true,
-                                    defaultValueSource: initializationKind == InitializationKind.Declaration ? memberAccessExpr : null,
-                                    useIncrementalStringValueIdentifier: true);
+                                    checkForNullSectionValue: true);
+
+                                if (emitNullCheck)
+                                {
+                                    EmitEndBlock(); // end of $"if ({valueIdentifier} is null)"
+                                }
+
+                                EmitEndBlock(); // End if-check for input type.
+
+                                if (initializationKind == InitializationKind.Declaration)
+                                {
+                                    EmitStartBlock($"else if (defaultValueIfNotFound)");
+                                    if (!stringParsableType.TypeRef.CanBeNull)
+                                    {
+                                        _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr};");
+                                    }
+                                    else
+                                    {
+                                        _writer.WriteLine($"var currentValue = {memberAccessExpr};");
+                                        EmitStartBlock($"if (currentValue is not null)");
+                                        _writer.WriteLine($"{memberAccessExpr} = currentValue;");
+                                        EmitEndBlock();
+                                    }
+                                    EmitEndBlock();
+                                }
                             }
 
                             return true;
@@ -910,13 +963,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 return false;
                             }
 
-                            string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({sectionParseExpr})";
+                            EmitBlankLineIfRequired();
+                            string configSection = GetIncrementalIdentifier(Identifier.value);
+                            _writer.WriteLine($"var {configSection} = {sectionParseExpr};");
+
+                            string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({configSection})";
                             string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
-                            EmitBlankLineIfRequired();
                             EmitStartBlock($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
                             EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet);
                             EmitEndBlock();
+
+                            // The current configuration section doesn't have any children, let's check if we are binding to an array and the configuration value is empty string.
+                            // In this case, we will assign an empty array to the member. Otherwise, we will skip the binding logic.
+                            if (complexType is ArraySpec arraySpec && canSet)
+                            {
+                                string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
+                                EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
+                                _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{arraySpec.ElementTypeRef.FullyQualifiedName}>();");
+                                EmitEndBlock();
+                            }
 
                             return _typeIndex.CanInstantiate(complexType);
                         }
@@ -1096,51 +1162,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string sectionValueExpr,
                 string sectionPathExpr,
                 Action<string>? writeOnSuccess,
-                bool checkForNullSectionValue,
-                string? defaultValueSource,
-                bool useIncrementalStringValueIdentifier)
+                bool checkForNullSectionValue)
             {
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
                 Debug.Assert(typeKind is not StringParsableTypeKind.None);
 
-                string nonNull_StringValue_Identifier = useIncrementalStringValueIdentifier ? GetIncrementalIdentifier(Identifier.value) : Identifier.value;
-                string stringValueToParse_Expr = checkForNullSectionValue ? nonNull_StringValue_Identifier : sectionValueExpr;
                 string parsedValueExpr = typeKind switch
                 {
-                    StringParsableTypeKind.AssignFromSectionValue => stringValueToParse_Expr,
-                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({stringValueToParse_Expr}, {sectionPathExpr})",
-                    _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, {sectionPathExpr})",
+                    StringParsableTypeKind.AssignFromSectionValue => sectionValueExpr,
+                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({sectionValueExpr}, {sectionPathExpr})",
+                    _ => $"{TypeIndex.GetParseMethodName(type)}({sectionValueExpr}, {sectionPathExpr})",
                 };
 
-                if (!checkForNullSectionValue)
+                // Usually assigning the configuration value to string or object
+                if (!checkForNullSectionValue || typeKind == StringParsableTypeKind.AssignFromSectionValue)
                 {
                     writeOnSuccess?.Invoke(parsedValueExpr);
                 }
                 else
                 {
-                    // In case of calling parsing methods, check the section value first for null or empty before calling parse.
-                    string extraCondition = typeKind == StringParsableTypeKind.AssignFromSectionValue ? "" : $" && !string.IsNullOrEmpty({nonNull_StringValue_Identifier})";
-                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier}{extraCondition})");
-                    writeOnSuccess?.Invoke(parsedValueExpr);
-                    EmitEndBlock();
-                }
+                    // call parsing methods
 
-                if (defaultValueSource is not null)
-                {
-                    Debug.Assert(checkForNullSectionValue);
-
-                    EmitStartBlock($"else if (defaultValueIfNotFound)");
-                    if (!type.TypeRef.CanBeNull)
+                    string conditionPrefix = string.Empty;
+                    // Special case ByteArray when having empty string configuration value as we need to assign empty byte array at that time.
+                    if (typeKind == StringParsableTypeKind.ByteArray)
                     {
-                        writeOnSuccess?.Invoke(defaultValueSource);
-                    }
-                    else
-                    {
-                        _writer.WriteLine($"var currentValue = {defaultValueSource};");
-                        EmitStartBlock($"if (currentValue is not null)");
-                        writeOnSuccess?.Invoke("currentValue");
+                        EmitStartBlock($"if ({sectionValueExpr} == string.Empty)");
+                        writeOnSuccess?.Invoke(parsedValueExpr);
                         EmitEndBlock();
+                        conditionPrefix = "else ";
                     }
+
+                    EmitStartBlock($"{conditionPrefix}if (!string.IsNullOrEmpty({sectionValueExpr}))");
+                    writeOnSuccess?.Invoke(parsedValueExpr);
                     EmitEndBlock();
                 }
             }
@@ -1180,7 +1234,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (strategy is ObjectInstantiationStrategy.ParameterlessConstructor)
                     {
-                        initExpr = $"new {typeFQN}()";
+                        // value tuple types will be declared with syntax like:
+                        //     (int, int) value = default;
+                        // This is to avoid using invalid syntax calling the parameterless constructor
+                        initExpr = type.IsValueTuple ? "default" : $"new {typeFQN}()";
                     }
                     else
                     {
@@ -1195,7 +1252,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case InitializationKind.Declaration:
                         {
                             Debug.Assert(!memberAccessExpr.Contains('.'));
-                            _writer.WriteLine($"var {memberAccessExpr} = {initExpr};");
+                            // value tuple will be declared with syntax like:
+                            //     (int, int) value = default;
+                            // We need to specify the typeFQN as we assign the variable to default value.
+                            string declarationType = type.IsValueTuple ? typeFQN : $"var";
+                            _writer.WriteLine($"{declarationType} {memberAccessExpr} = {initExpr};");
                         }
                         break;
                     case InitializationKind.AssignmentWithNullCheck:

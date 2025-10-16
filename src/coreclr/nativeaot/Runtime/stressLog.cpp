@@ -13,15 +13,14 @@
 #endif // DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "daccess.h"
 #include "stressLog.h"
 #include "holder.h"
 #include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -30,6 +29,7 @@
 #include "threadstore.inl"
 #include "thread.inl"
 #include "volatile.h"
+#include "minipal/time.h"
 
 #ifdef STRESS_LOG
 
@@ -64,7 +64,7 @@ uint64_t getTimeStamp()
 #else // HOST_X86
 uint64_t getTimeStamp()
 {
-    return PalQueryPerformanceCounter();
+    return (uint64_t)minipal_hires_ticks();
 }
 
 #endif // HOST_X86 else
@@ -75,7 +75,7 @@ uint64_t getTimeStamp()
 */
 uint64_t getTickFrequency()
 {
-    return PalQueryPerformanceFrequency();
+    return (uint64_t)minipal_hires_tick_frequency();
 }
 
 #endif // DACCESS_COMPILE
@@ -118,7 +118,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     theLog.tickFrequency = getTickFrequency();
 
-    PalGetSystemTimeAsFileTime (&theLog.startTime);
+    theLog.startTime = minipal_get_system_time();
     theLog.startTimeStamp = getTimeStamp();
 
     theLog.moduleOffset = (size_t)hMod; // HMODULES are base addresses.
@@ -472,7 +472,7 @@ inline void ThreadStressLog::Activate (Thread * /*pThread*/)
     // a previous record.  Update curPtr to reflect the last safe beginning of a record,
     // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress
     // log
-    curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize());
+    curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize);
     if (curPtr < (StressMsg*)curWriteChunk->StartPtr())
     {
         curPtr = (StressMsg *)curWriteChunk->StartPtr();

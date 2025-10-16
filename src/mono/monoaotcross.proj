@@ -22,6 +22,15 @@
     <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
   </ItemGroup>
 
+  <Target Name="CheckMonoAotTargets" BeforeTargets="BuildMonoCrossAllTargets">
+    <PropertyGroup>
+      <_SupportOS>android, browser, wasi</_SupportOS>
+      <_SupportOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(_SupportOS), tvos, ios, maccatalyst</_SupportOS>
+    </PropertyGroup>
+
+    <Error Condition="'@(MonoAotTargetRids->Count())' == '0'" Text="MonoAotTargets is empty. Please configure MonoCrossAOTTargetOS with supported values: $(_SupportOS). Multiple values should be separated with '+' (e.g., /p:MonoCrossAOTTargetOS=android+browser)." />
+  </Target>
+
   <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
     <MSBuild Targets="Restore"
              Projects="$(MSBuildThisFileDirectory)mono.proj"

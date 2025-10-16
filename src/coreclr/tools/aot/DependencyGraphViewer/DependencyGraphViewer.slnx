@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DependencyGraphViewer.csproj" />
+  <Project Path="Tests/DependecyGraphViewer.Tests.csproj" />
+</Solution>

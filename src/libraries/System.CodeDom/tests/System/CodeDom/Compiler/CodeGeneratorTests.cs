@@ -36,7 +36,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("st", "st")]
-        public void ContinueOnNewLine_InvokeWithOutput_Appends(string st, string expected)
+        public void ContinueOnNewLine_InvokeWithOutput_Appends(string? st, string expected)
         {
             CodeGeneratorTests generator = this;
             generator.PerformActionWithOutput(writer =>
@@ -50,7 +50,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("st")]
-        public void ContinueOnNewLine_InvokeWithoutOutput_ThrowsNullReferenceException(string st)
+        public void ContinueOnNewLine_InvokeWithoutOutput_ThrowsNullReferenceException(string? st)
         {
             CodeGeneratorTests generator = this;
             Assert.Throws<NullReferenceException>(() => generator.ContinueOnNewLine(st));
@@ -409,7 +409,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("text")]
-        public void GenerateCommentStatement_Invoke_CallsCorrectMethod(string text)
+        public void GenerateCommentStatement_Invoke_CallsCorrectMethod(string? text)
         {
             CodeGeneratorTests generator = this;
             var e = new CodeCommentStatement(text);
@@ -443,7 +443,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("text")]
-        public void GenerateCommentStatements_InvokeNonEmpty_CallsCorrectMethod(string text)
+        public void GenerateCommentStatements_InvokeNonEmpty_CallsCorrectMethod(string? text)
         {
             CodeGeneratorTests generator = this;
             generator.GenerateCommentStatementsAction = (actualE, baseMethod) => baseMethod(actualE);
@@ -1687,7 +1687,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("result", "result")]
-        public void GeneratePrimitiveExpression_InvokeString_Success(string result, string expected)
+        public void GeneratePrimitiveExpression_InvokeString_Success(string? result, string expected)
         {
             CodeGeneratorTests generator = this;
             generator.GeneratePrimitiveExpressionAction = (actualE, baseMethod) => baseMethod(actualE);
@@ -1794,7 +1794,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("value", "value")]
-        public void GenerateSnippetCompileUnit_Invoke_Success(string value, string expected)
+        public void GenerateSnippetCompileUnit_Invoke_Success(string? value, string expected)
         {
             CodeGeneratorTests generator = this;
             var e = new CodeSnippetCompileUnit(value);
@@ -1872,7 +1872,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("value", "value")]
-        public void GenerateSnippetStatement_Invoke_Success(string value, string expected)
+        public void GenerateSnippetStatement_Invoke_Success(string? value, string expected)
         {
             CodeGeneratorTests generator = this;
             PerformActionWithOutput(writer =>
@@ -2661,7 +2661,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("\n", false)]
         [InlineData("a\n", false)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not fixed on NetFX")]
-        public void IsValidLanguageIndependentIdentifier_Invoke_ReturnsExpected(string value, bool expected)
+        public void IsValidLanguageIndependentIdentifier_Invoke_ReturnsExpected(string? value, bool expected)
         {
             Assert.Equal(expected, CodeGenerator.IsValidLanguageIndependentIdentifier(value));
         }
@@ -2670,7 +2670,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "1")]
         [InlineData("", "1")]
         [InlineData("name", "name=1")]
-        public void OutputAttributeArgument_Invoke_Success(string name, string expected)
+        public void OutputAttributeArgument_Invoke_Success(string? name, string expected)
         {
             CodeGeneratorTests generator = this;
             PerformActionWithOutput(writer =>
@@ -2713,7 +2713,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("name")]
-        public void OutputAttributeArgument_InvokeNonNullNameWithoutOutput_ThrowsNullReferenceException(string name)
+        public void OutputAttributeArgument_InvokeNonNullNameWithoutOutput_ThrowsNullReferenceException(string? name)
         {
             CodeGeneratorTests generator = this;
             var arg = new CodeAttributeArgument(name, new CodePrimitiveExpression(1));
@@ -2927,7 +2927,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("ident", "ident")]
-        public void OutputIdentifier_InvokeWithOutput_Appends(string st, string expected)
+        public void OutputIdentifier_InvokeWithOutput_Appends(string? st, string expected)
         {
             CodeGeneratorTests generator = this;
             generator.PerformActionWithOutput(writer =>
@@ -2942,7 +2942,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("ident")]
-        public void OutputIdentifier_InvokeWithoutOutput_ThrowsNullReferenceException(string ident)
+        public void OutputIdentifier_InvokeWithoutOutput_ThrowsNullReferenceException(string? ident)
         {
             CodeGeneratorTests generator = this;
             generator.OutputIdentifierAction = (actualSt, baseMethod) => baseMethod(actualSt);
@@ -3541,7 +3541,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void ValidateIdentifier_InvokeValid_Nop(string value)
+        public void ValidateIdentifier_InvokeValid_Nop(string? value)
         {
             CodeGeneratorTests generator = this;
             int isValidIdentifierCallCount = 0;
@@ -3561,7 +3561,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("")]
         [InlineData("value")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not fixed on NetFX")]
-        public void ValidateIdentifier_InvokeInvalid_ThrowsArgumentException(string value)
+        public void ValidateIdentifier_InvokeInvalid_ThrowsArgumentException(string? value)
         {
             CodeGeneratorTests generator = this;
             int isValidIdentifierCallCount = 0;
@@ -3586,7 +3586,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("identifier", null)]
         [InlineData("identifier", "")]
         [InlineData("identifier", "escapedIdentifier")]
-        public void ICodeGeneratorCreateEscapedIdentifier_Invoke_ReturnsExpected(string value, string result)
+        public void ICodeGeneratorCreateEscapedIdentifier_Invoke_ReturnsExpected(string? value, string? result)
         {
             CodeGeneratorTests generator = this;
             int callCount = 0;
@@ -3611,7 +3611,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("identifier", null)]
         [InlineData("identifier", "")]
         [InlineData("identifier", "validIdentifier")]
-        public void ICodeGeneratorCreateValidIdentifier_Invoke_ReturnsExpected(string value, string result)
+        public void ICodeGeneratorCreateValidIdentifier_Invoke_ReturnsExpected(string? value, string? result)
         {
             CodeGeneratorTests generator = this;
             int callCount = 0;
@@ -3710,7 +3710,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void ICodeGeneratorValidateIdentifier_InvokeValid_Nop(string value)
+        public void ICodeGeneratorValidateIdentifier_InvokeValid_Nop(string? value)
         {
             CodeGeneratorTests generator = this;
             int isValidIdentifierCallCount = 0;
@@ -3731,7 +3731,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("")]
         [InlineData("value")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not fixed on NetFX")]
-        public void ICodeGeneratorValidateIdentifier_InvokeInvalid_ThrowsArgumentException(string value)
+        public void ICodeGeneratorValidateIdentifier_InvokeInvalid_ThrowsArgumentException(string? value)
         {
             CodeGeneratorTests generator = this;
             int isValidIdentifierCallCount = 0;

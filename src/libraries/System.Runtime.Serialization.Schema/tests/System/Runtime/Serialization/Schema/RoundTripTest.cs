@@ -22,8 +22,8 @@ namespace System.Runtime.Serialization.Schema.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        // Passes on some wasm, but not all? Seems to have both passed and failed on the same browser/wasm/OS/Mono-CoreCLR combo in the same pipeline? How does that happen? Is this trimming related?
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         public void RountTripTest()
         {
             // AppContext SetSwitch seems to be unreliable in the unit test case. So let's not rely on it
@@ -81,7 +81,6 @@ namespace System.Runtime.Serialization.Schema.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void RoundTripXmlSerializableWithSpecialAttributesTest()
         {
             XsdDataContractExporter exporter = new XsdDataContractExporter();

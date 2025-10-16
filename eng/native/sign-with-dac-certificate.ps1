@@ -40,7 +40,7 @@ foreach ($file in $filesToSign) {
     }
 
     if ($signingCert.Subject -ne "CN=.NET DAC, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" `
-        -or $signingCert.Issuer -ne "CN=Microsoft Code Signing PCA 2010, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")
+        -or $signingCert.Issuer -ne "CN=Microsoft Windows Code Signing PCA 2024, O=Microsoft Corporation, C=US")
     {
       throw "File $file not in expected trust chain."
     }

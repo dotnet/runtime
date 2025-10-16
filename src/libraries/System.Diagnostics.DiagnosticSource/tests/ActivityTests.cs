@@ -1416,7 +1416,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1433,7 +1433,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1472,7 +1472,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");
@@ -1878,7 +1878,7 @@ namespace System.Diagnostics.Tests
         [InlineData("key2", null, false, 0)]
         [InlineData("key3", "v1", true, 1)]
         [InlineData("key4", "v2", false, 1)]
-        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        public void TestInsertingFirstTag(string key, object? value, bool add, int resultCount)
         {
             Activity a = new Activity("SetFirstTag");
             if (add)
@@ -2420,6 +2420,100 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(values[0], tag);
                 values.RemoveAt(0);
             }
+        }
+
+        [Fact]
+        public void TestLinksToString()
+        {
+            Activity activity = new Activity("testLinksActivity");
+
+            Assert.Equal("[]", activity.Links.ToString());
+
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded), new ActivityTagsCollection { ["alk1"] = "alv1", ["alk2"] = "alv2", ["alk3"] = null }));
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+
+            string formattedLinks = "[";
+            string linkSep = "";
+            foreach (ActivityLink link in activity.Links)
+            {
+                ActivityContext ac = link.Context;
+
+                formattedLinks += $"{linkSep}(";
+                formattedLinks += ac.TraceId.ToHexString();
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.SpanId.ToHexString();
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.TraceFlags.ToString();
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.TraceState ?? "null";
+                formattedLinks += ",\u200B";
+                formattedLinks += ac.IsRemote ? "true" : "false";
+
+                if (link.Tags is not null)
+                {
+                    formattedLinks += ",\u200B[";
+                    string sep = "";
+                    foreach (KeyValuePair<string, object?> kvp in link.EnumerateTagObjects())
+                    {
+                        formattedLinks += sep;
+                        formattedLinks += kvp.Key;
+                        formattedLinks += ":\u200B";
+                        formattedLinks += kvp.Value?.ToString() ?? "null";
+                        sep = ",\u200B";
+                    }
+
+                    formattedLinks += "]";
+                }
+                formattedLinks += ")";
+                linkSep = ",\u200B";
+            }
+            formattedLinks += "]";
+
+            Assert.Equal(formattedLinks, activity.Links.ToString());
+        }
+
+        [Fact]
+        public void TestEventsToString()
+        {
+            Activity activity = new Activity("testLinksActivity");
+
+            Assert.Equal("[]", activity.Events.ToString());
+
+            activity.AddEvent(new ActivityEvent("TestEvent1", DateTime.UtcNow, new ActivityTagsCollection { { "E11", "EV1" }, { "E12", "EV2" } }));
+            activity.AddEvent(new ActivityEvent("TestEvent2", DateTime.UtcNow.AddSeconds(10), new ActivityTagsCollection { { "E21", "EV21" }, { "E22", "EV22" } }));
+
+            string formattedEvents = "[";
+            string linkSep = "";
+
+            foreach (var e in activity.Events)
+            {
+                formattedEvents += $"{linkSep}(";
+                formattedEvents += e.Name;
+                formattedEvents += ",\u200B";
+                formattedEvents += e.Timestamp.ToString("o");
+
+                if (e.Tags is not null)
+                {
+                    formattedEvents += ",\u200B[";
+                    string sep = "";
+                    foreach (KeyValuePair<string, object?> kvp in e.EnumerateTagObjects())
+                    {
+                        formattedEvents += sep;
+                        formattedEvents += kvp.Key;
+                        formattedEvents += ":\u200B";
+                        formattedEvents += kvp.Value?.ToString() ?? "null";
+                        sep = ",\u200B";
+                    }
+
+                    formattedEvents += "]";
+                }
+
+                formattedEvents += ")";
+                linkSep = ",\u200B";
+            }
+
+            formattedEvents += "]";
+            Assert.Equal(formattedEvents, activity.Events.ToString());
         }
 
         public void Dispose()

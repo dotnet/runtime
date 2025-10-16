@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public static void CounterCreationData_SetCounterType_Invalud()
+        public static void CounterCreationData_SetCounterType_Invalid()
         {
             CounterCreationData ccd = new CounterCreationData("Simple", "Simple Help", PerformanceCounterType.RawBase);
             Assert.Throws<InvalidEnumArgumentException>(() => ccd.CounterType = (PerformanceCounterType)int.MaxValue);

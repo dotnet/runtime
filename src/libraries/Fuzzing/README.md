@@ -24,7 +24,7 @@ Build the runtime with the desired configuration if you haven't already:
 ```
 
 > [!TIP]
-> The `-rc release` configuration here builds runime in `Release` and libraries in `Debug` mode.
+> The `-rc release` configuration here builds runtime in `Release` and libraries in `Debug` mode.
 > Automated fuzzing runs use a `Checked` runtime + `Debug` libraries configuration by default.
 > You can use any configuration locally, but `Checked` is recommended when testing changes in `System.Private.CoreLib`.
 
@@ -44,10 +44,10 @@ dotnet build
 ```
 
 Run `run.bat`, which will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
-When iterating on changes, remember to rebuild the project again: `dotnet build; .\run.bat`.
+When iterating on changes, remember to rebuild the project again.
 
 ```cmd
-run.bat
+dotnet build; .\run.bat
 ```
 
 Start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.

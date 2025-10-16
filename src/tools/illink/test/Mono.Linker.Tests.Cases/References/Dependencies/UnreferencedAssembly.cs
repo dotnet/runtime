@@ -1,6 +1,6 @@
 namespace Mono.Linker.Tests.Cases.References.Dependencies
 {
-	public class UnreferencedAssembly
-	{
-	}
+    public class UnreferencedAssembly
+    {
+    }
 }

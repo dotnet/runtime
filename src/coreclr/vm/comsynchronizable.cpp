@@ -160,7 +160,7 @@ static void PulseAllHelper(Thread* pThread)
     {
         // just keep going...
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
@@ -395,7 +395,7 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
     // if we don't have an internal Thread object associated with this exposed object,
     // now is our first opportunity to create one.
     Thread* unstarted = SetupUnstartedThread();
-    PREFIX_ASSUME(unstarted != NULL);
+    _ASSERTE(unstarted != NULL);
 
     threadRef->SetInternal(unstarted);
     threadRef->SetManagedThreadId(unstarted->GetThreadId());
@@ -473,20 +473,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnS
     }
 
     retVal = thread->GetApartment();
-
-#ifdef FEATURE_COMINTEROP
-    if (retVal == Thread::AS_Unknown)
-    {
-        // If the CLR hasn't started COM yet, start it up and attempt the call again.
-        // We do this in order to minimize the number of situations under which we return
-        // ApartmentState.Unknown to our callers.
-        if (!g_fComStarted)
-        {
-            EnsureComStarted();
-            retVal = thread->GetApartment();
-        }
-    }
-#endif // FEATURE_COMINTEROP
 
     END_QCALL;
     return retVal;
@@ -714,6 +700,14 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GetThread()->CatchAtSafePoint());
+}
+FCIMPLEND
+
 // Get whether or not this is a background thread.
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
 {
@@ -891,3 +885,11 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
 }
+
+FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(IsFinalizerThread());
+}
+FCIMPLEND

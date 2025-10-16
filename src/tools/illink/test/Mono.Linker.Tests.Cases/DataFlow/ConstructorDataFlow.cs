@@ -11,114 +11,117 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	public class ConstructorDataFlow
-	{
-		public static void Main ()
-		{
-			DataFlowInConstructor.Test ();
-			DataFlowInStaticConstructor.Test ();
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    public class ConstructorDataFlow
+    {
+        public static void Main()
+        {
+            DataFlowInConstructor.Test();
+            DataFlowInStaticConstructor.Test();
+        }
 
-		class DataFlowInConstructor
-		{
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-			public DataFlowInConstructor ()
-			{
-				RequireAll (GetUnknown ());
-			}
+        class DataFlowInConstructor
+        {
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll))]
+            public DataFlowInConstructor()
+            {
+                RequireAll(GetUnknown());
+            }
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
-			int field = RequireAll (GetUnknown ());
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll), CompilerGeneratedCode = true)]
+            int field = RequireAll(GetUnknown());
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
-			int Property { get; } = RequireAll (GetUnknown ());
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll), CompilerGeneratedCode = true)]
+            int Property { get; } = RequireAll(GetUnknown());
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (annotatedField), CompilerGeneratedCode = true)]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
-			Type annotatedField = GetUnknown ();
+            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(annotatedField), CompilerGeneratedCode = true)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type annotatedField = GetUnknown();
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedProperty), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93277", CompilerGeneratedCode = true)]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
-			Type AnnotatedProperty { get; } = GetUnknown ();
+            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(AnnotatedProperty), CompilerGeneratedCode = true)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type AnnotatedProperty { get; } = GetUnknown();
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedPropertyWithSetter), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93277", CompilerGeneratedCode = true)]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
-			Type AnnotatedPropertyWithSetter { get; set; } = GetUnknown ();
+            [ExpectedWarning("IL2074", nameof(GetUnknown), nameof(AnnotatedPropertyWithSetter), CompilerGeneratedCode = true)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type AnnotatedPropertyWithSetter { get; set; } = GetUnknown();
 
-			// The analyzer dataflow visitor asserts that we only see a return value
-			// inside of an IMethodSymbol. This testcase checks that we don't hit asserts
-			// in case the return statement is in a lambda owned by a field.
-			// When the lambda is analyzed, the OwningSymbol is still an IMethodSymbol
-			// (the symbol representing the lambda, not the field).
-			int fieldWithReturnStatementInInitializer = Execute(
-				[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-				() => {
-					return RequireAll (GetUnknown ());
-				});
+            // The analyzer dataflow visitor asserts that we only see a return value
+            // inside of an IMethodSymbol. This testcase checks that we don't hit asserts
+            // in case the return statement is in a lambda owned by a field.
+            // When the lambda is analyzed, the OwningSymbol is still an IMethodSymbol
+            // (the symbol representing the lambda, not the field).
+            int fieldWithReturnStatementInInitializer = Execute(
+                [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll))]
+            () =>
+                {
+                    return RequireAll(GetUnknown());
+                });
 
-			// When analyzer visits the lambda, its containing symbol is the compiler-generated
-			// backing field of the property, not the property itself.
-			Func<int> PropertyWithReturnStatementInInitializer { get; } =
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-			() => {
-				return RequireAll (GetUnknown ());
-			};
+            // When analyzer visits the lambda, its containing symbol is the compiler-generated
+            // backing field of the property, not the property itself.
+            Func<int> PropertyWithReturnStatementInInitializer { get; } =
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll))]
+            () =>
+            {
+                return RequireAll(GetUnknown());
+            };
 
-			// For property accessors, the containing symbol is the accessor method.
-			Func<int> PropertyWithReturnStatementInGetter =>
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-			() => {
-				return RequireAll (GetUnknown ());
-			};
+            // For property accessors, the containing symbol is the accessor method.
+            Func<int> PropertyWithReturnStatementInGetter =>
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll))]
+            () =>
+            {
+                return RequireAll(GetUnknown());
+            };
 
-			static int Execute(Func<int> f) => f();
+            static int Execute(Func<int> f) => f();
 
-			int fieldWithThrowStatementInInitializer = string.Empty.Length == 0 ? throw new Exception() : 0;
+            int fieldWithThrowStatementInInitializer = string.Empty.Length == 0 ? throw new Exception() : 0;
 
-			int PropertyWithThrowStatementInInitializer { get; } = string.Empty.Length == 0 ? throw new Exception() : 0;
+            int PropertyWithThrowStatementInInitializer { get; } = string.Empty.Length == 0 ? throw new Exception() : 0;
 
-			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158", CompilerGeneratedCode = true)]
-			int fieldWithLocalReferenceInInitializer = TryGetUnknown (out var type) ? RequireAll (type) : 0;
+            [ExpectedWarning("IL2067", nameof(TryGetUnknown), nameof(RequireAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158", CompilerGeneratedCode = true)]
+            int fieldWithLocalReferenceInInitializer = TryGetUnknown(out var type) ? RequireAll(type) : 0;
 
-			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158", CompilerGeneratedCode = true)]
-			int PropertyWithLocalReferenceInInitializer { get; } = TryGetUnknown (out var type) ? RequireAll (type) : 0;
+            [ExpectedWarning("IL2067", nameof(TryGetUnknown), nameof(RequireAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158", CompilerGeneratedCode = true)]
+            int PropertyWithLocalReferenceInInitializer { get; } = TryGetUnknown(out var type) ? RequireAll(type) : 0;
 
-			public static void Test ()
-			{
-				var instance = new DataFlowInConstructor ();
-				var _ = instance.PropertyWithReturnStatementInGetter;
-			}
-		}
+            public static void Test()
+            {
+                var instance = new DataFlowInConstructor();
+                var _ = instance.PropertyWithReturnStatementInGetter;
+            }
+        }
 
-		class DataFlowInStaticConstructor
-		{
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-			static DataFlowInStaticConstructor ()
-			{
-				RequireAll (GetUnknown ());
-			}
+        class DataFlowInStaticConstructor
+        {
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll))]
+            static DataFlowInStaticConstructor()
+            {
+                RequireAll(GetUnknown());
+            }
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
-			static int field = RequireAll (GetUnknown ());
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll), CompilerGeneratedCode = true)]
+            static int field = RequireAll(GetUnknown());
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
-			static int Property { get; } = RequireAll (GetUnknown ());
+            [ExpectedWarning("IL2072", nameof(GetUnknown), nameof(RequireAll), CompilerGeneratedCode = true)]
+            static int Property { get; } = RequireAll(GetUnknown());
 
-			public static void Test ()
-			{
-			}
-		}
+            public static void Test()
+            {
+            }
+        }
 
-		static Type GetUnknown () => null;
+        static Type GetUnknown() => null;
 
-		static bool TryGetUnknown (out Type type)
-		{
-			type = null;
-			return true;
-		}
+        static bool TryGetUnknown(out Type type)
+        {
+            type = null;
+            return true;
+        }
 
-		static int RequireAll ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type type) => 0;
-	}
+        static int RequireAll([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) => 0;
+    }
 }

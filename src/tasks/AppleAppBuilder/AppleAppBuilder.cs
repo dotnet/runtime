@@ -47,7 +47,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Path to Mono public headers (*.h)
     /// </summary>
-    public string MonoRuntimeHeaders { get; set; } = ""!;
+    public string[] MonoRuntimeHeaders { get; set; } = [];
 
     /// <summary>
     /// This library will be used as an entry point (e.g. TestRunner.dll). Can
@@ -62,6 +62,11 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// The set of environment variables
+    /// </summary>
+    public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// Additional linker arguments that apply to the app being built
@@ -201,7 +206,7 @@ public class AppleAppBuilderTask : Task
 
         if (targetRuntime == TargetRuntime.NativeAOT || targetRuntime == TargetRuntime.CoreCLR)
         {
-            if (!string.IsNullOrEmpty(MonoRuntimeHeaders))
+            if (MonoRuntimeHeaders.Length != 0)
                 throw new ArgumentException($"Property \"{nameof(MonoRuntimeHeaders)}\" is not supported with {Runtime} runtime and will be ignored.");
 
             if (!string.IsNullOrEmpty(MainLibraryFileName) && targetRuntime == TargetRuntime.NativeAOT)
@@ -224,7 +229,7 @@ public class AppleAppBuilderTask : Task
         }
         else
         {
-            if (string.IsNullOrEmpty(MonoRuntimeHeaders))
+            if (MonoRuntimeHeaders.Length == 0)
                 throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given a value for the required parameter \"{nameof(MonoRuntimeHeaders)}\" when using Mono runtime.");
         }
     }
@@ -315,8 +320,14 @@ public class AppleAppBuilderTask : Task
             assemblerFilesToLink.Add(nativeDependency);
         }
 
+        List<string> environmentVariables = new List<string>();
+        foreach (ITaskItem item in EnvironmentVariables)
+        {
+            environmentVariables.Add(item.ItemSpec);
+        }
+
         List<string> extraLinkerArgs = new List<string>();
-        foreach(ITaskItem item in ExtraLinkerArguments)
+        foreach (ITaskItem item in ExtraLinkerArguments)
         {
             extraLinkerArgs.Add(item.ItemSpec);
         }
@@ -331,7 +342,7 @@ public class AppleAppBuilderTask : Task
             {
                 extraLinkerArgs.Add("-rpath @executable_path");
             }
-            shouldStaticLink = false;
+            shouldStaticLink = true;
         }
 
         var generator = new Xcode(Log, TargetOS, Arch);
@@ -339,7 +350,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, targetRuntime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode);
 
             if (BuildAppBundle)
             {
@@ -365,7 +376,7 @@ public class AppleAppBuilderTask : Task
         else if (GenerateCMakeProject)
         {
              generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, targetRuntime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode);
         }
 
         return true;

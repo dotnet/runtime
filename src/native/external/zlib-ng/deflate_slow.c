@@ -79,7 +79,7 @@ Z_INTERNAL block_state deflate_slow(deflate_state *s, int flush) {
             /* Do not insert strings in hash table beyond this. */
 
             Assert((s->strstart-1) <= UINT16_MAX, "strstart-1 should fit in uint16_t");
-            check_match(s, (Pos)(s->strstart-1), s->prev_match, s->prev_length);
+            check_match(s, (Pos)(s->strstart - 1), s->prev_match, s->prev_length);
 
             bflush = zng_tr_tally_dist(s, s->strstart -1 - s->prev_match, s->prev_length - STD_MIN_MATCH);
 

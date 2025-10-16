@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <ScriptExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.cmd</ScriptExt>
     <ScriptExt Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">.sh</ScriptExt>
@@ -8,7 +9,10 @@
 
   <ItemGroup>
     <!-- Unless a "/p:SolutionNameOverride" property is passed in, glob all solutions under src/libraries. -->
-    <SolutionFile Include="$(MSBuildThisFileDirectory)$(SolutionNameOverride)\*.sln" />
+    <SolutionFile Include="$(MSBuildThisFileDirectory)$(SolutionNameOverride)\*.slnx"
+                  Exclude="$(MSBuildThisFileDirectory)Fuzzing\*.slnx" />
+    <SolutionFile Include="$(MSBuildThisFileDirectory)sfx.slnx"
+                  Condition="'$(SolutionNameOverride)' == '*' or '$(SolutionNameOverride)' == 'sfx'" />
   </ItemGroup>
 
   <Target Name="UpdateSolutionFile"
@@ -16,21 +20,33 @@
           DependsOnTargets="GetSolutionFiles"
           Inputs="@(SolutionFile)"
           Outputs="%(ProjFilePath)">
+    <!-- Delete the output slnx file -->
+    <Delete Files="%(SolutionFile.Identity)" />
+
     <!-- Copy template files, required by slngen -->
     <Copy SourceFiles="$(ProjTemplatePath)"
-          DestinationFiles="%(SolutionFile.ProjFilePath)" />
+          DestinationFiles="%(SolutionFile.ProjFilePath)"
+          Condition="'%(SolutionFile.Filename)' != 'sfx'" />
 
     <!-- Invoke slngen -->
     <Exec Command="&quot;$(RepoRoot)dotnet$(ScriptExt)&quot; slngen -p SlnGenMainProject=%(SolutionFile.Filename) --launch false --nologo &quot;%(SolutionFile.ProjFilePath)&quot;" />
 
     <!-- Delete temporary template file -->
-    <Delete Files="%(SolutionFile.ProjFilePath)" />
+    <Delete Files="%(SolutionFile.ProjFilePath)" Condition="'%(SolutionFile.Filename)' != 'sfx'" />
+
+    <!-- Invoke dotnet sln migrate as slngen doesn't support slnx yet. -->
+    <Exec Command="&quot;$(RepoRoot)dotnet$(ScriptExt)&quot; sln migrate &quot;%(SolutionFile.SlnFilePath)&quot;" />
+
+    <!-- Delete the intermediate sln file. -->
+    <Delete Files="%(SolutionFile.SlnFilePath)" />
   </Target>
 
   <Target Name="GetSolutionFiles">
     <ItemGroup>
       <!-- Add attributes that require a separate item mutation. -->
-      <SolutionFile ProjFilePath="%(RelativeDir)%(Filename).proj" />
+      <SolutionFile ProjFilePath="%(RelativeDir)%(Filename).proj"
+                    SlnFilePath="%(RelativeDir)%(Filename).sln" />
     </ItemGroup>
   </Target>
+
 </Project>

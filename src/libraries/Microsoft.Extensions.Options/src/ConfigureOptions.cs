@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             Action?.Invoke(options);
         }

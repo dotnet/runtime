@@ -62,25 +62,8 @@ namespace IntelHardwareIntrinsicTest._Avx10v2
             if (Avx10v2.IsSupported)
             {
                 Console.WriteLine("Avx10v2 supported");
-                Vector128<long> val = Vector128.Create<long>(-5);
-                Vector128<ulong> absVal = getAbs128(val);
-                Vector128<double> left = Vector128.Create<double>(11.0);
-                Vector128<double> right = Vector128.Create<double>(-12.0);
-                Vector128<float> firstOp = Vector128.Create<float>(0.65f);
-                Vector256<float> secondOp = Vector256.Create<float>(27.35f);
-                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToNegativeInfinity));
-                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToPositiveInfinity));
-                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToZero));
-                // Console.WriteLine("Scalar conversion " + (int)(sbyte)Math.Clamp(Math.Round(0.65f), sbyte.MinValue, sbyte.MaxValue));
-                // Console.WriteLine("widen to uint is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(firstOp));
-                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToSByteWithSaturationAndWidenToInt32(secondOp));
-                // Console.WriteLine("widen to uint is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp));
-                // Console.WriteLine("widen trunc to int is " + Avx10v2.ConvertToByteWithTruncationSaturationAndWidenToInt32(firstOp));
-                // Console.WriteLine("widen trunc to uint is " + Avx10v2.ConvertToSByteWithTruncationSaturationAndWidenToInt32(firstOp));
-                // Console.WriteLine("widen trunc to int is " + Avx10v2.ConvertToByteWithTruncationSaturationAndWidenToInt32(secondOp));
-                // Console.WriteLine("widen trunc to uint is " + Avx10v2.ConvertToSByteWithTruncationSaturationAndWidenToInt32(secondOp));
-                // Console.WriteLine("MinMax is " + Avx10v2.MinMax(left, right, 0x00));
-                // Console.WriteLine("MinMax is " + Avx10v2.MinMax(left, right, 0x04));
+                Vector128<int> val = Vector128.Create((int)8);
+                Console.WriteLine("Moving Scalar: " + Avx10v2.MoveScalar(val));
             }
             else {
                 Console.WriteLine("Avx10v2 not supported");

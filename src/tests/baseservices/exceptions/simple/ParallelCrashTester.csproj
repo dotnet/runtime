@@ -12,6 +12,7 @@
     <Compile Include="ParallelCrashTester.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="ParallelCrash.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>

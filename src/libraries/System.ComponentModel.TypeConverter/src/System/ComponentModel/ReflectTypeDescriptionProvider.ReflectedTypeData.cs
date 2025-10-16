@@ -45,7 +45,7 @@ namespace System.ComponentModel
             /// Retrieves custom attributes.
             /// </summary>
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
-                Justification = "_type is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well.")]
             internal AttributeCollection GetAttributes()
             {
                 // Worst case collision scenario:  we don't want the perf hit

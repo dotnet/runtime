@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- NativeExports dependency makes this project platform-specific -->
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferencesNativeExports>true</ReferencesNativeExports>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>

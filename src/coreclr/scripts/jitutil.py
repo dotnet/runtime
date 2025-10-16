@@ -20,6 +20,7 @@ import tempfile
 import logging
 import time
 import tarfile
+import threading
 import urllib
 import urllib.request
 import zipfile
@@ -129,7 +130,7 @@ def decode_and_print(str_to_decode):
         return output
 
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None, _timeout=None):
     """ Runs the command.
 
     Args:
@@ -138,6 +139,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         _exit_on_fail (bool): If it should exit on failure.
         _output_file ():
         _env: environment for sub-process, passed to subprocess.Popen()
+        _timeout: timeout in seconds, or None for no timeout
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
         Otherwise stdout, stderr are empty.
@@ -156,27 +158,44 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
     output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
     with subprocess.Popen(command_to_run, env=_env, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
 
-        # For long running command, continuously print the output
-        if _output_file:
-            while True:
-                with open(_output_file, 'a') as of:
-                    output = proc.stdout.readline()
-                    if proc.poll() is not None:
-                        break
-                    if output:
-                        output_str = decode_and_print(output.strip())
-                        of.write(output_str + "\n")
-        else:
-            command_stdout, command_stderr = proc.communicate()
-            if len(command_stdout) > 0:
-                decode_and_print(command_stdout)
-            if len(command_stderr) > 0:
-                decode_and_print(command_stderr)
+        timer = None
+        if _timeout is not None:
+            def try_kill():
+                try:
+                    print("  Timeout reached; killing process")
+                    proc.kill()
+                except:
+                    pass
+
+            timer = threading.Timer(_timeout, try_kill)
+            timer.start()
+
+        try:
+            # For long running command, continuously print the output
+            if _output_file:
+                while True:
+                    with open(_output_file, 'a') as of:
+                        output = proc.stdout.readline()
+                        if proc.poll() is not None:
+                            break
+                        if output:
+                            output_str = decode_and_print(output.strip())
+                            of.write(output_str + "\n")
+            else:
+                command_stdout, command_stderr = proc.communicate()
+                if len(command_stdout) > 0:
+                    decode_and_print(command_stdout)
+                if len(command_stderr) > 0:
+                    decode_and_print(command_stderr)
+        finally:
+            if timer:
+                timer.cancel()
 
         return_code = proc.returncode
         if _exit_on_fail and return_code != 0:
             print("Command failed. Exiting.")
             sys.exit(1)
+
     return command_stdout, command_stderr, return_code
 
 
@@ -537,13 +556,13 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
         Once we've done it once, we don't do it again.
 
         For this to work for cross-module usage, after you call this function, you need to add a line like:
-            from jitutil import BlobClient, DefaultAzureCredential
+            from jitutil import BlobClient, AzureCliCredential
         naming all the types you want to use.
 
         The full set of types this function loads:
-            BlobServiceClient, BlobClient, ContainerClient, DefaultAzureCredential
+            BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
     """
-    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, DefaultAzureCredential
+    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
 
     if azure_storage_libraries_check:
         return
@@ -560,7 +579,7 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
     azure_identity_import_ok = True
     if need_azure_identity:
         try:
-            from azure.identity import DefaultAzureCredential
+            from azure.identity import AzureCliCredential
         except:
             azure_identity_import_ok = False
 
@@ -608,7 +627,7 @@ def download_with_azure(uri, target_location, fail_if_not_found=True):
     logging.info("Download: %s -> %s", uri, target_location)
 
     ok = True
-    az_credential = DefaultAzureCredential()
+    az_credential = AzureCliCredential()
     blob = BlobClient.from_blob_url(uri, credential=az_credential)
     with open(target_location, "wb") as my_blob:
         try:

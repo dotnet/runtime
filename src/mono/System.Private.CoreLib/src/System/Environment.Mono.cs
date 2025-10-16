@@ -24,18 +24,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetProcessorCount();
 
-        public static extern int TickCount
-        {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        public static extern long TickCount64
-        {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            get;
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DoesNotReturn]
         public static extern void Exit(int exitCode);

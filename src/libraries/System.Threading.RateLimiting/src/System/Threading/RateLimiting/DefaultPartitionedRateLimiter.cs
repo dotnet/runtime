@@ -57,7 +57,7 @@ namespace System.Threading.RateLimiting
                 try
                 {
                     await Heartbeat().ConfigureAwait(
-#if NET8_0_OR_GREATER
+#if NET
                         ConfigureAwaitOptions.SuppressThrowing
 #else
                         false

@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -92,6 +93,28 @@ namespace System.Tests
 
             TypeWithPrivateDefaultConstructor c2 = (TypeWithPrivateDefaultConstructor)Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: true);
             Assert.Equal(-1, c2.Property);
+        }
+
+        // Add attribute to avoid unused field warning
+        [StructLayout(LayoutKind.Sequential)]
+        ref struct RSNoCtor
+        {
+            public int Value;
+        }
+
+        ref struct RSCtor
+        {
+            public int Value;
+            public RSCtor() => Value = 10;
+        }
+
+        [Fact]
+        public void CreateInstance_ByRefTypeAsGenericParameter_Success()
+        {
+            Assert.Equal(0, Activator.CreateInstance<Span<int>>().Length);
+            Assert.Equal(0, Activator.CreateInstance<ReadOnlySpan<string>>().Length);
+            Assert.Equal(0, Activator.CreateInstance<RSNoCtor>().Value);
+            Assert.Equal(10, Activator.CreateInstance<RSCtor>().Value);
         }
 
         [Fact]
@@ -318,15 +341,13 @@ namespace System.Tests
         [Theory]
         [InlineData(typeof(TypedReference))]
         [InlineData(typeof(RuntimeArgumentHandle))]
+        [InlineData(typeof(Span<int>))]
+        [InlineData(typeof(ReadOnlySpan<string>))]
+        [InlineData(typeof(RSNoCtor))]
+        [InlineData(typeof(RSCtor))]
         public void CreateInstance_BoxedByRefType_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type));
-        }
-
-        [Fact]
-        public void CreateInstance_Span_ThrowsNotSupportedException()
-        {
-            CreateInstance_BoxedByRefType_ThrowsNotSupportedException(typeof(Span<int>));
         }
 
         [Fact]

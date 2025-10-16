@@ -29,11 +29,13 @@ namespace System.Linq
             IAsyncEnumerable<TSecond> second,
             Func<TFirst, TSecond, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(first, second, resultSelector, default);
+            return
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(first, second, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TFirst> first,
@@ -41,26 +43,13 @@ namespace System.Linq
                 Func<TFirst, TSecond, TResult> resultSelector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
+                await using IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
+
+                while (await e1.MoveNextAsync() &&
+                       await e2.MoveNextAsync())
                 {
-                    IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
-                    try
-                    {
-                        while (await e1.MoveNextAsync().ConfigureAwait(false) &&
-                               await e2.MoveNextAsync().ConfigureAwait(false))
-                        {
-                            yield return resultSelector(e1.Current, e2.Current);
-                        }
-                    }
-                    finally
-                    {
-                        await e2.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    await e1.DisposeAsync().ConfigureAwait(false);
+                    yield return resultSelector(e1.Current, e2.Current);
                 }
             }
         }
@@ -84,11 +73,13 @@ namespace System.Linq
             IAsyncEnumerable<TSecond> second,
             Func<TFirst, TSecond, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(first, second, resultSelector, default);
+            return
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(first, second, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TFirst> first,
@@ -96,26 +87,13 @@ namespace System.Linq
                 Func<TFirst, TSecond, CancellationToken, ValueTask<TResult>> resultSelector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
+                await using IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
+
+                while (await e1.MoveNextAsync() &&
+                       await e2.MoveNextAsync())
                 {
-                    IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
-                    try
-                    {
-                        while (await e1.MoveNextAsync().ConfigureAwait(false) &&
-                               await e2.MoveNextAsync().ConfigureAwait(false))
-                        {
-                            yield return await resultSelector(e1.Current, e2.Current, cancellationToken).ConfigureAwait(false);
-                        }
-                    }
-                    finally
-                    {
-                        await e2.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    await e1.DisposeAsync().ConfigureAwait(false);
+                    yield return await resultSelector(e1.Current, e2.Current, cancellationToken);
                 }
             }
         }
@@ -132,36 +110,25 @@ namespace System.Linq
             this IAsyncEnumerable<TFirst> first,
             IAsyncEnumerable<TSecond> second)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
-            return Impl(first, second, default);
+            return
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<(TFirst, TSecond)>() :
+                Impl(first, second, default);
 
             static async IAsyncEnumerable<(TFirst First, TSecond Second)> Impl(
                 IAsyncEnumerable<TFirst> first,
                 IAsyncEnumerable<TSecond> second,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
+                await using IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
+
+                while (await e1.MoveNextAsync() &&
+                       await e2.MoveNextAsync())
                 {
-                    IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
-                    try
-                    {
-                        while (await e1.MoveNextAsync().ConfigureAwait(false) &&
-                               await e2.MoveNextAsync().ConfigureAwait(false))
-                        {
-                            yield return (e1.Current, e2.Current);
-                        }
-                    }
-                    finally
-                    {
-                        await e2.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    await e1.DisposeAsync().ConfigureAwait(false);
+                    yield return (e1.Current, e2.Current);
                 }
             }
         }
@@ -182,44 +149,26 @@ namespace System.Linq
             IAsyncEnumerable<TSecond> second,
             IAsyncEnumerable<TThird> third)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(third);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(third);
 
-            return Impl(first, second, third, default);
+            return
+                first.IsKnownEmpty() || second.IsKnownEmpty() || third.IsKnownEmpty() ? Empty<(TFirst, TSecond, TThird)>() :
+                Impl(first, second, third, default);
 
             static async IAsyncEnumerable<(TFirst First, TSecond Second, TThird)> Impl(
                 IAsyncEnumerable<TFirst> first, IAsyncEnumerable<TSecond> second, IAsyncEnumerable<TThird> third, [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TFirst> e1 = first.GetAsyncEnumerator(cancellationToken);
+                await using IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
+                await using IAsyncEnumerator<TThird> e3 = third.GetAsyncEnumerator(cancellationToken);
+
+                while (await e1.MoveNextAsync() &&
+                       await e2.MoveNextAsync() &&
+                       await e3.MoveNextAsync())
                 {
-                    IAsyncEnumerator<TSecond> e2 = second.GetAsyncEnumerator(cancellationToken);
-                    try
-                    {
-                        IAsyncEnumerator<TThird> e3 = third.GetAsyncEnumerator(cancellationToken);
-                        try
-                        {
-                            while (await e1.MoveNextAsync().ConfigureAwait(false) &&
-                                   await e2.MoveNextAsync().ConfigureAwait(false) &&
-                                   await e3.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                yield return (e1.Current, e2.Current, e3.Current);
-                            }
-                        }
-                        finally
-                        {
-                            await e3.DisposeAsync().ConfigureAwait(false);
-                        }
-                    }
-                    finally
-                    {
-                        await e2.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    await e1.DisposeAsync().ConfigureAwait(false);
+                    yield return (e1.Current, e2.Current, e3.Current);
                 }
             }
         }

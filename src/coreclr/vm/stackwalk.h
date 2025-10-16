@@ -29,23 +29,27 @@ class ICodeManager;
 class IJitManager;
 struct EE_ILEXCEPTION;
 class AppDomain;
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+#endif
 
 // This define controls handling of faults in managed code.  If it is defined,
 //  the exception is handled (retried, actually), with a FaultingExceptionFrame
 //  on the stack.  The FEF is used for unwinding.  If not defined, the unwinding
 //  uses the exception context.
 #define USE_FEF // to mark where code needs to be changed to eliminate the FEF
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
  #undef USE_FEF // Turn off the FEF use on x86.
  #define ELIMINATE_FEF
 #else
  #if defined(ELIMINATE_FEF)
   #undef ELIMINATE_FEF
  #endif
-#endif // TARGET_X86 && !TARGET_UNIX
+#endif // TARGET_X86 && !FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
+#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
 
 //************************************************************************
@@ -137,7 +141,6 @@ public:
      */
     PTR_VOID GetExactGenericArgsToken();
 
-    inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*
        IF YOU USE ANY OF THE SUBSEQUENT FUNCTIONS, YOU NEED TO REALLY UNDERSTAND THE
        STACK-WALKER (INCLUDING UNWINDING OF METHODS IN MANAGED NATIVE CODE)!
@@ -408,18 +411,6 @@ public:
         return fShouldParentFrameUseUnwindTargetPCforGCReporting;
     }
 
-    bool ShouldParentToFuncletReportSavedFuncletSlots()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fShouldParentToFuncletReportSavedFuncletSlots;
-    }
-
-    bool ShouldSaveFuncletInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fShouldSaveFuncletInfo;
-    }
-
     const EE_ILEXCEPTION_CLAUSE& GetEHClauseForCatch()
     {
         return ehClauseForCatch;
@@ -440,11 +431,9 @@ private:
     friend class EECodeManager;
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
     friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
-
-    CodeManState      codeManState;
 
     bool              isFrameless;
     bool              isFirst;
@@ -472,8 +461,6 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
-    bool              fShouldSaveFuncletInfo;
-    bool              fShouldParentToFuncletReportSavedFuncletSlots;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
@@ -610,18 +597,23 @@ public:
         m_AdjustedControlPC = pc;
     }
 
+    TADDR GetAdjustedControlPC()
+    {
+        return m_AdjustedControlPC;
+    }
+
     void UpdateIsRuntimeWrappedExceptions()
     {
         CONTRACTL
         {
             MODE_ANY;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             NOTHROW;
         }
         CONTRACTL_END
 
 #if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
-        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptionsDuringEH();
 #endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
     }
 
@@ -649,23 +641,6 @@ public:
 #endif // _DEBUG
 
 private:
-
-    // For the new exception handling that uses managed code to dispatch the
-    // exceptions, we need to force the stack walker to report GC references
-    // in the exception handling code frames, since they are alive. This is
-    // different from the old exception handling where no frames below the
-    // funclets upto the parent frame are alive.
-    enum class ForceGCReportingStage : BYTE
-    {
-        Off = 0,
-        // The stack walker has hit a funclet, we are looking for the first managed
-        // frame that would be one of the managed exception handling code frames
-        LookForManagedFrame = 1,
-        // The stack walker has already hit a managed exception handling code frame,
-        // we are looking for a marker frame which indicates the native caller of
-        // the managed exception handling code
-        LookForMarkerFrame = 2
-    };
 
     // This is a helper for the two constructors.
     void CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 flags);
@@ -759,14 +734,17 @@ private:
     bool          m_fDidFuncletReportGCReferences;
     bool          m_isRuntimeWrappedExceptions;
 #endif // FEATURE_EH_FUNCLETS
-    // State of forcing of GC reference reporting for managed exception handling methods (RhExThrow, RhDispatchEx etc)
-    ForceGCReportingStage m_forceReportingWhileSkipping;
-    // The stack walk has moved past the first ExInfo location on the stack
-    bool          m_movedPastFirstExInfo;
-    // Indicates that no funclet was seen during the current stack walk yet
-    bool          m_fFuncletNotSeen;
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
+#ifdef FEATURE_INTERPRETER
+    // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
+    // but we need to restore the original values after we are done with all the interpreted frames belonging to
+    // that InterpExecMethod.
+    TADDR         m_interpExecMethodIP;
+    TADDR         m_interpExecMethodSP;
+    TADDR         m_interpExecMethodFP;
+    TADDR         m_interpExecMethodFirstArgReg;
+#endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
@@ -778,5 +756,6 @@ private:
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark);
 
 #endif

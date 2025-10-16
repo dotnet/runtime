@@ -67,12 +67,9 @@ namespace ILCompiler.DependencyAnalysis
                         arguments.Append(nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(argNode)));
                     }
 
-                    // Method name and signature
-                    NativeLayoutVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-                    NativeLayoutSavedVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-                    Vertex placedNameAndSigVertexOffset = nativeWriter.GetUnsignedConstant((uint)placedNameAndSig.SavedVertex.VertexOffset);
+                    int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, method.GetTypicalMethodDefinition());
 
-                    fullMethodSignature = nativeWriter.GetTuple(containingType, placedNameAndSigVertexOffset, arguments);
+                    fullMethodSignature = nativeWriter.GetTuple(containingType, nativeWriter.GetUnsignedConstant((uint)token), arguments);
                 }
 
                 // Method's dictionary pointer
@@ -108,10 +105,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            // Method name and signature
-            NativeLayoutVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-            NativeLayoutSavedVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-            dependencies.Add(new DependencyListEntry(placedNameAndSig, "GenericMethodsHashtable entry signature"));
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, method.GetTypicalMethodDefinition());
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

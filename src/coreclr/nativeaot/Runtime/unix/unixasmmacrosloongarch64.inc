@@ -6,7 +6,7 @@
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
-        .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4
+        .cfi_personality 0x1c, C_FUNC(\Handler) // 0x1c == DW_EH_PE_pcrel | DW_EH_PE_sdata8
         .endif
 .endm
 
@@ -83,30 +83,26 @@ C_FUNC(\Name):
         .endif
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
+.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize
         addi.d  $sp, $sp, -\ssize
-        //.cfi_adjust_cfa_offset  \ssize
-        .cfi_def_cfa  3, \ssize
+        .cfi_adjust_cfa_offset  \ssize
 
         st.d  $r\reg1, $sp, 0
         st.d  $r\reg2, $sp, 8
 
         .cfi_rel_offset  \reg1, 0
         .cfi_rel_offset  \reg2, 8
-        .if (\__def_cfa_save ==  1)
-          ori  $fp, $sp, 0
-          .cfi_def_cfa_register  22
-        .endif
+
+        ori  $fp, $sp, 0
+        .cfi_def_cfa_register  22
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
         addi.d  $sp, $sp, -\ssize
-        //.cfi_adjust_cfa_offset  \ssize
-        .cfi_def_cfa  3, \ssize
+        .cfi_adjust_cfa_offset  \ssize
 
         st.d  $r\reg1, $sp, 0
         st.d  $r\reg2, $sp, 8
-
         .cfi_rel_offset  \reg1, 0
         .cfi_rel_offset  \reg2, 8
 .endm
@@ -154,9 +150,9 @@ C_FUNC(\Name):
         .error "target cannot be a0"
     .endif
 
-    st.d  $a0, $sp, -0x10
-    st.d  $ra, $sp, -0x8
     addi.d  $sp, $sp, -16
+    st.d  $a0, $sp, 0
+    st.d  $ra, $sp, 8
 
     // This instruction is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
@@ -175,75 +171,9 @@ C_FUNC(\Name):
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
 
-// Do not use these ETLS macros in functions that already create a stack frame.
-// Creating two stack frames in one function can confuse the unwinder/debugger
-
-.macro GETTHREAD_ETLS_1
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 32          // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a1, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 32
-.endm
-
-.macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a2, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
-.endm
-
-.macro GETTHREAD_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 48           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-    st.d  $a2, $sp, 0x20
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a3, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    ld.d  $a2, $sp, 0x20
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 48
-.endm
-
-.macro GETTHUNKDATA_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 96           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-    st.d  $a2, $sp, 0x20
-    st.d  $a3, $sp, 0x28
-    st.d  $a4, $sp, 0x30
-    st.d  $a5, $sp, 0x38
-    st.d  $a6, $sp, 0x40
-    st.d  $a7, $sp, 0x48
-    st.d  $t6, $sp, 0x50
-    st.d  $t7, $sp, 0x58
-
-    bl  RhpGetThunkData
-    ori  $t0, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    ld.d  $a2, $sp, 0x20
-    ld.d  $a3, $sp, 0x28
-    ld.d  $a4, $sp, 0x30
-    ld.d  $a5, $sp, 0x38
-    ld.d  $a6, $sp, 0x40
-    ld.d  $a7, $sp, 0x48
-    ld.d  $t6, $sp, 0x50
-    ld.d  $t7, $sp, 0x58
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 96
+// Target cannot be x0.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+    INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
 
 .macro  InterlockedOperationBarrier
@@ -255,7 +185,7 @@ C_FUNC(\Name):
     // Thread::Unhijack()
     //
     ld.d  \trashReg1, \threadReg, OFFSETOF__Thread__m_pvHijackedReturnAddress
-    beq  \trashReg1, $zero, 0f
+    beqz  \trashReg1, 0f
 
     ld.d  \trashReg2, \threadReg, OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation
     st.d  \trashReg1, \trashReg2, 0
@@ -269,13 +199,13 @@ C_FUNC(\Name):
 #define PTFF_SAVE_R4            0x00000800
 #define PTFF_SAVE_R5            0x00001000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
-#define PTFF_THREAD_HIJACK_HI   0x00000002 // upper 32 bits of the PTFF_THREAD_HIJACK
+#define PTFF_THREAD_HIJACK      0x80000000
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x78 // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x70 // Push down stack pointer and store FP and RA
 
     // 0x10 bytes reserved for Thread* and flags
 
@@ -286,8 +216,8 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR   29, 30, 0x50
     PROLOG_SAVE_REG        31,     0x60
 
-    // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
-    addi.d  \trashReg, $sp, 0x78
+    // Save the value of SP before stack allocation to the last slot in the frame (slot #13)
+    addi.d  \trashReg, $sp, 0x70
     st.d  \trashReg, $sp, 0x68
 
     // Record the bitmask of saved registers in the frame (slot #3)
@@ -299,18 +229,14 @@ C_FUNC(\Name):
 
 // Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
 .macro POP_COOP_PINVOKE_FRAME
-
-    //                      $s0,$s1
+    // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR  23, 24, 0x20
     EPILOG_RESTORE_REG_PAIR  25, 26, 0x30
     EPILOG_RESTORE_REG_PAIR  27, 28, 0x40
     EPILOG_RESTORE_REG_PAIR  29, 30, 0x50
     EPILOG_RESTORE_REG       31,     0x60
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x78
+    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x70
 .endm
-
-// Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
-#define PTFF_THREAD_ABORT_BIT 31
 
 //
 // CONSTANTS -- INTEGER
@@ -321,10 +247,8 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
-#define TrapThreadsFlags_AbortInProgress_Bit 0
-#define TrapThreadsFlags_TrapThreads_Bit     1
+#define TrapThreadsFlags_TrapThreads_Bit     0
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1

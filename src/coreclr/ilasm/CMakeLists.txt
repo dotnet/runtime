@@ -79,7 +79,7 @@ set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   # libraries that have circular references
-  $<LINK_GROUP:RESCAN,mdcompiler_ppdb,mdruntime_ppdb,mdruntimerw_ppdb,mdstaticapi_ppdb>
+  $<LINK_GROUP:RESCAN,mdcompiler_ppdb,mdruntime_ppdb,mdruntimerw_ppdb>
   ceefgen
   corguids
 )

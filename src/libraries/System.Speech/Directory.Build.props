@@ -3,5 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>MicrosoftShared</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 </Project>

@@ -24,7 +24,7 @@ namespace System.Composition.Runtime.Tests
         [Theory]
         [InlineData(typeof(int), null)]
         [InlineData(typeof(object), "contractName")]
-        public void Ctor_ContractType_ContractName(Type contractType, string contractName)
+        public void Ctor_ContractType_ContractName(Type contractType, string? contractName)
         {
             var contract = new CompositionContract(contractType, contractName);
             Assert.Equal(contractType, contract.ContractType);
@@ -40,7 +40,7 @@ namespace System.Composition.Runtime.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_ContractType_ContractName_MetadataConstraints_TestData))]
-        public void Ctor_ContractType_MetadataConstraints(Type contractType, string contractName, IDictionary<string, object> metadataConstraints)
+        public void Ctor_ContractType_MetadataConstraints(Type contractType, string? contractName, IDictionary<string, object> metadataConstraints)
         {
             var contract = new CompositionContract(contractType, contractName, metadataConstraints);
             Assert.Equal(contractType, contract.ContractType);

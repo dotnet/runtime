@@ -21,6 +21,23 @@ namespace R2RDump
                 writer.WriteLine("Debug Info");
 
             writer.WriteLine("    Bounds:");
+
+            byte[] boundsBytes = theThis.BoundsBytes;
+            for (int i = 0; i < boundsBytes.Length; i++)
+            {
+                if (i % 16 == 0)
+                {
+                    writer.Write($"{i:X8}:");
+                }
+                writer.Write($" {boundsBytes[i]:X2}");
+                if (i % 16 == 15 && i != boundsBytes.Length - 1)
+                {
+                    writer.WriteLine("");
+                }
+            }
+
+            writer.WriteLine("");
+
             for (int i = 0; i < theThis.BoundsList.Count; ++i)
             {
                 writer.Write("    ");

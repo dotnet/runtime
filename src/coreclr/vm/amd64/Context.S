@@ -12,6 +12,8 @@
 #define CONTEXT_INTEGER 2
 
 // Signature: EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
+// Note that this method is used to invoke EH funclets that take arguments in rcx and rdx, which is why those
+// registers are restored below in addition to the non-volatile registers.
 NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         push_nonvol_reg rbp
         set_cfa_register rbp, 0

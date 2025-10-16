@@ -12,7 +12,6 @@ namespace System.Net.WebSockets
     public sealed class ClientWebSocketOptions
     {
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
-        private List<string>? _requestedSubProtocols;
 
         internal ClientWebSocketOptions()
         { }
@@ -113,7 +112,7 @@ namespace System.Net.WebSockets
             subprotocols.Add(subProtocol);
         }
 
-        internal List<string> RequestedSubProtocols => _requestedSubProtocols ??= new List<string>();
+        internal List<string> RequestedSubProtocols => field ??= new List<string>();
 
         [UnsupportedOSPlatform("browser")]
         public TimeSpan KeepAliveInterval

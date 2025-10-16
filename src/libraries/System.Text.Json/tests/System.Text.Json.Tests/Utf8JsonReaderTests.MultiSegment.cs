@@ -1633,6 +1633,40 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void MultiSegmentInvalidLiteral()
+        {
+            // Tests edge case in Utf8JsonReader.CheckLiteralMultiSegment error handling
+            // when segment has invalid literal and more characters than stack-allocated span (5)
+            IEnumerable<byte[]> bytes = ["tr"u8.ToArray(), "uabcdef"u8.ToArray()];
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(bytes);
+
+            Utf8JsonReader reader = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref reader) =>
+            {
+                reader.Read();
+            });
+        }
+
+        [Fact]
+        public static void MultiSegmentInvalidLiteralInObject()
+        {
+            // Tests edge case in Utf8JsonReader.CheckLiteralMultiSegment error handling
+            // when segment has invalid literal after having done some prior reads (i.e. start of object and property name)
+            IEnumerable<byte[]> bytes = ["{\"foo\""u8.ToArray(), ":nul234"u8.ToArray()];
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(bytes);
+
+            Utf8JsonReader reader = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+            Assert.True(reader.Read()); // StartObject
+            Assert.True(reader.Read()); // PropertyName
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref reader) =>
+            {
+                reader.Read();
+            });
+        }
+
         [Theory]
         [MemberData(nameof(JsonTokenWithExtraValueAndComments))]
         public static void ReadJsonTokenWithExtraValueAndCommentsMultiSegment(string jsonString)

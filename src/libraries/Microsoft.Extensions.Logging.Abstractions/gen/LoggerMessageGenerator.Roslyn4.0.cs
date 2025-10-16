@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Logging.Generators
             IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(distinctClasses);
             if (logClasses.Count > 0)
             {
-                var e = new Emitter();
+                var e = new Emitter(compilation);
                 string result = e.Emit(logClasses, context.CancellationToken);
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));

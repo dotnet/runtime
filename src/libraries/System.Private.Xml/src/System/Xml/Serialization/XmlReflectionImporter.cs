@@ -406,7 +406,7 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidDataTypeUsage, dataType, "XmlElementAttribute.DataType"));
                     }
-                    TypeDesc? td = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                    TypeDesc? td = TypeScope.GetMatchingTypeDesc(dataType, XmlSchema.Namespace, modelTypeDesc.FullName);
                     if (td == null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidXsdDataType, dataType, "XmlElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
@@ -862,7 +862,11 @@ namespace System.Xml.Serialization
                     if (member == null) continue;
                     if (mapping.BaseMapping != null)
                     {
-                        if (mapping.BaseMapping.Declares(member, mapping.TypeName)) continue;
+                        // If the base mapping already declares this member, then we should remove that accessor and prefer the derived one.
+                        if (mapping.BaseMapping.Declares(member, mapping.TypeName))
+                        {
+                            RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
+                        }
                     }
                     isSequence |= member.IsSequence;
                     // add All member accessors to the scope accessors
@@ -1162,7 +1166,8 @@ namespace System.Xml.Serialization
             PrimitiveMapping mapping = new PrimitiveMapping();
             if (dataType.Length > 0)
             {
-                mapping.TypeDesc = TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
+                TypeDesc modelTypeDesc = TypeScope.IsOptionalValue(model.Type) ? model.TypeDesc.BaseTypeDesc! : model.TypeDesc;
+                mapping.TypeDesc = TypeScope.GetMatchingTypeDesc(dataType, XmlSchema.Namespace, modelTypeDesc.FullName);
                 if (mapping.TypeDesc == null)
                 {
                     // try it as a non-Xsd type
@@ -2221,6 +2226,36 @@ namespace System.Xml.Serialization
             }
         }
 
+        private static void RemoveUniqueAccessor(INameScope scope, Accessor accessor)
+        {
+            Accessor? existing = (Accessor?)scope[accessor.Name, accessor.Namespace];
+            if (existing != null)
+            {
+                scope[accessor.Name, accessor.Namespace] = null;
+            }
+#if DEBUG
+            else
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"The XML attribute/element '{accessor.Namespace}{accessor.Name}' does not have an existing accessor to remove."));
+            }
+#endif
+        }
+
+        private static void RemoveUniqueAccessor(MemberMapping member, INameScope elements, INameScope attributes, bool isSequence)
+        {
+            if (member.Attribute != null)
+            {
+                RemoveUniqueAccessor(attributes, member.Attribute);
+            }
+            else if (!isSequence && member.Elements != null && member.Elements.Length > 0)
+            {
+                for (int i = 0; i < member.Elements.Length; i++)
+                {
+                    RemoveUniqueAccessor(elements, member.Elements[i]);
+                }
+            }
+        }
+
         private static void CheckForm(XmlSchemaForm form, bool isQualified)
         {
             if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(SR.XmlInvalidFormUnqualified);
@@ -2353,7 +2388,6 @@ namespace System.Xml.Serialization
     {
         private readonly int _maxDepth;
         private int _depth;
-        private WorkItems? _deferredWorkItems;
 
         internal RecursionLimiter()
         {
@@ -2364,6 +2398,6 @@ namespace System.Xml.Serialization
         internal bool IsExceededLimit { get { return _depth > _maxDepth; } }
         internal int Depth { get { return _depth; } set { _depth = value; } }
 
-        internal WorkItems DeferredWorkItems => _deferredWorkItems ??= new WorkItems();
+        internal WorkItems DeferredWorkItems => field ??= new WorkItems();
     }
 }

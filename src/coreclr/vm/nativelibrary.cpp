@@ -123,7 +123,7 @@ namespace
             }
 #endif // TARGET_UNIX
 
-            __UNREACHABLE();
+            UNREACHABLE();
         }
 
     private:
@@ -227,7 +227,7 @@ namespace
     // If a pInvoke has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
     // Otherwise, if the containing assembly has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
     // Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-    BOOL GetDllImportSearchPathFlags(NDirectMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
+    BOOL GetDllImportSearchPathFlags(PInvokeMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
     {
         STANDARD_VM_CONTRACT;
 
@@ -356,13 +356,13 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
+        INT_PTR ptrAssemblyLoadContext = pCurrentBinder->GetAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
         DECLARE_ARGHOLDER_ARRAY(args, 2);
         args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrAssemblyLoadContext);
 
         // Make the call
         CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
@@ -373,20 +373,20 @@ namespace
     }
 
     // Return the AssemblyLoadContext for an assembly
-    INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
+    INT_PTR GetAssemblyLoadContext(Assembly* pAssembly)
     {
         STANDARD_VM_CONTRACT;
 
         PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-        return pBinder->GetManagedAssemblyLoadContext();
+        return pBinder->GetAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
-        INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-        if (ptrManagedAssemblyLoadContext == 0)
+        INT_PTR ptrAssemblyLoadContext = GetAssemblyLoadContext(pAssembly);
+        if (ptrAssemblyLoadContext == 0)
         {
             return NULL;
         }
@@ -413,7 +413,7 @@ namespace
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
         args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrAssemblyLoadContext);
 
         // Make the call
         CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
@@ -423,7 +423,7 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(PInvokeMethodDesc * pMD, LPCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -472,10 +472,21 @@ namespace
     NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
     {
         STANDARD_VM_CONTRACT;
-
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
+        _ASSERTE(libName != NULL);
 
         SString path{ pAssembly->GetPEAssembly()->GetPath() };
+
+        // Bundled assembly - path will be empty, path to load should point to the single-file bundle
+        bool isBundledAssembly = pAssembly->GetPEAssembly()->HasPEImage() && pAssembly->GetPEAssembly()->GetPEImage()->IsInBundle();
+        _ASSERTE(!isBundledAssembly || Bundle::AppBundle != NULL);
+        if (isBundledAssembly)
+            path.Set(pAssembly->GetPEAssembly()->GetPEImage()->GetPathToLoad());
+
+        if (path.IsEmpty())
+            return NULL;
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+        _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -483,6 +494,15 @@ namespace
             lastPathSeparatorIter++;
             path.Truncate(lastPathSeparatorIter);
 
+            path.Append(libName);
+            hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
+        }
+
+        // Bundle with additional files extracted - also treat the extraction path as the assembly directory for native library load
+        if (hmod == NULL && isBundledAssembly && Bundle::AppBundle->HasExtractedFiles())
+        {
+            path.Set(Bundle::AppBundle->ExtractionPath());
+            path.Append(DIRECTORY_SEPARATOR_CHAR_W);
             path.Append(libName);
             hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
         }
@@ -618,7 +638,7 @@ namespace
 #endif // TARGET_UNIX
 
     // Search for the library and variants of its name in probing directories.
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly,
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly, BOOL userSpecifiedSearchFlags,
                                                     BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags,
                                                     LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName)
     {
@@ -656,6 +676,14 @@ namespace
 
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
+        DWORD loadLibrarySearchFlags = 0;
+#ifdef TARGET_WINDOWS
+        loadLibrarySearchFlags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
+            | LOAD_LIBRARY_SEARCH_APPLICATION_DIR
+            | LOAD_LIBRARY_SEARCH_USER_DIRS
+            | LOAD_LIBRARY_SEARCH_SYSTEM32
+            | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+#endif
         bool libNameIsRelativePath = Path::IsRelative(wszLibName);
 
         // P/Invokes are often declared with variations on the actual library name.
@@ -689,14 +717,8 @@ namespace
 
             if (!libNameIsRelativePath)
             {
-                DWORD flags = loadWithAlteredPathFlags;
-                if ((dllImportSearchPathFlags & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0)
-                {
-                    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is the only flag affecting absolute path. Don't OR the flags
-                    // unconditionally as all absolute path P/Invokes could then lose LOAD_WITH_ALTERED_SEARCH_PATH.
-                    flags |= dllImportSearchPathFlags;
-                }
-
+                // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+                DWORD flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
                 hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker);
                 if (hmod != NULL)
                 {
@@ -705,34 +727,46 @@ namespace
             }
             else if ((callingAssembly != nullptr) && searchAssemblyDirectory)
             {
-                hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
+                // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+                DWORD flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
+                hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, flags, pErrorTracker);
                 if (hmod != NULL)
                 {
                     return hmod;
                 }
             }
 
-            hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
-            if (hmod != NULL)
+            // Internally, search path flags and whether or not to search the assembly directory are
+            // tracked separately. However, on the API level, DllImportSearchPath represents them both.
+            // When unspecified, the default is to search the assembly directory and all OS defaults,
+            // which maps to searchAssemblyDirectory being true and dllImportSearchPathFlags being 0.
+            // When a user specifies DllImportSearchPath.AssemblyDirectory, searchAssemblyDirectory is
+            // true, dllImportSearchPathFlags is 0, and the desired logic is to only search the assembly
+            // directory (handled above), so we avoid doing any additional load search in that case.
+            if (!userSpecifiedSearchFlags || !searchAssemblyDirectory || dllImportSearchPathFlags != 0)
             {
-                return hmod;
+                hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
+                if (hmod != NULL)
+                {
+                    return hmod;
+                }
             }
         }
 
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(PInvokeMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
         BOOL searchAssemblyDirectory;
         DWORD dllImportSearchPathFlags;
 
-        GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
+        BOOL userSpecifiedSearchFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
 
         Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
-        return LoadNativeLibraryBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
+        return LoadNativeLibraryBySearch(pAssembly, userSpecifiedSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
     }
 }
 
@@ -769,12 +803,12 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
     }
     else
     {
-        GetDllImportSearchPathFlags(callingAssembly->GetModule(),
+        hasDllImportSearchFlags = GetDllImportSearchPathFlags(callingAssembly->GetModule(),
                                     &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 
     LoadLibErrorTracker errorTracker;
-    hmod = LoadNativeLibraryBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    hmod = LoadNativeLibraryBySearch(callingAssembly, hasDllImportSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
     if (hmod != nullptr)
         return hmod;
 
@@ -794,7 +828,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
 
 namespace
 {
-    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(PInvokeMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
     {
         CONTRACTL
         {
@@ -807,7 +841,7 @@ namespace
         if ( !name || !*name )
             return NULL;
 
-        PREFIX_ASSUME( name != NULL );
+        _ASSERTE( name != NULL );
         MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
         NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
@@ -849,7 +883,7 @@ namespace
     }
 }
 
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(NDirectMethodDesc * pMD)
+NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc * pMD)
 {
     CONTRACT(NATIVE_LIBRARY_HANDLE)
     {
