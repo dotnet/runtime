@@ -1615,6 +1615,9 @@ void InterpCompiler::BuildEHInfo()
             nativeClause.Flags = (CORINFO_EH_CLAUSE_FLAGS)((int)nativeClause.Flags | COR_ILEXCEPTION_CLAUSE_SAMETRY);
         }
 
+        lastTryILOffset = clause.TryOffset;
+        lastTryILLength = clause.TryLength;
+
         m_compHnd->setEHinfo(nativeEHIndex++, &nativeClause);
 
         INTERP_DUMP("  try [IR_%04x(%x), IR_%04x(%x)) ", tryStartNativeOffset, clause.TryOffset, tryEndNativeOffset, clause.TryOffset + clause.TryLength);
@@ -1625,6 +1628,10 @@ void InterpCompiler::BuildEHInfo()
         else if (nativeClause.Flags == CORINFO_EH_CLAUSE_FINALLY)
         {
             INTERP_DUMP("finally handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
+        }
+        else if (nativeClause.Flags == CORINFO_EH_CLAUSE_FAULT)
+        {
+            INTERP_DUMP("fault handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
         }
         else
         {
