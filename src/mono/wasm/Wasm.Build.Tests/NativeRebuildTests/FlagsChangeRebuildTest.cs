@@ -35,7 +35,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
-            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0 && extraCFlags.Length == 0;
+            bool dotnetNativeFilesUnchanged = extraLDFlags.Length == 0;
             if (!dotnetNativeFilesUnchanged)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
@@ -53,9 +53,8 @@ namespace Wasm.Build.NativeRebuild.Tests
             // and thus doesn't cause relinking
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
 
-            // ldflags or cflags: link step args change, so it should trigger relink
+            // ldflags: link step args change, so it should trigger relink
             TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);
-
             if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files
