@@ -8215,6 +8215,61 @@ namespace System.Text.Json.Tests
             string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
             Assert.Contains("9223372036854775807", json);
         }
+
+        [Fact]
+        public static void WriteBase64String_IndentedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            byte[] bytes = new byte[] { 1, 2, 3, 4, 5 };
+            writer.WriteStartObject();
+            writer.WriteBase64String("data", bytes);
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\"data\": \"AQIDBAU=\"", json);
+        }
+
+        [Fact]
+        public static void WriteStartArray_WithPropertyName_Indented()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteStartArray("items");
+            writer.WriteNumberValue(1);
+            writer.WriteNumberValue(2);
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\"items\":", json);
+        }
+
+        [Fact]
+        public static void WriteStartObject_WithPropertyName_Indented()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteStartObject("nested");
+            writer.WriteString("key", "value");
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\"nested\":", json);
+            Assert.Contains("\"key\": \"value\"", json);
+        }
     }
 
     public static class WriterHelpers
