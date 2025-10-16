@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -741,6 +743,54 @@ namespace System.Text.Json.Serialization.Tests
             
             string json = Encoding.UTF8.GetString(stream.ToArray());
             Assert.Contains("Hello", json);
+        }
+
+        [Fact]
+        public static async Task SerializeAsyncToPipeWriter_WithJsonTypeInfo()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(MyPoco));
+            
+            Pipe pipe = new();
+            await JsonSerializer.SerializeAsync(pipe.Writer, obj, typeInfo);
+            await pipe.Writer.CompleteAsync();
+            
+            ReadResult result = await pipe.Reader.ReadAsync();
+            string json = Encoding.UTF8.GetString(result.Buffer.First.Span.ToArray());
+            pipe.Reader.Complete();
+            
+            Assert.Contains("Hello", json);
+        }
+
+        [Fact]
+        public static async Task SerializeAsyncToPipeWriter_WithJsonSerializerContext()
+        {
+            MyPoco obj = MyPoco.Create();
+            
+            Pipe pipe = new();
+            await JsonSerializer.SerializeAsync(pipe.Writer, obj, typeof(MyPoco), MyPocoContext.Default);
+            await pipe.Writer.CompleteAsync();
+            
+            ReadResult result = await pipe.Reader.ReadAsync();
+            string json = Encoding.UTF8.GetString(result.Buffer.First.Span.ToArray());
+            pipe.Reader.Complete();
+            
+            Assert.Contains("Hello", json);
+        }
+
+        [Fact]
+        public static async Task DeserializeAsyncFromPipeReader_WithJsonSerializerContext()
+        {
+            Pipe pipe = new();
+            byte[] utf8Json = Encoding.UTF8.GetBytes(Json);
+            await pipe.Writer.WriteAsync(utf8Json);
+            await pipe.Writer.CompleteAsync();
+            
+            object obj = await JsonSerializer.DeserializeAsync(pipe.Reader, typeof(MyPoco), MyPocoContext.Default);
+            Assert.IsType<MyPoco>(obj);
+            ((MyPoco)obj).Verify();
         }
     }
 }
