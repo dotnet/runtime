@@ -95,7 +95,12 @@ namespace System.Text.Json.Serialization.Converters
                 return ReadCore(ref reader);
             }
 
-            return Read(ref reader, Type, options);
+            if (reader.TokenType != JsonTokenType.Number)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
+            }
+
+            return ReadCore(ref reader);
         }
 
         internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, Int128 value, JsonNumberHandling handling)
