@@ -146,6 +146,5 @@ target_link_libraries(browserhost PRIVATE
 
 install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
-install(FILES ${CLR_SRC_NATIVE_DIR}/package.json DESTINATION corehost COMPONENT runtime)
 
 add_subdirectory(sample)
