@@ -261,7 +261,15 @@
         SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
 
+    <!-- Resolve runtime flavor for Android similar to AndroidBuild.targets -->
+    <PropertyGroup>
+      <_RuntimeFlavor>Mono</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(UseNativeAOTRuntime)' == 'true'">nativeaot</_RuntimeFlavor>
+    </PropertyGroup>
+
     <AndroidAppBuilderTask
+        RuntimeFlavor="$(_RuntimeFlavor)"
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
