@@ -93,21 +93,8 @@ namespace System.IO.Pipes
         [Obsolete(Obsoletions.NamedPipeClientStreamIsConnectedMessage, DiagnosticId = Obsoletions.NamedPipeClientStreamIsConnectedDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
-            : base(direction, 0)
+            : this(direction, isAsync, safePipeHandle)
         {
-            ArgumentNullException.ThrowIfNull(safePipeHandle);
-
-            if (safePipeHandle.IsInvalid)
-            {
-                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
-            }
-            ValidateHandleIsPipe(safePipeHandle);
-
-            InitializeHandle(safePipeHandle, true, isAsync);
-            if (isConnected)
-            {
-                State = PipeState.Connected;
-            }
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.
