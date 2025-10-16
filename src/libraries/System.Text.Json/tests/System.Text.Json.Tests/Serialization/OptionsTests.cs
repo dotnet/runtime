@@ -1973,5 +1973,31 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.PreferredObjectCreationHandling = (JsonObjectCreationHandling)999);
         }
+
+        [Fact]
+        public static void TypeInfoResolverChain_CanAddMultipleResolvers()
+        {
+            var options = new JsonSerializerOptions();
+            var resolver1 = new DefaultJsonTypeInfoResolver();
+            var resolver2 = new DefaultJsonTypeInfoResolver();
+            
+            options.TypeInfoResolverChain.Add(resolver1);
+            options.TypeInfoResolverChain.Add(resolver2);
+            
+            Assert.Equal(2, options.TypeInfoResolverChain.Count);
+            Assert.Same(resolver1, options.TypeInfoResolverChain[0]);
+            Assert.Same(resolver2, options.TypeInfoResolverChain[1]);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_ToString_ReturnsChainDescription()
+        {
+            var options = new JsonSerializerOptions();
+            options.TypeInfoResolverChain.Add(new DefaultJsonTypeInfoResolver());
+            
+            string result = options.TypeInfoResolver.ToString();
+            Assert.NotNull(result);
+            Assert.NotEmpty(result);
+        }
     }
 }
