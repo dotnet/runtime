@@ -52,3 +52,4 @@ Because the policy differs between main and servicing, whenever the main branch 
 
 1. [ ] Determine the **oldest** supported version of each test platform. The policy to determine this version is currently out of scope of this document. Refer to https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core
 2. [ ] Change PR definitions in CI to use oldest versions.
+3. [ ] Stabilize CI for oldest OS versions.
