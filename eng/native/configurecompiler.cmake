@@ -45,6 +45,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     endif()
 endif()
 
+if(CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
+    # Emscripten doesn't support WHOLE_ARCHIVE, so define it as a no-op
+    set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE "")
+    set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED ON)
+endif()
+
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
     set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
 endif (CMAKE_CONFIGURATION_TYPES)
