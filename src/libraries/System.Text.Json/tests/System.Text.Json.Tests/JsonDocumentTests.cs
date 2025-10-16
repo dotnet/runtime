@@ -3996,6 +3996,38 @@ namespace System.Text.Json.Tests
                 () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
                 "'0'");
         }
+
+        [Fact]
+        public static void JsonElement_GetDouble_EdgeCases()
+        {
+            using JsonDocument doc = JsonDocument.Parse("0.0");
+            double value = doc.RootElement.GetDouble();
+            Assert.Equal(0.0, value);
+            
+            using JsonDocument doc2 = JsonDocument.Parse("1.7976931348623157E+308");
+            double value2 = doc2.RootElement.GetDouble();
+            Assert.True(value2 > 1E+307);
+            
+            using JsonDocument doc3 = JsonDocument.Parse("-1.7976931348623157E+308");
+            double value3 = doc3.RootElement.GetDouble();
+            Assert.True(value3 < -1E+307);
+        }
+
+        [Fact]
+        public static void JsonElement_GetSingle_EdgeCases()
+        {
+            using JsonDocument doc = JsonDocument.Parse("0.0");
+            float value = doc.RootElement.GetSingle();
+            Assert.Equal(0.0f, value);
+            
+            using JsonDocument doc2 = JsonDocument.Parse("3.4028235E+38");
+            float value2 = doc2.RootElement.GetSingle();
+            Assert.True(value2 > 1E+37f);
+            
+            using JsonDocument doc3 = JsonDocument.Parse("-3.4028235E+38");
+            float value3 = doc3.RootElement.GetSingle();
+            Assert.True(value3 < -1E+37f);
+        }
     }
 
     public class ThrowOnReadStream : MemoryStream

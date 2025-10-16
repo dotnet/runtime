@@ -1952,5 +1952,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Single(result);
             Assert.Equal(2, result["a"]);
         }
+
+        [Fact]
+        public static void PreferredObjectCreationHandling_CanBeSet()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Equal(JsonObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
+            
+            options.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+            Assert.Equal(JsonObjectCreationHandling.Populate, options.PreferredObjectCreationHandling);
+            
+            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+            options.MakeReadOnly();
+            Assert.Throws<InvalidOperationException>(() => options.PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace);
+        }
+
+        [Fact]
+        public static void PreferredObjectCreationHandling_InvalidValue_ThrowsArgumentOutOfRangeException()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.PreferredObjectCreationHandling = (JsonObjectCreationHandling)999);
+        }
     }
 }
