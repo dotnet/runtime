@@ -918,5 +918,20 @@ namespace System.Text.Json.Nodes.Tests
             
             Assert.False(JsonNode.DeepEquals(array1, array2));
         }
+
+        [Fact]
+        public static void Clear_RemovesAllItemsAndDetachesParent()
+        {
+            JsonArray array = new JsonArray { 1, 2, 3 };
+            JsonNode item = array[0];
+            
+            Assert.Equal(3, array.Count);
+            Assert.Same(array, item.Parent);
+            
+            array.Clear();
+            
+            Assert.Equal(0, array.Count);
+            Assert.Null(item.Parent);
+        }
     }
 }

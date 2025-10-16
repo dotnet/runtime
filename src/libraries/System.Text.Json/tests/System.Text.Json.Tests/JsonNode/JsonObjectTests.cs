@@ -1831,5 +1831,25 @@ namespace System.Text.Json.Nodes.Tests
             
             Assert.False(JsonNode.DeepEquals(obj1, obj2));
         }
+
+        [Fact]
+        public static void TryGetPropertyValue_NonExistentProperty()
+        {
+            JsonObject obj = new JsonObject { ["a"] = 1 };
+            
+            bool result = obj.TryGetPropertyValue("b", out JsonNode value);
+            
+            Assert.False(result);
+            Assert.Null(value);
+        }
+
+        [Fact]
+        public static void ContainsKey_ChecksForProperty()
+        {
+            JsonObject obj = new JsonObject { ["a"] = 1, ["b"] = 2 };
+            
+            Assert.True(obj.ContainsKey("a"));
+            Assert.False(obj.ContainsKey("c"));
+        }
     }
 }

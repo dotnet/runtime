@@ -8117,6 +8117,38 @@ namespace System.Text.Json.Tests
             string result = element.ToString();
             Assert.Equal("", result);
         }
+
+        [Fact]
+        public static void WriteWithMinimizedFormatting()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WritePropertyName("name");
+            writer.WriteStringValue("test");
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Equal("""{"name":"test"}""", json);
+        }
+
+        [Fact]
+        public static void WriteRawValue_WithValidation()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output);
+            
+            writer.WriteStartArray();
+            writer.WriteRawValue("42"u8, skipInputValidation: false);
+            writer.WriteEndArray();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Equal("[42]", json);
+        }
     }
 
     public static class WriterHelpers
