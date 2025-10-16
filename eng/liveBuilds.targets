@@ -24,6 +24,8 @@
   <!-- Set up artifact subpaths. -->
   <PropertyGroup>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
+    <LibrariesSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(LibrariesNativeArtifactsPath)','sharedFramework'))</LibrariesSharedFrameworkDir>
+    <HostSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(HostArtifactsPath)','sharedFramework'))</HostSharedFrameworkDir>
     <CoreCLRCoreHostDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corehost'))</CoreCLRCoreHostDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
     <CoreCLRCrossILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
@@ -90,6 +92,7 @@
       -->
       <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
       <LibrariesSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(LibrariesNativeArtifactsPath)','sharedFramework'))</LibrariesSharedFrameworkDir>
+      <HostSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(HostArtifactsPath)','sharedFramework'))</HostSharedFrameworkDir>
       <CoreCLRSharedFrameworkPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRSharedFrameworkDir)','PDB'))</CoreCLRSharedFrameworkPdbDir>
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
@@ -232,8 +235,9 @@
         $(LibrariesSharedFrameworkDir)*.js;
         $(LibrariesSharedFrameworkDir)*.a;
         $(LibrariesSharedFrameworkDir)*.dat;
-        $(HostArtifactsPath)corehost/dotnet.native.js;
-        $(HostArtifactsPath)corehost/dotnet.native.wasm;
+        $(HostSharedFrameworkDir)libBrowserHost.a;
+        $(HostSharedFrameworkDir)dotnet.native.js;
+        $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
         IsNative="true" />
 

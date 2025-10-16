@@ -32,8 +32,6 @@ target_link_libraries(BrowserHost-Static PRIVATE
     hostmisc
 )
 
-install(TARGETS BrowserHost-Static DESTINATION corehost COMPONENT runtime)
-install(TARGETS BrowserHost-Static DESTINATION ${SHARED_LIB_DESTINATION} COMPONENT libs)
 install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime)
 
 # the executable
@@ -145,6 +143,8 @@ target_link_libraries(browserhost PRIVATE
 )
 
 install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
+install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 
 add_subdirectory(sample)
