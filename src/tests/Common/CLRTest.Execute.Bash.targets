@@ -413,7 +413,7 @@ fi
 
 if [ ! -z "$RunInterpreter" ]; then
   if [ -z "$DOTNET_InterpMode" ]; then
-    export DOTNET_InterpMode=3
+    export DOTNET_Interpreter='$(AssemblyName)!*'
   fi
 fi
 

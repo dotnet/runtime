@@ -334,6 +334,8 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           ${{ if eq(parameters.runInterpreter, 'true') }}:
             scenarios:
+            - normal
+            - no_tiered_compilation
             - interpmode1_no_tiered_compilation
             - interpmode2_no_tiered_compilation
             - interpmode3_no_tiered_compilation
