@@ -89,7 +89,6 @@ namespace System.IO.Pipes
             _accessRights = AccessRightsFromDirection(direction);
         }
 
-        // Create a NamedPipeClientStream from an existing server pipe handle.
         [Obsolete(Obsoletions.NamedPipeClientStreamIsConnectedMessage, DiagnosticId = Obsoletions.NamedPipeClientStreamIsConnectedDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
@@ -97,7 +96,6 @@ namespace System.IO.Pipes
         {
         }
 
-        // Create a NamedPipeClientStream from an existing server pipe handle.
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
