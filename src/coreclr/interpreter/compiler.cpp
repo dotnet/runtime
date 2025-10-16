@@ -783,9 +783,9 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         {
             *ip++ = ins->info.pTargetBB->nativeOffset - brBaseOffset;
         }
-        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB)
+        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB && ins->info.pTargetBB->overlappingEHClauseCount == m_pCBB->overlappingEHClauseCount)
         {
-            // Ignore branch to the next basic block. Revert the added INTOP_BR.
+            // Ignore branch to the next basic block if it is on the same clause depth. Revert the added INTOP_BR.
             isReverted = true;
             ip--;
         }
