@@ -945,5 +945,26 @@ namespace System.Text.Json.Nodes.Tests
             Assert.True(value.TryGetValue(out double result));
             Assert.Equal(3.14, result);
         }
+
+        [Fact]
+        public static void JsonValue_CreateWithJsonTypeInfo()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            
+            JsonValue value = JsonValue.Create(42, typeInfo);
+            Assert.Equal(42, value.GetValue<int>());
+        }
+
+        [Fact]
+        public static void JsonValue_CreateWithJsonTypeInfoAndOptions()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            JsonTypeInfo<string> typeInfo = (JsonTypeInfo<string>)options.GetTypeInfo(typeof(string));
+            var nodeOptions = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+            
+            JsonValue value = JsonValue.Create("test", typeInfo, nodeOptions);
+            Assert.Equal("test", value.GetValue<string>());
+        }
     }
 }

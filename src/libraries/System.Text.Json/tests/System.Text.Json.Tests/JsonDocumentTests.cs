@@ -4028,6 +4028,22 @@ namespace System.Text.Json.Tests
             float value3 = doc3.RootElement.GetSingle();
             Assert.True(value3 < -1E+37f);
         }
+
+        [Fact]
+        public static void JsonElement_TryGetDouble()
+        {
+            using JsonDocument doc = JsonDocument.Parse("3.14159");
+            Assert.True(doc.RootElement.TryGetDouble(out double value));
+            Assert.Equal(3.14159, value, precision: 5);
+        }
+
+        [Fact]
+        public static void JsonElement_TryGetSingle()
+        {
+            using JsonDocument doc = JsonDocument.Parse("3.14");
+            Assert.True(doc.RootElement.TryGetSingle(out float value));
+            Assert.Equal(3.14f, value, precision: 2);
+        }
     }
 
     public class ThrowOnReadStream : MemoryStream
