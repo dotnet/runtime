@@ -4,6 +4,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -101,7 +104,17 @@ namespace System.Linq
                     comparer = (IComparer<TKey>)StringComparer.CurrentCulture;
                 }
 
-                EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TKey>(_keySelector, comparer, _descending, next);
+                EnumerableSorter<TElement> sorter;
+
+                if (next is null)
+                {
+                    sorter = new EnumerableSorter<TElement, TKey>(_keySelector, comparer, _descending, next);
+                }
+                else
+                {
+                    sorter = next.CreateWithChild(_keySelector, comparer, _descending);
+                }
+
                 if (_parent is not null)
                 {
                     sorter = _parent.GetEnumerableSorter(sorter);
@@ -122,7 +135,7 @@ namespace System.Linq
             {
                 int state = _state;
 
-                Initialized:
+            Initialized:
                 if (state > 1)
                 {
                     Debug.Assert(_buffer is not null);
@@ -195,7 +208,7 @@ namespace System.Linq
                 int state = _state;
                 TElement[]? buffer;
 
-                Initialized:
+            Initialized:
                 if (state > 1)
                 {
                     buffer = _buffer;
@@ -343,6 +356,8 @@ namespace System.Linq
                 return map;
             }
 
+            internal abstract EnumerableSorter<TElement> CreateWithChild<TChildKey>(Func<TElement, TChildKey> keySelector, IComparer<TChildKey> comparer, bool descending);
+
             internal int[] Sort(TElement[] elements, int count)
             {
                 int[] map = ComputeMap(elements, count);
@@ -385,6 +400,7 @@ namespace System.Linq
             private readonly bool _descending;
             private readonly EnumerableSorter<TElement>? _next;
             private TKey[]? _keys;
+            private readonly byte _packingUsedSize;
 
             internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement>? next)
             {
@@ -392,6 +408,31 @@ namespace System.Linq
                 _comparer = comparer;
                 _descending = descending;
                 _next = next;
+            }
+
+            private EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement>? next, byte packingUsedSize)
+            {
+                _keySelector = keySelector;
+                _comparer = comparer;
+                _descending = descending;
+                _next = next;
+                _packingUsedSize = packingUsedSize;
+            }
+
+            internal override EnumerableSorter<TElement> CreateWithChild<TChildKey>(Func<TElement, TChildKey> keySelector, IComparer<TChildKey> comparer, bool descending)
+            {
+                EnumerableSorter<TElement> sorter;
+
+                if (TryPackKeys(keySelector, comparer, descending, this, out var packedSorter))
+                {
+                    sorter = packedSorter;
+                }
+                else
+                {
+                    sorter = new EnumerableSorter<TElement, TChildKey>(keySelector, comparer, descending, this);
+                }
+
+                return sorter;
             }
 
             internal override void ComputeKeys(TElement[] elements, int count)
@@ -652,6 +693,238 @@ namespace System.Linq
                     }
                 }
                 return map[index];
+            }
+
+            private static bool TryPackKeys<TKey1, TKey2>(Func<TElement, TKey1> keySelector, IComparer<TKey1> comparer, bool descending, EnumerableSorter<TElement, TKey2> next, [NotNullWhen(true)] out EnumerableSorter<TElement>? packedSorter)
+            {
+                bool key1typeIsSigned;
+                bool key2typeIsSigned;
+                int key1typeSize;
+                int key2typeSize;
+
+                if (!TryGetPackingTypeData<TKey1>(out key1typeIsSigned, out key1typeSize) ||
+                    !TryGetPackingTypeData<TKey2>(out key2typeIsSigned, out key2typeSize) ||
+                    comparer != Comparer<TKey1>.Default || next._comparer != Comparer<TKey2>.Default)
+                {
+                    packedSorter = null;
+                    return false;
+                }
+
+                int packingSize = next._packingUsedSize == 0 ? key2typeSize : next._packingUsedSize;
+
+                byte totalSize = (byte)(key1typeSize + packingSize);
+
+                if (totalSize <= sizeof(uint))
+                {
+                    uint toggle = 0U;
+                    if (key1typeIsSigned)
+                    {
+                        toggle |= 1U << ((totalSize * 8) - 1);
+                    }
+                    if (key2typeIsSigned)
+                    {
+                        toggle |= 1U << ((key2typeSize * 8) - 1);
+                    }
+                    packedSorter = CreatePacked<uint, TKey1, TKey2>(
+                        highKeySelector: keySelector,
+                        lowKeySelector: next._keySelector,
+                        key2typeSize: packingSize,
+                        totalSize: totalSize,
+                        key1IsDescending: descending,
+                        key2IsDescending: next._descending,
+                        toggleSignBits: toggle,
+                        next: next?._next
+                    );
+                    return true;
+                }
+
+                if (totalSize <= sizeof(ulong))
+                {
+                    ulong toggle = 0UL;
+                    if (key1typeIsSigned)
+                    {
+                        toggle |= 1UL << ((totalSize * 8) - 1);
+                    }
+                    if (key2typeIsSigned)
+                    {
+                        toggle |= 1UL << ((key2typeSize * 8) - 1);
+                    }
+                    packedSorter = CreatePacked<ulong, TKey1, TKey2>(
+                        highKeySelector: keySelector,
+                        lowKeySelector: next._keySelector,
+                        key2typeSize: packingSize,
+                        totalSize: totalSize,
+                        key1IsDescending: descending,
+                        key2IsDescending: next._descending,
+                        toggleSignBits: toggle,
+                        next: next?._next
+                    );
+                    return true;
+                }
+
+                packedSorter = null;
+                return false;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static bool TryGetPackingTypeData<T>(out bool isSigned, out int size)
+            {
+                if (typeof(T) == typeof(sbyte))
+                {
+                    isSigned = true;
+                    size = sizeof(sbyte);
+                    return true;
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    isSigned = true;
+                    size = sizeof(short);
+                    return true;
+                }
+                if (typeof(T) == typeof(int))
+                {
+                    isSigned = true;
+                    size = sizeof(int);
+                    return true;
+                }
+                if (typeof(T) == typeof(nint))
+                {
+                    isSigned = true;
+                    size = Unsafe.SizeOf<nint>();
+                    return true;
+                }
+                if (typeof(T) == typeof(long))
+                {
+                    isSigned = true;
+                    size = sizeof(long);
+                    return true;
+                }
+
+                if (typeof(T) == typeof(byte))
+                {
+                    isSigned = false;
+                    size = sizeof(byte);
+                    return true;
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    isSigned = false;
+                    size = sizeof(ushort);
+                    return true;
+                }
+                if (typeof(T) == typeof(uint))
+                {
+                    isSigned = false;
+                    size = sizeof(uint);
+                    return true;
+                }
+                if (typeof(T) == typeof(nuint))
+                {
+                    isSigned = false;
+                    size = Unsafe.SizeOf<nuint>();
+                    return true;
+                }
+                if (typeof(T) == typeof(ulong))
+                {
+                    isSigned = false;
+                    size = sizeof(ulong);
+                    return true;
+                }
+
+                if (typeof(T) == typeof(char))
+                {
+                    isSigned = false;
+                    size = sizeof(char);
+                    return true;
+                }
+
+                if (typeof(T) == typeof(bool))
+                {
+                    isSigned = false;
+                    size = sizeof(bool);
+                    return true;
+                }
+
+                isSigned = false;
+                size = default;
+
+                return false;
+            }
+
+            private static EnumerableSorter<TElement, TNewKey> CreatePacked<TNewKey, TKey1, TKey2>(
+                Func<TElement, TKey1> highKeySelector,
+                Func<TElement, TKey2> lowKeySelector,
+                int key2typeSize,
+                byte totalSize,
+                bool key1IsDescending,
+                bool key2IsDescending,
+                TNewKey toggleSignBits,
+                EnumerableSorter<TElement>? next
+            )
+                where TNewKey : IBitwiseOperators<TNewKey, TNewKey, TNewKey>, IShiftOperators<TNewKey, int, TNewKey>, IUnsignedNumber<TNewKey>
+            {
+                // see github.com/dotnet/runtime/issues/120785 for more information
+                if (key1IsDescending != key2IsDescending)
+                {
+                    // make the parent order not apply to the child
+                    TNewKey toggleLowKeyOrder = (TNewKey.One << key2typeSize * 8) - TNewKey.One;
+                    toggleSignBits ^= toggleLowKeyOrder;
+                }
+
+                if (toggleSignBits == TNewKey.Zero)
+                {
+                    //result ^= 0 does nothing
+                    return new EnumerableSorter<TElement, TNewKey>(x =>
+                    {
+                        TKey1 highKey = highKeySelector(x);
+                        TKey2 lowKey = lowKeySelector(x);
+
+                        TNewKey result = default!;
+
+                        Unsafe.WriteUnaligned(ref Unsafe.As<TNewKey, byte>(ref result), lowKey);
+
+                        ref byte dest = ref Unsafe.Add(ref Unsafe.As<TNewKey, byte>(ref result), key2typeSize);
+                        Unsafe.WriteUnaligned(ref dest, highKey);
+
+                        return result;
+                    }, Comparer<TNewKey>.Default, key1IsDescending, next, totalSize);
+                }
+
+                return new EnumerableSorter<TElement, TNewKey>(x =>
+                {
+                    // highKey = 11111111
+                    TKey1 highKey = highKeySelector(x);
+                    // lowKey = 01111000
+                    TKey2 lowKey = lowKeySelector(x);
+
+                    // result = 00000000_00000000
+                    TNewKey result = default!;
+
+                    // WriteUnaligned will write the bits in the low end of result
+                    Unsafe.WriteUnaligned(ref Unsafe.As<TNewKey, byte>(ref result), lowKey);
+                    // result = 00000000_01111000
+                    //                   |--lo--|
+
+                    // now we want to skip the size of the lowKey writted in the result
+                    ref byte dest = ref Unsafe.Add(ref Unsafe.As<TNewKey, byte>(ref result), key2typeSize);
+                    // |--hi--| |--lo--|
+                    // 00000000_01111000
+                    //        ^ now we are here
+
+                    // Write the highKey after lowKey
+                    Unsafe.WriteUnaligned(ref dest, highKey);
+                    // result = 11111111_01111000
+                    //          |--hi--| |--lo--|
+                    // toggle the sign bit, to safe convert to unsigned
+                    // (sbyte)0 in binary 00000000 will be 10000000, now (sbyte)0 is in the middle
+                    // basically doing this:
+                    //                  Middle
+                    // MinValue|----------|----------|MaxValue
+                    //                    0
+                    result ^= toggleSignBits;
+
+                    return result;
+                }, Comparer<TNewKey>.Default, key1IsDescending, next, totalSize);
             }
         }
     }

@@ -633,5 +633,143 @@ namespace System.Linq.Tests
                 Assert.Same(objects.OrderBy(x => x).Last(), objects.OrderBy(x => x).ToArray().Last());
             }
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void Packed_Ascending_Ascending_Should_Order_Correctly(int zeroOrders)
+        {
+            var expected = new int[]
+            {
+                0, 1, 2, 3, 4, 5,
+                -5, -4, -3, -2, -1,
+                100, 101, 102, 103, 104, 105,
+            };
+
+            var source = expected.Shuffle().ToArray();
+
+            var ordered = zeroOrders switch
+            {
+                0 => source.OrderBy(x => x.ToString().Length).ThenBy(x => x),
+
+                1 => source.OrderBy(_ => 0)
+                    .ThenBy(x => x.ToString().Length).ThenBy(x => x),
+
+                2 => source.OrderBy(_ => 0).ThenBy(_ => 0)
+                    .ThenBy(x => x.ToString().Length).ThenBy(x => x),
+
+                3 => source.OrderBy(_ => 0).ThenBy(_ => 0).ThenBy(_ => 0)
+                    .ThenBy(x => x.ToString().Length).ThenBy(x => x),
+
+                _ => throw new NotImplementedException(),
+            };
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void Packed_Ascending_Descending_Should_Order_Correctly(int zeroOrders)
+        {
+            var expected = new int[]
+            {
+                5, 4, 3, 2, 1, 0,
+                -1, -2, -3, -4, -5,
+                105, 104, 103, 102, 101, 100,
+            };
+
+            var source = expected.Shuffle().ToArray();
+
+            var ordered = zeroOrders switch
+            {
+                0 => source.OrderBy(x => x.ToString().Length).ThenByDescending(x => x),
+
+                1 => source.OrderBy(_ => 0)
+                    .ThenBy(x => x.ToString().Length).ThenByDescending(x => x),
+
+                2 => source.OrderBy(_ => 0).ThenBy(_ => 0)
+                    .ThenBy(x => x.ToString().Length).ThenByDescending(x => x),
+
+                3 => source.OrderBy(_ => 0).ThenBy(_ => 0).ThenBy(_ => 0)
+                    .ThenBy(x => x.ToString().Length).ThenByDescending(x => x),
+
+                _ => throw new NotImplementedException(),
+            };
+
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void Packed_Descending_Ascending_Should_Order_Correctly(int zeroOrders)
+        {
+            var expected = new int[]
+            {
+                100, 101, 102, 103, 104, 105,
+                -5, -4, -3, -2, -1,
+                0, 1, 2, 3, 4, 5,
+            };
+
+            var source = expected.Shuffle().ToArray();
+
+            var ordered = zeroOrders switch
+            {
+                0 => source.OrderByDescending(x => x.ToString().Length).ThenBy(x => x),
+
+                1 => source.OrderBy(_ => 0)
+                    .ThenByDescending(x => x.ToString().Length).ThenBy(x => x),
+
+                2 => source.OrderBy(_ => 0).ThenBy(_ => 0)
+                    .ThenByDescending(x => x.ToString().Length).ThenBy(x => x),
+
+                3 => source.OrderBy(_ => 0).ThenBy(_ => 0).ThenBy(_ => 0)
+                    .ThenByDescending(x => x.ToString().Length).ThenBy(x => x),
+
+                _ => throw new NotImplementedException(),
+            };
+            Assert.Equal(expected, ordered);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void Packed_Descending_Descending_Should_Order_Correctly(int zeroOrders)
+        {
+            var expected = new int[]
+            {
+                105, 104, 103, 102, 101, 100,
+                -1, -2, -3, -4, -5,
+                5, 4, 3, 2, 1, 0,
+            };
+
+            var source = expected.Shuffle().ToArray();
+
+            var ordered = zeroOrders switch
+            {
+                0 => source.OrderByDescending(x => x.ToString().Length).ThenByDescending(x => x),
+
+                1 => source.OrderBy(_ => 0)
+                    .ThenByDescending(x => x.ToString().Length).ThenByDescending(x => x),
+
+                2 => source.OrderBy(_ => 0).ThenBy(_ => 0)
+                    .ThenByDescending(x => x.ToString().Length).ThenByDescending(x => x),
+
+                3 => source.OrderBy(_ => 0).ThenBy(_ => 0).ThenBy(_ => 0)
+                    .ThenByDescending(x => x.ToString().Length).ThenByDescending(x => x),
+
+                _ => throw new NotImplementedException(),
+            };
+            Assert.Equal(expected, ordered);
+        }
     }
 }
