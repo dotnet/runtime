@@ -54,87 +54,92 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         assert(API_EXISTS(EVP_MAC_CTX_new));
         assert(API_EXISTS(EVP_MAC_init));
         assert(API_EXISTS(EVP_MD_get0_name));
+        assert(API_EXISTS(EVP_MD_is_a));
         assert(API_EXISTS(OSSL_PARAM_construct_octet_string));
         assert(API_EXISTS(OSSL_PARAM_construct_utf8_string));
         assert(API_EXISTS(OSSL_PARAM_construct_end));
 
-        EVP_MAC_CTX* evpMac = EVP_MAC_CTX_new(g_evpMacHmac);
-
-        if (evpMac == NULL)
+        // HMAC-MD5 does not exist some Linux distros.
+        // Since MD5 can never be FIPS, fall back to the old implementation.
+        if (!EVP_MD_is_a(md, "MD5"))
         {
-            return NULL;
-        }
+            EVP_MAC_CTX* evpMac = EVP_MAC_CTX_new(g_evpMacHmac);
 
-        const char* algorithm = EVP_MD_get0_name(md);
-
-        // OSSL_PARAM_construct_utf8_string wants a non-const qualified value. Rather than suppress compiler warnings
-        // which differ from compiler to compiler, we copy the string in to a temporary value.
-        char* algorithmDup = strdup(algorithm);
-
-        if (algorithmDup == NULL)
-        {
-            EVP_MAC_CTX_free(evpMac);
-            return NULL;
-        }
-
-        size_t keyLenT = Int32ToSizeT(keyLen);
-
-        OSSL_PARAM params[] =
-        {
-            OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY, (void*) key, keyLenT),
-            OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, algorithmDup, 0),
-            OSSL_PARAM_construct_end(),
-        };
-
-        if (!EVP_MAC_init(evpMac, NULL, 0, params))
-        {
-            EVP_MAC_CTX_free(evpMac);
-            free(algorithmDup);
-            return NULL;
-        }
-
-        free(algorithmDup);
-
-        DN_MAC_CTX* dnCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
-
-        if (dnCtx == NULL)
-        {
-            EVP_MAC_CTX_free(evpMac);
-            return NULL;
-        }
-
-        unsigned long version = OpenSSL_version_num();
-
-        // OpenSSL [3.0.0, 3.0.2] have an issue where EVP_MAC_init cannot reset the HMAC instance
-        // with its existing key. The key must always be supplied. In order to work around this,
-        // we keep a copy of the key for these OpenSSL versions.
-        // If this is on a fixed or non-applicable version of OpenSSL, the key in the context struct will be
-        // NULL. A NULL key tells the init to re-use the existing key properly. So for affected versions of
-        // OpenSSL, the key will be present. For unaffected, it will be NULL and let OpenSSL do the correct reset
-        // behavior.
-        if (version >= OPENSSL_VERSION_3_0_RTM && version <= OPENSSL_VERSION_3_0_2_RTM)
-        {
-            // OpenSSL's allocator will not allocate a zero-sized buffer. So always allocate at least one
-            // byte. keyLenT will still be zero and contains the actual length of the key.
-            uint8_t* keyCopy = (uint8_t*)OPENSSL_malloc(keyLenT == 0 ? 1 : keyLenT);
-
-            if (keyCopy == NULL)
+            if (evpMac == NULL)
             {
-                EVP_MAC_CTX_free(evpMac);
-                OPENSSL_free(dnCtx);
                 return NULL;
             }
 
-            memcpy(keyCopy, key, keyLenT);
-            dnCtx->key = keyCopy;
-            dnCtx->keyLen = keyLenT;
-        }
+            const char* algorithm = EVP_MD_get0_name(md);
 
-        dnCtx->mac = evpMac;
-        return dnCtx;
+            // OSSL_PARAM_construct_utf8_string wants a non-const qualified value. Rather than suppress compiler warnings
+            // which differ from compiler to compiler, we copy the string in to a temporary value.
+            char* algorithmDup = strdup(algorithm);
+
+            if (algorithmDup == NULL)
+            {
+                EVP_MAC_CTX_free(evpMac);
+                return NULL;
+            }
+
+            size_t keyLenT = Int32ToSizeT(keyLen);
+
+            OSSL_PARAM params[] =
+            {
+                OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY, (void*) key, keyLenT),
+                OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, algorithmDup, 0),
+                OSSL_PARAM_construct_end(),
+            };
+
+            if (!EVP_MAC_init(evpMac, NULL, 0, params))
+            {
+                EVP_MAC_CTX_free(evpMac);
+                free(algorithmDup);
+                return NULL;
+            }
+
+            free(algorithmDup);
+
+            DN_MAC_CTX* dnCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+
+            if (dnCtx == NULL)
+            {
+                EVP_MAC_CTX_free(evpMac);
+                return NULL;
+            }
+
+            unsigned long version = OpenSSL_version_num();
+
+            // OpenSSL [3.0.0, 3.0.2] have an issue where EVP_MAC_init cannot reset the HMAC instance
+            // with its existing key. The key must always be supplied. In order to work around this,
+            // we keep a copy of the key for these OpenSSL versions.
+            // If this is on a fixed or non-applicable version of OpenSSL, the key in the context struct will be
+            // NULL. A NULL key tells the init to re-use the existing key properly. So for affected versions of
+            // OpenSSL, the key will be present. For unaffected, it will be NULL and let OpenSSL do the correct reset
+            // behavior.
+            if (version >= OPENSSL_VERSION_3_0_RTM && version <= OPENSSL_VERSION_3_0_2_RTM)
+            {
+                // OpenSSL's allocator will not allocate a zero-sized buffer. So always allocate at least one
+                // byte. keyLenT will still be zero and contains the actual length of the key.
+                uint8_t* keyCopy = (uint8_t*)OPENSSL_malloc(keyLenT == 0 ? 1 : keyLenT);
+
+                if (keyCopy == NULL)
+                {
+                    EVP_MAC_CTX_free(evpMac);
+                    OPENSSL_free(dnCtx);
+                    return NULL;
+                }
+
+                memcpy(keyCopy, key, keyLenT);
+                dnCtx->key = keyCopy;
+                dnCtx->keyLen = keyLenT;
+            }
+
+            dnCtx->mac = evpMac;
+            return dnCtx;
+        }
     }
 #endif
-
     HMAC_CTX* ctx = HMAC_CTX_new();
 
     if (ctx == NULL)
@@ -203,10 +208,8 @@ int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx)
     ERR_clear_error();
 
 #ifdef NEED_OPENSSL_3_0
-    if (HAVE_EVP_MAC)
+    if (HAVE_EVP_MAC && ctx->mac)
     {
-        assert(ctx->mac);
-
         // See the Create method for the key and keyLen.
         return EVP_MAC_init(ctx->mac, ctx->key, ctx->keyLen, NULL);
     }
@@ -235,9 +238,8 @@ int32_t CryptoNative_HmacUpdate(DN_MAC_CTX* ctx, const uint8_t* data, int32_t le
     }
 
 #ifdef NEED_OPENSSL_3_0
-    if (HAVE_EVP_MAC)
+    if (HAVE_EVP_MAC && ctx->mac)
     {
-        assert(ctx->mac);
         return EVP_MAC_update(ctx->mac, data, Int32ToSizeT(len));
     }
 #endif
@@ -268,9 +270,8 @@ int32_t CryptoNative_HmacFinal(DN_MAC_CTX* ctx, uint8_t* md, int32_t* len)
     int ret = -1;
 
 #ifdef NEED_OPENSSL_3_0
-    if (HAVE_EVP_MAC)
+    if (HAVE_EVP_MAC && ctx->mac)
     {
-        assert(ctx->mac);
         size_t outl = 0;
         size_t lenT = Int32ToSizeT(*len);
         ret = EVP_MAC_final(ctx->mac, md, &outl, lenT);
@@ -298,9 +299,8 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
     ERR_clear_error();
 
 #ifdef NEED_OPENSSL_3_0
-    if (HAVE_EVP_MAC)
+    if (HAVE_EVP_MAC && ctx->mac)
     {
-        assert(ctx->mac);
         EVP_MAC_CTX* macDup = EVP_MAC_CTX_dup(ctx->mac);
 
         if (macDup == NULL)

@@ -472,6 +472,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_MD_fetch) \
     LIGHTUP_FUNCTION(EVP_MD_get0_name) \
     RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
+    LIGHTUP_FUNCTION(EVP_MD_is_a) \
     REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
     REQUIRED_FUNCTION(EVP_PKEY2PKCS8) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
@@ -1030,6 +1031,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_MD_fetch EVP_MD_fetch_ptr
 #define EVP_MD_get0_name EVP_MD_get0_name_ptr
 #define EVP_MD_get_size EVP_MD_get_size_ptr
+#define EVP_MD_is_a EVP_MD_is_a_ptr
 #define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
 #define EVP_PKEY2PKCS8 EVP_PKEY2PKCS8_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
