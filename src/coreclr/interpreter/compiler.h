@@ -312,7 +312,9 @@ struct InterpBasicBlock
 
     // * If this basic block is a finally, this points to a finally call island that is located where the finally
     //   was before all funclets were moved to the end of the method.
-    // * If this basic block is a call island, this points to the next finally call island basic block.
+    // * If this basic block is a catch, this points to a catch leave island that is located where the catch
+    //   was before all funclets were moved to the end of the method.
+    // * If this basic block is a call island, this points to the next finally call / catch leave island basic block.
     // * Otherwise, this is NULL.
     InterpBasicBlock *pFinallyCallIslandBB;
     // Target of a leave instruction that is located in this basic block. NULL if there is none.
@@ -329,6 +331,9 @@ struct InterpBasicBlock
 
     // True indicates that this basic block is the first block of a filter, catch or filtered handler funclet.
     bool isFilterOrCatchFuncletEntry;
+
+    // Valid only for BBs of call islands. It is set to true if it is a finally call island, false if is is a catch leave island.
+    bool isFinallyCallIsland;
 
     // If this basic block is a catch or filter funclet entry, this is the index of the variable
     // that holds the exception object.
@@ -359,6 +364,7 @@ struct InterpBasicBlock
 
         clauseType = BBClauseNone;
         isFilterOrCatchFuncletEntry = false;
+        isFinallyCallIsland = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
     }
