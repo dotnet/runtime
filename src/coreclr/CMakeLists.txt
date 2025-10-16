@@ -86,12 +86,12 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
-  set(CORERUN_LIBS_ONLY 1)
   if(CLR_CMAKE_TARGET_BROWSER)
     # WASM-TODO set GEN_PINVOKE to 1 once we generate them. static entrypoint.c prevents C linker from trimming, when IL trimming trims PInvokes
     set(GEN_PINVOKE 0)
     set(BUILD_LIBS_NATIVE_BROWSER 1)
     set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
+    set(CORERUN_LIBS_ONLY 1)
   endif()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif()
