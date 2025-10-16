@@ -7281,7 +7281,7 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
 HRESULT DacDbiInterfaceImpl::GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, OUT VMPTR_SharedReJitInfo* pvmSharedReJitInfo)
 {
     DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetLCodeVersionNode instead");
+    _ASSERTE(!"You shouldn't be calling this - use GetILCodeVersionNode instead");
     return S_OK;
 }
 
