@@ -2812,7 +2812,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                     m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
                     m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                    m_interpExecMethodSSP = pRD->SSP;
+#endif
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
                     if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
                     {
@@ -2833,6 +2835,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
                     SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
                     SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                    pRD->SSP = m_interpExecMethodSSP;
+#endif
                     SyncRegDisplayToCurrentContext(pRD);
                 }
             }
@@ -2844,6 +2849,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                 m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
                 m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                m_interpExecMethodSSP = pRD->SSP;
+#endif
             }
         }
 #endif // FEATURE_INTERPRETER
