@@ -1107,17 +1107,8 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     {
         JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
                 m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
-        allocLayout(sizeof(int), sizeof(int));
-    }
-
-    if (layout.ReturnSize > 0)
-    {
-        layout.ReturnValOffset = allocLayout(layout.ReturnHeapAlignment(), layout.ReturnSize);
-
-        JITDUMP("  Will store return of type %s, size %u at offset %u\n",
-                call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
-                                                 : varTypeName(call->gtReturnType),
-                layout.ReturnSize, layout.ReturnValOffset);
+        // Must be pointer sized for compatibility with Continuation methods that access fields
+        layout.OSRILOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     if (block->hasTryIndex())
@@ -1134,17 +1125,27 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 layout.ContinuationContextOffset);
     }
 
+    if (needsKeepAlive)
+    {
+        layout.KeepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        JITDUMP("  Continuation needs keep alive object; will be at offset %u\n", layout.KeepAliveOffset);
+    }
+
+    if (layout.ReturnSize > 0)
+    {
+        layout.ReturnValOffset = allocLayout(layout.ReturnHeapAlignment(), layout.ReturnSize);
+
+        JITDUMP("  Will store return of type %s, size %u at offset %u\n",
+                call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
+                                                 : varTypeName(call->gtReturnType),
+                layout.ReturnSize, layout.ReturnValOffset);
+    }
+
     if (call->GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
     {
         layout.ExecContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
         JITDUMP("  Call has async-only save and restore of ExecutionContext; ExecutionContext will be at offset %u\n",
                 layout.ExecContextOffset);
-    }
-
-    unsigned keepAliveOffset = UINT_MAX;
-    if (needsKeepAlive)
-    {
-        keepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
     for (LiveLocalInfo& inf : liveLocals)
@@ -1172,8 +1173,8 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     GCPointerBitMapBuilder bitmapBuilder(objRefs, layout.Size);
     bitmapBuilder.SetIfNotMax(layout.ExceptionOffset);
     bitmapBuilder.SetIfNotMax(layout.ContinuationContextOffset);
+    bitmapBuilder.SetIfNotMax(layout.KeepAliveOffset);
     bitmapBuilder.SetIfNotMax(layout.ExecContextOffset);
-    bitmapBuilder.SetIfNotMax(keepAliveOffset);
 
     if (layout.ReturnSize > 0)
     {
@@ -1223,12 +1224,8 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     }
 #endif
 
-    CORINFO_CONTINUATION_DATA_OFFSETS offsets;
-    offsets.Result              = layout.ReturnValOffset;
-    offsets.Exception           = layout.ExceptionOffset;
-    offsets.ContinuationContext = layout.ContinuationContextOffset;
-    offsets.KeepAlive           = keepAliveOffset;
-    layout.ClassHnd             = m_comp->info.compCompHnd->getContinuationType(layout.Size, objRefs, offsets);
+    layout.ClassHnd =
+        m_comp->info.compCompHnd->getContinuationType(layout.Size, objRefs, layout.Size / TARGET_POINTER_SIZE);
 
 #ifdef DEBUG
     char buffer[256];
@@ -1439,8 +1436,16 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
     unsigned             continuationFlags = 0;
-    if (block->hasTryIndex())
+    if (layout.OSRILOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
+    if (layout.ExceptionOffset != UINT_MAX)
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+    if (layout.ContinuationContextOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+    if (layout.KeepAliveOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_KEEPALIVE;
+    if (layout.ReturnValOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
@@ -1538,6 +1543,9 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         else
             ilOffsetToStore = m_comp->gtNewIconNode((int)m_comp->info.compILEntry);
 
+        // OSR IL offset needs to be at offset 0 because OSR and tier0 methods
+        // need to agree on that.
+        assert(layout.OSRILOffset == 0);
         GenTree* newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
         unsigned offset                = OFFSETOF__CORINFO_Continuation__data;
         GenTree* storePatchpointOffset = StoreAtOffset(newContinuation, offset, ilOffsetToStore, TYP_INT);

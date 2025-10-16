@@ -1700,20 +1700,24 @@ struct CORINFO_EE_INFO
 
 enum CorInfoContinuationFlags
 {
+    CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
     // If this bit is set the continuation resumes inside a try block and thus
     // if an exception is being propagated, needs to be resumed. The exception
     // should be placed at index 0 or 1 depending on whether the continuation
     // also expects a result.
-    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 1,
+    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
+    CORINFO_CONTINUATION_HAS_KEEPALIVE = 8,
+    CORINFO_CONTINUATION_HAS_RESULT = 16,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 2,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 32,
     // If this bit is set the continuation has a SynchronizationContext
     // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 4,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 64,
     // If this bit is set the continuation has a TaskScheduler
     // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 8,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 128,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1738,15 +1742,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
     CORINFO_METHOD_HANDLE captureContextsMethHnd;
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
-};
-
-// Offsets for continuation data layout
-struct CORINFO_CONTINUATION_DATA_OFFSETS
-{
-    uint32_t Result;
-    uint32_t Exception;
-    uint32_t ContinuationContext;
-    uint32_t KeepAlive;
 };
 
 // Flags passed from JIT to runtime.
@@ -3345,7 +3340,7 @@ public:
     virtual CORINFO_CLASS_HANDLE getContinuationType(
         size_t dataSize,
         bool* objRefs,
-        const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets
+        size_t objRefsSize
         ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.

@@ -10273,7 +10273,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
 CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
     size_t dataSize,
     bool* objRefs,
-    const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+    size_t objRefsSize)
 {
     CONTRACTL {
         THROWS;
@@ -10285,12 +10285,13 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
+    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
     LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
     AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, m_pMethodBeingCompiled);
+    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
 
 #ifdef DEBUG
-    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, dataOffsets, m_pMethodBeingCompiled);
+    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
     _ASSERTE(result2 == result);
 #endif
 

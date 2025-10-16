@@ -22,13 +22,15 @@ struct LiveLocalInfo
 struct ContinuationLayout
 {
     unsigned                             Size                      = 0;
+    unsigned                             OSRILOffset               = UINT_MAX;
+    unsigned                             ExceptionOffset           = UINT_MAX;
+    unsigned                             ContinuationContextOffset = UINT_MAX;
+    unsigned                             KeepAliveOffset           = UINT_MAX;
     ClassLayout*                         ReturnStructLayout        = nullptr;
     unsigned                             ReturnAlignment           = 0;
     unsigned                             ReturnSize                = 0;
     unsigned                             ReturnValOffset           = UINT_MAX;
-    unsigned                             ExceptionOffset           = UINT_MAX;
     unsigned                             ExecContextOffset         = UINT_MAX;
-    unsigned                             ContinuationContextOffset = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
     CORINFO_CLASS_HANDLE                 ClassHnd = NO_CLASS_HANDLE;
 

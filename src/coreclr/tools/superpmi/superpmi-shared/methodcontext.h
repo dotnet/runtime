@@ -867,9 +867,9 @@ public:
     void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
     CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
 
-    void recGetContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, CORINFO_CLASS_HANDLE result);
+    void recGetContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize, CORINFO_CLASS_HANDLE result);
     void dmpGetContinuationType(const Agnostic_GetContinuationTypeIn& key, DWORDLONG value);
-    CORINFO_CLASS_HANDLE repGetContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets);
+    CORINFO_CLASS_HANDLE repGetContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize);
 
     void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
     void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);

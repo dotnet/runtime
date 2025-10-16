@@ -2791,12 +2791,6 @@ public:
 
     inline BOOL IsContinuation();
 
-    inline void SetContinuationDataOffsets(const CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pContinuationOffsets = dataOffsets;
-    }
-
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
     {
@@ -2828,13 +2822,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return offsetof(MethodTable, m_ElementTypeHnd);
-    }
-
-    const CORINFO_CONTINUATION_DATA_OFFSETS* GetContinuationOffsets()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(IsContinuation());
-        return m_pContinuationOffsets;
     }
 
     //-------------------------------------------------------------------
@@ -3946,14 +3933,13 @@ private:
 
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
     // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
-    // element type handle for array MethodTables and continuation layout offsets for continuations.
+    // element type handle for array MethodTables.
 
     public:
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
-        const CORINFO_CONTINUATION_DATA_OFFSETS* m_pContinuationOffsets;
     };
     union
     {

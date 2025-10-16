@@ -664,9 +664,7 @@ struct Agnostic_GetContinuationTypeIn
 {
     DWORDLONG dataSize;
     DWORD     objRefs;
-    DWORD     result;
-    DWORD     exception;
-    DWORD     continuationContext;
+    DWORD     objRefsSize;
 };
 
 struct Agnostic_ResolveVirtualMethodKey

@@ -12,12 +12,10 @@ struct ContinuationLayoutKeyData
 {
     unsigned DataSize;
     const bool* ObjRefs;
-    const CORINFO_CONTINUATION_DATA_OFFSETS& DataOffsets;
 
-    ContinuationLayoutKeyData(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+    ContinuationLayoutKeyData(unsigned dataSize, const bool* objRefs)
         : DataSize(dataSize)
         , ObjRefs(objRefs)
-        , DataOffsets(dataOffsets)
     {
     }
 };
@@ -49,14 +47,14 @@ class AsyncContinuationsManager
     CrstExplicitInit m_layoutsLock;
     ContinuationLayoutHashTable m_layouts;
 
-    MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod, AllocMemTracker* pamTracker);
+    MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod, AllocMemTracker* pamTracker);
 
-    static MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, EEClass* eeClass, LoaderAllocator* allocator, Module* loaderModule, AllocMemTracker* pamTracker);
+    static MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, EEClass* eeClass, LoaderAllocator* allocator, Module* loaderModule, AllocMemTracker* pamTracker);
     static PTR_EEClass GetOrCreateSingletonSubContinuationEEClass();
     static PTR_EEClass CreateSingletonSubContinuationEEClass();
 public:
     AsyncContinuationsManager(LoaderAllocator* allocator);
-    MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod);
+    MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod);
     void NotifyUnloadingClasses();
 
     template<typename AppendString, typename AppendNum>

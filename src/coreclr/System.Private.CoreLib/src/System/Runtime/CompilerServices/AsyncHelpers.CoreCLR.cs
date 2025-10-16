@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -49,28 +50,24 @@ namespace System.Runtime.CompilerServices
     [Flags]
     internal enum CorInfoContinuationFlags
     {
+        CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
         // If this bit is set the continuation resumes inside a try block and thus
         // if an exception is being propagated, needs to be resumed. The exception
         // should be placed at index 0 or 1 depending on whether the continuation
         // also expects a result.
-        CORINFO_CONTINUATION_NEEDS_EXCEPTION = 1,
+        CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+        CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
+        CORINFO_CONTINUATION_HAS_KEEPALIVE = 8,
+        CORINFO_CONTINUATION_HAS_RESULT = 16,
         // If this bit is set the continuation should continue on the thread
         // pool.
-        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 2,
+        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 32,
         // If this bit is set the continuation has a SynchronizationContext
         // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 4,
+        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 64,
         // If this bit is set the continuation has a TaskScheduler
         // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 8,
-    }
-
-    internal struct CORINFO_CONTINUATION_DATA_OFFSETS
-    {
-        public uint Result;
-        public uint Exception;
-        public uint ContinuationContext;
-        public uint KeepAlive;
+        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 128,
     }
 
 #pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically
@@ -81,50 +78,46 @@ namespace System.Runtime.CompilerServices
         public CorInfoContinuationFlags Flags;
         public int State;
 
+#if TARGET_64BIT
+        private const int POINTER_SIZE = 8;
+#else
+        private const int POINTER_SIZE = 4;
+#endif
+
+        private const int CONTINUATION_OFFSET_TO_DATA = POINTER_SIZE /* Next */ + POINTER_SIZE /* Resume */ + 8 /* Flags + State */;
+
         public unsafe object GetContinuationContext()
         {
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-
-            // Only the special continuation sub types have continuation offsets.
-            Debug.Assert(mt->IsContinuation);
-            Debug.Assert(mt->ContinuationOffsets->ContinuationContext != uint.MaxValue);
-
+            Debug.Assert((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT) != 0);
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->ContinuationContext));
+            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE));
         }
 
         public void SetException(Exception ex)
         {
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-
-            // Only the special continuation sub types have continuation offsets.
-            Debug.Assert(mt->IsContinuation);
+            Debug.Assert((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0);
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->Exception)) = ex;
+            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE)) = ex;
         }
 
         public ref byte GetResultStorageOrNull()
         {
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-            // Only the special continuation sub types have continuation offsets.
-            Debug.Assert(mt->IsContinuation);
-
-            if (mt->ContinuationOffsets->Result == uint.MaxValue)
+            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_RESULT) == 0)
                 return ref Unsafe.NullRef<byte>();
 
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_RESULT - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return ref Unsafe.Add(ref data, mt->ContinuationOffsets->Result);
+            return ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE);
         }
 
         public void SetKeepAlive(object? obj)
         {
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(this);
-            // Only the special continuation sub types have continuation offsets.
-            Debug.Assert(mt->IsContinuation);
-            Debug.Assert(mt->ContinuationOffsets->KeepAlive != uint.MaxValue);
-
+            Debug.Assert((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_KEEPALIVE) != 0);
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_KEEPALIVE - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, object?>(ref Unsafe.Add(ref data, mt->ContinuationOffsets->KeepAlive)) = obj;
+            Unsafe.As<byte, object?>(ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE)) = obj;
         }
     }
 

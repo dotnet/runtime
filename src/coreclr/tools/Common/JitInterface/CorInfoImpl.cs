@@ -3361,8 +3361,9 @@ namespace Internal.JitInterface
             throw new NotImplementedException();
         }
 
-        private CORINFO_CLASS_STRUCT_* getContinuationType(UIntPtr dataSize, ref bool objRefs, ref CORINFO_CONTINUATION_DATA_OFFSETS dataOffsets)
+        private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
+            Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
             throw new NotImplementedException("getContinuationType");
         }
 

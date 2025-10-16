@@ -658,7 +658,7 @@ bool getTailCallHelpers(
 CORINFO_CLASS_HANDLE getContinuationType(
           size_t dataSize,
           bool* objRefs,
-          const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets) override;
+          size_t objRefsSize) override;
 
 CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
 

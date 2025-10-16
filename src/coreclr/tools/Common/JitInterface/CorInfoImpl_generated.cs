@@ -2298,12 +2298,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_CLASS_STRUCT_* _getContinuationType(IntPtr thisHandle, IntPtr* ppException, nuint dataSize, bool* objRefs, CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets)
+        private static CORINFO_CLASS_STRUCT_* _getContinuationType(IntPtr thisHandle, IntPtr* ppException, nuint dataSize, bool* objRefs, nuint objRefsSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getContinuationType(dataSize, ref *objRefs, ref *dataOffsets);
+                return _this.getContinuationType(dataSize, ref *objRefs, objRefsSize);
             }
             catch (Exception ex)
             {
@@ -2778,7 +2778,7 @@ namespace Internal.JitInterface
             callbacks[152] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, DelegateCtorArgs*, CORINFO_METHOD_STRUCT_*>)&_GetDelegateCtor;
             callbacks[153] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void>)&_MethodCompileComplete;
             callbacks[154] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_SIG_INFO*, CORINFO_GET_TAILCALL_HELPERS_FLAGS, CORINFO_TAILCALL_HELPERS*, byte>)&_getTailCallHelpers;
-            callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, bool*, CORINFO_CONTINUATION_DATA_OFFSETS*, CORINFO_CLASS_STRUCT_*>)&_getContinuationType;
+            callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, bool*, nuint, CORINFO_CLASS_STRUCT_*>)&_getContinuationType;
             callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*>)&_getAsyncResumptionStub;
             callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
             callbacks[158] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;

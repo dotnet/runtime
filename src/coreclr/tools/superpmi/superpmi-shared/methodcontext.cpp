@@ -6943,7 +6943,7 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAsyncResumptionStub()
 
 void MethodContext::recGetContinuationType(size_t dataSize,
                                            bool* objRefs,
-                                           const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets,
+                                           size_t objRefsSize,
                                            CORINFO_CLASS_HANDLE result)
 {
     if (GetContinuationType == nullptr)
@@ -6954,10 +6954,8 @@ void MethodContext::recGetContinuationType(size_t dataSize,
     Agnostic_GetContinuationTypeIn key;
     ZeroMemory(&key, sizeof(key));
     key.dataSize = (DWORDLONG)dataSize;
-    key.objRefs = (objRefs != nullptr) ? (*objRefs ? 1 : 0) : 0; // TODO add buffer
-    key.result = (DWORD)dataOffsets.Result;
-    key.exception = (DWORD)dataOffsets.Exception;
-    key.continuationContext = (DWORD)dataOffsets.ContinuationContext;
+    key.objRefs = GetContinuationType->AddBuffer((unsigned char*)objRefs, (unsigned)objRefsSize);
+    key.objRefsSize = (DWORD)objRefsSize;
 
     DWORDLONG value = CastHandle(result);
 
@@ -6967,25 +6965,27 @@ void MethodContext::recGetContinuationType(size_t dataSize,
 
 void MethodContext::dmpGetContinuationType(const Agnostic_GetContinuationTypeIn& key, DWORDLONG value)
 {
-    printf("GetContinuationType dataSize-%016" PRIX64 ", objRefs-%u, result-%d, exception-%d, handle-%016" PRIX64,
-           key.dataSize, key.objRefs, key.result, key.exception, value);
+    printf("GetContinuationType dataSize-%016" PRIX64 ", objRefs-%u, handle-%016" PRIX64,
+           key.dataSize, key.objRefs, value);
 }
 
 CORINFO_CLASS_HANDLE MethodContext::repGetContinuationType(size_t dataSize,
-                                                            bool* objRefs,
-                                                            const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+                                                           bool* objRefs,
+                                                           size_t objRefsSize)
 {
+    AssertMapExistsNoMessage(GetContinuationType);
+
+    int objRefsBuffer = GetContinuationType->Contains((unsigned char*)objRefs, (unsigned)objRefsSize);
+    if (objRefsBuffer == -1)
+        LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing obj refs buffer)", "");
+
     Agnostic_GetContinuationTypeIn key;
     ZeroMemory(&key, sizeof(key));
     key.dataSize = (DWORDLONG)dataSize;
-    key.objRefs = (objRefs != nullptr) ? (*objRefs ? 1 : 0) : 0;
-    key.result = (DWORD)dataOffsets.Result;
-    key.exception = (DWORD)dataOffsets.Exception;
-    key.continuationContext = (DWORD)dataOffsets.ContinuationContext;
+    key.objRefs = objRefsBuffer;
+    key.objRefsSize = (DWORD)objRefsSize;
 
-    DWORDLONG value = LookupByKeyOrMiss(GetContinuationType, key,
-        ": dataSize %016" PRIX64 ", objRefs %u, result %d, exception %d",
-        key.dataSize, key.objRefs, key.result, key.exception);
+    DWORDLONG value = LookupByKeyOrMiss(GetContinuationType, key, ": dataSize %016" PRIX64 ", objRefs %u", key.dataSize, key.objRefs);
     DEBUG_REP(dmpGetContinuationType(key, value));
 
     return (CORINFO_CLASS_HANDLE)value;

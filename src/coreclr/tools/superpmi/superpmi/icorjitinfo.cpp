@@ -1508,10 +1508,10 @@ CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
     return jitInstance->mc->repGetAsyncResumptionStub();;
 }
 
-CORINFO_CLASS_HANDLE MyICJI::getContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+CORINFO_CLASS_HANDLE MyICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
 {
     jitInstance->mc->cr->AddCall("getContinuationType");
-    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetContinuationType(dataSize, objRefs, dataOffsets);
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetContinuationType(dataSize, objRefs, objRefsSize);
     return result;
 }
 

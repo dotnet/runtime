@@ -1782,11 +1782,11 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
     return stub;
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(size_t dataSize, bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets)
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
 {
     mc->cr->AddCall("getContinuationType");
-    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getContinuationType(dataSize, objRefs, dataOffsets);
-    mc->recGetContinuationType(dataSize, objRefs, dataOffsets, result);
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
+    mc->recGetContinuationType(dataSize, objRefs, objRefsSize, result);
     return result;
 }
 

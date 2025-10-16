@@ -60,12 +60,7 @@ EEClass* AsyncContinuationsManager::CreateSingletonSubContinuationEEClass()
 
     EEClass* pClass = EEClass::CreateMinimalClass(allocator->GetHighFrequencyHeap(), &amTracker);
 
-    CORINFO_CONTINUATION_DATA_OFFSETS offsets;
-    offsets.Result = UINT_MAX;
-    offsets.Exception = UINT_MAX;
-    offsets.ContinuationContext = UINT_MAX;
-    offsets.KeepAlive = UINT_MAX;
-    MethodTable* pMT = CreateNewContinuationMethodTable(0, NULL, offsets, pClass, allocator, spc, &amTracker);
+    MethodTable* pMT = CreateNewContinuationMethodTable(0, NULL, pClass, allocator, spc, &amTracker);
 
     pClass->SetMethodTable(pMT);
 
@@ -111,7 +106,6 @@ static bool EnumerateRunsOfObjRefs(unsigned size, const bool* objRefs, TFunc fun
 MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
     unsigned dataSize,
     const bool* objRefs,
-    const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets,
     EEClass* pClass,
     LoaderAllocator* allocator,
     Module* loaderModule,
@@ -146,17 +140,14 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
 
     size_t cbGC = numPointerSeries == 0 ? 0 : CGCDesc::ComputeSize(numPointerSeries);
 
-    BYTE* pMemory = (BYTE*)pamTracker->Track(allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(CORINFO_CONTINUATION_DATA_OFFSETS)) + S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
-
-    CORINFO_CONTINUATION_DATA_OFFSETS* allocatedDataOffsets = new (pMemory) CORINFO_CONTINUATION_DATA_OFFSETS(dataOffsets);
+    BYTE* pMemory = (BYTE*)pamTracker->Track(allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbGC) + S_SIZE_T(cbMT)));
 
     unsigned startOfDataInInstance = AlignUp(pParentClass->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
     unsigned startOfDataInObject = OBJECT_SIZE + startOfDataInInstance;
 
-    MethodTable* pMT = (MethodTable*)(pMemory + sizeof(CORINFO_CONTINUATION_DATA_OFFSETS) + cbGC);
+    MethodTable* pMT = (MethodTable*)(pMemory + cbGC);
     pMT->AllocateAuxiliaryData(allocator, loaderModule, pamTracker, MethodTableStaticsFlags::None);
     pMT->SetParentMethodTable(pParentClass);
-    pMT->SetContinuationDataOffsets(allocatedDataOffsets);
     pMT->SetLoaderAllocator(allocator);
     pMT->SetModule(pParentClass->GetModule());
     pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
@@ -200,14 +191,12 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
 MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
     unsigned dataSize,
     const bool* objRefs,
-    const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets,
     MethodDesc* asyncMethod,
     AllocMemTracker* pamTracker)
 {
     MethodTable* pMT = CreateNewContinuationMethodTable(
         dataSize,
         objRefs,
-        dataOffsets,
         GetOrCreateSingletonSubContinuationEEClass(),
         m_allocator,
         asyncMethod->GetLoaderModule(),
@@ -229,26 +218,11 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
     return pMT;
 }
 
-MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, const CORINFO_CONTINUATION_DATA_OFFSETS& dataOffsets, MethodDesc* asyncMethod)
+MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod)
 {
     STANDARD_VM_CONTRACT;
 
-    // The API we expose has all offsets relative to the data, but we prefer to
-    // have offsets relative to the start of instance data so that
-    // RuntimeHelpers.GetRawData(obj) + offset returns the right offset. Adjust
-    // it here.
-    CORINFO_CONTINUATION_DATA_OFFSETS adjustedDataOffsets = dataOffsets;
-    const uint32_t startOfDataInInstance = OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object;
-    if (dataOffsets.Result != UINT_MAX)
-        adjustedDataOffsets.Result += startOfDataInInstance;
-    if (dataOffsets.Exception != UINT_MAX)
-        adjustedDataOffsets.Exception += startOfDataInInstance;
-    if (dataOffsets.ContinuationContext != UINT_MAX)
-        adjustedDataOffsets.ContinuationContext += startOfDataInInstance;
-    if (dataOffsets.KeepAlive != UINT_MAX)
-        adjustedDataOffsets.KeepAlive += startOfDataInInstance;
-
-    ContinuationLayoutKeyData keyData(dataSize, objRefs, adjustedDataOffsets);
+    ContinuationLayoutKeyData keyData(dataSize, objRefs);
     {
         CrstHolder lock(&m_layoutsLock);
         MethodTable* lookupResult;
@@ -263,7 +237,7 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
 #endif
 
     AllocMemTracker amTracker;
-    MethodTable* pNewMT = CreateNewContinuationMethodTable(dataSize, objRefs, adjustedDataOffsets, asyncMethod, &amTracker);
+    MethodTable* pNewMT = CreateNewContinuationMethodTable(dataSize, objRefs, asyncMethod, &amTracker);
     MethodTable* pReturnedMT = pNewMT;
     {
         CrstHolder lock(&m_layoutsLock);
@@ -353,16 +327,6 @@ BOOL ContinuationLayoutKeyHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Co
     if (left->GetBaseSize() != (OBJHEADER_SIZE + OFFSETOF__CORINFO_Continuation__data + right->DataSize))
         return FALSE;
 
-    const CORINFO_CONTINUATION_DATA_OFFSETS& leftOffsets = *left->GetContinuationOffsets();
-    const CORINFO_CONTINUATION_DATA_OFFSETS& rightOffsets = right->DataOffsets;
-    if (leftOffsets.Result != rightOffsets.Result ||
-        leftOffsets.Exception != rightOffsets.Exception ||
-        leftOffsets.ContinuationContext != rightOffsets.ContinuationContext ||
-        leftOffsets.KeepAlive != rightOffsets.KeepAlive)
-    {
-        return FALSE;
-    }
-
     // Now compare GC pointer series.
     CGCDesc* gc = CGCDesc::GetCGCDescFromMT(left);
     CGCDescSeries* curSeries = gc->GetHighestSeries();
@@ -400,12 +364,9 @@ DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
 {
     DWORD dwHash = 5381;
 
-    const CORINFO_CONTINUATION_DATA_OFFSETS* dataOffsets;
     if ((key.Data & 1) != 0)
     {
         MethodTable* pMT = reinterpret_cast<MethodTable*>(key.Data ^ 1);
-        dataOffsets = pMT->GetContinuationOffsets();
-
         CGCDesc* gc = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries* curSeries = gc->GetHighestSeries();
         CGCDescSeries* lowestSeries = gc->GetLowestSeries();
@@ -424,7 +385,6 @@ DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
     else
     {
         ContinuationLayoutKeyData* keyData = reinterpret_cast<ContinuationLayoutKeyData*>(key.Data);
-        dataOffsets = &keyData->DataOffsets;
 
         dwHash = ((dwHash << 5) + dwHash) ^ keyData->DataSize;
         EnumerateRunsOfObjRefs(keyData->DataSize, keyData->ObjRefs, [&dwHash](size_t offset, size_t count){
@@ -433,11 +393,6 @@ DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
             return true;
             });
     }
-
-    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->Result;
-    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->Exception;
-    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->ContinuationContext;
-    dwHash = ((dwHash << 5) + dwHash) ^ dataOffsets->KeepAlive;
 
     return dwHash;
 }
