@@ -1067,15 +1067,24 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         }
     }
 
-    jitstd::sort(liveLocals.begin(), liveLocals.end(), [](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
-        if (lhs.Alignment == rhs.Alignment)
+    jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
+        bool lhsIsRef = m_comp->lvaGetDesc(lhs.LclNum)->TypeIs(TYP_REF);
+        bool rhsIsRef = m_comp->lvaGetDesc(rhs.LclNum)->TypeIs(TYP_REF);
+
+        // Keep object refs first to improve sharability of continuation types.
+        if (lhsIsRef != rhsIsRef)
         {
-            // Prefer lowest local num first for same alignment.
-            return lhs.LclNum < rhs.LclNum;
+            return lhsIsRef;
         }
 
-        // Otherwise prefer highest alignment first.
-        return lhs.Alignment > rhs.Alignment;
+        // Otherwise prefer higher alignment first.
+        if (lhs.HeapAlignment() != rhs.HeapAlignment())
+        {
+            return lhs.HeapAlignment() > rhs.HeapAlignment();
+        }
+
+        // Prefer lowest local num first for tiebreaker.
+        return lhs.LclNum < rhs.LclNum;
     });
 
     if (call->gtReturnType == TYP_STRUCT)
