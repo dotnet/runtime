@@ -2517,16 +2517,12 @@ public class InterpreterTest
         if (!ArrayUInt32(32, uint.MinValue)) return false;
         if (!ArrayUInt32(32, uint.MaxValue)) return false;
 
-        // active issue https://github.com/dotnet/runtime/issues/120659
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            // // long
-            if (!ArrayInt64(0, 0)) return false;
-            if (!ArrayInt64(1, 1)) return false;
-            if (!ArrayInt64(32, 32)) return false;
-            if (!ArrayInt64(32, Int64.MinValue)) return false;
-            if (!ArrayInt64(32, Int64.MaxValue)) return false;
-        }
+        // long
+        if (!ArrayInt64(0, 0)) return false;
+        if (!ArrayInt64(1, 1)) return false;
+        if (!ArrayInt64(32, 32)) return false;
+        if (!ArrayInt64(32, Int64.MinValue)) return false;
+        if (!ArrayInt64(32, Int64.MaxValue)) return false;
 
         // float
         if (!ArrayFloat(0, 0)) return false;
@@ -2535,14 +2531,10 @@ public class InterpreterTest
         if (!ArrayFloat(32, float.MinValue)) return false;
         if (!ArrayFloat(32, float.MaxValue)) return false;
 
-        // active issue https://github.com/dotnet/runtime/issues/120659
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            // double
-            if (!ArrayDouble(0, 0)) return false;
-            if (!ArrayDouble(1, 1)) return false;
-            if (!ArrayDouble(32, 32)) return false;
-        }
+        // double
+        if (!ArrayDouble(0, 0)) return false;
+        if (!ArrayDouble(1, 1)) return false;
+        if (!ArrayDouble(32, 32)) return false;
 
         // ref and value types
         if (!TestObjectArray()) return false;
