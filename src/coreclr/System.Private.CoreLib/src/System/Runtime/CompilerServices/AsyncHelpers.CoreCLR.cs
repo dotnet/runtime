@@ -57,17 +57,16 @@ namespace System.Runtime.CompilerServices
         // also expects a result.
         CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
         CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
-        CORINFO_CONTINUATION_HAS_KEEPALIVE = 8,
-        CORINFO_CONTINUATION_HAS_RESULT = 16,
+        CORINFO_CONTINUATION_HAS_RESULT = 8,
         // If this bit is set the continuation should continue on the thread
         // pool.
-        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 32,
+        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
         // If this bit is set the continuation has a SynchronizationContext
         // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 64,
+        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
         // If this bit is set the continuation has a TaskScheduler
         // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 128,
+        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
     }
 
 #pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically
@@ -111,14 +110,6 @@ namespace System.Runtime.CompilerServices
             ref byte data = ref RuntimeHelpers.GetRawData(this);
             return ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE);
         }
-
-        public void SetKeepAlive(object? obj)
-        {
-            Debug.Assert((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_KEEPALIVE) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_KEEPALIVE - 1));
-            ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, object?>(ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE)) = obj;
-        }
     }
 
     public static partial class AsyncHelpers
@@ -149,16 +140,16 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
-        private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, MethodDesc* method)
+        private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
-            newContinuation.SetKeepAlive(loaderAllocator);
+            Unsafe.As<byte, object?>(ref Unsafe.Add(ref RuntimeHelpers.GetRawData(newContinuation), keepAliveOffset)) = loaderAllocator;
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
-        private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, MethodTable* contMT, MethodTable* methodTable)
+        private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodTable* methodTable)
         {
             IntPtr loaderAllocatorHandle = methodTable->GetLoaderAllocatorHandle();
 
@@ -166,7 +157,7 @@ namespace System.Runtime.CompilerServices
             prevContinuation.Next = newContinuation;
             if (loaderAllocatorHandle != IntPtr.Zero)
             {
-                newContinuation.SetKeepAlive(GCHandle.FromIntPtr(loaderAllocatorHandle).Target);
+                Unsafe.As<byte, object?>(ref Unsafe.Add(ref RuntimeHelpers.GetRawData(newContinuation), keepAliveOffset)) = GCHandle.FromIntPtr(loaderAllocatorHandle).Target;
             }
             return newContinuation;
         }

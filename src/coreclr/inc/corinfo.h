@@ -1707,17 +1707,16 @@ enum CorInfoContinuationFlags
     // also expects a result.
     CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
     CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
-    CORINFO_CONTINUATION_HAS_KEEPALIVE = 8,
-    CORINFO_CONTINUATION_HAS_RESULT = 16,
+    CORINFO_CONTINUATION_HAS_RESULT = 8,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 32,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
     // If this bit is set the continuation has a SynchronizationContext
     // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 64,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
     // If this bit is set the continuation has a TaskScheduler
     // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 128,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
 };
 
 struct CORINFO_ASYNC_INFO

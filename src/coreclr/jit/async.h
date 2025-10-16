@@ -103,9 +103,9 @@ class AsyncTransformation
 
     BasicBlock* CreateSuspension(
         BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
-    GenTreeCall* CreateAllocContinuationCall(AsyncLiveness&       life,
-                                             GenTree*             prevContinuation,
-                                             CORINFO_CLASS_HANDLE contClassHnd);
+    GenTreeCall* CreateAllocContinuationCall(AsyncLiveness&            life,
+                                             GenTree*                  prevContinuation,
+                                             const ContinuationLayout& layout);
     void         FillInDataOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,

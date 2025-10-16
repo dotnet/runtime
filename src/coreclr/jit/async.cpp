@@ -1134,12 +1134,6 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 layout.ContinuationContextOffset);
     }
 
-    if (needsKeepAlive)
-    {
-        layout.KeepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
-        JITDUMP("  Continuation needs keep alive object; will be at offset %u\n", layout.KeepAliveOffset);
-    }
-
     if (layout.ReturnSize > 0)
     {
         layout.ReturnValOffset = allocLayout(layout.ReturnHeapAlignment(), layout.ReturnSize);
@@ -1148,6 +1142,12 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
                                                  : varTypeName(call->gtReturnType),
                 layout.ReturnSize, layout.ReturnValOffset);
+    }
+
+    if (needsKeepAlive)
+    {
+        layout.KeepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        JITDUMP("  Continuation needs keep alive object; will be at offset %u\n", layout.KeepAliveOffset);
     }
 
     if (call->GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
@@ -1418,7 +1418,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     // Allocate continuation
     GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
 
-    GenTreeCall* allocContinuation = CreateAllocContinuationCall(life, returnedContinuation, layout.ClassHnd);
+    GenTreeCall* allocContinuation = CreateAllocContinuationCall(life, returnedContinuation, layout);
 
     m_comp->compCurBB = suspendBB;
     m_comp->fgMorphTree(allocContinuation);
@@ -1451,8 +1451,6 @@ BasicBlock* AsyncTransformation::CreateSuspension(
         continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
     if (layout.ContinuationContextOffset != UINT_MAX)
         continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
-    if (layout.KeepAliveOffset != UINT_MAX)
-        continuationFlags |= CORINFO_CONTINUATION_HAS_KEEPALIVE;
     if (layout.ReturnValOffset != UINT_MAX)
         continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
@@ -1486,17 +1484,16 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 // Parameters:
 //   life             - Liveness information about live locals
 //   prevContinuation - IR node that has the value of the previous continuation object
-//   gcRefsCount      - Number of GC refs to allocate in the continuation object
-//   dataSize         - Number of bytes to allocate in the continuation object
+//   layout           - Layout information
 //
 // Returns:
 //   IR node representing the allocation.
 //
-GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&       life,
-                                                              GenTree*             prevContinuation,
-                                                              CORINFO_CLASS_HANDLE contClassHnd)
+GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&            life,
+                                                              GenTree*                  prevContinuation,
+                                                              const ContinuationLayout& layout)
 {
-    GenTree* contClassHndNode = m_comp->gtNewIconEmbClsHndNode(contClassHnd);
+    GenTree* contClassHndNode = m_comp->gtNewIconEmbClsHndNode(layout.ClassHnd);
     // If VM requests that we report the method handle, or if we have a shared generic context method handle
     // that is live here, then we need to call a different helper to keep the loader alive.
     GenTree* methodHandleArg = nullptr;
@@ -1518,14 +1515,21 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
 
     if (methodHandleArg != nullptr)
     {
+        assert(layout.KeepAliveOffset != UINT_MAX);
+        // Offset passed to function is relative to instance data.
+        int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
+        GenTree* keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
         return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_METHOD, TYP_REF, prevContinuation,
-                                           contClassHndNode, methodHandleArg);
+                                           contClassHndNode, keepAliveOffsetNode, methodHandleArg);
     }
 
     if (classHandleArg != nullptr)
     {
+        assert(layout.KeepAliveOffset != UINT_MAX);
+        int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
+        GenTree* keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
         return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_CLASS, TYP_REF, prevContinuation,
-                                           contClassHndNode, classHandleArg);
+                                           contClassHndNode, keepAliveOffsetNode, classHandleArg);
     }
 
     return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation, contClassHndNode);
