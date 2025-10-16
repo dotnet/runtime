@@ -2924,6 +2924,13 @@ public:
         {
             BasicBlock* const block = m_comp->m_dfsTree->GetPostOrder(poNum);
 
+            // cfpt's cannot be scc entries
+            //
+            if (block->isBBCallFinallyPairTail())
+            {
+                continue;
+            }
+
             for (BasicBlock* pred : block->PredBlocks())
             {
                 if (!BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
@@ -3072,6 +3079,7 @@ public:
             LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
+            FlowEdge** const succs         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
             FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
 
             // Split edges, rewire flow, and add control var assignments
@@ -3086,6 +3094,7 @@ public:
                 if (dispatcher == nullptr)
                 {
                     dispatcher = m_comp->fgNewBBbefore(BBJ_SWITCH, header, true);
+                    dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
                 weight_t incomingWeight = 0;
@@ -3118,15 +3127,17 @@ public:
                     dispatchToHeaderEdge->setLikelihood(1.0 / numHeaders);
                 }
 
+                succs[headerNumber] = dispatchToHeaderEdge;
                 cases[headerNumber] = dispatchToHeaderEdge;
+
                 headerNumber++;
             }
 
-            // Create the dispatch switch... all cases unique, no default
+            // Create the dispatch switch... all cases unique.
             //
             JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
             BBswtDesc* const swtDesc =
-                new (m_comp, CMK_BasicBlock) BBswtDesc(cases, numHeaders, cases, numHeaders, /* hasDefault */ false);
+                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, /* hasDefault */ true);
             dispatcher->SetSwitch(swtDesc);
 
             GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
@@ -3193,7 +3204,7 @@ bool Compiler::optFindSCCs()
     //
     bool modified = false;
 
-    if (JitConfig.JitRemoveIrreducibleLoops() == 1)
+    if (JitConfig.JitTransformIrreducibleLoops() == 1)
     {
         for (int i = 0; i < sccs.Height(); i++)
         {
@@ -3279,17 +3290,27 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
 
         // Walk u's preds looking for more SCC members
         //
+        // Do not walk back out of a handler
+        //
+        if (bbIsHandlerBeg(u))
+        {
+            return;
+        }
+
+        // Do not walk back into a finally,
+        // instead skip to the call finally.
+        //
+        if (u->isBBCallFinallyPairTail())
+        {
+            JITDUMP("cfpt " FMT_BB ", advancing to " FMT_BB "\n", u->bbNum, u->Prev()->bbNum);
+            self(self, u->Prev(), root, subset);
+            return;
+        }
+
+        // Else walk preds...
+        //
         for (BasicBlock* p : u->PredBlocks())
         {
-            if (p->KindIs(BBJ_CALLFINALLYRET))
-            {
-                // Should we find the matching callfinally
-                // and walk back from there? Should just
-                // be our bbpred, right?
-                //
-                continue;
-            }
-
             self(self, p, root, subset);
         }
     };
