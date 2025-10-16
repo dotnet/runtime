@@ -51,16 +51,6 @@
         }
       },
       "developmentDependency": false
-    },
-    {
-      "component": {
-        "type": "git",
-        "git": {
-          "repositoryUrl": "https://github.com/microsoft/LinuxTracepoints",
-          "commitHash": "a817b91dfb08b2929ec6d48a211644e3394bf1c7"
-        }
-      },
-      "developmentDependency": false
     }
   ]
 }
