@@ -1958,7 +1958,7 @@ struct CORINFO_FPSTRUCT_LOWERING
 #define OFFSETOF__CORINFO_Span__reference                 0
 #define OFFSETOF__CORINFO_Span__length                    TARGET_POINTER_SIZE
 
-#define OFFSETOF__CORINFO_Continuation__data              (SIZEOF__CORINFO_Object + TARGET_POINTER_SIZE /* Next */ + TARGET_POINTER_SIZE /* Resume */ + TARGET_POINTER_SIZE /* Flags + maybe padding */)
+#define OFFSETOF__CORINFO_Continuation__data              (SIZEOF__CORINFO_Object + TARGET_POINTER_SIZE /* Next */ + TARGET_POINTER_SIZE /* Resume */ + 8 /* Flags + State */)
 
 
 /* data to optimize delegate construction */
