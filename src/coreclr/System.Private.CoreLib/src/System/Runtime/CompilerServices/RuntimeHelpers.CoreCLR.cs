@@ -897,8 +897,6 @@ namespace System.Runtime.CompilerServices
 
         public bool IsArray => (Flags & enum_flag_Category_Array_Mask) == enum_flag_Category_Array;
 
-        public bool IsContinuation => ParentMethodTable == TypeHandle.TypeHandleOf<Continuation>().AsMethodTable();
-
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 
         public bool IsGenericTypeDefinition => (Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == enum_flag_GenericsMask_TypicalInst;
