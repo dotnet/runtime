@@ -413,40 +413,45 @@ public:
     {
     }
 
+    ReadyToRunLoadedImage(const ReadyToRunLoadedImage&) = delete;
+    ReadyToRunLoadedImage& operator=(const ReadyToRunLoadedImage&) = delete;
+    ReadyToRunLoadedImage(ReadyToRunLoadedImage&&) = delete;
+    ReadyToRunLoadedImage& operator=(ReadyToRunLoadedImage&&) = delete;
+
     ~ReadyToRunLoadedImage()
     {
         if (m_pfnCleanup)
             m_pfnCleanup(m_pImageCleanupData);
     }
 
-    TADDR GetBase()
+    TADDR GetBase() const
     {
         return m_pImageBase;
     }
 
-    uint32_t GetVirtualSize()
+    uint32_t GetVirtualSize() const
     {
         return m_imageSize;
     }
 
-    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir)
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir) const
     {
         return m_pImageBase + pDir->VirtualAddress;
     }
 
-    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir, uint32_t* pSize)
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir, uint32_t* pSize) const
     {
         if (pSize != nullptr)
             *pSize = pDir->Size;
         return m_pImageBase + pDir->VirtualAddress;
     }
 
-    TADDR GetRvaData(RVA rva)
+    TADDR GetRvaData(RVA rva) const
     {
         return m_pImageBase + rva;
     }
 
-    RVA GetDataRva(TADDR data)
+    RVA GetDataRva(TADDR data) const
     {
         _ASSERTE_MSG(data >= m_pImageBase && data < m_pImageBase + m_imageSize, "Data pointer is outside of loaded image.");
         return (RVA)(data - m_pImageBase);
