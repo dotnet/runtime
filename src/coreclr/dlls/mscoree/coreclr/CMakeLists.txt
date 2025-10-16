@@ -198,7 +198,7 @@ endif()
 
 if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     target_link_libraries(coreclr_static
-        PUBLIC
+        PRIVATE
         coreclrminipal_objects
         coreclrpal_objects
         eventprovider_objects
