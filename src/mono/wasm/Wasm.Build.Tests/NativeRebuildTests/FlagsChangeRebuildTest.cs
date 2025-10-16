@@ -39,9 +39,6 @@ namespace Wasm.Build.NativeRebuild.Tests
             if (!dotnetNativeFilesUnchanged)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
-            if (extraCFlags.Length != 0)
-                pathsDict.UpdateTo(unchanged: false, "driver.o", "runtime.o", "corebindings.o", "pinvoke.o");
-
             var originalStat = StatFiles(pathsDict);
 
             // Rebuild

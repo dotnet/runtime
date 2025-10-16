@@ -233,7 +233,7 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                expectedWasmNativeDebugSymbols = false;
+                expectedWasmNativeDebugSymbols = true;
                 expectedWasmNativeStripValue = true;
             }
 
