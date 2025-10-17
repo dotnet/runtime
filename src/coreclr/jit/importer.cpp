@@ -6020,7 +6020,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE*
     if (nextOpcode + 2 * (1 + sizeof(mdToken)) < codeEndp)
     {
         // ConfigureAwait on a ValueTask will start with stloc/ldloca.
-        // The longest encoding will still should fit in the length we asked for above.
+        // The longest encoding should fit in the length we asked for above.
         uint8_t     maybeStLoc = getU1LittleEndian(nextOpcode);
         const BYTE* nextTmp    = nextOpcode + 1;
         int         stlocNum   = -1;
