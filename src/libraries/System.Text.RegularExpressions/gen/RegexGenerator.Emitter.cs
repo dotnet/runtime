@@ -5805,7 +5805,7 @@ namespace System.Text.RegularExpressions.Generator
                     string nodeDescription = DescribeNode(node, rm);
 
                     // Write out any comments associated with this node.
-                    if (rm.Tree.NodeComments?.TryGetValue(node, out List<string>? comments) == true)
+                    if (rm.Tree.NodeComments?.TryGetValue(node, out List<string>? comments) is true)
                     {
                         string indent = new string(' ', depth * 4);
                         foreach (string comment in comments)
