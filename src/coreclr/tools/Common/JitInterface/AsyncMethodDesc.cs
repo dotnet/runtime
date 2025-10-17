@@ -92,7 +92,6 @@ namespace Internal.JitInterface
                         }
 
                         return new MethodSignature(
-                            // Do we need to mask other call convs here?
                             wrappedSignature.Flags | MethodSignatureFlags.AsyncCallConv,
                             wrappedSignature.GenericParameterCount,
                             returnType,
@@ -117,8 +116,6 @@ namespace Internal.JitInterface
 
     internal static class AsyncMethodDescExtensions
     {
-        //public static bool IsAsyncCallConvMethod(this MethodDesc method) => method is AsyncMethodDesc;
-
         /// <summary>
         /// Returns the other async variant. If the supplied method is an async-callconv wrapper, returns the wrapped (Task-returning) method.
         /// If it is a Task/ValueTask returning method, returns (and possibly creates) the async-callconv variant via the factory; otherwise null.
