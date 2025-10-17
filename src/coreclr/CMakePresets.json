@@ -17,8 +17,7 @@
       "hidden": true,
       "inherits": "base",
       "cacheVariables": {
-        "CLR_CMAKE_TARGET_OS": "windows",
-        "CLI_CMAKE_FALLBACK_OS": "win10"
+        "CLR_CMAKE_TARGET_OS": "windows"
       },
       "condition": {
         "type": "equals",
