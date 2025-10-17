@@ -9,7 +9,6 @@ namespace Internal.JitInterface
 {
     /// <summary>
     /// Represents the async-callable (CORINFO_CALLCONV_ASYNCCALL) variant of a Task/ValueTask returning method.
-    /// Mirrors the structure and usage pattern of <see cref="UnboxingMethodDesc"/>.
     /// The wrapper should be short‑lived and only used while interacting with the JIT interface.
     /// </summary>
     internal sealed class AsyncMethodDesc : MethodDelegator, IJitHashableOnly
@@ -65,28 +64,9 @@ namespace Internal.JitInterface
         {
             get
             {
-                var wrappedSignature = _wrappedMethod.Signature;
-                var ret = wrappedSignature.ReturnType;
-                var md = (MetadataType)ret;
-                Debug.Assert(md.Namespace.SequenceEqual("System.Threading.Tasks"u8));
-                ReadOnlySpan<byte> name = md.Name;
-                TypeDesc returnType = null;
-                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("ValueTask"u8))
-                {
-                    returnType = this.Context.GetWellKnownType(WellKnownType.Void);
-                }
-                else if (name.SequenceEqual("Task`1"u8) || name.SequenceEqual("ValueTask`1"u8))
-                {
-                    Debug.Assert(md.HasInstantiation);
-                    returnType = md.Instantiation[0];
-                }
-                else
-                {
-                    throw new UnreachableException("AsyncMethodDesc should not wrap a non-Task-like-returning method");
-                }
-
+                var md = (MetadataType)_wrappedMethod.Signature.ReturnType;
                 var builder = new MethodSignatureBuilder(_wrappedMethod.Signature);
-                builder.ReturnType = returnType;
+                builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
                 builder.Flags |= MethodSignatureFlags.AsyncCallConv;
                 return builder.ToSignature();
             }
@@ -111,7 +91,6 @@ namespace Internal.JitInterface
         /// </summary>
         public static MethodDesc GetOtherAsyncMethod(this MethodDesc method, AsyncMethodDescFactory factory)
         {
-            if (method is null) return null;
             if (method is AsyncMethodDesc amd)
                 return amd.Target; // unwrap
 
@@ -124,16 +103,16 @@ namespace Internal.JitInterface
         public static bool ReturnsTaskLike(this MethodDesc method)
         {
             TypeDesc ret = method.GetTypicalMethodDefinition().Signature.ReturnType;
-            if (ret == null) return false;
 
-            if (ret is MetadataType md)
+            if (ret is MetadataType md
+                && md.Module == method.Context.SystemModule
+                && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
             {
-                if (md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+                ReadOnlySpan<byte> name = md.Name;
+                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
+                    || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
                 {
-                    ReadOnlySpan<byte> name = md.Name;
-                    if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
-                        || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
-                        return true;
+                    return true;
                 }
             }
             return false;
