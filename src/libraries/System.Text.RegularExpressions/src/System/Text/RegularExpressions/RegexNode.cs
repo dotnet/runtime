@@ -2113,9 +2113,13 @@ namespace System.Text.RegularExpressions
 
                     if (node.Kind is RegexNodeKind.Capture)
                     {
-                        parent.ReplaceChild(nodeIndex, node.Child(0));
-                        RemoveCaptures(parent, nodeIndex);
-                        return true;
+                        // Don't remove balancing groups (N != -1 indicates a balancing group with an uncapture)
+                        if (node.N == -1)
+                        {
+                            parent.ReplaceChild(nodeIndex, node.Child(0));
+                            RemoveCaptures(parent, nodeIndex);
+                            return true;
+                        }
                     }
 
                     bool changesMade = false;
