@@ -4972,7 +4972,6 @@ HRESULT CordbValueEnum::Init()
 #else
             m_iMax = 0;
 #endif // FEATURE_CODE_VERSIONING
-            }
             break;
         }
     }
