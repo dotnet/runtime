@@ -4,9 +4,16 @@
     <IsShipping>false</IsShipping>
   </PropertyGroup>
 
-  <ItemGroup>
-    <File Include="$(DotNetCdacBinDir)$(LibPrefix)mscordaccore_universal$(LibSuffix)">
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != '$(NETCoreSdkRuntimeIdentifier)'">
+    <File Include="$(DotNetCdacBinDir)$(PortableTargetRid)/publish/$(LibPrefix)mscordaccore_universal$(LibSuffix)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == '$(NETCoreSdkRuntimeIdentifier)'">
+    <File Include="$(DotNetCdacBinDir)*">
+      <TargetPath>$(PackageTargetRuntime)/any</TargetPath>
       <IsNative>true</IsNative>
     </File>
   </ItemGroup>
