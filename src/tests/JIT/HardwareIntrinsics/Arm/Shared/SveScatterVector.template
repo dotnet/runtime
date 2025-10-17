@@ -145,9 +145,11 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
         public static void MakeDistinct({Op3BaseType}[] input)
         {
             HashSet<{Op3BaseType}> dict = new ();
+            // Avoid overlapping offsets
+            bool isAtElementOffsets = !isScatterIndices;
             for(var i = 0; i < input.Length;)
             {
-                if(!dict.Add(input[i]))
+                if(!dict.Add(input[i]) || (isAtElementOffsets && input[i] % sizeof({Op2BaseType}) != 0))
                 {
                     // value already exist
                     input[i] = (input[i] + 1) % ({Op3BaseType})OutElementCount;
@@ -196,6 +198,7 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
         // A large enough buffer to hold many values.
         // Values in address will point to locations within this buffer.
         private static readonly int OutElementCount = 1024;
+        private static readonly bool isScatterIndices = {isScatterIndices};
         private static readonly int MaskElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int DataElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int OffsetElementCount = Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>() / sizeof({Op3BaseType});
@@ -321,7 +324,7 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
 
             _dataTable.ResetOutArray();
 
-            typeof(Sve).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op1BaseType}>), typeof({Op2BaseType}*), typeof(Vector<{Op3BaseType}>), typeof(Vector<{Op1BaseType}>) })
+            typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op1BaseType}>), typeof({Op2BaseType}*), typeof(Vector<{Op3BaseType}>), typeof(Vector<{Op1BaseType}>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inMaskArrayPtr),
                                         Pointer.Box(_dataTable.outArrayPtr, typeof({Op2BaseType}*)),
@@ -424,7 +427,12 @@ private void ValidateResult({Op1BaseType}[] mask, {Op1BaseType}[] data, {Op2Base
     var actualResult = new {Op2BaseType}[DataElementCount];
     for (var i = 0; i < DataElementCount; i++)
     {
-        actualResult[i] = *({Op2BaseType}*)(baseAddr + offset[i]);
+        var currOffset = offset[i];
+        if (!isScatterIndices)
+        {
+            currOffset /= sizeof({Op2BaseType});
+        }
+        actualResult[i] = *({Op2BaseType}*)(baseAddr + currOffset);
     }
 
     for (var i = 0; i < DataElementCount; i++)
@@ -439,10 +447,10 @@ private void ValidateResult({Op1BaseType}[] mask, {Op1BaseType}[] data, {Op2Base
 
     if (!succeeded)
     {
-        TestLibrary.TestFramework.LogInformation($"{nameof(Sve)}.{nameof({Isa}.{Method})}({Op1BaseType}, {Op2BaseType}*, {Op3BaseType}, {Op1BaseType}): {method} failed:");
+        TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1BaseType}, {Op2BaseType}*, {Op3BaseType}, {Op1BaseType}): {method} failed:");
         TestLibrary.TestFramework.LogInformation($"   mask: ({string.Join(", ", mask)})");
         TestLibrary.TestFramework.LogInformation($"  input: ({string.Join(", ", data)})");
-        TestLibrary.TestFramework.LogInformation($"indices: ({string.Join(", ", offset)})");
+        TestLibrary.TestFramework.LogInformation((isScatterIndices? "indices" : "offsets") + $": ({string.Join(", ", offset)})");
         TestLibrary.TestFramework.LogInformation($" result: ({string.Join(", ", actualResult)})");
         TestLibrary.TestFramework.LogInformation(string.Empty);
 
@@ -478,7 +486,12 @@ private void ValidateZeroResult({Op1BaseType}[] data, {Op2BaseType}* baseAddr, {
     var actualResult = new {Op2BaseType}[DataElementCount];
     for (var i = 0; i < DataElementCount; i++)
     {
-        actualResult[i] = *({Op2BaseType}*)(baseAddr + offset[i]);
+        var currOffset = offset[i];
+        if (!isScatterIndices)
+        {
+            currOffset /= sizeof({Op2BaseType});
+        }
+        actualResult[i] = *({Op2BaseType}*)(baseAddr + currOffset);
     }
 
     for (var i = 0; i < DataElementCount; i++)
@@ -492,9 +505,9 @@ private void ValidateZeroResult({Op1BaseType}[] data, {Op2BaseType}* baseAddr, {
 
     if (!succeeded)
     {
-        TestLibrary.TestFramework.LogInformation($"{nameof(Sve)}.{nameof({Isa}.{Method})}({Op1BaseType}, {Op2BaseType}*, {Op3BaseType}, {Op1BaseType}): {method} failed:");
+        TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1BaseType}, {Op2BaseType}*, {Op3BaseType}, {Op1BaseType}): {method} failed:");
         TestLibrary.TestFramework.LogInformation($"  input: ({string.Join(", ", data)})");
-        TestLibrary.TestFramework.LogInformation($"indices: ({string.Join(", ", offset)})");
+        TestLibrary.TestFramework.LogInformation((isScatterIndices? "indices" : "offsets") + $": ({string.Join(", ", offset)})");
         TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", actualResult)})");
         TestLibrary.TestFramework.LogInformation(string.Empty);
 
