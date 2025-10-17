@@ -161,7 +161,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             string fixedSource = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface(StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(BStrStringMarshaller))]
                 [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
                 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -408,7 +408,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                    [return: MarshalAs(UnmanagedType.Error)]
                    HResult Foo();
                }
-               
+
                [StructLayout(LayoutKind.Sequential)]
                public struct HResult
                {
@@ -453,6 +453,50 @@ namespace ComInterfaceGenerator.Unit.Tests
                  {
                  }
                  """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, source);
+        }
+
+        [Fact]
+        public async Task Property()
+        {
+            // Properties are not supported at this time.
+            // Make sure we don't offer a fix in this scenario.
+            string source = """
+               using System.Runtime.InteropServices;
+
+               [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public interface I
+               {
+                   int Prop
+                   {
+                       get;
+                   }
+               }
+               """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, source);
+        }
+
+        [Fact]
+        public async Task Event()
+        {
+            // Events are not supported at this time.
+            // Make sure we don't offer a fix in this scenario.
+            string source = """
+               using System;
+               using System.Runtime.InteropServices;
+
+               [ComImport]
+               [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+               [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+               public interface I
+               {
+                   event Action Evt;
+               }
+               """;
 
             await VerifyCS.VerifyCodeFixAsync(source, source);
         }
