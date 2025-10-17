@@ -4688,7 +4688,6 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
 HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpReJitData2 *pReJitData)
 {
 #ifdef FEATURE_CODE_VERSIONING
-{
     if (methodDesc == 0 || rejitId < 0 || pReJitData == NULL)
     {
         return E_INVALIDARG;
