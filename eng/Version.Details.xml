@@ -414,13 +414,13 @@
       <Uri>https://github.com/dotnet/installer</Uri>
       <Sha>46a7370763921ded24dcb70c585ee97883c615d4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Build" Version="17.8.29">
+    <Dependency Name="Microsoft.Build" Version="17.8.43">
       <Uri>https://github.com/dotnet/msbuild</Uri>
-      <Sha>2e2d89a923d83b7cf43ec543f725c1b206c912fe</Sha>
+      <Sha>f0cbb13971c30ad15a3f252a8d0171898a01ec11</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.msbuild" Version="17.8.29-servicing-25277-01">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.msbuild" Version="17.8.43-servicing-25466-03">
       <Uri>https://github.com/dotnet/msbuild</Uri>
-      <Sha>2e2d89a923d83b7cf43ec543f725c1b206c912fe</Sha>
+      <Sha>f0cbb13971c30ad15a3f252a8d0171898a01ec11</Sha>
       <SourceBuild RepoName="msbuild" ManagedOnly="true" />
     </Dependency>
   </ToolsetDependencies>
