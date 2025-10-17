@@ -3371,7 +3371,7 @@ namespace Internal.JitInterface
             // 'Data' field
             pAsyncInfoOut.continuationDataFldHnd = ObjectToHandle(continuation.GetField("Data"u8));
             // 'GCData' field
-            pAsyncInfoOut.continuationGCDataFldHnd = ObjectToHandle(continuation.GetField("Data"u8));
+            pAsyncInfoOut.continuationGCDataFldHnd = ObjectToHandle(continuation.GetField("GCData"u8));
             // Whether or not the continuation needs to be allocated through the
             // helper that also takes a method handle
             pAsyncInfoOut.continuationsNeedMethodHandle = false;
