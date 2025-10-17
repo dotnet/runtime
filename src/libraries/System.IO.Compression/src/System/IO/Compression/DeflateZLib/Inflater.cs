@@ -293,6 +293,7 @@ namespace System.IO.Compression
                     _zlibStream.AvailIn = 0;
                     _zlibStream.NextIn = ZLibNative.ZNullPtr;
                 }
+
                 _inputBufferHandle.Dispose();
             }
         }
