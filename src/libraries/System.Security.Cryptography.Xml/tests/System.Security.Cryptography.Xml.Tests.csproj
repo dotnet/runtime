@@ -12,6 +12,7 @@
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CanonicalXmlEntityReferenceTest.cs" />
     <Compile Include="CipherDataTests.cs" />
+    <Compile Include="CoverageImprovementTests.cs" />
     <Compile Include="DataObjectTest.cs" />
     <Compile Include="DataObjectTests.cs" />
     <Compile Include="DataReferenceTest.cs" />
