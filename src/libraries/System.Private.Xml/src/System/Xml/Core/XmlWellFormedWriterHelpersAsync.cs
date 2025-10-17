@@ -26,6 +26,8 @@ namespace System.Xml
 
         private partial struct Namespace
         {
+            // Roslyn NYI - async in structs. Remove opt-out once supported.
+            [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
             internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);

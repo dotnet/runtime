@@ -958,18 +958,25 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
             ClassLayout* layout = dsc->GetLayout();
-            assert(!layout->HasGCByRef());
+
+            // TODO: (async) we do not need to save ByRef-containing locals
+            //       as by the spec an await turns them into zero-inited state.
+            //       For now just store/restore as if there are no gc refs.
+            //       This is mostly to handle the "fake" live-across-await byrefs
+            //       in min-opts, since C#-compiled code by itself does not let
+            //       byrefs be live across awaits.
+            unsigned objCount = layout->HasGCByRef() ? 0 : layout->GetGCPtrCount();
 
             if (layout->IsCustomLayout())
             {
                 inf.Alignment   = 1;
                 inf.DataSize    = layout->GetSize();
-                inf.GCDataCount = layout->GetGCPtrCount();
+                inf.GCDataCount = objCount;
             }
             else
             {
                 inf.Alignment = m_comp->info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle());
-                if ((layout->GetGCPtrCount() * TARGET_POINTER_SIZE) == layout->GetSize())
+                if ((objCount * TARGET_POINTER_SIZE) == layout->GetSize())
                 {
                     inf.DataSize = 0;
                 }
@@ -978,7 +985,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                     inf.DataSize = layout->GetSize();
                 }
 
-                inf.GCDataCount = layout->GetGCPtrCount();
+                inf.GCDataCount = objCount;
             }
         }
         else if (dsc->TypeIs(TYP_REF))
@@ -987,10 +994,17 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
             inf.DataSize    = 0;
             inf.GCDataCount = 1;
         }
+        else if (dsc->TypeIs(TYP_BYREF))
+        {
+            // TODO: (async) ByRefs do not need to be saved at all.
+            //       For now pretend they are unmanaged data.
+            //       See the note on `layout->HasGCByRef()` case for justification.
+            inf.Alignment   = TARGET_POINTER_SIZE;
+            inf.DataSize    = TARGET_POINTER_SIZE;
+            inf.GCDataCount = 0;
+        }
         else
         {
-            assert(!dsc->TypeIs(TYP_BYREF));
-
             inf.Alignment   = genTypeAlignments[dsc->TypeGet()];
             inf.DataSize    = genTypeSize(dsc);
             inf.GCDataCount = 0;
@@ -1694,6 +1708,15 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     LIR::AsRange(block).InsertAfter(storeContinuation, null, returnedContinuation, neNull, jtrue);
     *remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
+
+    // HACK: Not sure why it can happen, but we may see the end IL for the block
+    //       to increasing after splitting off its tail.
+    //       This tweak is just to avoid asserts later on.
+    //       This is not a real fix.
+    if (block->bbCodeOffsEnd > (*remainder)->bbCodeOffs)
+    {
+        block->bbCodeOffsEnd = (*remainder)->bbCodeOffs;
+    }
 
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());

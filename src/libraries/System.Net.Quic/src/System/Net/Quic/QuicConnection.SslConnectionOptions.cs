@@ -66,6 +66,8 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
+        // Roslyn NYI - async in structs. Remove opt-out once supported.
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         internal async Task<bool> StartAsyncCertificateValidation(IntPtr certificatePtr, IntPtr chainPtr)
         {
             //

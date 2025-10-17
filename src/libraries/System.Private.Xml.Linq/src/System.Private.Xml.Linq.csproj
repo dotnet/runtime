@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
              Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />
