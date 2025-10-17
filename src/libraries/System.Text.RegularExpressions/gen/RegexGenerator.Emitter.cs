@@ -5810,7 +5810,16 @@ namespace System.Text.RegularExpressions.Generator
                         string indent = new string(' ', depth * 4);
                         foreach (string comment in comments)
                         {
-                            writer.WriteLine($"/// {indent}// {EscapeXmlComment(comment)}<br/>");
+                            // Split multi-line comments to maintain proper alignment
+                            string[] lines = comment.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (string line in lines)
+                            {
+                                string trimmedLine = line.Trim();
+                                if (!string.IsNullOrEmpty(trimmedLine))
+                                {
+                                    writer.WriteLine($"/// {indent}// {EscapeXmlComment(trimmedLine)}<br/>");
+                                }
+                            }
                         }
                     }
 
