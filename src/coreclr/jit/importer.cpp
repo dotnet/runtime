@@ -6042,9 +6042,14 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE*
                 stlocNum = getU1LittleEndian(nextTmp);
                 nextTmp += 1;
                 break;
-            case CEE_STLOC:
-                stlocNum = getU2LittleEndian(nextTmp);
-                nextTmp += 2;
+            case CEE_PREFIX1:
+                uint16_t maybeStLocWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
+                nextTmp += 1;
+                if (maybeStLocWide == CEE_STLOC)
+                {
+                    stlocNum = getU2LittleEndian(nextTmp);
+                    nextTmp += 2;
+                }
                 break;
         }
 
@@ -6060,9 +6065,14 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE*
                     ldlocaNum = getU1LittleEndian(nextTmp);
                     nextTmp += 1;
                     break;
-                case CEE_LDLOCA:
-                    ldlocaNum = getU2LittleEndian(nextTmp);
-                    nextTmp += 2;
+                case CEE_PREFIX1:
+                    uint16_t maybeLdLocaWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
+                    nextTmp += 1;
+                    if (maybeLdLocaWide == CEE_LDLOCA)
+                    {
+                        ldlocaNum = getU2LittleEndian(nextTmp);
+                        nextTmp += 2;
+                    }
                     break;
             }
 
