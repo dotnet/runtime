@@ -10,9 +10,7 @@
       "hidden": true,
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../artifacts/obj/coreclr/${presetName}",
-      "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/../../artifacts/bin/coreclr/${presetName}"
-      }
+      "installDir": "${sourceDir}/../../artifacts/bin/coreclr/${presetName}"
     },
     {
       "name": "windows-base",
