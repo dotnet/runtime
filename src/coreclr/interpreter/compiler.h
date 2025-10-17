@@ -467,10 +467,34 @@ struct LeavesTableEntry
     InterpBasicBlock *pLeaveChainIslandBB;
 };
 
+struct OpcodePeepElement
+{
+    uint16_t offsetIntoPeep;
+    OPCODE opcode; // If CEE_ILLEGAL this is the end marker, and the total size of the pattern is offsetIntoPeep
+};
+
+typedef bool (InterpCompiler::*CheckIfTokensAllowPeepToBeUsedFunc_t)(const uint8_t* ip, OpcodePeepElement*, void** outComputedInfo);
+typedef void (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
+struct OpcodePeep
+{
+    OpcodePeepElement* const pattern;
+    const CheckIfTokensAllowPeepToBeUsedFunc_t CheckIfTokensAllowPeepToBeUsedFunc;
+    const ApplyPeepFunc_t ApplyPeepFunc;
+    const char * const Name;
+    size_t GetPeepSize() const
+    {
+        OpcodePeepElement* patternIterator = this->pattern;
+        while (patternIterator->opcode != CEE_ILLEGAL)
+            patternIterator++;
+        return patternIterator->offsetIntoPeep;
+    }
+};
+
 class InterpCompiler
 {
     friend class InterpIAllocator;
     friend class InterpGcSlotAllocator;
+    friend class InterpILOpcodePeeps;
 
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
@@ -518,7 +542,7 @@ private:
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
-    uint8_t* m_ip;
+    const uint8_t* m_ip;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSizeFromILHeader;
     int32_t m_ILCodeSize; // This can differ from the size of the header if we add instructions for synchronized methods
@@ -730,6 +754,19 @@ private:
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
     void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
+
+    // Opcode peeps
+    bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    void    ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    void    ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    void    ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    void    ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
