@@ -5028,7 +5028,6 @@ retry_emit:
                 INTERP_DUMP("Chaining generated BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
                 pPrevBB->pNextBB = pNewBB;
                 assert(!linkBBlocks);
-                linkBBlocks = false;
             }
 
             m_pCBB = pPrevBB;
