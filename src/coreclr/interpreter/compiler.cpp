@@ -3356,6 +3356,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             AddIns(INTOP_SAFEPOINT);
             return true;
 
+        case NI_System_Type_GetTypeFromHandle:
+        case NI_System_Type_op_Equality:
+        case NI_System_Type_op_Inequality:
+        case NI_System_Type_get_IsValueType:
+            // These intrinsics are handled in the il peeps path, and do not need to produce warnings here.
+            return false;
+
         default:
         {
             FAIL_TO_EXPAND_INTRINSIC:
@@ -4868,9 +4875,10 @@ public:
             // starting at the current ip.
             for (int iPeepOpCode = 0; peep->pattern[iPeepOpCode].opcode != CEE_ILLEGAL; iPeepOpCode++)
             {
-                int32_t insOffset = (int32_t)((ip + peep->pattern[iPeepOpCode].offsetIntoPeep) - compiler->m_pILCode);
+                const uint8_t *ipForOpcode = ip + peep->pattern[iPeepOpCode].offsetIntoPeep;
+                int32_t insOffset = (int32_t)(ipForOpcode - compiler->m_pILCode);
 
-                if (ip + peep->pattern[iPeepOpCode].offsetIntoPeep >= compiler->m_pILCode + compiler->m_ILCodeSize)
+                if (ipForOpcode >= compiler->m_pILCode + compiler->m_ILCodeSize)
                 {
                     // Ran off the end of the IL code
                     skipToNextPeep = true;
@@ -4884,7 +4892,6 @@ public:
                     break;
                 }
 
-                const uint8_t *ipForOpcode = ip + peep->pattern[iPeepOpCode].offsetIntoPeep;
                 if (peep->pattern[iPeepOpCode].opcode != CEEDecodeOpcode(&ipForOpcode))
                 {
                     // Opcode does not match
@@ -4913,8 +4920,6 @@ public:
 bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
     // We need to check that the two ldtokens are for the same type
-    // const uint8_t* ipForFirstLdtoken = ip + pattern[0].offsetIntoPeep + 1;
-    // const uint8_t* ipForSecondLdtoken = ip + pattern[2].offsetIntoPeep + 1;
 
     CORINFO_RESOLVED_TOKEN firstResolvedToken;
     assert(pattern[0].opcode == CEE_LDTOKEN);
