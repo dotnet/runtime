@@ -40,6 +40,7 @@ public static partial class ZipFile
     /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
     /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, cancellationToken);
 
@@ -75,6 +76,7 @@ public static partial class ZipFile
     /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
     /// <param name="overwriteFiles">True to indicate overwrite.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, cancellationToken);
 
@@ -188,6 +190,7 @@ public static partial class ZipFile
     ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
     /// </param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static async Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
