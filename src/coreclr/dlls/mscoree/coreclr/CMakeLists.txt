@@ -129,7 +129,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal> # force all PAL objects to be included so all exports are available
         mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -185,9 +184,16 @@ if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+if(TARGET coreclr)
+    target_link_libraries(coreclr PUBLIC
+        ${CORECLR_LIBRARIES}
+        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal> # force all PAL objects to be included so all exports are available
+        ${CLRJIT_STATIC}
+        ${CLRINTERPRETER_STATIC}
+        cee_wks_core
+        cee_wks
+        ${FOUNDATION})
+endif()
 
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
@@ -207,6 +213,13 @@ if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_C
         log
         minipal_objects
         nativeresourcestring_objects
+    )
+else()
+    # If we aren't linking in the PAL directly into coreclr_static, we need to propagate it up to targets
+    # that link to coreclr_static
+    target_link_libraries(coreclr_static
+        PUBLIC
+        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal>
     )
 endif()
 
