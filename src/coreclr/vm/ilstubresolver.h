@@ -121,9 +121,9 @@ public:
 
 protected:
     // IP to resume in. Can be tier0 code if we suspended in an OSR method.
-    PCODE m_resumeIP = NULL;
+    PCODE m_resumeIP = 0;
     // Final IP resumed in. Will be OSR method IP if suspension happened there.
-    PCODE m_finalResumeIP = NULL;
+    PCODE m_finalResumeIP = 0;
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
