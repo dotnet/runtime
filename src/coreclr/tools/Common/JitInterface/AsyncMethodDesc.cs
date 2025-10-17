@@ -64,10 +64,11 @@ namespace Internal.JitInterface
         {
             get
             {
-                var md = (MetadataType)_wrappedMethod.Signature.ReturnType;
-                var builder = new MethodSignatureBuilder(_wrappedMethod.Signature);
+                MethodSignature wrappedSignature = _wrappedMethod.Signature;
+                MetadataType md = (MetadataType)wrappedSignature.ReturnType;
+                MethodSignatureBuilder builder = new MethodSignatureBuilder(wrappedSignature);
                 builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
-                builder.Flags |= MethodSignatureFlags.AsyncCallConv;
+                builder.Flags = wrappedSignature.Flags | MethodSignatureFlags.AsyncCallConv;
                 return builder.ToSignature();
             }
         }
@@ -85,21 +86,6 @@ namespace Internal.JitInterface
 
     internal static class AsyncMethodDescExtensions
     {
-        /// <summary>
-        /// Returns the other async variant. If the supplied method is an async-callconv wrapper, returns the wrapped (Task-returning) method.
-        /// If it is a Task/ValueTask returning method, returns (and possibly creates) the async-callconv variant via the factory; otherwise null.
-        /// </summary>
-        public static MethodDesc GetOtherAsyncMethod(this MethodDesc method, AsyncMethodDescFactory factory)
-        {
-            if (method is AsyncMethodDesc amd)
-                return amd.Target; // unwrap
-
-            if (method.IsAsync && ReturnsTaskLike(method))
-                return factory.GetAsyncMethod(method);
-
-            return null;
-        }
-
         public static bool ReturnsTaskLike(this MethodDesc method)
         {
             TypeDesc ret = method.GetTypicalMethodDefinition().Signature.ReturnType;
