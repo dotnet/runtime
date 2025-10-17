@@ -6078,11 +6078,11 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE*
 
             // no ldloca or locals did not match, this can't be await pattern
             if (stlocNum != ldlocaNum)
-                return NULL;
+                return nullptr;
 
             // locals match, but no space for ConfigureAwait call, this can't be await pattern
             if (nextTmp + 2 * (1 + sizeof(mdToken)) >= codeEndp)
-                return NULL;
+                return nullptr;
 
             nextOpcode = nextTmp;
         }
@@ -6095,7 +6095,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE*
             if (stlocNum != -1)
             {
                 // we had stloc/ldloca, we must see ConfigAwait
-                return NULL;
+                return nullptr;
             }
 
             goto checkForAwait;
@@ -6111,7 +6111,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE*
             if (stlocNum != -1)
             {
                 // we had stloc/ldloca, we must see ConfigAwait
-                return NULL;
+                return nullptr;
             }
 
             goto checkForAwait;
@@ -6141,7 +6141,7 @@ checkForAwait:
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /*****************************************************************************
