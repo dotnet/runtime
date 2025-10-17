@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-
   <PropertyGroup>
-    <PackageType>DotNetSdk</PackageType>
     <IsPackable>true</IsPackable>
     <EnablePackageValidation>false</EnablePackageValidation>
     <PackageDescription>Provides support for building IL projects.</PackageDescription>

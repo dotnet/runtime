@@ -1,4 +1,6 @@
 <Project>
-  <UsePkgProjTargets>false</UsePkgProjTargets>
+  <PropertyGroup>
+    <UsePkgProjTargets>false</UsePkgProjTargets>
+  </PropertyGroup>
   <Import Project="..\Directory.Build.props" />
 </Project>
