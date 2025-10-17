@@ -4954,35 +4954,23 @@ HRESULT CordbValueEnum::Init()
         }
         case LOCAL_VARS_REJIT_IL:
         {
+#ifdef FEATURE_CODE_VERSIONING
             // Get the locals signature.
             ULONG localsCount;
-#ifdef FEATURE_CODE_VERSIONING
             CordbReJitILCode* pCode = jil->GetReJitILCode();
-#else
-            void* pCode = NULL;
-#endif // FEATURE_CODE_VERSIONING
             if (pCode == NULL)
             {
                 m_iMax = 0;
             }
             else
             {
-#ifdef FEATURE_CODE_VERSIONING
                 IfFailRet(pCode->GetLocalVarSig(NULL, &localsCount));
 
                 // Grab the number of locals for the size of the enumeration.
                 m_iMax = localsCount;
+            }
 #else
-                m_iMax = 0;
-                m_iMax = 0;
-#ifdef FEATURE_CODE_VERSIONING
-                CordbReJitILCode* pCode = jil->GetReJitILCode();
-                if (pCode != NULL)
-                {
-                    IfFailRet(pCode->GetLocalVarSig(NULL, &localsCount));
-
-                    // Grab the number of locals for the size of the enumeration.
-                    m_iMax = localsCount;
+            m_iMax = 0;
 #endif // FEATURE_CODE_VERSIONING
             }
             break;
