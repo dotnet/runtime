@@ -46,9 +46,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 endif()
 
 if(CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
-    # Emscripten doesn't support WHOLE_ARCHIVE, so define it as a no-op
-    set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE "")
-    set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED ON)
+    if (CMAKE_VERSION VERSION_LESS 4.2)
+        # Emscripten toolchain support in CMake wasn't well-supported before 4.2
+        set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE "-Wl,--whole-archive" "<LINK_ITEM>" "-Wl,--no-whole-archive")
+        set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED ON)
+    endif()
 endif()
 
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
