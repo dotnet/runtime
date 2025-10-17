@@ -2885,7 +2885,13 @@ private:
     BitVec               m_entries;
     jitstd::vector<SCC*> m_nested;
     unsigned             m_numIrr;
-    weight_t             m_entryWeight;
+
+    // lowest common ancestor try index + 1, or 0 if method region
+    unsigned m_enclosingTryIndex;
+    // lowest common ancestor handler index + 1, or 0 if method region
+    unsigned m_enclosingHndIndex;
+
+    weight_t m_entryWeight;
 
 public:
 
@@ -2898,6 +2904,8 @@ public:
         , m_entries(BitVecOps::UninitVal())
         , m_nested(comp->getAllocator(CMK_DepthFirstSearch))
         , m_numIrr(0)
+        , m_enclosingTryIndex(0)
+        , m_enclosingHndIndex(0)
         , m_entryWeight(0)
     {
         m_blocks  = BitVecOps::MakeEmpty(&m_traits);
@@ -2920,6 +2928,8 @@ public:
     {
         BitVecOps::Iter iterator(&m_traits, m_blocks);
         unsigned int    poNum;
+        bool            isFirstEntry = true;
+
         while (iterator.NextElem(&poNum))
         {
             BasicBlock* const block = m_comp->m_dfsTree->GetPostOrder(poNum);
@@ -2937,7 +2947,21 @@ public:
                 {
                     BitVecOps::AddElemD(&m_traits, m_entries, block->bbPostorderNum);
                     m_entryWeight += block->bbWeight;
-                    break;
+
+                    if (isFirstEntry)
+                    {
+                        m_enclosingTryIndex = block->bbTryIndex;
+                        m_enclosingHndIndex = block->bbHndIndex;
+                        isFirstEntry        = false;
+                    }
+                    else
+                    {
+                        // We expect all SCC headers to be in the same handler region
+                        assert(m_enclosingHndIndex == block->bbHndIndex);
+
+                        // But possibly different try regions
+                        m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
+                    }
                 }
             }
         }
@@ -3045,6 +3069,16 @@ public:
         }
     }
 
+    unsigned EnclosingTryIndex()
+    {
+        return m_enclosingTryIndex;
+    }
+
+    unsigned EnclosingHndIndex()
+    {
+        return m_enclosingHndIndex;
+    }
+
     //-----------------------------------------------------------------------------
     // TransformViaSwichDispatch: modify SCC into a reducible loop
     //
@@ -3094,7 +3128,25 @@ public:
                 BasicBlock* const header = m_comp->m_dfsTree->GetPostOrder(poHeaderNumber);
                 if (dispatcher == nullptr)
                 {
-                    dispatcher = m_comp->fgNewBBbefore(BBJ_SWITCH, header, true);
+                    if ((EnclosingTryIndex() > 0) || (EnclosingHndIndex() > 0))
+                    {
+                        const bool inTry = (EnclosingTryIndex() != 0) && (EnclosingHndIndex() == 0) ||
+                                           (EnclosingTryIndex() < EnclosingHndIndex());
+                        if (inTry)
+                        {
+                            JITDUMP("Dispatch header needs to go in try of EH#%02u ...\n", EnclosingTryIndex() - 1);
+                        }
+                        else
+                        {
+                            JITDUMP("Dispatch header needs to go in handler of EH#%02u ...\n", EnclosingHndIndex() - 1);
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP("Dispatch header needs to go in method region\n");
+                    }
+                    dispatcher = m_comp->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
+                                                         /* nearBlk */ nullptr);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
@@ -3112,6 +3164,16 @@ public:
                     m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
                     m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
+
+                // If the header is the OSR entry, and the dispatcher is in an enclosing
+                // try, we must branch there in a more complicated way...
+                //
+                // something like: create a new block in the same region as the dispatcher.
+                // In that block set the OSR control var for the OSR entry (0), and set the
+                // control vars for each enclosing try that is an SCC header (already handled)
+                // and then branch to the outermost enclosing try's header.
+                //
+                assert(!header->hasTryIndex() || (header != m_comp->fgOSREntryBB));
 
                 FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
 
