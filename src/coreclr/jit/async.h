@@ -51,8 +51,6 @@ class AsyncTransformation
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
     CORINFO_ASYNC_INFO*           m_asyncInfo;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
-    CORINFO_METHOD_HANDLE         m_resumeStub = NO_METHOD_HANDLE;
-    CORINFO_CONST_LOOKUP          m_resumeStubLookup;
     unsigned                      m_returnedContinuationVar = BAD_VAR_NUM;
     unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
     unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
@@ -140,9 +138,6 @@ class AsyncTransformation
     unsigned GetGCDataArrayVar();
     unsigned GetResultBaseVar();
     unsigned GetExceptionVar();
-
-    GenTree* CreateResumptionStubAddrTree();
-    GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup);
 
     void CreateResumptionSwitch();
 

@@ -466,14 +466,17 @@ static void DoAsyncSuspensionPoints(
     ULONG32 cSuspensionPoints,
     ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints)
 {
-    // Loop through and transfer each Entry in the Mapping.
-    uint32_t lastNativeOffset = 0;
+    uint32_t lastNativeResumeOffset = 0;
+    uint32_t lastNativeJoinOffset = 0;
     for (uint32_t i = 0; i < cSuspensionPoints; i++)
     {
         ICorDebugInfo::AsyncSuspensionPoint* sp = &suspensionPoints[i];
 
-        trans.DoEncodedDeltaU32NonMonotonic(sp->NativeOffset, lastNativeOffset);
-        lastNativeOffset = sp->NativeOffset;
+        trans.DoEncodedDeltaU32(sp->NativeResumeOffset, lastNativeResumeOffset);
+        lastNativeResumeOffset = sp->NativeResumeOffset;
+
+        trans.DoEncodedDeltaU32NonMonotonic(sp->NativeJoinOffset, lastNativeJoinOffset);
+        lastNativeJoinOffset = sp->NativeJoinOffset;
 
         trans.DoEncodedU32(sp->NumContinuationVars);
     }

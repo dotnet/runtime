@@ -186,6 +186,9 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
+    // label for trampoline to resumption stub
+    jitstd::vector<BasicBlock*>* genAsyncResumptionTrampolineLabels = nullptr;
+
     void**    codePtr;
     void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
@@ -208,6 +211,8 @@ protected:
     void genInitializeRegisterState();
 
     void genCodeForBBlist();
+    void genCodeForAsyncResumeTrampolines();
+    void genCodeForAsyncResumeTrampolineJump(CORINFO_METHOD_HANDLE resumeMethod, const CORINFO_CONST_LOOKUP& lookup);
 
 public:
     void genSpillVar(GenTree* tree);
@@ -220,6 +225,7 @@ protected:
     void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
+    BasicBlock* genCreateAsyncResumptionTrampolineLabel(GenTreeVal* node);
 
 private:
     void genLogLabel(BasicBlock* bb);

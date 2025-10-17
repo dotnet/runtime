@@ -4491,6 +4491,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_TRAMPOLINE:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:

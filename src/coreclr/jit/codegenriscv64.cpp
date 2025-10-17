@@ -6986,4 +6986,57 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
 }
 #endif // PROFILING_SUPPORTED
 
+//-----------------------------------------------------------------------------------
+// genCodeForAsyncresumeTrampolineJump:
+//   Generate code to jump to an async resumption stub.
+//
+// Arguments:
+//   methHnd - Handle of resumption stub
+//   lookup  - Lookup for the address of the resumption stub
+//
+// Remarks:
+//   The codegen for these jumps must handle a non-standard environment. No
+//   prolog has been run when these are invoked, so they cannot use locals,
+//   they cannot use non-volatile registers, and they cannot trash the argument
+//   registers that resumption stubs use (see BuildResumptionStubSignature in
+//   the VM).
+//
+void CodeGen::genCodeForAsyncResumeTrampolineJump(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
+{
+    switch (lookup.accessType)
+    {
+        case IAT_VALUE:
+        case IAT_PVALUE:
+        {
+            EmitCallParams call;
+            call.ptrVars   = VarSetOps::MakeEmpty(compiler);
+            call.gcrefRegs = RBM_NONE;
+            call.byrefRegs = RBM_NONE;
+            call.isJump    = true;
+            call.methHnd   = methHnd;
+
+            instGen_Set_Reg_To_Imm(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), REG_T0, (ssize_t)lookup.addr,
+                                   INS_FLAGS_DONT_CARE DEBUGARG((size_t)methHnd) DEBUGARG(GTF_ICON_FTN_ADDR));
+
+            if (lookup.accessType == IAT_PVALUE)
+            {
+                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_T0, REG_T0);
+            }
+            call.callType = EC_INDIR_R;
+            call.ireg     = REG_T0;
+            GetEmitter()->emitIns_Call(call);
+            break;
+        }
+        case IAT_PPVALUE:
+            noway_assert(!"Cannot handle PPVALUE access type");
+            break;
+        case IAT_RELPVALUE:
+            noway_assert(!"Cannot handle RELPVALUE access type");
+            break;
+        default:
+            noway_assert(!"Cannot handle access type");
+            break;
+    }
+}
+
 #endif // TARGET_RISCV64

@@ -514,6 +514,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForAsyncContinuation(treeNode);
             break;
 
+        case GT_ASYNC_RESUME_TRAMPOLINE:
+#if defined(TARGET_ARM)
+            genMov32RelocatableDisplacement(genCreateAsyncResumptionTrampolineLabel(treeNode->AsVal()), targetReg);
+#else
+            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genCreateAsyncResumptionTrampolineLabel(treeNode->AsVal()),
+                              targetReg);
+#endif
+            break;
+
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
                           ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
@@ -553,6 +562,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
@@ -5122,4 +5132,72 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindEndEpilog();
 }
+
+//-----------------------------------------------------------------------------------
+// genCodeForAsyncresumeTrampolineJump:
+//   Generate code to jump to an async resumption stub.
+//
+// Arguments:
+//   methHnd - Handle of resumption stub
+//   lookup  - Lookup for the address of the resumption stub
+//
+// Remarks:
+//   The codegen for these jumps must handle a non-standard environment. No
+//   prolog has been run when these are invoked, so they cannot use locals,
+//   they cannot use non-volatile registers, and they cannot trash the argument
+//   registers that resumption stubs use (see BuildResumptionStubSignature in
+//   the VM).
+//
+void CodeGen::genCodeForAsyncResumeTrampolineJump(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
+{
+    switch (lookup.accessType)
+    {
+        case IAT_VALUE:
+        case IAT_PVALUE:
+        {
+            EmitCallParams call;
+            call.ptrVars   = VarSetOps::MakeEmpty(compiler);
+            call.gcrefRegs = RBM_NONE;
+            call.byrefRegs = RBM_NONE;
+            call.isJump    = true;
+            call.methHnd   = methHnd;
+
+            if ((lookup.accessType == IAT_VALUE) && validImmForBL((ssize_t)lookup.addr))
+            {
+                call.callType = EC_FUNC_TOKEN;
+                call.addr     = lookup.addr;
+            }
+            else
+            {
+#ifdef TARGET_ARM64
+                regNumber tempReg = REG_IP0;
+#else
+                regNumber tempReg = REG_R12;
+#endif
+
+                instGen_Set_Reg_To_Imm(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), tempReg, (ssize_t)lookup.addr,
+                                       INS_FLAGS_DONT_CARE DEBUGARG((size_t)methHnd) DEBUGARG(GTF_ICON_FTN_ADDR));
+
+                if (lookup.accessType == IAT_PVALUE)
+                {
+                    GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tempReg, tempReg);
+                }
+                call.callType = EC_INDIR_R;
+                call.ireg     = tempReg;
+            }
+            GetEmitter()->emitIns_Call(call);
+            break;
+        }
+        case IAT_PPVALUE:
+            noway_assert(!"Cannot handle PPVALUE access type");
+            break;
+        case IAT_RELPVALUE:
+            noway_assert(!"Cannot handle RELPVALUE access type");
+            break;
+        default:
+            noway_assert(!"Cannot handle access type");
+            break;
+    }
+}
+
 #endif // TARGET_ARMARCH

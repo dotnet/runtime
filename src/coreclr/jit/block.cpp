@@ -1206,7 +1206,7 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
 }
 
 // Returns true if the basic block ends with either
-//  i) GT_JMP or
+//  i) GT_JMP/GT_NONLOCAL_JMP or
 // ii) tail call (implicit or explicit)
 //
 // Params:

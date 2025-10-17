@@ -988,6 +988,28 @@ BasicBlock* CodeGen::genCreateTempLabel()
     return block;
 }
 
+BasicBlock* CodeGen::genCreateAsyncResumptionTrampolineLabel(GenTreeVal* node)
+{
+    assert(node->OperIs(GT_ASYNC_RESUME_TRAMPOLINE));
+
+    if (genAsyncResumptionTrampolineLabels == nullptr)
+    {
+        genAsyncResumptionTrampolineLabels =
+            new (compiler, CMK_Codegen) jitstd::vector<BasicBlock*>(compiler->compSuspensionPoints->size(), nullptr,
+                                                                    compiler->getAllocator(CMK_Codegen));
+    }
+
+    assert(genAsyncResumptionTrampolineLabels->size() > node->gtVal1);
+
+    BasicBlock*& label = (*genAsyncResumptionTrampolineLabels)[node->gtVal1];
+    if (label == nullptr)
+    {
+        label = genCreateTempLabel();
+    }
+
+    return label;
+}
+
 void CodeGen::genLogLabel(BasicBlock* bb)
 {
 #ifdef DEBUG
@@ -6676,16 +6698,17 @@ void CodeGen::genReportAsyncDebugInfo()
     for (size_t i = 0; i < suspPoints->size(); i++)
     {
         AsyncSuspensionPoint& suspPoint = (*suspPoints)[i];
-        if (suspPoint.nativeLoc.Valid())
+        if (suspPoint.nativeResumeLoc.Valid())
         {
-            hostSuspensionPoints[i].NativeOffset        = suspPoint.nativeLoc.CodeOffset(GetEmitter());
-            hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
+            hostSuspensionPoints[i].NativeResumeOffset = suspPoint.nativeResumeLoc.CodeOffset(GetEmitter());
         }
-        else
+
+        if (suspPoint.nativeJoinLoc.Valid())
         {
-            hostSuspensionPoints[i].NativeOffset        = 0;
-            hostSuspensionPoints[i].NumContinuationVars = 0;
+            hostSuspensionPoints[i].NativeJoinOffset = suspPoint.nativeJoinLoc.CodeOffset(GetEmitter());
         }
+
+        hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
     }
 
     jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = compiler->compAsyncVars;
@@ -6703,7 +6726,8 @@ void CodeGen::genReportAsyncDebugInfo()
         printf("Reported async suspension points:\n");
         for (size_t i = 0; i < suspPoints->size(); i++)
         {
-            printf("  [%zu] Offset = %x, NumAsyncVars = %u\n", i, hostSuspensionPoints[i].NativeOffset,
+            printf("  [%zu] ResumeOffset = %x, JoinOffset = %x, NumAsyncVars = %u\n", i,
+                   hostSuspensionPoints[i].NativeResumeOffset, hostSuspensionPoints[i].NativeJoinOffset,
                    hostSuspensionPoints[i].NumContinuationVars);
         }
 
@@ -6925,7 +6949,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
     // In flowgraph and other places assert that the last node of a block marked as
-    // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
+    // BBJ_RETURN is either a GT_RETURN, GT_JMP, GT_NONLOCAL_JMP or a tail call.  It would be nice to
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
     //
