@@ -1622,7 +1622,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _reportMetadata(IntPtr thisHandle, IntPtr* ppException, byte* key, void* value, UIntPtr length)
+        private static void _reportMetadata(IntPtr thisHandle, IntPtr* ppException, byte* key, void* value, nuint length)
         {
             var _this = GetThis(thisHandle);
             try
@@ -2620,7 +2620,7 @@ namespace Internal.JitInterface
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 177);
+            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * 177));
 
             callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_notifyMethodInfoUsage;
@@ -2731,8 +2731,8 @@ namespace Internal.JitInterface
             callbacks[106] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, NativeVarInfo*, void>)&_setVars;
             callbacks[107] = (delegate* unmanaged<IntPtr, IntPtr*, InlineTreeNode*, uint, RichOffsetMapping*, uint, void>)&_reportRichMappings;
             callbacks[108] = (delegate* unmanaged<IntPtr, IntPtr*, AsyncInfo*, AsyncSuspensionPoint*, AsyncContinuationVarInfo*, uint, void>)&_reportAsyncDebugInfo;
-            callbacks[109] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, void*, UIntPtr, void>)&_reportMetadata;
-            callbacks[110] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocateArray;
+            callbacks[109] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, void*, nuint, void>)&_reportMetadata;
+            callbacks[110] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, void*>)&_allocateArray;
             callbacks[111] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_freeArray;
             callbacks[112] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ARG_LIST_STRUCT_*, CORINFO_ARG_LIST_STRUCT_*>)&_getArgNext;
             callbacks[113] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, CORINFO_ARG_LIST_STRUCT_*, CORINFO_CLASS_STRUCT_**, CorInfoTypeWithMod>)&_getArgType;
@@ -2744,8 +2744,8 @@ namespace Internal.JitInterface
             callbacks[119] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void>)&_getEEInfo;
             callbacks[120] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASYNC_INFO*, void>)&_getAsyncInfo;
             callbacks[121] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken>)&_getMethodDefFromMethod;
-            callbacks[122] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, UIntPtr, UIntPtr*, UIntPtr>)&_printMethodName;
-            callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, UIntPtr, byte*>)&_getMethodNameFromMetadata;
+            callbacks[122] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, nuint, nuint*, nuint>)&_printMethodName;
+            callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, nuint, byte*>)&_getMethodNameFromMetadata;
             callbacks[124] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodHash;
             callbacks[125] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, byte>)&_getSystemVAmd64PassStructInRegisterDescriptor;
             callbacks[126] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void>)&_getSwiftLowering;
@@ -2785,7 +2785,7 @@ namespace Internal.JitInterface
             callbacks[160] = (delegate* unmanaged<IntPtr, IntPtr*, AllocMemArgs*, void>)&_allocMem;
             callbacks[161] = (delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void>)&_reserveUnwindInfo;
             callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, byte*, uint, uint, uint, byte*, CorJitFuncKind, void>)&_allocUnwindInfo;
-            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocGCInfo;
+            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, void*>)&_allocGCInfo;
             callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, uint, void>)&_setEHcount;
             callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_EH_CLAUSE*, void>)&_setEHinfo;
             callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, uint, byte*, IntPtr, byte>)&_logMsg;
