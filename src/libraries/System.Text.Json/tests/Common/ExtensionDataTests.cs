@@ -1525,6 +1525,50 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expected, actual);
         }
 
+        [Fact]
+        public async Task IReadOnlyDictionary_PrePopulated_SeedsNewInstance()
+        {
+            string json = @"{""MyIntMissing"":2, ""KeyToOverwrite"":""NewValue"", ""MyInt"":1}";
+            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryAlreadyInstantiated>(json);
+
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+
+            // Should have the existing key from the initializer
+            Assert.True(obj.MyOverflow.ContainsKey("ExistingKey"));
+            Assert.Equal("ExistingValue", ((JsonElement)obj.MyOverflow["ExistingKey"]).GetString());
+
+            // Should have the new key from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("MyIntMissing"));
+            Assert.Equal(2, ((JsonElement)obj.MyOverflow["MyIntMissing"]).GetInt32());
+
+            // Existing key should be overwritten with new value from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("KeyToOverwrite"));
+            Assert.Equal("NewValue", ((JsonElement)obj.MyOverflow["KeyToOverwrite"]).GetString());
+        }
+
+        [Fact]
+        public async Task IReadOnlyDictionary_PrePopulated_JsonElement_SeedsNewInstance()
+        {
+            string json = @"{""MyIntMissing"":2, ""KeyToOverwrite"":""NewValue"", ""MyInt"":1}";
+            var obj = await Serializer.DeserializeWrapper<ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated>(json);
+
+            Assert.NotNull(obj.MyOverflow);
+            Assert.Equal(1, obj.MyInt);
+
+            // Should have the existing key from the initializer
+            Assert.True(obj.MyOverflow.ContainsKey("ExistingKey"));
+            Assert.Equal("ExistingValue", obj.MyOverflow["ExistingKey"].GetString());
+
+            // Should have the new key from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("MyIntMissing"));
+            Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
+
+            // Existing key should be overwritten with new value from deserialization
+            Assert.True(obj.MyOverflow.ContainsKey("KeyToOverwrite"));
+            Assert.Equal("NewValue", obj.MyOverflow["KeyToOverwrite"].GetString());
+        }
+
         public class ClassWithIReadOnlyDictionaryExtensionPropertyAsObject
         {
             [JsonExtensionData]
@@ -1551,6 +1595,30 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonExtensionData]
             public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        public class ClassWithIReadOnlyDictionaryAlreadyInstantiated
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, object> MyOverflow { get; set; } = new Dictionary<string, object>
+            {
+                ["ExistingKey"] = JsonDocument.Parse("\"ExistingValue\"").RootElement,
+                ["KeyToOverwrite"] = JsonDocument.Parse("\"OldValue\"").RootElement
+            };
+        }
+
+        public class ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated
+        {
+            public int MyInt { get; set; }
+
+            [JsonExtensionData]
+            public IReadOnlyDictionary<string, JsonElement> MyOverflow { get; set; } = new Dictionary<string, JsonElement>
+            {
+                ["ExistingKey"] = JsonDocument.Parse("\"ExistingValue\"").RootElement,
+                ["KeyToOverwrite"] = JsonDocument.Parse("\"OldValue\"").RootElement
+            };
         }
     }
 }

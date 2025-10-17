@@ -110,7 +110,13 @@ namespace System.Text.Json
             Debug.Assert(jsonPropertyInfo != null);
 
             object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
-            if (extensionData == null)
+
+            // For IReadOnlyDictionary, if there's an existing non-null instance, we need to create a new mutable
+            // Dictionary seeded with the existing contents so we can add the deserialized extension data to it.
+            bool isReadOnlyDictionary = jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                                        jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
+
+            if (extensionData == null || (isReadOnlyDictionary && extensionData != null))
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
@@ -139,20 +145,43 @@ namespace System.Text.Json
                         ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
                     }
                     // For IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement> interface types,
-                    // create a Dictionary<TKey, TValue> instance. We only do this if Dictionary can be assigned back
-                    // to the property (i.e., the property is the interface type itself, not a concrete implementation).
-                    else if (typeof(IReadOnlyDictionary<string, object>).IsAssignableFrom(jsonPropertyInfo.PropertyType) &&
-                             jsonPropertyInfo.PropertyType.IsAssignableFrom(typeof(Dictionary<string, object>)))
+                    // create a Dictionary<TKey, TValue> instance seeded with any existing contents.
+                    else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>))
                     {
-                        extensionData = new Dictionary<string, object>();
+                        if (extensionData != null)
+                        {
+                            var existing = (IReadOnlyDictionary<string, object>)extensionData;
+                            var newDict = new Dictionary<string, object>();
+                            foreach (KeyValuePair<string, object> kvp in existing)
+                            {
+                                newDict[kvp.Key] = kvp.Value;
+                            }
+                            extensionData = newDict;
+                        }
+                        else
+                        {
+                            extensionData = new Dictionary<string, object>();
+                        }
                         Debug.Assert(jsonPropertyInfo.Set != null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
                     }
-                    else if (typeof(IReadOnlyDictionary<string, JsonElement>).IsAssignableFrom(jsonPropertyInfo.PropertyType) &&
-                             jsonPropertyInfo.PropertyType.IsAssignableFrom(typeof(Dictionary<string, JsonElement>)))
+                    else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
                     {
-                        extensionData = new Dictionary<string, JsonElement>();
+                        if (extensionData != null)
+                        {
+                            var existing = (IReadOnlyDictionary<string, JsonElement>)extensionData;
+                            var newDict = new Dictionary<string, JsonElement>();
+                            foreach (KeyValuePair<string, JsonElement> kvp in existing)
+                            {
+                                newDict[kvp.Key] = kvp.Value;
+                            }
+                            extensionData = newDict;
+                        }
+                        else
+                        {
+                            extensionData = new Dictionary<string, JsonElement>();
+                        }
                         Debug.Assert(jsonPropertyInfo.Set != null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
