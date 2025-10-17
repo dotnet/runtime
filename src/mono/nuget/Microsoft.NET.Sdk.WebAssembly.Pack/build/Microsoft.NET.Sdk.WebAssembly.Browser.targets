@@ -519,8 +519,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBootConfigFileExtension>$([System.IO.Path]::GetExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileExtension>
     </PropertyGroup>
     <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintBootConfig)' == 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileNameWithoutExtension).%(Fingerprint)$(_WasmBootConfigFileExtension)'" />
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintBootConfig)' != 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintAssets)' == 'true' and '$(_WasmFingerprintBootConfig)' == 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileNameWithoutExtension).%(Fingerprint)$(_WasmBootConfigFileExtension)'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="('$(_WasmFingerprintAssets)' != 'true' or '$(_WasmFingerprintBootConfig)' != 'true') and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
