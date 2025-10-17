@@ -8075,7 +8075,7 @@ namespace System.Text.Json.Tests
             
             writer.WriteStartObject();
             
-            string longName = new string('a', 1000000001);
+            string longName = new string('a', 170_000_000);
             
             Assert.Throws<ArgumentException>(() => writer.WritePropertyName(longName.AsSpan()));
         }
@@ -8088,7 +8088,7 @@ namespace System.Text.Json.Tests
             
             writer.WriteStartArray();
             
-            string longValue = new string('a', 1000000001);
+            string longValue = new string('a', 170_000_000);
             
             Assert.Throws<ArgumentException>(() => writer.WriteStringValue(longValue.AsSpan()));
         }
