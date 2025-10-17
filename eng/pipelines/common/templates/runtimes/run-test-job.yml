@@ -334,14 +334,14 @@ jobs:
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           ${{ if eq(parameters.runInterpreter, 'true') }}:
             scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode3
+            - interpmode2_no_tiered_compilation
+            - interpmode2
             - normal
             - no_tiered_compilation
             - interpmode1_no_tiered_compilation
-            - interpmode2_no_tiered_compilation
-            - interpmode3_no_tiered_compilation
             - interpmode1
-            - interpmode2
-            - interpmode3
           ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
