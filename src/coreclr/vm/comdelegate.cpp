@@ -1344,6 +1344,10 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
     }
     else
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_DynamicEntrypoint"));
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         UMEntryThunkData*   pUMEntryThunk   = NULL;
         SyncBlock*          pSyncBlock      = pDelegate->GetSyncBlock();
 
@@ -1407,6 +1411,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
         }
         pCode = (PCODE)pUMEntryThunk->GetCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     GCPROTECT_END();
@@ -1431,6 +1436,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Check if this callback was originally a managed method passed out to unmanaged code.
     //
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     UMEntryThunk* pUMEntryThunk = NULL;
 
     auto stubKind = RangeSectionStubManager::GetStubKind((PCODE)pCallback);
@@ -1443,19 +1449,19 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         }
     }
 
-
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
-    OBJECTHANDLE DelegateHnd = (pUMEntryThunk != NULL)
+    OBJECTHANDLE delegateHnd = (pUMEntryThunk != NULL)
         ? pUMEntryThunk->GetData()->GetObjectHandle()
         : (OBJECTHANDLE)NULL;
 
-    if (DelegateHnd != (OBJECTHANDLE)NULL)
+    if (delegateHnd != (OBJECTHANDLE)NULL)
     {
         // Found a managed callsite
-        return ObjectFromHandle(DelegateHnd);
+        return ObjectFromHandle(delegateHnd);
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Validate the MethodTable is a delegate type
     // See Marshal.GetDelegateForFunctionPointer() for exception details.
@@ -2403,16 +2409,16 @@ static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, boo
                 // We need to check whether constraints of fromHandle have been loaded, because the
                 // CanCastTo operation might have made its decision without enumerating constraints
                 // (e.g. when toHandle is System.Object).
-                if (!fromHandleVar->ConstraintsLoaded())
-                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                if (!fromHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                 if (toHandle.IsGenericVariable())
                 {
                     TypeVarTypeDesc *toHandleVar = toHandle.AsGenericVariable();
 
                     // Constraints of toHandleVar were not touched by CanCastTo.
-                    if (!toHandleVar->ConstraintsLoaded())
-                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                    if (!toHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                     // Both handles are type variables. The following table lists all possible combinations.
                     //
