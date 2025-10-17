@@ -187,7 +187,7 @@ endif()
 if(TARGET coreclr)
     target_link_libraries(coreclr PUBLIC
         ${CORECLR_LIBRARIES}
-        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal> # force all PAL objects to be included so all exports are available
+        $<LINK_LIBRARY:WHOLE_ARCHIVE,$<TARGET_NAME_IF_EXISTS:coreclrpal>> # force all PAL objects to be included so all exports are available
         ${CLRJIT_STATIC}
         ${CLRINTERPRETER_STATIC}
         cee_wks_core
@@ -214,7 +214,7 @@ if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_C
         minipal_objects
         nativeresourcestring_objects
     )
-else()
+elseif (TARGET coreclrpal)
     # If we aren't linking in the PAL directly into coreclr_static, we need to propagate it up to targets
     # that link to coreclr_static
     target_link_libraries(coreclr_static
