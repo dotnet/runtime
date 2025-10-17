@@ -40,6 +40,7 @@
     <Compile Include="RegexParserTests.cs" />
     <Compile Include="RegexPcreTests.cs" />
     <Compile Include="RegexRustTests.cs" />
+    <Compile Include="RegexNimTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
