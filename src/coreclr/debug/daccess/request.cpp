@@ -4732,7 +4732,6 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     SOSDacLeave();
 
     return hr;
-}
 #else
     return E_NOTIMPL;
 #endif // FEATURE_CODE_VERSIONING
