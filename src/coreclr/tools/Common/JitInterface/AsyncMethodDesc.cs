@@ -67,39 +67,28 @@ namespace Internal.JitInterface
             {
                 var wrappedSignature = _wrappedMethod.Signature;
                 var ret = wrappedSignature.ReturnType;
-                if (ret is MetadataType md)
+                var md = ret as MetadataType;
+                Debug.Assert(md.Namespace.SequenceEqual("System.Threading.Tasks"u8));
+                ReadOnlySpan<byte> name = md.Name;
+                TypeDesc returnType = null;
+                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("ValueTask"u8))
                 {
-                    if (md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
-                    {
-                        ReadOnlySpan<byte> name = md.Name;
-                        TypeDesc returnType = null;
-                        if (name.SequenceEqual("Task"u8) || name.SequenceEqual("ValueTask"u8))
-                        {
-                            returnType = this.Context.GetWellKnownType(WellKnownType.Void);
-                        }
-                        else if (name.SequenceEqual("Task`1"u8) || name.SequenceEqual("ValueTask`1"u8))
-                        {
-                            returnType = md.Instantiation[0];
-                        }
-                        else
-                        {
-                            throw new UnreachableException("AsyncMethodDesc should not wrap a non-Task-like-returning method");
-                        }
-                        TypeDesc[] parameters = new TypeDesc[wrappedSignature.Length];
-                        for (int i = 0; i < wrappedSignature.Length; i++)
-                        {
-                            parameters[i] = wrappedSignature[i];
-                        }
-
-                        return new MethodSignature(
-                            wrappedSignature.Flags | MethodSignatureFlags.AsyncCallConv,
-                            wrappedSignature.GenericParameterCount,
-                            returnType,
-                            parameters,
-                            wrappedSignature.GetEmbeddedSignatureData());
-                    }
+                    returnType = this.Context.GetWellKnownType(WellKnownType.Void);
                 }
-                throw new UnreachableException("AsyncMethodDesc should not wrap a non-Task-like-returning method");
+                else if (name.SequenceEqual("Task`1"u8) || name.SequenceEqual("ValueTask`1"u8))
+                {
+                    Debug.Assert(returnType.HasInstantiation);
+                    returnType = md.Instantiation[0];
+                }
+                else
+                {
+                    throw new UnreachableException("AsyncMethodDesc should not wrap a non-Task-like-returning method");
+                }
+
+                var builder = new MethodSignatureBuilder(_wrappedMethod.Signature);
+                builder.ReturnType = returnType;
+                builder.Flags |= MethodSignatureFlags.AsyncCallConv;
+                return builder.ToSignature();
             }
         }
 
