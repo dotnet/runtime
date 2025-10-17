@@ -38,8 +38,7 @@
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnV8' or 
                                       '$(Scenario)' == 'WasmTestOnChrome' or 
-                                      '$(Scenario)' == 'WasmTestOnFirefox' or 
-                                      '$(Scenario)' == 'WasmTestOnNodeJS'">true</IsRunningLibraryTests>
+                                      '$(Scenario)' == 'WasmTestOnFirefox'">true</IsRunningLibraryTests>
 
     <HelixExtensionTargets />
     <PrepareForBuildHelixWorkItems_WasmDependsOn>
@@ -58,7 +57,7 @@
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
-    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
     <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
@@ -178,10 +177,9 @@
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
                       '$(Scenario)' != 'WasmTestOnFirefox' and 
-                      '$(Scenario)' != 'WasmTestOnNodeJS' and 
                       '$(Scenario)' != 'WasmDebuggerTests' and 
                       '$(Scenario)' != 'BuildWasmApps'" 
-                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
     <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
@@ -231,19 +229,13 @@
 
   <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
     <ItemGroup Label="Add samples">
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnFirefox'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnFirefox'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'WasmTestOnFirefox'" />
 
       <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <Timeout Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
         <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
         <Timeout Condition="'%(FileName)' == 'System.IO.FileSystem.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
@@ -255,7 +247,6 @@
     <!-- Create work items for run-only WASM sample apps  -->
     <ItemGroup>
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnV8'"                 Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
-      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJS'"             Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnChrome'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
       <!-- xharness -> selenium -> firefox doesn't support forwarding console without dotnet.withConsoleForwarding()
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnFirefox'"            Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
