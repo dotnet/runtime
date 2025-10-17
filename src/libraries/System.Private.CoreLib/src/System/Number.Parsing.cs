@@ -1178,52 +1178,47 @@ namespace System
                 return isNegative ? -TFloat.Zero : TFloat.Zero;
             }
 
-            // Combine integer and fractional parts into a single significand
             // The hex significand represents: integerPart + fractionalPart * 16^(-fractionalDigits)
-            // We need to normalize this and adjust the exponent
+            // The value is: significand * 2^binaryExponent
+            // Key invariant: e = binaryExponent - 4*fractionalDigits accounts for the fractional part's scale
+            // Every time we left-shift significand by s, we do e -= s
 
+            int exponent = binaryExponent - (fractionalDigits * 4);
             ulong significand;
 
             if (integerPart != 0)
             {
-                // Normalize integer part
-                int shift = 64 - BitOperations.LeadingZeroCount(integerPart);
+                // Start with integer part
                 significand = integerPart;
 
-                // Add fractional part if space allows
-                if (fractionalDigits > 0 && shift < 64)
+                // Add fractional part by shifting integer left and OR-ing fractional
+                int fractionalBits = fractionalDigits * 4;
+                if (fractionalBits > 0 && fractionalBits <= 64 - BitOperations.LeadingZeroCount(significand))
                 {
-                    int fractionalShift = fractionalDigits * 4;
-                    if (fractionalShift < 64 - shift)
+                    significand = (significand << fractionalBits) | fractionalPart;
+                    exponent -= fractionalBits;
+                }
+                else if (fractionalBits > 0)
+                {
+                    // Can't fit all fractional bits, take what we can
+                    int availableBits = 64 - BitOperations.LeadingZeroCount(significand);
+                    if (availableBits < 64)
                     {
-                        significand = (significand << fractionalShift) | fractionalPart;
-                        shift += fractionalShift;
-                    }
-                    else
-                    {
-                        // Partial fractional part
-                        int availableShift = 64 - shift;
-                        int usedFractionalDigits = availableShift / 4;
-                        significand = (significand << (usedFractionalDigits * 4)) | (fractionalPart >> ((fractionalDigits - usedFractionalDigits) * 4));
-                        shift = 64;
+                        significand = (significand << availableBits) | (fractionalPart >> (fractionalBits - availableBits));
+                        exponent -= availableBits;
                     }
                 }
-
-                binaryExponent += shift - (fractionalDigits * 4);
             }
             else
             {
-                // Only fractional part
-                int shift = 64 - BitOperations.LeadingZeroCount(fractionalPart);
-                significand = fractionalPart << (64 - shift);
-                binaryExponent += -((fractionalDigits * 4) - (64 - shift));
+                // Only fractional part - it's already the significand
+                significand = fractionalPart;
             }
 
-            // Convert to IEEE 754 representation
+            // Normalize: shift significand so MSB is set at bit 63
             int mantissaBits = TFloat.NormalMantissaBits;
             int exponentBias = TFloat.ExponentBias;
 
-            // Normalize significand to have the MSB set
             if (significand == 0)
             {
                 return isNegative ? -TFloat.Zero : TFloat.Zero;
@@ -1233,11 +1228,13 @@ namespace System
             if (leadingZeros > 0)
             {
                 significand <<= leadingZeros;
-                binaryExponent -= leadingZeros;
+                exponent -= leadingZeros;
             }
 
-            // Adjust exponent for the hidden bit in IEEE 754
-            int actualExponent = binaryExponent + exponentBias;
+            // At this point, significand has MSB set, representing a value in [1, 2)
+            // The IEEE 754 format has an implicit leading 1, so we need to adjust
+            // actualExponent = exponent + exponentBias + 63 (since MSB is at bit 63, not bit 0)
+            int actualExponent = exponent + exponentBias + 63;
 
             // Handle overflow to infinity
             if (actualExponent >= TFloat.InfinityExponent)
@@ -1258,18 +1255,21 @@ namespace System
                 actualExponent = 0;
             }
 
+            // Extract the mantissa bits (top mantissaBits bits after the implicit leading 1)
             // Round to nearest, ties to even
-            int roundBit = 64 - mantissaBits - 1;
-            ulong mask = (1UL << roundBit) - 1;
-            ulong roundingBits = significand & mask;
-            significand >>= roundBit;
+            int roundBitPos = 63 - mantissaBits;
+            ulong roundBit = 1UL << roundBitPos;
+            ulong roundMask = roundBit - 1;
+            ulong roundingBits = significand & roundMask;
+
+            significand >>= roundBitPos;
 
             // Round to nearest, ties to even
-            if (roundingBits > (1UL << (roundBit - 1)) ||
-                (roundingBits == (1UL << (roundBit - 1)) && (significand & 1) == 1))
+            if (roundingBits > (roundBit >> 1) ||
+                (roundingBits == (roundBit >> 1) && (significand & 1) == 1))
             {
                 significand++;
-                if ((significand >> (mantissaBits + 1)) != 0)
+                if (significand > ((1UL << (mantissaBits + 1)) - 1))
                 {
                     // Overflow in rounding
                     significand >>= 1;
