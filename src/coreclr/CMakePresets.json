@@ -16,9 +16,6 @@
       "name": "windows-base",
       "hidden": true,
       "inherits": "base",
-      "cacheVariables": {
-        "CLR_CMAKE_TARGET_OS": "windows"
-      },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -29,9 +26,6 @@
       "name": "osx-base",
       "hidden": true,
       "inherits": "base",
-      "cacheVariables": {
-        "CLR_CMAKE_TARGET_OS": "darwin"
-      },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -42,9 +36,6 @@
       "name": "linux-base",
       "hidden": true,
       "inherits": "base",
-      "cacheVariables": {
-        "CLR_CMAKE_TARGET_OS": "linux"
-      },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
