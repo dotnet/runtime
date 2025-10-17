@@ -1448,7 +1448,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     if (layout.OSRILOffset != UINT_MAX)
         continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
     if (layout.ExceptionOffset != UINT_MAX)
-        continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
+        continuationFlags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
     if (layout.ContinuationContextOffset != UINT_MAX)
         continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
     if (layout.ReturnValOffset != UINT_MAX)

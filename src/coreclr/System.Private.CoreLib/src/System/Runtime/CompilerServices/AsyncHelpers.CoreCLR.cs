@@ -48,25 +48,34 @@ namespace System.Runtime.CompilerServices
     }
 
     [Flags]
-    internal enum CorInfoContinuationFlags
+    // Keep in sync with CORINFO_CONTINUATION_FLAGS
+    internal enum ContinuationFlags
     {
-        CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
-        // If this bit is set the continuation resumes inside a try block and thus
-        // if an exception is being propagated, needs to be resumed. The exception
-        // should be placed at index 0 or 1 depending on whether the continuation
-        // also expects a result.
-        CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
-        CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
-        CORINFO_CONTINUATION_HAS_RESULT = 8,
+        // Note: the following 'Has' members determine the members present at
+        // the beginning of the continuation's data chunk. Each field is
+        // pointer sized when present, apart from the result that has variable
+        // size.
+
+        // Whether or not the continuation starts with an OSR IL offset.
+        HasOsrILOffset = 1,
+        // If this bit is set the continuation resumes inside a try block and
+        // thus if an exception is being propagated, needs to be resumed.
+        HasException = 2,
+        // If this bit is set the continuation has space for a continuation
+        // context.
+        HasContinuationContext = 4,
+        // If this bit is set the continuation has space to store a result
+        // returned by the callee.
+        HasResult = 8,
         // If this bit is set the continuation should continue on the thread
         // pool.
-        CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
-        // If this bit is set the continuation has a SynchronizationContext
-        // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
-        // If this bit is set the continuation has a TaskScheduler
-        // that we should continue on.
-        CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
+        ContinueOnThreadPool = 16,
+        // If this bit is set the continuation context is a
+        // SynchronizationContext that we should continue on.
+        ContinueOnCapturedSynchronizationContext = 32,
+        // If this bit is set the continuation context is a TaskScheduler that
+        // we should continue on.
+        ContinueOnCapturedTaskScheduler = 64,
     }
 
 #pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically
@@ -74,41 +83,41 @@ namespace System.Runtime.CompilerServices
     {
         public Continuation? Next;
         public delegate*<Continuation, ref byte, Continuation?> Resume;
-        public CorInfoContinuationFlags Flags;
+        public ContinuationFlags Flags;
         public int State;
 
 #if TARGET_64BIT
-        private const int POINTER_SIZE = 8;
+        private const int PointerSize = 8;
 #else
-        private const int POINTER_SIZE = 4;
+        private const int PointerSize = 4;
 #endif
 
-        private const int CONTINUATION_OFFSET_TO_DATA = POINTER_SIZE /* Next */ + POINTER_SIZE /* Resume */ + 8 /* Flags + State */;
+        private const int DataOffset = PointerSize /* Next */ + PointerSize /* Resume */ + 8 /* Flags + State */;
 
         public unsafe object GetContinuationContext()
         {
-            Debug.Assert((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT - 1));
+            Debug.Assert((Flags & ContinuationFlags.HasContinuationContext) != 0);
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasContinuationContext - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE));
+            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize));
         }
 
         public void SetException(Exception ex)
         {
-            Debug.Assert((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION - 1));
+            Debug.Assert((Flags & ContinuationFlags.HasException) != 0);
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasException - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE)) = ex;
+            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize)) = ex;
         }
 
         public ref byte GetResultStorageOrNull()
         {
-            if ((Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_RESULT) == 0)
+            if ((Flags & ContinuationFlags.HasResult) == 0)
                 return ref Unsafe.NullRef<byte>();
 
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)CorInfoContinuationFlags.CORINFO_CONTINUATION_HAS_RESULT - 1));
+            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasResult - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return ref Unsafe.Add(ref data, CONTINUATION_OFFSET_TO_DATA + contIndex * POINTER_SIZE);
+            return ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize);
         }
     }
 
@@ -412,7 +421,7 @@ namespace System.Runtime.CompilerServices
                     if (nextContinuation == null)
                         return null;
 
-                    if ((nextContinuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_NEEDS_EXCEPTION) != 0)
+                    if ((nextContinuation.Flags & ContinuationFlags.HasException) != 0)
                         return nextContinuation;
 
                     continuation = nextContinuation;
@@ -436,10 +445,10 @@ namespace System.Runtime.CompilerServices
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                 // These never have special continuation handling.
-                const CorInfoContinuationFlags continueFlags =
-                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT |
-                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL |
-                    CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+                const ContinuationFlags continueFlags =
+                    ContinuationFlags.ContinueOnCapturedSynchronizationContext |
+                    ContinuationFlags.ContinueOnThreadPool |
+                    ContinuationFlags.ContinueOnCapturedTaskScheduler;
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 TOps.SetContinuationState(task, headContinuation);
@@ -474,7 +483,7 @@ namespace System.Runtime.CompilerServices
 
             private static bool QueueContinuationFollowUpActionIfNecessary<T, TOps>(T task, Continuation continuation) where T : Task where TOps : IRuntimeAsyncTaskOps<T>
             {
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL) != 0)
+                if ((continuation.Flags & ContinuationFlags.ContinueOnThreadPool) != 0)
                 {
                     SynchronizationContext? ctx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
                     if (ctx == null || ctx.GetType() == typeof(SynchronizationContext))
@@ -492,7 +501,7 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT) != 0)
+                if ((continuation.Flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
                 {
                     object continuationContext = continuation.GetContinuationContext();
                     Debug.Assert(continuationContext is SynchronizationContext { });
@@ -518,7 +527,7 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                if ((continuation.Flags & CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER) != 0)
+                if ((continuation.Flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
                 {
                     object continuationContext = continuation.GetContinuationContext();
                     Debug.Assert(continuationContext is TaskScheduler { });
@@ -642,11 +651,11 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static void CaptureContinuationContext(SynchronizationContext syncCtx, ref object context, ref CorInfoContinuationFlags flags)
+        private static void CaptureContinuationContext(SynchronizationContext syncCtx, ref object context, ref ContinuationFlags flags)
         {
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
-                flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT;
+                flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
                 context = syncCtx;
                 return;
             }
@@ -654,12 +663,12 @@ namespace System.Runtime.CompilerServices
             TaskScheduler? sched = TaskScheduler.InternalCurrent;
             if (sched != null && sched != TaskScheduler.Default)
             {
-                flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER;
+                flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
                 context = sched;
                 return;
             }
 
-            flags |= CorInfoContinuationFlags.CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
+            flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
         internal static T CompletedTaskResult<T>(Task<T> task)
