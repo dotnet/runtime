@@ -401,7 +401,7 @@ namespace System.Text.RegularExpressions.Generator
             return null;
         }
 
-        static bool ShouldUseVerbatimString(string str)
+        private static bool ShouldUseVerbatimString(string str)
         {
             // Use verbatim string syntax if the string contains backslashes or newlines
             // to preserve readability, especially for patterns with RegexOptions.IgnorePatternWhitespace
