@@ -2151,22 +2151,22 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* LongLifetimeMalloc(UIntPtr sz)
+        private void* LongLifetimeMalloc(nuint sz)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return (void*)Marshal.AllocCoTaskMem((int)sz);
+            return NativeMemory.Alloc(sz);
         }
 
 #pragma warning disable CA1822 // Mark members as static
         private void LongLifetimeFree(void* obj)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeCoTaskMem((IntPtr)obj);
+            NativeMemory.Free(obj);
         }
 
-        private UIntPtr getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void* getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassStaticDynamicInfo"); }
-        private UIntPtr getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassThreadStaticDynamicInfo"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
@@ -2334,7 +2334,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.MetadataBaseType is { ContainsGCPointers: true } baseType)
+            if (type.BaseType is { ContainsGCPointers: true } baseType)
                 result += GatherClassGCLayout(baseType, gcPtrs);
 
             bool isInlineArray = type.IsInlineArray;
@@ -2616,7 +2616,7 @@ namespace Internal.JitInterface
             return GetTypeLayoutResult.Success;
         }
 
-        private GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, UIntPtr* numTreeNodes)
+        private GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint* numTreeNodes)
         {
             TypeDesc type = HandleToObject(typeHnd);
 
@@ -3211,8 +3211,8 @@ namespace Internal.JitInterface
         private void reportRichMappings(InlineTreeNode* inlineTree, uint numInlineTree, RichOffsetMapping* mappings, uint numMappings)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)inlineTree);
-            Marshal.FreeHGlobal((IntPtr)mappings);
+            NativeMemory.Free(inlineTree);
+            NativeMemory.Free(mappings);
         }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -3222,17 +3222,17 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* allocateArray(UIntPtr cBytes)
+        private void* allocateArray(nuint cBytes)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return (void*)Marshal.AllocHGlobal((IntPtr)(void*)cBytes);
+            return NativeMemory.Alloc(cBytes);
         }
 
 #pragma warning disable CA1822 // Mark members as static
         private void freeArray(void* array)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)array);
+            NativeMemory.Free(array);
         }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -3347,10 +3347,10 @@ namespace Internal.JitInterface
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
-            pEEInfoOut.osPageSize = new UIntPtr(0x1000);
+            pEEInfoOut.osPageSize = 0x1000;
 
             pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
-                new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
+                (32 * 1024 - 1) : (pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
@@ -3443,7 +3443,7 @@ namespace Internal.JitInterface
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                EcmaType owningType = (EcmaType)ecmaMethod.OwningType;
+                EcmaType owningType = ecmaMethod.OwningType;
                 var reader = owningType.MetadataReader;
 
                 if (className != null)
@@ -3456,7 +3456,7 @@ namespace Internal.JitInterface
                 EcmaType containingType = owningType;
                 for (nuint i = 0; i < maxEnclosingClassNames; i++)
                 {
-                    containingType = containingType.ContainingType as EcmaType;
+                    containingType = containingType.ContainingType;
                     if (containingType == null)
                         break;
 
@@ -3867,9 +3867,9 @@ namespace Internal.JitInterface
 #endif
         }
 
-        private void* allocGCInfo(UIntPtr size)
+        private void* allocGCInfo(nuint size)
         {
-            _gcInfo = new byte[(int)size];
+            _gcInfo = new byte[size];
             return (void*)GetPin(_gcInfo);
         }
 

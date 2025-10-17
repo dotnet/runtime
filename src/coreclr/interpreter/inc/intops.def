@@ -236,6 +236,9 @@ OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpHelperFtn) // [class handle
 OPDEF(INTOP_UNBOX_ANY_GENERIC, "unbox.any.generic", 6, 1, 2, InterpOpGenericHelperFtn) // [class handle data item] [helper data item]
 // Unary operations end
 
+OPDEF(INTOP_UNBOX_END, "unbox.end", 4, 1, 1, InterpOpLdPtr) // [helper data item]
+OPDEF(INTOP_UNBOX_END_GENERIC, "unbox.end.generic", 5, 1, 2, InterpOpGenericLookup) // [helper data item]
+
 OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)
 OPDEF(INTOP_ADD_I8_IMM, "add.i8.imm", 4, 1, 1, InterpOpInt)
 
@@ -399,6 +402,10 @@ OPDEF(INTOP_CALL_HELPER_V_AGS, "call.helper.v.ags", 6, 1, 2, InterpOpGenericHelp
 
 // Call a helper function with a signature of void helper(SVar1, AddrOfSVar2)
 OPDEF(INTOP_CALL_HELPER_V_SA, "call.helper.v.sa", 4, 0, 2, InterpOpHelperFtnNoArgs)
+
+// Call a helper function with a signature of void helper(Pointer,Pointer,Pointer)
+OPDEF(INTOP_CALL_HELPER_V_SS, "call.helper.v.ss", 4, 0, 2, InterpOpHelperFtnNoArgs)
+OPDEF(INTOP_CALL_HELPER_V_SSS, "call.helper.v.sss", 5, 0, 3, InterpOpHelperFtnNoArgs)
 
 OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 
