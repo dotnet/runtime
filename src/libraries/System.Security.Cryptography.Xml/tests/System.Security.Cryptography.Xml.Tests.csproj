@@ -14,6 +14,7 @@
     <Compile Include="CanonicalXmlEntityReferenceTest.cs" />
     <Compile Include="CipherDataTests.cs" />
     <Compile Include="CoverageImprovementTests.cs" />
+    <Compile Include="Cycle1CoverageTests.cs" />
     <Compile Include="DataObjectTest.cs" />
     <Compile Include="DataObjectTests.cs" />
     <Compile Include="DataReferenceTest.cs" />
