@@ -313,7 +313,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 features.Add(feature[..featureSplit], feature[(featureSplit + 1)..]);
                                 break;
                             }
-                            else if(splitIndex != -1 && option[..splitIndex] == "/nowarn")
+                            else if (splitIndex != -1 && option[..splitIndex] == "/nowarn")
                             {
                                 var nowarn = option[(splitIndex + 1)..];
                                 var withNoWarn = compilationOptions.SpecificDiagnosticOptions.SetItem(nowarn, ReportDiagnostic.Suppress);
