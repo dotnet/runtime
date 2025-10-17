@@ -610,7 +610,7 @@ namespace System.Text.Json.Nodes.Tests
         public static void GetValueKind_NumberHandling(JsonNumberHandling numberHandling, JsonValueKind expectedKind)
         {
             JsonSerializerOptions options = new(JsonSerializerOptions.Default) { NumberHandling = numberHandling };
-            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)JsonSerializerOptions.Default.GetTypeInfo(typeof(int));
             JsonValue value = JsonValue.Create(42, typeInfo);
             Assert.Equal(expectedKind, value.GetValueKind());
         }
@@ -949,8 +949,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void JsonValue_CreateWithJsonTypeInfo()
         {
-            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)JsonSerializerOptions.Default.GetTypeInfo(typeof(int));
             
             JsonValue value = JsonValue.Create(42, typeInfo);
             Assert.Equal(42, value.GetValue<int>());
@@ -959,8 +958,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void JsonValue_CreateWithJsonTypeInfoAndOptions()
         {
-            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<string> typeInfo = (JsonTypeInfo<string>)options.GetTypeInfo(typeof(string));
+            JsonTypeInfo<string> typeInfo = (JsonTypeInfo<string>)JsonSerializerOptions.Default.GetTypeInfo(typeof(string));
             var nodeOptions = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
             
             JsonValue value = JsonValue.Create("test", typeInfo, nodeOptions);
