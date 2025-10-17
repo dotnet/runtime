@@ -1,6 +1,4 @@
 <Project>
-  <Import Project="..\Directory.Build.targets" />
-
   <PropertyGroup>
     <StableVersion Condition="'$(DotNetFinalVersionKind)' == 'release'">$(ProductVersion)</StableVersion>
     <StableVersion Condition="'$(IsShippingPackage)' != 'true' and '$(MSBuildProjectExtension)' == '.pkgproj'"></StableVersion>
