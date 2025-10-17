@@ -109,7 +109,6 @@
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
-    <!-- WASM-TODO: host.native -->
     <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.tools+clr.packages+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
@@ -365,7 +364,7 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetsWasm)' != 'true'">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetArchitecture)' != 'wasm'">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
@@ -661,8 +660,8 @@
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
             <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
-            <!-- Some source build configurations and musl need to work out packaging errors before they can be enabled -->
-            <_BuildCdacPack Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(TargetsLinuxMusl)' == 'true' or '$(TargetArchitecture)' == 'loongarch64' or '$(TargetArchitecture)' == 'riscv64'">false</_BuildCdacPack>
+            <!-- Some configurations need to work out packaging errors before they can be enabled -->
+            <_BuildCdacPack Condition="'$(TargetArchitecture)' == 'loongarch64'">false</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 
