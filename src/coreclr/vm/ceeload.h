@@ -22,7 +22,6 @@
 #include "peassembly.h"
 #include "typehash.h"
 #include "contractimpl.h"
-#include "bitmask.h"
 #include "instmethhash.h"
 #include "eetwain.h"    // For EnumGCRefs (we should probably move that somewhere else, but can't
                         // find anything better (modulo common or vars.hpp)
