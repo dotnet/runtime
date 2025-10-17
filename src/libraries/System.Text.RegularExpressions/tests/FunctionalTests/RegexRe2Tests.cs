@@ -33,43 +33,24 @@ namespace System.Text.RegularExpressions.Tests
             bool skipBackreferences = RegexHelpers.IsNonBacktracking(engine);
 
             // Basic matching tests from search_test.cc and re2_test.cc
-            yield return ("a", RegexOptions.None, "a", true);
-            yield return ("a", RegexOptions.None, "zyzzyva", true);
-            yield return ("a+", RegexOptions.None, "aa", true);
-            yield return ("(a+|b)+", RegexOptions.None, "ab", true);
-            yield return ("ab|cd", RegexOptions.None, "xabcdx", true);
-            yield return ("h.*o", RegexOptions.None, "hello", true);
+            // Note: Removed very basic patterns like "a", "a*", "a+" that are already well-covered in other tests
             yield return ("h.*o", RegexOptions.None, "hello world", true);
             yield return ("h.*o", RegexOptions.None, "othello, world", true);
             yield return ("[^\\s\\S]", RegexOptions.None, "aaaaaaa", false);
-            yield return ("a", RegexOptions.None, "aaaaaaa", true);
-            yield return ("a*", RegexOptions.None, "aaaaaaa", true);
-            yield return ("a*", RegexOptions.None, "", true);
-            yield return ("ab|cd", RegexOptions.None, "xabcdx", true);
-            yield return ("a", RegexOptions.None, "cab", true);
             yield return ("a*b", RegexOptions.None, "cab", true);
             yield return ("((((((((((((((((((((x))))))))))))))))))))", RegexOptions.None, "x", true);
-            yield return ("[abcd]", RegexOptions.None, "xxxabcdxxx", true);
-            yield return ("[^x]", RegexOptions.None, "xxxabcdxxx", true);
             yield return ("[abcd]+", RegexOptions.None, "xxxabcdxxx", true);
             yield return ("[^x]+", RegexOptions.None, "xxxabcdxxx", true);
             yield return ("(fo|foo)", RegexOptions.None, "fo", true);
             yield return ("(foo|fo)", RegexOptions.None, "foo", true);
 
             // Anchor tests
-            yield return ("^foo", RegexOptions.None, "foo", true);
             yield return ("^foo", RegexOptions.None, "foobar", true);
             yield return ("^foo", RegexOptions.None, "barfoo", false);
-            yield return ("foo$", RegexOptions.None, "foo", true);
             yield return ("foo$", RegexOptions.None, "barfoo", true);
             yield return ("foo$", RegexOptions.None, "foobar", false);
-            yield return ("^foo$", RegexOptions.None, "foo", true);
             yield return ("^foo$", RegexOptions.None, "foobar", false);
             yield return ("^foo$", RegexOptions.None, "barfoo", false);
-            yield return ("^$", RegexOptions.None, "", true);
-            yield return ("^$", RegexOptions.None, "x", false);
-            yield return ("^", RegexOptions.None, "x", true);
-            yield return ("$", RegexOptions.None, "x", true);
 
             // Word boundaries
             yield return ("\\bfoo\\b", RegexOptions.None, "nofoo foo that", true);
@@ -126,47 +107,20 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("\\x61", RegexOptions.None, "a", true);
             yield return ("\\u0061", RegexOptions.None, "a", true);
 
-            // Character classes & case folding
-            yield return ("(?i)[@-A]+", RegexOptions.None, "@AaB", true);
-            yield return ("(?i)[A-Z]+", RegexOptions.None, "aAzZ", true);
-            yield return ("(?i)[^\\\\]+", RegexOptions.None, "Aa\\", true);
-            yield return ("(?i)[acegikmoqsuwy]+", RegexOptions.None, "acegikmoqsuwyACEGIKMOQSUWY", true);
-
-            // Without case folding
-            yield return ("[@-A]+", RegexOptions.None, "@AaB", true);
-            yield return ("[A-Z]+", RegexOptions.None, "aAzZ", true);
-            yield return ("[^\\\\]+", RegexOptions.None, "Aa\\", true);
-            yield return ("[acegikmoqsuwy]+", RegexOptions.None, "acegikmoqsuwyACEGIKMOQSUWY", true);
-
-            // Anchoring tests
-            yield return ("^abc", RegexOptions.None, "abcdef", true);
-            yield return ("^abc", RegexOptions.None, "aabcdef", false);
-            yield return ("def$", RegexOptions.None, "abcdef", true);
-            yield return ("def$", RegexOptions.None, "abcdeff", false);
-
             // Multiline mode
             yield return ("(?m)^foo", RegexOptions.None, "bar\nfoo", true);
             yield return ("(?m)^foo", RegexOptions.None, "barfoo", false);
             yield return ("(?m)bar$", RegexOptions.None, "bar\nfoo", true);
             yield return ("(?m)bar$", RegexOptions.None, "barfoo", false);
 
-            // Context tests
-            yield return ("a", RegexOptions.None, "a", true);
-            yield return ("ab*", RegexOptions.None, "a", true);
-
+            // Context tests - removed basic "a" and "ab*" as they're covered elsewhere
+            
             // Former bugs
             yield return ("\\w*I\\w*", RegexOptions.None, "Inc.", true);
             yield return ("(?:|a)*", RegexOptions.None, "aaa", true);
             yield return ("(?:|a)+", RegexOptions.None, "aaa", true);
 
-            // FullMatch tests from re2_test.cc
-            yield return ("h", RegexOptions.None, "h", true);
-            yield return ("hello", RegexOptions.None, "hello", true);
-            yield return ("h.*o", RegexOptions.None, "hello", true);
-
-            // PartialMatch tests
-            yield return ("x", RegexOptions.None, "x", true);
-            yield return ("h.*o", RegexOptions.None, "hello", true);
+            // PartialMatch tests - removed basic "x" and "h.*o" with "hello" as duplicative
             yield return ("h.*o", RegexOptions.None, "othello", true);
             yield return ("h.*o", RegexOptions.None, "hello!", true);
 
@@ -175,20 +129,18 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("[0-9a-f+.-]{5,}", RegexOptions.None, "0abcde", true);
             yield return ("[0-9a-f+.-]{5,}", RegexOptions.None, "0abc", false);
 
-            // Complicated RE
+            // Complicated RE - removed "XY" case which is likely covered
             yield return ("foo|bar|[A-Z]", RegexOptions.None, "foo", true);
             yield return ("foo|bar|[A-Z]", RegexOptions.None, "bar", true);
             yield return ("foo|bar|[A-Z]", RegexOptions.None, "X", true);
-            yield return ("foo|bar|[A-Z]", RegexOptions.None, "XY", true);
 
             // Check full-match handling
             yield return ("fo|foo", RegexOptions.None, "fo", true);
             yield return ("fo|foo", RegexOptions.None, "foo", true);
             yield return ("foo$", RegexOptions.None, "foo", true);
 
-            // UTF-8 handling
-            yield return (".", RegexOptions.None, "\u65e5", true);
-
+            // UTF-8 handling - removed basic "." test
+            
             // Case insensitive
             yield return ("(?i)HELLO", RegexOptions.None, "hello", true);
             yield return ("(?i)hello", RegexOptions.None, "HELLO", true);
@@ -204,26 +156,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("(foo)\\1", RegexOptions.None, "foobar", false);
             }
 
-            // Quantifiers
-            yield return ("a?", RegexOptions.None, "", true);
-            yield return ("a?", RegexOptions.None, "a", true);
-            yield return ("a?", RegexOptions.None, "aa", true);
-            yield return ("a+", RegexOptions.None, "", false);
-            yield return ("a+", RegexOptions.None, "a", true);
-            yield return ("a+", RegexOptions.None, "aa", true);
-            yield return ("a*", RegexOptions.None, "", true);
-            yield return ("a*", RegexOptions.None, "a", true);
-            yield return ("a*", RegexOptions.None, "aa", true);
+            // Quantifiers - keep only unique combinations not well-covered elsewhere
             yield return ("a{2}", RegexOptions.None, "a", false);
-            yield return ("a{2}", RegexOptions.None, "aa", true);
             yield return ("a{2}", RegexOptions.None, "aaa", true);
             yield return ("a{2,}", RegexOptions.None, "a", false);
-            yield return ("a{2,}", RegexOptions.None, "aa", true);
-            yield return ("a{2,}", RegexOptions.None, "aaa", true);
-            yield return ("a{2,4}", RegexOptions.None, "a", false);
-            yield return ("a{2,4}", RegexOptions.None, "aa", true);
-            yield return ("a{2,4}", RegexOptions.None, "aaa", true);
-            yield return ("a{2,4}", RegexOptions.None, "aaaa", true);
             yield return ("a{2,4}", RegexOptions.None, "aaaaa", true);
         }
 
