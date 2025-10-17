@@ -751,7 +751,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -775,7 +775,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1100,7 +1100,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1226,7 +1226,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
