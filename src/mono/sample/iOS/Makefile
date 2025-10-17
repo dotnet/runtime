@@ -9,7 +9,6 @@ USE_LLVM=true
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
-HYBRID_GLOBALIZATION?=true
 USE_MONO_RUNTIME?=true
 AOT?=true
 
@@ -43,7 +42,6 @@ build-appbundle: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
-	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	/p:RunAOTCompilation=$(AOT) \
 	/p:UseMonoRuntime=$(USE_MONO_RUNTIME) \
 	/bl

@@ -15,11 +15,9 @@ namespace ILCompiler
     public class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
         private readonly FieldLayoutAlgorithm _fallbackAlgorithm;
-        private readonly bool _vectorAbiIsStable;
 
-        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, bool vectorAbiIsStable = true)
+        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
         {
-            _vectorAbiIsStable = vectorAbiIsStable;
             _fallbackAlgorithm = fallbackAlgorithm;
         }
 
@@ -119,7 +117,7 @@ namespace ILCompiler
                 FieldAlignment = alignment,
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
-                LayoutAbiStable = _vectorAbiIsStable
+                LayoutAbiStable = true
             };
         }
 
