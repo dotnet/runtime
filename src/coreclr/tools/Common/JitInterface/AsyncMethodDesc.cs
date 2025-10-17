@@ -77,7 +77,7 @@ namespace Internal.JitInterface
                 }
                 else if (name.SequenceEqual("Task`1"u8) || name.SequenceEqual("ValueTask`1"u8))
                 {
-                    Debug.Assert(returnType.HasInstantiation);
+                    Debug.Assert(md.HasInstantiation);
                     returnType = md.Instantiation[0];
                 }
                 else
