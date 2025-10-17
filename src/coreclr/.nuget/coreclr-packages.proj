@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' or '$(DotNetBuildSourceOnly)' == 'true'">
-    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' ">

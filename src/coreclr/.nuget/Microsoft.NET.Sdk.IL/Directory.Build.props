@@ -1,0 +1,4 @@
+<Project>
+  <UsePkgProjTargets>false</UsePkgProjTargets>
+  <Import Project="..\Directory.Build.props" />
+</Project>
