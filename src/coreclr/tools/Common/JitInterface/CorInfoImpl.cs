@@ -4297,7 +4297,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.IsRuntimeAsync)
+            if (this.MethodBeingCompiled.IsAsync)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
