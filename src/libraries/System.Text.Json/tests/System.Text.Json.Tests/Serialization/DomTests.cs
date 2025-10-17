@@ -329,7 +329,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeFromSpan_WithJsonTypeInfo()
         {
-            ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
+            ReadOnlySpan<byte> utf8Json = """{"StringProp":"Hello","IntArrayProp":[1,2]}"""u8;
             
             JsonTypeInfo<MyPoco> typeInfo = (JsonTypeInfo<MyPoco>)JsonSerializerOptions.Default.GetTypeInfo(typeof(MyPoco));
             
@@ -340,7 +340,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeFromSpan_WithJsonTypeInfo_NonGeneric()
         {
-            ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
+            ReadOnlySpan<byte> utf8Json = """{"StringProp":"Hello","IntArrayProp":[1,2]}"""u8;
             
             JsonTypeInfo typeInfo = JsonSerializerOptions.Default.GetTypeInfo(typeof(MyPoco));
             
@@ -611,7 +611,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeFromSpan_WithJsonSerializerContext()
         {
-            ReadOnlySpan<byte> utf8Json = "{\"StringProp\":\"Hello\",\"IntArrayProp\":[1,2]}"u8;
+            ReadOnlySpan<byte> utf8Json = """{"StringProp":"Hello","IntArrayProp":[1,2]}"""u8;
             
             object obj = JsonSerializer.Deserialize(utf8Json, typeof(MyPoco), MyPocoContext.Default);
             Assert.IsType<MyPoco>(obj);
