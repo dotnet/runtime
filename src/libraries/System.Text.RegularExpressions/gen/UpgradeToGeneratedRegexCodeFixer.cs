@@ -408,7 +408,7 @@ namespace System.Text.RegularExpressions.Generator
             return str.IndexOfAny(['\\', '\n', '\r']) >= 0;
         }
 
-        static string Literal(string stringifiedRegexOptions)
+        private static string Literal(string stringifiedRegexOptions)
         {
             if (int.TryParse(stringifiedRegexOptions, NumberStyles.Integer, CultureInfo.InvariantCulture, out int options))
             {
