@@ -3713,7 +3713,7 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
 #pragma warning restore CA1822 // Mark members as static
         {
-            return null;
+            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
         }
 
         private byte[] _code;
@@ -4295,6 +4295,11 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
+
+            if (this.MethodBeingCompiled.IsAsync)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
 
             return (uint)sizeof(CORJIT_FLAGS);
