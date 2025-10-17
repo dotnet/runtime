@@ -180,7 +180,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
 {
     // Branches have a full range of comparisons, these transformations would be counter-productive
-    LIR::Use cmpUse; 
+    LIR::Use cmpUse;
     if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
         return cmp;
 
