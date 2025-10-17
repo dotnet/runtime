@@ -67,7 +67,7 @@ namespace Internal.JitInterface
             {
                 var wrappedSignature = _wrappedMethod.Signature;
                 var ret = wrappedSignature.ReturnType;
-                var md = ret as MetadataType;
+                var md = (MetadataType)ret;
                 Debug.Assert(md.Namespace.SequenceEqual("System.Threading.Tasks"u8));
                 ReadOnlySpan<byte> name = md.Name;
                 TypeDesc returnType = null;
