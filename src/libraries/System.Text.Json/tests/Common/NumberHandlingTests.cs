@@ -2011,6 +2011,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void GetConverter_Int32_RespectsNumberHandling_AllowReadingFromString()
         {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
             var converter = (JsonConverter<int>)options.GetConverter(typeof(int));
             ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
@@ -2025,6 +2031,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void GetConverter_Int32_RespectsNumberHandling_WriteAsString()
         {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
             var converter = (JsonConverter<int>)options.GetConverter(typeof(int));
             using var stream = new MemoryStream();
@@ -2041,6 +2053,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void GetConverter_Double_RespectsNumberHandling_AllowReadingFromString()
         {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
             var converter = (JsonConverter<double>)options.GetConverter(typeof(double));
             ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.45\"}"u8;
@@ -2055,6 +2073,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void GetConverter_Double_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
         {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
             var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
             var converter = (JsonConverter<double>)options.GetConverter(typeof(double));
             ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
