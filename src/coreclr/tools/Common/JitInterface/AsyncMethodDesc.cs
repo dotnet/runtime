@@ -21,8 +21,7 @@ namespace Internal.JitInterface
         public AsyncMethodDesc(MethodDesc wrappedMethod, AsyncMethodDescFactory factory)
             : base(wrappedMethod)
         {
-            Debug.Assert(wrappedMethod is not null);
-            Debug.Assert(wrappedMethod.IsAsync && wrappedMethod.ReturnsTaskLike());
+            Debug.Assert(wrappedMethod.ReturnsTaskLike());
             _factory = factory;
             // Salt with arbitrary constant so hash space differs from underlying method.
             _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 0x51C0A54);
