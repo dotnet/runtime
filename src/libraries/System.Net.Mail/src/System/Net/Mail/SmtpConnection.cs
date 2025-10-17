@@ -628,6 +628,14 @@ namespace System.Net.Mail
 
             private bool SendHello()
             {
+                if (_connection._enableSsl)
+                {
+                    // We only try HELO command if EHLO was not recognized. Server cannot
+                    // advertise STARTTLS in older HELO command, thus if TLS is required,
+                    // we can fail early.
+                    throw new SmtpException(SR.MailServerDoesNotSupportStartTls);
+                }
+
                 IAsyncResult result = HelloCommand.BeginSend(_connection, _connection._client!._clientDomain, s_sendHelloCallback, this);
                 //if ehello isn't supported, assume basic auth
                 if (result.CompletedSynchronously)
