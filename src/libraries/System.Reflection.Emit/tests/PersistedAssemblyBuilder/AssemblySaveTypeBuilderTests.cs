@@ -904,8 +904,10 @@ namespace System.Reflection.Emit.Tests
             //     }
             // }
 
+            TestAssemblyLoadContext context = new();
+
             TempFile assembly2Path = TempFile.Create();
-            Assembly assembly1FromDisk = Assembly.LoadFile(assembly1Path.Path);
+            Assembly assembly1FromDisk = context.LoadFromAssemblyPath(assembly1Path.Path);
             PersistedAssemblyBuilder assembly2 = new(new AssemblyName("Assembly2"), typeof(object).Assembly);
             ModuleBuilder mod2 = assembly2.DefineDynamicModule("Module2");
             TypeBuilder programType = mod2.DefineType("Program");
@@ -921,7 +923,7 @@ namespace System.Reflection.Emit.Tests
             programType.CreateType();
             assembly2.Save(assembly2Path.Path);
 
-            Assembly assembly2FromDisk = Assembly.LoadFile(assembly2Path.Path);
+            Assembly assembly2FromDisk = context.LoadFromAssemblyPath(assembly2Path.Path);
             int result = (int)assembly2FromDisk.GetType("Program").GetMethod("Main").Invoke(null, null);
             Assert.Equal(5, result);
 
