@@ -4786,37 +4786,37 @@ static OpcodePeepElement peepStLdLoc0[] = {
     { 2, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepStLdLoc1[] = {
+static OpcodePeepElement peepStLdLoc1[] = {
     { 0, CEE_STLOC_1 },
     { 1, CEE_LDLOC_1 },
     { 2, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepStLdLoc2[] = {
+static OpcodePeepElement peepStLdLoc2[] = {
     { 0, CEE_STLOC_2 },
     { 1, CEE_LDLOC_2 },
     { 2, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepStLdLoc3[] = {
+static OpcodePeepElement peepStLdLoc3[] = {
     { 0, CEE_STLOC_3 },
     { 1, CEE_LDLOC_3 },
     { 2, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepStLdLoc_S[] = {
+static OpcodePeepElement peepStLdLoc_S[] = {
     { 0, CEE_STLOC_S },
     { 2, CEE_LDLOC_S },
     { 4, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepStLdLoc[] = {
+static OpcodePeepElement peepStLdLoc[] = {
     { 0, CEE_STLOC },
     { 5, CEE_LDLOC },
     { 10, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepBoxUnboxOpcodes[] = {
+static OpcodePeepElement peepBoxUnboxOpcodes[] = {
     { 0, CEE_BOX },
     { 5, CEE_UNBOX_ANY },
     { 10, CEE_ILLEGAL } // End marker
@@ -4913,8 +4913,8 @@ public:
 bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
     // We need to check that the two ldtokens are for the same type
-    const uint8_t* ipForFirstLdtoken = ip + pattern[0].offsetIntoPeep + 1;
-    const uint8_t* ipForSecondLdtoken = ip + pattern[2].offsetIntoPeep + 1;
+    // const uint8_t* ipForFirstLdtoken = ip + pattern[0].offsetIntoPeep + 1;
+    // const uint8_t* ipForSecondLdtoken = ip + pattern[2].offsetIntoPeep + 1;
 
     CORINFO_RESOLVED_TOKEN firstResolvedToken;
     assert(pattern[0].opcode == CEE_LDTOKEN);
@@ -4989,7 +4989,7 @@ bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElemen
     else 
     {
         assert(compareResult == TypeCompareState::Must);
-        // The types are definitely not equal, so we can optimize this to a constant result
+        // The types are definitely equal, so we can optimize this to a constant result
         *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 1 : 0);
         return true;
     }
@@ -5001,8 +5001,6 @@ void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepEle
 
     // We are going to replace the entire peep with a single ldc.i4 of the result value
     int32_t peepSize = pattern[5].offsetIntoPeep; // Offset of end marker is the size of the peep
-    m_ip = ip + peepSize;
-
     AddIns(INTOP_LDC_I4);
     m_pLastNewIns->data[0] = resultValue;
     PushInterpType(InterpTypeI4, NULL);
@@ -5227,7 +5225,6 @@ void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement
 
     // We are going to replace the entire peep with a single ldc.i4 of the result value
     int32_t peepSize = pattern[3].offsetIntoPeep; // Offset of end marker is the size of the peep
-    m_ip = ip + peepSize;
 
     AddIns(INTOP_LDC_I4);
     m_pLastNewIns->data[0] = resultValue;
