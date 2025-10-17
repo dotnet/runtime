@@ -783,9 +783,9 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         {
             *ip++ = ins->info.pTargetBB->nativeOffset - brBaseOffset;
         }
-        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB)
+        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB && ins->info.pTargetBB->overlappingEHClauseCount == m_pCBB->overlappingEHClauseCount)
         {
-            // Ignore branch to the next basic block. Revert the added INTOP_BR.
+            // Ignore branch to the next basic block if it is on the same clause depth. Revert the added INTOP_BR.
             isReverted = true;
             ip--;
         }
@@ -954,6 +954,31 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
     return ip;
 }
 
+void ValidateEmittedSequenceTermination(InterpInst *lastIns)
+{
+    if (lastIns == NULL)
+        return;
+
+    if (InterpOpIsUncondBranch(lastIns->opcode) ||
+        (lastIns->opcode == INTOP_RET) ||
+        (lastIns->opcode == INTOP_RET_VOID) ||
+        (lastIns->opcode == INTOP_RET_VT) ||
+        (lastIns->opcode == INTOP_THROW) ||
+        (lastIns->opcode == INTOP_THROW_PNSE) ||
+        (lastIns->opcode == INTOP_CALL_TAIL) ||
+        (lastIns->opcode == INTOP_CALLI_TAIL) ||
+        (lastIns->opcode == INTOP_CALLVIRT_TAIL) ||
+        (lastIns->opcode == INTOP_RETHROW) ||
+        (lastIns->opcode == INTOP_LEAVE_FILTER) ||
+        (lastIns->opcode == INTOP_LEAVE_CATCH))
+    {
+        // Valid terminating instruction
+        return;
+    }
+
+    BADCODE("Emitted code sequence does not end with a terminating instruction");
+}
+
 void InterpCompiler::EmitCode()
 {
     TArray<Reloc*, MemPoolAllocator> relocs(GetMemPoolAllocator());
@@ -999,14 +1024,19 @@ void InterpCompiler::EmitCode()
     do
     {
         emittedBlock = false;
+        InterpInst *lastEmittedIns = NULL;
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
             if (bb->overlappingEHClauseCount == clauseDepth)
             {
                 ip = EmitBBCode(ip, bb, &relocs);
+                lastEmittedIns = bb->pLastIns;
                 emittedBlock = true;
             }
         }
+
+        ValidateEmittedSequenceTermination(lastEmittedIns);
+
         clauseDepth++;
     }
     while (emittedBlock);
@@ -1445,7 +1475,7 @@ void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t en
     InterpBasicBlock* pEndBB = pStartBB;
     for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
     {
-        if ((pBB->clauseType == pStartBB->clauseType) && (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount))
+        if (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount)
         {
             pEndBB = pBB;
         }
@@ -1585,6 +1615,9 @@ void InterpCompiler::BuildEHInfo()
             nativeClause.Flags = (CORINFO_EH_CLAUSE_FLAGS)((int)nativeClause.Flags | COR_ILEXCEPTION_CLAUSE_SAMETRY);
         }
 
+        lastTryILOffset = clause.TryOffset;
+        lastTryILLength = clause.TryLength;
+
         m_compHnd->setEHinfo(nativeEHIndex++, &nativeClause);
 
         INTERP_DUMP("  try [IR_%04x(%x), IR_%04x(%x)) ", tryStartNativeOffset, clause.TryOffset, tryEndNativeOffset, clause.TryOffset + clause.TryLength);
@@ -1592,9 +1625,13 @@ void InterpCompiler::BuildEHInfo()
         {
             INTERP_DUMP("filter IR_%04x(%x), handler [IR_%04x(%x), IR_%04x(%x))%s\n", pFilterStartBB->nativeOffset, clause.FilterOffset, handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength, ((int)nativeClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) ? " (same try)" : "");
         }
-        else if (nativeClause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+        else if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY)
         {
             INTERP_DUMP("finally handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
+        }
+        else if (clause.Flags == CORINFO_EH_CLAUSE_FAULT)
+        {
+            INTERP_DUMP("fault handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
         }
         else
         {
@@ -1835,6 +1872,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // All vars are stored at 8 byte aligned offsets
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
+
+        // We do not align beyond the stack alignment 
+        // (This is relevant for structs with very high alignment requirements, 
+        // where we align within struct layout, but the structs are not actually
+        // aligned on the stack)
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
     }
     else
     {
@@ -1983,69 +2027,104 @@ void InterpCompiler::CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argC
 // Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
 // That means when the leaveOffset is inside the try region and the target is outside of it.
 // These finally call island blocks are used for non-exceptional finally execution.
-// The linked list of finally call island blocks is stored in the pFinallyCallIslandBB field of the finally basic block.
-// The pFinallyCallIslandBB in the actual finally call island block points to the outer try region's finally call island block.
-void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
+// The linked list of finally and catch call island blocks is stored in the pLeaveChainIslandBB field of the finally / catch basic block.
+// The pLeaveChainIslandBB in the actual island block points to the outer try region's finally call island block / outer catch region's catch call island block.
+void InterpCompiler::CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
 {
-    bool firstFinallyCallIsland = true;
-    InterpBasicBlock* pInnerFinallyCallIslandBB = NULL;
+    bool firstLeaveChainIsland = true;
+    InterpBasicBlock* pInnerLeaveChainIslandBB = NULL;
     for (unsigned int i = 0; i < getEHcount(methodInfo); i++)
     {
+        bool isFinallyCallIsland = false;
         CORINFO_EH_CLAUSE clause;
         getEHinfo(methodInfo, i, &clause);
-        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+
+        // Check IL correctness for filter clauses
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && (uint32_t)leaveOffset >= clause.FilterOffset && (uint32_t)leaveOffset < clause.HandlerOffset)
         {
+            if ((uint32_t)pLeaveTargetBB->ilOffset < clause.FilterOffset || (uint32_t)pLeaveTargetBB->ilOffset >= clause.HandlerOffset)
+            {
+                BADCODE("Leave out of filter clause is not allowed");
+            }
+        }
+
+        if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+        {
+            // Only try regions in which the leave instruction is located are considered.
+            if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset >= (clause.TryOffset + clause.TryLength))
+            {
+                continue;
+            }
+
+            // If the leave target is inside the try region, we don't need to create a finally call island block.
+            if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
+            {
+                continue;
+            }
+
+            isFinallyCallIsland = true;
+        }
+        else if ((clause.Flags == CORINFO_EH_CLAUSE_NONE) || (clause.Flags & CORINFO_EH_CLAUSE_FILTER) != 0)
+        {
+            // This is a catch
+            // If the leave instruction is outside of this catch handler, there is nothing to do for this catch
+            if ((uint32_t)leaveOffset < clause.HandlerOffset || (uint32_t)leaveOffset >= (clause.HandlerOffset + clause.HandlerLength))
+            {
+                continue;
+            }
+
+            // If the leave target is inside the catch region, there is nothing more to do for this catch
+            if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.HandlerOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.HandlerOffset + clause.HandlerLength))
+            {
+                continue;
+            }
+        }
+        else
+        {
+            assert(clause.Flags == CORINFO_EH_CLAUSE_FAULT);
             continue;
         }
 
-        // Only try regions in which the leave instruction is located are considered.
-        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset >= (clause.TryOffset + clause.TryLength))
-        {
-            continue;
-        }
-
-        // If the leave target is inside the try region, we don't need to create a finally call island block.
-        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
-        {
-            continue;
-        }
+        // We have found a leave that goes out of a try region with a finally or out of a catch handler
 
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
-        InterpBasicBlock* pFinallyCallIslandBB = NULL;
+        InterpBasicBlock* pLeaveChainIslandBB = NULL;
 
-        InterpBasicBlock** ppLastBBNext = &pHandlerBB->pFinallyCallIslandBB;
+        InterpBasicBlock** ppLastBBNext = &pHandlerBB->pLeaveChainIslandBB;
         while (*ppLastBBNext != NULL)
         {
             if ((*ppLastBBNext)->pLeaveTargetBB == pLeaveTargetBB)
             {
                 // We already have finally call island block for the leave target
-                pFinallyCallIslandBB = (*ppLastBBNext);
+                pLeaveChainIslandBB = (*ppLastBBNext);
                 break;
             }
             ppLastBBNext = &((*ppLastBBNext)->pNextBB);
         }
 
-        if (pFinallyCallIslandBB == NULL)
+        if (pLeaveChainIslandBB == NULL)
         {
-            pFinallyCallIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
-            pFinallyCallIslandBB->pLeaveTargetBB = pLeaveTargetBB;
-            *ppLastBBNext = pFinallyCallIslandBB;
+            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pLeaveChainIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            *ppLastBBNext = pLeaveChainIslandBB;
         }
 
-        if (pInnerFinallyCallIslandBB != NULL)
-        {
-            pInnerFinallyCallIslandBB->pFinallyCallIslandBB = pFinallyCallIslandBB;
-        }
-        pInnerFinallyCallIslandBB = pFinallyCallIslandBB;
+        pLeaveChainIslandBB->isFinallyCallIsland = isFinallyCallIsland;
 
-        if (firstFinallyCallIsland)
+        if (pInnerLeaveChainIslandBB != NULL)
+        {
+            pInnerLeaveChainIslandBB->pLeaveChainIslandBB = pLeaveChainIslandBB;
+        }
+        pInnerLeaveChainIslandBB = pLeaveChainIslandBB;
+
+        if (firstLeaveChainIsland)
         {
             // The leaves table entry points to the first finally call island block
-            firstFinallyCallIsland = false;
+            firstLeaveChainIsland = false;
 
             LeavesTableEntry leavesEntry;
             leavesEntry.ilOffset = leaveOffset;
-            leavesEntry.pFinallyCallIslandBB = pFinallyCallIslandBB;
+            leavesEntry.pLeaveChainIslandBB = pLeaveChainIslandBB;
             m_leavesTable.Add(leavesEntry);
         }
     }
@@ -2078,7 +2157,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                 if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
                 {
                     // This is a ret instruction coming from the initial IL of a synchronized method.
-                    CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
+                    CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
                 }
             }
             break;
@@ -2106,7 +2185,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             pTargetBB = GetBB(target);
             if (opcode == CEE_LEAVE_S)
             {
-                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+                CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
             }
             ip += 2;
             GetBB((int32_t)(ip - codeStart));
@@ -2118,7 +2197,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             pTargetBB = GetBB(target);
             if (opcode == CEE_LEAVE)
             {
-                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+                CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
             }
             ip += 5;
             GetBB((int32_t)(ip - codeStart));
@@ -2256,27 +2335,22 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         }
     }
 
-    // Now that we have classified all the basic blocks, we can set the clause type for the finally call island blocks.
-    // We set it to the same type as the basic block after the finally handler.
+    // Now that we have classified all the basic blocks, we can set the clause type for the finally call / catch leave island blocks.
+    // We set it to the same type as the basic block after the finally / catch handler.
     for (unsigned int i = 0; i < getEHcount(methodInfo); i++)
     {
         CORINFO_EH_CLAUSE clause;
         getEHinfo(methodInfo, i, &clause);
 
-        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
-        {
-            continue;
-        }
-
         InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
 
-        InterpBasicBlock* pFinallyCallIslandBB = pFinallyBB->pFinallyCallIslandBB;
-        while (pFinallyCallIslandBB != NULL)
+        InterpBasicBlock* pLeaveChainIslandBB = pFinallyBB->pLeaveChainIslandBB;
+        while (pLeaveChainIslandBB != NULL)
         {
             InterpBasicBlock* pAfterFinallyBB = m_ppOffsetToBB[clause.HandlerOffset + clause.HandlerLength];
             assert(pAfterFinallyBB != NULL);
-            pFinallyCallIslandBB->clauseType = pAfterFinallyBB->clauseType;
-            pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+            pLeaveChainIslandBB->clauseType = pAfterFinallyBB->clauseType;
+            pLeaveChainIslandBB = pLeaveChainIslandBB->pNextBB;
         }
     }
 }
@@ -2464,7 +2538,7 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
             // from the building block, because the finally call islands share the same IL
             // offset with another block of original code in front of which it is injected.
             // The EmitBranch would to that block instead of the finally call island.
-            pTargetBB = m_leavesTable.Get(i).pFinallyCallIslandBB;
+            pTargetBB = m_leavesTable.Get(i).pLeaveChainIslandBB;
             break;
         }
     }
@@ -2476,17 +2550,7 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
 
     // The leave doesn't jump out of any try region with finally, so we can just emit a branch
     // to the target.
-    if (m_pCBB->clauseType == BBClauseCatch)
-    {
-        // leave out of catch is different from a leave out of finally. It
-        // exits the catch handler and returns the address of the finally
-        // call island as the continuation address to the EH code.
-        EmitBranchToBB(INTOP_LEAVE_CATCH, pTargetBB);
-    }
-    else
-    {
-        EmitBranchToBB(INTOP_BR, pTargetBB);
-    }
+    EmitBranchToBB(INTOP_BR, pTargetBB);
 }
 
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
@@ -3457,7 +3521,7 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
-    PushStackType(StackTypeI, NULL);
+    PushStackType(StackTypeByRef, NULL);
     int32_t intermediateVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
@@ -3843,6 +3907,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         resolvedCallToken.tokenScope   = m_methodInfo->scope;
 
         m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -3857,6 +3925,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
 
         // Inject call to callsite callout helper
         EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
@@ -4945,6 +5018,20 @@ retry_emit:
                 assert (pNewBB->emitState == BBStateNotEmitted);
             }
 
+            InterpBasicBlock *pPrevBB = m_pCBB;
+            InterpBasicBlock *pPrevBB2 = m_pCBB;
+
+            pPrevBB = GenerateCodeForLeaveChainIslands(pNewBB, pPrevBB);
+
+            if (pPrevBB != pPrevBB2 && !pPrevBB->pNextBB)
+            {
+                INTERP_DUMP("Chaining generated BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
+                pPrevBB->pNextBB = pNewBB;
+                assert(!linkBBlocks);
+            }
+
+            m_pCBB = pPrevBB;
+
             // We are starting a new basic block. Change cbb and link them together
             if (linkBBlocks)
             {
@@ -4992,14 +5079,10 @@ retry_emit:
                 }
             }
 
-            InterpBasicBlock *pPrevBB = m_pCBB;
-
-            pPrevBB = GenerateCodeForFinallyCallIslands(pNewBB, pPrevBB);
-
-            if (!pPrevBB->pNextBB)
+            if (!m_pCBB->pNextBB)
             {
-                INTERP_DUMP("Chaining BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
-                pPrevBB->pNextBB = pNewBB;
+                INTERP_DUMP("Chaining BB%d -> BB%d\n" , m_pCBB->index, pNewBB->index);
+                m_pCBB->pNextBB = pNewBB;
             }
 
             m_pCBB = pNewBB;
@@ -5250,6 +5333,7 @@ retry_emit:
                         CheckStackExact(0);
                     }
                     EmitLeave(ilOffset, target);
+                    linkBBlocks = false;
                     m_ip++;
                     break;
                 }
@@ -5276,6 +5360,7 @@ retry_emit:
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                 }
                 m_ip++;
+                linkBBlocks = false;
                 break;
             }
 
@@ -5321,7 +5406,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5342,7 +5427,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5363,7 +5448,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5384,7 +5469,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5421,7 +5506,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5458,7 +5543,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5481,7 +5566,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5504,7 +5589,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5532,7 +5617,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5552,7 +5637,7 @@ retry_emit:
                 case StackTypeR4:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5572,7 +5657,7 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5599,7 +5684,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5618,7 +5703,8 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
@@ -5639,7 +5725,8 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
@@ -5660,7 +5747,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5681,7 +5768,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5702,7 +5789,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5722,7 +5809,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5743,7 +5830,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5763,7 +5850,7 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5784,7 +5871,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5821,7 +5908,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5858,7 +5945,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5882,7 +5969,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5903,7 +5990,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5924,7 +6011,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5945,7 +6032,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5966,7 +6053,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -5986,7 +6073,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6007,7 +6094,7 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6027,7 +6114,7 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
@@ -6064,7 +6151,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -6099,7 +6186,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -6108,13 +6195,11 @@ retry_emit:
                 m_ip++;
                 uint32_t n = getU4LittleEndian(m_ip);
                 // Format of switch instruction is opcode + srcVal + n + T1 + T2 + ... + Tn
-                AddInsExplicit(INTOP_SWITCH, n + 3);
-                m_pLastNewIns->data[0] = n;
                 m_ip += 4;
                 const uint8_t *nextIp = m_ip + n * 4;
                 m_pStackPointer--;
-                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 InterpBasicBlock **targetBBTable = (InterpBasicBlock**)AllocMemPool(sizeof (InterpBasicBlock*) * n);
+                uint32_t *targetOffsets = (uint32_t*)AllocMemPool(sizeof (uint32_t) * n);
 
                 for (uint32_t i = 0; i < n; i++)
                 {
@@ -6122,12 +6207,36 @@ retry_emit:
                     uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
                     InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
                     assert(targetBB);
-
-                    InitBBStackState(targetBB);
+                    targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
-                    LinkBBs(m_pCBB, targetBB);
                     m_ip += 4;
                 }
+
+                // Sort the targetOffsets array so that we can easily skip duplicates
+                qsort(targetOffsets, n, sizeof(uint32_t), [](const void* a, const void* b) {
+                    uint32_t valA = *(const uint32_t*)a;
+                    uint32_t valB = *(const uint32_t*)b;
+                    return (valA < valB) ? -1 : (valA > valB) ? 1 : 0;
+                });
+
+                // Setup so that we can safely branch to each target
+                uint32_t lastOffset = UINT32_MAX;
+                for (uint32_t i = 0; i < n; i++)
+                {
+                    if (targetOffsets[i] != lastOffset)
+                    {
+                        lastOffset = targetOffsets[i];
+                        InterpBasicBlock *targetBB = m_ppOffsetToBB[targetOffsets[i]];
+                        assert(targetBB);
+                        EmitBBEndVarMoves(targetBB);
+                        InitBBStackState(targetBB);
+                        LinkBBs(m_pCBB, targetBB);
+                    }
+                }
+
+                AddInsExplicit(INTOP_SWITCH, n + 3);
+                m_pLastNewIns->data[0] = n;
+                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 m_pLastNewIns->info.ppTargetBBTable = targetBBTable;
                 break;
             }
@@ -7058,6 +7167,10 @@ DO_LDFTN:
 
             case CEE_ENDFINALLY:
             {
+                if (m_pCBB->clauseType != BBClauseFinally)
+                {
+                    BADCODE("endfinally not in a finally block");
+                }
                 AddIns(INTOP_RET_VOID);
                 m_ip++;
                 linkBBlocks = false;
@@ -7662,39 +7775,46 @@ DO_LDFTN:
     UnlinkUnreachableBBlocks();
 }
 
-InterpBasicBlock *InterpCompiler::GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
+InterpBasicBlock *InterpCompiler::GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
 {
-    InterpBasicBlock *pFinallyCallIslandBB = pNewBB->pFinallyCallIslandBB;
+    InterpBasicBlock *pLeaveChainIslandBB = pNewBB->pLeaveChainIslandBB;
 
-    while (pFinallyCallIslandBB != NULL)
+    while (pLeaveChainIslandBB != NULL)
     {
-        INTERP_DUMP("Injecting finally call island BB%d\n", pFinallyCallIslandBB->index);
-        if (pFinallyCallIslandBB->emitState != BBStateEmitted)
+        INTERP_DUMP("Injecting %s island BB%d\n", pLeaveChainIslandBB->isFinallyCallIsland ? "finally call" : "catch leave", pLeaveChainIslandBB->index);
+        if (pLeaveChainIslandBB->emitState != BBStateEmitted)
         {
             // Set the finally call island BB as current so that the instructions are emitted into it
-            m_pCBB = pFinallyCallIslandBB;
+            m_pCBB = pLeaveChainIslandBB;
+            m_pStackPointer = m_pStackBase;
             InitBBStackState(m_pCBB);
-            EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
-            m_pLastNewIns->ilOffset = -1;
-            // Try to get the next finally call island block (for an outer try's finally)
-            if (pFinallyCallIslandBB->pFinallyCallIslandBB)
+            if (pLeaveChainIslandBB->isFinallyCallIsland)
+            {
+                EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
+                m_pLastNewIns->ilOffset = -1;
+            }
+
+            InterpOpcode branchOpcode = pLeaveChainIslandBB->isFinallyCallIsland ? INTOP_BR : INTOP_LEAVE_CATCH;
+
+            // Try to get the next finally call (for an outer try's finally) / catch leave island block (for an outer catch)
+            if (pLeaveChainIslandBB->pLeaveChainIslandBB)
             {
                 // Branch to the next finally call island (at an outer try block)
-                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pFinallyCallIslandBB);
+                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveChainIslandBB);
             }
             else
             {
-                // This is the last finally call island, so we need to emit a branch to the leave target
-                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pLeaveTargetBB);
+                // This is the last finally call / catch leave island, so we need to emit a branch to the leave target
+                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveTargetBB);
             }
             m_pLastNewIns->ilOffset = -1;
             m_pCBB->emitState = BBStateEmitted;
-            INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pFinallyCallIslandBB->index);
+            INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pLeaveChainIslandBB->index);
         }
-        assert(pPrevBB->pNextBB == NULL || pPrevBB->pNextBB == pFinallyCallIslandBB);
-        pPrevBB->pNextBB = pFinallyCallIslandBB;
-        pPrevBB = pFinallyCallIslandBB;
-        pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+        assert(pPrevBB->pNextBB == NULL || pPrevBB->pNextBB == pLeaveChainIslandBB);
+        pPrevBB->pNextBB = pLeaveChainIslandBB;
+        pPrevBB = pLeaveChainIslandBB;
+        pLeaveChainIslandBB = pLeaveChainIslandBB->pNextBB;
     }
 
     return pPrevBB;

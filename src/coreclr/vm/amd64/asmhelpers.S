@@ -451,7 +451,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         jnz             LOCAL_LABEL(HaveInterpThreadContext)
 
 LOCAL_LABEL(NoManagedThread):
-        mov             rcx, r10
+        mov             rdi, r10
         call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
 
 LOCAL_LABEL(HaveInterpThreadContext):
@@ -1147,6 +1147,12 @@ LEAF_END Store_XMM7, _TEXT
 
 // Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 // from the interpreter to native code
+
+LEAF_ENTRY InjectInterpStackAlign, _TEXT
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END InjectInterpStackAlign, _TEXT
 
 // Copy arguments from the the interpreter stack to the CPU stack.
 // The CPU stack slots are aligned to pointer size.

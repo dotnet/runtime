@@ -943,13 +943,9 @@ public class InterpreterTest
         if (!TestCalli())
             Environment.FailFast(null);
 
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            Console.WriteLine("TestStaticVirtualGeneric_CodePointerCase");
-            if (!TestStaticVirtualGeneric_CodePointerCase())
-                Environment.FailFast(null);
-        }
+        Console.WriteLine("TestStaticVirtualGeneric_CodePointerCase");
+        if (!TestStaticVirtualGeneric_CodePointerCase())
+            Environment.FailFast(null);
 
         Console.WriteLine("TestPreciseInitCctors");
         if (!TestPreciseInitCctors())
@@ -969,11 +965,7 @@ public class InterpreterTest
 
         Console.WriteLine("Empty string length: {0}", string.Empty.Length);
 
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
-        }
+        Console.WriteLine("BitConverter.IsLittleEndian: {0}", BitConverter.IsLittleEndian);
 
         Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
@@ -1964,14 +1956,10 @@ public class InterpreterTest
         retType = bc.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || isBase)
             return false;
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            Console.WriteLine("bc.GenericVirtualMethod<string>");
-            retType = bc.GenericVirtualMethod<string>(out isBase);
-            if (retType != typeof(string) || isBase)
-                return false;
-        }
+        Console.WriteLine("bc.GenericVirtualMethod<string>");
+        retType = bc.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || isBase)
+            return false;
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xdede)
             return false;
@@ -1979,15 +1967,10 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || isBase)
             return false;
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            Console.WriteLine("itest.GenericVirtualMethod<string>");
-            retType = itest.GenericVirtualMethod<string>(out isBase);
-            if (retType != typeof(string) || isBase)
-                return false;
-        }
-
+        Console.WriteLine("itest.GenericVirtualMethod<string>");
+        retType = itest.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || isBase)
+            return false;
         bc = new BaseClass();
         itest = bc;
         Console.WriteLine("bc.NonVirtualMethod");
@@ -2000,14 +1983,10 @@ public class InterpreterTest
         retType = bc.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || !isBase)
             return false;
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            Console.WriteLine("bc.GenericVirtualMethod<string>");
-            retType = bc.GenericVirtualMethod<string>(out isBase);
-            if (retType != typeof(string) || !isBase)
-                return false;
-        }
+        Console.WriteLine("bc.GenericVirtualMethod<string>");
+        retType = bc.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || !isBase)
+            return false;
         Console.WriteLine("itest.VirtualMethod");
         if (itest.VirtualMethod() != 0xbebe)
             return false;
@@ -2015,14 +1994,10 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<int>(out isBase);
         if (retType != typeof(int) || !isBase)
             return false;
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            Console.WriteLine("itest.GenericVirtualMethod<string>");
-            retType = itest.GenericVirtualMethod<string>(out isBase);
-            if (retType != typeof(string) || !isBase)
-                return false;
-        }
+        Console.WriteLine("itest.GenericVirtualMethod<string>");
+        retType = itest.GenericVirtualMethod<string>(out isBase);
+        if (retType != typeof(string) || !isBase)
+            return false;
         return true;
     }
 
@@ -2517,16 +2492,12 @@ public class InterpreterTest
         if (!ArrayUInt32(32, uint.MinValue)) return false;
         if (!ArrayUInt32(32, uint.MaxValue)) return false;
 
-        // active issue https://github.com/dotnet/runtime/issues/120659
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            // // long
-            if (!ArrayInt64(0, 0)) return false;
-            if (!ArrayInt64(1, 1)) return false;
-            if (!ArrayInt64(32, 32)) return false;
-            if (!ArrayInt64(32, Int64.MinValue)) return false;
-            if (!ArrayInt64(32, Int64.MaxValue)) return false;
-        }
+        // long
+        if (!ArrayInt64(0, 0)) return false;
+        if (!ArrayInt64(1, 1)) return false;
+        if (!ArrayInt64(32, 32)) return false;
+        if (!ArrayInt64(32, Int64.MinValue)) return false;
+        if (!ArrayInt64(32, Int64.MaxValue)) return false;
 
         // float
         if (!ArrayFloat(0, 0)) return false;
@@ -2535,14 +2506,10 @@ public class InterpreterTest
         if (!ArrayFloat(32, float.MinValue)) return false;
         if (!ArrayFloat(32, float.MaxValue)) return false;
 
-        // active issue https://github.com/dotnet/runtime/issues/120659
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            // double
-            if (!ArrayDouble(0, 0)) return false;
-            if (!ArrayDouble(1, 1)) return false;
-            if (!ArrayDouble(32, 32)) return false;
-        }
+        // double
+        if (!ArrayDouble(0, 0)) return false;
+        if (!ArrayDouble(1, 1)) return false;
+        if (!ArrayDouble(32, 32)) return false;
 
         // ref and value types
         if (!TestObjectArray()) return false;
@@ -2965,24 +2932,20 @@ public class InterpreterTest
             return false;
         }
 
-
-        // active issue https://github.com/dotnet/runtime/issues/120319
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        GetCalliGeneric<object>()();
+        if (_typeFromFill != typeof(object))
         {
-            GetCalliGeneric<object>()();
-            if (_typeFromFill != typeof(object))
-            {
-                Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
-                return false;
-            }
-
-            GetCalliGeneric<string>()();
-            if (_typeFromFill != typeof(string))
-            {
-                Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
-                return false;
-            }
+            Console.WriteLine("Calli generic test failed: expected object, got " + _typeFromFill);
+            return false;
         }
+
+        GetCalliGeneric<string>()();
+        if (_typeFromFill != typeof(string))
+        {
+            Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
+            return false;
+        }
+
         return true;
     }
 
