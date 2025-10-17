@@ -188,9 +188,11 @@ if(FEATURE_JIT)
     set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
 endif(FEATURE_JIT)
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    set(CEE_WKS_STATIC cee_wks_mergeable)
+if(CLR_CMAKE_HOST_ARCH_WASM)
+  set(CEE_WKS_STATIC cee_wks)
 else()
+    set(CEE_WKS_STATIC cee_wks_mergeable)
+endif()
     set(CEE_WKS_STATIC cee_wks)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
@@ -202,7 +204,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
