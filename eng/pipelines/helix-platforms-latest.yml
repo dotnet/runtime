@@ -3,7 +3,7 @@
 # Use this when you want to test against the most recent OS versions.
 #
 # Usage in templates:
-#   - template: /eng/pipelines/common/helix-platforms-latest.yml
+#   - template: /eng/pipelines/helix-platforms-latest.yml
 #
 # Then reference platforms using:
 #   ${{ variables.helix_macos_latest }}
