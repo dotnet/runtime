@@ -704,7 +704,7 @@ namespace System.IO.Compression
 
             // By default we compress with deflate, except if compression level
             // is set to NoCompression then stored is used.
-            // 
+            //
             // Stored is also used for empty files, but we can't know at this
             // point if user will write anything to the stream or not. For that
             // reason, we defer the instantiation of the compression stream
