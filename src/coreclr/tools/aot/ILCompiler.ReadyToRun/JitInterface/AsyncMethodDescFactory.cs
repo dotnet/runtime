@@ -23,7 +23,6 @@ namespace Internal.JitInterface
 
         public AsyncMethodDesc GetAsyncMethod(MethodDesc method)
         {
-
             return GetOrAdd(method, _factoryDelegate);
         }
     }

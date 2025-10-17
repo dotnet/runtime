@@ -395,10 +395,6 @@ namespace Internal.TypeSystem
 
         public MethodSignatureFlags Flags
         {
-            get
-            {
-                return _flags;
-            }
             set
             {
                 _flags = value;
