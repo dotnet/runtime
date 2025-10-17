@@ -76,6 +76,8 @@ else()
                 -fwasm-exceptions
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
+                -sMAXIMUM_MEMORY=2147483648
+                -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
