@@ -30,11 +30,16 @@ namespace System.Text.RegularExpressions.Tests
         public static IEnumerable<(string Pattern, RegexOptions options, string Input, bool ExpectedSuccess)> NimTestData_Cases(RegexEngine engine)
         {
             yield return ("", RegexOptions.None, "", true);
+            yield return ("(a)b", RegexOptions.None, "ab", true);
+            yield return ("(a)*", RegexOptions.None, "aa", true);
             yield return ("((a)*b)", RegexOptions.None, "aab", true);
             yield return ("a(b|c)*d", RegexOptions.None, "abbbbccccd", true);
             yield return ("((a)*(b)*)", RegexOptions.None, "abbb", true);
             yield return ("((a(b)*)*(b)*)", RegexOptions.None, "abbb", true);
+            yield return ("a|b", RegexOptions.None, "a", true);
+            yield return ("a|b", RegexOptions.None, "b", true);
             yield return ("a(b|c)*d", RegexOptions.None, "ab", false);
+            yield return ("b", RegexOptions.None, "a", false);
             yield return ("\\s\".*\"\\s", RegexOptions.None, " \"word\" ", true);
             yield return ("\\**", RegexOptions.None, "**", true);
             yield return ("\\++", RegexOptions.None, "++", true);
@@ -77,6 +82,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("a+b+", RegexOptions.None, "aabb", true);
             yield return ("(a+|b)+", RegexOptions.None, "aabb", true);
             yield return ("(a+|b+)*", RegexOptions.None, "aabb", true);
+            yield return ("a?", RegexOptions.None, "a", true);
+            yield return ("a?", RegexOptions.None, "", true);
             yield return ("ab?", RegexOptions.None, "a", true);
             yield return ("ab?", RegexOptions.None, "ab", true);
             yield return ("ab?a", RegexOptions.None, "aba", true);
@@ -158,7 +165,15 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("\\b", RegexOptions.None, " a", true);
             yield return ("\\b", RegexOptions.None, "a ", true);
             yield return ("\\B", RegexOptions.None, "ab", true);
+            yield return (".", RegexOptions.None, "a", true);
+            yield return (".", RegexOptions.None, "1", true);
+            yield return (".", RegexOptions.None, "!", true);
+            yield return (".", RegexOptions.None, "\n", false);
             yield return (".+", RegexOptions.None, "abc", true);
+            yield return ("(a)", RegexOptions.None, "a", true);
+            yield return ("(a)(b)", RegexOptions.None, "ab", true);
+            yield return ("(a)|(b)", RegexOptions.None, "a", true);
+            yield return ("(a)|(b)", RegexOptions.None, "b", true);
             yield return ("(?<foo>a)", RegexOptions.None, "a", true);
             yield return ("(?<foo>a)(?<bar>b)", RegexOptions.None, "ab", true);
 
