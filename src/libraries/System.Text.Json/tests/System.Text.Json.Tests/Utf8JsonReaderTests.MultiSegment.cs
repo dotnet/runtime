@@ -268,7 +268,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadComplexNestedJsonMultiSegment()
         {
-            string jsonString = "{\"array\":[1,2,{\"nested\":\"value\",\"number\":42.5e10}],\"bool\":true,\"null\":null}";
+            string jsonString = """{"array":[1,2,{"nested":"value","number":42.5e10}],"bool":true,"null":null}""";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)
@@ -319,7 +319,7 @@ namespace System.Text.Json.Tests
         public static void ReadLongStringAcrossSegments()
         {
             string longString = new string('a', 1000);
-            string jsonString = $"{{\"key\":\"{longString}\"}}";
+            string jsonString = $$"""{"key":"{{longString}}"}""";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int segmentSize = 10; segmentSize < 100; segmentSize += 10)
@@ -345,7 +345,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadEscapedStringAcrossSegmentBoundary()
         {
-            string jsonString = @"{""key"":""value\twith\nescape\u0041sequences""}";
+            string jsonString = """{"key":"value\twith\nescape\u0041sequences"}""";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)
@@ -365,7 +365,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadNumberWithExponentAcrossSegments()
         {
-            string jsonString = "[1.23456789e+100,-9.87654321e-50,1e308]";
+            string jsonString = """[1.23456789e+100,-9.87654321e-50,1e308]""";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)
@@ -390,7 +390,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadLiteralsAcrossSegmentBoundaries()
         {
-            string jsonString = "{\"t\":true,\"f\":false,\"n\":null}";
+            string jsonString = """{"t":true,"f":false,"n":null}""";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)
@@ -455,12 +455,14 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadCommentsAcrossSegments()
         {
-            string jsonString = @"{
+            string jsonString = """
+            {
                 // single line comment
-                ""key"": /* multi
+                "key": /* multi
                 line
-                comment */ ""value""
-            }";
+                comment */ "value"
+            }
+            """;
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
             var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
 
@@ -486,7 +488,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadPropertyNameAcrossSegmentWithEscaping()
         {
-            string jsonString = @"{""prop\u0065rty"":123}";
+            string jsonString = """{"prop\u0065rty":123}""";
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
             for (int splitLocation = 1; splitLocation < utf8.Length; splitLocation++)

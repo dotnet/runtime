@@ -4032,7 +4032,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ParseWithMaxDepthOption()
         {
-            string json = "{\"a\":{\"b\":{\"c\":{\"d\":1}}}}";
+            string json = """{"a":{"b":{"c":{"d":1}}}}""";
             var options = new JsonDocumentOptions { MaxDepth = 10 };
             using var doc = JsonDocument.Parse(json, options);
             Assert.Equal(1, doc.RootElement.GetProperty("a").GetProperty("b").GetProperty("c").GetProperty("d").GetInt32());
@@ -4041,7 +4041,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ParseWithAllowTrailingCommas()
         {
-            string json = "{\"a\":1,}";
+            string json = """{"a":1,}""";
             var options = new JsonDocumentOptions { AllowTrailingCommas = true };
             using var doc = JsonDocument.Parse(json, options);
             Assert.Equal(1, doc.RootElement.GetProperty("a").GetInt32());
