@@ -1077,10 +1077,8 @@ namespace System.Text.RegularExpressions
                     if (_pendingComments is not null && commentStart < _pos)
                     {
                         string comment = _pattern.Substring(commentStart, _pos - commentStart).Trim();
-                        if (!string.IsNullOrEmpty(comment))
-                        {
-                            _pendingComments.Add(comment);
-                        }
+                        // Preserve even empty comments for visual separation
+                        _pendingComments.Add(comment);
                     }
                 }
                 else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
@@ -1096,10 +1094,8 @@ namespace System.Text.RegularExpressions
                     if (_pendingComments is not null && commentStart < _pos)
                     {
                         string comment = _pattern.Substring(commentStart, _pos - commentStart).Trim();
-                        if (!string.IsNullOrEmpty(comment))
-                        {
-                            _pendingComments.Add(comment);
-                        }
+                        // Preserve even empty comments for visual separation
+                        _pendingComments.Add(comment);
                     }
 
                     _pos++;

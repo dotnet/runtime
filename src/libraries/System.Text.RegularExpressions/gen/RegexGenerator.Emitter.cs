@@ -5815,10 +5815,7 @@ namespace System.Text.RegularExpressions.Generator
                             foreach (string line in lines)
                             {
                                 string trimmedLine = line.Trim();
-                                if (!string.IsNullOrEmpty(trimmedLine))
-                                {
-                                    writer.WriteLine($"/// {indent}// {EscapeXmlComment(trimmedLine)}<br/>");
-                                }
+                                writer.WriteLine($"/// {indent}// {EscapeXmlComment(trimmedLine)}<br/>");
                             }
                         }
                     }
