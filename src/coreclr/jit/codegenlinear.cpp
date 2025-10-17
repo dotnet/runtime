@@ -865,8 +865,9 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurBB = nullptr;
 #endif // DEBUG
 
-        // We may need to generate a jump trampoline for async resumption outside the main method.
-        // This ensures we have an IP inside our main method that Coroutine.Resume points at, for
+        // We may need to generate jump trampolines for async resumption
+        // outside the main method. This ensures we have unique IPs inside our
+        // main method that Coroutine.Resume points at for each state, for
         // diagnostic purposes.
         if ((genAsyncResumptionTrampolineLabels != nullptr) && (block == compiler->fgLastBBInMainFunction()))
         {

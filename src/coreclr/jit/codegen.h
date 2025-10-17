@@ -186,7 +186,7 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
-    // label for trampoline to resumption stub
+    // labels for trampolines to resumption stub
     jitstd::vector<BasicBlock*>* genAsyncResumptionTrampolineLabels = nullptr;
 
     void**    codePtr;
