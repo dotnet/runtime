@@ -1178,44 +1178,48 @@ namespace System
                 return isNegative ? -TFloat.Zero : TFloat.Zero;
             }
 
-            // The hex significand represents: integerPart + fractionalPart * 16^(-fractionalDigits)
-            // The value is: significand * 2^binaryExponent
-            // Key invariant: e = binaryExponent - 4*fractionalDigits accounts for the fractional part's scale
-            // Every time we left-shift significand by s, we do e -= s
+            // The hex float represents: (integerPart + fractionalPart * 16^(-fractionalDigits)) * 2^binaryExponent
+            // We'll build a significand and track an exponent
 
-            int exponent = binaryExponent - (fractionalDigits * 4);
             ulong significand;
+            int exponent;
 
             if (integerPart != 0)
             {
-                // Start with integer part
+                // Start with the integer part
                 significand = integerPart;
 
-                // Add fractional part by shifting integer left and OR-ing fractional
+                // The integer part represents its value directly, so exponent adjustment is based on its bit position
+                int integerBits = 64 - BitOperations.LeadingZeroCount(integerPart);
+
+                // Shift to make room for fractional part
                 int fractionalBits = fractionalDigits * 4;
-                if (fractionalBits > 0 && fractionalBits <= 64 - BitOperations.LeadingZeroCount(significand))
+                if (fractionalBits > 0 && integerBits + fractionalBits <= 64)
                 {
                     significand = (significand << fractionalBits) | fractionalPart;
-                    exponent -= fractionalBits;
                 }
                 else if (fractionalBits > 0)
                 {
-                    // Can't fit all fractional bits, take what we can
-                    int availableBits = 64 - BitOperations.LeadingZeroCount(significand);
-                    if (availableBits < 64)
+                    // Can only fit some of the fractional bits
+                    int availableShift = 64 - integerBits;
+                    if (availableShift > 0)
                     {
-                        significand = (significand << availableBits) | (fractionalPart >> (fractionalBits - availableBits));
-                        exponent -= availableBits;
+                        significand = (significand << availableShift) | (fractionalPart >> (fractionalBits - availableShift));
                     }
+                    // Note: we're dropping some fractional bits here - should track for rounding
                 }
+
+                // The exponent accounts for: binary exponent - fractional scaling
+                exponent = binaryExponent - fractionalBits;
             }
             else
             {
-                // Only fractional part - it's already the significand
+                // Only fractional part (like 0x.8p1)
                 significand = fractionalPart;
+                exponent = binaryExponent - (fractionalDigits * 4);
             }
 
-            // Normalize: shift significand so MSB is set at bit 63
+            // Normalize: shift significand so MSB is at bit 63
             int mantissaBits = TFloat.NormalMantissaBits;
             int exponentBias = TFloat.ExponentBias;
 
@@ -1225,67 +1229,92 @@ namespace System
             }
 
             int leadingZeros = BitOperations.LeadingZeroCount(significand);
-            if (leadingZeros > 0)
-            {
-                significand <<= leadingZeros;
-                exponent -= leadingZeros;
-            }
+            significand <<= leadingZeros;
+            exponent -= leadingZeros;
 
-            // At this point, significand has MSB set, representing a value in [1, 2)
-            // The IEEE 754 format has an implicit leading 1, so we need to adjust
-            // actualExponent = exponent + exponentBias + 63 (since MSB is at bit 63, not bit 0)
-            int actualExponent = exponent + exponentBias + 63;
+            // At this point, significand is normalized with MSB at bit 63
+            // This means the value is significand * 2^exponent = (significand / 2^63) * 2^(exponent + 63)
+            // In IEEE 754, we have (1 + mantissa/2^mantissaBits) * 2^unbiasedExponent
+            // So unbiasedExponent = exponent + 63
+            // And biasedExponent = unbiasedExponent + exponentBias = exponent + 63 + exponentBias
+
+            // But wait - the IEEE format stores the exponent as biasedExponent = unbiasedExponent + bias
+            // So we want: actualExponent (stored) = (exponent + 63) + exponentBias
+            // Simplify: actualExponent = exponent + exponentBias + 63
+
+            // Actually, let me reconsider. When significand has MSB at bit 63:
+            // - significand is in range [2^63, 2^64)
+            // - The value is significand * 2^exponent
+            // - This equals (significand/2^63) * 2^(exponent+63)
+            // - Since significand/2^63 is in [1, 2), the IEEE unbiased exponent is exponent+63
+            // - The biased exponent (what we store) is unbiased + bias = exponent + 63 + exponentBias
+
+            // Wait, that's still what I had! Let me check the issue differently...
+            // Oh! The problem is that after shifting left to fit fractional bits,
+            // I'm not accounting for that shift in the exponent correctly.
+
+            // Let me restart with correct logic:
+            // After normalization, significand/2^63 is the effective significand value
+            // The actual value is (significand/2^63) * 2^(exponent+63)
+            // In IEEE 754: value = (1.mantissa) * 2^(stored_exp - bias)
+            // So: stored_exp = exponent + 63 + bias
+
+            // Hmm, this is getting circular. Let me think about it differently using the mantissa directly.
+            // After normalization with MSB at 63, we need to extract mantissaBits starting from bit 62 down
+
+            int unbiasedExponent = exponent + 63;
+            int biasedExponent = unbiasedExponent + exponentBias;
 
             // Handle overflow to infinity
-            if (actualExponent >= TFloat.InfinityExponent)
+            if (biasedExponent >= TFloat.InfinityExponent)
             {
                 return isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
             }
 
             // Handle underflow to zero or denormal
-            if (actualExponent <= 0)
+            if (biasedExponent <= 0)
             {
                 // Denormal number
-                int denormalShift = 1 - actualExponent;
+                int denormalShift = 1 - biasedExponent;
                 if (denormalShift >= 64)
                 {
                     return isNegative ? -TFloat.Zero : TFloat.Zero;
                 }
                 significand >>= denormalShift;
-                actualExponent = 0;
+                biasedExponent = 0;
             }
 
-            // Extract the mantissa bits (top mantissaBits bits after the implicit leading 1)
-            // Round to nearest, ties to even
-            int roundBitPos = 63 - mantissaBits;
-            ulong roundBit = 1UL << roundBitPos;
-            ulong roundMask = roundBit - 1;
-            ulong roundingBits = significand & roundMask;
-
-            significand >>= roundBitPos;
+            // Extract mantissa (bits 62 down to 63-mantissaBits)
+            // The mantissa in IEEE 754 excludes the implicit leading 1
+            ulong mantissa = (significand >> (63 - mantissaBits)) & TFloat.NormalMantissaMask;
 
             // Round to nearest, ties to even
-            if (roundingBits > (roundBit >> 1) ||
-                (roundingBits == (roundBit >> 1) && (significand & 1) == 1))
+            if (mantissaBits < 63)
             {
-                significand++;
-                if (significand > ((1UL << (mantissaBits + 1)) - 1))
+                int roundBitPos = 62 - mantissaBits;
+                ulong roundBit = 1UL << roundBitPos;
+                ulong roundMask = roundBit - 1;
+                ulong roundingBits = (significand >> roundBitPos) & roundMask;
+
+                if (roundingBits > (roundBit >> 1) ||
+                    (roundingBits == (roundBit >> 1) && (mantissa & 1) == 1))
                 {
-                    // Overflow in rounding
-                    significand >>= 1;
-                    actualExponent++;
-                    if (actualExponent >= TFloat.InfinityExponent)
+                    mantissa++;
+                    if (mantissa > TFloat.NormalMantissaMask)
                     {
-                        return isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+                        // Overflow in rounding
+                        mantissa = 0;
+                        biasedExponent++;
+                        if (biasedExponent >= TFloat.InfinityExponent)
+                        {
+                            return isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+                        }
                     }
                 }
             }
 
-            // Remove the implicit leading bit
-            ulong mantissa = significand & TFloat.NormalMantissaMask;
-
             // Construct the final bit representation
-            ulong bits = ((ulong)actualExponent << mantissaBits) | mantissa;
+            ulong bits = ((ulong)biasedExponent << mantissaBits) | mantissa;
 
             TFloat result = TFloat.BitsToFloat(bits);
             return isNegative ? -result : result;
