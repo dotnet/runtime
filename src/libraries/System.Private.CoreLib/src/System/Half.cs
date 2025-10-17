@@ -2311,14 +2311,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static Half Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseFloat<byte, Half>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Half result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
