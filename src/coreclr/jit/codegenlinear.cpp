@@ -933,6 +933,14 @@ void CodeGen::genCodeForAsyncResumeTrampolines()
         return;
     }
 
+    GetEmitter()->emitThisGCrefVars = VarSetOps::MakeEmpty(compiler);
+    GetEmitter()->emitThisGCrefRegs = RBM_NONE;
+    GetEmitter()->emitThisByrefRegs = RBM_NONE;
+    GetEmitter()->emitNxtIG();
+    GetEmitter()->emitDisableGC();
+    // emitDisableGC still allows GC at the current IP, so we need to insert a nop.
+    instGen(INS_nop);
+
     CORINFO_METHOD_HANDLE resumeStub = compiler->info.compCompHnd->getAsyncResumptionStub();
     CORINFO_CONST_LOOKUP  resumeStubLookup;
     compiler->info.compCompHnd->getFunctionEntryPoint(resumeStub, &resumeStubLookup);
@@ -944,11 +952,13 @@ void CodeGen::genCodeForAsyncResumeTrampolines()
             continue;
 
         genLogLabel(label);
-        label->bbEmitCookie = GetEmitter()->emitAddLabel(VarSetOps::MakeEmpty(compiler), RBM_NONE, RBM_NONE);
+        label->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
 
         (*compiler->compSuspensionPoints)[i].nativeResumeLoc.CaptureLocation(GetEmitter());
         genCodeForAsyncResumeTrampolineJump(resumeStub, resumeStubLookup);
     }
+
+    GetEmitter()->emitEnableGC();
 }
 
 /*
