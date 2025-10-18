@@ -3258,7 +3258,7 @@ HRESULT CordbILCode::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBrea
 }
 
 
-
+#ifdef FEATURE_CODE_VERSIONING
 CordbReJitILCode::CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode) :
 CordbILCode(pFunction, TargetBuffer(), encVersion, mdSignatureNil, VmPtrToCookie(vmILCodeVersionNode)),
 m_cClauses(0),
@@ -3544,6 +3544,7 @@ HRESULT CordbReJitILCode::GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR
     }
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 // FindNativeInfoInILVariableArray
 // Linear search through an array of NativeVarInfos, to find the variable of index dwIndex, valid

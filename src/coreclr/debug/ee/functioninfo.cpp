@@ -1060,6 +1060,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     InstrumentedILOffsetMapping mapping;
 
+#ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
     if (!ilVersion.IsDefaultVersion())
     {
@@ -1079,7 +1080,9 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
             mapping = *pReJitMap;
         }
     }
-    else if (m_methodInfo->HasInstrumentedILMap())
+    else
+#endif // FEATURE_CODE_VERSIONING
+    if (m_methodInfo->HasInstrumentedILMap())
     {
         // If a ReJIT hasn't happened, check for a profiler provided map.
         mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
@@ -1612,6 +1615,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     // CreateInitAndAddJitInfo takes a lock and checks the list again, which makes this thread-safe.
 
     NativeCodeVersion nativeCodeVersion;
+#ifdef FEATURE_CODE_VERSIONING
     if (fd->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
@@ -1622,6 +1626,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         }
     }
     else
+#endif // FEATURE_CODE_VERSIONING
     {
         // Some day we'll get EnC to use code versioning properly, but until then we'll get the right behavior treating all EnC versions as the default native code version.
         nativeCodeVersion = NativeCodeVersion(fd);
@@ -2104,7 +2109,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
 #else
     // We just ask for the DJI to ensure that it's lazily created.
     // This should only fail in an oom scenario.
-    DebuggerJitInfo * djiTest = g_pDebugger->GetLatestJitInfoFromMethodDesc(pDesc);
+    DebuggerJitInfo * djiTest = g_pDebugger->GetLatestJitInfoFromMethodDesc(pMethodDesc);
     if (djiTest == NULL)
     {
         // We're oom. Give up.
