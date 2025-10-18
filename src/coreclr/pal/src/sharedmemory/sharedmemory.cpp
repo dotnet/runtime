@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal/dbgmsg.h"
+#include <errno.h>
 SET_DEFAULT_DEBUG_CHANNEL(SHMEM); // some headers have code with asserts, so do this first
 
 #include "pal/sharedmemory.h"
@@ -178,7 +179,8 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 
     // Check if the path already exists
     struct stat statInfo;
-    int statResult = stat(path, &statInfo);
+    int statResult;
+    while (-1 == (statResult = stat(path, &statInfo)) && errno == -1);
     if (statResult != 0 && errno == ENOENT)
     {
         if (!createIfNotExist)
@@ -195,7 +197,8 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 
         if (isGlobalLockAcquired)
         {
-            int operationResult = mkdir(path, permissionsMask);
+            int operationResult;
+            while (-1 == (operationResult = mkdir(path, permissionsMask)) && errno == EINTR);
             if (operationResult != 0)
             {
                 if (errors != nullptr)
@@ -226,7 +229,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
                         GetFriendlyErrorCodeString(errorCode));
                 }
 
-                rmdir(path);
+                while (-1 == rmdir(path) && errno == EINTR);
                 throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
             }
 
@@ -264,19 +267,21 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
                     GetFriendlyErrorCodeString(errorCode));
             }
 
-            rmdir(tempPath);
+            while (-1 == rmdir(tempPath) && errno == EINTR);
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
 
-        if (rename(tempPath, path) == 0)
+        int rename_result;
+        while (-1 == (rename_result = rename(tempPath, path)) && errno == EINTR);
+        if (rename_result == 0)
         {
             return true;
         }
 
         // Another process may have beaten us to it. Delete the temp directory and continue to check the requested directory to
         // see if it meets our needs.
-        rmdir(tempPath);
-        statResult = stat(path, &statInfo);
+        while (-1 == rmdir(tempPath) && errno == EINTR);
+        while (-1 == (statResult = stat(path, &statInfo)) && errno == EINTR);
     }
 
     // If the path exists, check that it's a directory
@@ -481,7 +486,8 @@ int SharedMemoryHelpers::CreateOrOpenFile(
         if (id->IsUserScope())
         {
             struct stat statInfo;
-            int statResult = fstat(fileDescriptor, &statInfo);
+            int statResult;
+            while (-1 == (statResult = fstat(fileDescriptor, &statInfo)) && errno == EINTR);
             if (statResult != 0)
             {
                 if (errors != nullptr)
@@ -568,7 +574,7 @@ int SharedMemoryHelpers::CreateOrOpenFile(
         }
 
         CloseFile(fileDescriptor);
-        unlink(path);
+        while (-1 == unlink(path) && errno == EINTR);
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
     }
 
@@ -605,9 +611,16 @@ SIZE_T SharedMemoryHelpers::GetFileSize(SharedMemorySystemCallErrors *errors, LP
     _ASSERTE(filePath[0] != '\0');
     _ASSERTE(fileDescriptor != -1);
 
-    off_t endOffset = lseek(fileDescriptor, 0, SEEK_END);
-    if (endOffset == static_cast<off_t>(-1) ||
-        lseek(fileDescriptor, 0, SEEK_SET) == static_cast<off_t>(-1))
+    off_t endOffset;
+    while (-1 == (endOffset = lseek(fileDescriptor, 0, SEEK_END)) && errno == EINTR);
+    bool condition = endOffset == static_cast<off_t>(-1);
+    if (!condition)
+    {
+        off_t lseek_result;
+        while (-1 == (lseek_result = lseek(fileDescriptor, 0, SEEK_SET)) && errno == EINTR);
+        if (lseek_result == static_cast<off_t>(-1)) condition = true;
+    }
+    if (condition)
     {
         if (errors != nullptr)
         {
@@ -717,7 +730,8 @@ bool SharedMemoryHelpers::TryAcquireFileLock(SharedMemorySystemCallErrors *error
 
     while (true)
     {
-        int flockResult = flock(fileDescriptor, operation);
+        int flockResult;
+        while (-1 == (flockResult = flock(fileDescriptor, operation)) && errno == EINTR);
         if (flockResult == 0)
         {
             return true;
@@ -1029,14 +1043,14 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
             if (m_createdFile)
             {
                 _ASSERTE(m_filePath != nullptr);
-                unlink(*m_filePath);
+                while (-1 == unlink(*m_filePath) && errno == EINTR);
             }
 
             if (m_sessionDirectoryPathCharCount != 0)
             {
                 _ASSERTE(*m_filePath != nullptr);
                 m_filePath->CloseBuffer(m_sessionDirectoryPathCharCount);
-                rmdir(*m_filePath);
+                while (-1 == rmdir(*m_filePath) && errno == EINTR);
             }
 
             if (m_acquiredCreationDeletionFileLockForId != nullptr)
@@ -1387,9 +1401,9 @@ void SharedMemoryProcessDataHeader::Close()
             path.Append('/'));
         SIZE_T sessionDirectoryPathCharCount = path.GetCount();
         SharedMemoryHelpers::VerifyStringOperation(path.Append(m_id.GetName(), m_id.GetNameCharCount()));
-        unlink(path);
+        while (-1 == unlink(path) && errno == EINTR);
         path.CloseBuffer(sessionDirectoryPathCharCount);
-        rmdir(path);
+        while (-1 == rmdir(path) && errno == EINTR);
     }
     catch (SharedMemoryException)
     {

@@ -20,6 +20,7 @@
 #define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__linux__)
 #include <stdio.h>
+#include <errno.h>
 #define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
@@ -65,18 +66,31 @@ bool minipal_is_native_debugger_present(void)
     bool debugger_present = false;
     char buf[2048];
 
-    int status_fd = open("/proc/self/status", O_RDONLY);
+    int status_fd;
+    while (-1 == (status_fd = open("/proc/self/status", O_RDONLY)) && errno == EINTR);
     if (status_fd == -1)
     {
         return false;
     }
-    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
-    if (num_read > 0)
+    ssize_t readSoFar = 0;
+    while (readSoFar < sizeof(buf) - 1)
+    {
+        ssize_t num_read;
+        while (-1 == (num_read = read(status_fd, buf + readSoFar, sizeof(buf) - 1 - readSoFar)) && errno == EINTR);
+        if (num_read == 0) break;
+        if (num_read < 0)
+        {
+            readSoFar = -1;
+            break;
+        }
+        readSoFar += num_read;
+    }
+    if (readSoFar > 0)
     {
         static const char TracerPid[] = "TracerPid:";
         char *tracer_pid;
 
-        buf[num_read] = '\0';
+        buf[readSoFar] = '\0';
         tracer_pid = strstr(buf, TracerPid);
         if (tracer_pid)
         {
@@ -126,18 +140,24 @@ bool minipal_is_native_debugger_present(void)
     int fd;
     char statusFilename[64];
     snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
-    fd = open(statusFilename, O_RDONLY);
+    while (-1 == (fd = open(statusFilename, O_RDONLY)) && errno == EINTR);
     if (fd == -1)
     {
         return false;
     }
 
     pstatus_t status;
-    ssize_t readResult;
-    do
+    size_t readSoFar = 0;
+    while (readSoFar < sizeof(status))
     {
-        readResult = read(fd, &status, sizeof(status));
-    } while (readResult == -1 && errno == EINTR);
+        ssize_t readResult;
+        do
+        {
+            readResult = read(fd, &status + readSoFar, sizeof(status) - readSoFar);
+        } while (readResult == -1 && errno == EINTR);
+        if (readResult <= 0) break;
+        readSoFar += readResult;
+    }
 
     close(fd);
     return status.pr_flttrace.word[0] != 0;

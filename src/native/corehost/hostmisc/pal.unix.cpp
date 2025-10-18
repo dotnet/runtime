@@ -61,7 +61,8 @@ pal::string_t pal::get_timestamp()
 
 bool pal::touch_file(const pal::string_t& path)
 {
-    int fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH));
+    int fd;
+    while (-1 == (fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH))) && errno == EINTR);
     if (fd == -1)
     {
         trace::warning(_X("open(%s) failed in %s"), path.c_str(), _STRINGIFY(__FUNCTION__));
@@ -73,7 +74,8 @@ bool pal::touch_file(const pal::string_t& path)
 
 static void* map_file(const pal::string_t& path, size_t* length, int prot, int flags)
 {
-    int fd = open(path.c_str(), O_RDONLY);
+    int fd;
+    while (-1 == (fd = open(path.c_str(), O_RDONLY)) && errno == EINTR);
     if (fd == -1)
     {
         trace::error(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);
@@ -81,7 +83,9 @@ static void* map_file(const pal::string_t& path, size_t* length, int prot, int f
     }
 
     struct stat buf;
-    if (fstat(fd, &buf) != 0)
+    int fstat_result;
+    while (-1 == (fstat_result = fstat(fd, &buf)) && errno == EINTR);
+    if (fstat_result != 0)
     {
         trace::error(_X("Failed to map file. fstat(%s) failed with error %d"), path.c_str(), errno);
         close(fd);
@@ -400,7 +404,9 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
 
     // Create $HOME/.net with rwx access to the owner
-    if (::mkdir(extraction_dir.c_str(), S_IRWXU) == 0)
+    int mkdir_error;
+    while (-1 == (mkdir_error = ::mkdir(extraction_dir.c_str(), S_IRWXU)) && errno == EINTR);
+    if (mkdir_error == 0)
     {
         return true;
     }
@@ -1011,7 +1017,9 @@ bool pal::file_exists(const pal::string_t& path)
 bool pal::is_directory(const pal::string_t& path)
 {
     struct stat sb;
-    if (::stat(path.c_str(), &sb) != 0)
+    int result;
+    while (-1 == (result = ::stat(path.c_str(), &sb)) && errno == EINTR);
+    if (result != 0)
         return false;
 
     return S_ISDIR(sb.st_mode);
@@ -1023,12 +1031,22 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
 
     std::vector<pal::string_t>& files = *list;
 
-    auto dir = opendir(path.c_str());
+    DIR *dir;
+    while ((dir = opendir(path.c_str())) == nullptr && errno == EINTR);
+
     if (dir != nullptr)
     {
         struct dirent* entry = nullptr;
-        while ((entry = readdir(dir)) != nullptr)
+        while (true)
         {
+            do
+            {
+                errno = 0;
+                entry = readdir(dir);
+            }
+            while (entry == nullptr && errno == EINTR);
+            if (entry == nullptr) break;
+
             if (fnmatch(pattern.c_str(), entry->d_name, FNM_PATHNAME) != 0)
             {
                 continue;

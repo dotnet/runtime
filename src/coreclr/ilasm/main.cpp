@@ -11,6 +11,7 @@
 #include "clrversion.h"
 
 #include "strsafe.h"
+#include <errno.h>
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
@@ -844,7 +845,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(szOutputFilename, wzOutputFilename);
         if (szOutputFilename != NULL)
         {
-            remove(szOutputFilename);
+            while (-1 == remove(szOutputFilename) && errno == EINTR);
         }
 #endif
     }

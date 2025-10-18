@@ -1323,8 +1323,13 @@ extern void*     sbrk(ptrdiff_t);
 */
 #define MMAP_FLAGS           (MAP_PRIVATE)
 static int dev_zero_fd = -1; /* Cached file descriptor for /dev/zero. */
+static int open_with_eintr_handling(const char *path, int oflag) {
+  int open_result;
+  while (-1 == (open_result = open(path, oflag)) && errno == EINTR);
+  return open_result;
+}
 #define CALL_MMAP(s) ((dev_zero_fd < 0) ? \
-           (dev_zero_fd = open("/dev/zero", O_RDWR), \
+           (dev_zero_fd = open_with_eintr_handling("/dev/zero", O_RDWR), \
             mmap(0, (s), MMAP_PROT, MMAP_FLAGS, dev_zero_fd, 0)) : \
             mmap(0, (s), MMAP_PROT, MMAP_FLAGS, dev_zero_fd, 0))
 #endif /* MAP_ANONYMOUS */
@@ -2456,10 +2461,18 @@ static int init_mparams(void) {
       int fd;
       unsigned char buf[sizeof(size_t)];
       /* Try to use /dev/urandom, else fall back on using time */
-      if ((fd = open("/dev/urandom", O_RDONLY)) >= 0 &&
-          read(fd, buf, sizeof(buf)) == sizeof(buf)) {
+      while (-1 == (fd = open("/dev/urandom", O_RDONLY)) && errno == EINTR);
+      size_t readSoFar = 0;
+      while (fd >= 0 && readSoFar < sizeof(buf))
+      {
+        ssize_t numRead;
+        while (-1 == (numRead = read(fd, buf + numRead, sizeof(buf) - numRead)) && errno == EINTR);
+        if (numRead <= 0) break;
+        readSoFar += numRead;
+      }
+      if (fd >= 0) close(fd);
+      if (readSoFar == sizeof(buf)) {
         s = *((size_t *) buf);
-        close(fd);
       }
       else
 #endif /* USE_DEV_RANDOM */

@@ -59,7 +59,9 @@ create_socket (const char *hostname, const int port)
     serv_addr.sin_port = htons (GINT_TO_UINT16 (port));
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
-    if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    int connect_result;
+    while (-1 == (connect_result = connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) && errno == EINTR);
+    if (connect_result < 0) {
         g_warning ("cfg_dump: Connect Failed: %s", strerror (errno));
         return -2;
     }
@@ -79,14 +81,32 @@ write_short (MonoCompile *cfg, short s)
 {
 	short swap = htons (s);
 	int ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &swap, 2)) < 0 && errno == EINTR);
+	char* message = (char*)&swap;
+	size_t messageSize = 2;
+	do
+	{
+		while ((ret = write (cfg->gdump_ctx->fd, message, messageSize)) < 0 && errno == EINTR);
+		if (ret <= 0) break;
+		message += ret;
+		messageSize -= ret;
+	}
+	while (messageSize > 0);
 }
 
 static void
 write_int (MonoCompile *cfg, int v)
 {
 	int swap = htonl (v), ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &swap, 4)) < 0 && errno == EINTR);
+	char* message = (char*)&swap;
+	size_t messageSize = 4;
+	do
+	{
+		while ((ret = write (cfg->gdump_ctx->fd, message, messageSize)) < 0 && errno == EINTR);
+		if (ret <= 0) break;
+		message += ret;
+		messageSize -= ret;
+	}
+	while (messageSize > 0);
 }
 
 static void

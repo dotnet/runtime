@@ -301,7 +301,8 @@ helper_thread (void *arg)
 				break;
 
 			if (FD_ISSET (aot_profiler.server_socket, &rfds)) {
-				SOCKET fd = accept (aot_profiler.server_socket, NULL, NULL);
+				SOCKET fd;
+				while (-1 == (fd = accept (aot_profiler.server_socket, NULL, NULL)) && errno == EINTR);
 
 				if (fd != INVALID_SOCKET) {
 					if (fd >= FD_SETSIZE)

@@ -102,18 +102,21 @@ binary_protocol_open_file (gboolean assert_on_failure)
 	binary_protocol_file = CreateFileA (filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #elif defined(HAVE_UNISTD_H)
 	do {
-		binary_protocol_file = open (filename, O_CREAT | O_WRONLY, 0644);
+		while (-1 == (binary_protocol_file = open (filename, O_CREAT | O_WRONLY, 0644)) && errno == EINTR);
 		if (binary_protocol_file == -1) {
 			if (errno != EINTR)
 				break; /* Failed */
-#ifdef F_SETLK
-		} else if (fcntl (binary_protocol_file, F_SETLK, &lock) == -1) {
-			/* The lock for the file is already taken. Fail */
-			close (binary_protocol_file);
-			binary_protocol_file = -1;
-			break;
-#endif
 		} else {
+#ifdef F_SETLK
+			int fcntl_result;
+			while (-1 == (fcntl_result = fcntl (binary_protocol_file, F_SETLK, &lock)) && errno == EINTR);
+			if (fcntl_result == -1) {
+				/* The lock for the file is already taken. Fail */
+				close (binary_protocol_file);
+				binary_protocol_file = -1;
+				break;
+			}
+#endif
 			/* We have acquired the lock. Truncate the file */
 			int ret;
 			while ((ret = ftruncate (binary_protocol_file, 0)) < 0 && errno == EINTR);
@@ -259,7 +262,7 @@ binary_protocol_check_file_overflow (void)
 
 	if (current_file_index > 0) {
 		char *filename = filename_for_index (current_file_index - 1);
-		unlink (filename);
+		while (-1 == unlink (filename) && errno == EINTR);
 		free_filename (filename);
 	}
 

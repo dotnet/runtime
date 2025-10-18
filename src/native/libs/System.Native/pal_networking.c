@@ -1726,13 +1726,18 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
 #if defined(FD_CLOEXEC)
     // macOS does not have accept4 but it can set _CLOEXEC on descriptor.
     // Unlike accept4 it is not atomic and the fd can leak child process.
-    if ((accepted != -1) && fcntl(accepted, F_SETFD, FD_CLOEXEC) != 0)
+    if (accepted != -1)
     {
-        // Preserve and return errno from fcntl. close() may reset errno to OK.
-        int oldErrno = errno;
-        close(accepted);
-        accepted = -1;
-        errno = oldErrno;
+        int fcntl_result;
+        while (-1 == (fcntl_result = fcntl(accepted, F_SETFD, FD_CLOEXEC)) && errno == EINTR);
+        if (fcntl_result != 0)
+        {
+            // Preserve and return errno from fcntl. close() may reset errno to OK.
+            int oldErrno = errno;
+            close(accepted);
+            accepted = -1;
+            errno = oldErrno;
+        }
     }
 #endif
 #if !defined(__linux__)
@@ -2852,7 +2857,7 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
     }
 
 #ifndef SOCK_CLOEXEC
-    fcntl(ToFileDescriptor(*createdSocket), F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
+    while (-1 == fcntl(ToFileDescriptor(*createdSocket), F_SETFD, FD_CLOEXEC) && errno == EINTR); // ignore any failures; this is best effort
 #endif
     return Error_SUCCESS;
 }
@@ -3548,7 +3553,7 @@ int32_t SystemNative_Disconnect(intptr_t socket)
     memset(&addr, 0, sizeof(addr));
     addr.sa_family = AF_UNSPEC;
 
-    err = connect(fd, &addr, sizeof(addr));
+    while (-1 == (err = connect(fd, &addr, sizeof(addr))) && errno == EINTR);
     if (err != 0)
     {
         // On some older kernels connect(AF_UNSPEC) may fail. Fall back to shutdown in these cases:
@@ -3637,8 +3642,16 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     char* buffer = NULL;
 
     // Save the original input file position and seek to the offset position
-    off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
-    if (inputFileOrigOffset == -1 || lseek(infd, offtOffset, SEEK_SET) == -1)
+    off_t inputFileOrigOffset;
+    while (-1 == (inputFileOrigOffset = lseek(infd, 0, SEEK_CUR)) && errno == EINTR);
+    bool condition = inputFileOrigOffset == -1;
+    if (!condition)
+    {
+        off_t lseek_result;
+        while (-1 == (lseek_result = lseek(infd, offtOffset, SEEK_SET)) && errno == EINTR);
+        if (lseek_result == -1) condition = true;
+    }
+    if (condition)
     {
         goto error;
     }
@@ -3688,7 +3701,9 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Restore the original input file position
-    if (lseek(infd, inputFileOrigOffset, SEEK_SET) == -1)
+    off_t lseek_result;
+    while (-1 == (lseek_result = lseek(infd, inputFileOrigOffset, SEEK_SET)) && errno == EINTR);
+    if (lseek_result == -1)
     {
         goto error;
     }
