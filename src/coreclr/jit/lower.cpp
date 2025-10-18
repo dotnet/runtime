@@ -9440,7 +9440,6 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckIndir(node->AsIndir());
             break;
         case GT_PUTARG_REG:
-        case GT_PUTARG_STK:
             // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;
