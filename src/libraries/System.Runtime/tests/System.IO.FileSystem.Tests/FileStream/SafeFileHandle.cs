@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
@@ -64,5 +65,29 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer.Length, fsr.Length);
             }
         }
+
+        [ConditionalTheory(nameof(File_Exists))]
+        [InlineData("/proc/net/route")]
+        [InlineData("/proc/version")]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void SafeFileHandle_PseudoFile_DoesNotThrow(string path)
+        {
+            // On some Linux distributions (e.g., AzureLinux 3), pseudofiles may report CanSeek = true
+            // but fail when attempting to seek. Accessing SafeFileHandle should not throw in these cases.
+            if (!File.Exists(path))
+            {
+                throw new SkipTestException($"File {path} does not exist");
+            }
+
+            using FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            
+            // This should not throw even if the file reports CanSeek = true but doesn't support seeking
+            SafeFileHandle handle = fs.SafeFileHandle;
+            
+            Assert.NotNull(handle);
+            Assert.False(handle.IsClosed);
+        }
+
+        private static bool File_Exists => File.Exists("/proc/net/route") || File.Exists("/proc/version");
     }
 }
