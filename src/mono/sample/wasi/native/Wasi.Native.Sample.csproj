@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
-    
+
     <TargetOs>wasi</TargetOs>
     <WasmBuildNative>true</WasmBuildNative>
     <WasmNativeStrip>false</WasmNativeStrip>
