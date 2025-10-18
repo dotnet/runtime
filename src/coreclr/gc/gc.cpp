@@ -10865,11 +10865,13 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
         gc_heap* heap = g_heaps[i];
         if (heap->mark_list_piece_start[source_number] < heap->mark_list_piece_end[source_number])
         {
-            source[source_count] = heap->mark_list_piece_start[source_number];
-            source_end[source_count] = heap->mark_list_piece_end[source_number];
-            source_heap[source_count] = i;
             if (source_count < MAX_SUPPORTED_CPUS)
+            {
+                source[source_count] = heap->mark_list_piece_start[source_number];
+                source_end[source_count] = heap->mark_list_piece_end[source_number];
+                source_heap[source_count] = i;
                 source_count++;
+            }
         }
     }
 
