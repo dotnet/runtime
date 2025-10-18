@@ -239,11 +239,14 @@ namespace System.Reflection.Emit
             FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
             List<Type> retModOpts = [.. type.GetFunctionPointerReturnType().GetOptionalCustomModifiers()];
 
+            if (type.IsUnmanagedFunctionPointer)
+                callConv = SignatureCallingConvention.Unmanaged;
+
             if (type.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length > 0)
             {
-                foreach (Type conv in conventions)
+                if (conventions.Length == 1)
                 {
-                    switch (conv.FullName)
+                    switch (conventions[0].FullName)
                     {
                         case "System.Runtime.CompilerServices.CallConvCdecl":
                             callConv = SignatureCallingConvention.CDecl;
@@ -258,9 +261,14 @@ namespace System.Reflection.Emit
                             callConv = SignatureCallingConvention.FastCall;
                             break;
                         default:
-                            retModOpts.Add(conv);
+                            retModOpts.Add(conventions[0]);
                             break;
                     }
+                }
+                else
+                {
+                    foreach (Type conv in conventions)
+                        retModOpts.Add(conv);
                 }
             }
 
