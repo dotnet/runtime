@@ -223,9 +223,80 @@ namespace System.Reflection.Emit
             {
                 signature.GenericTypeParameter(type.GenericParameterPosition);
             }
+            else if (type.IsFunctionPointer)
+            {
+                WriteSignatureForFunctionPointerType(signature, type, module);
+            }
             else
             {
                 WriteSimpleSignature(signature, type, module);
+            }
+        }
+
+        private static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        {
+            SignatureCallingConvention callConv = SignatureCallingConvention.Default;
+            FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
+            List<Type> retModOpts = [.. type.GetFunctionPointerReturnType().GetOptionalCustomModifiers()];
+
+            if (type.IsUnmanagedFunctionPointer)
+                callConv = SignatureCallingConvention.Unmanaged;
+
+            if (type.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length > 0)
+            {
+                if (conventions.Length == 1)
+                {
+                    switch (conventions[0].FullName)
+                    {
+                        case "System.Runtime.CompilerServices.CallConvCdecl":
+                            callConv = SignatureCallingConvention.CDecl;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvStdcall":
+                            callConv = SignatureCallingConvention.StdCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvThiscall":
+                            callConv = SignatureCallingConvention.ThisCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvFastcall":
+                            callConv = SignatureCallingConvention.FastCall;
+                            break;
+                        default:
+                            retModOpts.Add(conventions[0]);
+                            break;
+                    }
+                }
+                else
+                {
+                    foreach (Type conv in conventions)
+                        retModOpts.Add(conv);
+                }
+            }
+
+            MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv, attribs);
+            sigEncoder.Parameters(type.GetFunctionPointerParameterTypes().Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
+
+            CustomModifiersEncoder retModifiersEncoder = retTypeEncoder.CustomModifiers();
+
+            if (retModOpts.Count > 0)
+                WriteCustomModifiers(retModifiersEncoder, [.. retModOpts], isOptional: true, module);
+
+            if (type.GetFunctionPointerReturnType().GetRequiredCustomModifiers() is Type[] retModReqs)
+                WriteCustomModifiers(retModifiersEncoder, retModReqs, isOptional: false, module);
+
+            WriteSignatureForType(retTypeEncoder.Type(), type.GetFunctionPointerReturnType(), module);
+
+            foreach (Type paramType in type.GetFunctionPointerParameterTypes())
+            {
+                ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
+                CustomModifiersEncoder paramModifiersEncoder = paramEncoder.CustomModifiers();
+
+                if (paramType.GetOptionalCustomModifiers() is Type[] paramModOpts)
+                    WriteCustomModifiers(paramModifiersEncoder, paramModOpts, isOptional: true, module);
+
+                if (paramType.GetRequiredCustomModifiers() is Type[] paramModReqs)
+                    WriteCustomModifiers(paramModifiersEncoder, paramModReqs, isOptional: false, module);
+
+                WriteSignatureForType(paramEncoder.Type(), paramType, module);
             }
         }
 
