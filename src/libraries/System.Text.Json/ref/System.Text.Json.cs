@@ -457,11 +457,13 @@ namespace System.Text.Json
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo GetTypeInfo(System.Type type) { throw null; }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>() { throw null; }
         public void MakeReadOnly() { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Populating unconfigured TypeInfoResolver properties with the reflection resolver requires runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Populating unconfigured TypeInfoResolver properties with the reflection resolver requires unreferenced code.")]
         public void MakeReadOnly(bool populateMissingResolver) { }
         public bool TryGetTypeInfo(System.Type type, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Serialization.Metadata.JsonTypeInfo? typeInfo) { throw null; }
+        public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? typeInfo) { throw null; }
     }
     public enum JsonTokenType : byte
     {
@@ -1152,6 +1154,7 @@ namespace System.Text.Json.Serialization
         protected abstract System.Text.Json.JsonSerializerOptions? GeneratedSerializerOptions { get; }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
         public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>() { throw null; }
         System.Text.Json.Serialization.Metadata.JsonTypeInfo System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver.GetTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
     [System.FlagsAttribute]
@@ -1270,6 +1273,9 @@ namespace System.Text.Json.Serialization.Metadata
     public partial interface IJsonTypeInfoResolver
     {
         System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options);
+#if NET
+        System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>() { throw null; }
+#endif
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonCollectionInfoValues<TCollection>
