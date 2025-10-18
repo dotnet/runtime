@@ -21,7 +21,6 @@ Abstract:
 
 #include "corunix.hpp"
 #include "threadinfo.hpp"
-#include "mutex.hpp"
 #include "list.h"
 
 #include <pthread.h>
@@ -38,8 +37,7 @@ namespace CorUnix
         CONST HANDLE *lpHandles,
         BOOL bWaitAll,
         DWORD dwMilliseconds,
-        BOOL bAlertable,
-        BOOL bPrioritize = FALSE);
+        BOOL bAlertable);
 
     DWORD InternalSignalObjectAndWait(
         CPalThread *thread,
@@ -68,7 +66,6 @@ namespace CorUnix
     class CSynchData;
 
     typedef struct _WaitingThreadsListNode * PWaitingThreadsListNode;
-    typedef struct _OwnedObjectsListNode * POwnedObjectsListNode;
     typedef struct _ThreadApcInfoNode * PThreadApcInfoNode;
 
     typedef struct _ThreadWaitInfo
@@ -112,8 +109,6 @@ namespace CorUnix
         SharedID               m_shridWaitAwakened;
         Volatile<LONG>         m_lLocalSynchLockCount;
         LIST_ENTRY             m_leOwnedObjsList;
-
-        NamedMutexProcessData *m_ownedNamedMutexListHead;
 
         ThreadNativeWaitData   m_tnwdNativeData;
         ThreadWaitInfo         m_twiWaitInfo;
@@ -159,20 +154,6 @@ namespace CorUnix
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         PAL_ERROR RunDeferredThreadConditionSignalings();
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
-
-        // NOTE: the following methods provide non-synchronized access to
-        //       the list of owned objects for this thread. Any thread
-        //       accessing this list MUST own the appropriate
-        //       synchronization lock(s).
-        void AddObjectToOwnedList(POwnedObjectsListNode pooln);
-        void RemoveObjectFromOwnedList(POwnedObjectsListNode pooln);
-        POwnedObjectsListNode RemoveFirstObjectFromOwnedList(void);
-
-        void AddOwnedNamedMutex(NamedMutexProcessData *processData);
-        void RemoveOwnedNamedMutex(NamedMutexProcessData *processData);
-        NamedMutexProcessData *RemoveFirstOwnedNamedMutex();
-        bool OwnsNamedMutex(NamedMutexProcessData *processData);
-        bool OwnsAnyNamedMutex() const;
 
         // The following methods provide access to the native wait lock for
         // those implementations that need a lock to protect the support for

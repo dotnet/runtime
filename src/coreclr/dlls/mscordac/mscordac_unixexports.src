@@ -64,8 +64,6 @@ nativeStringResourceTable_mscorrc
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
-#CreateMutexW
-#CreateMutexExW
 #CreateEventW
 #CreateEventExW
 #CreateProcessW
