@@ -11,6 +11,8 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IReadOnlySet<TElement>
     {
+        private readonly bool _isDeserializable = typeof(TCollection).IsAssignableFrom(typeof(HashSet<TElement>));
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
             // Directly convert to HashSet<TElement> since IReadOnlySet<T> does not have an Add method.
@@ -24,6 +26,11 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
+            if (!_isDeserializable)
+            {
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
+            }
+
             state.Current.ReturnValue = new HashSet<TElement>();
         }
 
