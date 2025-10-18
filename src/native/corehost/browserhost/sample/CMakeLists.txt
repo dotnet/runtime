@@ -8,11 +8,11 @@ set(SAMPLE_ASSETS
     index.html
     main.mjs
     dotnet.boot.js
-    ${STATIC_LIB_DESTINATION}/dotnet.js
-    ${STATIC_LIB_DESTINATION}/dotnet.js.map
-    ${STATIC_LIB_DESTINATION}/dotnet.d.ts
-    ${STATIC_LIB_DESTINATION}/dotnet.runtime.js
-    ${STATIC_LIB_DESTINATION}/dotnet.runtime.js.map
+    ${SHARED_LIB_DESTINATION}/dotnet.js
+    ${SHARED_LIB_DESTINATION}/dotnet.js.map
+    ${SHARED_LIB_DESTINATION}/dotnet.d.ts
+    ${SHARED_LIB_DESTINATION}/dotnet.runtime.js
+    ${SHARED_LIB_DESTINATION}/dotnet.runtime.js.map
 
     # Bring your own DLLs and update the dotnet.boot.js to match
         # HelloWorld.dll
