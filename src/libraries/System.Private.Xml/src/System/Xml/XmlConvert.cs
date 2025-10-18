@@ -34,6 +34,12 @@ namespace System.Xml
     public partial class XmlConvert
     {
         private const string Crt = "\t\n\r";
+        private const string TrueLiteral = "true";
+        private const string FalseLiteral = "false";
+        private const string NaNLiteral = "NaN";
+        private const string NegativeInfinityLiteral = "-INF";
+        private const string NegativeZeroLiteral = "-0";
+        private const string PositiveInfinityLiteral = "INF";
 
         /// <devdoc>
         ///    <para>
@@ -1638,19 +1644,38 @@ namespace System.Xml
 
         internal static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
         {
-            string valueAsString = value ? "true" : "false";
+            if (value)
+            {
+                if (TrueLiteral.TryCopyTo(destination))
+                {
+                    charsWritten = TrueLiteral.Length;
+                    return true;
+                }
+            }
+            else
+            {
+                if (FalseLiteral.TryCopyTo(destination))
+                {
+                    charsWritten = FalseLiteral.Length;
+                    return true;
+                }
+            }
 
-            charsWritten = valueAsString.Length;
-            return valueAsString.TryCopyTo(destination);
+            charsWritten = 0;
+            return false;
         }
 
         internal static bool TryFormat(char value, Span<char> destination, out int charsWritten)
         {
-            charsWritten = 1;
-            if (destination.Length < 1) return false;
+            if (!destination.IsEmpty)
+            {
+                destination[0] = value;
+                charsWritten = 1;
+                return true;
+            }
 
-            destination[0] = value;
-            return true;
+            charsWritten = 0;
+            return false;
         }
 
         internal static bool TryFormat(decimal value, Span<char> destination, out int charsWritten)
@@ -1700,50 +1725,94 @@ namespace System.Xml
 
         internal static bool TryFormat(float value, Span<char> destination, out int charsWritten)
         {
-            ReadOnlySpan<char> valueSpan;
-
             if (!float.IsFinite(value))
             {
                 if (float.IsNaN(value))
-                    valueSpan = "NaN";
+                {
+                    if (NaNLiteral.TryCopyTo(destination))
+                    {
+                        charsWritten = NaNLiteral.Length;
+                        return true;
+                    }
+                }
+                else if (float.IsNegative(value))
+                {
+                    if (NegativeInfinityLiteral.TryCopyTo(destination))
+                    {
+                        charsWritten = NegativeInfinityLiteral.Length;
+                        return true;
+                    }
+                }
                 else
-                    valueSpan = float.IsNegative(value) ? "-INF" : "INF";
+                {
+                    if (PositiveInfinityLiteral.TryCopyTo(destination))
+                    {
+                        charsWritten = PositiveInfinityLiteral.Length;
+                        return true;
+                    }
+                }
             }
             else if (IsNegativeZero((double)value))
             {
-                valueSpan = "-0";
+                if (NegativeZeroLiteral.TryCopyTo(destination))
+                {
+                    charsWritten = NegativeZeroLiteral.Length;
+                    return true;
+                }
             }
             else
             {
                 return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
             }
 
-            charsWritten = valueSpan.Length;
-            return valueSpan.TryCopyTo(destination);
+            charsWritten = 0;
+            return false;
         }
 
         internal static bool TryFormat(double value, Span<char> destination, out int charsWritten)
         {
-            ReadOnlySpan<char> valueSpan;
-
             if (!double.IsFinite(value))
             {
                 if (double.IsNaN(value))
-                    valueSpan = "NaN";
+                {
+                    if (NaNLiteral.TryCopyTo(destination))
+                    {
+                        charsWritten = NaNLiteral.Length;
+                        return true;
+                    }
+                }
+                else if (double.IsNegative(value))
+                {
+                    if (NegativeInfinityLiteral.TryCopyTo(destination))
+                    {
+                        charsWritten = NegativeInfinityLiteral.Length;
+                        return true;
+                    }
+                }
                 else
-                    valueSpan = double.IsNegative(value) ? "-INF" : "INF";
+                {
+                    if (PositiveInfinityLiteral.TryCopyTo(destination))
+                    {
+                        charsWritten = PositiveInfinityLiteral.Length;
+                        return true;
+                    }
+                }
             }
             else if (IsNegativeZero(value))
             {
-                valueSpan = "-0";
+                if (NegativeZeroLiteral.TryCopyTo(destination))
+                {
+                    charsWritten = NegativeZeroLiteral.Length;
+                    return true;
+                }
             }
             else
             {
                 return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
             }
 
-            charsWritten = valueSpan.Length;
-            return valueSpan.TryCopyTo(destination);
+            charsWritten = 0;
+            return false;
         }
 
         internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten)
