@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <PackageDescription>Provides support for building IL projects.</PackageDescription>
+    <BeforePack>$(BeforePack);ReplaceTemplateParametersInILTargetsTemplate</BeforePack>
+    <NoWarn>$(NoWarn);NU5128;NU5131</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="sdk/**/*" Pack="true" PackagePath="sdk/" />
+    <None Include="targets/**/*" Pack="true" PackagePath="targets/" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ILTargetsTemplateFile>Microsoft.NET.Sdk.IL.targets.template</ILTargetsTemplateFile>
+    <ILTargetsOutputFile>$(IntermediateOutputPath)Microsoft.NET.Sdk.IL.targets</ILTargetsOutputFile>
+  </PropertyGroup>
+
+  <Target Name="ReplaceTemplateParametersInILTargetsTemplate"
+          Inputs="$(MSBuildThisFileFullPath);$(ILTargetsTemplateFile)"
+          Outputs="$(ILTargetsOutputFile)">
+
+    <GenerateFileFromTemplate TemplateFile="$(ILTargetsTemplateFile)"
+                              OutputPath="$(ILTargetsOutputFile)"
+                              Properties="IlAsmVersion=$(Version)">
+      <Output TaskParameter="ResolvedOutputPath" ItemName="FileWrites" />
+    </GenerateFileFromTemplate>
+
+    <ItemGroup>
+      <None Include="$(ILTargetsOutputFile)" Pack="true" PackagePath="targets/" />
+    </ItemGroup>
+  </Target>
+
+</Project>

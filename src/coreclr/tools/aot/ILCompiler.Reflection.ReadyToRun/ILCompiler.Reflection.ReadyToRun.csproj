@@ -15,6 +15,10 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunAnalyzers>false</RunAnalyzers>
+    <IsPackable>true</IsPackable>
+    <IsShipping>false</IsShipping>
+    <PackageDescription>This package provides a low-level ReadyToRun file format decoder. This package is experimental.</PackageDescription>
+    <PackageId>ILCompiler.Reflection.ReadyToRun.Experimental</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
