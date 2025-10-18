@@ -25,7 +25,7 @@ namespace System.Runtime.Caching
 #if NETCOREAPP
         private int lastGCCount;
 
-        protected override int GetCurrentPressure()
+        private int LegacyGetCurrentPressure()
         {
             // Try to refresh GC stats if they haven't been updated since our last check.
             int ccount = GC.CollectionCount(0);
@@ -39,7 +39,7 @@ namespace System.Runtime.Caching
             // Get stats from GC.
             GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
 
-            if (memInfo.TotalAvailableMemoryBytes >= memInfo.MemoryLoadBytes)
+            if (memInfo.TotalAvailableMemoryBytes > memInfo.MemoryLoadBytes)
             {
                 int memoryLoad = (int)((float)memInfo.MemoryLoadBytes * 100.0 / (float)memInfo.TotalAvailableMemoryBytes);
                 return Math.Max(1, memoryLoad);
@@ -50,7 +50,7 @@ namespace System.Runtime.Caching
             return (memInfo.MemoryLoadBytes > 0) ? 100 : 0;
         }
 #else
-        protected override int GetCurrentPressure() => 0;
+        private static int LegacyGetCurrentPressure() => 0;
 #endif
     }
 }
