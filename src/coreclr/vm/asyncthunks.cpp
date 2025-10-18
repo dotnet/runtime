@@ -69,16 +69,14 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     // store.Push();
     // try
     // {
-    //   Continuation cont;
     //   try
     //   {
     //     T result = Inner(args);
     //     // call an intrisic to see if the call above produced a continuation
-    //     cont = StubHelpers.AsyncCallContinuation();
-    //     if (cont == null)
+    //     if (StubHelpers.AsyncCallContinuation() == null)
     //       return Task.FromResult(result);
     //
-    //     return FinalizeTaskReturningThunk(cont);
+    //     return FinalizeTaskReturningThunk();
     //   }
     //   catch (Exception ex)
     //   {
