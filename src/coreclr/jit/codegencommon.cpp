@@ -4463,8 +4463,15 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
+    bool isLast = block->IsLast();
+    if ((genAsyncResumptionTrampolineLabels != nullptr) && (genAsyncResumptionTrampolineLabels->size() != 0) &&
+        (block == compiler->fgLastBBInMainFunction()))
+    {
+        isLast = false;
+    }
+
     GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur, block->IsLast());
+                                          gcInfo.gcRegByrefSetCur, isLast);
 }
 
 /*****************************************************************************
