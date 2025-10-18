@@ -227,7 +227,13 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Removes a group match by capnum</summary>
-        internal void RemoveMatch(int cap) => _matchcount[cap]--;
+        internal void RemoveMatch(int cap)
+        {
+            if (_matchcount[cap] > 0)
+            {
+                _matchcount[cap]--;
+            }
+        }
 
         /// <summary>Tells if a group was matched by capnum</summary>
         internal bool IsMatched(int cap)
@@ -245,8 +251,15 @@ namespace System.Text.RegularExpressions
         internal int MatchIndex(int cap)
         {
             int[][] matches = _matches;
+            int[] matchcount = _matchcount;
 
-            int i = matches[cap][_matchcount[cap] * 2 - 2];
+            // If no captures exist for this group, return 0
+            if (matchcount[cap] == 0)
+            {
+                return 0;
+            }
+
+            int i = matches[cap][matchcount[cap] * 2 - 2];
             return i >= 0 ? i : matches[cap][-3 - i];
         }
 
@@ -256,8 +269,15 @@ namespace System.Text.RegularExpressions
         internal int MatchLength(int cap)
         {
             int[][] matches = _matches;
+            int[] matchcount = _matchcount;
 
-            int i = matches[cap][_matchcount[cap] * 2 - 1];
+            // If no captures exist for this group, return 0
+            if (matchcount[cap] == 0)
+            {
+                return 0;
+            }
+
+            int i = matches[cap][matchcount[cap] * 2 - 1];
             return i >= 0 ? i : matches[cap][-3 - i];
         }
 
@@ -348,7 +368,11 @@ namespace System.Text.RegularExpressions
                     if (matcharray[i] < 0)
                     {
                         // skip negative values
-                        j--;
+                        // Ensure j doesn't go below 0 to prevent ArgumentOutOfRangeException
+                        if (j > 0)
+                        {
+                            j--;
+                        }
                     }
                     else
                     {
