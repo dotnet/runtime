@@ -2312,6 +2312,21 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static CORINFO_CLASS_STRUCT_* _getContinuationType(IntPtr thisHandle, IntPtr* ppException, nuint dataSize, bool* objRefs, nuint objRefsSize)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getContinuationType(dataSize, ref *objRefs, objRefsSize);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static CORINFO_METHOD_STRUCT_* _getAsyncResumptionStub(IntPtr thisHandle, IntPtr* ppException)
         {
             var _this = GetThis(thisHandle);
