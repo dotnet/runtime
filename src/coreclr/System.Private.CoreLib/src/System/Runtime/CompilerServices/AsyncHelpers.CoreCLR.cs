@@ -171,18 +171,6 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
-        // Used to box the return value before storing into caller's continuation
-        // if the value is an object-containing struct.
-        // We are allocating a box directly instead of relying on regular boxing because we want
-        // to store structs without changing layout, including nullables.
-        private static unsafe object AllocContinuationResultBox(void* ptr)
-        {
-            MethodTable* pMT = (MethodTable*)ptr;
-            Debug.Assert(pMT->IsValueType);
-            // We need no type/cctor checks since we will be storing an instance that already exists.
-            return RuntimeTypeHandle.InternalAllocNoChecks((MethodTable*)pMT);
-        }
-
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
