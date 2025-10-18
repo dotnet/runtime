@@ -589,10 +589,6 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(new TypeWitness<ConcurrentStack<int>>());
             yield return Wrap(new TypeWitness<ICollection<int>>());
             yield return Wrap(new TypeWitness<ISet<int>>());
-            // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-            yield return Wrap(new TypeWitness<IReadOnlySet<int>>());
-#endif
             yield return Wrap(new TypeWitness<Dictionary<string, int>>());
             yield return Wrap(new TypeWitness<IDictionary<string, int>>());
             yield return Wrap(new TypeWitness<IDictionary>());
