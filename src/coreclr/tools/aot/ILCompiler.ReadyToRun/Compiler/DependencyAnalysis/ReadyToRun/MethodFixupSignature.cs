@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(data: Array.Empty<byte>(), relocs: null, alignment: 0, definedSymbols: null);
             }
 
-            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             dataBuilder.AddSymbol(this);
 
             // Optimize some of the fixups into a more compact form

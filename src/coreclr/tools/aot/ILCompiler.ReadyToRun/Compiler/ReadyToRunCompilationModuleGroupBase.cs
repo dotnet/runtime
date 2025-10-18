@@ -931,5 +931,7 @@ namespace ILCompiler
         {
             _profileData = profileGuidedCompileRestriction;
         }
+
+        public bool IsSingleFileCompilation => true;
     }
 }

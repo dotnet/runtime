@@ -8,11 +8,16 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum RelocType
     {
+        // PE base relocation types.
         IMAGE_REL_BASED_ABSOLUTE             = 0x00,   // No relocation required
-        IMAGE_REL_BASED_ADDR32NB             = 0x02,   // The 32-bit address without an image base (RVA)
         IMAGE_REL_BASED_HIGHLOW              = 0x03,   // 32 bit address base
         IMAGE_REL_BASED_THUMB_MOV32          = 0x07,   // Thumb2: based MOVW/MOVT
         IMAGE_REL_BASED_DIR64                = 0x0A,   // 64 bit address base
+
+        // COFF relocation types
+        IMAGE_REL_BASED_ADDR32NB             = 0x0B,   // The 32-bit address without an image base (RVA)
+
+        // General relocation types
         IMAGE_REL_BASED_REL32                = 0x10,   // 32-bit relative address from byte following reloc
         IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
         IMAGE_REL_BASED_THUMB_MOV32_PCREL    = 0x14,   // Thumb2: based MOVW/MOVT
@@ -24,6 +29,7 @@ namespace ILCompiler.DependencyAnalysis
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
                                                        // section smaller)
+
         IMAGE_REL_SECTION                    = 0x79,   // 16 bit section index containing target
 
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
@@ -63,9 +69,12 @@ namespace ILCompiler.DependencyAnalysis
 
         //
         // Relocations for R2R image production
+        // None of these are "real" relocations that map to an object file's relocation.
+        // All must be emulated by the object writer.
         //
         IMAGE_REL_SYMBOL_SIZE                = 0x1000, // The size of data in the image represented by the target symbol node
         IMAGE_REL_FILE_ABSOLUTE              = 0x1001, // 32 bit offset from beginning of image
+        IMAGE_REL_FILE_CHECKSUM_CALLBACK     = 0x1002, // After the image has been emitted, call the IChecksumNode.EmitChecksum method on the target symbol to emit the checksum data.
     }
 
     public struct Relocation
@@ -560,7 +569,20 @@ namespace ILCompiler.DependencyAnalysis
             {
                 RelocType.IMAGE_REL_BASED_DIR64 => 8,
                 RelocType.IMAGE_REL_BASED_HIGHLOW => 4,
+                RelocType.IMAGE_REL_BASED_ADDR32NB => 4,
+                RelocType.IMAGE_REL_BASED_REL32 => 4,
                 RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
+                RelocType.IMAGE_REL_FILE_ABSOLUTE => 4,
+                // The relocation itself aren't these sizes, but their values
+                // are immediates in instructions within
+                // a span of this many bytes.
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 4,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 16,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 16,
+                RelocType.IMAGE_REL_BASED_RISCV64_PC => 16,
                 _ => throw new NotSupportedException(),
             };
         }

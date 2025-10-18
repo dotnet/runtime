@@ -567,9 +567,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private ObjectDataBuilder _builder;
 
-        public ObjectDataSignatureBuilder()
+        public ObjectDataSignatureBuilder(NodeFactory factory, bool relocsOnly)
         {
-            _builder = new ObjectDataBuilder();
+            _builder = new ObjectDataBuilder(factory, relocsOnly);
         }
 
         public void AddSymbol(ISymbolDefinitionNode symbol)

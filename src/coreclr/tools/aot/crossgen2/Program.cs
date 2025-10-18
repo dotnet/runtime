@@ -616,6 +616,7 @@ namespace ILCompiler
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
+                        .UseContainerFormat(Get(_command.OutputFormat))
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(Get(_command.CodegenOptions))
                         .UseLogger(logger)

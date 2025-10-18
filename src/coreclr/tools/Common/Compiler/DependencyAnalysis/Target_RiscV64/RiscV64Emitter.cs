@@ -103,6 +103,14 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
         {
             if (symbol.RepresentsIndirectionCell)
             {
+                Builder.RequireInitialPointerAlignment();
+
+                if (Builder.CountBytes % Builder.TargetPointerSize != 0)
+                {
+                    // Emit a NOP instruction to align the 64-bit reloc below.
+                    EmitNOP();
+                }
+
                 // auipc x29, 0
                 EmitPC(Register.X29);
                 // ld x29,16(x29)
@@ -136,6 +144,11 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             // bne regSrc, x0, offset
             Builder.EmitUInt((uint)(0x00001063 | ((uint)regSrc << 15) | encodedOffset));
             EmitJMP(symbol);
+        }
+
+        public void EmitNOP()
+        {
+            Builder.EmitUInt(0x00000013);
         }
     }
 }
