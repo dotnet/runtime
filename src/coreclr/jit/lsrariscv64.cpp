@@ -202,11 +202,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
-        case GT_JTRUE:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -440,30 +435,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        {
-            var_types op1Type = genActualType(tree->gtGetOp1()->TypeGet());
-            if (!varTypeIsFloating(op1Type))
-            {
-                emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-                if (cmpSize == EA_4BYTE)
-                {
-                    GenTree* op2 = tree->gtGetOp2();
-
-                    bool isUnsigned    = (tree->gtFlags & GTF_UNSIGNED) != 0;
-                    bool useAddSub     = !(!tree->OperIs(GT_EQ, GT_NE) || op2->IsIntegralConst(-2048));
-                    bool useShiftRight = !isUnsigned && ((tree->OperIs(GT_LT) && op2->IsIntegralConst(0)) ||
-                                                         (tree->OperIs(GT_LE) && op2->IsIntegralConst(-1)));
-                    bool useLoadImm    = isUnsigned && ((tree->OperIs(GT_LT, GT_GE) && op2->IsIntegralConst(0)) ||
-                                                     (tree->OperIs(GT_LE, GT_GT) && op2->IsIntegralConst(-1)));
-
-                    if (!useAddSub && !useShiftRight && !useLoadImm)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-            }
-            buildInternalRegisterUses();
-        }
-            FALLTHROUGH;
-
         case GT_JCMP:
             srcCount = BuildCmp(tree);
             break;

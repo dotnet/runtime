@@ -1698,29 +1698,34 @@ struct CORINFO_EE_INFO
     CORINFO_OS  osType;
 };
 
+// Keep in sync with ContinuationFlags enum in BCL sources
 enum CorInfoContinuationFlags
 {
-    // Whether or not the continuation expects the result to be boxed and
-    // placed in the GCData array at index 0. Not set if the callee is void.
-    CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
-    // If this bit is set the continuation resumes inside a try block and thus
-    // if an exception is being propagated, needs to be resumed. The exception
-    // should be placed at index 0 or 1 depending on whether the continuation
-    // also expects a result.
-    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
-    // If this bit is set the continuation has the IL offset that inspired the
-    // OSR method saved in the beginning of 'Data', or -1 if the continuation
-    // belongs to a tier 0 method.
-    CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+    // Note: the following 'Has' members determine the members present at
+    // the beginning of the continuation's data chunk. Each field is
+    // pointer sized when present, apart from the result that has variable
+    // size.
+
+    // Whether or not the continuation starts with an OSR IL offset.
+    CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
+    // If this bit is set the continuation resumes inside a try block and
+    // thus if an exception is being propagated, needs to be resumed.
+    CORINFO_CONTINUATION_HAS_EXCEPTION = 2,
+    // If this bit is set the continuation has space for a continuation
+    // context.
+    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
+    // If this bit is set the continuation has space to store a result
+    // returned by the callee.
+    CORINFO_CONTINUATION_HAS_RESULT = 8,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
-    // If this bit is set the continuation has a SynchronizationContext
-    // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
-    // If this bit is set the continuation has a TaskScheduler
-    // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
+    // If this bit is set the continuation context is a
+    // SynchronizationContext that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
+    // If this bit is set the continuation context is a TaskScheduler that
+    // we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1735,13 +1740,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
-    // 'Data' field
-    CORINFO_FIELD_HANDLE continuationDataFldHnd;
-    // 'GCData' field
-    CORINFO_FIELD_HANDLE continuationGCDataFldHnd;
-    // Whether or not the continuation needs to be allocated through the
-    // helper that also takes a method handle
-    bool continuationsNeedMethodHandle;
     // Method handle for AsyncHelpers.CaptureExecutionContext
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
     // Method handle for AsyncHelpers.RestoreExecutionContext
@@ -1959,6 +1957,8 @@ struct CORINFO_FPSTRUCT_LOWERING
 
 #define OFFSETOF__CORINFO_Span__reference                 0
 #define OFFSETOF__CORINFO_Span__length                    TARGET_POINTER_SIZE
+
+#define OFFSETOF__CORINFO_Continuation__data              (SIZEOF__CORINFO_Object + TARGET_POINTER_SIZE /* Next */ + TARGET_POINTER_SIZE /* Resume */ + 8 /* Flags + State */)
 
 
 /* data to optimize delegate construction */
@@ -3341,6 +3341,12 @@ public:
             ) = 0;
 
     virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+
+    virtual CORINFO_CLASS_HANDLE getContinuationType(
+        size_t dataSize,
+        bool* objRefs,
+        size_t objRefsSize
+        ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(

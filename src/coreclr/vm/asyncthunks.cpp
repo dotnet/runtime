@@ -69,16 +69,14 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     // store.Push();
     // try
     // {
-    //   Continuation cont;
     //   try
     //   {
     //     T result = Inner(args);
     //     // call an intrisic to see if the call above produced a continuation
-    //     cont = StubHelpers.AsyncCallContinuation();
-    //     if (cont == null)
+    //     if (StubHelpers.AsyncCallContinuation() == null)
     //       return Task.FromResult(result);
     //
-    //     return FinalizeTaskReturningThunk(cont);
+    //     return FinalizeTaskReturningThunk();
     //   }
     //   catch (Exception ex)
     //   {
@@ -91,8 +89,6 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     // }
 
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
-
-    unsigned continuationLocal = pCode->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__CONTINUATION)));
 
     TypeHandle thTaskRet = thunkMsig.GetRetTypeHandleThrowing();
 
@@ -195,8 +191,6 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             if (logicalResultLocal != UINT_MAX)
                 pCode->EmitSTLOC(logicalResultLocal);
             pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
-            pCode->EmitSTLOC(continuationLocal);
-            pCode->EmitLDLOC(continuationLocal);
             pCode->EmitBRFALSE(finishedLabel);
 
             pCode->EmitLEAVE(suspendedLabel);
@@ -283,8 +277,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                 md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
             finalizeTaskReturningThunkToken = pCode->GetToken(md);
         }
-        pCode->EmitLDLOC(continuationLocal);
-        pCode->EmitCALL(finalizeTaskReturningThunkToken, 1, 1);
+        pCode->EmitCALL(finalizeTaskReturningThunkToken, 0, 1);
         pCode->EmitSTLOC(returnTaskLocal);
         pCode->EmitLEAVE(returnTaskLabel);
 

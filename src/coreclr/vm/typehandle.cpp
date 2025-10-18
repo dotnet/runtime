@@ -91,6 +91,13 @@ BOOL TypeHandle::IsString() const
     return !IsTypeDesc() && AsMethodTable()->IsString();
 }
 
+BOOL TypeHandle::IsContinuation() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsContinuation();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -318,6 +325,20 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    if (IsContinuation())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
+        return;
+    }
+
     REFLECTCLASSBASEREF refClass = NULL;
 
     PTR_LoaderAllocator allocator = GetLoaderAllocator();
