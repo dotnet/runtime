@@ -63,6 +63,23 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
             public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>unsigned _umul128(unsigned __int64 Multiplier, unsigned __int64  Multiplicand, unsigned __int64 * HighProduct)</para>
+            ///   <para>  MUL reg/m64</para>
+            /// </summary>
+            /// <remarks>
+            ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
+            /// </remarks>
+            internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  IMUL reg/m64</para>
+            /// </summary>
+            /// <remarks>
+            ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
+            /// </remarks>
+            internal static (long Lower, long Upper) BigMul(long left, long right) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -108,6 +125,28 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>  IDIV reg/m</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  MUL reg/m32</para>
+        /// </summary>
+        /// <remarks>
+        ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
+        /// </remarks>
+        internal static (uint Lower, uint Upper) BigMul(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  IMUL reg/m32</para>
+        /// </summary>
+        /// <remarks>
+        ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
+        /// </remarks>
+        internal static (int Lower, int Upper) BigMul(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>  MUL reg/m</summary>
+        internal static (nuint Lower, nuint Upper) BigMul(nuint left, nuint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>  IMUL reg/m</summary>
+        internal static (nint Lower, nint Upper) BigMul(nint left, nint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm_pause (void);</para>
