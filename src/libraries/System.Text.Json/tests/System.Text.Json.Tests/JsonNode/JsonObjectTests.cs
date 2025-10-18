@@ -1810,5 +1810,46 @@ namespace System.Text.Json.Nodes.Tests
                 });
             }
         }
+
+        [Fact]
+        public static void DeepEquals_WithNestedObjects()
+        {
+            JsonObject obj1 = new JsonObject { ["a"] = 1, ["b"] = new JsonObject { ["c"] = 2 } };
+            JsonObject obj2 = new JsonObject { ["a"] = 1, ["b"] = new JsonObject { ["c"] = 2 } };
+            JsonObject obj3 = new JsonObject { ["a"] = 1, ["b"] = new JsonObject { ["c"] = 3 } };
+            
+            Assert.True(JsonNode.DeepEquals(obj1, obj2));
+            Assert.False(JsonNode.DeepEquals(obj1, obj3));
+            Assert.False(JsonNode.DeepEquals(obj1, null));
+        }
+
+        [Fact]
+        public static void DeepEquals_DifferentKeys()
+        {
+            JsonObject obj1 = new JsonObject { ["a"] = 1, ["b"] = 2 };
+            JsonObject obj2 = new JsonObject { ["a"] = 1, ["c"] = 2 };
+            
+            Assert.False(JsonNode.DeepEquals(obj1, obj2));
+        }
+
+        [Fact]
+        public static void TryGetPropertyValue_NonExistentProperty()
+        {
+            JsonObject obj = new JsonObject { ["a"] = 1 };
+            
+            bool result = obj.TryGetPropertyValue("b", out JsonNode value);
+            
+            Assert.False(result);
+            Assert.Null(value);
+        }
+
+        [Fact]
+        public static void ContainsKey_ChecksForProperty()
+        {
+            JsonObject obj = new JsonObject { ["a"] = 1, ["b"] = 2 };
+            
+            Assert.True(obj.ContainsKey("a"));
+            Assert.False(obj.ContainsKey("c"));
+        }
     }
 }
