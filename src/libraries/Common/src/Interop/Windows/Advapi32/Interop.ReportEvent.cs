@@ -16,7 +16,7 @@ internal static partial class Interop
             short wType,
             ushort wcategory,
             uint dwEventID,
-            byte[] lpUserSid,
+            byte[]? lpUserSid,
             short wNumStrings,
             int dwDataSize,
             IntPtr lpStrings,

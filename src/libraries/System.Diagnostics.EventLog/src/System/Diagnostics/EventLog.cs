@@ -61,7 +61,7 @@ namespace System.Diagnostics
         }
 
         [Browsable(false)]
-        public string LogDisplayName
+        public string? LogDisplayName
         {
             get
             {
@@ -150,7 +150,7 @@ namespace System.Diagnostics
             get => this.DesignMode;
         }
 
-        internal object ComponentGetService(Type service)
+        internal object? ComponentGetService(Type service)
         {
             return GetService(service);
         }
@@ -171,7 +171,7 @@ namespace System.Diagnostics
         /// </summary>
         [Browsable(false)]
         [DefaultValue(null)]
-        public ISynchronizeInvoke SynchronizingObject
+        public ISynchronizeInvoke? SynchronizingObject
         {
             get => _underlyingEventLog.SynchronizingObject;
             set => _underlyingEventLog.SynchronizingObject = value;
@@ -205,7 +205,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Raised each time any application writes an entry to the event log.
         /// </summary>
-        public event EntryWrittenEventHandler EntryWritten
+        public event EntryWrittenEventHandler? EntryWritten
         {
             add
             {
@@ -248,7 +248,7 @@ namespace System.Diagnostics
             ArgumentNullException.ThrowIfNull(sourceData);
 
             string logName = sourceData.LogName;
-            string source = sourceData.Source;
+            string? source = sourceData.Source;
             string machineName = sourceData.MachineName;
 
             if (!SyntaxCheck.CheckMachineName(machineName))
@@ -265,7 +265,7 @@ namespace System.Diagnostics
             if (source.Length + EventLogKey.Length > 254)
                 throw new ArgumentException(SR.Format(SR.ParameterTooLong, nameof(source), 254 - EventLogKey.Length));
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -277,11 +277,11 @@ namespace System.Diagnostics
                         throw new ArgumentException(SR.Format(SR.SourceAlreadyExists, source, machineName));
                 }
 
-                RegistryKey baseKey = null;
-                RegistryKey eventKey = null;
-                RegistryKey logKey = null;
-                RegistryKey sourceLogKey = null;
-                RegistryKey sourceKey = null;
+                RegistryKey? baseKey = null;
+                RegistryKey? eventKey = null;
+                RegistryKey? logKey = null;
+                RegistryKey? sourceLogKey = null;
+                RegistryKey? sourceKey = null;
                 try
                 {
                     if (machineName == ".")
@@ -308,9 +308,10 @@ namespace System.Diagnostics
                             throw new ArgumentException(SR.Format(SR.InvalidCustomerLogName, logName));
                     }
 
-                    bool createLogKey = (logKey == null);
-                    if (createLogKey)
+                    bool createLogKey = false;
+                    if (logKey == null)
                     {
+                        createLogKey = true;
                         if (SourceExists(logName, machineName, true))
                         {
                             if (".".Equals(machineName))
@@ -368,9 +369,9 @@ namespace System.Diagnostics
             if (!ValidLogName(logName, false))
                 throw new InvalidOperationException(SR.BadLogName);
 
-            RegistryKey eventlogkey = null;
+            RegistryKey? eventlogkey = null;
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
@@ -382,7 +383,7 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.Format(SR.RegKeyNoAccess, "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\EventLog", machineName));
                     }
 
-                    using (RegistryKey logKey = eventlogkey.OpenSubKey(logName))
+                    using (RegistryKey? logKey = eventlogkey.OpenSubKey(logName))
                     {
                         if (logKey == null)
                             throw new InvalidOperationException(SR.Format(SR.MissingLog, logName, machineName));
@@ -398,11 +399,11 @@ namespace System.Diagnostics
                             logToClear.Close();
                         }
 
-                        string filename = null;
+                        string? filename = null;
                         try
                         {
                             //most of the time, the "File" key does not exist, but we'll still give it a whirl
-                            filename = (string)logKey.GetValue("File");
+                            filename = (string?)logKey.GetValue("File");
                         }
                         catch { }
                         if (filename != null)
@@ -440,11 +441,11 @@ namespace System.Diagnostics
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName));
             }
 
-            Mutex mutex = null;
+            Mutex? mutex = null;
             try
             {
                 NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
-                RegistryKey key = null;
+                RegistryKey? key = null;
                 // First open the key read only so we can do some checks.  This is important so we get the same
                 // exceptions even if we don't have write access to the reg key.
                 using (key = FindSourceRegistration(source, machineName, true))
@@ -466,7 +467,7 @@ namespace System.Diagnostics
 
                 try
                 {
-                    key = FindSourceRegistration(source, machineName, false);
+                    key = FindSourceRegistration(source, machineName, false)!;
                     key.DeleteSubKeyTree(source);
                 }
                 finally
@@ -491,12 +492,12 @@ namespace System.Diagnostics
             _underlyingEventLog.EndInit();
         }
 
-        public static bool Exists(string logName)
+        public static bool Exists([NotNullWhen(true)] string? logName)
         {
             return Exists(logName, ".");
         }
 
-        public static bool Exists(string logName, string machineName)
+        public static bool Exists([NotNullWhen(true)] string? logName, string machineName)
         {
             if (!SyntaxCheck.CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.InvalidParameterFormat, nameof(machineName)));
@@ -504,8 +505,8 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(logName))
                 return false;
 
-            RegistryKey eventkey = null;
-            RegistryKey logKey = null;
+            RegistryKey? eventkey = null;
+            RegistryKey? logKey = null;
 
             try
             {
@@ -523,16 +524,16 @@ namespace System.Diagnostics
             }
         }
 
-        private static RegistryKey FindSourceRegistration(string source, string machineName, bool readOnly)
+        private static RegistryKey? FindSourceRegistration(string source, string machineName, bool readOnly)
         {
             return FindSourceRegistration(source, machineName, readOnly, false);
         }
 
-        private static RegistryKey FindSourceRegistration(string source, string machineName, bool readOnly, bool wantToCreate)
+        private static RegistryKey? FindSourceRegistration(string? source, string machineName, bool readOnly, bool wantToCreate)
         {
             if (!string.IsNullOrEmpty(source))
             {
-                RegistryKey eventkey = null;
+                RegistryKey? eventkey = null;
                 try
                 {
                     eventkey = GetEventLogRegKey(machineName, !readOnly);
@@ -543,7 +544,7 @@ namespace System.Diagnostics
                         return null;
                     }
 
-                    StringBuilder inaccessibleLogs = null;
+                    StringBuilder? inaccessibleLogs = null;
                     // Most machines will return only { "Application", "System", "Security" },
                     // but you can create your own if you want.
                     string[] logNames = eventkey.GetSubKeyNames();
@@ -551,10 +552,10 @@ namespace System.Diagnostics
                     {
                         // see if the source is registered in this log.
                         // NOTE: A source name must be unique across ALL LOGS!
-                        RegistryKey sourceKey = null;
+                        RegistryKey? sourceKey = null;
                         try
                         {
-                            RegistryKey logKey = eventkey.OpenSubKey(logNames[i], /*writable*/!readOnly);
+                            RegistryKey? logKey = eventkey.OpenSubKey(logNames[i], /*writable*/!readOnly);
                             if (logKey != null)
                             {
                                 sourceKey = logKey.OpenSubKey(source, /*writable*/!readOnly);
@@ -625,9 +626,9 @@ namespace System.Diagnostics
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName));
             }
 
-            string[] logNames = null;
+            string[]? logNames = null;
 
-            RegistryKey eventkey = null;
+            RegistryKey? eventkey = null;
             try
             {
                 // we figure out what logs are on the machine by looking in the registry.
@@ -667,9 +668,9 @@ namespace System.Diagnostics
             return logs.ToArray();
         }
 
-        internal static RegistryKey GetEventLogRegKey(string machine, bool writable)
+        internal static RegistryKey? GetEventLogRegKey(string machine, bool writable)
         {
-            RegistryKey lmkey = null;
+            RegistryKey? lmkey = null;
 
             try
             {
@@ -703,7 +704,7 @@ namespace System.Diagnostics
                 string assmLocation = typeof(EventLog).Assembly.Location;
                 if (!string.IsNullOrEmpty(assmLocation))
                 {
-                    dllPath = Path.Combine(Path.GetDirectoryName(assmLocation), AltDllName);
+                    dllPath = Path.Combine(Path.GetDirectoryName(assmLocation)!, AltDllName);
                 }
                 else
                 {
@@ -714,24 +715,24 @@ namespace System.Diagnostics
             return dllPath;
         }
 
-        public static bool SourceExists(string source)
+        public static bool SourceExists([NotNullWhen(true)] string? source)
         {
             return SourceExists(source, ".");
         }
 
-        public static bool SourceExists(string source, string machineName)
+        public static bool SourceExists([NotNullWhen(true)] string? source, string machineName)
         {
             return SourceExists(source, machineName, false);
         }
 
-        internal static bool SourceExists(string source, string machineName, bool wantToCreate)
+        internal static bool SourceExists([NotNullWhen(true)] string? source, string machineName, bool wantToCreate)
         {
             if (!SyntaxCheck.CheckMachineName(machineName))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(machineName), machineName));
             }
 
-            using (RegistryKey keyFound = FindSourceRegistration(source, machineName, true, wantToCreate))
+            using (RegistryKey? keyFound = FindSourceRegistration(source, machineName, true, wantToCreate))
             {
                 return (keyFound != null);
             }
@@ -744,7 +745,7 @@ namespace System.Diagnostics
 
         internal static string _InternalLogNameFromSourceName(string source, string machineName)
         {
-            using (RegistryKey key = FindSourceRegistration(source, machineName, true))
+            using (RegistryKey? key = FindSourceRegistration(source, machineName, true))
             {
                 if (key == null)
                     return string.Empty;
@@ -805,7 +806,7 @@ namespace System.Diagnostics
                 return Path.GetFullPath(path);
         }
 
-        internal static string TryFormatMessage(SafeLibraryHandle hModule, uint messageNum, string[] insertionStrings)
+        internal static string? TryFormatMessage(SafeLibraryHandle hModule, uint messageNum, string[] insertionStrings)
         {
             if (insertionStrings.Length == 0)
             {
@@ -813,7 +814,7 @@ namespace System.Diagnostics
             }
 
             // If you pass in an empty array UnsafeTryFormatMessage will just pull out the message.
-            string formatString = UnsafeTryFormatMessage(hModule, messageNum, Array.Empty<string>());
+            string? formatString = UnsafeTryFormatMessage(hModule, messageNum, Array.Empty<string>());
 
             if (formatString == null)
             {
@@ -822,7 +823,7 @@ namespace System.Diagnostics
 
             int largestNumber = 0;
 
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             for (int i = 0; i < formatString.Length; i++)
             {
                 if (formatString[i] == '%')
@@ -876,9 +877,9 @@ namespace System.Diagnostics
 
         // FormatMessageW will AV if you don't pass in enough format strings.  If you call TryFormatMessage we ensure insertionStrings
         // is long enough.  You don't want to call this directly unless you're sure insertionStrings is long enough!
-        internal static string UnsafeTryFormatMessage(SafeLibraryHandle hModule, uint messageNum, string[] insertionStrings)
+        internal static string? UnsafeTryFormatMessage(SafeLibraryHandle hModule, uint messageNum, string[] insertionStrings)
         {
-            string msg = null;
+            string? msg = null;
 
             int msgLen = 0;
             var buf = new char[1024];
@@ -971,87 +972,87 @@ namespace System.Diagnostics
             return true;
         }
 
-        public void WriteEntry(string message)
+        public void WriteEntry(string? message)
         {
             WriteEntry(message, EventLogEntryType.Information, (short)0, 0, null);
         }
 
-        public static void WriteEntry(string source, string message)
+        public static void WriteEntry(string source, string? message)
         {
             WriteEntry(source, message, EventLogEntryType.Information, (short)0, 0, null);
         }
 
-        public void WriteEntry(string message, EventLogEntryType type)
+        public void WriteEntry(string? message, EventLogEntryType type)
         {
             WriteEntry(message, type, (short)0, 0, null);
         }
 
-        public static void WriteEntry(string source, string message, EventLogEntryType type)
+        public static void WriteEntry(string source, string? message, EventLogEntryType type)
         {
             WriteEntry(source, message, type, (short)0, 0, null);
         }
 
-        public void WriteEntry(string message, EventLogEntryType type, int eventID)
+        public void WriteEntry(string? message, EventLogEntryType type, int eventID)
         {
             WriteEntry(message, type, eventID, 0, null);
         }
 
-        public static void WriteEntry(string source, string message, EventLogEntryType type, int eventID)
+        public static void WriteEntry(string source, string? message, EventLogEntryType type, int eventID)
         {
             WriteEntry(source, message, type, eventID, 0, null);
         }
 
-        public void WriteEntry(string message, EventLogEntryType type, int eventID, short category)
+        public void WriteEntry(string? message, EventLogEntryType type, int eventID, short category)
         {
             WriteEntry(message, type, eventID, category, null);
         }
 
-        public static void WriteEntry(string source, string message, EventLogEntryType type, int eventID, short category)
+        public static void WriteEntry(string source, string? message, EventLogEntryType type, int eventID, short category)
         {
             WriteEntry(source, message, type, eventID, category, null);
         }
 
-        public static void WriteEntry(string source, string message, EventLogEntryType type, int eventID, short category, byte[] rawData)
+        public static void WriteEntry(string source, string? message, EventLogEntryType type, int eventID, short category, byte[]? rawData)
         {
-            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
+            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source), parent: null! /* Special case - EventLogInternal instance is immediately used */))
             {
                 log.WriteEntry(message, type, eventID, category, rawData);
             }
         }
 
-        public void WriteEntry(string message, EventLogEntryType type, int eventID, short category, byte[] rawData)
+        public void WriteEntry(string? message, EventLogEntryType type, int eventID, short category, byte[]? rawData)
         {
             _underlyingEventLog.WriteEntry(message, type, eventID, category, rawData);
         }
 
-        public void WriteEvent(EventInstance instance, params object[] values)
+        public void WriteEvent(EventInstance instance, params object?[]? values)
         {
             WriteEvent(instance, null, values);
         }
 
-        public void WriteEvent(EventInstance instance, byte[] data, params object[] values)
+        public void WriteEvent(EventInstance instance, byte[]? data, params object?[]? values)
         {
             _underlyingEventLog.WriteEvent(instance, data, values);
         }
 
-        public static void WriteEvent(string source, EventInstance instance, params object[] values)
+        public static void WriteEvent(string source, EventInstance instance, params object?[]? values)
         {
-            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
+            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source), parent: null! /* Special case - EventLogInternal instance is immediately used */))
             {
                 log.WriteEvent(instance, null, values);
             }
         }
 
-        public static void WriteEvent(string source, EventInstance instance, byte[] data, params object[] values)
+        public static void WriteEvent(string source, EventInstance instance, byte[] data, params object?[]? values)
         {
-            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
+            using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source), parent: null! /* Special case - EventLogInternal instance is immediately used */))
             {
                 log.WriteEvent(instance, data, values);
             }
         }
 
         // The EventLog.set_Source used to do some normalization and throw some exceptions.  We mimic that behavior here.
-        private static string CheckAndNormalizeSourceName(string source)
+        private static string CheckAndNormalizeSourceName(string? source)
         {
             source ??= string.Empty;
 
