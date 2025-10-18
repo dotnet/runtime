@@ -192,5 +192,36 @@ namespace System.IO.Tests
             string[] files = GetEntries(root + (IsDirectoryInfo ? trailing : ""), "*", SearchOption.AllDirectories);
             FSAssert.EqualWhenOrdered(new string[] { rootFile, nestedFile }, files);
         }
+
+        [Fact]
+        public void EnumerateFilesWithLeadingSpacesDots()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            File.Create(Path.Combine(testDir.FullName, " leading")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, ".leading")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, "..leading")).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Equal(3, files.Length);
+            Assert.Contains(files, f => Path.GetFileName(f) == " leading");
+            Assert.Contains(files, f => Path.GetFileName(f) == ".leading");
+            Assert.Contains(files, f => Path.GetFileName(f) == "..leading");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixEnumerateFilesWithDashesAndTabs()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            File.Create(Path.Combine(testDir.FullName, "-")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, "--")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, "file\tname")).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Equal(3, files.Length);
+            Assert.Contains(files, f => Path.GetFileName(f) == "-");
+            Assert.Contains(files, f => Path.GetFileName(f) == "--");
+            Assert.Contains(files, f => Path.GetFileName(f) == "file\tname");
+        }
     }
 }

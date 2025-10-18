@@ -422,6 +422,117 @@ namespace System.IO.Tests
 
             Assert.Equal(content, File.ReadAllBytes(destPath));
         }
+
+        [Theory]
+        [InlineData(" leading", "destination")]
+        [InlineData("source", " leading")]
+        [InlineData(" leading", " leadingdest")]
+        public void CopyWithLeadingSpaces(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [InlineData(".leading", "destination")]
+        [InlineData("source", ".leading")]
+        public void CopyWithLeadingDots(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [InlineData("-", "destination")]
+        [InlineData("source", "-")]
+        [InlineData("--", "destination")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixCopyWithDashPrefixedNames(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [InlineData("file\tname", "destination")]
+        [InlineData("source", "file\tname")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixCopyWithEmbeddedControlCharacters(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [InlineData("trailing ", "destination")]
+        [InlineData("source", "trailing ")]
+        [InlineData("trailing.", "destination")]
+        [InlineData("source", "trailing.")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
+        {
+            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+            
+            // Create source with extended syntax if needed
+            string sourceToCreate = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + sourcePath : sourcePath;
+            File.Create(sourceToCreate).Dispose();
+            
+            // Copy with extended syntax if needed
+            string sourceToCopy = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + sourcePath : sourcePath;
+            string destToCopy = destFileName.TrimEnd(' ', '.') != destFileName ? @"\\?\" + destPath : destPath;
+            
+            Copy(sourceToCopy, destToCopy);
+            
+            Assert.True(File.Exists(sourceToCopy));
+            Assert.True(File.Exists(destToCopy));
+        }
+
+        [Theory]
+        [InlineData("name with spaces", "dest with spaces")]
+        [InlineData("name.with.periods", "dest.with.periods")]
+        public void CopyEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
+            string destPath = Path.Combine(testDir.FullName, destFileName);
+
+            File.Create(sourcePath).Dispose();
+            Copy(sourcePath, destPath);
+
+            Assert.True(File.Exists(sourcePath));
+            Assert.True(File.Exists(destPath));
+        }
     }
 
     /// <summary>
