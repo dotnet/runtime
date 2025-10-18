@@ -162,6 +162,7 @@
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
+    <Compile Include="JitInterface\AsyncMethodDescFactory.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
@@ -336,6 +337,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\AsyncMethodDesc.cs">
+      <Link>JitInterface\AsyncMethodDesc.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
