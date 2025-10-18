@@ -7,6 +7,11 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Mail")]
-    internal sealed partial class NetEventSource { }
+    [EventSource(Name = NetEventSourceName)]
+    internal sealed partial class NetEventSource
+    {
+        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Mail";
+
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
+    }
 }
