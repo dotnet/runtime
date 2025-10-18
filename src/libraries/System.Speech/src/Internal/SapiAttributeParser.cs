@@ -11,7 +11,7 @@ namespace System.Speech.Internal
     {
         #region Internal Methods
 
-        internal static CultureInfo GetCultureInfoFromLanguageString(string valueString)
+        internal static CultureInfo? GetCultureInfoFromLanguageString(string valueString)
         {
             string[] strings = valueString.Split(';');
 
@@ -42,7 +42,7 @@ namespace System.Speech.Internal
                 string formatString = strings[i].Trim();
                 if (!string.IsNullOrEmpty(formatString))
                 {
-                    SpeechAudioFormatInfo formatInfo = AudioFormatConverter.ToSpeechAudioFormatInfo(formatString);
+                    SpeechAudioFormatInfo? formatInfo = AudioFormatConverter.ToSpeechAudioFormatInfo(formatString);
                     if (formatInfo != null) // Skip cases where a Guid is used.
                     {
                         formatList.Add(formatInfo);
