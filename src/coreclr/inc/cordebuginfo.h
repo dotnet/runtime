@@ -436,12 +436,8 @@ public:
     {
         // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
         uint32_t VarNumber;
-        // Index in continuation's byte[] data where this variable is stored, or 0xFFFFFFFF if the
-        // variable does not have any byte[] data
+        // Offset in continuation object where this variable is stored
         uint32_t Offset;
-        // Index in continuation's object[] data where this variable's GC pointers are stored, or 0xFFFFFFFF
-        // if the variable does not have any GC pointers
-        uint32_t GCIndex;
     };
 
     struct AsyncSuspensionPoint

@@ -494,8 +494,7 @@ static void DoAsyncVars(
     {
         ICorDebugInfo::AsyncContinuationVarInfo* var = &vars[i];
         trans.DoEncodedAdjustedU32(var->VarNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
-        trans.DoEncodedAdjustedU32(var->Offset, UINT_MAX);
-        trans.DoEncodedAdjustedU32(var->GCIndex, UINT_MAX);
+        trans.DoEncodedU32(var->Offset);
     }
 }
 

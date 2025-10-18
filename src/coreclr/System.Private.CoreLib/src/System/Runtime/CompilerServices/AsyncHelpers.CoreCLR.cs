@@ -374,7 +374,7 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
-                        Continuation handlerContinuation = UnwindToPossibleHandler(continuation);
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(continuation);
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException

@@ -6779,8 +6779,7 @@ void CodeGen::genReportAsyncDebugInfo()
         printf("Reported async vars:\n");
         for (size_t i = 0; i < asyncVars->size(); i++)
         {
-            printf("  [%zu] VarNumber = %u, Offset = %x, GCIndex = %u\n", i, hostVars[i].VarNumber, hostVars[i].Offset,
-                   hostVars[i].GCIndex);
+            printf("  [%zu] VarNumber = %u, Offset = %x\n", i, hostVars[i].VarNumber, hostVars[i].Offset);
         }
     }
 #endif
