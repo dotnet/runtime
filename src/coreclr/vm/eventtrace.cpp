@@ -3857,6 +3857,9 @@ VOID ETW::EnumerationLog::SendGCRundownEvent()
         if (gcSettingsInfo.no_affinitize_p)
             dwEtwGCSettingFlags |= kEtwGCFlagNoAffinitize;
 
+        if (gcSettingsInfo.dynamic_heap_count_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagDynamicHeapCount;
+
         FireEtwGCSettingsRundown (
             gcSettingsInfo.heap_hard_limit,
             gcSettingsInfo.loh_threshold,
