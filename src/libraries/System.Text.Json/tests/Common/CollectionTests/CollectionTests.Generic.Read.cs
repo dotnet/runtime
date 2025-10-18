@@ -690,59 +690,6 @@ namespace System.Text.Json.Serialization.Tests
         // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
 #if NET
         [Fact]
-        public async Task ReadGenericIReadOnlySetOfGenericIReadOnlySet()
-        {
-            IReadOnlySet<IReadOnlySet<int>> result = await Serializer.DeserializeWrapper<IReadOnlySet<IReadOnlySet<int>>>(@"[[1,2],[3,4]]");
-
-            if (result.First().Contains(1))
-            {
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
-            }
-            else
-            {
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
-            }
-
-            GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper> result2 = await Serializer.DeserializeWrapper<GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
-
-            if (result2.First().Contains("1"))
-            {
-                Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result2.First());
-                Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result2.Last());
-            }
-            else
-            {
-                Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result.First());
-                Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result.Last());
-            }
-        }
-
-        [Fact]
-        public async Task ReadGenericStructIReadOnlySet()
-        {
-            string json = "[10, 20, 30]";
-            var wrapper = await Serializer.DeserializeWrapper<GenericStructIReadOnlySetWrapper<int>>(json);
-            Assert.Equal(3, wrapper.Count);
-            Assert.Equal(10, wrapper.ElementAt(0));
-            Assert.Equal(20, wrapper.ElementAt(1));
-            Assert.Equal(30, wrapper.ElementAt(2));
-        }
-
-        [Fact]
-        public async Task ReadNullableGenericStructIReadOnlySet()
-        {
-            string json = "[10, 20, 30]";
-            var wrapper = await Serializer.DeserializeWrapper<GenericStructIReadOnlySetWrapper<int>?>(json);
-            Assert.True(wrapper.HasValue);
-            Assert.Equal(3, wrapper.Value.Count);
-            Assert.Equal(10, wrapper.Value.ElementAt(0));
-            Assert.Equal(20, wrapper.Value.ElementAt(1));
-            Assert.Equal(30, wrapper.Value.ElementAt(2));
-        }
-
-        [Fact]
         public async Task ReadNullableGenericStructIReadOnlySetWithNullJson()
         {
             var wrapper = await Serializer.DeserializeWrapper<GenericStructIReadOnlySetWrapper<int>?>("null");

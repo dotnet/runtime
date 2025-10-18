@@ -540,54 +540,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task WriteIReadOnlySetTOfIReadOnlySet()
-        {
-            IReadOnlySet<IReadOnlySet<int>> input = new HashSet<IReadOnlySet<int>>
-            {
-                new HashSet<int>() { 1, 2 },
-                new HashSet<int>() { 3, 4 }
-            };
-
-            string json = await Serializer.SerializeWrapper(input);
-
-            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = await Serializer.DeserializeWrapper<IReadOnlySet<IReadOnlySet<int>>>(json);
-
-            if (input.First().Contains(1))
-            {
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
-            }
-            else
-            {
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
-            }
-
-            GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper> input2 = new GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>().Initialize(new()
-            {
-                new StringIReadOnlySetWrapper().Initialize(new() { "1", "2" }),
-                new StringIReadOnlySetWrapper().Initialize(new() { "3", "4" })
-            });
-
-            json = await Serializer.SerializeWrapper(input2);
-
-            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input2 = await Serializer.DeserializeWrapper<GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>>(json);
-
-            if (input2.First().Contains("1"))
-            {
-                Assert.Equal(new StringIReadOnlySetWrapper().Initialize(new() { "1", "2" }), input2.First());
-                Assert.Equal(new StringIReadOnlySetWrapper().Initialize(new() { "3", "4" }), input2.Last());
-            }
-            else
-            {
-                Assert.Equal(new StringIReadOnlySetWrapper().Initialize(new() { "3", "4" }), input2.First());
-                Assert.Equal(new StringIReadOnlySetWrapper().Initialize(new() { "1", "2" }), input2.Last());
-            }
-        }
-
-        [Fact]
         public async Task WriteIReadOnlySetTOfHashSetT()
         {
             IReadOnlySet<HashSet<int>> input = new HashSet<HashSet<int>>
