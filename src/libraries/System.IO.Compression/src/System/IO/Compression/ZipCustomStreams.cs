@@ -433,7 +433,8 @@ namespace System.IO.Compression
 
     internal sealed class CheckSumAndSizeWriteStream : Stream
     {
-        private readonly Stream _baseStream;
+        private readonly Func<Stream> _baseStreamFactory;
+        private Stream? _baseStream;
         private readonly Stream _baseBaseStream;
         private long _position;
         private uint _checksum;
@@ -459,11 +460,11 @@ namespace System.IO.Compression
         // baseBaseStream it's a backingStream, passed here so as to avoid closure allocation,
         // zipArchiveEntry passed here so as to avoid closure allocation,
         // onClose handler passed here so as to avoid closure allocation
-        public CheckSumAndSizeWriteStream(Stream baseStream, Stream baseBaseStream, bool leaveOpenOnClose,
+        public CheckSumAndSizeWriteStream(Func<Stream> baseStreamFactory, Stream baseBaseStream, bool leaveOpenOnClose,
             ZipArchiveEntry entry, EventHandler? onClose,
             Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler?> saveCrcAndSizes)
         {
-            _baseStream = baseStream;
+            _baseStreamFactory = baseStreamFactory;
             _baseBaseStream = baseBaseStream;
             _position = 0;
             _checksum = 0;
@@ -555,9 +556,14 @@ namespace System.IO.Compression
 
             if (!_everWritten)
             {
+                Debug.Assert(_baseStream == null);
+                _baseStream = _baseStreamFactory();
+
                 _initialPosition = _baseBaseStream.Position;
                 _everWritten = true;
             }
+
+            Debug.Assert(_baseStream != null);
 
             _checksum = Crc32Helper.UpdateCrc32(_checksum, buffer, offset, count);
             _baseStream.Write(buffer, offset, count);
@@ -575,9 +581,14 @@ namespace System.IO.Compression
 
             if (!_everWritten)
             {
+                Debug.Assert(_baseStream == null);
+                _baseStream = _baseStreamFactory();
+
                 _initialPosition = _baseBaseStream.Position;
                 _everWritten = true;
             }
+
+            Debug.Assert(_baseStream != null);
 
             _checksum = Crc32Helper.UpdateCrc32(_checksum, source);
             _baseStream.Write(source);
@@ -606,9 +617,14 @@ namespace System.IO.Compression
             {
                 if (!_everWritten)
                 {
+                    Debug.Assert(_baseStream == null);
+                    _baseStream = _baseStreamFactory();
+
                     _initialPosition = _baseBaseStream.Position;
                     _everWritten = true;
                 }
+
+                Debug.Assert(_baseStream != null);
 
                 _checksum = Crc32Helper.UpdateCrc32(_checksum, buffer.Span);
 
@@ -624,13 +640,13 @@ namespace System.IO.Compression
             // assume writable if not disposed
             Debug.Assert(CanWrite);
 
-            _baseStream.Flush();
+            _baseStream?.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _baseStream.FlushAsync(cancellationToken);
+            return _baseStream?.FlushAsync(cancellationToken) ?? Task.CompletedTask;
         }
 
         protected override void Dispose(bool disposing)
@@ -641,7 +657,7 @@ namespace System.IO.Compression
                 if (!_everWritten)
                     _initialPosition = _baseBaseStream.Position;
                 if (!_leaveOpenOnClose)
-                    _baseStream.Dispose(); // Close my super-stream (flushes the last data)
+                    _baseStream?.Dispose(); // Close my super-stream (flushes the last data if we ever wrote any)
                 _saveCrcAndSizes?.Invoke(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
                 _isDisposed = true;
             }
@@ -655,8 +671,8 @@ namespace System.IO.Compression
                 // if we never wrote through here, save the position
                 if (!_everWritten)
                     _initialPosition = _baseBaseStream.Position;
-                if (!_leaveOpenOnClose)
-                    await _baseStream.DisposeAsync().ConfigureAwait(false); // Close my super-stream (flushes the last data)
+                if (!_leaveOpenOnClose && _baseStream != null)
+                    await _baseStream.DisposeAsync().ConfigureAwait(false); // Close my super-stream (flushes the last data if we ever wrote any)
                 _saveCrcAndSizes?.Invoke(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
                 _isDisposed = true;
             }
