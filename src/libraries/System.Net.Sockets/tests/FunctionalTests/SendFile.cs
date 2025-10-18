@@ -484,7 +484,6 @@ namespace System.Net.Sockets.Tests
         {
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
         [OuterLoop("Creates and sends a file several gigabytes long")]
         [Fact]
         public async Task GreaterThan2GBFile_SendsAllBytes()
