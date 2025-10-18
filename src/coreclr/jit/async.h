@@ -135,9 +135,9 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void CreateDebugInfoForSuspensionPoint(GenTreeCall*              asyncCall,
-                                           const ContinuationLayout& layout,
-                                           BasicBlock*               joinBB);
+    void     CreateDebugInfoForSuspensionPoint(GenTreeCall*              asyncCall,
+                                               const ContinuationLayout& layout,
+                                               BasicBlock*               joinBB);
     unsigned GetResultBaseVar();
     unsigned GetExceptionVar();
 
