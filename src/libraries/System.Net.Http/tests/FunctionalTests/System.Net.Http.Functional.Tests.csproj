@@ -47,6 +47,8 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
+    <Content Include="package.json" Link="wwwroot\package.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="package-lock.json" Link="wwwroot\package-lock.json" CopyToOutputDirectory="PreserveNewest" />
 
     <NodeNpmModule Include="ws" />
     <NodeNpmModule Include="node-fetch" />

@@ -15,7 +15,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <IsRidAgnostic>true</IsRidAgnostic>
 
-    <OutputType>exe</OutputType>
+    <OutputType Condition="'$(OutputType)' == ''">exe</OutputType>
 
     <IsPackable>false</IsPackable>
 
