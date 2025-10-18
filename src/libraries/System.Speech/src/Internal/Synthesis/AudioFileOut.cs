@@ -25,7 +25,7 @@ namespace System.Speech.Internal.Synthesis
             _startStreamPosition = _stream.Position;
             _hasHeader = headerInfo;
 
-            _wfxOut = new WAVEFORMATEX();
+            _wfxOut = default;
             // if we have a formatInfo object, format conversion may be necessary
             if (formatInfo != null)
             {
