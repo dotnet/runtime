@@ -522,6 +522,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return pointer;
     }
 
+    public override bool TryReadPointer(ulong address, out TargetPointer value)
+        => TryReadPointer(address, _config, _dataTargetDelegates, out value);
+
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
     {
         if (_config.PointerSize == sizeof(uint))
@@ -546,6 +549,29 @@ public sealed unsafe class ContractDescriptorTarget : Target
             return new TargetCodePointer(Read<ulong>(address));
         }
         throw new VirtualReadException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
+    }
+
+    public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
+    {
+        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        if (codePointerTypeInfo.Size is sizeof(uint))
+        {
+            if (TryRead<uint>(address, out uint val))
+            {
+                value = new TargetCodePointer(val);
+                return true;
+            }
+        }
+        else if (codePointerTypeInfo.Size is sizeof(ulong))
+        {
+            if (TryRead<ulong>(address, out ulong val))
+            {
+                value = new TargetCodePointer(val);
+                return true;
+            }
+        }
+        value = default;
+        return false;
     }
 
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)
