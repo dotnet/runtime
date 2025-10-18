@@ -308,6 +308,11 @@ namespace System.IO.Compression
         /// </summary>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
+        /// <summary>
+        /// Return the byte that specifies the platform on which the zip was created.
+        /// </summary>
+        public ZipVersionMadeByPlatform VersionMadeByPlatform => _versionMadeByPlatform;
+
         internal ZipArchive.ChangeState Changes { get; private set; }
 
         internal bool OriginallyInArchive => _originallyInArchive;
