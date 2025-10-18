@@ -2134,7 +2134,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
 {
     int32_t codeSize = getILCodeSize(methodInfo);
     uint8_t *codeStart = getILCode(methodInfo);
-    uint8_t *codeEnd = codeStart + codeSize;
+    const uint8_t *codeEnd = codeStart + codeSize;
     const uint8_t *ip = codeStart;
 
     m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (codeSize + 1));
@@ -3375,6 +3375,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         case NI_System_Threading_Thread_FastPollGC:
             AddIns(INTOP_SAFEPOINT);
             return true;
+
+        case NI_System_Type_GetTypeFromHandle:
+        case NI_System_Type_op_Equality:
+        case NI_System_Type_op_Inequality:
+        case NI_System_Type_get_IsValueType:
+            // These intrinsics are handled in the il peeps path, and do not need to produce warnings here.
+            return false;
 
         default:
         {
@@ -4790,6 +4797,466 @@ constexpr uint8_t getLittleEndianByte(uint32_t value, int byteNum)
     return (value >> (byteNum * 8)) & 0xFF;
 }
 
+// Peeps
+static OpcodePeepElement peepTypeEqualityCheckOpcodes[] = {
+    { 0, CEE_LDTOKEN },
+    { 5, CEE_CALL },
+    { 10, CEE_LDTOKEN },
+    { 15, CEE_CALL },
+    { 20, CEE_CALL },
+    { 25, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc0[] = {
+    { 0, CEE_STLOC_0 },
+    { 1, CEE_LDLOC_0 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc1[] = {
+    { 0, CEE_STLOC_1 },
+    { 1, CEE_LDLOC_1 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc2[] = {
+    { 0, CEE_STLOC_2 },
+    { 1, CEE_LDLOC_2 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc3[] = {
+    { 0, CEE_STLOC_3 },
+    { 1, CEE_LDLOC_3 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc_S[] = {
+    { 0, CEE_STLOC_S },
+    { 2, CEE_LDLOC_S },
+    { 4, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc[] = {
+    { 0, CEE_STLOC },
+    { 5, CEE_LDLOC },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxUnboxOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_UNBOX_ANY },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+OpcodePeepElement peepTypeValueTypeOpcodes[] = {
+    { 0, CEE_LDTOKEN },
+    { 5, CEE_CALL },
+    { 10, CEE_CALL },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+class InterpILOpcodePeeps
+{
+public:
+    OpcodePeep peepTypeEqualityCheck = { peepTypeEqualityCheckOpcodes, &InterpCompiler::IsTypeEqualityCheckPeep, &InterpCompiler::ApplyTypeEqualityCheckPeep, "TypeEqualityCheck" };
+    OpcodePeep peepStoreLoad0 = { peepStLdLoc0, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad0" };
+    OpcodePeep peepStoreLoad1 = { peepStLdLoc1, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad1" };
+    OpcodePeep peepStoreLoad2 = { peepStLdLoc2, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad2" };
+    OpcodePeep peepStoreLoad3 = { peepStLdLoc3, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad3" };
+    OpcodePeep peepStoreLoadS = { peepStLdLoc_S, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoadS" };
+    OpcodePeep peepStoreLoad = { peepStLdLoc, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad" };
+    OpcodePeep peepBoxUnbox = { peepBoxUnboxOpcodes, &InterpCompiler::IsBoxUnboxPeep, &InterpCompiler::ApplyBoxUnboxPeep, "BoxUnbox" };
+    OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
+
+public:
+    OpcodePeep* Peeps[10] = { 
+        &peepTypeEqualityCheck,
+        &peepStoreLoad,
+        &peepStoreLoad1,
+        &peepStoreLoad2,
+        &peepStoreLoad3,
+        &peepStoreLoadS,
+        &peepStoreLoad0,
+        &peepBoxUnbox,
+        &peepTypeValueType,
+        NULL };
+
+    bool FindAndApplyPeep(InterpCompiler* compiler)
+    {
+        const uint8_t* ip = compiler->m_ip;
+        
+        for (int i = 0; Peeps[i] != NULL; i++)
+        {
+            OpcodePeep *peep = Peeps[i];
+            bool skipToNextPeep = false;
+
+            // Check to see if peep applies to the current block just looking at the IL streams
+            // starting at the current ip.
+            for (int iPeepOpCode = 0; peep->pattern[iPeepOpCode].opcode != CEE_ILLEGAL; iPeepOpCode++)
+            {
+                const uint8_t *ipForOpcode = ip + peep->pattern[iPeepOpCode].offsetIntoPeep;
+                int32_t insOffset = (int32_t)(ipForOpcode - compiler->m_pILCode);
+
+                if (ipForOpcode >= compiler->m_pILCode + compiler->m_ILCodeSize)
+                {
+                    // Ran off the end of the IL code
+                    skipToNextPeep = true;
+                    break;
+                }
+                InterpBasicBlock *pNewBB = compiler->m_ppOffsetToBB[insOffset];
+                if (pNewBB != NULL && compiler->m_pCBB != pNewBB)
+                {
+                    // Ran into a different basic block
+                    skipToNextPeep = true;
+                    break;
+                }
+
+                if (peep->pattern[iPeepOpCode].opcode != CEEDecodeOpcode(&ipForOpcode))
+                {
+                    // Opcode does not match
+                    skipToNextPeep = true;
+                    break;
+                }
+            }
+            if (skipToNextPeep)
+                continue;
+
+            // The IL opcode pattern matches, now to check the more non-opcode conditions
+            void* computedInfo;
+            if ((compiler->*(peep->CheckIfTokensAllowPeepToBeUsedFunc))(ip, peep->pattern, &computedInfo))
+            {
+                INTERP_DUMP("Applying peep: %s\n", peep->Name);
+                // The peep applies, so apply it
+                (compiler->*(peep->ApplyPeepFunc))(ip, peep->pattern, computedInfo);
+                compiler->m_ip = ip + peep->GetPeepSize();
+                return true;
+            }
+        }
+        return false;
+    }
+} ILOpcodePeeps;
+
+bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    // We need to check that the two ldtokens are for the same type
+
+    CORINFO_RESOLVED_TOKEN firstResolvedToken;
+    assert(pattern[0].opcode == CEE_LDTOKEN);
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Ldtoken, &firstResolvedToken);
+
+    CORINFO_RESOLVED_TOKEN secondResolvedToken;
+    assert(pattern[2].opcode == CEE_LDTOKEN);
+    ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Ldtoken, &secondResolvedToken);
+
+    if (firstResolvedToken.hField != NULL || secondResolvedToken.hField != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    if (firstResolvedToken.hMethod != NULL || secondResolvedToken.hMethod != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    TypeCompareState compareResult = m_compHnd->compareTypesForEquality(firstResolvedToken.hClass, secondResolvedToken.hClass);
+    if (compareResult == TypeCompareState::May)
+    {
+        // We can't optimize this if we can't prove the types are the same or different
+        return false;
+    }
+
+    // Check to see that the calls to System.Type System.Type::GetTypeFromHandle(valuetype System.RuntimeTypeHandle) are the expected ones
+    assert(pattern[1].opcode == CEE_CALL);
+    assert(pattern[3].opcode == CEE_CALL);
+    mdToken tkCallGetTypeFromHandleToken = getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1);
+    if (tkCallGetTypeFromHandleToken != getU4LittleEndian(ip + pattern[3].offsetIntoPeep + 1))
+    {
+        // GetTypeFromHandle calls are not the same
+        return false;
+    }
+    CORINFO_RESOLVED_TOKEN getTypeFromHandleResolvedToken;
+    ResolveToken(tkCallGetTypeFromHandleToken, CORINFO_TOKENKIND_Method, &getTypeFromHandleResolvedToken);
+    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+
+    CORINFO_CALL_INFO callInfo;
+    m_compHnd->getCallInfo(&getTypeFromHandleResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    if (!(callInfo.methodFlags & CORINFO_FLG_INTRINSIC))
+    {
+        // The call is not intrinsic, so we can't optimize it
+        return false;
+    }
+
+    NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+    if (ni != NI_System_Type_GetTypeFromHandle)
+    {
+        // The call is not System.Type::GetTypeFromHandle
+        return false;
+    }
+
+    CORINFO_RESOLVED_TOKEN typeEqualityCheckFunctionResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[4].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &typeEqualityCheckFunctionResolvedToken);
+    m_compHnd->getCallInfo(&typeEqualityCheckFunctionResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+
+    if ((ni != NI_System_Type_op_Equality) && (ni != NI_System_Type_op_Inequality))
+    {
+        // The call is not System.Type::op_Equality or System.Type::op_Inequality
+        return false;
+    }
+
+    if (compareResult == TypeCompareState::MustNot)
+    {
+        // The types are definitely not equal, so we can optimize this to a constant result
+        *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 0 : 1);
+        return true;
+    }
+    else 
+    {
+        assert(compareResult == TypeCompareState::Must);
+        // The types are definitely equal, so we can optimize this to a constant result
+        *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 1 : 0);
+        return true;
+    }
+}
+
+void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    int resultValue = (int)(size_t)computedInfo;
+
+    // We are going to replace the entire peep with a single ldc.i4 of the result value
+    int32_t peepSize = pattern[5].offsetIntoPeep; // Offset of end marker is the size of the peep
+    AddIns(INTOP_LDC_I4);
+    m_pLastNewIns->data[0] = resultValue;
+    PushInterpType(InterpTypeI4, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    int localVar = 0;
+
+    switch(pattern[0].opcode)
+    {
+        case CEE_STLOC_0: localVar = 0; break;
+        case CEE_STLOC_1: localVar = 1; break;
+        case CEE_STLOC_2: localVar = 2; break;
+        case CEE_STLOC_3: localVar = 3; break;
+        case CEE_STLOC_S: localVar = ip[1]; break;
+        case CEE_STLOC: localVar = getU2LittleEndian(ip + 1); break;
+        default:
+            assert(!"Unexpected opcode in store/load peep");
+            return false;
+    }
+
+    int secondLocalVar = 0;
+
+    switch(pattern[1].opcode)
+    {
+        case CEE_LDLOC_0: secondLocalVar = 0; break;
+        case CEE_LDLOC_1: secondLocalVar = 1; break;
+        case CEE_LDLOC_2: secondLocalVar = 2; break;
+        case CEE_LDLOC_3: secondLocalVar = 3; break;
+        case CEE_LDLOC_S: secondLocalVar = ip[pattern[1].offsetIntoPeep + 1]; break;
+        case CEE_LDLOC: secondLocalVar = getU2LittleEndian(ip + pattern[1].offsetIntoPeep + 1); break;
+        default:
+            assert(!"Unexpected opcode in store/load peep");
+            return false;
+    }
+
+    *ppComputedInfo = (void*)(size_t)localVar;
+    return localVar == secondLocalVar;
+}
+
+void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // We are going to replace the entire peep with just storing to the local variable, and possibly coercing the type if needed.
+    int localVar = (int)(size_t)computedInfo;
+    int numArgs = m_methodInfo->args.totalILArgs();
+    localVar = numArgs + localVar; // Adjust for args
+
+    InterpType interpType = m_pVars[localVar].interpType;
+
+    // Convert var on top of stack to the type of the local variable if needed
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+
+    // Handle floating point conversions
+    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+    // stloc/ldloc is not a no-op if the InterpType is different as it may cause truncation/sign-extension for I1/U1/I2/U2 types
+    switch (interpType)
+    {
+        case InterpTypeI1:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
+            break;
+        case InterpTypeU1:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I4);
+            break;
+        case InterpTypeI2:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+            break;
+        case InterpTypeU2:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I4);
+            break;
+        default:
+            // No zero/sign extension needed
+            break;
+    }
+
+    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[interpType])
+    {
+        if (m_pStackPointer[-1].type == StackTypeI && (interpType == InterpTypeByRef || interpType == InterpTypeO))
+        {
+            // Sometime we have a pointer instead of a ByRef or object reference. That's ok.
+        }
+        else
+        {
+            // We should have handled all the legal cases above
+            BADCODE("Incompatible types in store/load peep");
+        }
+    }
+
+    StackInfo topOfStackInfo = m_pStackPointer[-1];
+    EmitStoreVar(localVar);
+
+    // Push the value back on the stack
+    EnsureStack(1);
+    *m_pStackPointer = topOfStackInfo;
+    m_pStackPointer++;
+}
+
+bool InterpCompiler::IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep + 1;
+    const uint8_t* ipForUnboxAny = ip + pattern[1].offsetIntoPeep + 1;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    CORINFO_RESOLVED_TOKEN unboxAnyResolvedToken;
+    assert(pattern[1].opcode == CEE_UNBOX_ANY);
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Class, &unboxAnyResolvedToken);
+
+    CORINFO_HELPER_DESC calloutHelper;
+    CorInfoIsAccessAllowedResult accessAllowed =
+        m_compHnd->canAccessClass(&boxResolvedToken, m_methodHnd, &calloutHelper);
+    if (accessAllowed != CORINFO_ACCESS_ALLOWED)
+    {
+        // We can't optimize this if we can't access the type
+        return false;
+    }
+
+    TypeCompareState compareResult = m_compHnd->compareTypesForEquality(boxResolvedToken.hClass, unboxAnyResolvedToken.hClass);
+    if (compareResult == TypeCompareState::Must)
+    {
+        // We optimize this if we can prove the types are the same
+        return true;
+    }
+
+    if (compareResult == TypeCompareState::May)
+    {
+        // We can't optimize this if we can't prove the types are the same or different
+        return false;
+    }
+
+    // An attempt to catch cases where we mix enums and primitives, e.g.:
+    //   (IntEnum)(object)myInt
+    //   (byte)(object)myByteEnum
+    //
+    CorInfoType typ = m_compHnd->getTypeForPrimitiveValueClass(boxResolvedToken.hClass);
+    if ((typ >= CORINFO_TYPE_BYTE) && (typ <= CORINFO_TYPE_ULONG) &&
+        (m_compHnd->getTypeForPrimitiveValueClass(unboxAnyResolvedToken.hClass) == typ))
+    {
+        return true;
+    }
+
+    // TODO: handle the Nullable cases that Compiler::impBoxPatternMatch handles for box/unbox.any scenario
+
+    return false;
+}
+
+void InterpCompiler::ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    AddIns(INTOP_NOP);
+}
+
+bool InterpCompiler::IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForLdtoken = ip + pattern[0].offsetIntoPeep + 1;
+
+    CORINFO_RESOLVED_TOKEN resolvedToken;
+    assert(pattern[0].opcode == CEE_LDTOKEN);
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
+
+    if (resolvedToken.hField != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    if (resolvedToken.hMethod != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    bool isValueType = m_compHnd->isValueClass(resolvedToken.hClass);
+
+    // Check to see that the call to System.Type System.Type::GetTypeFromHandle(valuetype System.RuntimeTypeHandle) is the expected one
+    assert(pattern[1].opcode == CEE_CALL);
+    CORINFO_RESOLVED_TOKEN getTypeFromHandleResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &getTypeFromHandleResolvedToken);
+    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+
+    CORINFO_CALL_INFO callInfo;
+    m_compHnd->getCallInfo(&getTypeFromHandleResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    if (!(callInfo.methodFlags & CORINFO_FLG_INTRINSIC))
+    {
+        // The call is not intrinsic, so we can't optimize it
+        return false;
+    }
+
+    NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+    if (ni != NI_System_Type_GetTypeFromHandle)
+    {
+        // The call is not System.Type::GetTypeFromHandle
+        return false;
+    }
+
+    // We need to check that the call to System.Boolean System.Type::get_IsValueType() is the expected one
+    assert(pattern[2].opcode == CEE_CALL);
+    CORINFO_RESOLVED_TOKEN isValueTypeFunctionResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &isValueTypeFunctionResolvedToken);
+    m_compHnd->getCallInfo(&isValueTypeFunctionResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+    if (ni != NI_System_Type_get_IsValueType)
+    {
+        // The call is not System.Type::get_IsValueType
+        return false;
+    }
+    *ppComputedInfo = (void*)(size_t)(isValueType ? 1 : 0);
+    return true;
+}
+
+void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    int resultValue = (int)(size_t)computedInfo;
+
+    // We are going to replace the entire peep with a single ldc.i4 of the result value
+    int32_t peepSize = pattern[3].offsetIntoPeep; // Offset of end marker is the size of the peep
+
+    AddIns(INTOP_LDC_I4);
+    m_pLastNewIns->data[0] = resultValue;
+    PushInterpType(InterpTypeI4, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
@@ -4798,7 +5265,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     CORINFO_RESOLVED_TOKEN* pConstrainedToken = NULL;
     CORINFO_RESOLVED_TOKEN constrainedToken;
     CORINFO_CALL_INFO callInfo;
-    uint8_t *codeEnd;
+    const uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
     m_pILCode = methodInfo->ILCode;
@@ -5118,6 +5585,11 @@ retry_emit:
             printf("\n");
         }
 #endif
+
+        // Check for IL opcode peephole optimizations
+        
+        if (ILOpcodePeeps.FindAndApplyPeep(this))
+            continue;
 
         uint8_t opcode = *m_ip;
         switch (opcode)
@@ -7020,7 +7492,7 @@ retry_emit:
                         }
 
                         m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                        PushStackType(StackTypeByRef, NULL);
+                        PushStackType(StackTypeI, NULL);
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                         m_ip++;
                         break;

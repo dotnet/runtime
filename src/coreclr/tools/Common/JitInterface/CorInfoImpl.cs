@@ -3387,6 +3387,12 @@ namespace Internal.JitInterface
             pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetMethod("RestoreContexts"u8, null));
         }
 
+        private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
+        {
+            Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
+            throw new NotImplementedException("getContinuationType");
+        }
+
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
