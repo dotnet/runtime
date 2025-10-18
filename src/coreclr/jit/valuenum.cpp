@@ -9385,7 +9385,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 
     if (IsVNConstant(arg0VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
-        assert(varTypeIsFloating(TypeOfVN(arg0VN)));
+        assert(varTypeIsFloating(TypeOfVN(arg0VN)) RISCV64_ONLY(|| varTypeIsIntegral(TypeOfVN(arg0VN))));
 
         if (typ == TYP_DOUBLE)
         {
