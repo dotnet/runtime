@@ -32,7 +32,7 @@
                                         '$(IsRIDSpecificProject)' == 'true'
                                        ) and
                                        (
-                                        '$(PreReleaseVersionLabel)' != 'servicing' or
+                                        '$(IsServicingBuild)' != 'true' or
                                         '$(PackageUseIncrementalServicingVersion)' != 'true'
                                        ) and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
@@ -45,14 +45,14 @@
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+  <PropertyGroup Condition="'$(IsServicingBuild)' == 'true'">
     <!-- In servicing, the live package is compared against the GA version in strict mode. -->
     <EnableStrictModeForBaselineValidation>true</EnableStrictModeForBaselineValidation>
     <!-- In servicing, disable the APICompat rule that validates that the assembly versions must match. -->
     <NoWarn>$(NoWarn);CP0003</NoWarn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
+  <PropertyGroup Condition="'$(IsServicingBuild)' == 'true' and
                             '$(PackageUseIncrementalServicingVersion)' == 'true'">
     <!-- If no servicing version is set we need to default to 0 in order for dependency versions to
     be calculated properly, if we don't set it to 0, we would get the dependency version using the
@@ -342,7 +342,7 @@
 
   <!-- Validate that ServicingVersion is set and packing is enabled.  Runs once in the outer build (or only build if no outer build exists). -->
   <Target Name="ValidateServicingProperties"
-          Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
+          Condition="'$(IsServicingBuild)' == 'true' and
                      '$(PackageUseIncrementalServicingVersion)' == 'true' and
                      '$(DotNetBuildFromSource)' != 'true' and
                      '$(IsInnerBuild)' != 'true'"
