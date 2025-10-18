@@ -259,8 +259,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Should().Pass()
                     .And.InitializeContextForConfig(component.RuntimeConfigJson)
                     .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
-                    .And.ResolveHostPolicy(TestContext.BuiltDotNet)
-                    .And.ResolveCoreClr(TestContext.BuiltDotNet);
+                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
             }
         }
 
@@ -280,8 +280,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                DotNetRoot = TestContext.BuiltDotNet.BinPath;
-                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = HostTestContext.BuiltDotNet.BinPath;
+                HostFxrPath = HostTestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
                 Component = TestApp.CreateFromBuiltAssets("Component");
 

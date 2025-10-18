@@ -41,9 +41,9 @@ namespace HostActivation.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining(expectedSdksOutput)
                 .And.HaveStdOutContaining(expectedRuntimesOutput)
-                .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
+                .And.HaveStdOutMatching($@"Architecture:\s*{HostTestContext.BuildArchitecture}")
                 // If an SDK exists, we rely on it to print the RID. The host should not print it again.
-                .And.NotHaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
+                .And.NotHaveStdOutMatching($@"RID:\s*{HostTestContext.BuildRID}");
         }
 
         [Fact]
@@ -57,23 +57,23 @@ namespace HostActivation.Tests
             string expectedRuntimesOutput =
                 $"""
                 .NET runtimes installed:
-                {GetListRuntimesOutput(TestContext.BuiltDotNet.BinPath, [TestContext.MicrosoftNETCoreAppVersion], "  ")}
+                {GetListRuntimesOutput(HostTestContext.BuiltDotNet.BinPath, [HostTestContext.MicrosoftNETCoreAppVersion], "  ")}
                 """;
-            TestContext.BuiltDotNet.Exec("--info")
+            HostTestContext.BuiltDotNet.Exec("--info")
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining(expectedSdksOutput)
                 .And.HaveStdOutContaining(expectedRuntimesOutput)
-                .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
-                .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
+                .And.HaveStdOutMatching($@"Architecture:\s*{HostTestContext.BuildArchitecture}")
+                .And.HaveStdOutMatching($@"RID:\s*{HostTestContext.BuildRID}");
         }
 
         [Fact]
         public void Info_Utf8Path()
         {
             string installLocation = Encoding.UTF8.GetString("utf8-龯蝌灋齅ㄥ䶱"u8);
-            DotNetCli dotnet = new DotNetBuilder(SharedState.Artifact.Location, TestContext.BuiltDotNet.BinPath, installLocation)
+            DotNetCli dotnet = new DotNetBuilder(SharedState.Artifact.Location, HostTestContext.BuiltDotNet.BinPath, installLocation)
                 .Build();
 
             dotnet.Exec("--info")
@@ -87,7 +87,7 @@ namespace HostActivation.Tests
         [Fact]
         public void Info_ListEnvironment()
         {
-            var command = TestContext.BuiltDotNet.Exec("--info")
+            var command = HostTestContext.BuiltDotNet.Exec("--info")
                 .CaptureStdOut();
 
             // Add DOTNET_ROOT environment variables
@@ -159,7 +159,7 @@ namespace HostActivation.Tests
         public void Info_ListEnvironment_LegacyPrefixDetection()
         {
             string comPlusEnvVar = "COMPlus_ReadyToRun";
-            TestContext.BuiltDotNet.Exec("--info")
+            HostTestContext.BuiltDotNet.Exec("--info")
                 .EnvironmentVariable(comPlusEnvVar, "0")
                 .CaptureStdOut()
                 .Execute()
@@ -175,7 +175,7 @@ namespace HostActivation.Tests
             using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidJson)))
             {
                 string globalJsonPath = GlobalJson.Write(workingDir.Location, "{ \"sdk\": { }");
-                TestContext.BuiltDotNet.Exec("--info")
+                HostTestContext.BuiltDotNet.Exec("--info")
                     .WorkingDirectory(workingDir.Location)
                     .CaptureStdOut().CaptureStdErr()
                     .Execute()
@@ -196,7 +196,7 @@ namespace HostActivation.Tests
             using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidData)))
             {
                 string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
-                TestContext.BuiltDotNet.Exec("--info")
+                HostTestContext.BuiltDotNet.Exec("--info")
                     .WorkingDirectory(workingDir.Location)
                     .CaptureStdOut().CaptureStdErr()
                     .Execute()
@@ -216,7 +216,7 @@ namespace HostActivation.Tests
             using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_NonExistentFeatureBand)))
             {
                 string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
-                var result = TestContext.BuiltDotNet.Exec("--info")
+                var result = HostTestContext.BuiltDotNet.Exec("--info")
                     .WorkingDirectory(workingDir.Location)
                     .CaptureStdOut().CaptureStdErr()
                     .Execute()
@@ -289,7 +289,7 @@ namespace HostActivation.Tests
         public void ListRuntimes_OtherArchitecture_NoInstalls()
         {
             // Non-host architecture - arm64 if current architecture is x64, otherwise x64
-            string arch = TestContext.BuildArchitecture == "x64" ? "arm64" : "x64";
+            string arch = HostTestContext.BuildArchitecture == "x64" ? "arm64" : "x64";
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.DotNet.GreatestVersionHostFxrFilePath))
             {
                 // Register a location that should have no runtimes installed
@@ -306,7 +306,7 @@ namespace HostActivation.Tests
         [Fact]
         public void ListRuntimes_UnknownArchitecture()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes", "--arch", "invalid")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes", "--arch", "invalid")
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
@@ -358,7 +358,7 @@ namespace HostActivation.Tests
         public void ListSdks_OtherArchitecture_NoInstalls()
         {
             // Non-host architecture - arm64 if current architecture is x64, otherwise x64
-            string arch = TestContext.BuildArchitecture == "x64" ? "arm64" : "x64";
+            string arch = HostTestContext.BuildArchitecture == "x64" ? "arm64" : "x64";
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.DotNet.GreatestVersionHostFxrFilePath))
             {
                 // Register a location that should have no SDKs installed
@@ -375,7 +375,7 @@ namespace HostActivation.Tests
         [Fact]
         public void ListSdks_UnknownArchitecture()
         {
-            TestContext.BuiltDotNet.Exec("--list-sdks", "--arch", "invalid")
+            HostTestContext.BuiltDotNet.Exec("--list-sdks", "--arch", "invalid")
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
@@ -409,7 +409,7 @@ namespace HostActivation.Tests
             {
                 Artifact = TestArtifact.Create(nameof(HostCommands));
 
-                var builder = new DotNetBuilder(Artifact.Location, TestContext.BuiltDotNet.BinPath, "exe");
+                var builder = new DotNetBuilder(Artifact.Location, HostTestContext.BuiltDotNet.BinPath, "exe");
                 foreach (string version in InstalledVersions)
                 {
                     builder.AddMicrosoftNETCoreAppFrameworkMockHostPolicy(version);
@@ -419,7 +419,7 @@ namespace HostActivation.Tests
                 DotNet = builder.Build();
 
                 // Add runtimes and SDKs for other architectures
-                string[] otherArchs = new[] { "arm64", "x64", "x86" }.Where(a => a != TestContext.BuildArchitecture).ToArray();
+                string[] otherArchs = new[] { "arm64", "x64", "x86" }.Where(a => a != HostTestContext.BuildArchitecture).ToArray();
                 OtherArchInstallLocations = new (string, string)[otherArchs.Length];
                 for (int i = 0; i < otherArchs.Length; i++)
                 {
