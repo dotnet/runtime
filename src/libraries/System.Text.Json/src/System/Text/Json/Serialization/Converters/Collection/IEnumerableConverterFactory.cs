@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(ISetOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
-            // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+            // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
             // IReadOnlySet<>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IReadOnlySet<>))) != null)

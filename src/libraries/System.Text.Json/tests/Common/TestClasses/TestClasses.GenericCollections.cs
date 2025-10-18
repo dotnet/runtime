@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public class SimpleTestClassWithStringIReadOnlySetWrapper
     {
@@ -459,7 +459,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public class WrapperForIReadOnlySetOfT<T> : IReadOnlySet<T>
     {
@@ -813,7 +813,7 @@ namespace System.Text.Json.Serialization.Tests
         internal GenericISetWrapperInternalConstructor() { }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public class StringIReadOnlySetWrapper : IReadOnlySet<string>
     {
@@ -1402,7 +1402,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public interface IDerivedISetOfT<T> : ISet<T> { }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public interface IDerivedIReadOnlySetOfT<T> : IReadOnlySet<T> { }
 #endif
@@ -1681,7 +1681,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public struct GenericStructIReadOnlySetWrapper<T> : IReadOnlySet<T>
     {

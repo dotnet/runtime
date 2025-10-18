@@ -52,7 +52,7 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? ISetOfTType => GetOrResolveType(typeof(ISet<>), ref _ISetOfTType);
         private Option<INamedTypeSymbol?> _ISetOfTType;
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         public INamedTypeSymbol? IReadOnlySetOfTType => GetOrResolveType(typeof(IReadOnlySet<>), ref _IReadOnlySetOfTType);
         private Option<INamedTypeSymbol?> _IReadOnlySetOfTType;

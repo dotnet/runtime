@@ -685,7 +685,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public class TestClassWithObjectIReadOnlySetT : ITestClass
     {
@@ -1154,7 +1154,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     public class TestClassWithGenericIReadOnlySetT : ITestClass
     {

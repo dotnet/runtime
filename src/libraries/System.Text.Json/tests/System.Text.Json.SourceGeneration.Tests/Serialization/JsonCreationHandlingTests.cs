@@ -225,7 +225,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithWritableProperty<ICollection<int>>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<ISet<int>>))]
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     [JsonSerializable(typeof(ClassWithWritableProperty<IReadOnlySet<int>>))]
 #endif
@@ -239,7 +239,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithWritableProperty<StructCollection<int>?>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<StructSet<int>?>))]
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     [JsonSerializable(typeof(ClassWithWritableProperty<StructReadOnlySet<int>?>))]
 #endif
@@ -263,7 +263,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<ICollection<int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<ISet<int>>))]
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<IReadOnlySet<int>>))]
 #endif
@@ -280,7 +280,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructSet<int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructSet<int>?>))]
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructReadOnlySet<int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructReadOnlySet<int>?>))]

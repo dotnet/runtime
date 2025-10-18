@@ -206,7 +206,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ISet<int>))]
 
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [JsonSerializable(typeof(IReadOnlySet<IReadOnlySet<int>>))]
         [JsonSerializable(typeof(GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>))]
@@ -417,7 +417,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(GenericISetWrapperPrivateConstructor<string>))]
         [JsonSerializable(typeof(GenericISetWrapperInternalConstructor<string>))]
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [JsonSerializable(typeof(GenericIReadOnlySetWrapperPrivateConstructor<string>))]
         [JsonSerializable(typeof(GenericIReadOnlySetWrapperInternalConstructor<string>))]
@@ -664,7 +664,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ISet<int>[]), TypeInfoPropertyName = "ArrayOfIntISet")]
         [JsonSerializable(typeof(ISet<int>))]
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [JsonSerializable(typeof(IReadOnlySet<IReadOnlySet<int>>))]
         [JsonSerializable(typeof(GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>))]

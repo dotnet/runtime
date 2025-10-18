@@ -687,7 +687,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, result.Count());
         }
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [Fact]
         public async Task ReadNullableGenericStructIReadOnlySetWithNullJson()
@@ -1218,7 +1218,7 @@ namespace System.Text.Json.Serialization.Tests
                     typeof(GenericIReadOnlyDictionaryWrapper<string, string>)
                 };
 
-                // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+                // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
                 yield return new object[]
                 {
@@ -1369,7 +1369,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { typeof(IDerivedIList) };
             yield return new object[] { typeof(IDerivedISetOfT<string>) };
 
-            // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+            // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
             yield return new object[] { typeof(IDerivedIReadOnlySetOfT<string>) };
 #endif

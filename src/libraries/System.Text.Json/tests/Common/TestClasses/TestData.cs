@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(TestClassWithObjectIReadOnlyListT), TestClassWithObjectIReadOnlyListT.s_data };
                 yield return new object[] { typeof(TestClassWithObjectISetT), TestClassWithObjectISetT.s_data };
 
-                // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+                // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
                 yield return new object[] { typeof(TestClassWithObjectIReadOnlySetT), TestClassWithObjectIReadOnlySetT.s_data };
 #endif
@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithObjectIReadOnlyListT() };
                 yield return new object[] { new TestClassWithObjectISetT() };
 
-                // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+                // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
                 yield return new object[] { new TestClassWithObjectIReadOnlySetT() };
 #endif

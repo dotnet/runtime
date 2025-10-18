@@ -31,7 +31,7 @@ namespace System.Text.Json.SourceGeneration
         ImmutableEnumerable,
         MemoryOfT,
         ReadOnlyMemoryOfT,
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         IReadOnlySetOfT
 #endif

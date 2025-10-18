@@ -1515,7 +1515,7 @@ namespace System.Text.Json.SourceGeneration
                     CollectionType.ReadOnlyMemoryOfT => "CreateReadOnlyMemoryInfo",
                     CollectionType.ISet => "CreateISetInfo",
 
-                    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+                    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         CollectionType.IReadOnlySetOfT => "CreateIReadOnlySetInfo",
 #endif

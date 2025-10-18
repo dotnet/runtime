@@ -523,7 +523,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(json == "[1,2]" || json == "[2,1]");
         }
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [Fact]
         public async Task GenericStructIReadOnlySetWrapperT()
@@ -1075,7 +1075,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
+        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [Fact]
         public async Task WriteIReadOnlySetT_DisposesEnumerators()
