@@ -13,9 +13,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ExternalTypeMapNode : DependencyNodeCore<NodeFactory>, IExternalTypeMapNode
     {
-        private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> _mapEntries;
+        private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, List<TypeDesc> trimmingTargetType)>> _mapEntries;
 
-        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> mapEntries)
+        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, (TypeDesc targetType, List<TypeDesc> trimmingTargetTypes)>> mapEntries)
         {
             _mapEntries = mapEntries;
             TypeMapGroup = typeMapGroup;
@@ -35,13 +35,27 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
-                if (trimmingTargetType is not null)
+                bool unconditional = false;
+                foreach (var trimTarget in entry.Value.trimmingTargetType)
                 {
-                    yield return new CombinedDependencyListEntry(
-                        context.MetadataTypeSymbol(targetType),
-                        context.NecessaryTypeSymbol(trimmingTargetType),
-                        "Type in external type map is cast target");
+                    if (trimTarget is null)
+                    {
+                        unconditional = true;
+                        break;
+                    }
+                }
+                if (unconditional)
+                    continue;
+                foreach (var trimmingTargetType in entry.Value.trimmingTargetType)
+                {
+                    var targetType = entry.Value.targetType;
+                    if (trimmingTargetType is not null)
+                    {
+                        yield return new CombinedDependencyListEntry(
+                            context.MetadataTypeSymbol(targetType),
+                            context.NecessaryTypeSymbol(trimmingTargetType),
+                            "Type in external type map is cast target");
+                    }
                 }
             }
         }
@@ -50,12 +64,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
-                if (trimmingTargetType is null)
+                var (targetType, trimmingTargetTypes) = entry.Value;
+                foreach (var trimTarget in trimmingTargetTypes)
                 {
-                    yield return new DependencyListEntry(
-                        context.MetadataTypeSymbol(targetType),
-                        "External type map entry target type");
+                    if (trimTarget is null)
+                    {
+                        yield return new DependencyListEntry(
+                            context.MetadataTypeSymbol(targetType),
+                            "External type map entry target type");
+                        break;
+                    }
                 }
             }
         }
@@ -75,14 +93,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                var (targetType, trimmingTargetTypes) = entry.Value;
 
-                if (trimmingTargetType is null
-                    || factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
+                foreach (var trimmingTargetType in trimmingTargetTypes)
                 {
-                    IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
-                    Debug.Assert(targetNode.Marked);
-                    yield return (entry.Key, targetNode);
+                    if (trimmingTargetType is null
+                        || factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
+                    {
+                        IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
+                        Debug.Assert(targetNode.Marked);
+                        yield return (entry.Key, targetNode);
+                        break;
+                    }
                 }
             }
         }
