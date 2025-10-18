@@ -3361,6 +3361,12 @@ namespace Internal.JitInterface
             throw new NotImplementedException();
         }
 
+        private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
+        {
+            Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
+            throw new NotImplementedException("getContinuationType");
+        }
+
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
@@ -3713,7 +3719,7 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
 #pragma warning restore CA1822 // Mark members as static
         {
-            return null;
+            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
         }
 
         private byte[] _code;
@@ -4295,6 +4301,11 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
+
+            if (this.MethodBeingCompiled.IsAsync)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
 
             return (uint)sizeof(CORJIT_FLAGS);
