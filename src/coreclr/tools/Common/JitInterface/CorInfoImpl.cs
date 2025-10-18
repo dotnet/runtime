@@ -3358,7 +3358,33 @@ namespace Internal.JitInterface
 
         private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            throw new NotImplementedException();
+            DefType continuation = MethodBeingCompiled.Context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
+            // 'Next' field
+            pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetField("Next"u8));
+            // 'Resume' field
+            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetField("Resume"u8));
+            // 'State' field
+            pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetField("State"u8));
+            // 'Flags' field
+            pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetField("Flags"u8));
+            // 'Data' field
+            pAsyncInfoOut.continuationDataFldHnd = ObjectToHandle(continuation.GetField("Data"u8));
+            // 'GCData' field
+            pAsyncInfoOut.continuationGCDataFldHnd = ObjectToHandle(continuation.GetField("GCData"u8));
+            // Whether or not the continuation needs to be allocated through the
+            // helper that also takes a method handle
+            pAsyncInfoOut.continuationsNeedMethodHandle = false;
+            DefType asyncHelpers = MethodBeingCompiled.Context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            DefType executionContext = MethodBeingCompiled.Context.SystemModule.GetType("System.Threading"u8, "ExecutionContext"u8);
+            DefType @void = MethodBeingCompiled.Context.GetWellKnownType(WellKnownType.Void);
+            // Method handle for AsyncHelpers.CaptureExecutionContext
+            pAsyncInfoOut.captureExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetMethod("CaptureExecutionContext"u8, null));
+            // Method handle for AsyncHelpers.RestoreExecutionContext
+            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetMethod("RestoreExecutionContext"u8, null));
+            pAsyncInfoOut.captureContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetMethod("CaptureContinuationContext"u8, null));
+            pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetMethod("CaptureContexts"u8, null));
+            pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetMethod("RestoreContexts"u8, null));
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)

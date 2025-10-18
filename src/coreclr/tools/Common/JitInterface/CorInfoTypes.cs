@@ -878,10 +878,26 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* continuationClsHnd;
         // 'Next' field
         public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
+        // 'Resume' field
+        public CORINFO_FIELD_STRUCT_* continuationResumeFldHnd;
+        // 'State' field
+        public CORINFO_FIELD_STRUCT_* continuationStateFldHnd;
+        // 'Flags' field
+        public CORINFO_FIELD_STRUCT_* continuationFlagsFldHnd;
         // 'Data' field
         public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
         // 'GCData' field
         public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
+        // Whether or not the continuation needs to be allocated through the
+        // helper that also takes a method handle
+        public bool continuationsNeedMethodHandle; // byte?
+        // Method handle for AsyncHelpers.CaptureExecutionContext
+        public CORINFO_METHOD_STRUCT_* captureExecutionContextMethHnd;
+        // Method handle for AsyncHelpers.RestoreExecutionContext
+        public CORINFO_METHOD_STRUCT_* restoreExecutionContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
     }
 
     // Flags passed from JIT to runtime.
