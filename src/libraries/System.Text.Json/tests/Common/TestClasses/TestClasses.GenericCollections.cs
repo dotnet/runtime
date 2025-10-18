@@ -1404,7 +1404,7 @@ namespace System.Text.Json.Serialization.Tests
 
     // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
 #if NET
-    public interface IDerivedIReadOnlySetOfT<T> : ISet<T> { }
+    public interface IDerivedIReadOnlySetOfT<T> : IReadOnlySet<T> { }
 #endif
 
     public struct GenericStructIListWrapper<T> : IList<T>
