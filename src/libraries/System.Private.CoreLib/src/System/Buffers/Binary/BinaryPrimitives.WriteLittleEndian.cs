@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -46,6 +47,29 @@ namespace System.Buffers.Binary
             if (!BitConverter.IsLittleEndian)
             {
                 short tmp = ReverseEndianness(BitConverter.HalfToInt16Bits(value));
+                MemoryMarshal.Write(destination, in tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, in value);
+            }
+        }
+
+        /// <summary>
+        /// Writes a <see cref="BFloat16" /> into a span of bytes, as little endian.
+        /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain a <see cref="BFloat16" />.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteBFloat16LittleEndian(Span<byte> destination, BFloat16 value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                short tmp = ReverseEndianness(BitConverter.BFloat16ToInt16Bits(value));
                 MemoryMarshal.Write(destination, in tmp);
             }
             else
@@ -348,6 +372,27 @@ namespace System.Buffers.Binary
             if (!BitConverter.IsLittleEndian)
             {
                 short tmp = ReverseEndianness(BitConverter.HalfToInt16Bits(value));
+                return MemoryMarshal.TryWrite(destination, in tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, in value);
+        }
+
+        /// <summary>
+        /// Writes a <see cref="BFloat16" /> into a span of bytes, as little endian.
+        /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="BFloat16" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 2 bytes to the beginning of the span.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteBFloat16LittleEndian(Span<byte> destination, BFloat16 value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                short tmp = ReverseEndianness(BitConverter.BFloat16ToInt16Bits(value));
                 return MemoryMarshal.TryWrite(destination, in tmp);
             }
 
