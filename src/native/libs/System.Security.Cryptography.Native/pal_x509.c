@@ -1250,6 +1250,7 @@ static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509
             {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
+#pragma clang diagnostic ignored "-Wimplicit-void-ptr-cast"
                 if (i2d_OCSP_RESPONSE_bio(bio, resp))
 #pragma clang diagnostic pop
                 {
