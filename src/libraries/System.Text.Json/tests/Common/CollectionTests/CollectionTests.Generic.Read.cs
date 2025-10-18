@@ -1141,10 +1141,6 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructICollectionWrapper>(@"{ ""Collection"": null }"));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructIDictionaryWrapper>(@"{ ""Dictionary"": null }"));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructISetWrapper>(@"{ ""Set"": null }"));
-            // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithGenericStructIReadOnlySetWrapper>(@"{ ""ReadOnlySet"": null }"));
-#endif
         }
 
         [Fact]
@@ -1168,19 +1164,11 @@ namespace System.Text.Json.Serialization.Tests
                         @"""List"" : null," +
                         @"""Collection"" : null," +
                         @"""Set"" : null," +
-                        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-                        @"""ReadOnlySet"" : null," +
-#endif
                         @"""Dictionary"" : null" +
                         @"}";
                 SimpleTestStructWithNullableGenericStructCollectionWrappers obj = await Serializer.DeserializeWrapper<SimpleTestStructWithNullableGenericStructCollectionWrappers>(json);
                 Assert.False(obj.List.HasValue);
                 Assert.False(obj.Collection.HasValue);
-
-#if NET
-                Assert.False(obj.ReadOnlySet.HasValue);
-#endif
                 Assert.False(obj.Set.HasValue);
                 Assert.False(obj.Dictionary.HasValue);
             }

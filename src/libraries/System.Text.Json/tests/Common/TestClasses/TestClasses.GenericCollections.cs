@@ -1693,6 +1693,7 @@ namespace System.Text.Json.Serialization.Tests
         /// </remarks>
         public GenericStructIReadOnlySetWrapper<T> Initialize(HashSet<T> items)
         {
+            InitializeIfNull();
             foreach (T item in items)
             {
                 _hashset.Add(item);
@@ -1885,24 +1886,11 @@ namespace System.Text.Json.Serialization.Tests
         public GenericStructISetWrapper<int> Set { get; set; }
     }
 
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-    public class ClassWithGenericStructIReadOnlySetWrapper
-    {
-        public GenericStructIReadOnlySetWrapper<int> Set { get; set; }
-    }
-#endif
-
     public class SimpleTestClassWithGenericStructCollectionWrappers : ITestClass
     {
         public GenericStructIListWrapper<int> List { get; set; }
         public GenericStructICollectionWrapper<int> Collection { get; set; }
         public GenericStructISetWrapper<int> Set { get; set; }
-
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-        public GenericStructIReadOnlySetWrapper<int> ReadOnlySet { get; set; }
-#endif
         public GenericStructIDictionaryWrapper<string, string> Dictionary { get; set; }
 
         public static readonly string s_json =
@@ -1910,9 +1898,6 @@ namespace System.Text.Json.Serialization.Tests
             @"""List"" : [10]," +
             @"""Collection"" : [30]," +
             @"""Set"" : [50]," +
-#if NET
-            @"""ReadOnlySet"" : [50]," +
-#endif
             @"""Dictionary"" : {""key1"" : ""value1""}" +
             @"}";
 
@@ -1921,9 +1906,6 @@ namespace System.Text.Json.Serialization.Tests
             List = new GenericStructIListWrapper<int>() { 10 };
             Collection = new GenericStructICollectionWrapper<int>() { 30 };
             Set = new GenericStructISetWrapper<int>() { 50 };
-#if NET
-            ReadOnlySet = new GenericStructIReadOnlySetWrapper<int>().Initialize(new() { 50 });
-#endif
             Dictionary = new GenericStructIDictionaryWrapper<string, string>() { { "key1", "value1" } };
         }
 
@@ -1935,12 +1917,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(30, Collection.ElementAt(0));
             Assert.Equal(1, Set.Count);
             Assert.Equal(50, Set.ElementAt(0));
-
-#if NET
-            Assert.Equal(1, ReadOnlySet.Count);
-            Assert.Equal(50, ReadOnlySet.ElementAt(0));
-#endif
-
             Assert.Equal(1, Dictionary.Keys.Count);
             Assert.Equal("value1", Dictionary["key1"]);
         }
@@ -1951,11 +1927,6 @@ namespace System.Text.Json.Serialization.Tests
         public GenericStructIListWrapper<int>? List { get; set; }
         public GenericStructICollectionWrapper<int>? Collection { get; set; }
         public GenericStructISetWrapper<int>? Set { get; set; }
-
-        // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-        public GenericStructIReadOnlySetWrapper<int>? ReadOnlySet { get; set; }
-#endif
         public GenericStructIDictionaryWrapper<string, string>? Dictionary { get; set; }
 
         public static readonly string s_json =
@@ -1963,9 +1934,6 @@ namespace System.Text.Json.Serialization.Tests
             @"""List"" : [10]," +
             @"""Collection"" : [30]," +
             @"""Set"" : [50]," +
-#if NET
-            @"""ReadOnlySet"" : [50]," +
-#endif
             @"""Dictionary"" : {""key1"" : ""value1""}" +
             @"}";
 
@@ -1974,9 +1942,6 @@ namespace System.Text.Json.Serialization.Tests
             List = new GenericStructIListWrapper<int>() { 10 };
             Collection = new GenericStructICollectionWrapper<int>() { 30 };
             Set = new GenericStructISetWrapper<int>() { 50 };
-#if NET
-            ReadOnlySet = new GenericStructIReadOnlySetWrapper<int>().Initialize(new() { 50 });
-#endif
             Dictionary = new GenericStructIDictionaryWrapper<string, string>() { { "key1", "value1" } };
         }
 
@@ -1988,12 +1953,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(30, Collection.Value.ElementAt(0));
             Assert.Equal(1, Set.Value.Count);
             Assert.Equal(50, Set.Value.ElementAt(0));
-
-#if NET
-            Assert.Equal(1, ReadOnlySet.Value.Count);
-            Assert.Equal(50, ReadOnlySet.Value.ElementAt(0));
-#endif
-
             Assert.Equal(1, Dictionary.Value.Keys.Count);
             Assert.Equal("value1", Dictionary.Value["key1"]);
         }

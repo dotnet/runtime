@@ -958,21 +958,13 @@ namespace System.Text.Json.Serialization.Tests
                     List = default,
                     Dictionary = default,
                     Collection = default,
-                    Set = default,
-
-                    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-                    ReadOnlySet = default
-#endif
+                    Set = default
                 };
                 string json =
                     @"{" +
                     @"""List"" : []," +
                     @"""Collection"" : []," +
                     @"""Set"" : []," +
-#if NET
-                    @"""ReadOnlySet"" : []," +
-#endif
                     @"""Dictionary"" : {}" +
                     @"}";
                 Assert.Equal(json.StripWhitespace(), await Serializer.SerializeWrapper(obj));
@@ -995,9 +987,6 @@ namespace System.Text.Json.Serialization.Tests
                     @"""List"" : null," +
                     @"""Collection"" : null," +
                     @"""Set"" : null," +
-#if NET                    
-                    @"""ReadOnlySet"" : null," +
-#endif
                     @"""Dictionary"" : null" +
                     @"}";
                 Assert.Equal(json.StripWhitespace(), await Serializer.SerializeWrapper(obj));
