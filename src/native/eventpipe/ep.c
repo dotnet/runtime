@@ -646,7 +646,8 @@ disable_holding_lock (
 		}
 
 		// Log the process information event.
-		log_process_info_event (ep_event_source_get ());
+		if (ep_session_get_session_type (session) != EP_SESSION_TYPE_LISTENER)
+			log_process_info_event (ep_event_source_get ());
 
 		// Disable session tracing.
 		config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false);

@@ -57,7 +57,7 @@ struct _EventPipeBuffer_Internal {
 	// The linked list is invasive, thus we declare the pointers here.
 	EventPipeBuffer *prev_buffer;
 	EventPipeBuffer *next_buffer;
-	// State transition WRITABLE -> READ_ONLY only occurs while holding the writer_thread->rt_lock;
+	// State transition WRITABLE -> READ_ONLY only occurs while holding the buffer_manager lock;
 	// It can be read at any time
 	volatile uint32_t state;
 	// The sequence number corresponding to current_read_event
