@@ -200,7 +200,6 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG continuationResumeFldHnd;
     DWORDLONG continuationStateFldHnd;
     DWORDLONG continuationFlagsFldHnd;
-    DWORD continuationsNeedMethodHandle;
     DWORDLONG captureExecutionContextMethHnd;
     DWORDLONG restoreExecutionContextMethHnd;
     DWORDLONG captureContinuationContextMethHnd;

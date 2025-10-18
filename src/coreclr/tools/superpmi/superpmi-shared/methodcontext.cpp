@@ -4457,7 +4457,6 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationResumeFldHnd = CastHandle(pAsyncInfo->continuationResumeFldHnd);
     value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
     value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
-    value.continuationsNeedMethodHandle = pAsyncInfo->continuationsNeedMethodHandle ? 1 : 0;
     value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
     value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
     value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
@@ -4470,9 +4469,9 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
 void MethodContext::dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value)
 {
     printf("GetAsyncInfo key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
-           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contsNeedMethodHandle-%d",
+           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64,
         key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
-        value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationsNeedMethodHandle);
+        value.continuationStateFldHnd, value.continuationFlagsFldHnd);
 }
 void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
 {
@@ -4482,7 +4481,6 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationResumeFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeFldHnd;
     pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
     pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
-    pAsyncInfoOut->continuationsNeedMethodHandle = value.continuationsNeedMethodHandle != 0;
     pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
     pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
     pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureContinuationContextMethHnd;

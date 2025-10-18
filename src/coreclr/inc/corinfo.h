@@ -1740,9 +1740,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
-    // Whether or not the continuation needs to be allocated through the
-    // helper that also takes a method handle
-    bool continuationsNeedMethodHandle;
     // Method handle for AsyncHelpers.CaptureExecutionContext
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
     // Method handle for AsyncHelpers.RestoreExecutionContext
