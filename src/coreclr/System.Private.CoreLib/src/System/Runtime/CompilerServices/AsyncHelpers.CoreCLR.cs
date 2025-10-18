@@ -355,8 +355,7 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(continuation != null);
                     try
                     {
-                        Continuation? curContinuation = continuation;
-                        Debug.Assert(curContinuation != null);
+                        Continuation curContinuation = continuation;
                         Continuation? nextContinuation = curContinuation.Next;
                         continuation = nextContinuation;
 
