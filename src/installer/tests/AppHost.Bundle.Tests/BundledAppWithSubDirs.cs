@@ -50,13 +50,22 @@ namespace AppHost.Bundle.Tests
                 return;
 
             string extractionDir = match.Groups[1].Value;
-            try
+            for (int i = 0; i < 3; i++)
             {
-                Directory.Delete(extractionDir, true);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to delete extraction directory '{extractionDir}': {ex}");
+                try
+                {
+                    if (Directory.Exists(extractionDir))
+                        Directory.Delete(extractionDir, true);
+                    break;
+                }
+                catch (Exception ex) when (i < 2)
+                {
+                    System.Threading.Thread.Sleep(100);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to delete extraction directory '{extractionDir}': {ex}");
+                }
             }
         }
 
@@ -187,10 +196,22 @@ namespace AppHost.Bundle.Tests
                 // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
                 var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
                 var longDirPath = Path.Combine(directory, "Sentence", longDirName);
-                Directory.CreateDirectory(longDirPath);
-                using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
+                
+                for (int i = 0; i < 3; i++)
                 {
-                    writer.Write(".");
+                    try
+                    {
+                        Directory.CreateDirectory(longDirPath);
+                        using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
+                        {
+                            writer.Write(".");
+                        }
+                        break;
+                    }
+                    catch (IOException) when (i < 2)
+                    {
+                        System.Threading.Thread.Sleep(100);
+                    }
                 }
             }
         }
