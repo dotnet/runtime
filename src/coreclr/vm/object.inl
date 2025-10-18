@@ -127,42 +127,9 @@ inline void Object::EnumMemoryRegions(void)
     // As an Object is very low-level don't propagate
     // the enumeration to the MethodTable.
 }
-
-#else // !DACCESS_COMPILE
-
-FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePoint())
-    {
-        return false;
-    }
-
-    AwareLock::EnterHelperResult result = EnterObjMonitorHelper(pCurThread);
-    if (result == AwareLock::EnterHelperResult::Entered)
-    {
-        return true;
-    }
-    if (result == AwareLock::EnterHelperResult::Contention)
-    {
-        result = EnterObjMonitorHelperSpin(pCurThread);
-        if (result == AwareLock::EnterHelperResult::Entered)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 #endif // DACCESS_COMPILE
 
-        // Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
+// Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
 inline CorElementType ArrayBase::GetArrayElementType() const
 {
     WRAPPER_NO_CONTRACT;

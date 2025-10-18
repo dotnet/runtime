@@ -1640,11 +1640,6 @@ typedef CordbEnumerator<RSSmartPtr<CordbThread>,
                         ICorDebugThreadEnum, IID_ICorDebugThreadEnum,
                         QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread, IID_ICorDebugThread> > CordbThreadEnumerator;
 
-typedef CordbEnumerator<CorDebugBlockingObject,
-                        CorDebugBlockingObject,
-                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
-                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
-
 // Template classes must be fully defined rather than just declared in the header
 #include "rsenumerator.hpp"
 

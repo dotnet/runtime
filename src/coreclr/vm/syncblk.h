@@ -67,7 +67,6 @@ class SyncBlock;
 class SyncBlockCache;
 class SyncTableEntry;
 class SyncBlockArray;
-class AwareLock;
 class Thread;
 class AppDomain;
 
@@ -76,7 +75,6 @@ class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 #endif // FEATURE_METADATA_UPDATER
 
-#include "eventstore.hpp"
 #include "synch.h"
 
 // At a negative offset from each Object is an ObjHeader.  The 'size' of the
@@ -142,465 +140,8 @@ inline void InitializeSpinConstants()
     g_SpinConstants.dwMaximumDuration = min(g_pConfig->SpinLimitProcCap(), g_SystemInfo.dwNumberOfProcessors) * g_pConfig->SpinLimitProcFactor() + g_pConfig->SpinLimitConstant();
     g_SpinConstants.dwBackoffFactor   = g_pConfig->SpinBackoffFactor();
     g_SpinConstants.dwRepetitions     = g_pConfig->SpinRetryCount();
-    g_SpinConstants.dwMonitorSpinCount = g_SpinConstants.dwMaximumDuration == 0 ? 0 : g_pConfig->MonitorSpinCount();
 #endif
 }
-
-// this is a 'GC-aware' Lock.  It is careful to enable preemptive GC before it
-// attempts any operation that can block.  Once the operation is finished, it
-// restores the original state of GC.
-
-// AwareLocks can only be created inside SyncBlocks, since they depend on the
-// enclosing SyncBlock for coordination.  This is enforced by the private ctor.
-typedef DPTR(class AwareLock) PTR_AwareLock;
-
-class AwareLock
-{
-    friend class CheckAsmOffsets;
-
-    friend class SyncBlockCache;
-    friend class SyncBlock;
-
-public:
-    // These must match the values in Monitor.CoreCLR.cs
-    enum class EnterHelperResult : INT32 {
-        Contention = 0,
-        Entered = 1,
-        UseSlowPath = 2
-    };
-
-    // These must match the values in Monitor.CoreCLR.cs
-    enum class LeaveHelperAction : INT32 {
-        None = 0,
-        Signal = 1,
-        Yield = 2,
-        Contention = 3,
-        Error = 4,
-    };
-
-private:
-    class LockState
-    {
-    private:
-        // Layout constants for m_state
-        static const UINT32 IsLockedMask = (UINT32)1 << 0; // bit 0
-        static const UINT32 ShouldNotPreemptWaitersMask = (UINT32)1 << 1; // bit 1
-        static const UINT32 SpinnerCountIncrement = (UINT32)1 << 2;
-        static const UINT32 SpinnerCountMask = (UINT32)0x7 << 2; // bits 2-4
-        static const UINT32 IsWaiterSignaledToWakeMask = (UINT32)1 << 5; // bit 5
-        static const UINT8 WaiterCountShift = 6;
-        static const UINT32 WaiterCountIncrement = (UINT32)1 << WaiterCountShift;
-        static const UINT32 WaiterCountMask = (UINT32)-1 >> WaiterCountShift << WaiterCountShift; // bits 6-31
-
-    private:
-        UINT32 m_state;
-
-    public:
-        LockState(UINT32 state = 0) : m_state(state)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-    public:
-        UINT32 GetState() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_state;
-        }
-
-        UINT32 GetMonitorHeldState() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            static_assert(IsLockedMask == 1);
-            static_assert(WaiterCountShift >= 1);
-
-            // Return only the locked state and waiter count in the previous (m_MonitorHeld) layout for the debugger:
-            //   bit 0: 1 if locked, 0 otherwise
-            //   bits 1-31: waiter count
-            UINT32 state = m_state;
-            return (state & IsLockedMask) + (state >> WaiterCountShift << 1);
-        }
-
-    public:
-        bool IsUnlockedWithNoWaiters() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return !(m_state & (IsLockedMask + WaiterCountMask));
-        }
-
-        void InitializeToLockedWithNoWaiters()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!m_state);
-
-            m_state = IsLockedMask;
-        }
-
-    public:
-        bool IsLocked() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return !!(m_state & IsLockedMask);
-        }
-
-    private:
-        void InvertIsLocked()
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_state ^= IsLockedMask;
-        }
-
-    public:
-        bool ShouldNotPreemptWaiters() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return !!(m_state & ShouldNotPreemptWaitersMask);
-        }
-
-    private:
-        void InvertShouldNotPreemptWaiters()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            m_state ^= ShouldNotPreemptWaitersMask;
-            _ASSERTE(!ShouldNotPreemptWaiters() || HasAnyWaiters());
-        }
-
-        bool ShouldNonWaiterAttemptToAcquireLock() const
-        {
-            WRAPPER_NO_CONTRACT;
-            _ASSERTE(!ShouldNotPreemptWaiters() || HasAnyWaiters());
-
-            return !(m_state & (IsLockedMask + ShouldNotPreemptWaitersMask));
-        }
-
-    public:
-        bool HasAnySpinners() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return !!(m_state & SpinnerCountMask);
-        }
-
-    private:
-        bool TryIncrementSpinnerCount()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            LockState newState = m_state + SpinnerCountIncrement;
-            if (newState.HasAnySpinners()) // overflow check
-            {
-                m_state = newState;
-                return true;
-            }
-            return false;
-        }
-
-        void DecrementSpinnerCount()
-        {
-            WRAPPER_NO_CONTRACT;
-            _ASSERTE(HasAnySpinners());
-
-            m_state -= SpinnerCountIncrement;
-        }
-
-    public:
-        bool IsWaiterSignaledToWake() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return !!(m_state & IsWaiterSignaledToWakeMask);
-        }
-
-    private:
-        void InvertIsWaiterSignaledToWake()
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_state ^= IsWaiterSignaledToWakeMask;
-        }
-
-    public:
-        bool HasAnyWaiters() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_state >= WaiterCountIncrement;
-        }
-
-    private:
-        void IncrementWaiterCount()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(m_state + WaiterCountIncrement >= WaiterCountIncrement);
-
-            m_state += WaiterCountIncrement;
-        }
-
-        void DecrementWaiterCount()
-        {
-            WRAPPER_NO_CONTRACT;
-            _ASSERTE(HasAnyWaiters());
-
-            m_state -= WaiterCountIncrement;
-        }
-
-    private:
-        bool NeedToSignalWaiter() const
-        {
-            WRAPPER_NO_CONTRACT;
-            return HasAnyWaiters() && !(m_state & (SpinnerCountMask + IsWaiterSignaledToWakeMask));
-        }
-
-    private:
-        operator UINT32() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_state;
-        }
-
-        LockState &operator =(UINT32 state)
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            m_state = state;
-            return *this;
-        }
-
-    public:
-        LockState VolatileLoadWithoutBarrier() const
-        {
-            WRAPPER_NO_CONTRACT;
-            return ::VolatileLoadWithoutBarrier(&m_state);
-        }
-
-        LockState VolatileLoad() const
-        {
-            WRAPPER_NO_CONTRACT;
-            return ::VolatileLoad(&m_state);
-        }
-
-    private:
-        LockState CompareExchange(LockState toState, LockState fromState)
-        {
-            LIMITED_METHOD_CONTRACT;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            return (UINT32)FastInterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
-#else
-            return (UINT32)InterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
-#endif
-        }
-
-        LockState CompareExchangeAcquire(LockState toState, LockState fromState)
-        {
-            LIMITED_METHOD_CONTRACT;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            return (UINT32)FastInterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
-#else
-            return (UINT32)InterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
-#endif
-        }
-
-    public:
-        bool InterlockedTryLock();
-        bool InterlockedTryLock(LockState state);
-        bool InterlockedUnlock();
-        bool InterlockedTrySetShouldNotPreemptWaitersIfNecessary(AwareLock *awareLock);
-        bool InterlockedTrySetShouldNotPreemptWaitersIfNecessary(AwareLock *awareLock, LockState state);
-        EnterHelperResult InterlockedTry_LockOrRegisterSpinner(LockState state);
-        EnterHelperResult InterlockedTry_LockAndUnregisterSpinner();
-        bool InterlockedUnregisterSpinner_TryLock();
-        bool InterlockedTryLock_Or_RegisterWaiter(AwareLock *awareLock, LockState state);
-        void InterlockedUnregisterWaiter();
-        bool InterlockedTry_LockAndUnregisterWaiterAndObserveWakeSignal(AwareLock *awareLock);
-        bool InterlockedObserveWakeSignal_Try_LockAndUnregisterWaiter(AwareLock *awareLock);
-    };
-
-    friend class LockState;
-
-private:
-    // Take care to use 'm_lockState.VolatileLoadWithoutBarrier()` when loading this value into a local variable that will be
-    // reused. That prevents an optimization in the compiler that avoids stack-spilling a value loaded from memory and instead
-    // reloads the value from the original memory location under the assumption that it would not be changed by another thread,
-    // which can result in the local variable's value changing between reads if the memory location is modifed by another
-    // thread. This is important for patterns such as:
-    //
-    //     T x = m_x; // no barrier
-    //     if (meetsCondition(x))
-    //     {
-    //         assert(meetsCondition(x)); // This may fail!
-    //     }
-    //
-    // The code should be written like this instead:
-    //
-    //     T x = VolatileLoadWithoutBarrier(&m_x); // compile-time barrier, no run-time barrier
-    //     if (meetsCondition(x))
-    //     {
-    //         assert(meetsCondition(x)); // This will not fail
-    //     }
-    LockState m_lockState;
-
-    ULONG           m_Recursion;
-    DWORD           m_HoldingThreadId;
-    SIZE_T          m_HoldingOSThreadId;
-
-    LONG            m_TransientPrecious;
-
-
-    // This is a backpointer from the syncblock to the synctable entry.  This allows
-    // us to recover the object that holds the syncblock.
-    DWORD           m_dwSyncIndex;
-
-    CLREvent        m_SemEvent;
-
-    DWORD m_waiterStarvationStartTimeMs;
-    int m_emittedLockCreatedEvent;
-
-    static const DWORD WaiterStarvationDurationMsBeforeStoppingPreemptingWaiters = 100;
-
-    // Only SyncBlocks can create AwareLocks.  Hence this private constructor.
-    AwareLock(DWORD indx)
-        : m_Recursion(0),
-          m_HoldingThreadId(0),
-          m_HoldingOSThreadId(0),
-          m_TransientPrecious(0),
-          m_dwSyncIndex(indx),
-          m_waiterStarvationStartTimeMs(0),
-          m_emittedLockCreatedEvent(0)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    ~AwareLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // We deliberately allow this to remain incremented if an exception blows
-        // through a lock attempt.  This simply prevents the GC from aggressively
-        // reclaiming a particular syncblock until the associated object is garbage.
-        // From a perf perspective, it's not worth using SEH to prevent this from
-        // happening.
-        //
-        // _ASSERTE(m_TransientPrecious == 0);
-    }
-
-#if defined(ENABLE_CONTRACTS_IMPL)
-    // The LOCK_TAKEN/RELEASED macros need a "pointer" to the lock object to do
-    // comparisons between takes & releases (and to provide debugging info to the
-    // developer).  Since AwareLocks are always allocated embedded inside SyncBlocks,
-    // and since SyncBlocks don't move (unlike the GC objects that use
-    // the syncblocks), it's safe for us to just use the AwareLock pointer directly
-    void * GetPtrForLockContract()
-    {
-        return (void *) this;
-    }
-#endif // defined(ENABLE_CONTRACTS_IMPL)
-
-public:
-    UINT32 GetLockState() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_lockState.VolatileLoadWithoutBarrier().GetState();
-    }
-
-    bool IsUnlockedWithNoWaiters() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_lockState.VolatileLoadWithoutBarrier().IsUnlockedWithNoWaiters();
-    }
-
-    UINT32 GetMonitorHeldStateVolatile() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_lockState.VolatileLoad().GetMonitorHeldState();
-    }
-
-    ULONG GetRecursionLevel() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_Recursion;
-    }
-
-    DWORD GetHoldingThreadId() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_HoldingThreadId;
-    }
-
-private:
-    void ResetWaiterStarvationStartTime();
-    void RecordWaiterStarvationStartTime();
-    bool ShouldStopPreemptingWaiters() const;
-
-private: // friend access is required for this unsafe function
-    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, DWORD holdingThreadId, SIZE_T holdingOSThreadId)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        m_lockState.InitializeToLockedWithNoWaiters();
-        m_Recursion = recursionLevel;
-        m_HoldingThreadId = holdingThreadId;
-        m_HoldingOSThreadId = holdingOSThreadId;
-    }
-
-public:
-    static void SpinWait(const YieldProcessorNormalizationInfo &normalizationInfo, DWORD spinIteration);
-
-    // Helper encapsulating the fast path entering monitor. Returns what kind of result was achieved.
-    bool TryEnterHelper(Thread* pCurThread);
-
-    EnterHelperResult TryEnterBeforeSpinLoopHelper(Thread *pCurThread);
-    EnterHelperResult TryEnterInsideSpinLoopHelper(Thread *pCurThread);
-    bool TryEnterAfterSpinLoopHelper(Thread *pCurThread);
-
-    // Helper encapsulating the core logic for leaving monitor. Returns what kind of
-    // follow up action is necessary
-    AwareLock::LeaveHelperAction LeaveHelper(Thread* pCurThread);
-
-    void    Enter();
-    BOOL    TryEnter(INT32 timeOut = 0);
-    BOOL    EnterEpilog(Thread *pCurThread, INT32 timeOut = INFINITE);
-    BOOL    EnterEpilogHelper(Thread *pCurThread, INT32 timeOut);
-    BOOL    Leave();
-
-    void    Signal()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // CLREvent::SetMonitorEvent works even if the event has not been initialized yet
-        m_SemEvent.SetMonitorEvent();
-
-        m_lockState.InterlockedTrySetShouldNotPreemptWaitersIfNecessary(this);
-    }
-
-    void    AllocLockSemEvent();
-    LONG    LeaveCompletely();
-    BOOL    OwnedByCurrentThread();
-    PTR_Thread GetHoldingThread();
-
-    void    IncrementTransientPrecious()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement(&m_TransientPrecious);
-        _ASSERTE(m_TransientPrecious > 0);
-    }
-
-    void    DecrementTransientPrecious()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_TransientPrecious > 0);
-        InterlockedDecrement(&m_TransientPrecious);
-    }
-
-    DWORD GetSyncBlockIndex();
-
-    void SetPrecious();
-
-    // Provide access to the object associated with this awarelock, so client can
-    // protect it.
-    inline OBJECTREF GetOwningObject();
-
-    static int GetOffsetOfHoldingOSThreadId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (int)offsetof(AwareLock, m_HoldingOSThreadId);
-    }
-};
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 class UMEntryThunkData;
@@ -854,14 +395,23 @@ class SyncBlock
     // ObjHeader creates our Mutex and Event
     friend class ObjHeader;
     friend class SyncBlockCache;
-    friend struct ThreadQueue;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
     friend class CheckAsmOffsets;
 
-  protected:
-    AwareLock  m_Monitor;                    // the actual monitor
+  private:
+    OBJECTHANDLE m_Lock; // the object handle for the lock in the sync block
+    // If the sync block was created from an object that had a thin-lock in the header,
+    // this stores the recursion level and thread id of the lock.
+    // We have this because we can't allocate a lock when we allocate the sync block
+    // as we're in a no-GC region. Instead, we'll capture the information and immediately upgrade
+    // to the full lock next time someone tries to read the lock information.
+    Volatile<DWORD> m_thinLock;
+
+    // This is a backpointer from the syncblock to the synctable entry.  This allows
+    // us to recover the object that holds the syncblock.
+    DWORD           m_dwSyncIndex;
 
   public:
     // If this object is exposed to unmanaged code, we keep some extra info here.
@@ -873,10 +423,8 @@ class SyncBlock
     PTR_EnCSyncBlockInfo m_pEnCInfo;
 #endif // FEATURE_METADATA_UPDATER
 
-    // We thread two different lists through this link.  When the SyncBlock is
-    // active, we create a list of waiting threads here.  When the SyncBlock is
-    // released (we recycle them), the SyncBlockCache maintains a free list of
-    // SyncBlocks here.
+    // When the SyncBlock is released (we recycle them),
+    // the SyncBlockCache maintains a free list of SyncBlocks here.
     //
     // We can't afford to use an SList<> here because we only want to burn
     // space for the minimum, which is the pointer within an SLink.
@@ -902,7 +450,9 @@ class SyncBlock
 
   public:
     SyncBlock(DWORD indx)
-        : m_Monitor(indx)
+        : m_Lock((OBJECTHANDLE)NULL)
+        , m_thinLock(0)
+        , m_dwSyncIndex(indx)
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
@@ -912,15 +462,12 @@ class SyncBlock
         LIMITED_METHOD_CONTRACT;
 
         m_pInteropInfo = NULL;
-
-        // The monitor must be 32-bit aligned for atomicity to be guaranteed.
-        _ASSERTE((((size_t) &m_Monitor) & 3) == 0);
     }
 
     DWORD GetSyncBlockIndex()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_Monitor.GetSyncBlockIndex();
+        return m_dwSyncIndex & ~SyncBlockPrecious;
     }
 
    // As soon as a syncblock acquires some state that cannot be recreated, we latch
@@ -928,14 +475,26 @@ class SyncBlock
    void SetPrecious()
    {
        WRAPPER_NO_CONTRACT;
-       m_Monitor.SetPrecious();
+       m_dwSyncIndex |= SyncBlockPrecious;
    }
 
    BOOL IsPrecious()
    {
        LIMITED_METHOD_CONTRACT;
-       return (m_Monitor.m_dwSyncIndex & SyncBlockPrecious) != 0;
+       return (m_dwSyncIndex & SyncBlockPrecious) != 0;
    }
+
+   // Get the lock information for this sync block.
+   // Returns false when the lock is not locked or has not been created yet.
+   BOOL TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel);
+
+   OBJECTHANDLE GetLockIfExists()
+   {
+       WRAPPER_NO_CONTRACT;
+       return m_Lock;
+   }
+
+   OBJECTHANDLE GetOrCreateLock(OBJECTREF lockObj);
 
     // True is the syncblock and its index are disposable.
     // If new members are added to the syncblock, this
@@ -943,9 +502,7 @@ class SyncBlock
     BOOL IsIDisposable()
     {
         WRAPPER_NO_CONTRACT;
-        return (!IsPrecious() &&
-                m_Monitor.IsUnlockedWithNoWaiters() &&
-                m_Monitor.m_TransientPrecious == 0);
+        return !IsPrecious() && m_thinLock == 0u;
     }
 
     // Gets the InteropInfo block, creates a new one if none is present.
@@ -1033,63 +590,6 @@ class SyncBlock
         // We've already destructed.  But retain the memory.
     }
 
-    void EnterMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_Monitor.Enter();
-    }
-
-    BOOL TryEnterMonitor(INT32 timeOut = 0)
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_Monitor.TryEnter(timeOut);
-    }
-
-    // leave the monitor
-    BOOL LeaveMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_Monitor.Leave();
-    }
-
-    AwareLock* GetMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        //hold the syncblock
-#ifndef DACCESS_COMPILE
-        SetPrecious();
-#endif
-
-        //Note that for DAC we did not return a PTR_ type. This pointer is interior and
-        //the SyncBlock has already been marshaled so that GetMonitor could be called.
-        return &m_Monitor;
-    }
-
-    AwareLock* QuickGetMonitor()
-    {
-        LIMITED_METHOD_CONTRACT;
-    // Note that the syncblock isn't marked precious, so use caution when
-    // calling this method.
-        return &m_Monitor;
-    }
-
-    BOOL DoesCurrentThreadOwnMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_Monitor.OwnedByCurrentThread();
-    }
-
-    LONG LeaveMonitorCompletely()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_Monitor.LeaveCompletely();
-    }
-
-    BOOL Wait(INT32 timeOut);
-    void Pulse();
-    void PulseAll();
-
     enum
     {
         // This bit indicates that the syncblock is valuable and can neither be discarded
@@ -1113,26 +613,8 @@ class SyncBlock
         SetPrecious();
     }
 
-  protected:
-    // <NOTE>
-    // This should ONLY be called when initializing a SyncBlock (i.e. ONLY from
-    // ObjHeader::GetSyncBlock()), otherwise we'll have a race condition.
-    // </NOTE>
-    void InitState(ULONG recursionLevel, DWORD holdingThreadId, SIZE_T holdingOSThreadId)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThreadId, holdingOSThreadId);
-    }
-
-#if defined(ENABLE_CONTRACTS_IMPL)
-    // The LOCK_TAKEN/RELEASED macros need a "pointer" to the lock object to do
-    // comparisons between takes & releases (and to provide debugging info to the
-    // developer).  Use the AwareLock (m_Monitor)
-    void * GetPtrForLockContract()
-    {
-        return m_Monitor.GetPtrForLockContract();
-    }
-#endif // defined(ENABLE_CONTRACTS_IMPL)
+    private:
+    void InitializeThinLock(DWORD recursionLevel, DWORD threadId);
 
     friend struct ::cdac_data<SyncBlock>;
 };
@@ -1318,8 +800,6 @@ class ObjHeader
     void IllegalAlignPad();
 #endif // HOST_64BIT && _DEBUG
 
-    INCONTRACT(void * GetPtrForLockContract());
-
   public:
 
     // Access to the Sync Block Index, by masking the Value.
@@ -1478,49 +958,27 @@ class ObjHeader
 
     DWORD GetSyncBlockIndex();
 
-    // this enters the monitor of an object
-    void EnterObjMonitor();
-
-    // non-blocking version of above
-    BOOL TryEnterObjMonitor(INT32 timeOut = 0);
-
-    // Inlineable fast path of EnterObjMonitor/TryEnterObjMonitor. Must be called before EnterObjMonitorHelperSpin.
-    AwareLock::EnterHelperResult EnterObjMonitorHelper(Thread* pCurThread);
-
-    // Typically non-inlined spin loop for some fast paths of EnterObjMonitor/TryEnterObjMonitor. EnterObjMonitorHelper must be
-    // called before this function.
-    AwareLock::EnterHelperResult EnterObjMonitorHelperSpin(Thread* pCurThread);
-
-    // leaves the monitor of an object
-    BOOL LeaveObjMonitor();
-
-    // should be called only from unwind code
-    BOOL LeaveObjMonitorAtException();
-
-    // Helper encapsulating the core logic for releasing monitor. Returns what kind of
-    // follow up action is necessary
-    AwareLock::LeaveHelperAction LeaveObjMonitorHelper(Thread* pCurThread);
-
-    // Returns TRUE if the lock is owned and FALSE otherwise
-    // threadId is set to the ID (Thread::GetThreadId()) of the thread which owns the lock
-    // acquisitionCount is set to the number of times the lock needs to be released before
-    // it is unowned
-    BOOL GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisitionCount);
-
     PTR_Object GetBaseObject()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<PTR_Object>(dac_cast<TADDR>(this + 1));
     }
 
-    BOOL Wait(INT32 timeOut);
-    void Pulse();
-    void PulseAll();
-
     void EnterSpinLock();
     void ReleaseSpinLock();
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
+
+    // These must match the values in ObjectHeader.CoreCLR.cs
+    enum class HeaderLockResult : int32_t {
+        Success = 0,
+        Failure = 1,
+        UseSlowPath = 2
+    };
+
+    HeaderLockResult AcquireHeaderThinLock(DWORD tid);
+
+    HeaderLockResult ReleaseHeaderThinLock(DWORD tid);
 
     friend struct ::cdac_data<ObjHeader>;
 };
@@ -1539,68 +997,6 @@ typedef DPTR(class ObjHeader) PTR_ObjHeader;
 
 #define LEAVE_SPIN_LOCK(pOh)        \
     pOh->ReleaseSpinLock();
-
-
-#ifdef DACCESS_COMPILE
-// A visitor function used to enumerate threads in the ThreadQueue below
-typedef void (*FP_TQ_THREAD_ENUMERATION_CALLBACK)(PTR_Thread pThread, VOID* pUserData);
-#endif
-
-// A SyncBlock contains an m_Link field that is used for two purposes.  One
-// is to manage a FIFO queue of threads that are waiting on this synchronization
-// object.  The other is to thread free SyncBlocks into a list for recycling.
-// We don't want to burn anything else on the SyncBlock instance, so we can't
-// use an SList or similar data structure.  So here's the encapsulation for the
-// queue of waiting threads.
-//
-// Note that Enqueue is slower than it needs to be, because we don't want to
-// burn extra space in the SyncBlock to remember the head and the tail of the Q.
-// An alternate approach would be to treat the list as a LIFO stack, which is not
-// a fair policy because it permits to starvation.
-//
-// Important!!! While there is a lock that is used in process to keep multiple threads
-// from altering the queue simultaneously, the queue must still be consistent at all
-// times, even when the lock is held. The debugger inspects the queue from out of process
-// and just looks at the memory...it must be valid even if the lock is held. Be careful if you
-// change the way the queue is updated.
-struct ThreadQueue
-{
-    // Given a link in the chain, get the Thread that it represents
-    static PTR_WaitEventLink WaitEventLinkForLink(PTR_SLink pLink);
-
-    // Unlink the head of the Q.  We are always in the SyncBlock's critical
-    // section.
-    static WaitEventLink *DequeueThread(SyncBlock *psb);
-
-    // Enqueue is the slow one.  We have to find the end of the Q since we don't
-    // want to burn storage for this in the SyncBlock.
-    static void          EnqueueThread(WaitEventLink *pWaitEventLink, SyncBlock *psb);
-
-    // Wade through the SyncBlock's list of waiting threads and remove the
-    // specified thread.
-    static BOOL          RemoveThread (Thread *pThread, SyncBlock *psb);
-
-#ifdef DACCESS_COMPILE
-    // Enumerates the threads in the queue from front to back by calling
-    // pCallbackFunction on each one
-    static void          EnumerateThreads(SyncBlock *psb,
-                                          FP_TQ_THREAD_ENUMERATION_CALLBACK pCallbackFunction,
-                                          void* pUserData);
-#endif
-};
-
-inline void AwareLock::SetPrecious()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_dwSyncIndex |= SyncBlock::SyncBlockPrecious;
-}
-
-inline DWORD AwareLock::GetSyncBlockIndex()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (m_dwSyncIndex & ~SyncBlock::SyncBlockPrecious);
-}
 
 #ifdef TARGET_X86
 #include <poppack.h>

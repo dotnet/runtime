@@ -148,19 +148,12 @@ static void PulseAllHelper(Thread* pThread)
     }
     CONTRACTL_END;
 
-    EX_TRY
-    {
-        // GetExposedObject() will either throw, or we have a valid object.  Note
-        // that we re-acquire it each time, since it may move during calls.
-        pThread->GetExposedObject()->EnterObjMonitor();
-        pThread->GetExposedObject()->PulseAll();
-        pThread->GetExposedObject()->LeaveObjMonitor();
-    }
-    EX_CATCH
-    {
-        // just keep going...
-    }
-    EX_END_CATCH
+    // GetExposedObject() will either throw, or we have a valid object.  Note
+    // that we re-acquire it each time, since it may move during calls.
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__PULSE_THREAD_OBJECT);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
@@ -587,7 +580,7 @@ static BOOL DoJoin(THREADBASEREF dyingThread, INT32 timeout)
                    ? INFINITE
                    : (DWORD) timeout);
 
-    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
+    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, WaitMode_Alertable);
     switch(rv)
     {
         case WAIT_OBJECT_0:
@@ -891,5 +884,50 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
     FCALL_CONTRACT;
 
     FC_RETURN_BOOL(IsFinalizerThread());
+}
+FCIMPLEND
+
+FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pObj != NULL);
+    PTR_SyncBlock pSyncBlock = pObj->PassiveGetSyncBlock();
+    if (pSyncBlock == NULL)
+    {
+        return (OBJECTHANDLE)NULL;
+    }
+    return pSyncBlock->GetLockIfExists();
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
+
+    lockObj.Set(ObjectFromHandle(pSyncBlock->GetOrCreateLock(lockObj.Get())));
+
+    END_QCALL;
+}
+
+FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    return obj->GetHeader()->AcquireHeaderThinLock(GetThread()->GetThreadId());
+}
+FCIMPLEND
+
+FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread()->GetThreadId());
 }
 FCIMPLEND
