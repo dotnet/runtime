@@ -116,8 +116,28 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             NibbleReader reader = new NibbleReader(imageReader, (int)debugInfoOffset);
-            uint boundsByteCount = reader.ReadUInt();
-            uint variablesByteCount = reader.ReadUInt();
+
+            uint boundsByteCountOrIndicator = reader.ReadUInt();
+
+            uint boundsByteCount = 0;
+            uint variablesByteCount = 0;
+
+            const int DebugInfoFat = 0;
+            if (_runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion >= 17 && boundsByteCountOrIndicator == DebugInfoFat)
+            {
+                boundsByteCount = reader.ReadUInt();
+                variablesByteCount = reader.ReadUInt();
+                reader.ReadUInt(); // uninstrumented bounds
+                reader.ReadUInt(); // patchpoint info
+                reader.ReadUInt(); // rich debug info
+                reader.ReadUInt(); // async info
+            }
+            else
+            {
+                boundsByteCount = boundsByteCountOrIndicator;
+                variablesByteCount = reader.ReadUInt();
+            }
+
             int boundsOffset = reader.GetNextByteOffset();
             int variablesOffset = (int)(boundsOffset + boundsByteCount);
 

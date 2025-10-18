@@ -559,3 +559,25 @@ void ILStubResolver::StubGenFailed(ILStubResolver* pResolver)
 
     pResolver->ClearCompileTimeState(ILNotYetGenerated);
 }
+
+PCODE AsyncResumeILStubResolver::GetFinalResumeMethodStartAddress()
+{
+    return m_finalResumeIP;
+}
+
+#ifndef DACCESS_COMPILE
+PCODE* AsyncResumeILStubResolver::GetAddrOfResumeMethodStartAddress()
+{
+    return &m_resumeIP;
+}
+
+void AsyncResumeILStubResolver::SetResumeMethodStartAddress(PCODE ip)
+{
+    m_resumeIP = ip;
+}
+
+void AsyncResumeILStubResolver::SetFinalResumeMethodStartAddress(PCODE ip)
+{
+    m_finalResumeIP = ip;
+}
+#endif

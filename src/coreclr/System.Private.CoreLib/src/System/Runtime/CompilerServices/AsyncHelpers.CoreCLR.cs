@@ -195,9 +195,8 @@ namespace System.Runtime.CompilerServices
             static abstract ref byte GetResultStorage(T task);
         }
 
-        /// <summary>
-        /// Represents a wrapped runtime async operation.
-        /// </summary>
+        // Represents execution of a chain of suspended and resuming runtime
+        // async functions.
         private sealed class RuntimeAsyncTask<T> : Task<T>, ITaskCompletionAction
         {
             public RuntimeAsyncTask()
@@ -261,9 +260,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        /// <summary>
-        /// Represents a wrapped runtime async operation.
-        /// </summary>
+        // Represents execution of a chain of suspended and resuming runtime
+        // async functions.
         private sealed class RuntimeAsyncTask : Task, ITaskCompletionAction
         {
             public RuntimeAsyncTask()
@@ -329,35 +327,55 @@ namespace System.Runtime.CompilerServices
 
         private static class RuntimeAsyncTaskCore
         {
+            private unsafe struct NextContinuationData
+            {
+                public NextContinuationData* Next;
+                public Continuation* NextContinuation;
+            }
+
+            // To be used for async stack walking
+            [ThreadStatic]
+            private static unsafe NextContinuationData* t_nextContinuation;
+
             public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
                 Continuation? continuation = TOps.GetContinuationState(task);
 
+                ref NextContinuationData* nextContRef = ref t_nextContinuation;
+                NextContinuationData nextContinuationData;
+                nextContinuationData.Next = nextContRef;
+                nextContinuationData.NextContinuation = &continuation;
+
+                nextContRef = &nextContinuationData;
+
                 while (true)
                 {
                     Debug.Assert(continuation != null);
                     try
                     {
-                        ref byte resultLoc = ref continuation.Next != null ? ref continuation.Next.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
-                        Continuation? newContinuation = continuation.Resume(continuation, ref resultLoc);
+                        Continuation? curContinuation = continuation;
+                        Debug.Assert(curContinuation != null);
+                        Continuation? nextContinuation = curContinuation.Next;
+                        continuation = nextContinuation;
+
+                        ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
+                        Continuation? newContinuation = curContinuation.Resume(curContinuation, ref resultLoc);
 
                         if (newContinuation != null)
                         {
-                            newContinuation.Next = continuation.Next;
+                            newContinuation.Next = nextContinuation;
                             HandleSuspended<T, TOps>(task);
                             contexts.Pop();
+                            t_nextContinuation = nextContinuationData.Next;
                             return;
                         }
-
-                        continuation = continuation.Next;
                     }
                     catch (Exception ex)
                     {
-                        Debug.Assert(continuation != null);
-                        Continuation? nextContinuation = UnwindToPossibleHandler(continuation);
-                        if (nextContinuation == null)
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(continuation);
+                        if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             bool successfullySet = ex is OperationCanceledException oce ?
@@ -365,6 +383,8 @@ namespace System.Runtime.CompilerServices
                                 task.TrySetException(ex);
 
                             contexts.Pop();
+
+                            t_nextContinuation = nextContinuationData.Next;
 
                             if (!successfullySet)
                             {
@@ -374,9 +394,8 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        nextContinuation.SetException(ex);
-
-                        continuation = nextContinuation;
+                        handlerContinuation.SetException(ex);
+                        continuation = handlerContinuation;
                     }
 
                     if (continuation == null)
@@ -384,6 +403,8 @@ namespace System.Runtime.CompilerServices
                         bool successfullySet = TOps.SetCompleted(task);
 
                         contexts.Pop();
+
+                        t_nextContinuation = nextContinuationData.Next;
 
                         if (!successfullySet)
                         {
@@ -396,23 +417,20 @@ namespace System.Runtime.CompilerServices
                     if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, continuation))
                     {
                         contexts.Pop();
+                        t_nextContinuation = nextContinuationData.Next;
                         return;
                     }
                 }
             }
 
-            private static Continuation? UnwindToPossibleHandler(Continuation continuation)
+            private static Continuation? UnwindToPossibleHandler(Continuation? continuation)
             {
                 while (true)
                 {
-                    Continuation? nextContinuation = continuation.Next;
-                    if (nextContinuation == null)
-                        return null;
+                    if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
+                        return continuation;
 
-                    if ((nextContinuation.Flags & ContinuationFlags.HasException) != 0)
-                        return nextContinuation;
-
-                    continuation = nextContinuation;
+                    continuation = continuation.Next;
                 }
             }
 

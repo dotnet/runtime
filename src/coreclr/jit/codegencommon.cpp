@@ -988,6 +988,28 @@ BasicBlock* CodeGen::genCreateTempLabel()
     return block;
 }
 
+BasicBlock* CodeGen::genCreateAsyncResumptionTrampolineLabel(GenTreeVal* node)
+{
+    assert(node->OperIs(GT_ASYNC_RESUME_TRAMPOLINE));
+
+    if (genAsyncResumptionTrampolineLabels == nullptr)
+    {
+        genAsyncResumptionTrampolineLabels =
+            new (compiler, CMK_Codegen) jitstd::vector<BasicBlock*>(compiler->compSuspensionPoints->size(), nullptr,
+                                                                    compiler->getAllocator(CMK_Codegen));
+    }
+
+    assert(genAsyncResumptionTrampolineLabels->size() > node->gtVal1);
+
+    BasicBlock*& label = (*genAsyncResumptionTrampolineLabels)[node->gtVal1];
+    if (label == nullptr)
+    {
+        label = genCreateTempLabel();
+    }
+
+    return label;
+}
+
 void CodeGen::genLogLabel(BasicBlock* bb)
 {
 #ifdef DEBUG
@@ -2197,6 +2219,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     genIPmappingGen();
 
     genReportRichDebugInfo();
+
+    genReportAsyncDebugInfo();
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -4439,8 +4463,15 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
+    bool isLast = block->IsLast();
+    if ((genAsyncResumptionTrampolineLabels != nullptr) && (genAsyncResumptionTrampolineLabels->size() != 0) &&
+        (block == compiler->fgLastBBInMainFunction()))
+    {
+        isLast = false;
+    }
+
     GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur, block->IsLast());
+                                          gcInfo.gcRegByrefSetCur, isLast);
 }
 
 /*****************************************************************************
@@ -6692,6 +6723,68 @@ void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
     compiler->genRichIPmappings.push_back(mapping);
 }
 
+//------------------------------------------------------------------------
+// genReportAsyncDebugInfo:
+//   Report async debug info back to EE.
+//
+void CodeGen::genReportAsyncDebugInfo()
+{
+    jitstd::vector<AsyncSuspensionPoint>* suspPoints = compiler->compSuspensionPoints;
+    if (suspPoints == nullptr)
+    {
+        return;
+    }
+
+    ICorDebugInfo::AsyncInfo asyncInfo;
+    asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(suspPoints->size());
+
+    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints = static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(
+        compiler->info.compCompHnd->allocateArray(suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
+    for (size_t i = 0; i < suspPoints->size(); i++)
+    {
+        AsyncSuspensionPoint& suspPoint = (*suspPoints)[i];
+        if (suspPoint.nativeResumeLoc.Valid())
+        {
+            hostSuspensionPoints[i].NativeResumeOffset = suspPoint.nativeResumeLoc.CodeOffset(GetEmitter());
+        }
+
+        if (suspPoint.nativeJoinLoc.Valid())
+        {
+            hostSuspensionPoints[i].NativeJoinOffset = suspPoint.nativeJoinLoc.CodeOffset(GetEmitter());
+        }
+
+        hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
+    }
+
+    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = compiler->compAsyncVars;
+    ICorDebugInfo::AsyncContinuationVarInfo* hostVars = static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(
+        compiler->info.compCompHnd->allocateArray(asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
+    for (size_t i = 0; i < asyncVars->size(); i++)
+        hostVars[i] = (*asyncVars)[i];
+
+    compiler->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
+                                                     static_cast<uint32_t>(asyncVars->size()));
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported async suspension points:\n");
+        for (size_t i = 0; i < suspPoints->size(); i++)
+        {
+            printf("  [%zu] ResumeOffset = %x, JoinOffset = %x, NumAsyncVars = %u\n", i,
+                   hostSuspensionPoints[i].NativeResumeOffset, hostSuspensionPoints[i].NativeJoinOffset,
+                   hostSuspensionPoints[i].NumContinuationVars);
+        }
+
+        printf("Reported async vars:\n");
+        for (size_t i = 0; i < asyncVars->size(); i++)
+        {
+            printf("  [%zu] VarNumber = %u, Offset = %x\n", i, hostVars[i].VarNumber, hostVars[i].Offset);
+        }
+    }
+#endif
+}
+
 /*============================================================================
  *
  *   These are empty stubs to help the late dis-assembler to compile
@@ -6900,7 +6993,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
     // In flowgraph and other places assert that the last node of a block marked as
-    // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
+    // BBJ_RETURN is either a GT_RETURN, GT_JMP or a tail call.  It would be nice to
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
     //

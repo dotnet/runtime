@@ -2734,6 +2734,7 @@ AGAIN:
 
             case GT_NOP:
             case GT_LABEL:
+            case GT_ASYNC_RESUME_TRAMPOLINE:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
                 return true;
@@ -6693,6 +6694,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_TRAMPOLINE:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -6724,6 +6726,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -9568,6 +9571,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
             case GT_CATCH_ARG:
             case GT_ASYNC_CONTINUATION:
+            case GT_ASYNC_RESUME_TRAMPOLINE:
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
@@ -10326,6 +10330,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_TRAMPOLINE:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -10357,6 +10362,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_JOIN:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -12441,6 +12447,11 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_IL_OFFSET:
             printf(" ");
             tree->AsILOffset()->gtStmtDI.Dump(true);
+            break;
+
+        case GT_RECORD_ASYNC_JOIN:
+        case GT_ASYNC_RESUME_TRAMPOLINE:
+            printf(" state=%zu", tree->AsVal()->gtVal1);
             break;
 
         case GT_JCC:

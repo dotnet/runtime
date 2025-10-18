@@ -61,6 +61,7 @@
 
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
+#include "ilstubresolver.h"
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -10772,6 +10773,9 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     , m_numInlineTreeNodes(0)
     , m_richOffsetMappings(NULL)
     , m_numRichOffsetMappings(0)
+    , m_dbgAsyncSuspensionPoints(NULL)
+    , m_dbgAsyncContinuationVars(NULL)
+    , m_numAsyncContinuationVars(0)
     , m_gphCache()
 {
     STANDARD_VM_CONTRACT;
@@ -10784,6 +10788,7 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     m_ILHeader = ilHeader;
 
     m_jitFlags = GetCompileFlags(config, m_pMethodBeingCompiled, &m_MethodInfo);
+    m_dbgAsyncInfo.NumSuspensionPoints = 0;
 }
 
 void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN  */
@@ -11106,10 +11111,34 @@ void CEEJitInfo::PublishFinalCodeAddress(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_finalCodeAddressSlot != NULL)
+    if (m_resumptionStubResolver == NULL)
     {
-        *m_finalCodeAddressSlot = addr;
+        return;
     }
+
+    m_resumptionStubResolver->SetFinalResumeMethodStartAddress(addr);
+    m_resumptionStubResolver->SetResumeMethodStartAddress(addr);
+
+#ifdef FEATURE_TIERED_COMPILATION
+    // Resumption stubs are uniquely coupled to the code version (since the
+    // continuation is), so we need to make sure we always keep calling the
+    // same version here.
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
+    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+    {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        // The OSR version needs to resume in the tier0 version. The tier0
+        // version will handle setting up the frame that the OSR version
+        // expects and then delegating back into the OSR version (knowing to do
+        // so through information stored in the continuation).
+        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
+        m_resumptionStubResolver->SetResumeMethodStartAddress((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+#else // !FEATURE_ON_STACK_REPLACEMENT
+        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
+#endif // FEATURE_ON_STACK_REPLACEMENT
+    }
+#endif
 }
 
 template<class TCodeHeader>
@@ -11213,6 +11242,28 @@ void CEECodeGenInfo::reportRichMappings(
     }
 
     EE_TO_JIT_TRANSITION();
+}
+
+void CEECodeGenInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    m_dbgAsyncInfo = *asyncInfo;
+    m_dbgAsyncSuspensionPoints = suspensionPoints;
+    m_dbgAsyncContinuationVars = vars;
+    m_numAsyncContinuationVars = numVars;
+
+    EE_TO_JIT_TRANSITION_LEAF();
 }
 
 void CEECodeGenInfo::reportMetadata(
@@ -11477,7 +11528,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0) && (m_dbgAsyncInfo.NumSuspensionPoints == 0))
         return;
 
     if (patchpointInfo != NULL)
@@ -11487,14 +11538,6 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
 
     EX_TRY
     {
-        BOOL writeFlagByte = FALSE;
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-        writeFlagByte = TRUE;
-#endif
-        if (m_jitManager->IsStoringRichDebugInfo())
-            writeFlagByte = TRUE;
-
-
     const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
     InstrumentedILOffsetMapping loadTimeMapping;
 #ifdef FEATURE_REJIT
@@ -11522,13 +11565,13 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     }
 #endif
 
-        PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
+        PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(
             m_pOffsetMapping, m_iOffsetMapping, pILOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
             m_inlineTreeNodes, m_numInlineTreeNodes,
             m_richOffsetMappings, m_numRichOffsetMappings,
-            writeFlagByte,
+            &m_dbgAsyncInfo, m_dbgAsyncSuspensionPoints, m_dbgAsyncContinuationVars, m_numAsyncContinuationVars,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
         SetDebugInfo(pDebugInfo);
@@ -14699,35 +14742,10 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     numArgs++;
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-    // Resumption stubs are uniquely coupled to the code version (since the
-    // continuation is), so we need to make sure we always keep calling the
-    // same version here.
-    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
-    NativeCodeVersion ncv = config->GetCodeVersion();
-    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
-    {
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-        // The OSR version needs to resume in the tier0 version. The tier0
-        // version will handle setting up the frame that the OSR version
-        // expects and then delegating back into the OSR version (knowing to do
-        // so through information stored in the continuation).
-        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
-        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
-#else // !FEATURE_ON_STACK_REPLACEMENT
-        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
-#endif // FEATURE_ON_STACK_REPLACEMENT
-    }
-    else
-#endif // FEATURE_TIERED_COMPILATION
-    {
-        {
-            m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
-        }
-
-        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
-        pCode->EmitLDIND_I();
-    }
+    void* resolverMem = amTracker.Track(loaderAlloc->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(AsyncResumeILStubResolver))));
+    m_resumptionStubResolver = new (resolverMem) AsyncResumeILStubResolver();
+    pCode->EmitLDC((DWORD_PTR)m_resumptionStubResolver->GetAddrOfResumeMethodStartAddress());
+    pCode->EmitLDIND_I();
 
     pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
 
@@ -14769,12 +14787,18 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
             md->GetModule(),
             stubSig.GetRawSig(), stubSig.GetRawSigLen(),
             &emptyCtx,
-            &sl);
+            &sl,
+            FALSE, /* isAsync */
+            m_resumptionStubResolver);
 
     amTracker.SuppressRelease();
 
+    m_resumptionStubResolver->SetStubTargetMethodDesc(m_pMethodBeingCompiled);
+
     const char* optimizationTierName = "UnknownTier";
 #ifdef FEATURE_TIERED_COMPILATION
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
     switch (ncv.GetOptimizationTier())
     {
     case NativeCodeVersion::OptimizationTier0: optimizationTierName = "Tier0"; break;
@@ -14970,6 +14994,16 @@ void CEEInfo::reportRichMappings(
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

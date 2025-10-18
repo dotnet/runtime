@@ -462,6 +462,14 @@ void CodeGen::genCodeForBBlist()
 
 #endif // DEBUG
             }
+            else if (node->OperIs(GT_RECORD_ASYNC_JOIN))
+            {
+                size_t index = node->AsVal()->gtVal1;
+                assert(compiler->compSuspensionPoints != nullptr);
+                assert(index < compiler->compSuspensionPoints->size());
+
+                (*compiler->compSuspensionPoints)[index].nativeJoinLoc.CaptureLocation(GetEmitter());
+            }
 
             genCodeForTreeNode(node);
             if (node->gtHasReg(compiler) && node->IsUnusedValue())
@@ -856,7 +864,16 @@ void CodeGen::genCodeForBBlist()
         }
         compiler->compCurBB = nullptr;
 #endif // DEBUG
-    }  //------------------ END-FOR each block of the method -------------------
+
+        // We may need to generate jump trampolines for async resumption
+        // outside the main method. This ensures we have unique IPs inside our
+        // main method that Coroutine.Resume points at for each state, for
+        // diagnostic purposes.
+        if ((genAsyncResumptionTrampolineLabels != nullptr) && (block == compiler->fgLastBBInMainFunction()))
+        {
+            genCodeForAsyncResumeTrampolines();
+        }
+    } //------------------ END-FOR each block of the method -------------------
 
 #if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
@@ -882,11 +899,11 @@ void CodeGen::genCodeForBBlist()
     // This call is for cleaning the GC refs
     genUpdateLife(VarSetOps::MakeEmpty(compiler));
 
-    /* Finalize the spill  tracking logic */
+    // Finalize the spill  tracking logic
 
     regSet.rsSpillEnd();
 
-    /* Finalize the temp   tracking logic */
+    // Finalize the temp   tracking logic
 
     regSet.tmpEnd();
 
@@ -899,6 +916,49 @@ void CodeGen::genCodeForBBlist()
         printf("%s\n", compiler->info.compFullName);
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// genCodeForAsyncResumeTrampolines:
+//   Generate jumps to the async resumption stub and bind them to each label
+//   that was referenced from suspension code.
+//
+// Arguments:
+//    None
+//
+void CodeGen::genCodeForAsyncResumeTrampolines()
+{
+    if (genAsyncResumptionTrampolineLabels->size() == 0)
+    {
+        return;
+    }
+
+    GetEmitter()->emitThisGCrefVars = VarSetOps::MakeEmpty(compiler);
+    GetEmitter()->emitThisGCrefRegs = RBM_NONE;
+    GetEmitter()->emitThisByrefRegs = RBM_NONE;
+    GetEmitter()->emitNxtIG();
+    GetEmitter()->emitDisableGC();
+    // emitDisableGC still allows GC at the current IP, so we need to insert a nop.
+    instGen(INS_nop);
+
+    CORINFO_METHOD_HANDLE resumeStub = compiler->info.compCompHnd->getAsyncResumptionStub();
+    CORINFO_CONST_LOOKUP  resumeStubLookup;
+    compiler->info.compCompHnd->getFunctionEntryPoint(resumeStub, &resumeStubLookup);
+
+    for (size_t i = 0; i < genAsyncResumptionTrampolineLabels->size(); i++)
+    {
+        BasicBlock* label = (*genAsyncResumptionTrampolineLabels)[i];
+        if (label == nullptr)
+            continue;
+
+        genLogLabel(label);
+        label->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
+
+        (*compiler->compSuspensionPoints)[i].nativeResumeLoc.CaptureLocation(GetEmitter());
+        genCodeForAsyncResumeTrampolineJump(resumeStub, resumeStubLookup);
+    }
+
+    GetEmitter()->emitEnableGC();
 }
 
 /*

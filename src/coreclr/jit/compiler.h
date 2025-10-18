@@ -2397,6 +2397,13 @@ struct RichIPMapping
     DebugInfo    debugInfo;
 };
 
+struct AsyncSuspensionPoint
+{
+    emitLocation nativeJoinLoc;
+    emitLocation nativeResumeLoc;
+    unsigned numContinuationVars = 0;
+};
+
 // Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.
 // See fgNodeThreading for more information.
 enum class NodeThreading
@@ -8631,6 +8638,9 @@ public:
     jitstd::list<IPmappingDsc>  genIPmappings;
     jitstd::list<RichIPMapping> genRichIPmappings;
 
+    jitstd::vector<AsyncSuspensionPoint>*                    compSuspensionPoints = nullptr;
+    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* compAsyncVars        = nullptr;
+
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
     // that can be used by debugger to determine the native offset at which the
@@ -11696,6 +11706,7 @@ public:
             // Leaf nodes
             case GT_CATCH_ARG:
             case GT_ASYNC_CONTINUATION:
+            case GT_ASYNC_RESUME_TRAMPOLINE:
             case GT_LABEL:
             case GT_FTN_ADDR:
             case GT_RET_EXPR:
@@ -11727,6 +11738,7 @@ public:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
+            case GT_RECORD_ASYNC_JOIN:
             case GT_NOP:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:

@@ -70,7 +70,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
 // static
 MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllocator, MethodTable* pMT, DWORD dwStubFlags,
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
-                                             ILStubLinker* pStubLinker, BOOL isAsync /* = FALSE */)
+                                             ILStubLinker* pStubLinker, BOOL isAsync /* = FALSE */, ILStubResolver* pResolver /* = NULL */)
 {
     CONTRACT (MethodDesc*)
     {
@@ -88,13 +88,14 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
                                                            pSig, cbSig,
                                                            isAsync,
                                                            pTypeContext,
-                                                           &amTracker);
+                                                           &amTracker,
+                                                           pResolver);
 
     amTracker.SuppressRelease();
 
     pStubLinker->SetStubMethodDesc(pStubMD);
 
-    ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
+    pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
     pResolver->SetStubMethodDesc(pStubMD);
 
@@ -148,7 +149,7 @@ namespace
 // static
 MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTable* pMT, DWORD dwStubFlags,
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, BOOL isAsync, SigTypeContext *pTypeContext,
-                                             AllocMemTracker* pamTracker)
+                                             AllocMemTracker* pamTracker, ILStubResolver* pResolver)
 {
     CONTRACT (MethodDesc*)
     {
@@ -216,12 +217,19 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetStatic();
     }
 
-    pMD->m_pResolver = (ILStubResolver*)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(ILStubResolver))));
+    if (pResolver != NULL)
+    {
+        pMD->m_pResolver = pResolver;
+    }
+    else
+    {
+        pMD->m_pResolver = (ILStubResolver*)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(ILStubResolver))));
 #ifdef _DEBUG
-    // Poison the ILStubResolver storage
-    memset((void*)pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
+        // Poison the ILStubResolver storage
+        memset((void*)pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
 #endif // _DEBUG
-    pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
+        pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
+    }
 
     if (SF_IsArrayOpStub(dwStubFlags))
     {
