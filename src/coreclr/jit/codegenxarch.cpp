@@ -115,6 +115,13 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // these cannot be a part of any kind of return
         regGSCheck                      = REG_R8;
         regNumber regGSCheckAlternative = REG_R9;
+
+		// except for swift, where R8 can be used for returns
+		if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+		{
+			regGSCheck            = REG_R9;
+			regGSCheckAlternative = REG_R10;
+		}
 #endif
 
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg() &&
