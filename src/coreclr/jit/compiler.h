@@ -88,6 +88,7 @@ struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
+class SCC;
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -7023,6 +7024,9 @@ public:
 
     void optFindLoops();
     bool optCanonicalizeLoops();
+
+    void optFindSCCs();
+    void optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs);
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);

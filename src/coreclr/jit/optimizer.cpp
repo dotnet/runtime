@@ -2366,6 +2366,14 @@ void Compiler::optFindLoops()
     // loops by removing edges.
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
+
+    // If we saw anything unusual when finding loops,
+    // find the SCCs.
+    if (m_loops->ImproperLoopHeaders() > 0)
+    {
+        JITDUMP("Improper headers detected, finding SCCs\n");
+        optFindSCCs();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -2852,6 +2860,296 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     else
     {
         block->RemoveFlags(BBF_PROF_WEIGHT);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// optFindSCCs: Find strongly connected components.
+//
+class SCC
+{
+private:
+
+    Compiler*            m_comp;
+    BitVecTraits         m_traits;
+    BitVec               m_blocks;
+    BitVec               m_entries;
+    jitstd::vector<SCC*> m_nested;
+    unsigned             m_numIrr;
+
+public:
+
+    // Factor out traits? Parent links?
+    //
+    SCC(Compiler* comp, BasicBlock* block)
+        : m_comp(comp)
+        , m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
+        , m_blocks(BitVecOps::UninitVal())
+        , m_entries(BitVecOps::UninitVal())
+        , m_nested(comp->getAllocator(CMK_DepthFirstSearch))
+        , m_numIrr(0)
+    {
+        m_blocks  = BitVecOps::MakeEmpty(&m_traits);
+        m_entries = BitVecOps::MakeEmpty(&m_traits);
+        Add(block);
+    }
+
+    void Add(BasicBlock* block)
+    {
+        BitVecOps::AddElemD(&m_traits, m_blocks, block->bbPostorderNum);
+    }
+
+    void Finalize()
+    {
+        ComputeEntries();
+        FindNested();
+    }
+
+    void ComputeEntries()
+    {
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        while (iterator.NextElem(&poNum))
+        {
+            BasicBlock* const block = m_comp->m_dfsTree->GetPostOrder(poNum);
+
+            for (BasicBlock* pred : block->PredBlocks())
+            {
+                if (!BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
+                {
+                    BitVecOps::AddElemD(&m_traits, m_entries, block->bbPostorderNum);
+                    break;
+                }
+            }
+        }
+    }
+
+    unsigned NumEntries()
+    {
+        return BitVecOps::Count(&m_traits, m_entries);
+    }
+
+    unsigned NumBlocks()
+    {
+        return BitVecOps::Count(&m_traits, m_blocks);
+    }
+
+    BitVec InternalBlocks()
+    {
+        return BitVecOps::Diff(&m_traits, m_blocks, m_entries);
+    }
+
+    bool IsIrr()
+    {
+        return NumEntries() > 1;
+    }
+
+    unsigned NumIrr()
+    {
+        m_numIrr = IsIrr();
+
+        for (SCC* nested : m_nested)
+        {
+            m_numIrr += nested->NumIrr();
+        }
+
+        return m_numIrr;
+    }
+
+    void Dump(Compiler* comp, int indent = 0)
+    {
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        bool            first = true;
+        while (iterator.NextElem(&poNum))
+        {
+            if (first)
+            {
+                JITDUMP("%*c", indent, ' ');
+
+                if (NumEntries() > 1)
+                {
+                    JITDUMP("[irrd] ");
+                }
+                else
+                {
+                    JITDUMP("[loop] ");
+                }
+            }
+            else
+            {
+                JITDUMP(", ");
+            }
+            first = false;
+
+            BasicBlock* const block   = m_comp->m_dfsTree->GetPostOrder(poNum);
+            bool              isEntry = BitVecOps::IsMember(&m_traits, m_entries, poNum);
+            JITDUMP(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
+        }
+        JITDUMP("\n");
+
+        for (SCC* child : m_nested)
+        {
+            child->Dump(comp, indent + 3);
+        }
+    }
+
+    void FindNested()
+    {
+        ArrayStack<SCC*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
+        BitVec           nestedBlocks = InternalBlocks();
+        m_comp->optFindSCCs(nestedBlocks, m_traits, nestedSccs);
+
+        const int nNested = nestedSccs.Height();
+
+        if (nNested == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < nNested; i++)
+        {
+            SCC* const nestedScc = nestedSccs.Bottom(i);
+            m_nested.push_back(nestedScc);
+        }
+    }
+};
+
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SCC*> SCCMap;
+
+void Compiler::optFindSCCs()
+{
+    BitVecTraits traits(m_dfsTree->GetPostOrderCount(), this);
+    BitVec       allBlocks = BitVecOps::MakeFull(&traits);
+
+    ArrayStack<SCC*> sccs(getAllocator(CMK_DepthFirstSearch));
+    optFindSCCs(allBlocks, traits, sccs);
+
+    unsigned numIrreducible       = 0;
+    unsigned numNestedIrreducible = 0;
+
+    if (sccs.Height() > 0)
+    {
+        JITDUMP("\n*** SCCs\n");
+
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            SCC* const scc = sccs.Bottom(i);
+            scc->Dump(this);
+
+            numIrreducible += scc->NumIrr();
+        }
+    }
+    else
+    {
+        JITDUMP("\n*** No SCCs\n");
+    }
+
+    if (numIrreducible > 0)
+    {
+        JITDUMP("\n*** %u total Irreducible!\n", numIrreducible);
+    }
+
+    Metrics.IrreducibleLoopsFoundDuringOpts = (int)numIrreducible;
+}
+
+void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs)
+{
+    // Initially we map a block to a null entry in the map.
+    // If we then get a second block in that SCC, we allocate an SCC instance.
+    //
+    // We probably want to ignore flow through finallies (back ignore preds that are callfinally ret?)
+    //
+    SCCMap map(getAllocator(CMK_DepthFirstSearch));
+
+    auto assign = [=, &map, &sccs, &traits](auto self, BasicBlock* u, BasicBlock* root, BitVec& subset) -> void {
+        // Ignore blocks not in the subset
+        //
+        // This might be too restrictive. Consider
+        //
+        // X -> A; X -> B;
+        // A -> B; A -> C;
+        // B -> A; B -> B;
+        //
+        // We find the A,B SCC. Its non-header subset is empty.
+        //
+        // Thus we fail to find the B self loop "nested" inside.
+        //
+        // Might need to be: "ignore in-edges from outside the set, or from
+        // non-dominated edges in the set...?" So we'd ignore A->B and B->A,
+        // but not B->B.
+        //
+        // However I think we still find all nested SCCs, since those cannot
+        // share a header with the outer SCC?
+        //
+        if (!BitVecOps::IsMember(&traits, subset, u->bbPostorderNum))
+        {
+            return;
+        }
+
+        // If we've assigned u an scc, no more work needed.
+        //
+        if (map.Lookup(u))
+        {
+            return;
+        }
+
+        // Else see if there's an SCC for root
+        //
+        SCC* scc   = nullptr;
+        bool found = map.Lookup(root, &scc);
+
+        if (found)
+        {
+            assert(u != root);
+
+            if (scc == nullptr)
+            {
+                scc = new (this, CMK_DepthFirstSearch) SCC(this, root);
+                map.Set(root, scc, SCCMap::SetKind::Overwrite);
+                sccs.Push(scc);
+            }
+
+            scc->Add(u);
+        }
+
+        // Indicate we've visited u
+        //
+        map.Set(u, scc);
+
+        // Walk u's preds looking for more SCC members
+        //
+        for (BasicBlock* p : u->PredBlocks())
+        {
+            if (p->KindIs(BBJ_CALLFINALLYRET))
+            {
+                // Should we find the matching callfinally
+                // and walk back from there? Should just
+                // be our bbpred, right?
+                //
+                continue;
+            }
+
+            self(self, p, root, subset);
+        }
+    };
+
+    // proper rdfs here? Seems like recursion might be bad
+    //
+    for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
+    {
+        unsigned          rpoNum = m_dfsTree->GetPostOrderCount() - i - 1;
+        BasicBlock* const block  = m_dfsTree->GetPostOrder(rpoNum);
+        assign(assign, block, block, subset);
+    }
+
+    if (sccs.Height() > 0)
+    {
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            SCC* const scc = sccs.Bottom(i);
+            scc->Finalize();
+        }
     }
 }
 
