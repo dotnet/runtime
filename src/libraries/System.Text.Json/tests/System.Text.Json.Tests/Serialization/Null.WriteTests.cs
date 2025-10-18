@@ -141,6 +141,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.StackT = null;
             obj.QueueT = null;
             obj.HashSetT = null;
+            obj.IReadOnlySetT = null;
             obj.LinkedListT = null;
             obj.SortedSetT = null;
             obj.NullableInt = null;
@@ -159,6 +160,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(@"""StackT"":null", json);
             Assert.Contains(@"""QueueT"":null", json);
             Assert.Contains(@"""HashSetT"":null", json);
+            Assert.Contains(@"""IReadOnlySetT"":null", json);
             Assert.Contains(@"""LinkedListT"":null", json);
             Assert.Contains(@"""SortedSetT"":null", json);
             Assert.Contains(@"""NullableInt"":null", json);
