@@ -133,6 +133,7 @@ public static partial class ZipFile
     ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
     /// </param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, cancellationToken);
 
@@ -231,6 +232,7 @@ public static partial class ZipFile
     /// -or-
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, cancellationToken);
 
@@ -262,6 +264,7 @@ public static partial class ZipFile
     /// -or-
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, cancellationToken);
 
@@ -301,6 +304,7 @@ public static partial class ZipFile
     /// -or-
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, cancellationToken);
 
@@ -341,6 +345,7 @@ public static partial class ZipFile
     /// -or-
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
     public static async Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
