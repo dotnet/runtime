@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -856,6 +857,73 @@ namespace DispatchProxyTests
             Assert.True((bool)method.Invoke(null, null));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Verify_Correct_Interface_Using_Cached_ALCs(bool collectable)
+        {
+            var asmBytes = EmitITestInterface();
+
+            // Write the compiled assembly to a temporary file
+            var tempAssemblyPath = Path.Combine(Path.GetTempPath(), $"SharedInterface_{Guid.NewGuid():N}.dll");
+            File.WriteAllBytes(tempAssemblyPath, asmBytes);
+
+            var alc1 = new AssemblyLoadContext("alc1", collectable);
+            var alc2 = new AssemblyLoadContext("alc2", collectable);
+
+            try
+            {
+                var a1 = alc1.LoadFromAssemblyPath(tempAssemblyPath);
+                var a2 = alc2.LoadFromAssemblyPath(tempAssemblyPath);
+
+                var interface1 = a1.GetType("Shared.ITest") ?? throw new Exception("interface1 not found");
+                var interface2 = a2.GetType("Shared.ITest") ?? throw new Exception("interface2 not found");
+
+                Assert.NotEqual(interface1, interface2); // types from different ALCs must not be equal
+
+                // 1) Create a proxy for interface1. This populates DispatchProxy's internal cache.
+                var proxy1 = DispatchProxy.Create(interface1, typeof(ForwardingDispatchProxy));
+                Assert.NotNull(proxy1);
+
+                // 2) Now create a proxy for interface2 WITHOUT entering contextual reflection.
+                // According to the bug, this can produce a proxy that implements interface1
+                // (from the other ALC) rather than interface2.
+                var proxy2 = DispatchProxy.Create(interface2, typeof(ForwardingDispatchProxy));
+                Assert.NotNull(proxy2);
+
+                // Collect interfaces implemented by proxy2's runtime type.
+                var implemented = proxy2.GetType().GetInterfaces();
+
+                // Assert: proxy should not be castable across ALC boundaries
+                Assert.Throws<InvalidCastException>(() =>
+                {
+                    var _ = Convert.ChangeType(proxy1, interface2);
+                });
+
+                // We expect the created proxy to implement interface2. On affected runtimes it will
+                // implement interface1 instead and this assertion will fail.
+                Assert.Contains(interface2, implemented);
+
+                // For additional clarity, make the negative assertion that it should not be the other.
+                Assert.DoesNotContain(interface1, implemented.Where(t => t.Assembly == interface1.Assembly && t.FullName == interface1.FullName));
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempAssemblyPath))
+                        File.Delete(tempAssemblyPath);
+
+                    if (collectable)
+                    {
+                        alc1.Unload();
+                        alc2.Unload();
+                    }
+                }
+                catch { }
+            }
+        }
+
         internal static bool Demo()
         {
             TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, InternalInvokeProxy>();
@@ -871,6 +939,51 @@ namespace DispatchProxyTests
             }
 
             return (TInterface)DispatchProxy.Create(typeof(TInterface), typeof(TProxy));
+        }
+
+        // Compile a small assembly in-memory that contains a single public interface Shared.ITest
+        // with two abstract methods: void DoSomething() and int GetValue()
+        private static byte[] EmitITestInterface()
+        {
+            // Define a new assembly
+            var assemblyName = new AssemblyName("SharedInterfaceAssembly");
+            var pab = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+
+            // Define a dynamic module
+            var moduleBuilder = pab.DefineDynamicModule("MainModule");
+
+            // Define public interface Shared.ITest
+            var tb = moduleBuilder.DefineType("Shared.ITest", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+
+            // Add methods
+            tb.DefineMethod("DoSomething", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+            tb.DefineMethod("GetValue", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes);
+
+            // Finalize the interface
+            tb.CreateType();
+
+            // Save into memory as a portable executable (DLL)
+            using var peStream = new MemoryStream();
+            pab.Save(peStream);
+            return peStream.ToArray();
+        }
+
+        // ForwardingDispatchProxy is a custom proxy base for our tests.
+        public class ForwardingDispatchProxy : DispatchProxy
+        {
+            protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+            {
+                if (targetMethod == null)
+                    throw new ArgumentNullException(nameof(targetMethod));
+
+                if (targetMethod.ReturnType == typeof(void))
+                    return null!;
+
+                if (targetMethod.ReturnType.IsValueType)
+                    return Activator.CreateInstance(targetMethod.ReturnType)!;
+
+                return null;
+            }
         }
     }
 }
