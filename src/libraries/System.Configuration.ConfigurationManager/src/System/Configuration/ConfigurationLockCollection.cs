@@ -219,12 +219,7 @@ namespace System.Configuration
             }
 
             string parentListEnclosed = "," + _seedList + ",";
-            if (name.Equals(_ignoreName) ||
-#if NET
-                parentListEnclosed.Contains("," + name + ",", StringComparison.Ordinal))
-#else
-                parentListEnclosed.IndexOf("," + name + ",", StringComparison.Ordinal) >= 0)
-#endif
+            if (name.Equals(_ignoreName) || parentListEnclosed.Contains("," + name + ",", StringComparison.Ordinal))
                 return true;
             return _internalDictionary.Contains(name) &&
                 (((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Inherited) != 0);
