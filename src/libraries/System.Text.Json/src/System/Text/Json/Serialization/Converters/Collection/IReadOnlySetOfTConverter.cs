@@ -11,8 +11,6 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IReadOnlySet<TElement>
     {
-        internal override bool CanPopulate => false;
-
         protected override void Add(in TElement value, ref ReadStack state)
         {
             // Directly convert to HashSet<TElement> since IReadOnlySet<T> does not have an Add method.
