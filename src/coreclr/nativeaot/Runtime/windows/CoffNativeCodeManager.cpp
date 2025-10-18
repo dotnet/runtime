@@ -831,6 +831,55 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return true;
 }
 
+#if defined(TARGET_ARM64)
+bool CoffNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
+                                         REGDISPLAY *    pRegisterSet)
+{
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+
+    size_t unwindDataBlobSize;
+
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+
+    PTR_uint8_t UnwindCodePtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob);
+    PTR_uint8_t UnwindCodesEndPtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
+
+     while (UnwindCodePtr < UnwindCodesEndPtr)
+    {
+        uint8_t CurCode = * UnwindCodePtr;
+        if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
+        {
+            break;
+        }
+
+        if (CurCode == 0xFC) // Unwind code for PAC (pac_sign_lr)
+        {
+            return true;
+        }
+
+        if (CurCode < 0xC0)
+        {
+            UnwindCodePtr += 1;
+        }
+        else if (CurCode < 0xE0)
+        {
+            UnwindCodePtr += 2;
+        }
+        else
+        {
+            static const BYTE UnwindCodeSizeTable[32] =
+            {
+                4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1
+            };
+
+            UnwindCodePtr += UnwindCodeSizeTable[CurCode - 0xE0];
+        }
+    }
+
+    return false;
+}
+#endif //TARGET_ARM64
+
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
                                                 PTR_PTR_VOID *  ppvRetAddrLocation) // out
