@@ -130,23 +130,6 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithWritableFieldNullableStructSetOfInt))]
     [JsonSerializable(typeof(StructWithWritableFieldNullableStructSetOfIntWithAttributeOnType))]
     [JsonSerializable(typeof(StructWithWritableFieldNullableStructSetOfIntWithoutPopulateAttribute))]
-
-    // Only modern .NET (> 5.0) supports IReadOnlySet<T>.
-#if NET
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfInt))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithAttributeOnType))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandling))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithAttributeOnType))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfInt))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithAttributeOnType))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithoutPopulateAttribute))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandling))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithAttributeOnType))]
-    [JsonSerializable(typeof(ClassWithReadOnlyPropertyIReadOnlySetOfInt_BackedBy_StructReadOnlySetOfIntWithNumberHandlingWithoutPopulateAttribute))]
-#endif
-
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyDictionaryOfStringToInt))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyDictionaryOfStringToIntWithAttributeOnType))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyDictionaryOfStringToIntWithoutPopulateAttribute))]
