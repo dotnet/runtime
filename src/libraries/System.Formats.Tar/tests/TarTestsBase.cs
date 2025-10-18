@@ -155,7 +155,6 @@ namespace System.Formats.Tar.Tests
 
         private static readonly string[] NodeTarTestCaseNames = new[]
         {
-            "bad-cksum",
             "body-byte-counts",
             "dir",
             "emptypax",

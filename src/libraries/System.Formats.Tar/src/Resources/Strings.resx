@@ -190,6 +190,9 @@
   <data name="TarInvalidNumber" xml:space="preserve">
     <value>Unable to parse number.</value>
   </data>
+  <data name="TarInvalidChecksum" xml:space="preserve">
+    <value>Checksum validation failed. The archive might be corrupted.</value>
+  </data>
   <data name="TarEntryFieldExceedsMaxLength" xml:space="preserve">
     <value>The field '{0}' exceeds the maximum allowed length for this format.</value>
   </data>
