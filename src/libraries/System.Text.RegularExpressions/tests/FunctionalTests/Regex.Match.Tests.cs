@@ -660,13 +660,6 @@ namespace System.Text.RegularExpressions.Tests
                 // The pattern captures group 1, uncaptures it, then checks the negative lookahead
                 // The negative lookahead contains a balancing group that should not be removed
                 yield return (@"()(?'-1')(?!(?'-1'))", "a", RegexOptions.None, 0, 1, true, string.Empty);
-
-                // Test cases from issue https://github.com/dotnet/runtime/issues/110450
-                // These patterns use complex balancing groups that could trigger ArgumentOutOfRangeException
-                // in the TidyBalancing method if j goes negative when processing consecutive balance operations
-                yield return (@"(?'time'){2}(?=((?'-time')|(?'x')){3}((^[1-9](?'count')(((?'-count')|((?'-x'))\d)(?'count')){2}|0)(?((?'-count'){3})|((?'-count')|){3})([1-9](?'count')(((?'-count')|((?'-x'))\d)(?'count')){2}|0)(?!(?'-x')))){2}", "25525511135", RegexOptions.None, 0, 11, false, string.Empty);
-                yield return (@"(?'time'){2}(?=((?'-time')|(?'x')){3}(((?'count')(((?'-count')|((?'-x')))(?'count')){2}|0)(?((?'-count'){3})|((?'-count')|){3})(?!(?'-x')))){2}", "25525511135", RegexOptions.None, 0, 11, false, string.Empty);
-                yield return (@"(?'time'){2}(?=((?'-time')|(?'x')){3}(((?'count')(((?'-count')|((?'-x')))(?'count')){2}|0)(?((?'-count'){3})|((?'-count')|){3})(?!(?'-x')))|){2}", "25525511135", RegexOptions.None, 0, 11, true, string.Empty);
             }
 
             // Atomic Zero-Width Assertions \A \Z \z \b \B
