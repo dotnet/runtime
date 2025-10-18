@@ -33,7 +33,7 @@ set(NATIVECRYPTO_SOURCES
 
 add_library(System.Security.Cryptography.Native.Android
     SHARED
-    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c
+    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c pal_trust_manager_jni_export.c
     ${VERSION_FILE_PATH}
 )
 
@@ -42,7 +42,24 @@ add_library(System.Security.Cryptography.Native.Android-Static
     ${NATIVECRYPTO_SOURCES}
 )
 
-set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Android CLEAN_DIRECT_OUTPUT 1)
+#
+# This is necessary so that dynamic linking of the .NET for Android runtime
+# can hide all the other symbols in System.Security.Cryptography.Native.Android.
+#
+# .NET for Android dynamic runtime linking links all the relevant native BCL
+# libraries into a single .so, using the .a archives built here.  clang allows
+# hiding all the symbols in the .a archive, but there's no (working) way to
+# exclude just select symbols from hiding.
+#
+# Java VM requires that all the functions implementing the `native` methods are
+# exported from the shared libraries they are implemented in.  Therefore it is
+# necessary to put this symbol in a separate .a archive so that we can exclude it
+# from hiding described above.
+#
+add_library(System.Security.Cryptography.Native.Android.JNIExport-Static
+    STATIC
+    pal_trust_manager_jni_export.c
+)
 
 target_link_libraries(System.Security.Cryptography.Native.Android
     PRIVATE
@@ -50,14 +67,17 @@ target_link_libraries(System.Security.Cryptography.Native.Android
 )
 
 set_target_properties(System.Security.Cryptography.Native.Android PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
-set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
+set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android" CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Security.Cryptography.Native.Android.JNIExport-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android.JNIExport"  CLEAN_DIRECT_OUTPUT 1)
 
 if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
 endif()
 
 install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+install (TARGETS System.Security.Cryptography.Native.Android.JNIExport-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
 if(CLR_CMAKE_HOST_ANDROID)
     install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION sharedFramework COMPONENT runtime)
+    install (TARGETS System.Security.Cryptography.Native.Android.JNIExport-Static DESTINATION sharedFramework COMPONENT runtime)
 endif()
