@@ -29101,6 +29101,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_AndMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
+        case NI_Sve_And:
 #endif
         {
             return GT_AND;
@@ -29110,6 +29111,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_NotMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Not:
+        case NI_Sve_Not:
 #endif
         {
             return GT_NOT;
@@ -29123,6 +29125,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_XorMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
+        case NI_Sve_Xor:
 #endif
         {
             return GT_XOR;
@@ -29136,6 +29139,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_OrMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Or:
+        case NI_Sve_Or:
 #endif
         {
             return GT_OR;
@@ -29149,6 +29153,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_AndNotMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseClear:
+        case NI_Sve_BitwiseClear:
 #endif
         {
             return GT_AND_NOT;
@@ -29162,6 +29167,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Add:
         case NI_AdvSimd_Arm64_Add:
+        case NI_Sve_Add:
 #endif
         {
             return GT_ADD;
@@ -29193,6 +29199,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_Divide:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Arm64_Divide:
+        case NI_Sve_Divide:
 #endif
         {
             return GT_DIV;
@@ -29226,6 +29233,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Multiply:
         case NI_AdvSimd_Arm64_Multiply:
+        case NI_Sve_Multiply:
 #endif
         {
             return GT_MUL;
@@ -29266,6 +29274,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #if defined(TARGET_ARM64)
         case NI_AdvSimd_Negate:
         case NI_AdvSimd_Arm64_Negate:
+        case NI_Sve_Negate:
         {
             return GT_NEG;
         }
@@ -29303,6 +29312,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_ShiftLeftLogicalVariable:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftLeftLogical:
+        case NI_Sve_ShiftLeftLogical:
 #endif
         {
             return GT_LSH;
@@ -29327,6 +29337,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_ShiftRightArithmeticVariable:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftRightArithmetic:
+        case NI_Sve_ShiftRightArithmetic:
 #endif
         {
             return GT_RSH;
@@ -29351,6 +29362,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_ShiftRightLogicalVariable:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftRightLogical:
+        case NI_Sve_ShiftRightLogical:
 #endif
         {
             return GT_RSZ;
@@ -29375,6 +29387,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Subtract:
         case NI_AdvSimd_Arm64_Subtract:
+        case NI_Sve_Subtract:
 #endif
         {
             return GT_SUB;
@@ -31962,11 +31975,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+#ifdef TARGET_XARCH
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
 
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-#ifdef TARGET_XARCH
     if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
         // Comparisons that produce masks lead to more verbose trees than
@@ -32650,9 +32663,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
                 else
                 {
-#if defined(TARGET_XARCH)
                     if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
                     {
+#if defined(TARGET_XARCH)
                         if (otherNode->TypeIs(TYP_SIMD16))
                         {
                             if (!HWIntrinsicInfo::IsVariableShift(ni))
@@ -32676,8 +32689,23 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                                 otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
                             }
                         }
-                    }
+#elif defined(TARGET_ARM64)
+                        CorInfoType auxJitType = tree->GetAuxiliaryJitType();
+                        if (auxJitType != CORINFO_TYPE_UNDEF &&
+                            genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(simdBaseType))
+                        {
+                            // Handle the "wide elements" variant of shift, where otherNode is a vector of ulongs,
+                            // which is looped over to read the shift values. The values can safely be narrowed
+                            // to the result type.
+                            assert(auxJitType == CORINFO_TYPE_ULONG);
+                            assert(tree->TypeIs(TYP_SIMD16));
+
+                            simd16_t result = {};
+                            NarrowSimdLong<simd16_t>(simdBaseType, &result, otherNode->AsVecCon()->gtSimd16Val);
+                            otherNode->AsVecCon()->gtSimd16Val = result;
+                        }
 #endif // TARGET_XARCH
+                    }
 
                     if (otherNode->IsIntegralConst())
                     {
