@@ -139,7 +139,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (index >= this.Count)
+                    if ((uint)index >= (uint)this.Count)
                     {
                         ThrowIndexOutOfRangeException();
                     }
@@ -149,7 +149,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    if (index >= this.Count)
+                    if ((uint)index >= (uint)this.Count)
                     {
                         ThrowIndexOutOfRangeException();
                     }
@@ -167,7 +167,7 @@ namespace System.Collections.Immutable
             /// </exception>
             public ref readonly T ItemRef(int index)
             {
-                if (index >= this.Count)
+                if ((uint)index >= (uint)this.Count)
                 {
                     ThrowIndexOutOfRangeException();
                 }
