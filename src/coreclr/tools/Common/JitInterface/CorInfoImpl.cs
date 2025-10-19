@@ -3358,33 +3358,19 @@ namespace Internal.JitInterface
 
         private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            DefType continuation = MethodBeingCompiled.Context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
-            // 'Next' field
-            pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetField("Next"u8));
-            // 'Resume' field
-            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetField("Resume"u8));
-            // 'State' field
-            pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetField("State"u8));
-            // 'Flags' field
-            pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetField("Flags"u8));
-            // 'Data' field
-            pAsyncInfoOut.continuationDataFldHnd = ObjectToHandle(continuation.GetField("Data"u8));
-            // 'GCData' field
-            pAsyncInfoOut.continuationGCDataFldHnd = ObjectToHandle(continuation.GetField("GCData"u8));
-            // Whether or not the continuation needs to be allocated through the
-            // helper that also takes a method handle
-            pAsyncInfoOut.continuationsNeedMethodHandle = false;
-            DefType asyncHelpers = MethodBeingCompiled.Context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-            DefType executionContext = MethodBeingCompiled.Context.SystemModule.GetType("System.Threading"u8, "ExecutionContext"u8);
-            DefType @void = MethodBeingCompiled.Context.GetWellKnownType(WellKnownType.Void);
-            // Method handle for AsyncHelpers.CaptureExecutionContext
-            pAsyncInfoOut.captureExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetMethod("CaptureExecutionContext"u8, null));
-            // Method handle for AsyncHelpers.RestoreExecutionContext
-            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetMethod("RestoreExecutionContext"u8, null));
-            pAsyncInfoOut.captureContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetMethod("CaptureContinuationContext"u8, null));
-            pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetMethod("CaptureContexts"u8, null));
-            pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetMethod("RestoreContexts"u8, null));
+            pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
+            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetKnownField("Resume"u8));
+            pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetKnownField("State"u8));
+            pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
+            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            DefType executionContext = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Threading"u8, "ExecutionContext"u8);
+            pAsyncInfoOut.captureExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null));
+            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null));
+            pAsyncInfoOut.captureContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null));
+            pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null));
+            pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null));
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
