@@ -916,13 +916,15 @@ namespace System.Reflection.Emit.Tests
             mainMethod.SetReturnType(typeof(int));
             ILGenerator il = mainMethod.GetILGenerator();
             il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field1"));
-            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field2"));
-            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field3"));
-            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field4"));
             il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Pop);
-            il.Emit(OpCodes.Pop);
+            // References to fields with unmanaged calling convention are broken
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/111003")]
+            // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field2"));
+            // il.Emit(OpCodes.Pop);
+            // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field3"));
+            // il.Emit(OpCodes.Pop);
+            // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field4"));
+            // il.Emit(OpCodes.Pop);
             il.Emit(OpCodes.Call, assembly1FromDisk.GetType("Container").GetMethod("Init"));
             il.Emit(OpCodes.Ldc_I4_2);
             il.Emit(OpCodes.Ldc_I4_3);
