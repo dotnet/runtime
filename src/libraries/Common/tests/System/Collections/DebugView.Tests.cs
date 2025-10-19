@@ -21,6 +21,7 @@ namespace System.Collections.Tests
             yield return new object[] { new ReadOnlyDictionary<int, string>(new Dictionary<int, string>()), new KeyValuePair<string, string>[0] };
             yield return new object[] { new SortedDictionary<string, int>(), new KeyValuePair<string, string>[0] };
             yield return new object[] { new SortedList<int, string>(), new KeyValuePair<string, string>[0] };
+            yield return new object[] { new OrderedDictionary<int, string>(), new KeyValuePair<string, string>[0] };
 
             yield return new object[] { new Dictionary<int, string>{{1, "One"}, {2, "Two"}},
                 new KeyValuePair<string, string>[]
@@ -67,6 +68,14 @@ namespace System.Collections.Tests
                 {
                     new ("[1]", "\"One\""),
                     new ("[2]", "\"Two\""),
+                }
+            };
+
+            yield return new object[] { new OrderedDictionary<int, string>{{1, "One"}, {2, "Two"}},
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[0/1]", "\"One\""),
+                    new ("[1/2]", "\"Two\""),
                 }
             };
         }
