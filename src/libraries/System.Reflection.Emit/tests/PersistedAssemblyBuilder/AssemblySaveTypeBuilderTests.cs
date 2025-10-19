@@ -927,7 +927,7 @@ namespace System.Reflection.Emit.Tests
             il.Emit(OpCodes.Ldc_I4_2);
             il.Emit(OpCodes.Ldc_I4_3);
             il.Emit(OpCodes.Ldsfld, assembly1FromDisk.GetType("Container").GetField("Method"));
-            il.EmitCalli(OpCodes.Calli, CallingConvention.Winapi, typeof(int), [typeof(int), typeof(int)]);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), [typeof(int), typeof(int)]);
             il.Emit(OpCodes.Ret);
             programType.CreateType();
             assembly2.Save(assembly2Path.Path);
