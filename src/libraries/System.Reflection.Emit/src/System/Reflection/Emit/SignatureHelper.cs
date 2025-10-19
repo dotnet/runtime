@@ -244,7 +244,7 @@ namespace System.Reflection.Emit
 
             if (type.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length > 0)
             {
-                if (conventions.Length == 1)
+                if (conventions.Length == 1 && callConv == SignatureCallingConvention.Unmanaged)
                 {
                     switch (conventions[0].FullName)
                     {
