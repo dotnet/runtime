@@ -2783,21 +2783,10 @@ namespace System.Text.RegularExpressions.Generator
                 // technically backtracking, it's appropriate to have a timeout check.
                 EmitTimeoutCheckIfNeeded(writer, rm);
 
-                // Save the current done label. Lookarounds are atomic, so we need to ensure that any backtracking
-                // labels set by the child don't leak out to subsequent code.
-                string originalDoneLabel = doneLabel;
-
                 // Emit the child.
-                RegexNode child = node.Child(0);
-                if (rm.Analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookaround.
@@ -2805,9 +2794,6 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
-
-                // Restore the done label to prevent backtracking labels from the lookaround's child from leaking out.
-                doneLabel = originalDoneLabel;
             }
 
             // Emits the code to handle a negative lookaround assertion. This is a negative lookahead
@@ -2867,20 +2853,10 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
 
-                // Save the current done label. Lookarounds are atomic, so we need to ensure that any backtracking
-                // labels set by the child don't leak out to subsequent code.
-                string savedDoneLabel = doneLabel;
-
                 // Emit the child.
-                if (rm.Analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
@@ -2901,9 +2877,6 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
-
-                // Restore the done label to prevent backtracking labels from the lookaround's child from leaking out.
-                doneLabel = savedDoneLabel;
 
                 // And uncapture anything if necessary. Negative lookaround captures don't persist beyond the lookaround.
                 if (hasCaptures)
@@ -3020,9 +2993,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // For everything else, put the node's code into its own scope, purely for readability. If the node contains labels
                 // that may need to be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                // Lazy loop nodes with M != N always create internal backtracking labels that need to be accessible from subsequent code,
-                // so they should use faux braces even if they're atomic by ancestor.
-                using (EmitBlock(writer, null, faux: rm.Analysis.MayBacktrack(node) || ((node.Kind is RegexNodeKind.Lazyloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy) && node.M != node.N)))
+                using (EmitBlock(writer, null, faux: rm.Analysis.MayBacktrack(node)))
                 {
                     switch (node.Kind)
                     {
@@ -3100,7 +3071,8 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
-                Debug.Assert(rm.Analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
+                // Note: Lookarounds always use EmitAtomic for isolation even if their child doesn't backtrack
+                Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround || rm.Analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
 
                 // Grab the current done label and the current backtracking position.  The purpose of the atomic node
                 // is to ensure that nodes after it that might backtrack skip over the atomic, which means after
