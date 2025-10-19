@@ -94,7 +94,7 @@ namespace System.Speech.Internal.Synthesis
                 // Fake a header for ALaw and ULaw
                 if (!string.IsNullOrEmpty(audio._mimeType))
                 {
-                    WAVEFORMATEX wfx = new();
+                    WAVEFORMATEX wfx = default;
 
                     wfx.nChannels = 1;
                     wfx.nSamplesPerSec = 8000;
@@ -164,7 +164,7 @@ namespace System.Speech.Internal.Synthesis
                         {
                             while (true)
                             {
-                                DATAHDR dataHdr = new();
+                                DATAHDR dataHdr = default;
 
                                 // check for the end of file (+8 for the 2 DWORD)
                                 if (audio._stream.Position + 8 >= audio._stream.Length)
@@ -208,7 +208,7 @@ namespace System.Speech.Internal.Synthesis
         internal static byte[] GetWaveFormat(BinaryReader br)
         {
             // Read the riff Header
-            RIFFHDR riff = new();
+            RIFFHDR riff = default;
 
             riff._id = br.ReadUInt32();
             riff._len = br.ReadInt32();
@@ -219,7 +219,7 @@ namespace System.Speech.Internal.Synthesis
                 return null;
             }
 
-            BLOCKHDR block = new();
+            BLOCKHDR block = default;
             block._id = br.ReadUInt32();
             block._len = br.ReadInt32();
 
@@ -392,7 +392,7 @@ namespace System.Speech.Internal.Synthesis
         {
             GCHandle gc = GCHandle.Alloc(waveHeader, GCHandleType.Pinned);
             IntPtr ptr = gc.AddrOfPinnedObject();
-            WAVEFORMATEX wfx = new();
+            WAVEFORMATEX wfx = default;
             wfx.wFormatTag = Marshal.ReadInt16(ptr);
             wfx.nChannels = Marshal.ReadInt16(ptr, 2);
             wfx.nSamplesPerSec = Marshal.ReadInt32(ptr, 4);
@@ -444,7 +444,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                WAVEFORMATEX wfx = new();
+                WAVEFORMATEX wfx = default;
                 wfx.wFormatTag = 1;
                 wfx.nChannels = 1;
                 wfx.nSamplesPerSec = 22050;

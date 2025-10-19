@@ -309,7 +309,7 @@ namespace System.Speech.Internal.Synthesis
         internal static Interop.WinMM.MMSYSERR GetDeviceName(int deviceId, [MarshalAs(UnmanagedType.LPWStr)] out string prodName)
         {
             prodName = string.Empty;
-            Interop.WinMM.WAVEOUTCAPS caps = new();
+            Interop.WinMM.WAVEOUTCAPS caps = default;
 
             Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf<Interop.WinMM.WAVEOUTCAPS>());
             if (result != Interop.WinMM.MMSYSERR.NOERROR)

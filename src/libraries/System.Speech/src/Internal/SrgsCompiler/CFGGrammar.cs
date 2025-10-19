@@ -248,7 +248,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //  Because in 64-bit code, pointers != sizeof(ULONG) we copy each member explicitly.
             //
 
-            CfgHeader header = new();
+            CfgHeader header = default;
             header.FormatId = cfgSerializedHeader.FormatId;
             header.GrammarGUID = cfgSerializedHeader.GrammarGUID;
             header.langId = cfgSerializedHeader.LangID;
