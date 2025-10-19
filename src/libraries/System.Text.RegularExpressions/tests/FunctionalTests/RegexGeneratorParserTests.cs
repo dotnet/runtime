@@ -1233,5 +1233,30 @@ namespace System.Text.RegularExpressions.Tests
                 return handle.Process.StandardOutput.ReadToEnd();
             }
         }
+
+        [Fact]
+        public async Task LazyLoopInLookbehind_GeneratesValidCode()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/XXXXX
+            // Lazy loops inside lookbehinds should generate valid code with accessible backtracking labels
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+
+                partial class C
+                {
+                    [GeneratedRegex(@""(?<=(abc)+?123)a"")]
+                    public static partial Regex LazyLoopInLookbehind1();
+
+                    [GeneratedRegex(@""xxx(?<=(abc)+?123)a"")]
+                    public static partial Regex LazyLoopInLookbehind2();
+
+                    [GeneratedRegex(@""(?<=(abc)+?123)"")]
+                    public static partial Regex LazyLoopInLookbehind3();
+
+                    [GeneratedRegex(@""(?<=(abc)+?)a"")]
+                    public static partial Regex LazyLoopInLookbehind4();
+                }
+            ", compile: true));
+        }
     }
 }

@@ -3006,7 +3006,9 @@ namespace System.Text.RegularExpressions.Generator
 
                 // For everything else, put the node's code into its own scope, purely for readability. If the node contains labels
                 // that may need to be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using (EmitBlock(writer, null, faux: rm.Analysis.MayBacktrack(node)))
+                // Lazyloop nodes with M != N always create internal backtracking labels that need to be accessible from subsequent code,
+                // so they should use faux braces even if they're atomic by ancestor.
+                using (EmitBlock(writer, null, faux: rm.Analysis.MayBacktrack(node) || (node.Kind is RegexNodeKind.Lazyloop && node.M != node.N)))
                 {
                     switch (node.Kind)
                     {
