@@ -1312,13 +1312,10 @@ RefCopyLoop16$argReg
 CopyBy8$argReg
         cmp x11, #8
         blt RefCopyLoop1$argReg
-RefCopyLoop8$argReg
         ldr x13, [$argReg], #8
         str x13, [x9], #8
         subs x11, x11, #8
-        bgt RefCopyLoop8$argReg
         beq RefCopyDone$argReg
-        add x11, x11, #8
 RefCopyLoop1$argReg
         ldrb w13, [$argReg], #1
         strb w13, [x9], #1

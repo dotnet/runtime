@@ -961,13 +961,10 @@ LOCAL_LABEL(RefCopyLoop16\argReg):
 LOCAL_LABEL(CopyBy8\argReg):
     cmp x11, #8
     blt LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyLoop8\argReg):
     ldr x13, [\argReg], #8
     str x13, [x9], #8
     subs x11, x11, #8
-    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
     beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #8
 LOCAL_LABEL(RefCopyLoop1\argReg):
     ldrb w13, [\argReg], #1
     strb w13, [x9], #1
