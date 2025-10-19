@@ -758,19 +758,29 @@ bool emitter::DoesWriteSignFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// DoesResetOverflowAndCarryFlags: check if the instruction resets the
-//     OF and CF flag to 0.
+// DoesModifySameFlagsAsTESTInst: check if the instruction modifies
+//    the same flags as a "TEST" instruction, which allows some optims
 //
 // Arguments:
 //    ins - instruction to test
 //
 // Return Value:
-//    true if instruction resets the OF and CF flag, false otherwise.
+//    true if instruction modifies the same flags as "TEST" instruction
 //
-bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
+// Note:
+//    "TEST" instruction:
+//    - Resets OF and CF flags to zero
+//    - Sets SF, ZF, PF flags from the result
+//    - Leaves AF undefined
+//
+bool emitter::DoesModifySameFlagsAsTESTInst(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
+    return (flags & (Resets_OF | Writes_OF)) != 0 &&
+           (flags & (Resets_CF | Writes_CF)) != 0 &&
+           (flags & (Resets_SF | Writes_SF)) != 0 &&
+           (flags & (Resets_ZF | Writes_ZF)) != 0 &&
+           (flags & (Resets_PF | Writes_PF)) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -1457,9 +1467,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
-    // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlag(lastIns) &&
-        DoesWriteParityFlag(lastIns))
+    if (DoesModifySameFlagsAsTESTInst(lastIns))
     {
         return id->idOpSize() == opSize;
     }
