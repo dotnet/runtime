@@ -5399,9 +5399,13 @@ namespace System.Text.RegularExpressions
 
                 // If we also have a fixed-length trailing anchor, we can skip TryFindNextPossibleStartingPosition entirely
                 // and just validate the exact length in TryMatchAtCurrentPosition.
+                // Note: TrailingAnchor is only set in RegexFindOptimizations when there's no leading anchor, so we need to check for it ourselves.
+                RegexNodeKind trailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
+                int? maxLength = root.ComputeMaxLength();
                 bool hasFixedLengthTrailingAnchor =
-                    _regexTree.FindOptimizations.TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
-                    _regexTree.FindOptimizations.MinRequiredLength == _regexTree.FindOptimizations.MaxPossibleLength;
+                    !rtl &&
+                    trailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
+                    maxLength == _regexTree.FindOptimizations.MinRequiredLength;
 
                 if (hasFixedLengthTrailingAnchor)
                 {

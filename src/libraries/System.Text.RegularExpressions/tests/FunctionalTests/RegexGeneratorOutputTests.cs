@@ -1186,12 +1186,36 @@ namespace System.Text.RegularExpressions.Tests
                 """;
 
             string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
-            
+
             // The pattern should escape newline as Unicode escape sequence to avoid breaking XML comments
             Assert.Contains("/// <code>\\u000A</code><br/>", actual);
-            
+
             // The actual pattern string should properly escape the newline for C#
             Assert.Contains("base.pattern = \"\\n\";", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Both_Anchors_And_Fixed_Length_Should_Not_Emit_TryFindNextPossibleStartingPosition()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"^1234$")]
+                    public static partial Regex FixedLengthWithBothAnchors();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+
+            // The optimization should skip TryFindNextPossibleStartingPosition entirely
+            Assert.DoesNotContain("private bool TryFindNextPossibleStartingPosition", actual);
+
+            // But should still have TryMatchAtCurrentPosition
+            Assert.Contains("private bool TryMatchAtCurrentPosition", actual);
+
+            // Scan should call TryMatchAtCurrentPosition directly
+            Assert.Contains("if (!TryMatchAtCurrentPosition(inputSpan))", actual);
         }
     }
 }
