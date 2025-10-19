@@ -905,15 +905,56 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
-                _r.ReadStartElement();
-                _r.MoveToContent();
-                if (_r.NodeType != XmlNodeType.EndElement)
-                    node = Document.ReadNode(_r);
-                while (_r.NodeType != XmlNodeType.EndElement)
+                
+                // Store element information before consuming it
+                string localName = _r.LocalName;
+                string namespaceURI = _r.NamespaceURI;
+                bool isEmpty = _r.IsEmptyElement;
+                
+                // Store attributes if present
+                var attributes = new List<(string name, string namespaceUri, string value)>();
+                if (_r.HasAttributes)
                 {
-                    UnknownNode(null);
+                    while (_r.MoveToNextAttribute())
+                    {
+                        attributes.Add((_r.Name, _r.NamespaceURI, _r.Value));
+                    }
+                    _r.MoveToElement();
                 }
-                _r.ReadEndElement();
+                
+                _r.ReadStartElement();
+                
+                if (isEmpty)
+                {
+                    // For empty elements, create an empty XmlElement with attributes
+                    var element = Document.CreateElement(localName, namespaceURI);
+                    foreach (var (name, nsUri, value) in attributes)
+                    {
+                        element.SetAttribute(name, nsUri, value);
+                    }
+                    node = element;
+                }
+                else
+                {
+                    _r.MoveToContent();
+                    if (_r.NodeType != XmlNodeType.EndElement)
+                        node = Document.ReadNode(_r);
+                    else
+                    {
+                        // Element is empty (no content between start and end tags)
+                        var element = Document.CreateElement(localName, namespaceURI);
+                        foreach (var (name, nsUri, value) in attributes)
+                        {
+                            element.SetAttribute(name, nsUri, value);
+                        }
+                        node = element;
+                    }
+                    while (_r.NodeType != XmlNodeType.EndElement)
+                    {
+                        UnknownNode(null);
+                    }
+                    _r.ReadEndElement();
+                }
             }
             else
             {
