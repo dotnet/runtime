@@ -343,6 +343,9 @@ namespace System.Text.RegularExpressions.Tests
 
                     // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/114626
                     yield return (@"(?>(-*)+?-*)$", "abc", RegexOptions.None, 0, 3, true, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/63385
+                    yield return (@"(^+?)?()", "1", RegexOptions.None, 0, 1, true, "");
                 }
             }
 
