@@ -1302,12 +1302,12 @@ StoreCopyLoop
         Copy_Ref $argReg
         cmp x11, #16
         blt CopyBy8$argReg
+        sub x11, x11, #16
 RefCopyLoop16$argReg
         ldp x13, x14, [$argReg], #16
         stp x13, x14, [x9], #16
         subs x11, x11, #16
-        bgt RefCopyLoop16$argReg
-        beq RefCopyDone$argReg
+        bge RefCopyLoop16$argReg
         add x11, x11, #16
 CopyBy8$argReg
         cmp x11, #8

@@ -951,12 +951,12 @@ LEAF_END Load_Stack_Ref, _TEXT
 .macro Copy_Ref argReg
     cmp x11, #16
     blt LOCAL_LABEL(CopyBy8\argReg)
+    sub x11, x11, #16
 LOCAL_LABEL(RefCopyLoop16\argReg):
     ldp x13, x14, [\argReg], #16
     stp x13, x14, [x9], #16
     subs x11, x11, #16
-    bgt LOCAL_LABEL(RefCopyLoop16\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
+    bge LOCAL_LABEL(RefCopyLoop16\argReg)
     add x11, x11, #16
 LOCAL_LABEL(CopyBy8\argReg):
     cmp x11, #8
